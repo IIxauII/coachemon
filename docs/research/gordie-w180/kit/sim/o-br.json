@@ -1,0 +1,778 @@
+[
+ {
+  "name": "(prefix)",
+  "seed": "U0QKEz8wJ8ea7832",
+  "turns": [
+   {
+    "turn": 1,
+    "step": {
+     "m": "DRAGON_PULSE"
+    },
+    "msgs": [
+     "Reshiram used\nDragon Pulse!",
+     "Foe Gigalith used\nRock Slide!",
+     "It’s super effective!",
+     "The sandstorm rages.",
+     "Reshiram is buffeted\nby the sandstorm!",
+     "Reshiram restored its health using\nits Enigma Berry!",
+     "Reshiram restored its health using\nits Sitrus Berry!"
+    ],
+    "ours": [
+     "Reshiram* 577/577 [0,0,0,0,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 427/427"
+    ],
+    "foes": [
+     "Gigalith* 282/525 [0,0,0,0,0,0,0]",
+     "Carracosta 467/467",
+     "Tyranitar 569/569",
+     "Stonjourner 574/574",
+     "Barbaracle 460/460",
+     "Coalossal 711/711"
+    ]
+   },
+   {
+    "turn": 2,
+    "step": {
+     "s": "Probopass"
+    },
+    "msgs": [
+     "Come back, Reshiram!",
+     "Go! Probopass!",
+     "Foe Gigalith used\nExplosion!",
+     "It’s mostly ineffective…",
+     "Foe Gigalith fainted!",
+     "The sandstorm rages."
+    ],
+    "ours": [
+     "Probopass* 359/427 [0,0,0,0,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Reshiram 577/577"
+    ],
+    "foes": [
+     "Carracosta* 467/467 [0,0,0,0,0,0,0]",
+     "Gigalith 0/525 st7",
+     "Tyranitar 569/569",
+     "Stonjourner 574/574",
+     "Barbaracle 460/460",
+     "Coalossal 711/711"
+    ]
+   },
+   {
+    "turn": 3,
+    "step": {
+     "s": "Leavanny"
+    },
+    "msgs": [
+     "Come back, Probopass!",
+     "Go! Leavanny!",
+     "Foe Carracosta used\nBrine!",
+     "It’s not very effective…",
+     "The sandstorm rages.",
+     "Leavanny is buffeted\nby the sandstorm!"
+    ],
+    "ours": [
+     "Leavanny* 413/497 [0,0,0,0,0,0,0]",
+     "Probopass 359/427",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Reshiram 577/577"
+    ],
+    "foes": [
+     "Carracosta* 467/467 [0,0,0,0,0,0,0]",
+     "Gigalith 0/525 st7",
+     "Tyranitar 569/569",
+     "Stonjourner 574/574",
+     "Barbaracle 460/460",
+     "Coalossal 711/711"
+    ]
+   },
+   {
+    "turn": 4,
+    "step": {
+     "m": "POLLEN_PUFF"
+    },
+    "msgs": [
+     "Gordie withdrew Carracosta!",
+     "Gordie sent out Coalossal!",
+     "Leavanny used\nPollen Puff!",
+     "It’s not very effective…",
+     "The sandstorm rages.",
+     "Leavanny is buffeted\nby the sandstorm!"
+    ],
+    "ours": [
+     "Leavanny* 382/497 [0,0,0,0,0,0,0]",
+     "Probopass 359/427",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Reshiram 577/577"
+    ],
+    "foes": [
+     "Coalossal* 657/711 [0,0,0,0,0,0,0]",
+     "Gigalith 0/525 st7",
+     "Tyranitar 569/569",
+     "Stonjourner 574/574",
+     "Barbaracle 460/460",
+     "Carracosta 467/467"
+    ]
+   },
+   {
+    "turn": 5,
+    "step": {
+     "m": "BUG_BITE"
+    },
+    "msgs": [
+     "Foe Coalossal Terastallized into the Rock type!",
+     "Leavanny used\nBug Bite!",
+     "A critical hit!",
+     "Leavanny stole and ate\nCoalossal’s Lum Berry!",
+     "Foe Coalossal used\nBurn Up!",
+     "But it failed!",
+     "The sandstorm rages.",
+     "Leavanny is buffeted\nby the sandstorm!"
+    ],
+    "ours": [
+     "Leavanny* 351/497 [0,0,0,0,0,0,0]",
+     "Probopass 359/427",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Reshiram 577/577"
+    ],
+    "foes": [
+     "Coalossal* 515/711 TERA [0,0,0,0,0,0,0]",
+     "Gigalith 0/525 st7",
+     "Tyranitar 569/569",
+     "Stonjourner 574/574",
+     "Barbaracle 460/460",
+     "Carracosta 467/467"
+    ]
+   },
+   {
+    "turn": 6,
+    "step": {
+     "m": "LEAF_STORM"
+    },
+    "msgs": [
+     "Leavanny used\nLeaf Storm!",
+     "It’s super effective!",
+     "Leavanny’s Sp. Atk harshly fell!",
+     "Foe Coalossal used\nStone Edge!",
+     "Leavanny avoided the attack!",
+     "The sandstorm rages.",
+     "Leavanny is buffeted\nby the sandstorm!"
+    ],
+    "ours": [
+     "Leavanny* 320/497 [0,0,-2,0,0,0,0]",
+     "Probopass 359/427",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Reshiram 577/577"
+    ],
+    "foes": [
+     "Coalossal* 238/711 TERA [0,0,0,0,0,0,0]",
+     "Gigalith 0/525 st7",
+     "Tyranitar 569/569",
+     "Stonjourner 574/574",
+     "Barbaracle 460/460",
+     "Carracosta 467/467"
+    ]
+   },
+   {
+    "turn": 7,
+    "step": {
+     "m": "BUG_BITE"
+    },
+    "msgs": [
+     "Gordie withdrew Coalossal!",
+     "Gordie sent out Carracosta!",
+     "Leavanny used\nBug Bite!",
+     "Leavanny stole and ate\nCarracosta’s Enigma Berry!",
+     "Leavanny restored its health using\nits Enigma Berry!",
+     "The sandstorm rages.",
+     "Leavanny is buffeted\nby the sandstorm!"
+    ],
+    "ours": [
+     "Leavanny* 413/497 [0,0,-2,0,0,0,0]",
+     "Probopass 359/427",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Reshiram 577/577"
+    ],
+    "foes": [
+     "Carracosta* 380/467 [0,0,0,0,0,0,0]",
+     "Gigalith 0/525 st7",
+     "Tyranitar 569/569",
+     "Stonjourner 574/574",
+     "Barbaracle 460/460",
+     "Coalossal 238/711 TERA"
+    ]
+   },
+   {
+    "turn": 8,
+    "step": {
+     "m": "LEAF_STORM"
+    },
+    "msgs": [
+     "Leavanny used\nLeaf Storm!",
+     "It’s extremely effective!",
+     "Leavanny’s Sp. Atk harshly fell!",
+     "Foe Carracosta used\nIron Defense!",
+     "Foe Carracosta’s Defense rose sharply!",
+     "The sandstorm rages.",
+     "Leavanny is buffeted\nby the sandstorm!"
+    ],
+    "ours": [
+     "Leavanny* 382/497 [0,0,-4,0,0,0,0]",
+     "Probopass 359/427",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Reshiram 577/577"
+    ],
+    "foes": [
+     "Carracosta* 121/467 [0,2,0,0,0,0,0]",
+     "Gigalith 0/525 st7",
+     "Tyranitar 569/569",
+     "Stonjourner 574/574",
+     "Barbaracle 460/460",
+     "Coalossal 238/711 TERA"
+    ]
+   },
+   {
+    "turn": 9,
+    "step": {
+     "s": "Reshiram"
+    },
+    "msgs": [
+     "Come back, Leavanny!",
+     "Go! Reshiram!",
+     "Reshiram is radiating a blazing aura!",
+     "Gordie withdrew Carracosta!",
+     "Gordie sent out Stonjourner!",
+     "The sandstorm rages.",
+     "Reshiram is buffeted\nby the sandstorm!"
+    ],
+    "ours": [
+     "Reshiram* 577/577 [0,0,0,0,0,0,0]",
+     "Probopass 359/427",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Leavanny 382/497"
+    ],
+    "foes": [
+     "Stonjourner* 574/574 [0,0,0,0,0,0,0]",
+     "Gigalith 0/525 st7",
+     "Tyranitar 569/569",
+     "Carracosta 121/467",
+     "Barbaracle 460/460",
+     "Coalossal 238/711 TERA"
+    ]
+   },
+   {
+    "turn": 10,
+    "step": {
+     "m": "DRAGON_PULSE"
+    },
+    "msgs": [
+     "Reshiram used\nDragon Pulse!",
+     "Foe Stonjourner fainted!",
+     "The sandstorm rages.",
+     "Reshiram is buffeted\nby the sandstorm!"
+    ],
+    "ours": [
+     "Reshiram* 577/577 [0,0,0,0,0,0,0]",
+     "Probopass 359/427",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Leavanny 382/497"
+    ],
+    "foes": [
+     "Barbaracle* 460/460 [0,0,0,0,0,0,0]",
+     "Gigalith 0/525 st7",
+     "Tyranitar 569/569",
+     "Carracosta 121/467",
+     "Stonjourner 0/574 st7",
+     "Coalossal 238/711 TERA"
+    ]
+   },
+   {
+    "turn": 11,
+    "step": {
+     "s": "Leavanny"
+    },
+    "msgs": [
+     "Come back, Reshiram!",
+     "Go! Leavanny!",
+     "Foe Barbaracle used\nRazor Shell!",
+     "It’s not very effective…",
+     "The sandstorm rages.",
+     "Leavanny is buffeted\nby the sandstorm!"
+    ],
+    "ours": [
+     "Leavanny* 280/497 [0,0,0,0,0,0,0]",
+     "Probopass 359/427",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Reshiram 577/577"
+    ],
+    "foes": [
+     "Barbaracle* 460/460 [0,0,0,0,0,0,0]",
+     "Gigalith 0/525 st7",
+     "Tyranitar 569/569",
+     "Carracosta 121/467",
+     "Stonjourner 0/574 st7",
+     "Coalossal 238/711 TERA"
+    ]
+   },
+   {
+    "turn": 12,
+    "step": {
+     "m": "LEAF_STORM"
+    },
+    "msgs": [
+     "Leavanny used\nLeaf Storm!",
+     "It’s extremely effective!",
+     "Leavanny’s Sp. Atk harshly fell!",
+     "Foe Barbaracle fainted!",
+     "The sandstorm rages.",
+     "Leavanny is buffeted\nby the sandstorm!"
+    ],
+    "ours": [
+     "Leavanny* 249/497 [0,0,-2,0,0,0,0]",
+     "Probopass 359/427",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Reshiram 577/577"
+    ],
+    "foes": [
+     "Tyranitar* 569/569 [0,0,0,0,0,0,0]",
+     "Gigalith 0/525 st7",
+     "Barbaracle 0/460 st7",
+     "Carracosta 121/467",
+     "Stonjourner 0/574 st7",
+     "Coalossal 238/711 TERA"
+    ]
+   },
+   {
+    "turn": 13,
+    "step": {
+     "faint": [
+      "Golbat"
+     ],
+     "m": "BUG_BITE"
+    },
+    "msgs": [
+     "Leavanny used\nBug Bite!",
+     "It’s super effective!",
+     "Leavanny stole and ate\nTyranitar’s Leppa Berry!",
+     "Leavanny restored PP to its move Leaf Storm\nusing its Leppa Berry!",
+     "Foe Tyranitar used\nStone Edge!",
+     "It’s super effective!",
+     "Leavanny fainted!",
+     "The sandstorm rages.",
+     "Foe Tyranitar restored its health using\nits Enigma Berry!"
+    ],
+    "sentIn": "Golbat",
+    "ours": [
+     "Golbat* 493/493 [0,0,0,0,0,0,0]",
+     "Probopass 359/427",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Leavanny 0/497 st7",
+     "Reshiram 577/577"
+    ],
+    "foes": [
+     "Tyranitar* 512/569 [0,0,0,0,0,0,0]",
+     "Gigalith 0/525 st7",
+     "Barbaracle 0/460 st7",
+     "Carracosta 121/467",
+     "Stonjourner 0/574 st7",
+     "Coalossal 238/711 TERA"
+    ]
+   },
+   {
+    "turn": 14,
+    "step": {
+     "m": "TOXIC"
+    },
+    "msgs": [
+     "Golbat used\nToxic!",
+     "Foe Tyranitar\nwas badly poisoned!",
+     "Foe Tyranitar used\nStone Edge!",
+     "Golbat avoided the attack!",
+     "The sandstorm rages.",
+     "Golbat is buffeted\nby the sandstorm!",
+     "Foe Tyranitar is hurt\nby poison!"
+    ],
+    "ours": [
+     "Golbat* 463/493 [0,0,0,0,0,0,0]",
+     "Probopass 359/427",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Leavanny 0/497 st7",
+     "Reshiram 577/577"
+    ],
+    "foes": [
+     "Tyranitar* 477/569 st2 [0,0,0,0,0,0,0]",
+     "Gigalith 0/525 st7",
+     "Barbaracle 0/460 st7",
+     "Carracosta 121/467",
+     "Stonjourner 0/574 st7",
+     "Coalossal 238/711 TERA"
+    ]
+   },
+   {
+    "turn": 15,
+    "step": {
+     "faint": [
+      "Gyarados"
+     ],
+     "m": "VENOSHOCK"
+    },
+    "msgs": [
+     "Golbat used\nVenoshock!",
+     "It’s not very effective…",
+     "Foe Tyranitar used\nStone Edge!",
+     "It’s super effective!",
+     "Golbat fainted!",
+     "The sandstorm rages.",
+     "Foe Tyranitar is hurt\nby poison!"
+    ],
+    "sentIn": "Gyarados",
+    "ours": [
+     "Gyarados* 570/570 [0,0,0,0,0,0,0]",
+     "Probopass 359/427",
+     "Snorlax 824/824",
+     "Golbat 0/493 st7",
+     "Leavanny 0/497 st7",
+     "Reshiram 577/577"
+    ],
+    "foes": [
+     "Tyranitar* 339/569 st2 [-1,0,0,0,0,0,0]",
+     "Gigalith 0/525 st7",
+     "Barbaracle 0/460 st7",
+     "Carracosta 121/467",
+     "Stonjourner 0/574 st7",
+     "Coalossal 238/711 TERA"
+    ]
+   },
+   {
+    "turn": 16,
+    "step": {
+     "faint": [
+      "Reshiram"
+     ],
+     "m": "HYDRO_PUMP",
+     "tera": true
+    },
+    "msgs": [
+     "Gyarados Terastallized into the Water type!",
+     "Gyarados used\nHydro Pump!",
+     "It’s super effective!",
+     "Foe Tyranitar used\nStone Edge!",
+     "The sandstorm rages.",
+     "Gyarados is buffeted\nby the sandstorm!",
+     "Foe Tyranitar restored its health using\nits Sitrus Berry!",
+     "Foe Tyranitar is getting\npumped!",
+     "Foe Tyranitar’s Defense rose!",
+     "Foe Tyranitar is hurt\nby poison!"
+    ],
+    "ours": [
+     "Gyarados* 351/570 TERA [0,0,0,0,0,0,0]",
+     "Probopass 359/427",
+     "Snorlax 824/824",
+     "Golbat 0/493 st7",
+     "Leavanny 0/497 st7",
+     "Reshiram 577/577"
+    ],
+    "foes": [
+     "Tyranitar* 109/569 st2 [-1,1,0,0,0,0,0]",
+     "Gigalith 0/525 st7",
+     "Barbaracle 0/460 st7",
+     "Carracosta 121/467",
+     "Stonjourner 0/574 st7",
+     "Coalossal 238/711 TERA"
+    ]
+   },
+   {
+    "turn": 17,
+    "step": {
+     "m": "HYDRO_PUMP"
+    },
+    "msgs": [
+     "Gyarados used\nHydro Pump!",
+     "It’s super effective!",
+     "Foe Tyranitar fainted!",
+     "The sandstorm rages.",
+     "Gyarados is buffeted\nby the sandstorm!"
+    ],
+    "ours": [
+     "Gyarados* 316/570 TERA [0,0,0,0,0,0,0]",
+     "Probopass 359/427",
+     "Snorlax 824/824",
+     "Golbat 0/493 st7",
+     "Leavanny 0/497 st7",
+     "Reshiram 577/577"
+    ],
+    "foes": [
+     "Carracosta* 121/467 [0,0,0,0,0,0,0]",
+     "Gigalith 0/525 st7",
+     "Barbaracle 0/460 st7",
+     "Tyranitar 0/569 st7",
+     "Stonjourner 0/574 st7",
+     "Coalossal 238/711 TERA"
+    ]
+   },
+   {
+    "turn": 18,
+    "step": {
+     "m": "HYDRO_PUMP"
+    },
+    "msgs": [
+     "Gyarados used\nHydro Pump!",
+     "Foe Carracosta fainted!",
+     "The sandstorm rages.",
+     "Gyarados is buffeted\nby the sandstorm!",
+     "Gyarados restored its health using\nits Sitrus Berry!"
+    ],
+    "ours": [
+     "Gyarados* 423/570 TERA [0,0,0,0,0,0,0]",
+     "Probopass 359/427",
+     "Snorlax 824/824",
+     "Golbat 0/493 st7",
+     "Leavanny 0/497 st7",
+     "Reshiram 577/577"
+    ],
+    "foes": [
+     "Coalossal* 238/711 TERA [0,0,0,0,0,0,0]",
+     "Gigalith 0/525 st7",
+     "Barbaracle 0/460 st7",
+     "Tyranitar 0/569 st7",
+     "Stonjourner 0/574 st7",
+     "Carracosta 0/467 st7"
+    ]
+   },
+   {
+    "turn": 19,
+    "step": {
+     "m": "HYDRO_PUMP"
+    },
+    "msgs": [
+     "Gyarados used\nHydro Pump!",
+     "A critical hit!",
+     "It’s super effective!",
+     "Foe Coalossal fainted!"
+    ],
+    "ours": [
+     "Gyarados* 423/570 TERA [0,0,0,0,0,0,0]",
+     "Probopass 359/427",
+     "Snorlax 824/824",
+     "Golbat 0/493 st7",
+     "Leavanny 0/497 st7",
+     "Reshiram 577/577"
+    ],
+    "foes": [
+     "Coalossal 0/711 st7",
+     "Gigalith 0/525 st7",
+     "Barbaracle 0/460 st7",
+     "Tyranitar 0/569 st7",
+     "Stonjourner 0/574 st7",
+     "Carracosta 0/467 st7"
+    ]
+   }
+  ],
+  "start": {
+   "ours": [
+    "Reshiram* 577/577 [0,0,0,0,0,0,0]",
+    "Leavanny 497/497",
+    "Snorlax 824/824",
+    "Gyarados 570/570",
+    "Golbat 493/493",
+    "Probopass 427/427"
+   ],
+   "foes": [
+    "Gigalith* 525/525 [0,0,0,0,0,0,0]",
+    "Carracosta 467/467",
+    "Tyranitar 569/569",
+    "Stonjourner 574/574",
+    "Barbaracle 460/460",
+    "Coalossal 711/711"
+   ]
+  },
+  "stats": [
+   [
+    "Reshiram",
+    174,
+    "577,547,379,654,530,373",
+    "26,24,15,13,14,14",
+    12,
+    null
+   ],
+   [
+    "Leavanny",
+    174,
+    "497,373,337,295,335,413",
+    "30,30,31,27,30,29",
+    10,
+    null
+   ],
+   [
+    "Snorlax",
+    174,
+    "824,424,271,262,429,135",
+    "16,21,23,18,24,15",
+    6,
+    null
+   ],
+   [
+    "Gyarados",
+    175,
+    "570,474,325,237,355,299",
+    "30,18,25,13,0,6",
+    18,
+    null
+   ],
+   [
+    "Golbat",
+    174,
+    "493,285,292,276,295,372",
+    "28,1,25,26,17,31",
+    24,
+    null
+   ],
+   [
+    "Probopass",
+    174,
+    "427,215,533,279,558,159",
+    "8,25,14,8,18,0",
+    17,
+    null
+   ],
+   [
+    "Gigalith",
+    169,
+    "525,496,486,265,315,131",
+    "19,21,25,22,24,21",
+    24,
+    null
+   ],
+   [
+    "Carracosta",
+    169,
+    "467,412,533,302,314,180",
+    "23,25,21,30,27,30",
+    13,
+    null
+   ],
+   [
+    "Tyranitar",
+    169,
+    "569,600,457,324,375,270",
+    "31,26,26,21,19,23",
+    3,
+    null
+   ],
+   [
+    "Stonjourner",
+    172,
+    "574,472,560,118,115,283",
+    "28,22,27,26,20,22",
+    6,
+    null
+   ],
+   [
+    "Barbaracle",
+    172,
+    "460,391,530,273,381,285",
+    "18,20,25,28,31,27",
+    5,
+    null
+   ],
+   [
+    "Coalossal",
+    179,
+    "711,375,513,339,351,184",
+    "28,31,20,27,18,25",
+    14,
+    null
+   ]
+  ],
+  "mods": [
+   "EXP. Charm:14",
+   "Super EXP. Charm:7",
+   "EXP. All:5",
+   "Carbos:1",
+   "Map:1",
+   "Calcium:2",
+   "Wide Lens:3",
+   "Enigma Berry:1",
+   "HP Up:1",
+   "Soothe Bell:1",
+   "Leftovers:2",
+   "Golden Poké Ball:3",
+   "Silk Scarf:1",
+   "Wide Lens:1",
+   "Dynamax Band:1",
+   "Soul Dew:1",
+   "Leppa Berry:1",
+   "Protein:2",
+   "Zinc:2",
+   "Amulet Coin:1",
+   "Tera Orb:1",
+   "Golden Punch:1",
+   "HP Up:1",
+   "Mega Bracelet:1",
+   "Lum Berry:2",
+   "Quick Claw:1",
+   "Soft Sand:1",
+   "Lock Capsule:1",
+   "Berry Pouch:1",
+   "Petaya Berry:3",
+   "Petaya Berry:1",
+   "Enigma Berry:1",
+   "Apicot Berry:1",
+   "Starf Berry:1",
+   "Lansat Berry:1",
+   "Sitrus Berry:1",
+   "Liechi Berry:1",
+   "Leppa Berry:1",
+   "Sitrus Berry:1",
+   "Dire Hit:1",
+   "X Defense:1"
+  ],
+  "result": "WIN",
+  "end": {
+   "ours": [
+    "Gyarados* 423/570 TERA [0,0,0,0,0,0,0]",
+    "Probopass 359/427",
+    "Snorlax 824/824",
+    "Golbat 0/493 st7",
+    "Leavanny 0/497 st7",
+    "Reshiram 577/577"
+   ],
+   "foes": [
+    "Coalossal 0/711 st7",
+    "Gigalith 0/525 st7",
+    "Barbaracle 0/460 st7",
+    "Tyranitar 0/569 st7",
+    "Stonjourner 0/574 st7",
+    "Carracosta 0/467 st7"
+   ]
+  }
+ }
+]

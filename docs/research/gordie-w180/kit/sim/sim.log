@@ -1,0 +1,1664 @@
+
+ RUN  v4.1.9 /Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11
+
+(node:36338) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[1m[38;2;255;124;124m==================[39m[22m
+[2m> [22m[38;2;193;98;222mStarting test: [39m[38;2;0;136;134mgordie > sim[39m
+Mocking Phaser.GameObjects.GameObjectCreator;
+[38;2;176;176;30mMystery encounter chance set to 0% (=0)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping before running LoginPhase[39m
+[38;2;255;127;80mSkipping current phase: LoginPhase[39m
+[32mStart Phase: TitlePhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to TITLE (=1)![39m
+use seasonal splash messages true
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching TITLE (=1) during TitlePhase[39m
+[38;2;176;176;30mPlayer Pokemon set to never be shiny![39m
+[38;2;176;176;30mEnemy Pokemon set to never be shiny![39m
+[38;2;176;176;30mPlayer Pokemon IVs set to 31![39m
+[38;2;176;176;30mEnemy Pokemon IVs set to 31![39m
+[38;2;176;176;30mPlayer Pokemon Natures set to HARDY (=0)![39m
+[38;2;176;176;30mEnemy Nature set to HARDY (=0)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[32mStart Phase: EncounterPhase[39m
+Starting species pool tier: RARE
+Pokemon: Wild Tandemaus | Species ID: 924 | Level: 2 | Nature: Hardy (-)
+Stats (IVs): HP: 14 (31), Atk: 7 (31), Def: 7 (31), Spatk: 6 (31), Spdef: 8 (31), Spd: 7 (31)
+Ability: Pickup | Passive Ability (inactive): Friend Guard 
+Moveset: [ 'Pound', 'Baby-Doll Eyes' ]
+[38;2;0;60;189mUI mode changed from TITLE (=1) to MESSAGE (=0)![39m
+[34mA wild Tandemaus appeared![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of EncounterPhase[39m
+Enemy held items removed
+[32mStart Phase: SummonPhase[39m
+[34mGo! Bulbasaur![39m
+[32mStart Phase: ToggleDoublePositionPhase[39m
+[32mStart Phase: InitEncounterPhase[39m
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Bulbasaur
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Tandemaus
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+[38;2;255;173;0m==================[New Turn]==================[39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to MESSAGE (=0)![39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to MESSAGE (=0)![39m
+Applied Carbos 
+Applied Calcium 
+Applied Protein 
+Applied Zinc 
+Applied HP Up 
+Applied HP Up 
+Applied Calcium (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Protein (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Calcium (enemy)
+Applied Iron (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied HP Up (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+[34mSession loaded successfully.[39m
+[32mStart Phase: EncounterPhase[39m
+Pokemon: Foe Gigalith | Species ID: 526 | Level: 169 | Nature: Hardy (-)
+Stats (IVs): HP: 545 (31), Atk: 513 (31), Def: 496 (31), Spatk: 280 (31), Spdef: 327 (31), Spd: 148 (31)
+Ability: Sand Stream | Passive Ability (inactive): Solid Rock 
+Moveset: [ 'Rock Slide', 'Explosion', 'Spiky Shield', 'Body Press' ]
+Pokemon: Foe Carracosta | Species ID: 565 | Level: 169 | Nature: Hardy (-)
+Stats (IVs): HP: 481 (31), Atk: 422 (31), Def: 550 (31), Spatk: 337 (31), Spdef: 321 (31), Spd: 165 (31)
+Ability: Solid Rock | Passive Ability (inactive): Water Absorb 
+Moveset: [ 'Rock Slide', 'Brine', 'Curse', 'Iron Defense' ]
+Pokemon: Foe Tyranitar | Species ID: 248 | Level: 169 | Nature: Hardy (-)
+Stats (IVs): HP: 569 (31), Atk: 554 (31), Def: 466 (31), Spatk: 378 (31), Spdef: 395 (31), Spd: 283 (31)
+Ability: Sand Stream | Passive Ability (inactive): Solid Rock 
+Moveset: [ 'Crunch', 'Stone Edge', 'Earthquake', 'Taunt' ]
+Pokemon: Foe Stonjourner | Species ID: 874 | Level: 172 | Nature: Hardy (-)
+Stats (IVs): HP: 579 (31), Atk: 488 (31), Def: 567 (31), Spatk: 127 (31), Spdef: 134 (31), Spd: 299 (31)
+Ability: Power Spot | Passive Ability (inactive): Sturdy 
+Moveset: [ 'Accelerock', 'Stealth Rock', 'Earthquake', 'Body Slam' ]
+Pokemon: Foe Barbaracle | Species ID: 689 | Level: 172 | Nature: Hardy (-)
+Stats (IVs): HP: 483 (31), Atk: 453 (31), Def: 491 (31), Spatk: 278 (31), Spdef: 381 (31), Spd: 292 (31)
+Ability: Sniper | Passive Ability (inactive): Sap Sipper 
+Moveset: [ 'Stone Edge', 'Razor Shell', 'Nature Power', 'Skull Bash' ]
+Pokemon: Foe Coalossal | Species ID: 839 | Level: 179 | Nature: Hardy (-)
+Stats (IVs): HP: 717 (31), Atk: 375 (31), Def: 533 (31), Spatk: 346 (31), Spdef: 414 (31), Spd: 178 (31)
+Ability: Flame Body | Passive Ability (inactive): Solid Rock 
+Moveset: [ 'Burn Up', 'Stone Edge', 'Iron Defense', 'Body Press' ]
+Generated AI funcs
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to MESSAGE (=0)![39m
+Applied Calcium (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Protein (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Calcium (enemy)
+Applied Iron (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied HP Up (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Gym Leader Gordie
+Gym Leader Gordie: 
+[34mdialogue:gordie.encounter.1[39m
+Gym Leader Gordie
+[34mGym Leader Gordie would like to battle![39m
+[32mStart Phase: SummonPhase[39m
+Gordie
+[34mGordie sent out Gigalith![39m
+Applied Calcium (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Protein (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Calcium (enemy)
+Applied Iron (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied HP Up (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+[32mStart Phase: SummonPhase[39m
+[34mGo! Reshiram![39m
+Applied Carbos 
+Applied Calcium 
+Applied Protein 
+Applied Zinc 
+Applied HP Up 
+Applied HP Up 
+[32mStart Phase: InitEncounterPhase[39m
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Reshiram
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: ShowAbilityPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram is radiating a blazing aura![39m
+[32mStart Phase: HideAbilityPhase[39m
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Gigalith
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+[38;2;255;173;0m==================[New Turn (Reloaded)]==================[39m
+Applied Carbos 
+Applied Calcium 
+Applied Protein 
+Applied Zinc 
+Applied HP Up 
+Applied HP Up 
+Applied Calcium (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Protein (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Calcium (enemy)
+Applied Iron (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied HP Up (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Move position for DRAGON_PULSE (=406): 3
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to FIGHT (=3)![39m
+Move: DRAGON_PULSE Move targets: { multiple: false, targets: [ 2 ] } 
+Player Pokemon: Reshiram
+[38;2;0;60;189mUI mode changed from FIGHT (=3) to MESSAGE (=0)![39m
+[33mBattlerTag SPIKY_SHIELD is missing a score![39m
+[33mBattlerTag SPIKY_SHIELD is missing a score![39m
+[32mStart Phase: EnemyCommandPhase[39m
+Applied X Defense 
+Applied X Defense 
+Applied X Defense 
+Move Pool: [ 'Rock Slide', 'Explosion', 'Spiky Shield', 'Body Press' ]
+Move Scores: [ 57, 45, -20, 16 ]
+Sorted Move Pool: [ 'Rock Slide', 'Explosion', 'Body Press', 'Spiky Shield' ]
+Chosen Move: Rock Slide
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Reshiram[39m
+[38;2;0;0;0mMove: DRAGON_PULSE[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram used Dragon Pulse![39m
+[32mStart Phase: MoveEffectPhase[39m
+Applied Wide Lens 
+Applied Dire Hit 
+crit stage: +1
+Move: Dragon Pulse | Base damage: 170.654406779661 | Power: 85 | Source attack: 654 | Target defense: 472
+Move: Dragon Pulse | Attack damage: 243
+Applied Amulet Coin 
+Applied Golden Punch 
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Gigalith[39m
+[38;2;0;0;0mMove: ROCK_SLIDE[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Gigalith used Rock Slide![39m
+[32mStart Phase: MoveEffectPhase[39m
+crit stage: +0
+Applied X Defense 
+Move: Rock Slide | Base damage: 116.05814977973569 | Power: 75 | Source attack: 496 | Target defense: 454
+Move: Rock Slide | Attack damage: 320
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mIt’s super effective![39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[34mThe sandstorm rages.[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram is buffeted by the sandstorm![39m
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+Applied Berry Pouch 
+Applied Enigma Berry 
+Applied Berry Pouch 
+Applied Sitrus Berry 
+Applied Carbos 
+Applied Calcium 
+Applied Protein 
+Applied Zinc 
+Applied HP Up 
+Applied HP Up 
+[32mStart Phase: CommonAnimPhase[39m
+[32mStart Phase: PokemonHealPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram restored its health using its Enigma Berry![39m
+[32mStart Phase: PokemonHealPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram restored its health using its Sitrus Berry![39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: TurnEndPhase[39m
+Applied Leftovers 
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: PokemonHealPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram restored a little HP using its Leftovers![39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to PARTY (=8)![39m
+[38;2;0;60;189mUI mode changed from PARTY (=8) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+Applied X Defense 
+Applied X Defense 
+Applied X Defense 
+Move Pool: [ 'Rock Slide', 'Explosion', 'Spiky Shield', 'Body Press' ]
+Move Scores: [ 57, 48, -20, 16 ]
+Sorted Move Pool: [ 'Rock Slide', 'Explosion', 'Body Press', 'Spiky Shield' ]
+Chosen Move: Explosion
+[33mBattlerTag SPIKY_SHIELD is missing a score![39m
+[33mBattlerTag SPIKY_SHIELD is missing a score![39m
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: SwitchSummonPhase[39m
+[34mCome back, Reshiram![39m
+[34mGo! Probopass![39m
+Applied HP Up 
+Applied HP Up 
+Applied Carbos 
+Applied Calcium 
+Applied Protein 
+Applied Zinc 
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Probopass
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Gigalith[39m
+[38;2;0;0;0mMove: EXPLOSION[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Gigalith used Explosion![39m
+[32mStart Phase: MoveEffectPhase[39m
+crit stage: +0
+Applied X Defense 
+Move: Explosion | Base damage: 272.1220657276995 | Power: 250 | Source attack: 496 | Target defense: 639
+Move: Explosion | Attack damage: 68
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mIt’s mostly ineffective…[39m
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: FaintPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Gigalith fainted![39m
+[32mStart Phase: VictoryPhase[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[34mThe sandstorm rages.[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: TurnEndPhase[39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: SwitchSummonPhase[39m
+Gordie
+[34mGordie sent out Carracosta![39m
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Calcium (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Protein (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Calcium (enemy)
+Applied Iron (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied HP Up (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Carracosta
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to PARTY (=8)![39m
+[38;2;0;60;189mUI mode changed from PARTY (=8) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+Applied X Defense 
+Move Pool: [ 'Rock Slide', 'Brine', 'Curse', 'Iron Defense' ]
+Move Scores: [ 10.5, 45, 0, 6 ]
+Sorted Move Pool: [ 'Brine', 'Rock Slide', 'Iron Defense', 'Curse' ]
+Chosen Move: Brine
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: SwitchSummonPhase[39m
+[34mCome back, Probopass![39m
+[34mGo! Leavanny![39m
+Applied HP Up 
+Applied HP Up 
+Applied Carbos 
+Applied Calcium 
+Applied Protein 
+Applied Zinc 
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Leavanny
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Carracosta[39m
+[38;2;0;0;0mMove: BRINE[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Carracosta used Brine![39m
+[32mStart Phase: MoveEffectPhase[39m
+crit stage: +0
+Move: Brine | Base damage: 83.5670447761194 | Power: 65 | Source attack: 302 | Target defense: 335
+Move: Brine | Attack damage: 53
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mIt’s not very effective…[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[34mThe sandstorm rages.[39m
+[32mStart Phase: MessagePhase[39m
+[34mLeavanny is buffeted by the sandstorm![39m
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: TurnEndPhase[39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+Move position for POLLEN_PUFF (=676): 3
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to FIGHT (=3)![39m
+Move: POLLEN_PUFF Move targets: { multiple: false, targets: [ 2 ] } 
+Player Pokemon: Leavanny
+[38;2;0;60;189mUI mode changed from FIGHT (=3) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: SwitchSummonPhase[39m
+Gordie
+[34mGordie withdrew Carracosta![39m
+Gordie
+[34mGordie sent out Coalossal![39m
+Applied HP Up (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Calcium (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Protein (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Calcium (enemy)
+Applied Iron (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Coalossal
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Leavanny[39m
+[38;2;0;0;0mMove: POLLEN_PUFF[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mLeavanny used Pollen Puff![39m
+[32mStart Phase: MoveEffectPhase[39m
+Applied Wide Lens 
+Applied Dire Hit 
+crit stage: +1
+Move: Pollen Puff | Base damage: 74.280608365019 | Power: 90 | Source attack: 295 | Target defense: 526
+Move: Pollen Puff | Attack damage: 54
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mIt’s not very effective…[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[34mThe sandstorm rages.[39m
+[32mStart Phase: MessagePhase[39m
+[34mLeavanny is buffeted by the sandstorm![39m
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: TurnEndPhase[39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+Move position for BUG_BITE (=450): 1
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to FIGHT (=3)![39m
+Move: BUG_BITE Move targets: { multiple: false, targets: [ 2 ] } 
+Player Pokemon: Leavanny
+[38;2;0;60;189mUI mode changed from FIGHT (=3) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+Applied X Defense 
+Applied X Defense 
+Move Pool: [ 'Burn Up', 'Stone Edge' ]
+Move Scores: [ 264, 63 ]
+Sorted Move Pool: [ 'Burn Up', 'Stone Edge' ]
+Chosen Move: Burn Up
+[33mBattlerTag BURNED_UP is missing a score![39m
+[33mBattlerTag BURNED_UP is missing a score![39m
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: TeraPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Coalossal Terastallized into the Rock type![39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Leavanny[39m
+[38;2;0;0;0mMove: BUG_BITE[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mLeavanny used Bug Bite![39m
+[32mStart Phase: MoveEffectPhase[39m
+Applied Wide Lens 
+Applied Dire Hit 
+crit stage: +1
+Move: Bug Bite | Base damage: 64.47204678362573 | Power: 60 | Source attack: 373 | Target defense: 513
+Move: Bug Bite | Attack damage: 142
+Applied HP Up (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Calcium (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Protein (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Calcium (enemy)
+Applied Iron (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mA critical hit![39m
+[32mStart Phase: MessagePhase[39m
+[34mLeavanny stole and ate Coalossal’s Lum Berry![39m
+[32mStart Phase: ResetStatusPhase[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Coalossal[39m
+[38;2;0;0;0mMove: BURN_UP[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Coalossal used Burn Up![39m
+[32mStart Phase: MessagePhase[39m
+[34mBut it failed![39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[34mThe sandstorm rages.[39m
+[32mStart Phase: MessagePhase[39m
+[34mLeavanny is buffeted by the sandstorm![39m
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: TurnEndPhase[39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+Move position for LEAF_STORM (=437): 0
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to FIGHT (=3)![39m
+Move: LEAF_STORM Move targets: { multiple: false, targets: [ 2 ] } 
+Player Pokemon: Leavanny
+[38;2;0;60;189mUI mode changed from FIGHT (=3) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+Applied X Defense 
+Applied X Defense 
+Move Pool: [ 'Stone Edge' ]
+Move Scores: [ 63 ]
+Sorted Move Pool: [ 'Stone Edge' ]
+Chosen Move: Stone Edge
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Leavanny[39m
+[38;2;0;0;0mMove: LEAF_STORM[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mLeavanny used Leaf Storm![39m
+[32mStart Phase: MoveEffectPhase[39m
+Applied Wide Lens 
+Applied Dire Hit 
+crit stage: +1
+Move: Leaf Storm | Base damage: 106.40532319391636 | Power: 130 | Source attack: 295 | Target defense: 526
+Move: Leaf Storm | Attack damage: 277
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mIt’s super effective![39m
+[32mStart Phase: StatStageChangePhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mLeavanny’s Sp. Atk harshly fell![39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Coalossal[39m
+[38;2;0;0;0mMove: STONE_EDGE[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Coalossal used Stone Edge![39m
+[32mStart Phase: MoveEffectPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mLeavanny avoided the attack![39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[34mThe sandstorm rages.[39m
+[32mStart Phase: MessagePhase[39m
+[34mLeavanny is buffeted by the sandstorm![39m
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: TurnEndPhase[39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+Move position for BUG_BITE (=450): 1
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to FIGHT (=3)![39m
+Move: BUG_BITE Move targets: { multiple: false, targets: [ 2 ] } 
+Player Pokemon: Leavanny
+[38;2;0;60;189mUI mode changed from FIGHT (=3) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: SwitchSummonPhase[39m
+Gordie
+[34mGordie withdrew Coalossal![39m
+Gordie
+[34mGordie sent out Carracosta![39m
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Calcium (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Protein (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Calcium (enemy)
+Applied Iron (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied HP Up (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Carracosta
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Leavanny[39m
+[38;2;0;0;0mMove: BUG_BITE[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mLeavanny used Bug Bite![39m
+[32mStart Phase: MoveEffectPhase[39m
+Applied Wide Lens 
+Applied Dire Hit 
+crit stage: +1
+Move: Bug Bite | Base damage: 62.12787992495309 | Power: 60 | Source attack: 373 | Target defense: 533
+Move: Bug Bite | Attack damage: 87
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Calcium (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Protein (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Calcium (enemy)
+Applied Iron (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied HP Up (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mLeavanny stole and ate Carracosta’s Enigma Berry![39m
+[32mStart Phase: PokemonHealPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mLeavanny restored its health using its Enigma Berry![39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[34mThe sandstorm rages.[39m
+[32mStart Phase: MessagePhase[39m
+[34mLeavanny is buffeted by the sandstorm![39m
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: TurnEndPhase[39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+Move position for LEAF_STORM (=437): 0
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to FIGHT (=3)![39m
+Move: LEAF_STORM Move targets: { multiple: false, targets: [ 2 ] } 
+Player Pokemon: Leavanny
+[38;2;0;60;189mUI mode changed from FIGHT (=3) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+Applied X Defense 
+Move Pool: [ 'Rock Slide', 'Brine', 'Curse', 'Iron Defense' ]
+Move Scores: [ 57, 9.375, 0, 6 ]
+Sorted Move Pool: [ 'Rock Slide', 'Brine', 'Iron Defense', 'Curse' ]
+Chosen Move: Iron Defense
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Leavanny[39m
+[38;2;0;0;0mMove: LEAF_STORM[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mLeavanny used Leaf Storm![39m
+[32mStart Phase: MoveEffectPhase[39m
+Applied Wide Lens 
+Applied Dire Hit 
+crit stage: +1
+Move: Leaf Storm | Base damage: 60.10089171974522 | Power: 130 | Source attack: 147 | Target defense: 471
+Move: Leaf Storm | Attack damage: 259
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mIt’s extremely effective![39m
+[32mStart Phase: StatStageChangePhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mLeavanny’s Sp. Atk harshly fell![39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Carracosta[39m
+[38;2;0;0;0mMove: IRON_DEFENSE[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Carracosta used Iron Defense![39m
+[32mStart Phase: MoveEffectPhase[39m
+[32mStart Phase: StatStageChangePhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Carracosta’s Defense rose sharply![39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[34mThe sandstorm rages.[39m
+[32mStart Phase: MessagePhase[39m
+[34mLeavanny is buffeted by the sandstorm![39m
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: TurnEndPhase[39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to PARTY (=8)![39m
+[38;2;0;60;189mUI mode changed from PARTY (=8) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: SwitchSummonPhase[39m
+[34mCome back, Leavanny![39m
+[34mGo! Reshiram![39m
+Applied Carbos 
+Applied Calcium 
+Applied Protein 
+Applied Zinc 
+Applied HP Up 
+Applied HP Up 
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Reshiram
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: ShowAbilityPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram is radiating a blazing aura![39m
+[32mStart Phase: HideAbilityPhase[39m
+[32mStart Phase: SwitchSummonPhase[39m
+Gordie
+[34mGordie withdrew Carracosta![39m
+Gordie
+[34mGordie sent out Stonjourner![39m
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Calcium (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Protein (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Calcium (enemy)
+Applied Iron (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied HP Up (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Stonjourner
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[34mThe sandstorm rages.[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram is buffeted by the sandstorm![39m
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: TurnEndPhase[39m
+Applied Leftovers 
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: PokemonHealPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram restored a little HP using its Leftovers![39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+Move position for DRAGON_PULSE (=406): 3
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to FIGHT (=3)![39m
+Move: DRAGON_PULSE Move targets: { multiple: false, targets: [ 2 ] } 
+Player Pokemon: Reshiram
+[38;2;0;60;189mUI mode changed from FIGHT (=3) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+Applied X Defense 
+Applied X Defense 
+Applied X Defense 
+Move Pool: [ 'Accelerock', 'Stealth Rock', 'Earthquake', 'Body Slam' ]
+Move Scores: [ 36, 0, 48, 20 ]
+Sorted Move Pool: [ 'Earthquake', 'Accelerock', 'Body Slam', 'Stealth Rock' ]
+Chosen Move: Earthquake
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Reshiram[39m
+[38;2;0;0;0mMove: DRAGON_PULSE[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram used Dragon Pulse![39m
+[32mStart Phase: MoveEffectPhase[39m
+Applied Wide Lens 
+Applied Dire Hit 
+crit stage: +1
+Move: Dragon Pulse | Base damage: 464.8190697674418 | Power: 85 | Source attack: 654 | Target defense: 172
+Move: Dragon Pulse | Attack damage: 662
+Applied Amulet Coin 
+Applied Golden Punch 
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: FaintPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Stonjourner fainted![39m
+[32mStart Phase: VictoryPhase[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: MovePhase[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[34mThe sandstorm rages.[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram is buffeted by the sandstorm![39m
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: TurnEndPhase[39m
+Applied Leftovers 
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: PokemonHealPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram restored a little HP using its Leftovers![39m
+[32mStart Phase: SwitchSummonPhase[39m
+Gordie
+[34mGordie sent out Barbaracle![39m
+Applied Calcium (enemy)
+Applied Iron (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied Calcium (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Protein (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied HP Up (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Barbaracle
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to PARTY (=8)![39m
+[38;2;0;60;189mUI mode changed from PARTY (=8) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+Applied X Defense 
+Applied X Defense 
+Applied X Defense 
+Move Pool: [ 'Stone Edge', 'Razor Shell', 'Nature Power', 'Skull Bash' ]
+Move Scores: [ 69, 24, 0, 13 ]
+Sorted Move Pool: [ 'Stone Edge', 'Razor Shell', 'Skull Bash', 'Nature Power' ]
+Chosen Move: Razor Shell
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: SwitchSummonPhase[39m
+[34mCome back, Reshiram![39m
+[34mGo! Leavanny![39m
+Applied HP Up 
+Applied HP Up 
+Applied Carbos 
+Applied Calcium 
+Applied Protein 
+Applied Zinc 
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Leavanny
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Barbaracle[39m
+[38;2;0;0;0mMove: RAZOR_SHELL[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Barbaracle used Razor Shell![39m
+[32mStart Phase: MoveEffectPhase[39m
+crit stage: +0
+Applied X Defense 
+Move: Razor Shell | Base damage: 104.78267326732674 | Power: 75 | Source attack: 391 | Target defense: 404
+Move: Razor Shell | Attack damage: 71
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mIt’s not very effective…[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[34mThe sandstorm rages.[39m
+[32mStart Phase: MessagePhase[39m
+[34mLeavanny is buffeted by the sandstorm![39m
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: TurnEndPhase[39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+Move position for LEAF_STORM (=437): 0
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to FIGHT (=3)![39m
+Move: LEAF_STORM Move targets: { multiple: false, targets: [ 2 ] } 
+Player Pokemon: Leavanny
+[38;2;0;60;189mUI mode changed from FIGHT (=3) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+Applied X Defense 
+Applied X Defense 
+Applied X Defense 
+Move Pool: [ 'Stone Edge' ]
+Move Scores: [ 69 ]
+Sorted Move Pool: [ 'Stone Edge' ]
+Chosen Move: Stone Edge
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Leavanny[39m
+[38;2;0;0;0mMove: LEAF_STORM[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mLeavanny used Leaf Storm![39m
+[32mStart Phase: MoveEffectPhase[39m
+Applied Wide Lens 
+Applied Dire Hit 
+crit stage: +1
+Move: Leaf Storm | Base damage: 98.17723292469353 | Power: 130 | Source attack: 295 | Target defense: 571
+Move: Leaf Storm | Attack damage: 530
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mIt’s extremely effective![39m
+[32mStart Phase: StatStageChangePhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mLeavanny’s Sp. Atk harshly fell![39m
+[32mStart Phase: FaintPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Barbaracle fainted![39m
+[32mStart Phase: VictoryPhase[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: MovePhase[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[34mThe sandstorm rages.[39m
+[32mStart Phase: MessagePhase[39m
+[34mLeavanny is buffeted by the sandstorm![39m
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: TurnEndPhase[39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: SwitchSummonPhase[39m
+Gordie
+[34mGordie sent out Tyranitar![39m
+Applied Protein (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Calcium (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Calcium (enemy)
+Applied Iron (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied HP Up (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Tyranitar
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+Move position for BUG_BITE (=450): 1
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to FIGHT (=3)![39m
+Move: BUG_BITE Move targets: { multiple: false, targets: [ 2 ] } 
+Player Pokemon: Leavanny
+[38;2;0;60;189mUI mode changed from FIGHT (=3) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+Applied X Defense 
+Applied X Defense 
+Applied Soft Sand (enemy)
+Applied X Defense 
+Move Pool: [ 'Crunch', 'Stone Edge' ]
+Move Scores: [ 27, 69 ]
+Sorted Move Pool: [ 'Stone Edge', 'Crunch' ]
+Chosen Move: Stone Edge
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Leavanny[39m
+[38;2;0;0;0mMove: BUG_BITE[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mLeavanny used Bug Bite![39m
+[32mStart Phase: MoveEffectPhase[39m
+Applied Wide Lens 
+Applied Dire Hit 
+crit stage: +1
+Move: Bug Bite | Base damage: 72.1272647702407 | Power: 60 | Source attack: 373 | Target defense: 457
+Move: Bug Bite | Attack damage: 199
+Applied Protein (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Calcium (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Calcium (enemy)
+Applied Iron (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied HP Up (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mIt’s super effective![39m
+[32mStart Phase: MessagePhase[39m
+[34mLeavanny stole and ate Tyranitar’s Leppa Berry![39m
+[32mStart Phase: MessagePhase[39m
+[34mLeavanny restored PP to its move Leaf Storm using its Leppa Berry![39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Tyranitar[39m
+[38;2;0;0;0mMove: STONE_EDGE[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Tyranitar used Stone Edge![39m
+[32mStart Phase: MoveEffectPhase[39m
+crit stage: +1
+Applied X Defense 
+Move: Stone Edge | Base damage: 208.73267326732673 | Power: 100 | Source attack: 600 | Target defense: 404
+Move: Stone Edge | Attack damage: 613
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mIt’s super effective![39m
+[32mStart Phase: FaintPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mLeavanny fainted![39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[34mThe sandstorm rages.[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+Applied Enigma Berry (enemy)
+Applied Protein (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Calcium (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Calcium (enemy)
+Applied Iron (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied HP Up (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+[32mStart Phase: CommonAnimPhase[39m
+[32mStart Phase: PokemonHealPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Tyranitar restored its health using its Enigma Berry![39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: TurnEndPhase[39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: SwitchPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to PARTY (=8)![39m
+[38;2;0;60;189mUI mode changed from PARTY (=8) to MESSAGE (=0)![39m
+[32mStart Phase: SwitchSummonPhase[39m
+[34mGo! Golbat![39m
+Applied HP Up 
+Applied HP Up 
+Applied Carbos 
+Applied Calcium 
+Applied Protein 
+Applied Zinc 
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Golbat
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+Move position for TOXIC (=92): 3
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to FIGHT (=3)![39m
+Move: TOXIC Move targets: { multiple: false, targets: [ 2 ] } 
+Player Pokemon: Golbat
+[38;2;0;60;189mUI mode changed from FIGHT (=3) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+Applied X Defense 
+Applied X Defense 
+Move Pool: [ 'Stone Edge' ]
+Move Scores: [ 69 ]
+Sorted Move Pool: [ 'Stone Edge' ]
+Chosen Move: Stone Edge
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Golbat[39m
+[38;2;0;0;0mMove: TOXIC[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mGolbat used Toxic![39m
+[32mStart Phase: MoveEffectPhase[39m
+[32mStart Phase: ObtainStatusEffectPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Tyranitar was badly poisoned![39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Tyranitar[39m
+[38;2;0;0;0mMove: STONE_EDGE[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Tyranitar used Stone Edge![39m
+[32mStart Phase: MoveEffectPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mGolbat avoided the attack![39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[34mThe sandstorm rages.[39m
+[32mStart Phase: MessagePhase[39m
+[34mGolbat is buffeted by the sandstorm![39m
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: PostTurnStatusEffectPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Tyranitar is hurt by poison![39m
+[32mStart Phase: TurnEndPhase[39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+Move position for VENOSHOCK (=474): 2
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to FIGHT (=3)![39m
+Move: VENOSHOCK Move targets: { multiple: false, targets: [ 2 ] } 
+Player Pokemon: Golbat
+[38;2;0;60;189mUI mode changed from FIGHT (=3) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+Applied X Defense 
+Applied X Defense 
+Move Pool: [ 'Stone Edge' ]
+Move Scores: [ 69 ]
+Sorted Move Pool: [ 'Stone Edge' ]
+Chosen Move: Stone Edge
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Golbat[39m
+[38;2;0;0;0mMove: VENOSHOCK[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mGolbat used Venoshock![39m
+[32mStart Phase: MoveEffectPhase[39m
+Applied Dire Hit 
+crit stage: +1
+Move: Venoshock | Base damage: 93.42377224199288 | Power: 130 | Source attack: 276 | Target defense: 562
+Move: Venoshock | Attack damage: 67
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mIt’s not very effective…[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Tyranitar[39m
+[38;2;0;0;0mMove: STONE_EDGE[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Tyranitar used Stone Edge![39m
+[32mStart Phase: MoveEffectPhase[39m
+crit stage: +1
+Applied X Defense 
+Move: Stone Edge | Base damage: 240.6285714285714 | Power: 100 | Source attack: 600 | Target defense: 350
+Move: Stone Edge | Attack damage: 664
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mIt’s super effective![39m
+[32mStart Phase: FaintPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mGolbat fainted![39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[34mThe sandstorm rages.[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: PostTurnStatusEffectPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Tyranitar is hurt by poison![39m
+[32mStart Phase: TurnEndPhase[39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: SwitchPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to PARTY (=8)![39m
+[38;2;0;60;189mUI mode changed from PARTY (=8) to MESSAGE (=0)![39m
+[32mStart Phase: SwitchSummonPhase[39m
+[34mGo! Gyarados![39m
+Applied HP Up 
+Applied HP Up 
+Applied Carbos 
+Applied Calcium 
+Applied Protein 
+Applied Zinc 
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Gyarados
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: ShowAbilityPhase[39m
+[32mStart Phase: StatStageChangePhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Tyranitar’s Attack fell![39m
+[32mStart Phase: HideAbilityPhase[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+Move position for HYDRO_PUMP (=56): 3
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to FIGHT (=3)![39m
+Move: HYDRO_PUMP Move targets: { multiple: false, targets: [ 2 ] } 
+Player Pokemon: Gyarados
+[38;2;0;60;189mUI mode changed from FIGHT (=3) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+Applied X Defense 
+Applied X Defense 
+Move Pool: [ 'Crunch', 'Stone Edge', 'Earthquake', 'Taunt' ]
+Move Scores: [ 27, 66, -20, 0 ]
+Sorted Move Pool: [ 'Stone Edge', 'Crunch', 'Taunt', 'Earthquake' ]
+Chosen Move: Stone Edge
+[33mBattlerTag TAUNT is missing a score![39m
+[33mBattlerTag TAUNT is missing a score![39m
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: TeraPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mGyarados Terastallized into the Water type![39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Gyarados[39m
+[38;2;0;0;0mMove: HYDRO_PUMP[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mGyarados used Hydro Pump![39m
+[32mStart Phase: MoveEffectPhase[39m
+Applied Dire Hit 
+crit stage: +1
+Move: Hydro Pump | Base damage: 68.79857651245553 | Power: 110 | Source attack: 237 | Target defense: 562
+Move: Hydro Pump | Attack damage: 266
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mIt’s super effective![39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Tyranitar[39m
+[38;2;0;0;0mMove: STONE_EDGE[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Tyranitar used Stone Edge![39m
+[32mStart Phase: MoveEffectPhase[39m
+crit stage: +1
+Applied X Defense 
+Move: Stone Edge | Base damage: 144.76923076923075 | Power: 100 | Source attack: 400 | Target defense: 390
+Move: Stone Edge | Attack damage: 184
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[34mThe sandstorm rages.[39m
+[32mStart Phase: MessagePhase[39m
+[34mGyarados is buffeted by the sandstorm![39m
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+Applied Ganlon Berry (enemy)
+Applied Sitrus Berry (enemy)
+Applied Lansat Berry (enemy)
+Applied Protein (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Calcium (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Calcium (enemy)
+Applied Iron (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied HP Up (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+[32mStart Phase: CommonAnimPhase[39m
+[32mStart Phase: PokemonHealPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Tyranitar restored its health using its Sitrus Berry![39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Tyranitar is getting pumped![39m
+[32mStart Phase: StatStageChangePhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Tyranitar’s Defense rose![39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: PostTurnStatusEffectPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Tyranitar is hurt by poison![39m
+[32mStart Phase: TurnEndPhase[39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+Move position for HYDRO_PUMP (=56): 3
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to FIGHT (=3)![39m
+Move: HYDRO_PUMP Move targets: { multiple: false, targets: [ 2 ] } 
+Player Pokemon: Gyarados
+[38;2;0;60;189mUI mode changed from FIGHT (=3) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+Applied X Defense 
+Applied X Defense 
+Applied Soft Sand (enemy)
+Applied X Defense 
+Move Pool: [ 'Crunch', 'Stone Edge', 'Earthquake', 'Taunt' ]
+Move Scores: [ 27, 28.5, 20, 0 ]
+Sorted Move Pool: [ 'Stone Edge', 'Crunch', 'Earthquake', 'Taunt' ]
+Chosen Move: Stone Edge
+[33mBattlerTag TAUNT is missing a score![39m
+[33mBattlerTag TAUNT is missing a score![39m
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Gyarados[39m
+[38;2;0;0;0mMove: HYDRO_PUMP[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mGyarados used Hydro Pump![39m
+[32mStart Phase: MoveEffectPhase[39m
+Applied Dire Hit 
+crit stage: +1
+Move: Hydro Pump | Base damage: 68.79857651245553 | Power: 110 | Source attack: 237 | Target defense: 562
+Move: Hydro Pump | Attack damage: 264
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mIt’s super effective![39m
+[32mStart Phase: FaintPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Tyranitar fainted![39m
+[32mStart Phase: VictoryPhase[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: MovePhase[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[34mThe sandstorm rages.[39m
+[32mStart Phase: MessagePhase[39m
+[34mGyarados is buffeted by the sandstorm![39m
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: TurnEndPhase[39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: SwitchSummonPhase[39m
+Gordie
+[34mGordie sent out Carracosta![39m
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Calcium (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Calcium (enemy)
+Applied Iron (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied Protein (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied HP Up (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Carracosta
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+Move position for HYDRO_PUMP (=56): 3
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to FIGHT (=3)![39m
+Move: HYDRO_PUMP Move targets: { multiple: false, targets: [ 2 ] } 
+Player Pokemon: Gyarados
+[38;2;0;60;189mUI mode changed from FIGHT (=3) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+Applied X Defense 
+Move Pool: [ 'Rock Slide', 'Brine', 'Curse', 'Iron Defense' ]
+Move Scores: [ 22.5, 9.375, 0, 6 ]
+Sorted Move Pool: [ 'Rock Slide', 'Brine', 'Iron Defense', 'Curse' ]
+Chosen Move: Iron Defense
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Gyarados[39m
+[38;2;0;0;0mMove: HYDRO_PUMP[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mGyarados used Hydro Pump![39m
+[32mStart Phase: MoveEffectPhase[39m
+Applied Dire Hit 
+crit stage: +1
+Move: Hydro Pump | Base damage: 81.70445859872612 | Power: 110 | Source attack: 237 | Target defense: 471
+Move: Hydro Pump | Attack damage: 150
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: FaintPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Carracosta fainted![39m
+[32mStart Phase: VictoryPhase[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: MovePhase[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[34mThe sandstorm rages.[39m
+[32mStart Phase: MessagePhase[39m
+[34mGyarados is buffeted by the sandstorm![39m
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+Applied Berry Pouch 
+Applied Sitrus Berry 
+Applied HP Up 
+Applied HP Up 
+Applied Carbos 
+Applied Calcium 
+Applied Protein 
+Applied Zinc 
+[32mStart Phase: CommonAnimPhase[39m
+[32mStart Phase: PokemonHealPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mGyarados restored its health using its Sitrus Berry![39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: TurnEndPhase[39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: SwitchSummonPhase[39m
+Gordie
+[34mGordie sent out Coalossal![39m
+Applied HP Up (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Calcium (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Calcium (enemy)
+Applied Iron (enemy)
+Applied Protein (enemy)
+Applied Zinc (enemy)
+Applied Protein (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Coalossal
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+Move position for HYDRO_PUMP (=56): 3
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to FIGHT (=3)![39m
+Move: HYDRO_PUMP Move targets: { multiple: false, targets: [ 2 ] } 
+Player Pokemon: Gyarados
+[38;2;0;60;189mUI mode changed from FIGHT (=3) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+Applied X Defense 
+Applied X Defense 
+Move Pool: [ 'Burn Up', 'Stone Edge', 'Iron Defense', 'Body Press' ]
+Move Scores: [ -20, 28.5, 6, 16 ]
+Sorted Move Pool: [ 'Stone Edge', 'Body Press', 'Iron Defense', 'Burn Up' ]
+Chosen Move: Stone Edge
+[33mBattlerTag BURNED_UP is missing a score![39m
+[33mBattlerTag BURNED_UP is missing a score![39m
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Gyarados[39m
+[38;2;0;0;0mMove: HYDRO_PUMP[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mGyarados used Hydro Pump![39m
+[32mStart Phase: MoveEffectPhase[39m
+Applied Dire Hit 
+crit stage: +1
+Move: Hydro Pump | Base damage: 73.3703422053232 | Power: 110 | Source attack: 237 | Target defense: 526
+Move: Hydro Pump | Attack damage: 382
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mA critical hit![39m
+[32mStart Phase: MessagePhase[39m
+[34mIt’s super effective![39m
+[32mStart Phase: FaintPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Coalossal fainted![39m
+[32mStart Phase: VictoryPhase[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: MovePhase[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: TurnEndPhase[39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[2m> [22m[30m[48;2;193;98;222m Test finished! [49m[39m
+    Name: [38;2;0;136;134mgordie > sim[39m
+    Result: [32m[1m✓ Passed[22m[39m [2min[22m [32m5464[39m[2mms[22m
+    File: [38;2;210;155;14mv1.12.0.11/test/tests/zz-gordie-sim.test.ts:26:3[39m
+ ✓ |main| test/tests/zz-gordie-sim.test.ts (1 test) 5537ms
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'getItem')
+ ❯ src/i18n.ts:207:36
+    205|     async () => {
+    206|       i18next.services.formatter?.add("money", i18nMoneyFormatter);
+    207|       await initFonts(localStorage.getItem("prLang") ?? undefined);
+       |                                    ^
+    208|     },
+    209|   );
+ ❯ finish node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1870:9
+ ❯ done node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1997:21
+ ❯ node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:2011:9
+ ❯ Object.callback node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1907:9
+ ❯ node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1533:13
+ ❯ Connector.loaded node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1515:16
+ ❯ node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1615:12
+ ❯ resolver node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1566:7
+
+This error originated in "test/tests/zz-gordie-sim.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+     Errors  1 error
+   Start at  23:10:14
+   Duration  10.57s (transform 3.81s, setup 4.70s, import 5ms, tests 5.54s, environment 238ms)
+

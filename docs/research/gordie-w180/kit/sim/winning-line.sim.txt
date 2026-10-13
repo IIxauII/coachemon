@@ -1,0 +1,58 @@
+## (prefix)  -> WIN 
+T 1 DRAGON_PULSE   Reshiram used Dragon Pulse! | Foe Gigalith used Rock Slide! | It’s super effective! | Reshiram restored its health using its Enigma Berry! | Reshiram restored its health using its Sitrus Berry!
+       us: Reshiram* 577/577, Leavanny 497/497, Snorlax 824/824, Gyarados 570/570, Golbat 493/493, Probopass 427/427
+     them: Gigalith* 282/525, Carracosta 467/467, Tyranitar 569/569, Stonjourner 574/574, Barbaracle 460/460, Coalossal 711/711
+T 2 >Probopass     Foe Gigalith used Explosion! | It’s mostly ineffective… | Foe Gigalith fainted!
+       us: Probopass* 359/427, Leavanny 497/497, Snorlax 824/824, Gyarados 570/570, Golbat 493/493, Reshiram 577/577
+     them: Carracosta* 467/467, Tyranitar 569/569, Stonjourner 574/574, Barbaracle 460/460, Coalossal 711/711
+T 3 >Leavanny      Foe Carracosta used Brine! | It’s not very effective…
+       us: Leavanny* 413/497, Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Golbat 493/493, Reshiram 577/577
+     them: Carracosta* 467/467, Tyranitar 569/569, Stonjourner 574/574, Barbaracle 460/460, Coalossal 711/711
+T 4 POLLEN_PUFF    Gordie withdrew Carracosta! | Gordie sent out Coalossal! | Leavanny used Pollen Puff! | It’s not very effective…
+       us: Leavanny* 382/497, Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Golbat 493/493, Reshiram 577/577
+     them: Coalossal* 657/711, Tyranitar 569/569, Stonjourner 574/574, Barbaracle 460/460, Carracosta 467/467
+T 5 BUG_BITE       Foe Coalossal Terastallized into the Rock type! | Leavanny used Bug Bite! | A critical hit! | Leavanny stole and ate Coalossal’s Lum Berry! | Foe Coalossal used Burn Up! | But it failed!
+       us: Leavanny* 351/497, Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Golbat 493/493, Reshiram 577/577
+     them: Coalossal* 515/711 TERA, Tyranitar 569/569, Stonjourner 574/574, Barbaracle 460/460, Carracosta 467/467
+T 6 LEAF_STORM     Leavanny used Leaf Storm! | It’s super effective! | Leavanny’s Sp. Atk harshly fell! | Foe Coalossal used Stone Edge! | Leavanny avoided the attack!
+       us: Leavanny* 320/497 [0,0,-2,0,0,0,0], Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Golbat 493/493, Reshiram 577/577
+     them: Coalossal* 238/711 TERA, Tyranitar 569/569, Stonjourner 574/574, Barbaracle 460/460, Carracosta 467/467
+T 7 BUG_BITE       Gordie withdrew Coalossal! | Gordie sent out Carracosta! | Leavanny used Bug Bite! | Leavanny stole and ate Carracosta’s Enigma Berry! | Leavanny restored its health using its Enigma Berry!
+       us: Leavanny* 413/497 [0,0,-2,0,0,0,0], Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Golbat 493/493, Reshiram 577/577
+     them: Carracosta* 380/467, Tyranitar 569/569, Stonjourner 574/574, Barbaracle 460/460, Coalossal 238/711 TERA
+T 8 LEAF_STORM     Leavanny used Leaf Storm! | It’s extremely effective! | Leavanny’s Sp. Atk harshly fell! | Foe Carracosta used Iron Defense! | Foe Carracosta’s Defense rose sharply!
+       us: Leavanny* 382/497 [0,0,-4,0,0,0,0], Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Golbat 493/493, Reshiram 577/577
+     them: Carracosta* 121/467 [0,2,0,0,0,0,0], Tyranitar 569/569, Stonjourner 574/574, Barbaracle 460/460, Coalossal 238/711 TERA
+T 9 >Reshiram      Reshiram is radiating a blazing aura! | Gordie withdrew Carracosta! | Gordie sent out Stonjourner!
+       us: Reshiram* 577/577, Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Golbat 493/493, Leavanny 382/497
+     them: Stonjourner* 574/574, Tyranitar 569/569, Carracosta 121/467, Barbaracle 460/460, Coalossal 238/711 TERA
+T10 DRAGON_PULSE   Reshiram used Dragon Pulse! | Foe Stonjourner fainted!
+       us: Reshiram* 577/577, Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Golbat 493/493, Leavanny 382/497
+     them: Barbaracle* 460/460, Tyranitar 569/569, Carracosta 121/467, Coalossal 238/711 TERA
+T11 >Leavanny      Foe Barbaracle used Razor Shell! | It’s not very effective…
+       us: Leavanny* 280/497, Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Golbat 493/493, Reshiram 577/577
+     them: Barbaracle* 460/460, Tyranitar 569/569, Carracosta 121/467, Coalossal 238/711 TERA
+T12 LEAF_STORM     Leavanny used Leaf Storm! | It’s extremely effective! | Leavanny’s Sp. Atk harshly fell! | Foe Barbaracle fainted!
+       us: Leavanny* 249/497 [0,0,-2,0,0,0,0], Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Golbat 493/493, Reshiram 577/577
+     them: Tyranitar* 569/569, Carracosta 121/467, Coalossal 238/711 TERA
+T13 BUG_BITE       Leavanny used Bug Bite! | It’s super effective! | Leavanny stole and ate Tyranitar’s Leppa Berry! | Leavanny restored PP to its move Leaf Storm using its Leppa Berry! | Foe Tyranitar used Stone Edge! | It’s super effective! | Leavanny fainted! | Foe Tyranitar restored its health using its Enigma Berry!
+       us: Golbat* 493/493, Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Reshiram 577/577 (in:Golbat)
+     them: Tyranitar* 512/569, Carracosta 121/467, Coalossal 238/711 TERA
+T14 TOXIC          Golbat used Toxic! | Foe Tyranitar was badly poisoned! | Foe Tyranitar used Stone Edge! | Golbat avoided the attack! | Foe Tyranitar is hurt by poison!
+       us: Golbat* 463/493, Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Reshiram 577/577
+     them: Tyranitar* 477/569 st2, Carracosta 121/467, Coalossal 238/711 TERA
+T15 VENOSHOCK      Golbat used Venoshock! | It’s not very effective… | Foe Tyranitar used Stone Edge! | It’s super effective! | Golbat fainted! | Foe Tyranitar is hurt by poison!
+       us: Gyarados* 570/570, Probopass 359/427, Snorlax 824/824, Reshiram 577/577 (in:Gyarados)
+     them: Tyranitar* 339/569 st2 [-1,0,0,0,0,0,0], Carracosta 121/467, Coalossal 238/711 TERA
+T16 T:HYDRO_PUMP   Gyarados Terastallized into the Water type! | Gyarados used Hydro Pump! | It’s super effective! | Foe Tyranitar used Stone Edge! | Foe Tyranitar restored its health using its Sitrus Berry! | Foe Tyranitar is getting pumped! | Foe Tyranitar’s Defense rose! | Foe Tyranitar is hurt by poison!
+       us: Gyarados* 351/570 TERA, Probopass 359/427, Snorlax 824/824, Reshiram 577/577
+     them: Tyranitar* 109/569 st2 [-1,1,0,0,0,0,0], Carracosta 121/467, Coalossal 238/711 TERA
+T17 HYDRO_PUMP     Gyarados used Hydro Pump! | It’s super effective! | Foe Tyranitar fainted!
+       us: Gyarados* 316/570 TERA, Probopass 359/427, Snorlax 824/824, Reshiram 577/577
+     them: Carracosta* 121/467, Coalossal 238/711 TERA
+T18 HYDRO_PUMP     Gyarados used Hydro Pump! | Foe Carracosta fainted! | Gyarados restored its health using its Sitrus Berry!
+       us: Gyarados* 423/570 TERA, Probopass 359/427, Snorlax 824/824, Reshiram 577/577
+     them: Coalossal* 238/711 TERA
+T19 HYDRO_PUMP     Gyarados used Hydro Pump! | A critical hit! | It’s super effective! | Foe Coalossal fainted!
+       us: Gyarados* 423/570 TERA, Probopass 359/427, Snorlax 824/824, Reshiram 577/577
+     them: 

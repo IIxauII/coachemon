@@ -1,0 +1,416 @@
+{
+ "teraMode": 1,
+ "teraLogic": [
+  5,
+  5,
+  5
+ ],
+ "weather": 3,
+ "partyMods": [
+  [
+   "Dynamax Band",
+   null
+  ],
+  [
+   "Dire Hit",
+   4
+  ],
+  [
+   "X Defense",
+   5
+  ]
+ ],
+ "enemy": [
+  {
+   "name": "Gigalith",
+   "lvl": 169,
+   "idx": 0,
+   "hp": 525,
+   "types": [
+    "5"
+   ],
+   "teraType": 5,
+   "ability": "Sand Stream",
+   "stats": {
+    "atk": 496,
+    "def": 486,
+    "spa": 265,
+    "spd": 315,
+    "spe": 131
+   },
+   "moves": [
+    "Rock Slide pp10",
+    "Explosion pp5",
+    "Spiky Shield pp5",
+    "Body Press pp10"
+   ],
+   "items": [
+    "Leppa Berryx1",
+    "Calciumx1",
+    "Starf Berryx2",
+    "Carbosx1",
+    "HP Upx1",
+    "Sitrus Berryx2",
+    "Apicot Berryx1"
+   ]
+  },
+  {
+   "name": "Carracosta",
+   "lvl": 169,
+   "idx": 1,
+   "hp": 467,
+   "types": [
+    "10",
+    "5"
+   ],
+   "teraType": 10,
+   "ability": "Solid Rock",
+   "stats": {
+    "atk": 412,
+    "def": 533,
+    "spa": 302,
+    "spd": 314,
+    "spe": 180
+   },
+   "moves": [
+    "Rock Slide pp10",
+    "Brine pp10",
+    "Curse pp10",
+    "Iron Defense pp15"
+   ],
+   "items": [
+    "Leppa Berryx1",
+    "Ganlon Berryx1",
+    "Enigma Berryx1",
+    "Starf Berryx1",
+    "Zincx2",
+    "Liechi Berryx1",
+    "Petaya Berryx1",
+    "Ironx1"
+   ]
+  },
+  {
+   "name": "Tyranitar",
+   "lvl": 169,
+   "idx": 2,
+   "hp": 569,
+   "types": [
+    "5",
+    "16"
+   ],
+   "teraType": 5,
+   "ability": "Sand Stream",
+   "stats": {
+    "atk": 600,
+    "def": 457,
+    "spa": 324,
+    "spd": 375,
+    "spe": 270
+   },
+   "moves": [
+    "Crunch pp15",
+    "Stone Edge pp5",
+    "Earthquake pp10",
+    "Taunt pp20"
+   ],
+   "items": [
+    "Leppa Berryx1",
+    "Proteinx1",
+    "Ganlon Berryx1",
+    "Ironx1",
+    "Sitrus Berryx1",
+    "Lansat Berryx1",
+    "Carbosx1",
+    "Enigma Berryx1",
+    "Soft Sandx1"
+   ]
+  },
+  {
+   "name": "Stonjourner",
+   "lvl": 172,
+   "idx": 3,
+   "hp": 574,
+   "types": [
+    "5"
+   ],
+   "teraType": 5,
+   "ability": "Power Spot",
+   "stats": {
+    "atk": 472,
+    "def": 560,
+    "spa": 118,
+    "spd": 115,
+    "spe": 283
+   },
+   "moves": [
+    "Accelerock pp20",
+    "Stealth Rock pp20",
+    "Earthquake pp10",
+    "Body Slam pp15"
+   ],
+   "items": [
+    "Leppa Berryx2",
+    "Lum Berryx1",
+    "Zincx1",
+    "Ironx1",
+    "Sitrus Berryx1",
+    "Lansat Berryx1",
+    "Petaya Berryx1"
+   ]
+  },
+  {
+   "name": "Barbaracle",
+   "lvl": 172,
+   "idx": 4,
+   "hp": 460,
+   "types": [
+    "5",
+    "10"
+   ],
+   "teraType": 10,
+   "ability": "Sniper",
+   "stats": {
+    "atk": 391,
+    "def": 530,
+    "spa": 273,
+    "spd": 381,
+    "spe": 285
+   },
+   "moves": [
+    "Stone Edge pp5",
+    "Razor Shell pp10",
+    "Nature Power pp20",
+    "Skull Bash pp10"
+   ],
+   "items": [
+    "Salac Berryx1",
+    "Calciumx2",
+    "Ironx1",
+    "Proteinx1",
+    "Lum Berryx1",
+    "Ganlon Berryx1",
+    "Sitrus Berryx1",
+    "Zincx1"
+   ]
+  },
+  {
+   "name": "Coalossal",
+   "lvl": 179,
+   "idx": 5,
+   "hp": 711,
+   "types": [
+    "5",
+    "9"
+   ],
+   "teraType": 5,
+   "ability": "Flame Body",
+   "stats": {
+    "atk": 375,
+    "def": 513,
+    "spa": 339,
+    "spd": 351,
+    "spe": 184
+   },
+   "moves": [
+    "Burn Up pp5",
+    "Stone Edge pp5",
+    "Iron Defense pp15",
+    "Body Press pp10"
+   ],
+   "items": [
+    "Salac Berryx1",
+    "HP Upx2",
+    "Proteinx1",
+    "Zincx1",
+    "Lum Berryx1",
+    "Ironx1",
+    "Lucky Eggx1",
+    "Carbosx1"
+   ]
+  }
+ ],
+ "player": [
+  {
+   "name": "Reshiram",
+   "lvl": 174,
+   "hp": 577,
+   "types": [
+    "15",
+    "9"
+   ],
+   "teraType": 6,
+   "ability": "Turboblaze",
+   "stats": {
+    "atk": 547,
+    "def": 379,
+    "spa": 654,
+    "spd": 530,
+    "spe": 373
+   },
+   "moves": [
+    "Hyper Voice pp10",
+    "Blue Flare pp8",
+    "Fickle Beam pp8",
+    "Dragon Pulse pp10"
+   ],
+   "items": [
+    "Carbosx1",
+    "Calciumx2",
+    "Wide Lensx3",
+    "Leftoversx2",
+    "Soul Dewx1",
+    "Proteinx2",
+    "Zincx2",
+    "Golden Punchx1",
+    "Lum Berryx2",
+    "Quick Clawx1",
+    "Petaya Berryx3",
+    "Enigma Berryx1",
+    "Apicot Berryx1",
+    "Starf Berryx1",
+    "Lansat Berryx1",
+    "Sitrus Berryx1",
+    "Liechi Berryx1",
+    "Leppa Berryx1"
+   ]
+  },
+  {
+   "name": "Leavanny",
+   "lvl": 174,
+   "hp": 497,
+   "types": [
+    "6",
+    "11"
+   ],
+   "teraType": 6,
+   "ability": "Chlorophyll",
+   "stats": {
+    "atk": 373,
+    "def": 337,
+    "spa": 295,
+    "spd": 335,
+    "spe": 413
+   },
+   "moves": [
+    "Leaf Storm pp5",
+    "Bug Bite pp20",
+    "Helping Hand pp20",
+    "Pollen Puff pp15"
+   ],
+   "items": [
+    "Wide Lensx1",
+    "Leppa Berryx1",
+    "Petaya Berryx1"
+   ]
+  },
+  {
+   "name": "Snorlax",
+   "lvl": 174,
+   "hp": 824,
+   "types": [
+    "0"
+   ],
+   "teraType": 0,
+   "ability": "Thick Fat",
+   "stats": {
+    "atk": 424,
+    "def": 271,
+    "spa": 262,
+    "spd": 429,
+    "spe": 135
+   },
+   "moves": [
+    "Body Slam pp15",
+    "Belly Drum pp10",
+    "Sleep Talk pp10",
+    "Rest pp5"
+   ],
+   "items": [
+    "Enigma Berryx1",
+    "HP Upx1",
+    "Soothe Bellx1",
+    "Silk Scarfx1"
+   ]
+  },
+  {
+   "name": "Gyarados",
+   "lvl": 175,
+   "hp": 570,
+   "types": [
+    "10",
+    "2"
+   ],
+   "teraType": 10,
+   "ability": "Intimidate",
+   "stats": {
+    "atk": 474,
+    "def": 325,
+    "spa": 237,
+    "spd": 355,
+    "spe": 299
+   },
+   "moves": [
+    "Hurricane pp10",
+    "Twister pp20",
+    "Bounce pp5",
+    "Hydro Pump pp8"
+   ],
+   "items": [
+    "Sitrus Berryx1"
+   ]
+  },
+  {
+   "name": "Golbat",
+   "lvl": 174,
+   "hp": 493,
+   "types": [
+    "3",
+    "2"
+   ],
+   "teraType": 3,
+   "ability": "Inner Focus",
+   "stats": {
+    "atk": 285,
+    "def": 292,
+    "spa": 276,
+    "spd": 295,
+    "spe": 372
+   },
+   "moves": [
+    "Mean Look pp5",
+    "Poison Fang pp15",
+    "Venoshock pp10",
+    "Toxic pp10"
+   ],
+   "items": []
+  },
+  {
+   "name": "Probopass",
+   "lvl": 174,
+   "hp": 427,
+   "types": [
+    "5",
+    "8"
+   ],
+   "teraType": 5,
+   "ability": "Magnet Pull",
+   "stats": {
+    "atk": 215,
+    "def": 533,
+    "spa": 279,
+    "spd": 558,
+    "spe": 159
+   },
+   "moves": [
+    "Tri Attack pp10",
+    "Zap Cannon pp6",
+    "Earth Power pp10",
+    "Power Gem pp20"
+   ],
+   "items": [
+    "HP Upx1",
+    "Soft Sandx1"
+   ]
+  }
+ ]
+}
