@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coachemon HUD Gaps</title>
+<!--
+  PROTOTYPE, throwaway: issue #640 "Which of the battle oracle's HUD candidates ship?"
+  Each confirmed gap from #637, mocked on the Gordie W180 / Ivy W145 turn where it would have changed the call, in
+  four states: Today, A (fix the call, say nothing), B (fix the call and say why), C (keep the call, add a ✦ option).
+  Switch from the bar at the bottom or by #gap-scene-variant. Pick per gap in the right column. Double-click to open.
+  Never merged.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&family=Pixelify+Sans:wght@400;600&display=swap">
+<style>
+:root{
+  --bg:#f3f2f6; --panel:#ffffff; --fg:#1d1922; --muted:#625a6d; --line:#dbd5e2;
+  --accent:#9a5c0c; --accent-soft:#f5e6cd;
+  --ok:#1f6f53; --ok-bg:#ddf0e7; --bad:#b02e26; --bad-bg:#f8dfdc; --none-bg:#ebe8ef;
+  --bar-bg:#1d1922; --bar-fg:#f3f2f6; --bar-line:#4a4252; --bar-hi:#f8b050;
+  /* fixed worlds: the game and its HUD look the same in both themes */
+  --hud-fill:#362d3e; --hud-body:#f8f8f8; --hud-rule:#f8b050; --hud-shadow:#181818; --hud-dim:#b4a8c0;
+  --hud-ok:#8fe0b4; --hud-bad:#ff8f84; --hud-add:rgba(143,224,180,.14);
+  --game-a:#24495a; --game-b:#0d1c24; --game-fg:#cfe3ea;
+  --term-bg:#121116; --term-fg:#e4e1ea; --term-dim:#8a8496; --term-acc:#f8b050;
+  --sans:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --pixel:"Pixelify Sans", "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141218; --panel:#1c1a21; --fg:#ece8f2; --muted:#a59db0; --line:#302a38;
+    --accent:#f0a948; --accent-soft:#3a2c17; --ok:#74d3a4; --ok-bg:#163128; --bad:#ff8f84; --bad-bg:#3d1d1b; --none-bg:#26222c;
+    --bar-bg:#ece8f2; --bar-fg:#141218; --bar-line:#bdb5c8; --bar-hi:#9a5c0c;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141218; --panel:#1c1a21; --fg:#ece8f2; --muted:#a59db0; --line:#302a38;
+  --accent:#f0a948; --accent-soft:#3a2c17; --ok:#74d3a4; --ok-bg:#163128; --bad:#ff8f84; --bad-bg:#3d1d1b; --none-bg:#26222c;
+  --bar-bg:#ece8f2; --bar-fg:#141218; --bar-line:#bdb5c8; --bar-hi:#9a5c0c;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 var(--sans);padding-inline:16px;padding-block:28px 150px}
+.wrap{max-width:1260px;margin:0 auto;display:grid;gap:22px}
+code{font:0.9em var(--mono);background:var(--none-bg);padding:0 4px;border-radius:3px}
+b{font-weight:600}
+header{display:grid;gap:8px}
+.eyebrow{font:600 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+h1{font:600 clamp(22px,3vw,30px)/1.2 var(--sans);margin:0;text-wrap:balance}
+header p{margin:0;max-width:80ch;color:var(--muted)}
+details.prov{max-width:80ch;color:var(--muted);font-size:14px}
+details.prov summary{cursor:pointer;color:var(--fg);font-weight:500}
+details.prov ul{margin:6px 0 0;padding-left:20px;display:grid;gap:2px}
+
+.picks{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px;display:grid;gap:8px;font-size:14px}
+.picks h3,.notes h3{margin:0;font:600 12px/1.2 var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.picks ol{margin:0;padding-left:20px;display:grid;gap:2px}
+.picks .ship{color:var(--ok);font-weight:600} .picks .skip{color:var(--muted)} .picks .open{color:var(--accent)}
+
+.where-head{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline}
+.where-head h2{margin:0;font:600 19px/1.3 var(--sans)}
+.where-head .fid{font:13px var(--mono);color:var(--muted)}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:22px;align-items:start}
+@media (max-width:980px){.layout{grid-template-columns:minmax(0,1fr)}}
+.stage{min-width:0;display:grid;gap:12px}
+.notes{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:grid;gap:16px;font-size:14px}
+.notes dl{margin:4px 0 0;display:grid;gap:6px}
+.notes dt{font-weight:600}
+.notes dd{margin:0}
+.notes p{margin:4px 0 0}
+.choice{display:grid;gap:6px;margin-top:6px}
+.choice label{display:flex;gap:8px;align-items:flex-start;cursor:pointer;padding:6px 8px;border:1px solid var(--line);border-radius:8px}
+.choice label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.choice input{margin-top:4px;accent-color:var(--accent)}
+.choice small{display:block;color:var(--muted)}
+
+.game{background:linear-gradient(160deg,var(--game-a),var(--game-b));border-radius:8px;padding:12px;display:grid;gap:10px}
+.game .field{font:600 14px/1.3 var(--pixel);color:var(--game-fg);display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 12px}
+.hud{background:var(--hud-fill);color:var(--hud-body);border:2px solid var(--hud-rule);box-shadow:3px 3px 0 var(--hud-shadow);font:14px/1.45 var(--pixel);max-width:640px}
+.hud .strip{padding:5px 8px 6px;display:grid;gap:1px;border-bottom:1px solid var(--hud-rule)}
+.hud .cap{display:flex;justify-content:space-between;gap:8px;color:var(--hud-rule)}
+.hud .grp{padding:4px 8px 6px;border-bottom:1px solid rgba(248,176,80,.35);display:grid;gap:1px}
+.hud .grp:last-child{border-bottom:0}
+.hud .gh{color:var(--hud-rule);font-size:12px;letter-spacing:.04em}
+.hud .r{position:relative;padding-left:14px}
+.hud .r::before{position:absolute;left:0;top:0;width:12px;text-align:center}
+.hud .d{color:var(--hud-dim)}
+.hud .g{color:var(--hud-rule)}
+.hud .r.add{background:var(--hud-add)}
+.hud .r.add::before{content:"+";color:var(--hud-ok)}
+.hud .r.del{color:var(--hud-dim);text-decoration:line-through;text-decoration-color:var(--hud-bad)}
+.hud .r.del::before{content:"−";color:var(--hud-bad);text-decoration:none}
+.hud .r.bad{box-shadow:inset 2px 0 0 var(--hud-bad)}
+.hud .r.bad::before{content:"!";color:var(--hud-bad)}
+.hud .r.bad::after{content:" ← wrong here";color:var(--hud-bad);font-size:12px}
+.hud .r.d{color:var(--hud-dim)}
+.feed{background:var(--term-bg);color:var(--term-fg);border-radius:8px;padding:10px 14px;font:13px/1.55 var(--mono)}
+.feed .k{color:var(--term-acc)} .feed .dim{color:var(--term-dim)}
+.scene-note{font-size:14px;color:var(--muted);border-left:3px solid var(--line);padding:2px 0 2px 12px}
+.legend{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 16px}
+.legend span b{font-family:var(--mono)}
+
+.bar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:10;
+  background:var(--bar-bg);color:var(--bar-fg);border-radius:14px;padding:6px 8px;display:flex;flex-wrap:wrap;justify-content:center;
+  gap:6px 10px;align-items:center;box-shadow:0 8px 28px rgba(0,0,0,.28);font:500 13px/1 var(--mono);width:max-content;max-width:calc(100vw - 24px)}
+.bar .grp{display:flex;align-items:center;gap:4px}
+.bar button,.bar select{font:inherit;color:inherit;background:transparent;border:1px solid var(--bar-line);border-radius:8px;padding:6px 9px;cursor:pointer}
+.bar select{appearance:auto;color:var(--bar-fg);background:var(--bar-bg);max-width:52vw}
+.bar button:disabled{opacity:.35;cursor:default}
+.bar button:focus-visible,.bar select:focus-visible{outline:2px solid var(--bar-hi);outline-offset:1px}
+.bar .lbl{min-width:12ch;text-align:center;white-space:nowrap}
+.bar .k{opacity:.6;font-size:11px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Prototype · #640 · throwaway</div>
+    <h1>Which of the battle oracle's HUD candidates ship, and what does each say on the card?</h1>
+    <p>Each confirmed gap from #637, drawn on the Gordie W180 or Ivy W145 turn where it would have changed the call. Flip between <b>Today</b> and three ways to ship it, then pick one per gap on the right. Variants: <b>A</b> fixes the call and says nothing, <b>B</b> fixes the call and says why in a few words, <b>C</b> keeps today's call and adds a <b>✦</b> line offering the play.</p>
+    <details class="prov">
+      <summary>Where the content comes from</summary>
+      <ul>
+        <li><b>Today's card on Gordie:</b> the engine-run cards in #638 (<code>runs/win.cards.txt</code> on <code>research/gordie-hud-vs-engine</code>), the real HUD bundle read at each decision of the winning line.</li>
+        <li><b>Today's card on Ivy:</b> the panel lines quoted in the W145 log (<code>research/gordie-w180</code>) and the #637 probes, which ran the real bundle against W145-shaped turns.</li>
+        <li><b>The fixed lines are mocks.</b> None of the fixes exists, so numbers after a fix are only ones the engine or log already showed (e.g. Rayquaza → 286 after Extreme Speed). Steps a fix would re-search say <i>not run</i>.</li>
+        <li><b>Berries and odds</b> are from <code>kit/gordie-teams.json</code>. A steal takes one berry <i>type</i> uniformly (#637 (a)).</li>
+      </ul>
+    </details>
+  </header>
+
+  <section class="picks" aria-live="polite"><h3>Your picks</h3><ol id="picks"></ol></section>
+
+  <div class="where-head"><h2 id="gapTitle"></h2><span class="fid" id="sceneTitle"></span></div>
+  <div class="layout">
+    <section class="stage" id="stage" aria-live="polite"></section>
+    <aside class="notes" id="notes"></aside>
+  </div>
+</div>
+
+<nav class="bar" aria-label="Prototype switcher">
+  <div class="grp">
+    <button id="vPrev" aria-label="Previous variant">←</button>
+    <span class="lbl" id="vLbl"></span>
+    <button id="vNext" aria-label="Next variant">→</button>
+  </div>
+  <div class="grp"><label for="gap" class="k">gap</label><select id="gap"></select></div>
+  <div class="grp">
+    <button id="sPrev" aria-label="Previous scene">◀</button>
+    <span class="lbl" id="sLbl"></span>
+    <button id="sNext" aria-label="Next scene">▶</button>
+  </div>
+  <span class="k">← → variant · [ ] gap</span>
+</nav>
+
+<script>
+// Rows: a leading "+" is a line the variant adds, "-" one it removes, "!" one today gets wrong, "." a dim line.
+const VARIANTS = [
+  ["today", "Today"],
+  ["A", "A · fix the call"],
+  ["B", "B · fix + why"],
+  ["C", "C · keep + ✦ option"],
+];
+
+const GAPS = [
+  {
+    id: "a", name: "Berry theft with Bug Bite / Pluck", verdict: "gap", size: "M", modules: "30-planner, 35-team-plan",
+    fights: "Gordie T5, T7, T13 (the three steals). W145: nobody had the move.",
+    caveat: "A lottery outside the oracle. The steal takes one berry type uniformly: Coalossal's Lum was 1 in 2, Carracosta's Enigma 1 in 6, Tyranitar's Leppa 1 in 5. The HUD can price the expectation; only the oracle knows which berry comes out.",
+    scenes: [{
+      label: "Gordie W180 · T7, the deciding turn",
+      field: ["Leavanny 64% · SpA −2", "Coalossal 33% TERA → Carracosta 100%"],
+      engine: "T7 <span class=k>Bug Bite → Carracosta</span> (in for Coalossal): stole and ate its Enigma, 1 of its 6 berry types. Leavanny 320 → 413. T8 Leaf Storm 4× took Carracosta to 26% with no Enigma left. #638: following the card here loses, and this is the turn that decides the fight.",
+      note: "A and B draw the call flipping to Bug Bite. Whether it would flip isn't computed: the Enigma is a 1-in-6 draw, so the steal's expected value may not beat Earth Power. C works whichever way the score falls.",
+      today: {
+        now: ["⇄ Coalossal → Carracosta · switches — moves aimed at it", "!⚔ Probopass · Earth Power → Carracosta", "⇄ Leavanny out › Probopass in"],
+        foes: ["Carracosta L169 · Water Rock · 100%", "↯ Brine → Probopass · 88% likely · moves first"],
+        plan: [".Fight plan · likely lost · 💀 Tyranitar KOs 2/6", "!➜ 1. Probopass in · Earth Power → Carracosta · takes a hit · falls · foe at 38%", "➜ 2. Golbat · Venoshock → Carracosta · sacrifice → Snorlax in free"],
+      },
+      A: {
+        now: ["⇄ Coalossal → Carracosta · switches — moves aimed at it", "-⚔ Probopass · Earth Power → Carracosta", "-⇄ Leavanny out › Probopass in", "+⚔ Leavanny · Bug Bite → Carracosta · ~19%"],
+        foes: ["Carracosta L169 · Water Rock · 100%", "↯ Brine → Leavanny · 88% likely · moves first"],
+        plan: [".Fight plan · likely lost · 💀 Tyranitar KOs 2/6", "-➜ 1. Probopass in · Earth Power → Carracosta", "+➜ 1. Leavanny · Bug Bite → Carracosta", ".(the rest re-searched with the steal priced · not run)"],
+      },
+      B: {
+        now: ["⇄ Coalossal → Carracosta · switches — moves aimed at it", "-⚔ Probopass · Earth Power → Carracosta", "-⇄ Leavanny out › Probopass in", "+⚔ Leavanny · Bug Bite → Carracosta · ~19% · steals a berry", "+· Enigma 1 in 6: heals Leavanny ¼, and Carracosta loses it"],
+        foes: ["Carracosta L169 · Water Rock · 100%", "+✦ berries: Enigma · Leppa · Ganlon · Starf · Liechi · Petaya", "↯ Brine → Leavanny · 88% likely · moves first"],
+        plan: [".Fight plan · likely lost · 💀 Tyranitar KOs 2/6", "-➜ 1. Probopass in · Earth Power → Carracosta", "+➜ 1. Leavanny · Bug Bite → Carracosta · steals 1 of 6 berries", ".(the rest re-searched · not run)"],
+      },
+      C: {
+        now: ["⇄ Coalossal → Carracosta · switches — moves aimed at it", "⚔ Probopass · Earth Power → Carracosta", "⇄ Leavanny out › Probopass in", "+✦ or Leavanny Bug Bite → Carracosta: steals 1 of its 6 berries · Enigma 1 in 6"],
+        foes: ["Carracosta L169 · Water Rock · 100%", "+✦ berries: Enigma · Leppa · Ganlon · Starf · Liechi · Petaya", "↯ Brine → Probopass · 88% likely · moves first"],
+        plan: [".Fight plan · likely lost · 💀 Tyranitar KOs 2/6", "➜ 1. Probopass in · Earth Power → Carracosta · takes a hit · falls · foe at 38%", "➜ 2. Golbat · Venoshock → Carracosta · sacrifice → Snorlax in free"],
+      },
+    }],
+  },
+  {
+    id: "lum", name: "A foe's Lum voids our status play", verdict: "gap", size: "S", modules: "30-planner (statusPlay)",
+    fights: "Gordie: Toxic into Coalossal, Stonjourner and Barbaracle, all Lum holders. W145: Spore into Rayquaza or Torterra while a Lum is held.",
+    caveat: "No logged card called a status move into a Lum holder, so this scene is illustrative. In the game, a sleep or paralysis still costs the foe this turn's move if we move first. A Toxic or burn is cured before it ticks.",
+    scenes: [{
+      label: "Ivy W145 · attempt 2, T7 (illustrative)",
+      field: ["Breloom 100% · Spore", "Torterra 70% 👑 · Lum ×2"],
+      engine: "<span class=dim>Not logged.</span> At attempt 2 T6 Raichu switched to Breloom against Torterra, which holds two Lum Berries. The Spore that did land (T7–8) was on Rayquaza, after its Lum was spent.",
+      note: "Today the status play is priced as if the sleep lasts. The fix prices it as one skipped move plus a burnt Lum. A silent A drops the 'asleep' claim and may keep the call.",
+      today: {
+        now: ["!⚔ Breloom · Spore → Torterra · asleep"],
+        foes: ["Torterra L129 👑 · Grass Ground · 70%", "↯ Earthquake → Breloom · moves after"],
+        plan: [".Fight plan · prices Torterra asleep for the exchange"],
+      },
+      A: {
+        now: ["-⚔ Breloom · Spore → Torterra · asleep", "+⚔ Breloom · Spore → Torterra"],
+        foes: ["Torterra L129 👑 · Grass Ground · 70%", "↯ Earthquake → Breloom · moves after"],
+        plan: [".Fight plan · prices one skipped move, then awake"],
+      },
+      B: {
+        now: ["-⚔ Breloom · Spore → Torterra · asleep", "+⚔ Breloom · Spore → Torterra · skips its move, then Lum cures", "+· burns 1 of its 2 Lums"],
+        foes: ["Torterra L129 👑 · Grass Ground · 70%", "+✦ Lum ×2: cures a status at turn end", "↯ Earthquake → Breloom · moves after"],
+        plan: [".Fight plan · prices one skipped move, then awake"],
+      },
+      C: {
+        now: ["⚔ Breloom · Spore → Torterra · asleep", "+✦ Torterra holds Lum ×2: the sleep lasts this turn only"],
+        foes: ["Torterra L129 👑 · Grass Ground · 70%", "↯ Earthquake → Breloom · moves after"],
+        plan: [".Fight plan · prices Torterra asleep for the exchange"],
+      },
+    }],
+  },
+  {
+    id: "tera", name: "A foe's Tera: the free turn and the switch-ins", verdict: "partial (b + c, one fix)", size: "S–M + M", modules: "25-turn, 30-planner, 35-team-plan",
+    fights: "Gordie T1–T5: Coalossal priced at Water ×4 and Gyarados as its answer. T5: Burn Up read as a hit.",
+    caveat: "This turn's numbers are already right. What's missing is the word on the card, and later turns priced with the Tera on. The second scene is the bench case: an instant-Tera foe priced at its old typing for its whole exchange.",
+    scenes: [{
+      label: "Gordie W180 · T5, Coalossal's instant Tera",
+      field: ["Leavanny 77%", "Coalossal 92% · Teras to Rock this turn"],
+      engine: "T5 <span class=k>Coalossal Terastallized into the Rock type · Leavanny Bug Bite (crit, stole the Lum) · Coalossal used Burn Up · But it failed!</span> A free turn. T6 Coalossal picked Stone Edge, which missed.",
+      note: "The card's damage already reads 0 for Burn Up. Today the row still reads as a 4× Fire hit coming.",
+      today: {
+        now: ["⚔ Leavanny · Pollen Puff → Coalossal, then Leaf Storm"],
+        foes: ["Coalossal L179 · Rock · TERA · 92%", ".▲ Water ×2 Grass ×2 Fighting ×2 Ground ×2 Steel ×2", "!↯ Fire Burn Up → Leavanny · 100% likely · moves after"],
+        plan: [".Fight plan · winnable · Leavanny › Reshiram › Gyarados", "➜ 1. Leavanny · Leaf Storm → Coalossal · KO · 35% left"],
+      },
+      A: {
+        now: ["⚔ Leavanny · Pollen Puff → Coalossal, then Leaf Storm"],
+        foes: ["Coalossal L179 · Rock · TERA · 92%", ".▲ Water ×2 Grass ×2 Fighting ×2 Ground ×2 Steel ×2", "-↯ Fire Burn Up → Leavanny · 100% likely · moves after", "+↯ Fire Burn Up · fails"],
+        plan: [".Fight plan · winnable · Leavanny › Reshiram › Gyarados", "➜ 1. Leavanny · Leaf Storm → Coalossal · KO", ".(later turns re-picked with the Tera on · not run)"],
+      },
+      B: {
+        now: ["⚔ Leavanny · Pollen Puff → Coalossal, then Leaf Storm", "+· free turn: Coalossal's Burn Up fails"],
+        foes: ["Coalossal L179 · Rock · TERA · 92%", ".▲ Water ×2 Grass ×2 Fighting ×2 Ground ×2 Steel ×2", "-↯ Fire Burn Up → Leavanny · 100% likely · moves after", "+↯ Fire Burn Up → Leavanny · fails: Tera Rock lands first", "+↯ next turn: Stone Edge"],
+        plan: [".Fight plan · winnable · Leavanny › Reshiram › Gyarados", "➜ 1. Leavanny · Leaf Storm → Coalossal · KO", ".(later turns re-picked with the Tera on · not run)"],
+      },
+      C: {
+        now: ["⚔ Leavanny · Pollen Puff → Coalossal, then Leaf Storm"],
+        foes: ["Coalossal L179 · Rock · TERA · 92%", ".▲ Water ×2 Grass ×2 Fighting ×2 Ground ×2 Steel ×2", "↯ Fire Burn Up → Leavanny · 100% likely · moves after", "+✦ it Teras to Rock before moving: Burn Up fails, a free turn"],
+        plan: [".Fight plan · winnable · Leavanny › Reshiram › Gyarados", "➜ 1. Leavanny · Leaf Storm → Coalossal · KO · 35% left"],
+      },
+    }, {
+      label: "Gordie W180 · T1, Coalossal on the bench",
+      field: ["Reshiram 100%", "Gigalith 100% · Coalossal on the bench"],
+      engine: "Coalossal is Gordie's instant Tera (<span class=k>trainerAI.instantTeras = [5]</span>): it Teras to Rock as it comes in. Tera Rock halves Water and Ground and makes Grass ×2. Leavanny's Leaf Storm beat it on the winning line (T6, 39% of its HP).",
+      note: "Today the card prices Coalossal at its old Rock/Fire typing until it is on the field.",
+      today: {
+        now: ["⚔ Reshiram · Dragon Pulse → Gigalith · 3 hits", "⤵ next in likely: Carracosta › answer Probopass"],
+        foes: ["Coalossal L179 · Rock Fire · 100%", "!▲ Water ×4 Ground ×4 Rock ×2 Fighting ×2", "!➜ Gyarados · Hydro Pump ~49% · 2 hits · later"],
+        plan: [".Fight plan · winnable · sacrifice Golbat → Reshiram in free", "➜ 5. Leavanny · Leaf Storm → Coalossal · falls · foe at 79%", "!➜ 6. Gyarados · Hydro Pump → Coalossal · KO (75%) · 57% left"],
+      },
+      A: {
+        now: ["⚔ Reshiram · Dragon Pulse → Gigalith · 3 hits", "⤵ next in likely: Carracosta › answer Probopass"],
+        foes: ["-Coalossal L179 · Rock Fire · 100%", "+Coalossal L179 · Rock · TERA · 100%", "-▲ Water ×4 Ground ×4 Rock ×2 Fighting ×2", "+▲ Water ×2 Grass ×2 Fighting ×2 Ground ×2 Steel ×2", "-➜ Gyarados · Hydro Pump ~49% · 2 hits · later", "+➜ Leavanny · Leaf Storm · later"],
+        plan: [".Fight plan · winnable", "-➜ 6. Gyarados · Hydro Pump → Coalossal · KO (75%)", ".(Coalossal's steps re-searched at Tera Rock · not run)"],
+      },
+      B: {
+        now: ["⚔ Reshiram · Dragon Pulse → Gigalith · 3 hits", "⤵ next in likely: Carracosta › answer Probopass"],
+        foes: ["-Coalossal L179 · Rock Fire · 100%", "+Coalossal L179 · Rock · TERA on entry · 100%", "+· Teras as it comes in: Water, Ground ×4 → ×2 · Grass ×1 → ×2", "-▲ Water ×4 Ground ×4 Rock ×2 Fighting ×2", "+▲ Water ×2 Grass ×2 Fighting ×2 Ground ×2 Steel ×2", "-➜ Gyarados · Hydro Pump ~49% · 2 hits · later", "+➜ Leavanny · Leaf Storm · later"],
+        plan: [".Fight plan · winnable", "-➜ 6. Gyarados · Hydro Pump → Coalossal · KO (75%)", ".(Coalossal's steps re-searched at Tera Rock · not run)"],
+      },
+      C: {
+        now: ["⚔ Reshiram · Dragon Pulse → Gigalith · 3 hits", "⤵ next in likely: Carracosta › answer Probopass"],
+        foes: ["Coalossal L179 · Rock Fire · 100%", "▲ Water ×4 Ground ×4 Rock ×2 Fighting ×2", "+✦ Teras to Rock on entry: Water ×4 → ×2 · Grass ×1 → ×2", "➜ Gyarados · Hydro Pump ~49% · 2 hits · later"],
+        plan: [".Fight plan · winnable · sacrifice Golbat → Reshiram in free", "➜ 6. Gyarados · Hydro Pump → Coalossal · KO (75%) · 57% left"],
+      },
+    }],
+  },
+  {
+    id: "ourtera", name: "Tera advice for our side (with the one-per-biome budget)", verdict: "gap (e, with g)", size: "L", modules: "25-turn (Tera hypothesis), 30-planner, 35-team-plan, card",
+    fights: "Gordie T16. W145: no Tera played (Mega Dragonite can't).",
+    caveat: "The biggest of the set. It is a new kind of option per mon, picked with the Tera off and landing with it on, plus the budget: one Tera per arena, back at a party heal. #638 found T16's departure still wins on its own, so Tera wasn't the decider here. The MCP side is already filed: 'offer Tera as a command option'.",
+    scenes: [{
+      label: "Gordie W180 · T16",
+      field: ["Gyarados 100%", "Tyranitar 60% · TOX · Atk −1"],
+      engine: "T16 <span class=k>Gyarados Terastallized into the Water type · Hydro Pump → Tyranitar</span>. Per #637: Stone Edge 114% → 57%, Hydro Pump 36% → 48%, and no foe's matchup cleared the switch bar against Tera Water Gyarados. Won at T19 with 4 of 6 left.",
+      note: "The 'input' line is #639's: the card names the input to get right at its turn.",
+      today: {
+        now: ["!⚔ Gyarados · Hydro Pump → Tyranitar · 2 hits", "⤵ next in likely: Carracosta › answer Reshiram"],
+        foes: ["Tyranitar L169 · Rock Dark · 60%", "↯ Rock Stone Edge → Gyarados · moves after"],
+        plan: [".Fight plan · winnable · Gyarados › Reshiram", "➜ 1. Gyarados · Hydro Pump → Tyranitar · KO (70%) · 48% left"],
+      },
+      A: {
+        now: ["-⚔ Gyarados · Hydro Pump → Tyranitar · 2 hits", "+⚔ Gyarados · Tera Water + Hydro Pump → Tyranitar · 2 hits", "+input: ← from Fight to the Tera button", "⤵ next in likely: Carracosta › answer Reshiram"],
+        foes: ["Tyranitar L169 · Rock Dark · 60%", "↯ Rock Stone Edge → Gyarados · moves after"],
+        plan: [".Fight plan · winnable · Gyarados › Reshiram", "-➜ 1. Gyarados · Hydro Pump → Tyranitar", "+➜ 1. Gyarados · Tera Water + Hydro Pump → Tyranitar", ".(re-priced with the Tera · not run)"],
+      },
+      B: {
+        now: ["-⚔ Gyarados · Hydro Pump → Tyranitar · 2 hits", "+⚔ Gyarados · Tera Water + Hydro Pump → Tyranitar · 2 hits", "+· Stone Edge ×2 → ×1 · Hydro Pump 36% → 48%", "+input: ← from Fight to the Tera button", "⤵ next in likely: Carracosta › answer Reshiram"],
+        foes: ["Tyranitar L169 · Rock Dark · 60%", "↯ Rock Stone Edge → Gyarados · moves after"],
+        plan: ["+.Tera: 1 left this biome · back at the next party heal", ".Fight plan · winnable · Gyarados › Reshiram", "-➜ 1. Gyarados · Hydro Pump → Tyranitar", "+➜ 1. Gyarados · Tera Water + Hydro Pump → Tyranitar", ".(re-priced with the Tera · not run)"],
+      },
+      C: {
+        now: ["⚔ Gyarados · Hydro Pump → Tyranitar · 2 hits", "+✦ Tera Water: Stone Edge ×2 → ×1 · Hydro Pump 36% → 48% · spends the biome's Tera", "⤵ next in likely: Carracosta › answer Reshiram"],
+        foes: ["Tyranitar L169 · Rock Dark · 60%", "↯ Rock Stone Edge → Gyarados · moves after"],
+        plan: [".Fight plan · winnable · Gyarados › Reshiram", "➜ 1. Gyarados · Hydro Pump → Tyranitar · KO (70%) · 48% left"],
+      },
+    }],
+  },
+  {
+    id: "W1", name: "A move whose user never gets to act", verdict: "gap", size: "M", modules: "30-planner, 35-team-plan",
+    fights: "W145 T4, attempts 2 and 3. Attempt 2 T15. Every plan step with a priority finisher (attempt 3 T16–17).",
+    caveat: "Two faults: in a lost race the turn line picks the stronger slow move, and the fight plan never counts our move's priority. The danger tag should also take the pick's move.",
+    scenes: [{
+      label: "Ivy W145 · T4, Dragonite meets Rayquaza",
+      field: ["Mega Dragonite 169/420", "Rayquaza 100% 👑 · 3 bars"],
+      engine: "Attempt 2: <span class=k>Extreme Speed</span> (priority) took one bar → 286, then Dragonite fainted. Attempt 3: the player switched Dragonite out, kept its 169 HP, and its Extreme Speed finished Rayquaza at T16–17.",
+      note: "Today's ⚔ line and plan step are the #637 probe's output on the real bundle.",
+      today: {
+        now: ["!⚔ Dragonite 💀 · Dragon Hammer → Rayquaza · 2 hits", ".danger: Dragonite ← Rayquaza Outrage · KO before it can act", "⤵ Dragonite falls this turn › Raichu in free"],
+        foes: ["Rayquaza L129 👑 · Dragon Flying · 100%", "↯ Dragon Outrage → Dragonite · moves first"],
+        plan: [".Fight plan", "!➜ 1. Dragonite · Dragon Hammer → Rayquaza · falls · foe at 100%"],
+      },
+      A: {
+        now: ["-⚔ Dragonite 💀 · Dragon Hammer → Rayquaza · 2 hits", "+⚔ Dragonite 💀 · Extreme Speed → Rayquaza · breaks a bar", ".danger: Dragonite ← Rayquaza Outrage · KO", "⤵ Dragonite falls this turn › Raichu in free"],
+        foes: ["Rayquaza L129 👑 · Dragon Flying · 100%", "↯ Dragon Outrage → Dragonite · moves first"],
+        plan: [".Fight plan", "-➜ 1. Dragonite · Dragon Hammer → Rayquaza · falls · foe at 100%", "+➜ 1. Dragonite · Extreme Speed → Rayquaza · falls · foe at 67%"],
+      },
+      B: {
+        now: ["-⚔ Dragonite 💀 · Dragon Hammer → Rayquaza · 2 hits", "+⚔ Dragonite 💀 · Extreme Speed → Rayquaza · breaks a bar · +2, lands first", "+· Dragon Hammer never lands: Outrage KOs first", ".danger: Dragonite ← Rayquaza Outrage · KO after it acts", "⤵ Dragonite falls this turn › Raichu in free"],
+        foes: ["Rayquaza L129 👑 · Dragon Flying · 100%", "↯ Dragon Outrage → Dragonite · moves after Extreme Speed"],
+        plan: [".Fight plan", "-➜ 1. Dragonite · Dragon Hammer → Rayquaza · falls · foe at 100%", "+➜ 1. Dragonite · Extreme Speed → Rayquaza · falls · foe at 67%"],
+      },
+      C: {
+        now: ["⚔ Dragonite 💀 · Dragon Hammer → Rayquaza · 2 hits", "+✦ Dragon Hammer never lands: Outrage KOs first · Extreme Speed (+2) breaks a bar", ".danger: Dragonite ← Rayquaza Outrage · KO before it can act", "⤵ Dragonite falls this turn › Raichu in free"],
+        foes: ["Rayquaza L129 👑 · Dragon Flying · 100%", "↯ Dragon Outrage → Dragonite · moves first"],
+        plan: [".Fight plan", "➜ 1. Dragonite · Dragon Hammer → Rayquaza · falls · foe at 100%"],
+      },
+    }],
+  },
+  {
+    id: "W3", name: "Sacrifice chains of mons that die without acting", verdict: "gap", size: "S–M", modules: "35-team-plan (and the ⤵ line it feeds)",
+    fights: "W145 attempt 3 T9–13. On Gordie the attempt-1 plan's sacrifices were single steps.",
+    caveat: "The log's own rule: a free entry is worth something only if the mon it brings in acts. The probe reproduced the chain on the real bundle, with or without Pidgeot on Ivy's bench.",
+    scenes: [{
+      label: "Ivy W145 · attempt 3, T9",
+      field: ["Breloom 93/346", "Rayquaza 305/429 👑 · 2 bars · Enigma held"],
+      engine: "Crawdaunt and Tentacruel each came in and fainted without doing damage. T15 <span class=k>Raichu Thunderbolt</span> broke the second bar → 143; T16–17 Dragonite's Extreme Speed finished Rayquaza.",
+      note: "Today's chain is the log's panel text. The fixed chain's later steps are not run.",
+      today: {
+        now: ["⚔ Breloom · Drain Punch → Rayquaza", "!⤵ Breloom falls this turn › Tentacruel in free"],
+        foes: ["Rayquaza L129 👑 · Dragon Flying · 71%", "↯ Dragon Outrage → Breloom · moves first"],
+        plan: [".Fight plan · sacrifice Breloom → Tentacruel, Tentacruel → Crawdaunt, Crawdaunt → Raichu", "➜ 1. Breloom · Drain Punch → Rayquaza · sacrifice → Tentacruel in free", "!➜ 2. Tentacruel free · Surf → Rayquaza · sacrifice → Crawdaunt in free", "!➜ 3. Crawdaunt free · Crabhammer → Rayquaza · sacrifice → Raichu in free", "➜ 4. Raichu free · Thunderbolt → Rayquaza"],
+      },
+      A: {
+        now: ["⚔ Breloom · Drain Punch → Rayquaza", "-⤵ Breloom falls this turn › Tentacruel in free", "+⤵ Breloom falls this turn › Raichu in free"],
+        foes: ["Rayquaza L129 👑 · Dragon Flying · 71%", "↯ Dragon Outrage → Breloom · moves first"],
+        plan: [".Fight plan · sacrifice Breloom → Raichu", "➜ 1. Breloom · Drain Punch → Rayquaza · sacrifice → Raichu in free", "-➜ 2. Tentacruel free · Surf → Rayquaza · sacrifice", "-➜ 3. Crawdaunt free · Crabhammer → Rayquaza · sacrifice", "+➜ 2. Raichu free · Thunderbolt → Rayquaza", ".(the rest re-searched · not run)"],
+      },
+      B: {
+        now: ["⚔ Breloom · Drain Punch → Rayquaza", "-⤵ Breloom falls this turn › Tentacruel in free", "+⤵ Breloom falls this turn › Raichu in free · moves first"],
+        foes: ["Rayquaza L129 👑 · Dragon Flying · 71%", "↯ Dragon Outrage → Breloom · moves first"],
+        plan: [".Fight plan · sacrifice Breloom → Raichu", "+✗ Tentacruel, Crawdaunt fall before acting: kept back", "➜ 1. Breloom · Drain Punch → Rayquaza · sacrifice → Raichu in free", "-➜ 2. Tentacruel free · Surf → Rayquaza · sacrifice", "-➜ 3. Crawdaunt free · Crabhammer → Rayquaza · sacrifice", "+➜ 2. Raichu free · Thunderbolt → Rayquaza", ".(the rest re-searched · not run)"],
+      },
+      C: {
+        now: ["⚔ Breloom · Drain Punch → Rayquaza", "⤵ Breloom falls this turn › Tentacruel in free", "+✦ Tentacruel and Crawdaunt fall before they act: their free entries buy nothing"],
+        foes: ["Rayquaza L129 👑 · Dragon Flying · 71%", "↯ Dragon Outrage → Breloom · moves first"],
+        plan: [".Fight plan · sacrifice Breloom → Tentacruel, Tentacruel → Crawdaunt, Crawdaunt → Raichu", "➜ 1. Breloom · Drain Punch → Rayquaza · sacrifice → Tentacruel in free", "➜ 2. Tentacruel free · Surf → Rayquaza · sacrifice → Crawdaunt in free", "➜ 3. Crawdaunt free · Crabhammer → Rayquaza · sacrifice → Raichu in free", "➜ 4. Raichu free · Thunderbolt → Rayquaza"],
+      },
+    }],
+  },
+  {
+    id: "W4", name: "A super-effective hit feeding an Enigma Berry", verdict: "gap (turn line), partial (plan)", size: "S", modules: "30-planner, 35-team-plan",
+    fights: "W145 attempt 2 T11–13, attempt 3 T15. Gordie T1 on our side (Reshiram's Enigma after Rock Slide).",
+    caveat: "Against bars, the bar cap often makes the super-effective and neutral hits equal, and then the heal decides. The fix works both ways: the foe's Enigma after our hit, and ours after theirs.",
+    scenes: [{
+      label: "Ivy W145 · attempt 2, T11",
+      field: ["Raichu", "Rayquaza 206/429 👑 · Enigma held"],
+      engine: "<span class=k>Moonblast</span> (super-effective) broke the second bar, and the Enigma healed 25%: the last bar went 143 → 250. Attempt 3 T15 the player chose <span class=k>Thunderbolt</span> against the panel: bar broken → 143, no heal.",
+      note: "The panel's Moonblast call is from the log. The wording 'breaks a bar' is the mock's.",
+      today: {
+        now: ["!⚔ Raichu · Moonblast → Rayquaza · breaks a bar"],
+        foes: ["Rayquaza L129 👑 · Dragon Flying · 48%", ".▲ Ice ×4 Rock ×2 Dragon ×2 Fairy ×2", "↯ Dragon Outrage → Raichu · moves after"],
+        plan: [".Fight plan", "!➜ 1. Raichu · Moonblast → Rayquaza · breaks a bar"],
+      },
+      A: {
+        now: ["-⚔ Raichu · Moonblast → Rayquaza · breaks a bar", "+⚔ Raichu · Thunderbolt → Rayquaza · breaks a bar"],
+        foes: ["Rayquaza L129 👑 · Dragon Flying · 48%", ".▲ Ice ×4 Rock ×2 Dragon ×2 Fairy ×2", "↯ Dragon Outrage → Raichu · moves after"],
+        plan: [".Fight plan", "-➜ 1. Raichu · Moonblast → Rayquaza", "+➜ 1. Raichu · Thunderbolt → Rayquaza · breaks a bar"],
+      },
+      B: {
+        now: ["-⚔ Raichu · Moonblast → Rayquaza · breaks a bar", "+⚔ Raichu · Thunderbolt → Rayquaza · breaks a bar", "+· Moonblast would feed its Enigma: +107"],
+        foes: ["Rayquaza L129 👑 · Dragon Flying · 48%", "+✦ Enigma: heals 25% after a super-effective hit", ".▲ Ice ×4 Rock ×2 Dragon ×2 Fairy ×2", "↯ Dragon Outrage → Raichu · moves after"],
+        plan: [".Fight plan", "-➜ 1. Raichu · Moonblast → Rayquaza", "+➜ 1. Raichu · Thunderbolt → Rayquaza · breaks a bar · no Enigma"],
+      },
+      C: {
+        now: ["⚔ Raichu · Moonblast → Rayquaza · breaks a bar", "+✦ Moonblast feeds its Enigma (+107); Thunderbolt breaks the bar and feeds nothing"],
+        foes: ["Rayquaza L129 👑 · Dragon Flying · 48%", ".▲ Ice ×4 Rock ×2 Dragon ×2 Fairy ×2", "↯ Dragon Outrage → Raichu · moves after"],
+        plan: [".Fight plan", "➜ 1. Raichu · Moonblast → Rayquaza · breaks a bar"],
+      },
+    }],
+  },
+  {
+    id: "W2", name: "Accuracy ties (not a gap: display only)", verdict: "modelled; display only", size: "S", modules: "96-render-battle / 30-planner view",
+    fights: "W145 attempt 2 T15.",
+    caveat: "Accuracy is already in the score. The card shows the likely KO turn, so a 75% and a 100% two-hit KO both read '2 hits'. W1 decided T15, not accuracy. Here only for completeness: ship it, or leave it out.",
+    scenes: [{
+      label: "Ivy W145 · attempt 2, T15",
+      field: ["Quaquaval", "Rayquaza 250/429 👑"],
+      engine: "Quaquaval landed one hit (→ 67) and fell. It never reached a second hit, so the tie between the moves didn't matter (#637 W2).",
+      note: "",
+      today: {
+        now: ["⚔ Quaquaval · Mega Kick → Rayquaza · 2 hits"],
+        foes: ["Rayquaza L129 👑 · Dragon Flying · 58%", "↯ Dragon Outrage → Quaquaval · moves first"],
+        plan: [".Fight plan", "➜ 1. Quaquaval · Mega Kick → Rayquaza"],
+      },
+      A: {
+        now: ["-⚔ Quaquaval · Mega Kick → Rayquaza · 2 hits", "+⚔ Quaquaval · Mega Kick → Rayquaza · 2 hits · 75%"],
+        foes: ["Rayquaza L129 👑 · Dragon Flying · 58%", "↯ Dragon Outrage → Quaquaval · moves first"],
+        plan: [".Fight plan", "➜ 1. Quaquaval · Mega Kick → Rayquaza"],
+      },
+      B: {
+        now: ["-⚔ Quaquaval · Mega Kick → Rayquaza · 2 hits", "+⚔ Quaquaval · Mega Kick → Rayquaza · 2 hits · 75%", "+· Close Combat: also 2 hits, 100%"],
+        foes: ["Rayquaza L129 👑 · Dragon Flying · 58%", "↯ Dragon Outrage → Quaquaval · moves first"],
+        plan: [".Fight plan", "➜ 1. Quaquaval · Mega Kick → Rayquaza"],
+      },
+      C: {
+        now: ["⚔ Quaquaval · Mega Kick → Rayquaza · 2 hits", "+✦ Close Combat is also 2 hits, and never misses"],
+        foes: ["Rayquaza L129 👑 · Dragon Flying · 58%", "↯ Dragon Outrage → Quaquaval · moves first"],
+        plan: [".Fight plan", "➜ 1. Quaquaval · Mega Kick → Rayquaza"],
+      },
+    }],
+  },
+];
+
+const state = { gap: 0, scene: 0, v: 0 };
+let picks = {};
+try { picks = JSON.parse(localStorage.getItem("proto-640-picks") || "{}") || {}; } catch (e) { picks = {}; }
+const savePicks = () => { try { localStorage.setItem("proto-640-picks", JSON.stringify(picks)); } catch (e) {} };
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function row(src) {
+  const k = { "+": "add", "-": "del", "!": "bad" }[src[0]] || "";
+  let t = k ? src.slice(1) : src;
+  let dim = false;
+  if (t[0] === ".") { dim = true; t = t.slice(1); }
+  return `<div class="r ${k} ${dim ? "d" : ""}">${esc(t)}</div>`;
+}
+function group(title, rows) { return `<div class="grp"><div class="gh">${title}</div>${rows.map(row).join("")}</div>`; }
+
+function readHash() {
+  const m = location.hash.match(/^#([\w]+)-(\d+)-(\w+)$/);
+  if (!m) return;
+  const g = GAPS.findIndex(x => x.id === m[1]);
+  if (g >= 0) state.gap = g;
+  state.scene = +m[2] || 0;
+  const v = VARIANTS.findIndex(x => x[0] === m[3]);
+  if (v >= 0) state.v = v;
+}
+function writeHash() {
+  try { history.replaceState(null, "", `#${GAPS[state.gap].id}-${state.scene}-${VARIANTS[state.v][0]}`); } catch (e) {}
+}
+
+function render() {
+  const g = GAPS[state.gap];
+  state.scene = Math.max(0, Math.min(state.scene, g.scenes.length - 1));
+  const s = g.scenes[state.scene];
+  const vk = VARIANTS[state.v][0];
+  const c = s[vk];
+  const strip = c.now.find(r => r.includes("⚔") && r[0] !== "-") || c.now[0];
+  $("#gapTitle").textContent = g.name;
+  $("#sceneTitle").textContent = `${s.label} · ${VARIANTS[state.v][1]}`;
+  $("#stage").innerHTML = `
+    <div class="game">
+      <div class="field"><span>${esc(s.field[0])}</span><span style="opacity:.6">vs</span><span>${esc(s.field[1])}</span></div>
+      <div class="hud" role="region" aria-label="Coachemon panel">
+        <div class="strip"><div class="cap"><span>⚔ ${esc(s.label.split(" · ")[0])}</span><span>${esc(VARIANTS[state.v][1])}</span></div>${row(strip.replace(/^[+!]/, ""))}</div>
+        ${group("Now", c.now)}${group("Foes", c.foes)}${group("Plan", c.plan)}
+      </div>
+    </div>
+    <div class="legend"><span><b>+</b> added by the variant</span><span><b>−</b> removed</span><span><b>!</b> today's line that the gap gets wrong</span><span><b>✦</b> an offered play, not the call</span></div>
+    <div class="feed"><span class="dim">what the engine / log shows ·</span> ${s.engine}</div>
+    ${s.note ? `<div class="scene-note">${esc(s.note)}</div>` : ""}`;
+  const p = picks[g.id] || "";
+  const opt = (val, label, sub) => `<label><input type="radio" name="pick" value="${val}" ${p === val ? "checked" : ""}><span>${label}<small>${sub}</small></span></label>`;
+  $("#notes").innerHTML = `
+    <div><h3>From #637</h3><dl>
+      <dt>Verdict</dt><dd>${esc(g.verdict)} · size ${esc(g.size)}</dd>
+      <dt>Modules</dt><dd>${esc(g.modules)}</dd>
+      <dt>Fights it would have changed</dt><dd>${esc(g.fights)}</dd>
+      <dt>Worth knowing</dt><dd>${esc(g.caveat)}</dd></dl></div>
+    <div><h3>Your pick for this gap</h3><div class="choice" id="choice">
+      ${opt("A", "Ship as A", "fix the call, say nothing")}
+      ${opt("B", "Ship as B", "fix the call, say why in a few words")}
+      ${opt("C", "Ship as C", "keep the call, add a ✦ option line")}
+      ${opt("skip", "Don't ship", "leave it out of this map's list")}
+    </div></div>`;
+  $("#choice").addEventListener("change", e => { picks[g.id] = e.target.value; savePicks(); renderPicks(); });
+  $("#vLbl").textContent = VARIANTS[state.v][1];
+  $("#sLbl").textContent = `scene ${state.scene + 1}/${g.scenes.length}`;
+  $("#sPrev").disabled = $("#sNext").disabled = g.scenes.length < 2;
+  $("#gap").value = String(state.gap);
+  renderPicks();
+  writeHash();
+}
+function renderPicks() {
+  $("#picks").innerHTML = GAPS.map(g => {
+    const p = picks[g.id];
+    const txt = !p ? `<span class="open">not picked</span>` : p === "skip" ? `<span class="skip">don't ship</span>` : `<span class="ship">ship as ${p}</span>`;
+    return `<li>${esc(g.name)} · ${txt}</li>`;
+  }).join("");
+}
+
+$("#gap").innerHTML = GAPS.map((g, i) => `<option value="${i}">${esc(g.name)}</option>`).join("");
+$("#gap").addEventListener("change", e => { state.gap = +e.target.value; state.scene = 0; render(); });
+const cycleV = d => { state.v = (state.v + d + VARIANTS.length) % VARIANTS.length; render(); };
+const cycleG = d => { state.gap = (state.gap + d + GAPS.length) % GAPS.length; state.scene = 0; render(); };
+const cycleS = d => { const n = GAPS[state.gap].scenes.length; state.scene = (state.scene + d + n) % n; render(); };
+$("#vPrev").onclick = () => cycleV(-1); $("#vNext").onclick = () => cycleV(1);
+$("#sPrev").onclick = () => cycleS(-1); $("#sNext").onclick = () => cycleS(1);
+document.addEventListener("keydown", e => {
+  if (e.target.closest("input, textarea, select, [contenteditable]")) return;
+  if (e.key === "ArrowLeft") cycleV(-1);
+  else if (e.key === "ArrowRight") cycleV(1);
+  else if (e.key === "[") cycleG(-1);
+  else if (e.key === "]") cycleG(1);
+});
+readHash();
+render();
+</script>
+</body>
+</html>
