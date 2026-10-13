@@ -180,6 +180,7 @@ details.prov ul{margin:6px 0 0;padding-left:20px;display:grid;gap:2px}
     <div class="eyebrow">Prototype · #639 · throwaway</div>
     <h1>What does a boss-fight plan from the coach look like?</h1>
     <p>One plan, drawn three ways and at two fidelities. Use the bar at the bottom to change where the plan lives, which fight it's for, how far into the fight you are, and whether the game has left the plan. The notes on the right say what each variant settles and what it costs.</p>
+    <p><b>Decided:</b> the card group (C) plus the file (B). Both now draw the decision, and the reply (A) is kept for comparison.</p>
     <details class="prov">
       <summary>Where the content comes from</summary>
       <ul>
@@ -250,10 +251,10 @@ const LINE = [
   { t: 10, field: ["Reshiram", "Stonjourner"], input: "Reshiram **Dragon Pulse**", happens: "Stonjourner faints in one hit; Barbaracle in", after: "Reshiram 577", card: "⇄ Leavanny, Leaf Storm (its own plan prefers Dragon Pulse)", foe: "Stonjourner Earthquake", foeConf: "exact", differs: true, why: "Dragon Pulse one-shots Stonjourner before it moves." },
   { t: 11, field: ["Reshiram", "Barbaracle"], input: "⇄ **Leavanny**", happens: "Barbaracle Razor Shell into Leavanny", after: "Leavanny 280", card: "Reshiram Fickle Beam · 2 hits", foe: "Barbaracle Razor Shell", foeConf: "exact", differs: true, why: "Leavanny's Leaf Storm one-shots Barbaracle next turn." },
   { t: 12, field: ["Leavanny", "Barbaracle"], input: "Leavanny **Leaf Storm**", happens: "Barbaracle faints; Tyranitar in", after: "Leavanny 249 (−2 SpA)", card: "same · 1 hit", foe: "Barbaracle Stone Edge", foeConf: "exact" },
-  { t: 13, field: ["Leavanny", "Tyranitar"], input: "Leavanny **Bug Bite** · send **Golbat**", happens: "steals Leppa; Tyranitar Stone Edge, Leavanny faints", after: "Golbat 493 · Tyranitar 512/569", card: "Pollen Puff, then Bug Bite · at the faint prompt, Reshiram", foe: "Tyranitar Stone Edge · 💀 after", foeConf: "exact", differs: true, why: "At the faint prompt, Golbat, for Toxic." },
+  { t: 13, field: ["Leavanny", "Tyranitar"], input: "Leavanny **Bug Bite** · send **Golbat**", happens: "steals Leppa; Tyranitar Stone Edge, Leavanny faints", after: "Golbat 493 · Tyranitar 512/569", card: "Pollen Puff, then Bug Bite · at the faint prompt, Reshiram", foe: "Tyranitar Stone Edge · 💀 after", foeConf: "exact", differs: true, why: "At the faint prompt, Golbat, for Toxic.", hint: "Leavanny faints this turn: at the faint prompt, send Golbat" },
   { t: 14, field: ["Golbat", "Tyranitar"], input: "Golbat **Toxic**", happens: "Stone Edge misses", after: "Golbat 463 · Tyranitar 477, badly poisoned", card: "⇄ Reshiram, Dragon Pulse", foe: "Tyranitar Stone Edge", foeConf: "exact", differs: true, luck: "miss", why: "Toxic on the win condition. The card has no word for it." },
-  { t: 15, field: ["Golbat", "Tyranitar"], input: "Golbat **Venoshock** · send **Gyarados**", happens: "Stone Edge, Golbat faints; Gyarados in (Intimidate)", after: "Gyarados 570 · Tyranitar 339 (−1 Atk)", card: "same · at the faint prompt, Reshiram", foe: "Tyranitar Stone Edge · free entry", foeConf: "exact", differs: true, why: "At the faint prompt, Gyarados, not Reshiram." },
-  { t: 16, field: ["Gyarados", "Tyranitar"], input: "Gyarados **Tera Water** + **Hydro Pump**", happens: "Tyranitar Stone Edge, eats Sitrus", after: "Gyarados 351 · Tyranitar 109", card: "Hydro Pump, no Tera · 2 hits", foe: "Tyranitar Stone Edge", foeConf: "exact", differs: true, why: "Tera Water halves Stone Edge. The card never offers our Tera." },
+  { t: 15, field: ["Golbat", "Tyranitar"], input: "Golbat **Venoshock** · send **Gyarados**", happens: "Stone Edge, Golbat faints; Gyarados in (Intimidate)", after: "Gyarados 570 · Tyranitar 339 (−1 Atk)", card: "same · at the faint prompt, Reshiram", foe: "Tyranitar Stone Edge · free entry", foeConf: "exact", differs: true, why: "At the faint prompt, Gyarados, not Reshiram.", hint: "Golbat faints this turn: at the faint prompt, send Gyarados" },
+  { t: 16, field: ["Gyarados", "Tyranitar"], input: "Gyarados **Tera Water** + **Hydro Pump**", happens: "Tyranitar Stone Edge, eats Sitrus", after: "Gyarados 351 · Tyranitar 109", card: "Hydro Pump, no Tera · 2 hits", foe: "Tyranitar Stone Edge", foeConf: "exact", differs: true, why: "Tera Water halves Stone Edge. The card never offers our Tera.", hint: "Tera: press ← from Fight to the Tera button, then Hydro Pump" },
   { t: 17, field: ["Gyarados", "Tyranitar"], input: "Gyarados **Hydro Pump**", happens: "Tyranitar faints; Carracosta in", after: "Gyarados 316", card: "same · 1 hit", foe: "Tyranitar Stone Edge", foeConf: "exact" },
   { t: 18, field: ["Gyarados", "Carracosta"], input: "Gyarados **Hydro Pump**", happens: "Carracosta faints; Coalossal in; Gyarados eats Sitrus", after: "Gyarados 423", card: "same · 1 hit", foe: "Carracosta Iron Defense", foeConf: "exact" },
   { t: 19, field: ["Gyarados", "Coalossal"], input: "Gyarados **Hydro Pump**", happens: "crit; Coalossal faints. **Win.**", after: "Gyarados 423 · Probopass 359 · Snorlax 824 · Reshiram 577", card: "same · 1 hit", foe: "Coalossal Stone Edge", foeConf: "exact" },
@@ -285,9 +286,9 @@ const GORDIE = {
   ],
   offline: [
     "**Stop.** Don't improvise into the next turn of the line: its luck belongs to the inputs before it.",
-    "**You pressed something else:** reload the tab and press Continue. Check W180, turn 1, full party, sand, Gigalith out. Replay from T1; the line still holds from the wave-start save.",
-    "**The game did something else on the same input:** the line's picture of this session is wrong, and reloading won't fix it. Play on with the card. The coach can export again and search if you ask.",
-    "One miss voids the rest of the line for this run.",
+    "**The coach re-solves from here:** it exports this turn and searches again in the background. The card's call leads meanwhile.",
+    "**No win turns up:** the plan says \"no answer\", and the card leads with the principles below.",
+    "One miss voids the rest of the line for this run. A miss on the line's own input also marks its replay claim wrong (!).",
   ],
   principles: [
     { text: "Gordie swaps on matchup, not on our move: a benched mon must score twice the active one against ours. Scores halve against a legendary, so he rarely leaves Reshiram.", conf: "exact" },
@@ -313,7 +314,7 @@ GORDIE.offs = {
     got: "Probopass 359/427 · Carracosta 467/467, Enigma held",
     src: "worked from the line, not run",
     headline: "Off the line at T7: you switched to Probopass.",
-    next: ["Reload and press Continue. Check W180, turn 1, full party, sand, Gigalith out.", "Replay from T1. The line still holds from the wave-start save.", "Or play on with the card. Its plan from here is an estimate, and following it from T7 lost in the engine."],
+    next: ["The coach exports this turn and re-solves from here, in the background.", "The card's call leads meanwhile.", "If no win turns up: no answer, and the principles in the plan file."],
     cardNow: "Probopass Earth Power → Carracosta · 2 hits",
   },
   game: {
@@ -324,7 +325,7 @@ GORDIE.offs = {
     got: "Leavanny fainted · Coalossal 238",
     src: "illustrative: the card tagged this Stone Edge 💀 after; in the line it missed",
     headline: "Off the line at T6: Stone Edge hit on the line's own input.",
-    next: ["The line's picture of this session is wrong, so its replay claim is marked wrong for the run.", "Reloading won't help: the same inputs meet the same live rolls.", "Play on with the card. Ask the coach to export again and search, if it's live."],
+    next: ["The line's picture of this session was wrong, so its replay claim is marked wrong (!) for the run.", "The coach exports this turn and re-solves from here; the card's call leads meanwhile.", "If no win turns up: no answer, and the principles in the plan file."],
     cardNow: "faint prompt: send Reshiram",
   },
 };
@@ -358,11 +359,9 @@ const IVY = {
     { name: "Torterra again (2 bars)", do: "Dragonite Hyper Voice. Aerilate makes it Flying, STAB and 2×, and it carries through both bars in one hit.", check: "Torterra down in one hit. The card will say `1 hit` once they meet." },
     { name: "Pidgeot, Alakazam, Tauros", do: "Raichu Thunderbolts Pidgeot in one hit and moves first. The card's turn line for the rest.", check: "Raichu or Dragonite standing when Pidgeot comes in." },
   ],
-  disagree: [
-    { text: "**Moonblast or Dragon Hammer into Rayquaza while it holds the Enigma Berry.** A super-effective hit heals it 25%, about 107 HP. The card will still call Moonblast. Use Thunderbolt or Extreme Speed.", conf: "exact" },
-    { text: "**Dragon Hammer from a Dragonite that Rayquaza outspeeds and KOs.** The card prices it as `2 hits`, but it never fires. Extreme Speed hits first.", conf: "exact" },
-    { text: "**A sacrifice chain of mons that never act.** The card offers Breloom → Tentacruel → Crawdaunt for free switches. All three are slower and fall to one Outrage, so each one only brings in the next sacrifice.", conf: "estimate" },
-  ],
+  // No "where the card disagrees" section without the oracle: the plan is the card's own, so it can't argue with Now.
+  // The card's blind spots here (Enigma, a move whose user never acts, sacrifice chains) are fixed in the card.
+  disagree: null,
   inputs: [
     "**Faint replacements while Rayquaza is up:** Dragonite or Raichu. Never Breloom, Crawdaunt or Tentacruel.",
     "**Wait for the first command.** At the intro the card can't ask the engine, and its fallback said \"likely lost · nobody KOs Torterra 1-on-1\".",
@@ -376,6 +375,8 @@ const IVY = {
     { text: "A boss bar stops a hit at its edge unless the hit is big enough to break more than one. Rayquaza's are 143 HP, so ~200-damage hits take one bar each.", conf: "exact" },
     { text: "Sitrus heals at half HP. Enigma heals 25% on a super-effective hit. Lum cures the first status, so the first Spore is wasted.", conf: "exact" },
     { text: "Extreme Speed has +2 priority: it hits before Outrage whatever the Speed.", conf: "exact" },
+    { text: "A move counts only if its user acts: Dragon Hammer from a slower Dragonite that Rayquaza KOs never fires.", conf: "exact" },
+    { text: "A sacrifice pays only if the mon it brings in acts. Crawdaunt, Tentacruel and Breloom are slower than Rayquaza and fall to one Outrage.", conf: "estimate" },
     { text: "Strip its berries, break bars with neutral hits, finish with priority. That's how attempt 3 won.", conf: "none" },
   ],
 };
@@ -383,7 +384,7 @@ IVY.steps = [
   { label: "T1", phase: 0, field: ["Raichu", "Torterra"], do: "⇄ **Dragonite**", why: "The card reads Torterra's move as Earthquake, so phase 1's Dragonite branch applies.", card: "not logged", foe: "Torterra Earthquake", foeConf: "exact", check: null },
   { label: "T2", phase: 1, field: ["Dragonite", "Torterra"], do: "⇄ **Raichu**", why: "The card reads Ivy's swap to Kingdra. Raichu takes the entry, and Dragonite keeps Multiscale.", card: "not logged", foe: "swap Torterra → Kingdra (sure)", foeConf: "exact", check: { what: "Dragonite on the field", expect: "420/420", got: "420/420" } },
   { label: "T4 · Rayquaza", phase: 2, field: ["Raichu", "Rayquaza"], do: "Raichu **Thunderbolt** → Rayquaza", why: "Raichu moves first. Thunderbolt is neutral, so the Enigma stays unfed. Bar 1.", card: "not logged", foe: "Rayquaza Outrage · 💀 after on Raichu", foeConf: "exact", check: { what: "Kingdra down, Dragonite benched", expect: "Dragonite 420/420, Multiscale intact", got: "420/420", illus: true } },
-  { label: "Bar 2", phase: 2, field: ["Raichu", "Rayquaza"], do: "Raichu **Thunderbolt**, not Moonblast", why: "Rayquaza still holds the Enigma. Moonblast is super-effective and would heal it 25%.", card: "Raichu Moonblast → Rayquaza", foe: "Rayquaza Outrage", foeConf: "exact", check: { what: "Rayquaza after bar 1", expect: "2 bars left · Enigma held", got: "305/429 · 2 bars · Lum and Sitrus spent · Enigma held", illus: true } },
+  { label: "Bar 2", phase: 2, field: ["Raichu", "Rayquaza"], do: "Raichu **Thunderbolt** → Rayquaza", why: "Neutral, so the Enigma stays unfed. Bar 2.", today: "today's card calls Moonblast here: it doesn't weigh the Enigma yet (a HUD candidate)", card: "Raichu Moonblast → Rayquaza", foe: "Rayquaza Outrage", foeConf: "exact", check: { what: "Rayquaza after bar 1", expect: "2 bars left · Enigma held", got: "305/429 · 2 bars · Lum and Sitrus spent · Enigma held", illus: true } },
   { label: "Finish", phase: 2, field: ["Dragonite", "Rayquaza"], do: "Dragonite **Extreme Speed**", why: "Priority hits before Outrage. Neutral, so no Enigma.", card: "not logged", foe: "Rayquaza Outrage", foeConf: "exact", check: { what: "Rayquaza after bar 2", expect: "last bar, ≤143 HP · Enigma unfed", got: "143 on its last bar · Raichu 91/356 on its berries", illus: true } },
   { label: "Torterra", phase: 3, field: ["Dragonite", "Torterra"], do: "Dragonite **Hyper Voice**", why: "Both bars in one hit.", card: "Hyper Voice → Torterra · 1 hit", foe: "Torterra Wood Hammer", foeConf: "exact", check: { what: "Rayquaza", expect: "down", got: "down", illus: true } },
   { label: "Pidgeot", phase: 4, field: ["Raichu", "Pidgeot"], do: "Raichu **Thunderbolt** → Pidgeot", why: "One hit, and Raichu moves first.", card: "not logged", foe: "Pidgeot Hurricane", foeConf: "exact", check: { what: "Torterra", expect: "down in one hit", got: "one hit", illus: true } },
@@ -401,7 +402,7 @@ IVY.offs = {
     headline: "Off the plan at T4: Multiscale is gone.",
     next: ["Dragonite stops being the Rayquaza wall. Its jobs become Torterra (Hyper Voice) and the priority finish.", "Switch it out now. Raichu breaks the bars with Thunderbolt.", "Attempt 3 did exactly this and won."],
     cardNow: "Dragonite Dragon Hammer → Rayquaza · 2 hits · 💀 ko Dragonite ← Outrage",
-    planNow: "⇄ out of **Dragonite** (keep it for Torterra and the finish)",
+    planNow: "⇄ out of **Dragonite** (keep it for Torterra and the finish) · today's card says Dragon Hammer, a move that never fires (a HUD candidate)",
   },
   enigma: {
     name: "Moonblast into the Enigma", at: 4, kind: "input", phaseMiss: 2, label: "Finish",
@@ -461,8 +462,8 @@ ${esc(rows)}
 decides the fight: stay in and Bug Bite. I'll flag each as you reach it.
 T16 is Tera: ← from Fight to the Tera button, then Hydro Pump.
 
-<span class="b">Off the line?</span> Stop. Reload, Continue, replay from T1. Or tell me
-and we go back to the card.`;
+<span class="b">Off the line?</span> Stop. I re-solve from there; the card leads
+while I search, and if no win turns up I say so.`;
   }
   return `<span class="b">No engine line for this one.</span> <span class="acc">≈ estimate</span>
 Winnable if Dragonite meets Rayquaza at full HP. The card says
@@ -482,9 +483,8 @@ Enigma, Lum.
  4 Torterra  Dragonite Hyper Voice, both bars in one hit.
  5 Pidgeot   Raichu Thunderbolt. Keep Raichu or Dragonite for it.
 
-<span class="b">Ignore the card</span> when it says Moonblast into the Enigma, Dragon
-Hammer from a Dragonite about to die, or a sacrifice chain of
-slow mons.`;
+These are the card's own calls, phase by phase. Where I check a
+phase, I'll tell you whether it held.`;
 }
 function renderReply() {
   const { f, k, s, off } = view();
@@ -516,7 +516,7 @@ function renderReply() {
     } else {
       out.push(`<span class="dim">TURN ${f.wave} ${esc(st.label)} · ${esc(st.check.what)} </span><span class="ok">✓</span><span class="dim"> ${esc(st.check.got)}</span>${i === first ? '  <span class="new">(new watcher event)</span>' : ""}`);
       if (st.done) { out.push(`<span class="b">●</span> Won, with ${esc(st.check.got)}.`); continue; }
-      out.push(`<span class="b">●</span> ${esc(st.label)}: ${esc(plain(st.do))}. ${esc(st.why)}${st.card !== "not logged" ? `\n  The card says ${esc(st.card)}.` : ""}`);
+      out.push(`<span class="b">●</span> ${esc(st.label)}: ${esc(plain(st.do))}. ${esc(st.why)}`);
     }
   }
   return `<div class="term"><pre>${out.join("\n\n")}</pre></div>
@@ -562,8 +562,7 @@ function renderFile() {
       const mark = miss ? `<span class="bad">✗</span> ` : cls === "done" ? `<span class="ok">✓</span> ` : "";
       return `<div class="phase ${cls}"><div class="ph">${mark}${i + 1}. ${esc(p.name)}</div><div>${md(p.do)}</div><div class="ckline">Check: ${md(p.check)}${miss ? ` <span class="bad">Got: ${esc(off.got)}.</span>` : ""}</div></div>`;
     }).join("");
-    parts.push(`<h3>The phases ${chip("estimate")}</h3><p>No turn-exact line exists, so each phase ends in a check the coach can read off the battle.</p>${ph}`);
-    parts.push(`<h3>Where the card is blind</h3><p>The card will say these. Follow the plan instead.</p>${list(f.disagree)}`);
+    parts.push(`<h3>The phases ${chip("estimate")}</h3><p>The card's own fight plan, in the phases the fight falls into. No turn-exact line exists, so each phase ends in a check the coach can read off the battle.</p>${ph}`);
   }
   parts.push(`<h3>Inputs to get right ${chip("none")}</h3>${list(f.inputs)}`);
   parts.push(`<h3>Off the ${f.id === "gordie" ? "line" : "plan"} ${chip("none")}</h3>${list(f.offline)}`);
@@ -574,16 +573,15 @@ function renderFile() {
 }
 
 // ───────────────────────────── C · card group ─────────────────────────────
-const TABS = [["act", "Now"], ["foes", "Foes"], ["plan", "Plan"], ["road", "Road"], ["notes", "Notes"]];
+// Decided in #639: no Notes tab for the plan. The principles live in the plan file only.
+const TABS = [["act", "Now"], ["foes", "Foes"], ["plan", "Plan"], ["road", "Road"]];
 function hudConf(k) { return k === "replay" ? `<span class="g">~</span>` : k === "estimate" ? `<span class="g">≈</span>` : k === "wrong" ? `<span class="bad">!</span>` : ""; }
 function cardRows() {
   const { f, k, s, off } = view();
   const R = (cls, html) => `<div class="r ${cls || ""}">${html}</div>`;
-  const rows = { act: [], foes: [], plan: [], road: [], notes: [] };
+  const rows = { act: [], foes: [], plan: [], road: [] };
   rows.foes.push(R("d", "(today's foe rows, unchanged)"));
   rows.road.push(R("d", "(today's road group, unchanged)"));
-  rows.notes.push(R("h", "If you leave the line"));
-  f.principles.forEach(p => rows.notes.push(R("", `${hudConf(p.conf)} ${md(p.text)}`)));
 
   if (f.id === "gordie") {
     if (s.search) {
@@ -596,57 +594,59 @@ function cardRows() {
     }
     // act group
     let strip;
+    // Decided in #639: while every checkpoint has matched, the line is the card's one call. The card's own ⚔ call
+    // is not drawn; it leads again once the game leaves the line, while the coach re-solves.
     if (off) {
-      rows.act.push(R("bad", `! off the line at T${off.turn}`));
+      rows.act.push(R("bad", `${off.kind === "game" ? "! " : ""}off the line at T${off.turn} · <span class="g">~ re-solving from here…</span>`));
       rows.act.push(R("", `expected ${esc(off.expect)}`));
       rows.act.push(R("", `got ${esc(off.got)}`));
-      rows.act.push(R("", `⚔ card: ${esc(off.cardNow)}`));
+      rows.act.push(R("", `⚔ ${esc(off.cardNow)}`));
       off.next.forEach(n => rows.act.push(R("d", "· " + esc(n))));
-      strip = [`<span class="bad">!</span> off the line at T${off.turn} · ${off.kind === "input" ? "↻ reload to replay it" : "card leads"}`, `⚔ ${esc(off.cardNow)}`];
+      strip = [`<span class="bad">${off.kind === "game" ? "!" : "✗"}</span> off the line at T${off.turn} · <span class="g">~ re-solving…</span>`, `⚔ ${esc(off.cardNow)}`];
     } else if (s.done) {
       rows.act.push(R("ok", "✓ line played · won"));
       strip = [`<span class="ok">✓</span> line played · won`, "Gyarados 423 · Probopass · Snorlax · Reshiram"];
     } else {
       const r = s.row;
-      rows.act.push(R("", `⚔ line ${hudConf("replay")} ${md(r.input)} <span class="d">T${r.t}/19</span>`));
-      if (r.differs) rows.act.push(R(r.decides ? "g" : "d", `card: ${esc(r.card)}${r.decides ? " · this turn decides the fight" : ""}`));
+      rows.act.push(R("", `⚔ ${hudConf("replay")} ${md(r.input)} <span class="d">T${r.t}/19</span>`));
+      if (r.hint) rows.act.push(R("g", `input: ${esc(r.hint)}`));
       rows.act.push(R("d", `↯ ${esc(r.foe)}`));
       rows.act.push(R("d", `after: ${esc(r.after)}`));
       if (s.check) rows.act.push(R("ok", `✓ T${s.check.turn} after matched`));
-      strip = [`⚔ ${hudConf("replay")} T${r.t}/19 · ${md(r.input)}`, r.differs ? `<span class="${r.decides ? "g" : "d"}">card: ${esc(r.card)}</span>` : `<span class="d">card agrees</span>`];
+      strip = [`⚔ ${hudConf("replay")} T${r.t}/19 · ${md(r.input)}`, r.hint ? `<span class="g">${esc(r.hint)}</span>` : `<span class="d">after: ${esc(r.after)}</span>`];
     }
     // plan group
     rows.plan.push(R("h", `Plan ${hudConf("replay")} line wins · 19 turns · 4 of 6 left`));
-    rows.plan.push(R("d", "✓ checks 1–5 passed · v1.12.0.11 · seed U0QK…"));
     LINE.forEach(r => {
       const done = r.t < s.turn || s.done;
       if (off && r.t === off.turn) rows.plan.push(R("bad", `✗ ${r.t} ${md(r.input)} · got ${esc(off.got)}`));
       else if (off && r.t > off.turn) rows.plan.push(R("void", `${r.t} ${md(r.input)}`));
       else if (done) rows.plan.push(R("", `<span class="ok">✓</span> ${r.t} ${md(r.input)} <span class="d">${esc(r.after)}</span>`));
-      else if (r.t === s.turn) rows.plan.push(R("cur", `▸ ${r.t} ${md(r.input)} <span class="d">→ ${esc(r.after)}</span>${r.decides ? ' <span class="g">decides it</span>' : ""}`));
-      else rows.plan.push(R("d", `· ${r.t} ${md(r.input)}${r.decides ? " · decides it" : ""}`));
+      else if (r.t === s.turn) rows.plan.push(R("cur", `▸ ${r.t} ${md(r.input)} <span class="d">→ ${esc(r.after)}</span>`));
+      else rows.plan.push(R("d", `· ${r.t} ${md(r.input)}`));
     });
-    rows.plan.push(R("d", "off the line → reload, Continue, replay from T1"));
+    rows.plan.push(R("d", off ? "~ re-solving from here · no win → no answer" : "off the line → the coach re-solves from there"));
     return { rows, strip };
   }
-  // Ivy
+  // Ivy. Decided in #639: without the oracle the plan is the card's own fight plan, so Now and Plan carry one call.
+  // A call the coach knows is wrong is fixed in the card, never overridden by the plan.
   let strip;
+  const offWhat = off ? off.headline.replace(/^Off the plan at [^:]+: /, "") : "";
   if (off) {
-    rows.act.push(R("bad", `! off the plan · ${esc(off.headline.replace(/^Off the plan at [^:]+: /, ""))}`));
-    rows.act.push(R("", `⚔ plan ${hudConf("estimate")} ${md(off.planNow)}`));
-    rows.act.push(R("d", `card: ${esc(off.cardNow)}`));
+    rows.act.push(R("bad", `✗ off the plan · ${esc(offWhat)}`));
+    rows.act.push(R("", `⚔ ${md(off.planNow)}`));
     off.next.forEach(n => rows.act.push(R("d", "· " + esc(n))));
-    strip = [`<span class="bad">!</span> off the plan · ${esc(off.headline.replace(/^Off the plan at [^:]+: /, ""))}`, `⚔ ${hudConf("estimate")} ${md(off.planNow)}`];
+    strip = [`<span class="bad">✗</span> off the plan · ${esc(offWhat)}`, `⚔ ${md(off.planNow)}`];
   } else if (s.done) {
     rows.act.push(R("ok", `✓ plan held · won · ${esc(s.check.got)}`));
     strip = [`<span class="ok">✓</span> plan held · won`, esc(s.check.got)];
   } else {
-    rows.act.push(R("", `⚔ plan ${hudConf("estimate")} ${md(s.do)}`));
+    rows.act.push(R("", `⚔ ${md(s.do)}`));
     rows.act.push(R("d", esc(s.why)));
-    if (s.card !== "not logged") rows.act.push(R("g", `card: ${esc(s.card)} · plan overrides`));
+    if (s.today) rows.act.push(R("d", esc(s.today)));
     rows.act.push(R("d", `↯ ${esc(s.foe)}`));
     if (s.check) rows.act.push(R("ok", `✓ ${esc(s.check.what)}: ${esc(s.check.got)}`));
-    strip = [`⚔ ${hudConf("estimate")} ${md(s.do)}`, s.card !== "not logged" ? `<span class="g">card: ${esc(s.card)}</span>` : `<span class="d">phase ${s.phase + 1}: ${esc(f.phases[s.phase].name)}</span>`];
+    strip = [`⚔ ${md(s.do)}`, `<span class="d">plan ${hudConf("estimate")} phase ${s.phase + 1}: ${esc(f.phases[s.phase].name)}</span>`];
   }
   rows.plan.push(R("h", `Plan ${hudConf("estimate")} winnable if Dragonite meets Rayquaza at full`));
   rows.plan.push(R("", "💀 Rayquaza · win condition · 3 bars × 143 · Sitrus Enigma Lum"));
@@ -659,10 +659,6 @@ function cardRows() {
     else if (i === s.phase) rows.plan.push(R("cur", `▸ ${i + 1}. ${esc(p.name)} <span class="d">· check: ${md(p.check)}</span>`));
     else rows.plan.push(R("d", `· ${i + 1}. ${esc(p.name)}`));
   });
-  rows.plan.push(R("h", "card is blind here"));
-  rows.plan.push(R("", "✗ Moonblast / Dragon Hammer into the Enigma"));
-  rows.plan.push(R("", "✗ Dragon Hammer from a Dragonite about to die"));
-  rows.plan.push(R("", "✗ sacrifice chain Breloom → Tentacruel → Crawdaunt"));
   return { rows, strip };
 }
 function renderCard() {
@@ -710,9 +706,16 @@ const NOTES = {
     checks: "The HUD itself, at every decision, with no Claude in the loop. Each checkpoint is scored as a claim and journalled.",
     off: "The strip turns to ! off the line, the Now pane says what to do, and the watcher emits OFF LINE once so a live coach can add to it.",
     survives: "A reload, if the page keeps it by seed and wave as it keeps the journal.",
-    costs: "A new way for the coach to hand the page a plan. The plan group gets a second author. A 19-turn line has to fit a pane capped at 40% of the game's width, and the principles need the Notes tab.",
+    costs: "A new way for the coach to hand the page a plan. A 19-turn line has to fit a pane capped at 40% of the game's width. The principles stay in the file.",
   },
 };
+const DECIDED = [
+  "**Where it lives:** the HUD's plan group and strip, plus a file the coach writes. The file holds every section; the card carries the line or phases, and the inputs to get right at their turn.",
+  "**One call per card.** With an oracle line, the line leads while every checkpoint has matched, and the card's own ⚔ call isn't drawn. Without one, the plan is the card's own fight plan, so Now and Plan agree. A wrong call is fixed in the card, not overridden.",
+  "**Off the line:** the coach re-solves from there. The card's call leads while it searches, and \"no answer\" if no win turns up. No reload prompt.",
+  "**Without the oracle**, the verdict is conditional on a check the coach can read, marked ≈.",
+  "**≈** joins ~ and ! as the card's mark for an estimate.",
+];
 const CONFS = {
   gordie: [
     ["The call", "replay"], ["Why it's more than a guess", "exact"], ["Each After checkpoint", "replay"],
@@ -721,15 +724,16 @@ const CONFS = {
   ],
   ivy: [
     ["The call", "estimate"], ["Teams, items, stats", "exact"], ["This turn's enemy move and swaps", "exact"],
-    ["Phases and their checks", "estimate"], ["Where the card is blind", "exact"], ["Inputs and what to do off the plan", "none"],
-    ["Principles: mechanics", "exact"],
+    ["Phases and their checks", "estimate"], ["Inputs and what to do off the plan", "none"],
+    ["Principles: mechanics", "exact"], ["Principles: damage worked by hand", "estimate"],
   ],
 };
 function renderNotes() {
   const { f } = view();
   const n = NOTES[state.where];
   const conf = CONFS[f.id].map(([a, b]) => `<tr><td>${esc(a)}</td><td>${chip(b)}</td></tr>`).join("");
-  return `<div><h3>What this variant settles</h3><dl>
+  return `<div><h3>Decided</h3>${list(DECIDED)}</div>
+    <div><h3>What this variant settles</h3><dl>
       <dt>Where it lives</dt><dd>${esc(n.lives)}</dd>
       <dt>Who checks it</dt><dd>${esc(n.checks)}</dd>
       <dt>Off the line, the player sees</dt><dd>${esc(n.off)}</dd>
@@ -742,7 +746,7 @@ function renderNotes() {
       <div>${chip("estimate")} read off state that may move. <code>≈</code> on the card is new.</div>
       <div>${chip("wrong")} a claim that has missed once this run. <code>!</code>, as today.</div>
       <div>${chip("none")} an instruction or judgement, not a claim.</div></div></div>
-    <div><h3>Sections</h3><div style="color:var(--muted)">The call · Why trust it · ${f.id === "gordie" ? "The line" : "Win condition and answers · The phases"} · Where the card ${f.id === "gordie" ? "disagrees" : "is blind"} · Inputs · Off the line · Principles. <i>Tools</i> from <code>PLAN.md</code> is cut. The file shows every section; the reply and the card show a subset.</div></div>`;
+    <div><h3>Sections</h3><div style="color:var(--muted)">${f.id === "gordie" ? "The call · Why trust it · The line · Where the card disagrees" : "The call · What it rests on · Win condition and answers · The phases"} · Inputs · Off the line · Principles. <i>Tools</i> from <code>PLAN.md</code> is cut. The file shows every section. The card shows the line or the phases and the inputs at their turn.</div></div>`;
 }
 
 // ───────────────────────────── wiring ─────────────────────────────
