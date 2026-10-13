@@ -1,0 +1,1001 @@
+
+ RUN  v4.1.9 /Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11
+
+(node:60308) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[1m[38;2;255;124;124m==================[39m[22m
+[2m> [22m[38;2;193;98;222mStarting test: [39m[38;2;0;136;134mdrayton-t10 > t10[39m
+Mocking Phaser.GameObjects.GameObjectCreator;
+[38;2;176;176;30mMystery encounter chance set to 0% (=0)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping before running LoginPhase[39m
+[38;2;255;127;80mSkipping current phase: LoginPhase[39m
+[32mStart Phase: TitlePhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to TITLE (=1)![39m
+use seasonal splash messages true
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching TITLE (=1) during TitlePhase[39m
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[32mStart Phase: EncounterPhase[39m
+Starting species pool tier: RARE
+Pokemon: Wild Tandemaus | Species ID: 924 | Level: 2 | Nature: Sassy (+SpDef/-Spd)
+Stats (IVs): HP: 14 (1), Atk: 7 (22), Def: 7 (12), Spatk: 6 (6), Spdef: 8 (11), Spd: 7 (29)
+Ability: Pickup | Passive Ability (inactive): Friend Guard 
+Moveset: [ 'Pound', 'Baby-Doll Eyes' ]
+[38;2;0;60;189mUI mode changed from TITLE (=1) to MESSAGE (=0)![39m
+[34mA wild Tandemaus appeared![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of EncounterPhase[39m
+Enemy held items removed
+[32mStart Phase: SummonPhase[39m
+[34mGo! Bulbasaur![39m
+[32mStart Phase: ToggleDoublePositionPhase[39m
+[32mStart Phase: InitEncounterPhase[39m
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Bulbasaur
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Tandemaus
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+[38;2;255;173;0m==================[New Turn]==================[39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to MESSAGE (=0)![39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to MESSAGE (=0)![39m
+Applied HP Up 
+Applied Carbos 
+Applied Calcium 
+Applied Protein 
+Applied Zinc 
+Applied HP Up 
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Iron (enemy)
+Applied HP Up (enemy)
+Applied Zinc (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Zinc (enemy)
+Applied Protein (enemy)
+Applied Calcium (enemy)
+Applied Iron (enemy)
+Applied Calcium (enemy)
+[34mSession loaded successfully.[39m
+[32mStart Phase: EncounterPhase[39m
+Pokemon: Foe Dragonite | Species ID: 149 | Level: 179 | Nature: Gentle (+SpDef/-Def)
+Stats (IVs): HP: 584 (21), Atk: 516 (18), Def: 374 (22), Spatk: 409 (26), Spdef: 496 (29), Spd: 361 (23)
+Ability: Inner Focus | Passive Ability (inactive): Aerilate 
+Moveset: [ 'Breaking Swipe', 'Air Slash', 'Attract', 'Metronome' ]
+Pokemon: Foe Sceptile | Species ID: 254 | Level: 182 | Nature: Hardy (-)
+Stats (IVs): HP: 515 (24), Atk: 352 (21), Def: 312 (27), Spatk: 438 (28), Spdef: 396 (29), Spd: 481 (22)
+Ability: Overgrow | Passive Ability (inactive): Tinted Lens 
+Moveset: [ 'Leaf Storm', 'Clanging Scales', 'Dual Chop', 'Swords Dance' ]
+Pokemon: Foe Flygon | Species ID: 330 | Level: 182 | Nature: Naughty (+Atk/-SpDef)
+Stats (IVs): HP: 530 (26), Atk: 442 (18), Def: 405 (28), Spatk: 347 (28), Spdef: 359 (25), Spd: 450 (25)
+Ability: Levitate | Passive Ability (inactive): Adaptability 
+Moveset: [ 'Thousand Arrows', 'Bug Buzz', 'Dragon Rush', 'Dragon Dance' ]
+Pokemon: Foe Haxorus | Species ID: 612 | Level: 182 | Nature: Naive (+Spd/-SpDef)
+Stats (IVs): HP: 528 (19), Atk: 592 (29), Def: 378 (25), Spatk: 270 (26), Spdef: 295 (24), Spd: 476 (23)
+Ability: Rivalry | Passive Ability (inactive): Sharpness 
+Moveset: [ 'Outrage', 'Earthquake', 'Swagger', 'Focus Energy' ]
+Pokemon: Foe Archaludon | Species ID: 1018 | Level: 190 | Nature: Serious (-)
+Stats (IVs): HP: 578 (19), Atk: 495 (28), Def: 582 (18), Spatk: 580 (29), Spdef: 299 (25), Spd: 379 (27)
+Ability: Stamina | Passive Ability: Transistor | Boss Bars: 2
+Moveset: [ 'Outrage', 'Flash Cannon', 'Iron Defense', 'Laser Focus' ]
+Pokemon: Foe Tatsugiri | Species ID: 978 | Level: 179 | Nature: Impish (+Def/-SpAtk)
+Stats (IVs): HP: 470 (21), Atk: 223 (22), Def: 279 (19), Spatk: 468 (24), Spdef: 398 (30), Spd: 348 (28)
+Ability: Commander | Passive Ability (inactive): Friend Guard 
+Moveset: [ 'Muddy Water', 'Dragon Pulse', 'Fillet Away', 'Nasty Plot' ]
+Generated AI funcs
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to MESSAGE (=0)![39m
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Iron (enemy)
+Applied HP Up (enemy)
+Applied Zinc (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Zinc (enemy)
+Applied Protein (enemy)
+Applied Calcium (enemy)
+Applied Iron (enemy)
+Applied Calcium (enemy)
+Elite Four Drayton
+Elite Four Drayton: 
+[34mdialogue:drayton.encounter.1[39m
+Elite Four Drayton
+[34mElite Four Drayton would like to battle![39m
+[32mStart Phase: SummonPhase[39m
+Drayton
+[34mDrayton sent out Dragonite![39m
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Iron (enemy)
+Applied HP Up (enemy)
+Applied Zinc (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Zinc (enemy)
+Applied Protein (enemy)
+Applied Calcium (enemy)
+Applied Iron (enemy)
+Applied Calcium (enemy)
+[32mStart Phase: SummonPhase[39m
+[34mGo! Gyarados![39m
+Applied HP Up 
+Applied Carbos 
+Applied Calcium 
+Applied Protein 
+Applied Zinc 
+Applied HP Up 
+[32mStart Phase: InitEncounterPhase[39m
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Dragonite
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Gyarados
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: ShowAbilityPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Dragonite’s Inner Focus prevented it from being Intimidated![39m
+[32mStart Phase: HideAbilityPhase[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+[38;2;255;173;0m==================[New Turn (Reloaded)]==================[39m
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to PARTY (=8)![39m
+[38;2;0;60;189mUI mode changed from PARTY (=8) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+Applied Dragon Fang (enemy)
+Move Pool: [ 'Breaking Swipe', 'Air Slash', 'Attract', 'Metronome' ]
+Move Scores: [ 21, 24, -20, 0 ]
+Sorted Move Pool: [ 'Air Slash', 'Breaking Swipe', 'Metronome', 'Attract' ]
+Chosen Move: Breaking Swipe
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: SwitchSummonPhase[39m
+[34mCome back, Gyarados![39m
+[34mGo! Probopass![39m
+Applied HP Up 
+Applied HP Up 
+Applied Carbos 
+Applied Calcium 
+Applied Protein 
+Applied Zinc 
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Probopass
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Dragonite[39m
+[38;2;0;0;0mMove: BREAKING_SWIPE[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Dragonite used Breaking Swipe![39m
+[32mStart Phase: MoveEffectPhase[39m
+crit stage: +0
+Applied Dragon Fang (enemy)
+Move: Breaking Swipe | Base damage: 112.76799999999999 | Power: 84 | Source attack: 516 | Target defense: 576
+Move: Breaking Swipe | Attack damage: 115
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mA critical hit![39m
+[32mStart Phase: MessagePhase[39m
+[34mIt’s not very effective…[39m
+[32mStart Phase: StatStageChangePhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mProbopass’s Attack fell![39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: TurnEndPhase[39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+Move position for EARTH_POWER (=414): 2
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to FIGHT (=3)![39m
+Move: EARTH_POWER Move targets: { multiple: false, targets: [ 2 ] } 
+Player Pokemon: Probopass
+[38;2;0;60;189mUI mode changed from FIGHT (=3) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: SwitchSummonPhase[39m
+Drayton
+[34mDrayton withdrew Dragonite![39m
+Drayton
+[34mDrayton sent out Archaludon![39m
+Applied Protein (enemy)
+Applied Calcium (enemy)
+Applied Iron (enemy)
+Applied Iron (enemy)
+Applied HP Up (enemy)
+Applied Zinc (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Zinc (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Calcium (enemy)
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Archaludon
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Probopass[39m
+[38;2;0;0;0mMove: EARTH_POWER[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mProbopass used Earth Power![39m
+[32mStart Phase: MoveEffectPhase[39m
+crit stage: +0
+Applied Soft Sand 
+Move: Earth Power | Base damage: 170.42509698996656 | Power: 108 | Source attack: 302 | Target defense: 299
+Move: Earth Power | Attack damage: 310
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: StatStageChangePhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mIt’s super effective![39m
+[32mStart Phase: StatStageChangePhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Archaludon’s Sp. Def fell![39m
+[32mStart Phase: ShowAbilityPhase[39m
+[32mStart Phase: StatStageChangePhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Archaludon’s Defense rose![39m
+[32mStart Phase: HideAbilityPhase[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: TurnEndPhase[39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to PARTY (=8)![39m
+[38;2;0;60;189mUI mode changed from PARTY (=8) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+Applied Metal Coat (enemy)
+Move Pool: [ 'Outrage', 'Flash Cannon', 'Iron Defense', 'Laser Focus' ]
+Move Scores: [ 17.625, 27, 6, 5 ]
+Sorted Move Pool: [ 'Flash Cannon', 'Outrage', 'Iron Defense', 'Laser Focus' ]
+Chosen Move: Flash Cannon
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: SwitchSummonPhase[39m
+[34mCome back, Probopass![39m
+[34mGo! Reshiram![39m
+Applied Carbos 
+Applied Calcium 
+Applied Protein 
+Applied Zinc 
+Applied HP Up 
+Applied HP Up 
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Reshiram
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: ShowAbilityPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram is radiating a blazing aura![39m
+[32mStart Phase: HideAbilityPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Archaludon[39m
+[38;2;0;0;0mMove: FLASH_CANNON[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Archaludon used Flash Cannon![39m
+[32mStart Phase: MoveEffectPhase[39m
+crit stage: +0
+Applied Metal Coat (enemy)
+Move: Flash Cannon | Base damage: 153.85454545454547 | Power: 96 | Source attack: 580 | Target defense: 572
+Move: Flash Cannon | Attack damage: 111
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mIt’s not very effective…[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: TurnEndPhase[39m
+Applied Leftovers 
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: PokemonHealPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram restored a little HP using its Leftovers![39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+Move position for BLUE_FLARE (=551): 1
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to FIGHT (=3)![39m
+Move: BLUE_FLARE Move targets: { multiple: false, targets: [ 2 ] } 
+Player Pokemon: Reshiram
+[38;2;0;60;189mUI mode changed from FIGHT (=3) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+Applied Metal Coat (enemy)
+Move Pool: [ 'Outrage' ]
+Move Scores: [ 78 ]
+Sorted Move Pool: [ 'Outrage' ]
+Chosen Move: Outrage
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Reshiram[39m
+[38;2;0;0;0mMove: BLUE_FLARE[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram used Blue Flare![39m
+[32mStart Phase: MoveEffectPhase[39m
+Applied Wide Lens 
+crit stage: +0
+Move: Blue Flare | Base damage: 714.1021105527637 | Power: 130 | Source attack: 706 | Target defense: 199
+Move: Blue Flare | Attack damage: 1006
+Applied Amulet Coin 
+Applied Golden Punch 
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: FaintPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Archaludon fainted![39m
+[32mStart Phase: VictoryPhase[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: MovePhase[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: TurnEndPhase[39m
+Applied Leftovers 
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: PokemonHealPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram restored a little HP using its Leftovers![39m
+[32mStart Phase: SwitchSummonPhase[39m
+Drayton
+[34mDrayton sent out Tatsugiri![39m
+Applied Calcium (enemy)
+Applied Iron (enemy)
+Applied HP Up (enemy)
+Applied Zinc (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Zinc (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Protein (enemy)
+Applied Calcium (enemy)
+Applied Iron (enemy)
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Tatsugiri
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+Move position for FICKLE_BEAM (=907): 2
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to FIGHT (=3)![39m
+Move: FICKLE_BEAM Move targets: { multiple: false, targets: [ 2 ] } 
+Player Pokemon: Reshiram
+[38;2;0;60;189mUI mode changed from FIGHT (=3) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+Move Pool: [ 'Muddy Water', 'Dragon Pulse', 'Fillet Away', 'Nasty Plot' ]
+Move Scores: [ 25.5, 63, 6, 0 ]
+Sorted Move Pool: [ 'Dragon Pulse', 'Muddy Water', 'Fillet Away', 'Nasty Plot' ]
+Chosen Move: Muddy Water
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Reshiram[39m
+[38;2;0;0;0mMove: FICKLE_BEAM[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram used Fickle Beam![39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram is going all out for this attack![39m
+[32mStart Phase: MoveEffectPhase[39m
+Applied Wide Lens 
+crit stage: +0
+Move: Fickle Beam | Base damage: 440.21668341708545 | Power: 160 | Source attack: 706 | Target defense: 398
+Move: Fickle Beam | Attack damage: 1214
+Applied Amulet Coin 
+Applied Golden Punch 
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mIt’s super effective![39m
+[32mStart Phase: FaintPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Tatsugiri fainted![39m
+[32mStart Phase: VictoryPhase[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: MovePhase[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: TurnEndPhase[39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: SwitchSummonPhase[39m
+Drayton
+[34mDrayton sent out Haxorus![39m
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied HP Up (enemy)
+Applied Zinc (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Calcium (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Protein (enemy)
+Applied Calcium (enemy)
+Applied Iron (enemy)
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Haxorus
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+Move position for FICKLE_BEAM (=907): 2
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to FIGHT (=3)![39m
+Move: FICKLE_BEAM Move targets: { multiple: false, targets: [ 2 ] } 
+Player Pokemon: Reshiram
+[38;2;0;60;189mUI mode changed from FIGHT (=3) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+Move Pool: [ 'Outrage' ]
+Move Scores: [ 84 ]
+Sorted Move Pool: [ 'Outrage' ]
+Chosen Move: Outrage
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: TeraPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram Terastallized into the Bug type![39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Haxorus[39m
+[38;2;0;0;0mMove: OUTRAGE[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Haxorus used Outrage![39m
+[32mStart Phase: MoveEffectPhase[39m
+crit stage: +0
+Move: Outrage | Base damage: 261.8431295843521 | Power: 120 | Source attack: 592 | Target defense: 409
+Move: Outrage | Attack damage: 380
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Reshiram[39m
+[38;2;0;0;0mMove: FICKLE_BEAM[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram used Fickle Beam![39m
+[32mStart Phase: MoveEffectPhase[39m
+Applied Wide Lens 
+crit stage: +0
+Move: Fickle Beam | Base damage: 297.61057627118646 | Power: 80 | Source attack: 706 | Target defense: 295
+Move: Fickle Beam | Attack damage: 830
+Applied Amulet Coin 
+Applied Golden Punch 
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mIt’s super effective![39m
+[32mStart Phase: FaintPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Haxorus fainted![39m
+[32mStart Phase: VictoryPhase[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: TurnEndPhase[39m
+Applied Leftovers 
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: PokemonHealPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram restored a little HP using its Leftovers![39m
+[32mStart Phase: SwitchSummonPhase[39m
+Drayton
+[34mDrayton sent out Dragonite![39m
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Iron (enemy)
+Applied HP Up (enemy)
+Applied Zinc (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Calcium (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Zinc (enemy)
+Applied Protein (enemy)
+Applied Calcium (enemy)
+Applied Iron (enemy)
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Dragonite
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+Move position for DRAGON_PULSE (=406): 3
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to FIGHT (=3)![39m
+Move: DRAGON_PULSE Move targets: { multiple: false, targets: [ 2 ] } 
+Player Pokemon: Reshiram
+[38;2;0;60;189mUI mode changed from FIGHT (=3) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+Applied Dragon Fang (enemy)
+Move Pool: [ 'Breaking Swipe', 'Air Slash', 'Attract', 'Metronome' ]
+Move Scores: [ 21, 54, -20, 0 ]
+Sorted Move Pool: [ 'Air Slash', 'Breaking Swipe', 'Metronome', 'Attract' ]
+Chosen Move: Air Slash
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Reshiram[39m
+[38;2;0;0;0mMove: DRAGON_PULSE[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram used Dragon Pulse![39m
+[32mStart Phase: MoveEffectPhase[39m
+Applied Wide Lens 
+crit stage: +0
+Move: Dragon Pulse | Base damage: 188.80532258064514 | Power: 85 | Source attack: 706 | Target defense: 496
+Move: Dragon Pulse | Attack damage: 504
+Applied Amulet Coin 
+Applied Golden Punch 
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mIt’s super effective![39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Dragonite[39m
+[38;2;0;0;0mMove: AIR_SLASH[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Dragonite used Air Slash![39m
+[32mStart Phase: MoveEffectPhase[39m
+crit stage: +0
+Move: Air Slash | Base damage: 80.93986013986014 | Power: 75 | Source attack: 409 | Target defense: 572
+Move: Air Slash | Attack damage: 242
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mIt’s super effective![39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+Applied Berry Pouch 
+Applied Petaya Berry 
+Applied Berry Pouch 
+Applied Enigma Berry 
+Applied Berry Pouch 
+Applied Apicot Berry 
+Applied Berry Pouch 
+Applied Starf Berry 
+Applied Berry Pouch 
+Applied Lansat Berry 
+Applied Berry Pouch 
+Applied Liechi Berry 
+Applied Carbos 
+Applied Calcium 
+Applied Protein 
+Applied Zinc 
+Applied HP Up 
+Applied HP Up 
+Applied Sitrus Berry (enemy)
+Applied Starf Berry (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Iron (enemy)
+Applied HP Up (enemy)
+Applied Zinc (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Calcium (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Zinc (enemy)
+Applied Protein (enemy)
+Applied Calcium (enemy)
+Applied Iron (enemy)
+[32mStart Phase: CommonAnimPhase[39m
+[32mStart Phase: PokemonHealPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram restored its health using its Enigma Berry![39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram is getting pumped![39m
+[32mStart Phase: StatStageChangePhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram’s Sp. Atk rose drastically![39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram’s Sp. Def and Attack rose![39m
+[32mStart Phase: CommonAnimPhase[39m
+[32mStart Phase: PokemonHealPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Dragonite restored its health using its Sitrus Berry![39m
+[32mStart Phase: StatStageChangePhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Dragonite’s Attack rose sharply![39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: TurnEndPhase[39m
+Applied Leftovers 
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: PokemonHealPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram restored a little HP using its Leftovers![39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+Move position for HYPER_VOICE (=304): 0
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to FIGHT (=3)![39m
+Move: HYPER_VOICE Move targets: { multiple: true, targets: [ 2 ] } 
+Player Pokemon: Reshiram
+[38;2;0;60;189mUI mode changed from FIGHT (=3) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+Applied Dragon Fang (enemy)
+Move Pool: [ 'Breaking Swipe' ]
+Move Scores: [ 21 ]
+Sorted Move Pool: [ 'Breaking Swipe' ]
+Chosen Move: Breaking Swipe
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Reshiram[39m
+[38;2;0;0;0mMove: HYPER_VOICE[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram used Hyper Voice![39m
+[32mStart Phase: MoveEffectPhase[39m
+Applied Wide Lens 
+crit stage: +2
+Move: Hyper Voice | Base damage: 496.48467741935485 | Power: 90 | Source attack: 1765 | Target defense: 496
+Move: Hyper Voice | Attack damage: 456
+Applied Amulet Coin 
+Applied Golden Punch 
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: FaintPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Dragonite fainted![39m
+[32mStart Phase: VictoryPhase[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: MovePhase[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: TurnEndPhase[39m
+Applied Leftovers 
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: PokemonHealPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram restored a little HP using its Leftovers![39m
+[32mStart Phase: SwitchSummonPhase[39m
+Drayton
+[34mDrayton sent out Flygon![39m
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Iron (enemy)
+Applied HP Up (enemy)
+Applied Zinc (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Calcium (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Zinc (enemy)
+Applied Protein (enemy)
+Applied Calcium (enemy)
+Applied Iron (enemy)
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Flygon
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+Move position for HYPER_VOICE (=304): 0
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to FIGHT (=3)![39m
+Move: HYPER_VOICE Move targets: { multiple: true, targets: [ 2 ] } 
+Player Pokemon: Reshiram
+[38;2;0;60;189mUI mode changed from FIGHT (=3) to MESSAGE (=0)![39m
+[33mBattlerTag IGNORE_FLYING is missing a score![39m
+[33mBattlerTag INTERRUPTED is missing a score![39m
+[32mStart Phase: EnemyCommandPhase[39m
+Applied Soft Sand (enemy)
+Move Pool: [ 'Thousand Arrows', 'Bug Buzz', 'Dragon Rush', 'Dragon Dance' ]
+Move Scores: [ 12.937_5, 20, 24, 4 ]
+Sorted Move Pool: [ 'Dragon Rush', 'Bug Buzz', 'Thousand Arrows', 'Dragon Dance' ]
+Chosen Move: Dragon Rush
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Flygon[39m
+[38;2;0;0;0mMove: DRAGON_RUSH[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Flygon used Dragon Rush![39m
+[32mStart Phase: MoveEffectPhase[39m
+crit stage: +0
+Move: Dragon Rush | Base damage: 163.67041564792177 | Power: 100 | Source attack: 442 | Target defense: 409
+Move: Dragon Rush | Attack damage: 238
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Reshiram[39m
+[38;2;0;0;0mMove: HYPER_VOICE[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram used Hyper Voice![39m
+[32mStart Phase: MoveEffectPhase[39m
+Applied Wide Lens 
+crit stage: +2
+Move: Hyper Voice | Base damage: 685.1877437325904 | Power: 90 | Source attack: 1765 | Target defense: 359
+Move: Hyper Voice | Attack damage: 873
+Applied Amulet Coin 
+Applied Golden Punch 
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mA critical hit![39m
+[32mStart Phase: FaintPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Flygon fainted![39m
+[32mStart Phase: VictoryPhase[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+Applied Berry Pouch 
+Applied Petaya Berry 
+Applied Berry Pouch 
+Applied Apicot Berry 
+Applied Carbos 
+Applied Calcium 
+Applied Protein 
+Applied Zinc 
+Applied HP Up 
+Applied HP Up 
+[32mStart Phase: CommonAnimPhase[39m
+[32mStart Phase: StatStageChangePhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram’s Sp. Atk and Sp. Def rose![39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: TurnEndPhase[39m
+Applied Leftovers 
+[38;2;255;127;80mPhaseInterceptor.to: Stopping on completion of TurnEndPhase[39m
+[38;2;255;173;0m==================[End of Turn]==================[39m
+[32mStart Phase: PokemonHealPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram restored a little HP using its Leftovers![39m
+[32mStart Phase: SwitchSummonPhase[39m
+Drayton
+[34mDrayton sent out Sceptile![39m
+Applied Iron (enemy)
+Applied HP Up (enemy)
+Applied Zinc (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied Zinc (enemy)
+Applied Iron (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Calcium (enemy)
+Applied Carbos (enemy)
+Applied HP Up (enemy)
+Applied Zinc (enemy)
+Applied Protein (enemy)
+Applied Calcium (enemy)
+Applied Iron (enemy)
+[32mStart Phase: PostSummonPhase[39m
+Ran PSP for: Sceptile
+[32mStart Phase: PostSummonPhase[39m
+[32mStart Phase: TurnInitPhase[39m
+[32mStart Phase: CommandPhase[39m
+[38;2;0;60;189mUI mode changed from MESSAGE (=0) to COMMAND (=2)![39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping after reaching COMMAND (=2) during CommandPhase[39m
+Move position for HYPER_VOICE (=304): 0
+[38;2;255;127;80mPhaseInterceptor.to: Waiting for phase to end after being interrupted![39m
+[38;2;0;60;189mUI mode changed from COMMAND (=2) to FIGHT (=3)![39m
+Move: HYPER_VOICE Move targets: { multiple: true, targets: [ 2 ] } 
+Player Pokemon: Reshiram
+[38;2;0;60;189mUI mode changed from FIGHT (=3) to MESSAGE (=0)![39m
+[32mStart Phase: EnemyCommandPhase[39m
+Applied Dragon Fang (enemy)
+Applied Dragon Fang (enemy)
+Move Pool: [ 'Leaf Storm', 'Clanging Scales', 'Dual Chop', 'Swords Dance' ]
+Move Scores: [ 12.187_5, 20, 19, 6 ]
+Sorted Move Pool: [ 'Clanging Scales', 'Dual Chop', 'Leaf Storm', 'Swords Dance' ]
+Chosen Move: Dual Chop
+[32mStart Phase: TurnStartPhase[39m
+[32mStart Phase: TeraPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Sceptile Terastallized into the Dragon type![39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Sceptile[39m
+[38;2;0;0;0mMove: DUAL_CHOP[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Sceptile used Dual Chop![39m
+[32mStart Phase: MoveEffectPhase[39m
+crit stage: +0
+Applied Dragon Fang (enemy)
+Move: Dual Chop | Base damage: 63.800528117359406 | Power: 48 | Source attack: 352 | Target defense: 409
+Move: Dual Chop | Attack damage: 91
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MoveEffectPhase[39m
+crit stage: +0
+Applied Dragon Fang (enemy)
+Move: Dual Chop | Base damage: 63.800528117359406 | Power: 48 | Source attack: 352 | Target defense: 409
+Move: Dual Chop | Attack damage: 92
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mHit 2 time(s)![39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: MovePhase[39m
+[38;2;0;0;0mUser: Reshiram[39m
+[38;2;0;0;0mMove: HYPER_VOICE[39m
+[38;2;0;0;0mUse Mode: NORMAL[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram used Hyper Voice![39m
+[32mStart Phase: MoveEffectPhase[39m
+Applied Wide Lens 
+crit stage: +2
+Move: Hyper Voice | Base damage: 745.2254545454546 | Power: 90 | Source attack: 2118 | Target defense: 396
+Move: Hyper Voice | Attack damage: 633
+Applied Amulet Coin 
+Applied Golden Punch 
+[32mStart Phase: DamageAnimPhase[39m
+[32mStart Phase: FaintPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mFoe Sceptile fainted![39m
+[32mStart Phase: VictoryPhase[39m
+[32mStart Phase: MoveEndPhase[39m
+[32mStart Phase: CheckInterludePhase[39m
+[32mStart Phase: WeatherEffectPhase[39m
+[32mStart Phase: PositionalTagPhase[39m
+[32mStart Phase: BerryPhase[39m
+Applied Berry Pouch 
+Applied Petaya Berry 
+Applied Berry Pouch 
+Applied Apicot Berry 
+Applied Carbos 
+Applied Calcium 
+Applied Protein 
+Applied Zinc 
+Applied HP Up 
+Applied HP Up 
+[32mStart Phase: CommonAnimPhase[39m
+[32mStart Phase: StatStageChangePhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram’s Sp. Atk and Sp. Def rose![39m
+[32mStart Phase: CheckStatusEffectPhase[39m
+[32mStart Phase: TurnEndPhase[39m
+Applied Leftovers 
+[32mStart Phase: PokemonHealPhase[39m
+[32mStart Phase: MessagePhase[39m
+[34mReshiram restored a little HP using its Leftovers![39m
+[32mStart Phase: BattleEndPhase[39m
+Battle Score: 0 (10 Turns x0)
+Total Score: 34304
+Applied Carbos 
+Applied Calcium 
+Applied Protein 
+Applied Zinc 
+Applied HP Up 
+Applied HP Up 
+[32mStart Phase: TrainerVictoryPhase[39m
+Elite Four Drayton
+[34mYou defeated Elite Four Drayton![39m
+Elite Four Drayton
+Elite Four Drayton: 
+[34mdialogue:drayton.victory.1[39m
+[32mStart Phase: MoneyRewardPhase[39m
+Applied Amulet Coin 
+[34mYou got ₽15,912 for winning![39m
+[32mStart Phase: EggLapsePhase[39m
+[38;2;255;127;80mPhaseInterceptor.to: Stopping before running SelectModifierPhase[39m
+[2m> [22m[30m[48;2;193;98;222m Test finished! [49m[39m
+    Name: [38;2;0;136;134mdrayton-t10 > t10[39m
+    Result: [32m[1m✓ Passed[22m[39m [2min[22m [32m3713[39m[2mms[22m
+    File: [38;2;210;155;14mv1.12.0.11/test/tests/zz-t10-60200-0d68b155.test.ts:28:3[39m
+ ✓ |main| test/tests/zz-t10-60200-0d68b155.test.ts (1 test) 3798ms
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'getItem')
+ ❯ src/i18n.ts:207:36
+    205|     async () => {
+    206|       i18next.services.formatter?.add("money", i18nMoneyFormatter);
+    207|       await initFonts(localStorage.getItem("prLang") ?? undefined);
+       |                                    ^
+    208|     },
+    209|   );
+ ❯ finish node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1870:9
+ ❯ done node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1997:21
+ ❯ node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:2011:9
+ ❯ Object.callback node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1907:9
+ ❯ node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1533:13
+ ❯ Connector.loaded node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1515:16
+ ❯ node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1615:12
+ ❯ resolver node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1566:7
+
+This error originated in "test/tests/zz-t10-60200-0d68b155.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+     Errors  1 error
+   Start at  21:11:13
+   Duration  11.36s (transform 5.06s, setup 6.73s, import 4ms, tests 3.80s, environment 657ms)
+

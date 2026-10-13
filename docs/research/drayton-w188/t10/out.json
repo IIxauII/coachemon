@@ -1,0 +1,225 @@
+{
+ "turns": [
+  {
+   "step": {
+    "s": "Probopass"
+   },
+   "reshiram": 622,
+   "msgs": [
+    "Come back, Gyarados!",
+    "Go! Probopass!",
+    "Foe Dragonite used\nBreaking Swipe!",
+    "A critical hit!",
+    "It’s not very effective…",
+    "Probopass’s Attack fell!"
+   ]
+  },
+  {
+   "step": {
+    "m": "EARTH_POWER"
+   },
+   "reshiram": 622,
+   "msgs": [
+    "Drayton withdrew Dragonite!",
+    "Drayton sent out Archaludon!",
+    "Probopass used\nEarth Power!",
+    "It’s super effective!",
+    "Foe Archaludon’s Sp. Def fell!",
+    "Foe Archaludon’s Defense rose!"
+   ]
+  },
+  {
+   "step": {
+    "s": "Reshiram"
+   },
+   "reshiram": 587,
+   "msgs": [
+    "Come back, Probopass!",
+    "Go! Reshiram!",
+    "Reshiram is radiating a blazing aura!",
+    "Foe Archaludon used\nFlash Cannon!",
+    "It’s not very effective…",
+    "Reshiram restored a little HP using\nits Leftovers!"
+   ]
+  },
+  {
+   "step": {
+    "m": "BLUE_FLARE"
+   },
+   "reshiram": 622,
+   "msgs": [
+    "Reshiram used\nBlue Flare!",
+    "Foe Archaludon fainted!",
+    "Reshiram restored a little HP using\nits Leftovers!",
+    "Drayton sent out Tatsugiri!"
+   ]
+  },
+  {
+   "step": {
+    "m": "FICKLE_BEAM"
+   },
+   "reshiram": 622,
+   "msgs": [
+    "Reshiram used\nFickle Beam!",
+    "Reshiram is going all out for this attack!",
+    "It’s super effective!",
+    "Foe Tatsugiri fainted!",
+    "Drayton sent out Haxorus!"
+   ]
+  },
+  {
+   "step": {
+    "m": "FICKLE_BEAM",
+    "tera": true
+   },
+   "reshiram": 318,
+   "msgs": [
+    "Reshiram Terastallized into the Bug type!",
+    "Foe Haxorus used\nOutrage!",
+    "Reshiram used\nFickle Beam!",
+    "It’s super effective!",
+    "Foe Haxorus fainted!",
+    "Reshiram restored a little HP using\nits Leftovers!",
+    "Drayton sent out Dragonite!"
+   ]
+  },
+  {
+   "step": {
+    "m": "DRAGON_PULSE"
+   },
+   "reshiram": 307,
+   "msgs": [
+    "Reshiram used\nDragon Pulse!",
+    "It’s super effective!",
+    "Foe Dragonite used\nAir Slash!",
+    "It’s super effective!",
+    "Reshiram restored its health using\nits Enigma Berry!",
+    "Reshiram is getting\npumped!",
+    "Reshiram’s Sp. Atk rose drastically!",
+    "Reshiram’s Sp. Def and Attack rose!",
+    "Foe Dragonite restored its health using\nits Sitrus Berry!",
+    "Foe Dragonite’s Attack rose sharply!",
+    "Reshiram restored a little HP using\nits Leftovers!"
+   ]
+  },
+  {
+   "step": {
+    "m": "HYPER_VOICE"
+   },
+   "reshiram": 383,
+   "msgs": [
+    "Reshiram used\nHyper Voice!",
+    "Foe Dragonite fainted!",
+    "Reshiram restored a little HP using\nits Leftovers!",
+    "Drayton sent out Flygon!"
+   ]
+  },
+  {
+   "step": {
+    "m": "HYPER_VOICE"
+   },
+   "reshiram": 221,
+   "msgs": [
+    "Foe Flygon used\nDragon Rush!",
+    "Reshiram used\nHyper Voice!",
+    "A critical hit!",
+    "Foe Flygon fainted!",
+    "Reshiram’s Sp. Atk and Sp. Def rose!",
+    "Reshiram restored a little HP using\nits Leftovers!",
+    "Drayton sent out Sceptile!"
+   ]
+  }
+ ],
+ "trace": [
+  {
+   "phase": "EnemyCommandPhase",
+   "reshiram": 221,
+   "maxHp": 622,
+   "level": 188,
+   "msgs": 0
+  },
+  {
+   "phase": "DamageAnimPhase",
+   "reshiram": 130,
+   "maxHp": 622,
+   "level": 188,
+   "msgs": 2
+  },
+  {
+   "phase": "DamageAnimPhase",
+   "reshiram": 38,
+   "maxHp": 622,
+   "level": 188,
+   "msgs": 2
+  },
+  {
+   "phase": "VictoryPhase",
+   "reshiram": 38,
+   "maxHp": 622,
+   "level": 188,
+   "msgs": 5
+  },
+  {
+   "phase": "MessagePhase",
+   "reshiram": 114,
+   "maxHp": 622,
+   "level": 188,
+   "msgs": 6
+  },
+  {
+   "phase": "BattleEndPhase",
+   "reshiram": 114,
+   "maxHp": 622,
+   "level": 188,
+   "msgs": 7
+  },
+  {
+   "phase": "TrainerVictoryPhase",
+   "reshiram": 114,
+   "maxHp": 622,
+   "level": 188,
+   "msgs": 7
+  },
+  {
+   "phase": "SelectModifierPhase",
+   "reshiram": 114,
+   "maxHp": 622,
+   "level": 188,
+   "msgs": 11
+  }
+ ],
+ "end": {
+  "reshiram": 114,
+  "maxHp": 622,
+  "level": 188,
+  "msgs": [
+   "Foe Sceptile Terastallized into the Dragon type!",
+   "Foe Sceptile used\nDual Chop!",
+   "Hit 2 time(s)!",
+   "Reshiram used\nHyper Voice!",
+   "Foe Sceptile fainted!",
+   "Reshiram’s Sp. Atk and Sp. Def rose!",
+   "Reshiram restored a little HP using\nits Leftovers!",
+   "You defeated\nElite Four Drayton!",
+   "Elite Four Drayton",
+   "dialogue:drayton.victory.1",
+   "You got\n₽15,912 for winning!"
+  ]
+ },
+ "party": [
+  "Reshiram L188 114/622",
+  "Snorlax L188 889/889",
+  "Probopass L188 346/461",
+  "Gyarados L188 601/611",
+  "Golbat L188 532/532",
+  "Leavanny L188 536/536"
+ ],
+ "foes": [
+  "Sceptile 0/490",
+  "Flygon 0/530",
+  "Dragonite 0/552",
+  "Tatsugiri 0/470",
+  "Haxorus 0/503",
+  "Archaludon 0/578"
+ ]
+}

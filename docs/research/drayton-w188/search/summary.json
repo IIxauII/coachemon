@@ -1,0 +1,5855 @@
+{
+ "summary": {
+  "args": {
+   "out": "/private/tmp/claude-501/-Users-xau-Documents-projects-coachemon/263ebfca-6bf9-4966-9a95-7e1efe9b85da/scratchpad/w188/pf",
+   "workers": 4,
+   "beams": "8:0.5,8:1,16:0.5",
+   "depth": 40,
+   "prefix": "",
+   "stall": 6,
+   "budget": 9000,
+   "session": "/private/tmp/claude-501/-Users-xau-Documents-projects-coachemon/263ebfca-6bf9-4966-9a95-7e1efe9b85da/scratchpad/w188/session-w188.json",
+   "no_share": false
+  },
+  "workers": 4,
+  "boot_secs": 55.4,
+  "search_secs": 376.4,
+  "stop_reason": "replayed win",
+  "children_total": 2084,
+  "children_per_sec": 5.54,
+  "tasks_created": 120,
+  "tasks_reused": 107,
+  "answer": {
+   "beam": "W8@1",
+   "depth": 10,
+   "children_so_far": 2084,
+   "detected_at": 368.8,
+   "replayed_at": 376.4,
+   "path": [
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "EARTH_POWER"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "FICKLE_BEAM",
+     "tera": true
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    }
+   ],
+   "steps": 10,
+   "end": {
+    "turn": 11,
+    "ours": [
+     "Reshiram* 38/622 TERA [1,0,5,3,0,0,0]",
+     "Snorlax 889/889 st4",
+     "Probopass 346/461",
+     "Gyarados 601/611",
+     "Golbat 532/532",
+     "Leavanny 536/536"
+    ],
+    "foes": [
+     "Sceptile 0/515 st7",
+     "Flygon 0/530 st7",
+     "Dragonite 0/584 st7",
+     "Tatsugiri 0/470 st7",
+     "Haxorus 0/528 st7",
+     "Archaludon 0/578 st7"
+    ]
+   },
+   "alive": 6,
+   "validated": "5/5"
+  },
+  "memory": {
+   "peak_total_mb": 3032.90625,
+   "peak_worker_mb": 955.296875,
+   "samples": 792
+  },
+  "coordinator_peak_mb": 29.7,
+  "replays": [
+   {
+    "beam": "W8@1",
+    "depth": 10,
+    "children_so_far": 2084,
+    "detected_at": 368.8,
+    "results": [
+     {
+      "result": "WIN",
+      "turns": 10
+     },
+     {
+      "result": "WIN",
+      "turns": 10
+     },
+     {
+      "result": "WIN",
+      "turns": 10
+     },
+     {
+      "result": "WIN",
+      "turns": 10
+     },
+     {
+      "result": "WIN",
+      "turns": 10
+     }
+    ],
+    "replayed_at": 376.4
+   },
+   {
+    "beam": "W8@0.5",
+    "depth": 10,
+    "children_so_far": 2084,
+    "detected_at": 368.8,
+    "results": [
+     null,
+     null,
+     null,
+     null,
+     null
+    ]
+   }
+  ],
+  "beams": [
+   {
+    "name": "W8@0.5",
+    "width": 8,
+    "w": 0.5,
+    "status": "replaying",
+    "depth": 10,
+    "dispatched_actions": 389,
+    "children_consumed": 1309,
+    "tasks_created": 37,
+    "tasks_reused": 36,
+    "losses": 0,
+    "stalled": 0,
+    "errors": 0,
+    "wins": 32,
+    "layers": [
+     {
+      "depth": 1,
+      "distinct": 17,
+      "wins": 0,
+      "losses": 0,
+      "errors": 0,
+      "secs": 9.74,
+      "at": 9.7,
+      "children_so_far": 17,
+      "best": {
+       "turn": 2,
+       "ours": [
+        "Gyarados* 223/611 [-1,0,0,0,0,0,0]",
+        "Snorlax 889/889 st4",
+        "Reshiram 622/622",
+        "Probopass 461/461",
+        "Golbat 532/532",
+        "Leavanny 536/536"
+       ],
+       "foes": [
+        "Dragonite* 463/584 [0,0,0,0,0,0,0]",
+        "Sceptile 515/515",
+        "Flygon 530/530",
+        "Haxorus 528/528",
+        "Archaludon 578/578",
+        "Tatsugiri 470/470"
+       ]
+      },
+      "beam_paths": [
+       [
+        {
+         "m": "HURRICANE"
+        }
+       ],
+       [
+        {
+         "m": "HURRICANE",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        }
+       ],
+       [
+        {
+         "m": "HYDRO_PUMP",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "m": "TWISTER"
+        }
+       ],
+       [
+        {
+         "m": "TWISTER",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "m": "HYDRO_PUMP"
+        }
+       ],
+       [
+        {
+         "s": "Snorlax"
+        }
+       ]
+      ],
+      "beam_scores": [
+       2.89,
+       2.89,
+       2.867,
+       2.821,
+       2.787,
+       2.787,
+       2.785,
+       2.738
+      ]
+     },
+     {
+      "depth": 2,
+      "distinct": 87,
+      "wins": 0,
+      "losses": 0,
+      "errors": 0,
+      "secs": 55.97,
+      "at": 65.7,
+      "children_so_far": 345,
+      "best": {
+       "turn": 3,
+       "ours": [
+        "Probopass* 346/461 [-1,0,0,0,0,0,0]",
+        "Snorlax 889/889 st4",
+        "Reshiram 622/622",
+        "Gyarados 601/611",
+        "Golbat 532/532",
+        "Leavanny 536/536"
+       ],
+       "foes": [
+        "Archaludon* 289/578 [0,1,0,-1,0,0,0]",
+        "Sceptile 515/515",
+        "Flygon 530/530",
+        "Haxorus 528/528",
+        "Dragonite 584/584",
+        "Tatsugiri 470/470"
+       ]
+      },
+      "beam_paths": [
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "POWER_GEM",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "ZAP_CANNON"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "ZAP_CANNON",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "POWER_GEM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "TRI_ATTACK"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "TRI_ATTACK",
+         "tera": true
+        }
+       ]
+      ],
+      "beam_scores": [
+       3.367,
+       3.367,
+       3.066,
+       3.016,
+       3.016,
+       3.016,
+       2.966,
+       2.966
+      ]
+     },
+     {
+      "depth": 3,
+      "distinct": 89,
+      "wins": 0,
+      "losses": 0,
+      "errors": 0,
+      "secs": 52.45,
+      "at": 118.2,
+      "children_so_far": 679,
+      "best": {
+       "turn": 4,
+       "ours": [
+        "Probopass* 134/461 [-1,0,0,0,0,0,0]",
+        "Snorlax 889/889 st4",
+        "Reshiram 622/622",
+        "Gyarados 601/611",
+        "Golbat 532/532",
+        "Leavanny 536/536"
+       ],
+       "foes": [
+        "Flygon* 530/530 [0,0,0,0,0,0,0]",
+        "Sceptile 515/515",
+        "Archaludon 0/578 st7",
+        "Haxorus 528/528",
+        "Dragonite 584/584",
+        "Tatsugiri 470/470"
+       ]
+      },
+      "beam_paths": [
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "m": "EARTH_POWER"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "ZAP_CANNON",
+         "tera": true
+        },
+        {
+         "m": "EARTH_POWER"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "TRI_ATTACK"
+        },
+        {
+         "m": "EARTH_POWER"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "TRI_ATTACK"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Gyarados"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Gyarados"
+        }
+       ]
+      ],
+      "beam_scores": [
+       3.637,
+       3.367,
+       3.367,
+       3.367,
+       3.348,
+       3.339,
+       3.244,
+       3.23
+      ]
+     },
+     {
+      "depth": 4,
+      "distinct": 97,
+      "wins": 0,
+      "losses": 0,
+      "errors": 0,
+      "secs": 63.86,
+      "at": 182.0,
+      "children_so_far": 1056,
+      "best": {
+       "turn": 5,
+       "ours": [
+        "Probopass* 346/461 [-1,0,0,0,0,0,0]",
+        "Snorlax 889/889 st4",
+        "Reshiram 622/622",
+        "Gyarados 601/611",
+        "Golbat 532/532",
+        "Leavanny 536/536"
+       ],
+       "foes": [
+        "Flygon* 530/530 [0,0,0,0,0,0,0]",
+        "Sceptile 515/515",
+        "Archaludon 0/578 st7",
+        "Haxorus 528/528",
+        "Dragonite 584/584",
+        "Tatsugiri 470/470"
+       ]
+      },
+      "beam_paths": [
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "TRI_ATTACK"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "m": "EARTH_POWER"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "TRI_ATTACK"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ]
+      ],
+      "beam_scores": [
+       3.867,
+       3.867,
+       3.867,
+       3.867,
+       3.867,
+       3.867,
+       3.867,
+       3.867
+      ]
+     },
+     {
+      "depth": 5,
+      "distinct": 84,
+      "wins": 0,
+      "losses": 0,
+      "errors": 0,
+      "secs": 24.11,
+      "at": 206.1,
+      "children_so_far": 1158,
+      "best": {
+       "turn": 6,
+       "ours": [
+        "Reshiram* 622/622 [0,0,0,0,0,0,0]",
+        "Snorlax 889/889 st4",
+        "Probopass 346/461 TERA",
+        "Gyarados 601/611",
+        "Golbat 532/532",
+        "Leavanny 536/536"
+       ],
+       "foes": [
+        "Haxorus* 528/528 [0,0,0,0,0,0,0]",
+        "Sceptile 515/515",
+        "Flygon 530/530",
+        "Tatsugiri 0/470 st7",
+        "Dragonite 584/584",
+        "Archaludon 0/578 st7"
+       ]
+      },
+      "beam_paths": [
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ]
+      ],
+      "beam_scores": [
+       4.867,
+       4.867,
+       4.867,
+       4.867,
+       4.867,
+       4.867,
+       4.867,
+       4.867
+      ]
+     },
+     {
+      "depth": 6,
+      "distinct": 118,
+      "wins": 0,
+      "losses": 0,
+      "errors": 0,
+      "secs": 57.5,
+      "at": 263.6,
+      "children_so_far": 1454,
+      "best": {
+       "turn": 7,
+       "ours": [
+        "Reshiram* 318/622 TERA [0,0,0,0,0,0,0]",
+        "Snorlax 889/889 st4",
+        "Probopass 346/461",
+        "Gyarados 601/611",
+        "Golbat 532/532",
+        "Leavanny 536/536"
+       ],
+       "foes": [
+        "Dragonite* 584/584 [0,0,0,0,0,0,0]",
+        "Sceptile 515/515",
+        "Flygon 530/530",
+        "Tatsugiri 0/470 st7",
+        "Haxorus 0/528 st7",
+        "Archaludon 0/578 st7"
+       ]
+      },
+      "beam_paths": [
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "DRAGON_PULSE",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "DRAGON_PULSE",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "BLUE_FLARE",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "BLUE_FLARE",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "HYPER_VOICE",
+         "tera": true
+        }
+       ]
+      ],
+      "beam_scores": [
+       5.623,
+       5.623,
+       5.623,
+       5.516,
+       5.465,
+       5.259,
+       5.259,
+       5.212
+      ]
+     },
+     {
+      "depth": 7,
+      "distinct": 106,
+      "wins": 0,
+      "losses": 0,
+      "errors": 0,
+      "secs": 38.18,
+      "at": 301.8,
+      "children_so_far": 1669,
+      "best": {
+       "turn": 8,
+       "ours": [
+        "Reshiram* 307/622 TERA [1,0,3,1,0,0,0]",
+        "Snorlax 889/889 st4",
+        "Probopass 346/461",
+        "Gyarados 601/611",
+        "Golbat 532/532",
+        "Leavanny 536/536"
+       ],
+       "foes": [
+        "Dragonite* 226/584 [2,0,0,0,0,0,0]",
+        "Sceptile 515/515",
+        "Flygon 530/530",
+        "Tatsugiri 0/470 st7",
+        "Haxorus 0/528 st7",
+        "Archaludon 0/578 st7"
+       ]
+      },
+      "beam_paths": [
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "DRAGON_PULSE",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "DRAGON_PULSE",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "DRAGON_PULSE",
+         "tera": true
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "DRAGON_PULSE",
+         "tera": true
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "BLUE_FLARE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "DRAGON_PULSE",
+         "tera": true
+        },
+        {
+         "m": "BLUE_FLARE"
+        }
+       ]
+      ],
+      "beam_scores": [
+       6.227,
+       6.227,
+       6.227,
+       6.176,
+       6.176,
+       6.176,
+       6.004,
+       6.004
+      ]
+     },
+     {
+      "depth": 8,
+      "distinct": 89,
+      "wins": 0,
+      "losses": 0,
+      "errors": 0,
+      "secs": 17.52,
+      "at": 319.3,
+      "children_so_far": 1782,
+      "best": {
+       "turn": 9,
+       "ours": [
+        "Reshiram* 383/622 TERA [1,0,3,1,0,0,0]",
+        "Snorlax 889/889 st4",
+        "Probopass 346/461",
+        "Gyarados 601/611",
+        "Golbat 532/532",
+        "Leavanny 536/536"
+       ],
+       "foes": [
+        "Flygon* 530/530 [0,0,0,0,0,0,0]",
+        "Sceptile 515/515",
+        "Dragonite 0/584 st7",
+        "Tatsugiri 0/470 st7",
+        "Haxorus 0/528 st7",
+        "Archaludon 0/578 st7"
+       ]
+      },
+      "beam_paths": [
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "DRAGON_PULSE",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "DRAGON_PULSE",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "DRAGON_PULSE",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "DRAGON_PULSE",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        }
+       ]
+      ],
+      "beam_scores": [
+       6.675,
+       6.675,
+       6.675,
+       6.675,
+       6.675,
+       6.675,
+       6.675,
+       6.675
+      ]
+     },
+     {
+      "depth": 9,
+      "distinct": 64,
+      "wins": 0,
+      "losses": 0,
+      "errors": 0,
+      "secs": 35.72,
+      "at": 355.1,
+      "children_so_far": 1984,
+      "best": {
+       "turn": 10,
+       "ours": [
+        "Reshiram* 221/622 TERA [1,0,4,2,0,0,0]",
+        "Snorlax 889/889 st4",
+        "Probopass 346/461",
+        "Gyarados 601/611",
+        "Golbat 532/532",
+        "Leavanny 536/536"
+       ],
+       "foes": [
+        "Sceptile* 515/515 [0,0,0,0,0,0,0]",
+        "Flygon 0/530 st7",
+        "Dragonite 0/584 st7",
+        "Tatsugiri 0/470 st7",
+        "Haxorus 0/528 st7",
+        "Archaludon 0/578 st7"
+       ]
+      },
+      "beam_paths": [
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ]
+      ],
+      "beam_scores": [
+       7.545,
+       7.545,
+       7.545,
+       7.545,
+       7.545,
+       7.545,
+       7.545,
+       7.545
+      ]
+     },
+     {
+      "depth": 10,
+      "distinct": 40,
+      "wins": 32,
+      "losses": 0,
+      "errors": 0,
+      "secs": 13.76,
+      "at": 368.8,
+      "children_so_far": 2084,
+      "best": {
+       "turn": 11,
+       "ours": [
+        "Probopass* 282/461 [0,0,0,0,0,0,0]",
+        "Snorlax 889/889 st4",
+        "Reshiram 221/622 TERA",
+        "Gyarados 601/611",
+        "Golbat 532/532",
+        "Leavanny 536/536"
+       ],
+       "foes": [
+        "Sceptile* 515/515 TERA [0,0,0,0,0,0,0]",
+        "Flygon 0/530 st7",
+        "Dragonite 0/584 st7",
+        "Tatsugiri 0/470 st7",
+        "Haxorus 0/528 st7",
+        "Archaludon 0/578 st7"
+       ]
+      },
+      "beam_paths": [
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        },
+        {
+         "s": "Probopass"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "s": "Probopass"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "s": "Probopass"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "s": "Probopass"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        },
+        {
+         "s": "Probopass"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "s": "Probopass"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "s": "Probopass"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "s": "Probopass"
+        }
+       ]
+      ],
+      "beam_scores": [
+       7.475,
+       7.475,
+       7.475,
+       7.475,
+       7.475,
+       7.475,
+       7.475,
+       7.475
+      ]
+     }
+    ]
+   },
+   {
+    "name": "W8@1",
+    "width": 8,
+    "w": 1.0,
+    "status": "replaying",
+    "depth": 10,
+    "dispatched_actions": 425,
+    "children_consumed": 1293,
+    "tasks_created": 45,
+    "tasks_reused": 28,
+    "losses": 0,
+    "stalled": 0,
+    "errors": 0,
+    "wins": 32,
+    "layers": [
+     {
+      "depth": 1,
+      "distinct": 17,
+      "wins": 0,
+      "losses": 0,
+      "errors": 0,
+      "secs": 9.74,
+      "at": 9.7,
+      "children_so_far": 17,
+      "best": {
+       "turn": 2,
+       "ours": [
+        "Probopass* 346/461 [-1,0,0,0,0,0,0]",
+        "Snorlax 889/889 st4",
+        "Reshiram 622/622",
+        "Gyarados 601/611",
+        "Golbat 532/532",
+        "Leavanny 536/536"
+       ],
+       "foes": [
+        "Dragonite* 584/584 [0,0,0,0,0,0,0]",
+        "Sceptile 515/515",
+        "Flygon 530/530",
+        "Haxorus 528/528",
+        "Archaludon 578/578",
+        "Tatsugiri 470/470"
+       ]
+      },
+      "beam_paths": [
+       [
+        {
+         "s": "Probopass"
+        }
+       ],
+       [
+        {
+         "m": "HURRICANE"
+        }
+       ],
+       [
+        {
+         "m": "HURRICANE",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "m": "HYDRO_PUMP",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Snorlax"
+        }
+       ],
+       [
+        {
+         "m": "TWISTER"
+        }
+       ],
+       [
+        {
+         "m": "TWISTER",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "m": "HYDRO_PUMP"
+        }
+       ]
+      ],
+      "beam_scores": [
+       5.734,
+       5.572,
+       5.572,
+       5.504,
+       5.476,
+       5.469,
+       5.469,
+       5.468
+      ]
+     },
+     {
+      "depth": 2,
+      "distinct": 87,
+      "wins": 0,
+      "losses": 0,
+      "errors": 0,
+      "secs": 55.97,
+      "at": 65.7,
+      "children_so_far": 345,
+      "best": {
+       "turn": 3,
+       "ours": [
+        "Probopass* 346/461 [-1,0,0,0,0,0,0]",
+        "Snorlax 889/889 st4",
+        "Reshiram 622/622",
+        "Gyarados 601/611",
+        "Golbat 532/532",
+        "Leavanny 536/536"
+       ],
+       "foes": [
+        "Archaludon* 289/578 [0,1,0,-1,0,0,0]",
+        "Sceptile 515/515",
+        "Flygon 530/530",
+        "Haxorus 528/528",
+        "Dragonite 584/584",
+        "Tatsugiri 470/470"
+       ]
+      },
+      "beam_paths": [
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "POWER_GEM",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "ZAP_CANNON"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "ZAP_CANNON",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "POWER_GEM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "TRI_ATTACK"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "TRI_ATTACK",
+         "tera": true
+        }
+       ]
+      ],
+      "beam_scores": [
+       6.234,
+       6.234,
+       5.933,
+       5.883,
+       5.883,
+       5.883,
+       5.833,
+       5.833
+      ]
+     },
+     {
+      "depth": 3,
+      "distinct": 89,
+      "wins": 0,
+      "losses": 0,
+      "errors": 0,
+      "secs": 52.45,
+      "at": 118.2,
+      "children_so_far": 679,
+      "best": {
+       "turn": 4,
+       "ours": [
+        "Probopass* 134/461 [-1,0,0,0,0,0,0]",
+        "Snorlax 889/889 st4",
+        "Reshiram 622/622",
+        "Gyarados 601/611",
+        "Golbat 532/532",
+        "Leavanny 536/536"
+       ],
+       "foes": [
+        "Flygon* 530/530 [0,0,0,0,0,0,0]",
+        "Sceptile 515/515",
+        "Archaludon 0/578 st7",
+        "Haxorus 528/528",
+        "Dragonite 584/584",
+        "Tatsugiri 470/470"
+       ]
+      },
+      "beam_paths": [
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "m": "EARTH_POWER"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "ZAP_CANNON",
+         "tera": true
+        },
+        {
+         "m": "EARTH_POWER"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "TRI_ATTACK"
+        },
+        {
+         "m": "EARTH_POWER"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "TRI_ATTACK"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "ZAP_CANNON",
+         "tera": true
+        },
+        {
+         "m": "POWER_GEM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "TRI_ATTACK"
+        },
+        {
+         "m": "POWER_GEM",
+         "tera": true
+        }
+       ]
+      ],
+      "beam_scores": [
+       6.274,
+       6.234,
+       6.234,
+       6.234,
+       6.196,
+       6.178,
+       6.091,
+       6.04
+      ]
+     },
+     {
+      "depth": 4,
+      "distinct": 94,
+      "wins": 0,
+      "losses": 0,
+      "errors": 0,
+      "secs": 61.97,
+      "at": 180.1,
+      "children_so_far": 1043,
+      "best": {
+       "turn": 5,
+       "ours": [
+        "Probopass* 346/461 [-1,0,0,0,0,0,0]",
+        "Snorlax 889/889 st4",
+        "Reshiram 622/622",
+        "Gyarados 601/611",
+        "Golbat 532/532",
+        "Leavanny 536/536"
+       ],
+       "foes": [
+        "Flygon* 530/530 [0,0,0,0,0,0,0]",
+        "Sceptile 515/515",
+        "Archaludon 0/578 st7",
+        "Haxorus 528/528",
+        "Dragonite 584/584",
+        "Tatsugiri 470/470"
+       ]
+      },
+      "beam_paths": [
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "TRI_ATTACK"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "m": "EARTH_POWER"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "TRI_ATTACK"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ]
+      ],
+      "beam_scores": [
+       6.734,
+       6.734,
+       6.734,
+       6.734,
+       6.734,
+       6.734,
+       6.734,
+       6.734
+      ]
+     },
+     {
+      "depth": 5,
+      "distinct": 84,
+      "wins": 0,
+      "losses": 0,
+      "errors": 0,
+      "secs": 25.99,
+      "at": 206.1,
+      "children_so_far": 1158,
+      "best": {
+       "turn": 6,
+       "ours": [
+        "Reshiram* 622/622 [0,0,0,0,0,0,0]",
+        "Snorlax 889/889 st4",
+        "Probopass 346/461 TERA",
+        "Gyarados 601/611",
+        "Golbat 532/532",
+        "Leavanny 536/536"
+       ],
+       "foes": [
+        "Haxorus* 528/528 [0,0,0,0,0,0,0]",
+        "Sceptile 515/515",
+        "Flygon 530/530",
+        "Tatsugiri 0/470 st7",
+        "Dragonite 584/584",
+        "Archaludon 0/578 st7"
+       ]
+      },
+      "beam_paths": [
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ]
+      ],
+      "beam_scores": [
+       7.734,
+       7.734,
+       7.734,
+       7.734,
+       7.734,
+       7.734,
+       7.734,
+       7.734
+      ]
+     },
+     {
+      "depth": 6,
+      "distinct": 118,
+      "wins": 0,
+      "losses": 0,
+      "errors": 0,
+      "secs": 57.5,
+      "at": 263.6,
+      "children_so_far": 1454,
+      "best": {
+       "turn": 7,
+       "ours": [
+        "Reshiram* 620/622 TERA [0,0,0,0,0,0,0]",
+        "Snorlax 889/889 st4",
+        "Probopass 346/461",
+        "Gyarados 601/611",
+        "Golbat 532/532",
+        "Leavanny 536/536"
+       ],
+       "foes": [
+        "Dragonite* 204/584 [0,0,2,0,0,0,0]",
+        "Sceptile 515/515",
+        "Flygon 530/530",
+        "Haxorus 528/528",
+        "Tatsugiri 0/470 st7",
+        "Archaludon 0/578 st7"
+       ]
+      },
+      "beam_paths": [
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "DRAGON_PULSE",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "DRAGON_PULSE",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "BLUE_FLARE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "HYPER_VOICE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "BLUE_FLARE",
+         "tera": true
+        }
+       ]
+      ],
+      "beam_scores": [
+       8.382,
+       8.33,
+       8.245,
+       8.245,
+       8.245,
+       8.077,
+       8.048,
+       7.882
+      ]
+     },
+     {
+      "depth": 7,
+      "distinct": 104,
+      "wins": 0,
+      "losses": 0,
+      "errors": 0,
+      "secs": 36.75,
+      "at": 300.4,
+      "children_so_far": 1611,
+      "best": {
+       "turn": 8,
+       "ours": [
+        "Reshiram* 307/622 TERA [1,0,3,1,0,0,0]",
+        "Snorlax 889/889 st4",
+        "Probopass 346/461",
+        "Gyarados 601/611",
+        "Golbat 532/532",
+        "Leavanny 536/536"
+       ],
+       "foes": [
+        "Dragonite* 226/584 [2,0,0,0,0,0,0]",
+        "Sceptile 515/515",
+        "Flygon 530/530",
+        "Tatsugiri 0/470 st7",
+        "Haxorus 0/528 st7",
+        "Archaludon 0/578 st7"
+       ]
+      },
+      "beam_paths": [
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "DRAGON_PULSE",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "DRAGON_PULSE",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "DRAGON_PULSE",
+         "tera": true
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "DRAGON_PULSE",
+         "tera": true
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ]
+      ],
+      "beam_scores": [
+       8.841,
+       8.841,
+       8.841,
+       8.789,
+       8.789,
+       8.789,
+       8.734,
+       8.734
+      ]
+     },
+     {
+      "depth": 8,
+      "distinct": 84,
+      "wins": 0,
+      "losses": 0,
+      "errors": 0,
+      "secs": 21.48,
+      "at": 321.9,
+      "children_so_far": 1800,
+      "best": {
+       "turn": 9,
+       "ours": [
+        "Reshiram* 490/622 TERA [0,0,0,0,0,0,0]",
+        "Snorlax 889/889 st4",
+        "Probopass 346/461",
+        "Gyarados 601/611",
+        "Golbat 532/532",
+        "Leavanny 536/536"
+       ],
+       "foes": [
+        "Haxorus* 528/528 [0,0,0,0,0,0,0]",
+        "Sceptile 515/515",
+        "Dragonite 0/584 st7",
+        "Flygon 0/530 st7",
+        "Tatsugiri 0/470 st7",
+        "Archaludon 0/578 st7"
+       ]
+      },
+      "beam_paths": [
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "DRAGON_PULSE",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        }
+       ]
+      ],
+      "beam_scores": [
+       9.522,
+       9.522,
+       9.522,
+       9.35,
+       9.35,
+       9.35,
+       9.35,
+       9.35
+      ]
+     },
+     {
+      "depth": 9,
+      "distinct": 78,
+      "wins": 0,
+      "losses": 0,
+      "errors": 0,
+      "secs": 19.42,
+      "at": 341.3,
+      "children_so_far": 1917,
+      "best": {
+       "turn": 10,
+       "ours": [
+        "Reshiram* 221/622 TERA [1,0,4,2,0,0,0]",
+        "Snorlax 889/889 st4",
+        "Probopass 346/461",
+        "Gyarados 601/611",
+        "Golbat 532/532",
+        "Leavanny 536/536"
+       ],
+       "foes": [
+        "Sceptile* 515/515 [0,0,0,0,0,0,0]",
+        "Flygon 0/530 st7",
+        "Dragonite 0/584 st7",
+        "Tatsugiri 0/470 st7",
+        "Haxorus 0/528 st7",
+        "Archaludon 0/578 st7"
+       ]
+      },
+      "beam_paths": [
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ]
+      ],
+      "beam_scores": [
+       10.089,
+       10.089,
+       10.089,
+       10.089,
+       10.089,
+       10.089,
+       10.089,
+       10.089
+      ]
+     },
+     {
+      "depth": 10,
+      "distinct": 40,
+      "wins": 32,
+      "losses": 0,
+      "errors": 0,
+      "secs": 27.53,
+      "at": 368.8,
+      "children_so_far": 2084,
+      "best": {
+       "turn": 11,
+       "ours": [
+        "Probopass* 282/461 [0,0,0,0,0,0,0]",
+        "Snorlax 889/889 st4",
+        "Reshiram 221/622 TERA",
+        "Gyarados 601/611",
+        "Golbat 532/532",
+        "Leavanny 536/536"
+       ],
+       "foes": [
+        "Sceptile* 515/515 TERA [0,0,0,0,0,0,0]",
+        "Flygon 0/530 st7",
+        "Dragonite 0/584 st7",
+        "Tatsugiri 0/470 st7",
+        "Haxorus 0/528 st7",
+        "Archaludon 0/578 st7"
+       ]
+      },
+      "beam_paths": [
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        },
+        {
+         "s": "Probopass"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "s": "Probopass"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "s": "Probopass"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "s": "Probopass"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "HYPER_VOICE"
+        },
+        {
+         "s": "Probopass"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "s": "Probopass"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "s": "Probopass"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "s": "Probopass"
+        }
+       ]
+      ],
+      "beam_scores": [
+       9.951,
+       9.951,
+       9.951,
+       9.951,
+       9.951,
+       9.951,
+       9.951,
+       9.951
+      ]
+     }
+    ]
+   },
+   {
+    "name": "W16@0.5",
+    "width": 16,
+    "w": 0.5,
+    "status": "running",
+    "depth": 5,
+    "dispatched_actions": 407,
+    "children_consumed": 1254,
+    "tasks_created": 38,
+    "tasks_reused": 43,
+    "losses": 0,
+    "stalled": 0,
+    "errors": 0,
+    "wins": 0,
+    "layers": [
+     {
+      "depth": 1,
+      "distinct": 17,
+      "wins": 0,
+      "losses": 0,
+      "errors": 0,
+      "secs": 9.74,
+      "at": 9.7,
+      "children_so_far": 17,
+      "best": {
+       "turn": 2,
+       "ours": [
+        "Gyarados* 223/611 [-1,0,0,0,0,0,0]",
+        "Snorlax 889/889 st4",
+        "Reshiram 622/622",
+        "Probopass 461/461",
+        "Golbat 532/532",
+        "Leavanny 536/536"
+       ],
+       "foes": [
+        "Dragonite* 463/584 [0,0,0,0,0,0,0]",
+        "Sceptile 515/515",
+        "Flygon 530/530",
+        "Haxorus 528/528",
+        "Archaludon 578/578",
+        "Tatsugiri 470/470"
+       ]
+      },
+      "beam_paths": [
+       [
+        {
+         "m": "HURRICANE"
+        }
+       ],
+       [
+        {
+         "m": "HURRICANE",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        }
+       ],
+       [
+        {
+         "m": "HYDRO_PUMP",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "m": "TWISTER"
+        }
+       ],
+       [
+        {
+         "m": "TWISTER",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "m": "HYDRO_PUMP"
+        }
+       ],
+       [
+        {
+         "s": "Snorlax"
+        }
+       ],
+       [
+        {
+         "m": "BOUNCE"
+        }
+       ],
+       [
+        {
+         "m": "BOUNCE",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Leavanny"
+        }
+       ],
+       [
+        {
+         "s": "Golbat"
+        }
+       ],
+       [
+        {
+         "s": "Reshiram",
+         "r": "Snorlax"
+        }
+       ],
+       [
+        {
+         "s": "Reshiram",
+         "r": "Gyarados"
+        }
+       ],
+       [
+        {
+         "s": "Reshiram",
+         "r": "Probopass"
+        }
+       ],
+       [
+        {
+         "s": "Reshiram",
+         "r": "Golbat"
+        }
+       ]
+      ],
+      "beam_scores": [
+       2.89,
+       2.89,
+       2.867,
+       2.821,
+       2.787,
+       2.787,
+       2.785,
+       2.738,
+       2.682,
+       2.682,
+       2.654,
+       2.599,
+       2.492,
+       2.492,
+       2.492,
+       2.492
+      ]
+     },
+     {
+      "depth": 2,
+      "distinct": 175,
+      "wins": 0,
+      "losses": 0,
+      "errors": 0,
+      "secs": 55.98,
+      "at": 65.7,
+      "children_so_far": 345,
+      "best": {
+       "turn": 3,
+       "ours": [
+        "Probopass* 346/461 [-1,0,0,0,0,0,0]",
+        "Snorlax 889/889 st4",
+        "Reshiram 622/622",
+        "Gyarados 601/611",
+        "Golbat 532/532",
+        "Leavanny 536/536"
+       ],
+       "foes": [
+        "Archaludon* 289/578 [0,1,0,-1,0,0,0]",
+        "Sceptile 515/515",
+        "Flygon 530/530",
+        "Haxorus 528/528",
+        "Dragonite 584/584",
+        "Tatsugiri 470/470"
+       ]
+      },
+      "beam_paths": [
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "POWER_GEM",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "ZAP_CANNON"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "ZAP_CANNON",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "POWER_GEM"
+        }
+       ],
+       [
+        {
+         "s": "Reshiram",
+         "r": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        }
+       ],
+       [
+        {
+         "s": "Reshiram",
+         "r": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "TRI_ATTACK"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "TRI_ATTACK",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "m": "BOUNCE"
+        },
+        {
+         "w": true
+        }
+       ],
+       [
+        {
+         "m": "BOUNCE",
+         "tera": true
+        },
+        {
+         "w": true
+        }
+       ],
+       [
+        {
+         "s": "Snorlax"
+        },
+        {
+         "m": "SLEEP_TALK",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "s": "Snorlax"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "s": "Reshiram"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "s": "Gyarados"
+        }
+       ]
+      ],
+      "beam_scores": [
+       3.367,
+       3.367,
+       3.066,
+       3.016,
+       3.016,
+       3.016,
+       2.992,
+       2.992,
+       2.966,
+       2.966,
+       2.963,
+       2.963,
+       2.89,
+       2.867,
+       2.867,
+       2.867
+      ]
+     },
+     {
+      "depth": 3,
+      "distinct": 204,
+      "wins": 0,
+      "losses": 0,
+      "errors": 0,
+      "secs": 52.45,
+      "at": 118.2,
+      "children_so_far": 679,
+      "best": {
+       "turn": 4,
+       "ours": [
+        "Probopass* 134/461 [-1,0,0,0,0,0,0]",
+        "Snorlax 889/889 st4",
+        "Reshiram 622/622",
+        "Gyarados 601/611",
+        "Golbat 532/532",
+        "Leavanny 536/536"
+       ],
+       "foes": [
+        "Flygon* 530/530 [0,0,0,0,0,0,0]",
+        "Sceptile 515/515",
+        "Archaludon 0/578 st7",
+        "Haxorus 528/528",
+        "Dragonite 584/584",
+        "Tatsugiri 470/470"
+       ]
+      },
+      "beam_paths": [
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "m": "EARTH_POWER"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "ZAP_CANNON",
+         "tera": true
+        },
+        {
+         "m": "EARTH_POWER"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "TRI_ATTACK"
+        },
+        {
+         "m": "EARTH_POWER"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "TRI_ATTACK"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        }
+       ],
+       [
+        {
+         "s": "Reshiram",
+         "r": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "m": "EARTH_POWER"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Gyarados"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Gyarados"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Snorlax"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "ZAP_CANNON",
+         "tera": true
+        },
+        {
+         "m": "POWER_GEM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "m": "ZAP_CANNON"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "m": "POWER_GEM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Snorlax"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "TRI_ATTACK"
+        },
+        {
+         "m": "POWER_GEM",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "ZAP_CANNON",
+         "tera": true
+        },
+        {
+         "m": "ZAP_CANNON"
+        }
+       ]
+      ],
+      "beam_scores": [
+       3.637,
+       3.367,
+       3.367,
+       3.367,
+       3.348,
+       3.339,
+       3.262,
+       3.244,
+       3.23,
+       3.228,
+       3.223,
+       3.218,
+       3.218,
+       3.212,
+       3.173,
+       3.17
+      ]
+     },
+     {
+      "depth": 4,
+      "distinct": 208,
+      "wins": 0,
+      "losses": 0,
+      "errors": 0,
+      "secs": 63.86,
+      "at": 182.0,
+      "children_so_far": 1056,
+      "best": {
+       "turn": 5,
+       "ours": [
+        "Probopass* 346/461 [-1,0,0,0,0,0,0]",
+        "Snorlax 889/889 st4",
+        "Reshiram 622/622",
+        "Gyarados 601/611",
+        "Golbat 532/532",
+        "Leavanny 536/536"
+       ],
+       "foes": [
+        "Flygon* 530/530 [0,0,0,0,0,0,0]",
+        "Sceptile 515/515",
+        "Archaludon 0/578 st7",
+        "Haxorus 528/528",
+        "Dragonite 584/584",
+        "Tatsugiri 470/470"
+       ]
+      },
+      "beam_paths": [
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "TRI_ATTACK"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "m": "EARTH_POWER"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "TRI_ATTACK"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "DRAGON_PULSE",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Leavanny"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "m": "TRI_ATTACK",
+         "r": "Snorlax"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "m": "TRI_ATTACK",
+         "tera": true,
+         "r": "Snorlax"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "m": "TRI_ATTACK",
+         "r": "Reshiram"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "m": "TRI_ATTACK",
+         "r": "Gyarados"
+        }
+       ]
+      ],
+      "beam_scores": [
+       3.867,
+       3.867,
+       3.867,
+       3.867,
+       3.867,
+       3.867,
+       3.867,
+       3.867,
+       3.867,
+       3.867,
+       3.867,
+       3.573,
+       3.492,
+       3.492,
+       3.492,
+       3.492
+      ]
+     },
+     {
+      "depth": 5,
+      "distinct": 172,
+      "wins": 0,
+      "losses": 0,
+      "errors": 0,
+      "secs": 86.59,
+      "at": 268.6,
+      "children_so_far": 1478,
+      "best": {
+       "turn": 6,
+       "ours": [
+        "Reshiram* 622/622 [0,0,0,0,0,0,0]",
+        "Snorlax 889/889 st4",
+        "Probopass 346/461 TERA",
+        "Gyarados 601/611",
+        "Golbat 532/532",
+        "Leavanny 536/536"
+       ],
+       "foes": [
+        "Haxorus* 528/528 [0,0,0,0,0,0,0]",
+        "Sceptile 515/515",
+        "Flygon 530/530",
+        "Tatsugiri 0/470 st7",
+        "Dragonite 584/584",
+        "Archaludon 0/578 st7"
+       ]
+      },
+      "beam_paths": [
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER",
+         "tera": true
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE"
+        },
+        {
+         "m": "DRAGON_PULSE",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "BLUE_FLARE",
+         "tera": true
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "FICKLE_BEAM"
+        },
+        {
+         "m": "DRAGON_PULSE",
+         "tera": true
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "FICKLE_BEAM",
+         "tera": true
+        },
+        {
+         "m": "FICKLE_BEAM"
+        }
+       ],
+       [
+        {
+         "s": "Probopass"
+        },
+        {
+         "m": "EARTH_POWER"
+        },
+        {
+         "s": "Reshiram"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        },
+        {
+         "m": "DRAGON_PULSE"
+        }
+       ]
+      ],
+      "beam_scores": [
+       4.867,
+       4.867,
+       4.867,
+       4.867,
+       4.867,
+       4.867,
+       4.867,
+       4.867,
+       4.867,
+       4.867,
+       4.867,
+       4.867,
+       4.867,
+       4.867,
+       4.867,
+       4.867
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "replays": [
+  {
+   "beam": "W8@1",
+   "depth": 10,
+   "children_so_far": 2084,
+   "detected_at": 368.8,
+   "results": [
+    {
+     "result": "WIN",
+     "turns": 10
+    },
+    {
+     "result": "WIN",
+     "turns": 10
+    },
+    {
+     "result": "WIN",
+     "turns": 10
+    },
+    {
+     "result": "WIN",
+     "turns": 10
+    },
+    {
+     "result": "WIN",
+     "turns": 10
+    }
+   ],
+   "wins": [
+    {
+     "path": [
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "FICKLE_BEAM",
+       "tera": true
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      }
+     ],
+     "end": {
+      "turn": 11,
+      "ours": [
+       "Reshiram* 38/622 TERA [1,0,5,3,0,0,0]",
+       "Snorlax 889/889 st4",
+       "Probopass 346/461",
+       "Gyarados 601/611",
+       "Golbat 532/532",
+       "Leavanny 536/536"
+      ],
+      "foes": [
+       "Sceptile 0/515 st7",
+       "Flygon 0/530 st7",
+       "Dragonite 0/584 st7",
+       "Tatsugiri 0/470 st7",
+       "Haxorus 0/528 st7",
+       "Archaludon 0/578 st7"
+      ]
+     }
+    },
+    {
+     "path": [
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "FICKLE_BEAM",
+       "tera": true
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     "end": {
+      "turn": 11,
+      "ours": [
+       "Reshiram* 38/622 TERA [1,0,5,3,0,0,0]",
+       "Snorlax 889/889 st4",
+       "Probopass 346/461",
+       "Gyarados 601/611",
+       "Golbat 532/532",
+       "Leavanny 536/536"
+      ],
+      "foes": [
+       "Sceptile 0/515 st7",
+       "Flygon 0/530 st7",
+       "Dragonite 0/584 st7",
+       "Tatsugiri 0/470 st7",
+       "Haxorus 0/528 st7",
+       "Archaludon 0/578 st7"
+      ]
+     }
+    },
+    {
+     "path": [
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "FICKLE_BEAM",
+       "tera": true
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     "end": {
+      "turn": 11,
+      "ours": [
+       "Reshiram* 38/622 TERA [1,0,5,3,0,0,0]",
+       "Snorlax 889/889 st4",
+       "Probopass 346/461",
+       "Gyarados 601/611",
+       "Golbat 532/532",
+       "Leavanny 536/536"
+      ],
+      "foes": [
+       "Sceptile 0/515 st7",
+       "Flygon 0/530 st7",
+       "Dragonite 0/584 st7",
+       "Tatsugiri 0/470 st7",
+       "Haxorus 0/528 st7",
+       "Archaludon 0/578 st7"
+      ]
+     }
+    },
+    {
+     "path": [
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "FICKLE_BEAM",
+       "tera": true
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ],
+     "end": {
+      "turn": 11,
+      "ours": [
+       "Reshiram* 38/622 TERA [1,0,5,3,0,0,0]",
+       "Snorlax 889/889 st4",
+       "Probopass 346/461",
+       "Gyarados 601/611",
+       "Golbat 532/532",
+       "Leavanny 536/536"
+      ],
+      "foes": [
+       "Sceptile 0/515 st7",
+       "Flygon 0/530 st7",
+       "Dragonite 0/584 st7",
+       "Tatsugiri 0/470 st7",
+       "Haxorus 0/528 st7",
+       "Archaludon 0/578 st7"
+      ]
+     }
+    },
+    {
+     "path": [
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "FICKLE_BEAM",
+       "tera": true
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      }
+     ],
+     "end": {
+      "turn": 11,
+      "ours": [
+       "Reshiram* 38/622 TERA [1,0,5,2,0,0,0]",
+       "Snorlax 889/889 st4",
+       "Probopass 346/461",
+       "Gyarados 601/611",
+       "Golbat 532/532",
+       "Leavanny 536/536"
+      ],
+      "foes": [
+       "Sceptile 0/515 st7",
+       "Flygon 0/530 st7",
+       "Dragonite 0/584 st7",
+       "Tatsugiri 0/470 st7",
+       "Haxorus 0/528 st7",
+       "Archaludon 0/578 st7"
+      ]
+     }
+    }
+   ],
+   "replayed_at": 376.4
+  },
+  {
+   "beam": "W8@0.5",
+   "depth": 10,
+   "children_so_far": 2084,
+   "detected_at": 368.8,
+   "results": [
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   "wins": [
+    {
+     "path": [
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "FICKLE_BEAM",
+       "tera": true
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      }
+     ],
+     "end": {
+      "turn": 11,
+      "ours": [
+       "Reshiram* 38/622 TERA [1,0,5,3,0,0,0]",
+       "Snorlax 889/889 st4",
+       "Probopass 346/461",
+       "Gyarados 601/611",
+       "Golbat 532/532",
+       "Leavanny 536/536"
+      ],
+      "foes": [
+       "Sceptile 0/515 st7",
+       "Flygon 0/530 st7",
+       "Dragonite 0/584 st7",
+       "Tatsugiri 0/470 st7",
+       "Haxorus 0/528 st7",
+       "Archaludon 0/578 st7"
+      ]
+     }
+    },
+    {
+     "path": [
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "FICKLE_BEAM",
+       "tera": true
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     "end": {
+      "turn": 11,
+      "ours": [
+       "Reshiram* 38/622 TERA [1,0,5,3,0,0,0]",
+       "Snorlax 889/889 st4",
+       "Probopass 346/461",
+       "Gyarados 601/611",
+       "Golbat 532/532",
+       "Leavanny 536/536"
+      ],
+      "foes": [
+       "Sceptile 0/515 st7",
+       "Flygon 0/530 st7",
+       "Dragonite 0/584 st7",
+       "Tatsugiri 0/470 st7",
+       "Haxorus 0/528 st7",
+       "Archaludon 0/578 st7"
+      ]
+     }
+    },
+    {
+     "path": [
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "FICKLE_BEAM",
+       "tera": true
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     "end": {
+      "turn": 11,
+      "ours": [
+       "Reshiram* 38/622 TERA [1,0,5,3,0,0,0]",
+       "Snorlax 889/889 st4",
+       "Probopass 346/461",
+       "Gyarados 601/611",
+       "Golbat 532/532",
+       "Leavanny 536/536"
+      ],
+      "foes": [
+       "Sceptile 0/515 st7",
+       "Flygon 0/530 st7",
+       "Dragonite 0/584 st7",
+       "Tatsugiri 0/470 st7",
+       "Haxorus 0/528 st7",
+       "Archaludon 0/578 st7"
+      ]
+     }
+    },
+    {
+     "path": [
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "FICKLE_BEAM",
+       "tera": true
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ],
+     "end": {
+      "turn": 11,
+      "ours": [
+       "Reshiram* 38/622 TERA [1,0,5,3,0,0,0]",
+       "Snorlax 889/889 st4",
+       "Probopass 346/461",
+       "Gyarados 601/611",
+       "Golbat 532/532",
+       "Leavanny 536/536"
+      ],
+      "foes": [
+       "Sceptile 0/515 st7",
+       "Flygon 0/530 st7",
+       "Dragonite 0/584 st7",
+       "Tatsugiri 0/470 st7",
+       "Haxorus 0/528 st7",
+       "Archaludon 0/578 st7"
+      ]
+     }
+    },
+    {
+     "path": [
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "FICKLE_BEAM",
+       "tera": true
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      }
+     ],
+     "end": {
+      "turn": 11,
+      "ours": [
+       "Reshiram* 38/622 TERA [1,0,5,2,0,0,0]",
+       "Snorlax 889/889 st4",
+       "Probopass 346/461",
+       "Gyarados 601/611",
+       "Golbat 532/532",
+       "Leavanny 536/536"
+      ],
+      "foes": [
+       "Sceptile 0/515 st7",
+       "Flygon 0/530 st7",
+       "Dragonite 0/584 st7",
+       "Tatsugiri 0/470 st7",
+       "Haxorus 0/528 st7",
+       "Archaludon 0/578 st7"
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}
