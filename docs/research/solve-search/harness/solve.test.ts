@@ -10,11 +10,15 @@
 import { existsSync, readdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { BattleScene } from "#app/battle-scene";
 import { PokemonSummonData } from "#data/pokemon-data";
+import { BattlerTagType } from "#enums/battler-tag-type";
 import { Button } from "#enums/buttons";
+import { Command } from "#enums/command";
 import { MoveId } from "#enums/move-id";
+import { isIgnorePP, isVirtual, MoveUseMode } from "#enums/move-use-mode";
 import { UiMode } from "#enums/ui-mode";
 import { GameManager } from "#test/framework/game-manager";
 import { PromptHandler } from "#test/helpers/prompt-handler";
+import type { CommandPhase } from "#phases/command-phase";
 import type { PartyUiHandler } from "#ui/party-ui-handler";
 import { canTerastallize } from "#utils/pokemon-utils";
 import { beforeAll, describe, it, vi } from "vitest";
@@ -126,7 +130,8 @@ function patch(snapshot: Cap) {
   for (const p of s.getEnemyParty()) {
     p.initialTeamIndex = cap.teamIdx[p.id];
     if (p.bossSegments) p.bossSegmentIndex = cap.bossIdx[p.id];
-    if (p.isOnField()) p.summonData = new PokemonSummonData(cap.enemySummon[p.id]);
+    // SS_NO_ENEMY_SUMMON=1 leaves the reload's own summonData in place: what the plain save keeps without this field.
+    if (p.isOnField() && process.env.SS_NO_ENEMY_SUMMON !== "1") p.summonData = new PokemonSummonData(cap.enemySummon[p.id]);
   }
 }
 
@@ -146,10 +151,29 @@ async function safeLoad(json: string) {
   await loadData(json);
 }
 
+// A job's setup edits the T1 save once it is loaded, with the test framework's own override: a moveset (changeMoveset)
+// and PP left, per party member. It builds a case (Struggle, a recharge, a rampage, a charge move) on the W180 save
+// rather than hunting for one in the fight. A snapshot taken afterwards carries the edit in its save.
+type Setup = { mon: string; foe?: boolean; moves?: string[]; ppLeft?: Record<string, number> }[];
+let SETUP: Setup | null = null;
+function applySetup() {
+  for (const st of SETUP ?? []) {
+    const party: any[] = st.foe ? (game.scene as any).getEnemyParty() : game.scene.getPlayerParty();
+    const p: any = party.find((x: any) => nm(x) === st.mon || x.name === st.mon);
+    if (!p) throw new Error(`setup: no ${st.mon} in the ${st.foe ? "foe's" : "player's"} party`);
+    if (st.moves) game.move.changeMoveset(p, st.moves.map(m => (MoveId as any)[m]));
+    for (const pm of p.getMoveset()) {
+      const left = st.ppLeft?.[MoveId[pm.moveId]] ?? st.ppLeft?.["*"];
+      if (left !== undefined) pm.ppUsed = Math.max(0, pm.getMovePp() - left);
+    }
+  }
+}
+
 async function restore(root: Cap | null, cap: Cap | null, path: Step[]) {
   const base = cap ?? root;
   await safeLoad(base ? base.json : readFileSync(SESSION, "utf8"));
   if (base) patch(base);
+  else applySetup();
   if (!cap) for (const st of path) await play(st);
 }
 
@@ -167,7 +191,10 @@ function sig() {
     [p.species.speciesId, p.hp, p.isOnField() ? 1 : 0, p.status?.effect ?? 0, p.status?.toxicTurnCount ?? 0,
       p.isTerastallized ? 1 : 0, p.isOnField() ? p.getStatStages().join(".") : "",
       p.getMoveset().map((x: any) => x.ppUsed).join("."), p.getHeldItems().map((x: any) => `${x.type.id}${x.stackCount}`).join(".")].join(":");
+  // The on-field move queues: two nodes alike but for a pending recharge, rampage turn or charge turn are not the same.
+  const q = (p: any) => (p.isOnField() ? p.getMoveQueue().map((x: any) => x.move).join(".") : "");
   return [s.currentBattle.turn, s.arena.playerTerasUsed, s.currentBattle.enemySwitchCounter,
+    ...[...s.getPlayerParty(), ...s.getEnemyParty()].map(q).filter(Boolean),
     ...s.getPlayerParty().map(m), "|", ...s.getEnemyParty().map(m)].join(",");
 }
 
@@ -182,19 +209,44 @@ function hpState() {
   };
 }
 
+// Whether CommandPhase will run a queued move instead of asking (the second turn of Bounce, a rampage, a recharge).
+// Mirrors CommandPhase.tryExecuteQueuedMove: it first drops queued moves the mon can no longer use (clearUnusableMoves),
+// and it asks after all when a non-virtual queued move is not in the moveset.
+function queuedRuns(a: any): boolean {
+  const q: any[] = a.getMoveQueue();
+  const ms: any[] = a.getMoveset();
+  let i = 0;
+  for (; i < q.length; i++) {
+    const t = q[i];
+    const pm = ms.find(m => m.moveId === t.move);
+    if (t.move === MoveId.NONE || isVirtual(t.useMode) || (pm?.isUsable(a, isIgnorePP(t.useMode), true)?.[0] ?? false)) break;
+  }
+  if (i >= q.length) return false;
+  const t = q[i];
+  return t.move === MoveId.NONE || isVirtual(t.useMode) || ms.some(m => m.moveId === t.move);
+}
+
 function legal(): Step[] {
   const s: any = game.scene;
   const a: any = s.getPlayerField()[0];
-  // A queued move (the second turn of Bounce, a rampage, a recharge) means the game won't ask for a command: the
-  // only action is to let the turn run. Selecting a move anyway leaves its prompts queued for the next decision.
-  if (a.getMoveQueue().length > 0) return [{ w: true }];
+  // A queued move that will run means the game won't ask for a command: the only action is to let the turn run.
+  // Selecting a move anyway leaves its prompts queued for the next decision.
+  if (queuedRuns(a)) return [{ w: true }];
   const out: Step[] = [];
   const tera = canTerastallize(a);
+  let usable = 0;
   for (const pm of a.getMoveset()) {
     if (!pm.isUsable(a, false, true)[0]) continue;
+    usable++;
     const m = MoveId[pm.moveId];
     out.push({ m });
     if (tera) out.push({ m, tera: true });
+  }
+  // No move usable (out of PP, or every move restricted): CommandPhase turns any fight command into Struggle
+  // (handleFightCommand's useStruggle). Struggle is then the only move, with Tera still on offer.
+  if (usable === 0 && a.getMoveset().length > 0) {
+    out.push({ m: "STRUGGLE" });
+    if (tera) out.push({ m: "STRUGGLE", tera: true });
   }
   if (!a.isTrapped?.()) {
     for (const p of s.getPlayerParty()) if (!p.isFainted() && !p.isOnField()) out.push({ s: nm(p) });
@@ -225,7 +277,17 @@ async function play(st: Step): Promise<Played> {
   if (st.w) {
     // nothing to choose: the queued move runs
   } else if (st.s) game.doSwitchPokemon(s.getPlayerParty().findIndex((p: any) => nm(p) === st.s));
-  else if (st.tera) game.move.selectWithTera((MoveId as any)[st.m!]);
+  else if (st.m === "STRUGGLE") {
+    // The move helper refuses a move with no PP left. Send the fight command the menu would: any slot, which
+    // handleFightCommand turns into Struggle because no move is usable.
+    game.onNextPrompt("CommandPhase", UiMode.COMMAND, () => {
+      s.ui.setMode(UiMode.FIGHT, (s.phaseManager.getCurrentPhase() as CommandPhase).getFieldIndex());
+    });
+    game.onNextPrompt("CommandPhase", UiMode.FIGHT, () => {
+      (s.phaseManager.getCurrentPhase() as CommandPhase).handleCommand(
+        st.tera ? Command.TERA : Command.FIGHT, 0, MoveUseMode.NORMAL);
+    });
+  } else if (st.tera) game.move.selectWithTera((MoveId as any)[st.m!]);
   else game.move.select((MoveId as any)[st.m!]);
   // A lost line never reaches TurnEndPhase, so toEndOfTurn would spin to the harness's 20 s timeout. Retarget the
   // interceptor at the game over instead: its wait loop reads the target afresh on every pass.
@@ -400,6 +462,73 @@ async function chaincheck(job: any) {
   return { id: job.id, steps: chained.length, diffs: diffs.slice(0, 2), ndiffs: diffs.length, stats };
 }
 
+// The on-field forced-move state a save could drop: each active mon's move queue and battler tags with their turns.
+function fx() {
+  const s: any = game.scene;
+  const f = (p: any) =>
+    p
+      ? {
+          q: p.getMoveQueue().map((x: any) => `${MoveId[x.move]}:${x.useMode}`),
+          tags: p.summonData.tags.map((t: any) => `${BattlerTagType[t.tagType]}:${t.turnCount}`),
+        }
+      : null;
+  return { ours: f(s.getPlayerField()[0]), foe: f(s.getEnemyField()[0]) };
+}
+
+// Forced moves (Struggle, a recharge, a rampage, a charge move) on a case built by the job's setup.
+// Pass 1 plays the script as a search would, chained: at every decision it takes legal(), plays "wait" when that is
+// all legal() offers and otherwise the next scripted step legal() offers, then snapshots, restores the snapshot and
+// records what the restore changed. Pass 2 replays the steps pass 1 played straight from the save. A step whose
+// prompts were left unconsumed (stalePrompts) or that timed out is a choice legal() offered that the game ignored,
+// or a turn legal() called forced that the game asked about.
+async function forced(job: any) {
+  const script: Step[] = job.script;
+  const steps: Step[] = [];
+  const chained: any[] = [];
+  let k = 0;
+  await restore(null, null, []);
+  for (let i = 0; i < (job.n ?? 12); i++) {
+    const L = legal();
+    const key = (x: Step) => (x.w ? "w" : x.s ? `>${x.s}` : `${x.tera ? "T:" : ""}${x.m}`);
+    let st: Step | undefined;
+    if (L.length === 1 && L[0].w) st = { w: true };
+    else {
+      while (k < script.length && !L.some(x => key(x) === key(script[k]))) k++;
+      st = script[k++];
+    }
+    if (!st) break;
+    const before = fx();
+    const r = await play(st);
+    steps.push({ ...st, ...(r.sentIn ? { r: r.sentIn } : {}) });
+    const rec: any = {
+      legal: L.map(key), step: key(st), before, ...view(), fx: fx(), won: r.won, lost: r.lost,
+      error: r.error, stalePrompts: r.stalePrompts, msgs: r.msgs,
+    };
+    chained.push(rec);
+    if (r.won || r.lost || r.error) break;
+    rec.pp = (game.scene as any).getPlayerField()[0].getMoveset().map((m: any) => `${MoveId[m.moveId]}:${m.getMovePp() - m.ppUsed}`);
+    const cap = capture();
+    const live = JSON.stringify({ ...view(), fx: fx() });
+    await restore(null, cap, []);
+    const back = JSON.stringify({ ...view(), fx: fx() });
+    if (back !== live) rec.restoreChanged = { live: JSON.parse(live), back: JSON.parse(back) };
+    const saved = JSON.parse(cap.json).party.find((p: any) => p.id === (game.scene as any).getPlayerField()[0]?.id);
+    rec.saved = saved ? { moveQueue: saved.summonData?.moveQueue, tags: saved.summonData?.tags } : null;
+  }
+  const diffs: any[] = [];
+  await restore(null, null, []);
+  for (let i = 0; i < steps.length; i++) {
+    const r = await play(steps[i]);
+    const v = { ...view(), fx: fx(), won: r.won, lost: r.lost, error: r.error, stalePrompts: r.stalePrompts };
+    const c = chained[i];
+    const want = { turn: c.turn, ours: c.ours, foes: c.foes, fx: c.fx, won: c.won, lost: c.lost, error: c.error, stalePrompts: c.stalePrompts };
+    if (JSON.stringify(v) !== JSON.stringify(want)) diffs.push({ step: i, straight: v, chained: want });
+    if (r.won || r.lost || r.error) break;
+  }
+  const fork = job.fork ? await forkcheck({ id: `${job.id}-fork`, steps }) : undefined;
+  return { id: job.id, steps, chained, diffs, fork, stats };
+}
+
 describe("solve-search", () => {
   beforeAll(() => {
     phaserGame = new Phaser.Game({ type: Phaser.HEADLESS });
@@ -420,6 +549,7 @@ describe("solve-search", () => {
       const job = JSON.parse(readFileSync(process.env.SS_JOB as string, "utf8"));
       const res: any = { bootMs, results: [] };
       for (const j of job.jobs) {
+        SETUP = j.setup ?? null;
         try {
           res.results.push(
             j.kind === "lines"
@@ -428,7 +558,9 @@ describe("solve-search", () => {
                 ? await forkcheck(j)
                 : j.kind === "chaincheck"
                   ? await chaincheck(j)
-                  : await expand(j),
+                  : j.kind === "forced"
+                    ? await forced(j)
+                    : await expand(j),
           );
         } catch (e) {
           res.results.push({ id: j.id, fatal: String(e), stack: (e as Error).stack?.split("\n").slice(0, 8) });
@@ -462,6 +594,7 @@ describe("solve-search", () => {
       idleSince = now();
       const job = JSON.parse(readFileSync(`${DIR}/claimed/${claimed}.${me}`, "utf8"));
       let res: any;
+      SETUP = job.setup ?? null;
       try {
         res = job.kind === "lines" ? await lines(job) : await expand(job);
       } catch (e) {

@@ -1,0 +1,120 @@
+boot ms 754 stats {'boots': 1, 'reloads': 54, 'rebootsAfterLoss': 0, 'reloadThrows': 0, 'lastReloadError': '', 'stalePrompts': 0}
+
+== foe-recharge: 8 steps; chained vs straight diffs 7; stale/error steps 0; restore changed state at 2; fork mismatches 1/7
+  0 T 2 >Snorlax         legal[HYPER_VOICE T:HYPER_VOICE BLUE_FLARE T:BLUE_FLARE FICKLE_BEAM T:FICKLE_BEAM DRAGON_PULSE T:DRAGON_PULSE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Snorlax* 653/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Gigalith* 525/525 [0,0,0,0,0,0,0] q=['NONE:1'] tags=['RECHARGING:1']
+      pp left: BODY_SLAM:15 BELLY_DRUM:10 SLEEP_TALK:10 REST:5
+      saved: moveQueue=[] tags=[]
+      RESTORE CHANGED {"live": {"turn": 2, "ours": ["Snorlax* 653/824 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Reshiram 577/577", "Gyarados 570/570", "Golbat 493/493", "Probopass 427/427"], "foes": ["Gigalith* 525/525 [0,0,0,0,0,0,0]", "Carracosta 467/467", "Tyranitar 569/569", "Stonjourner 574/574", "Barbaracle 460/460", "Coalossal 711/711"], "fx": {"ours": {"q": [], "tags": []}, "foe": {"q": ["NONE:1"], "tags": ["RECHARGING:1"]}}}, "back": {"turn": 2, "ours": ["Snorlax* 653/824 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Reshiram 577/577", "Gyarados 570/570", "Golbat 493/493", "Probopass 427/427"], "foes": ["Gigalith* 5
+  1 T 3 >Probopass       legal[BODY_SLAM T:BODY_SLAM BELLY_DRUM T:BELLY_DRUM SLEEP_TALK T:SLEEP_TALK REST T:REST >Leavanny >Reshiram >Gyarados >Golbat >Probopass]
+      ours Probopass* 411/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Gigalith* 525/525 [0,0,0,0,0,0,0] q=['NONE:1'] tags=['RECHARGING:1']
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+      RESTORE CHANGED {"live": {"turn": 3, "ours": ["Probopass* 411/427 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Reshiram 577/577", "Gyarados 570/570", "Golbat 493/493", "Snorlax 653/824"], "foes": ["Gigalith* 525/525 [0,0,0,0,0,0,0]", "Carracosta 467/467", "Tyranitar 569/569", "Stonjourner 574/574", "Barbaracle 460/460", "Coalossal 711/711"], "fx": {"ours": {"q": [], "tags": []}, "foe": {"q": ["NONE:1"], "tags": ["RECHARGING:1"]}}}, "back": {"turn": 3, "ours": ["Probopass* 411/427 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Reshiram 577/577", "Gyarados 570/570", "Golbat 493/493", "Snorlax 653/824"], "foes": ["Gigalith* 5
+  2 T 4 >Snorlax         legal[TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_GEM T:POWER_GEM >Leavanny >Reshiram >Gyarados >Golbat >Snorlax]
+      ours Snorlax* 602/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: BODY_SLAM:15 BELLY_DRUM:10 SLEEP_TALK:10 REST:5
+      saved: moveQueue=[] tags=[]
+  3 T 5 >Probopass       legal[BODY_SLAM T:BODY_SLAM BELLY_DRUM T:BELLY_DRUM SLEEP_TALK T:SLEEP_TALK REST T:REST >Leavanny >Reshiram >Gyarados >Golbat >Probopass]
+      ours Probopass* 366/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+  4 T 6 >Snorlax         legal[TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_GEM T:POWER_GEM >Leavanny >Reshiram >Gyarados >Golbat >Snorlax]
+      ours Snorlax* 455/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: BODY_SLAM:15 BELLY_DRUM:10 SLEEP_TALK:10 REST:5
+      saved: moveQueue=[] tags=[]
+  5 T 7 >Probopass       legal[BODY_SLAM T:BODY_SLAM BELLY_DRUM T:BELLY_DRUM SLEEP_TALK T:SLEEP_TALK REST T:REST >Leavanny >Reshiram >Gyarados >Golbat >Probopass]
+      ours Probopass* 319/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+  6 T 8 >Snorlax         legal[TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_GEM T:POWER_GEM >Leavanny >Reshiram >Gyarados >Golbat >Snorlax]
+      ours Snorlax* 311/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: BODY_SLAM:15 BELLY_DRUM:10 SLEEP_TALK:10 REST:5
+      saved: moveQueue=[] tags=[]
+  7 T 9 >Probopass       legal[BODY_SLAM T:BODY_SLAM BELLY_DRUM T:BELLY_DRUM SLEEP_TALK T:SLEEP_TALK REST T:REST >Leavanny >Reshiram >Gyarados >Golbat >Probopass]
+      ours Probopass* 268/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+  DIFF {"step": 1, "straight": {"turn": 3, "ours": ["Probopass* 427/427 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Reshiram 577/577", "Gyarados 570/570", "Golbat 493/493", "Snorlax 653/824"], "foes": ["Gigalith* 525/525 [0,0,0,0,0,0,0]", "Carracosta 467/467", "Tyranitar 569/569", "Stonjourner 574/574", "Barbaracle 460/460", "Coalossal 711/711"], "fx": {"ours": {"q": [], "tags": []}, "foe": {"q": [], "tags": []}}, "won": false, "lost": false, "stalePrompts": 0}, "chained": {"turn": 3, "ours": ["Probopass* 411/427 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Reshiram 577/577", "Gyarados 570/570", "Golbat 493/493", "Snorlax 653/824"], "foes": ["Gigalith* 525/525 [0,0,0,0,0,0,0]", "Carracosta 467/467", "Tyranitar 569/569", "Stonjourner 574/574", "Barbaracle 460/460", "Coalossal 711/711"], "fx": {"ours": {"q": [], "tags": []}, "foe": {"q": ["NONE:1"], "tags": ["RECHARGING:1"]}}, "won": false, "lost": false, "
+  DIFF {"step": 2, "straight": {"turn": 4, "ours": ["Snorlax* 602/824 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Reshiram 577/577", "Gyarados 570/570", "Golbat 493/493", "Probopass 427/427"], "foes": ["Carracosta* 467/467 [0,0,0,0,0,0,0]", "Gigalith 525/525", "Tyranitar 569/569", "Stonjourner 574/574", "Barbaracle 460/460", "Coalossal 711/711"], "fx": {"ours": {"q": [], "tags": []}, "foe": {"q": [], "tags": []}}, "won": false, "lost": false, "stalePrompts": 0}, "chained": {"turn": 4, "ours": ["Snorlax* 602/824 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Reshiram 577/577", "Gyarados 570/570", "Golbat 493/493", "Probopass 411/427"], "foes": ["Carracosta* 467/467 [0,0,0,0,0,0,0]", "Gigalith 525/525", "Tyranitar 569/569", "Stonjourner 574/574", "Barbaracle 460/460", "Coalossal 711/711"], "fx": {"ours": {"q": [], "tags": []}, "foe": {"q": [], "tags": []}}, "won": false, "lost": false, "stalePrompts": 0}}
+  FORK {"fromStep": 1, "turn": 2, "restoreMs": 163.442583, "match": false, "firstDiff": {"at": 1, "got": {"turn": 3, "ours": ["Probopass* 411/427 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Reshiram 577/577", "Gyarados 570/570", "Golbat 493/493", "Snorlax 653/824"], "foes": ["Gigalith* 525/525 [0,0,0,0,0,0,0]", "Carracosta 467/467", "Tyranitar 569/569", "Stonjourner 574/574", "Barbaracle 460/460", "Coalossal 711/711"], "won": false, "lost": false}, "want": {"turn": 3, "ours": ["Probopass* 427/427 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Reshiram 577/577", "Gyarados 570/570", "Golbat 493/493", "Snorlax 653/824"], "foes": ["Gigalith* 525/525 [0,0,0,0,0,0,0]", "Carracosta 467/467", "Tyranitar 569/569", "Stonjourner 574/574", "Barbaracle 460/460", "Coalossal 711/711"], "won": false, "lost": false}}}
+
+== foe-rampage: 8 steps; chained vs straight diffs 7; stale/error steps 0; restore changed state at 1; fork mismatches 6/7
+  0 T 2 >Probopass       legal[HYPER_VOICE T:HYPER_VOICE BLUE_FLARE T:BLUE_FLARE FICKLE_BEAM T:FICKLE_BEAM DRAGON_PULSE T:DRAGON_PULSE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Probopass* 365/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Gigalith* 525/525 [0,0,0,0,0,0,0] q=['OUTRAGE:2'] tags=['FRENZY:1']
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+      RESTORE CHANGED {"live": {"turn": 2, "ours": ["Probopass* 365/427 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Snorlax 824/824", "Gyarados 570/570", "Golbat 493/493", "Reshiram 577/577"], "foes": ["Gigalith* 525/525 [0,0,0,0,0,0,0]", "Carracosta 467/467", "Tyranitar 569/569", "Stonjourner 574/574", "Barbaracle 460/460", "Coalossal 711/711"], "fx": {"ours": {"q": [], "tags": []}, "foe": {"q": ["OUTRAGE:2"], "tags": ["FRENZY:1"]}}}, "back": {"turn": 2, "ours": ["Probopass* 365/427 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Snorlax 824/824", "Gyarados 570/570", "Golbat 493/493", "Reshiram 577/577"], "foes": ["Gigalith* 52
+  1 T 3 >Snorlax         legal[TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_GEM T:POWER_GEM >Leavanny >Snorlax >Gyarados >Golbat >Reshiram]
+      ours Snorlax* 773/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: BODY_SLAM:15 BELLY_DRUM:10 SLEEP_TALK:10 REST:5
+      saved: moveQueue=[] tags=[]
+  2 T 4 >Probopass       legal[BODY_SLAM T:BODY_SLAM BELLY_DRUM T:BELLY_DRUM SLEEP_TALK T:SLEEP_TALK REST T:REST >Leavanny >Probopass >Gyarados >Golbat >Reshiram]
+      ours Probopass* 321/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+  3 T 5 >Snorlax         legal[TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_GEM T:POWER_GEM >Leavanny >Snorlax >Gyarados >Golbat >Reshiram]
+      ours Snorlax* 637/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: BODY_SLAM:15 BELLY_DRUM:10 SLEEP_TALK:10 REST:5
+      saved: moveQueue=[] tags=[]
+  4 T 6 >Probopass       legal[BODY_SLAM T:BODY_SLAM BELLY_DRUM T:BELLY_DRUM SLEEP_TALK T:SLEEP_TALK REST T:REST >Leavanny >Probopass >Gyarados >Golbat >Reshiram]
+      ours Probopass* 220/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+  5 T 7 >Snorlax         legal[TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_GEM T:POWER_GEM >Leavanny >Snorlax >Gyarados >Golbat >Reshiram]
+      ours Snorlax* 496/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: BODY_SLAM:15 BELLY_DRUM:10 SLEEP_TALK:10 REST:5
+      saved: moveQueue=[] tags=[]
+  6 T 8 >Probopass       legal[BODY_SLAM T:BODY_SLAM BELLY_DRUM T:BELLY_DRUM SLEEP_TALK T:SLEEP_TALK REST T:REST >Leavanny >Probopass >Gyarados >Golbat >Reshiram]
+      ours Probopass* 171/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+  7 T 9 >Snorlax         legal[TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_GEM T:POWER_GEM >Leavanny >Snorlax >Gyarados >Golbat >Reshiram]
+      ours Snorlax* 314/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: BODY_SLAM:15 BELLY_DRUM:10 SLEEP_TALK:10 REST:5
+      saved: moveQueue=[] tags=[]
+  DIFF {"step": 1, "straight": {"turn": 3, "ours": ["Snorlax* 522/824 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Probopass 365/427", "Gyarados 570/570", "Golbat 493/493", "Reshiram 577/577"], "foes": ["Gigalith* 525/525 [0,0,0,0,0,0,0]", "Carracosta 467/467", "Tyranitar 569/569", "Stonjourner 574/574", "Barbaracle 460/460", "Coalossal 711/711"], "fx": {"ours": {"q": [], "tags": []}, "foe": {"q": [], "tags": ["CONFUSED:4"]}}, "won": false, "lost": false, "stalePrompts": 0}, "chained": {"turn": 3, "ours": ["Snorlax* 773/824 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Probopass 365/427", "Gyarados 570/570", "Golbat 493/493", "Reshiram 577/577"], "foes": ["Carracosta* 467/467 [0,0,0,0,0,0,0]", "Gigalith 525/525", "Tyranitar 569/569", "Stonjourner 574/574", "Barbaracle 460/460", "Coalossal 711/711"], "fx": {"ours": {"q": [], "tags": []}, "foe": {"q": [], "tags": []}}, "won": false, "lost": false, "stalePromp
+  DIFF {"step": 2, "straight": {"turn": 4, "ours": ["Probopass* 305/427 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Snorlax 522/824", "Gyarados 570/570", "Golbat 493/493", "Reshiram 577/577"], "foes": ["Gigalith* 525/525 [0,0,0,0,0,0,0]", "Carracosta 467/467", "Tyranitar 569/569", "Stonjourner 574/574", "Barbaracle 460/460", "Coalossal 711/711"], "fx": {"ours": {"q": [], "tags": []}, "foe": {"q": ["OUTRAGE:2"], "tags": ["CONFUSED:3", "FRENZY:1"]}}, "won": false, "lost": false, "stalePrompts": 0}, "chained": {"turn": 4, "ours": ["Probopass* 321/427 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Snorlax 773/824", "Gyarados 570/570", "Golbat 493/493", "Reshiram 577/577"], "foes": ["Carracosta* 467/467 [0,0,0,0,0,0,0]", "Gigalith 525/525", "Tyranitar 569/569", "Stonjourner 574/574", "Barbaracle 460/460", "Coalossal 711/711"], "fx": {"ours": {"q": [], "tags": []}, "foe": {"q": [], "tags": []}}, "won": false, "lo
+  FORK {"fromStep": 1, "turn": 2, "restoreMs": 162.7945409999993, "match": false, "firstDiff": {"at": 1, "got": {"turn": 3, "ours": ["Snorlax* 773/824 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Probopass 365/427", "Gyarados 570/570", "Golbat 493/493", "Reshiram 577/577"], "foes": ["Carracosta* 467/467 [0,0,0,0,0,0,0]", "Gigalith 525/525", "Tyranitar 569/569", "Stonjourner 574/574", "Barbaracle 460/460", "Coalossal 711/711"], "won": false, "lost": false}, "want": {"turn": 3, "ours": ["Snorlax* 522/824 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Probopass 365/427", "Gyarados 570/570", "Golbat 493/493", "Reshiram 577/577"], "foes": ["Gigalith* 525/525 [0,0,0,0,0,0,0]", "Carracosta 467/467", "Tyranitar 569/569", "Stonjourner 574/574", "Barbaracle 460/460", "Coalossal 711/711"], "won": false, "lost": false}}}
+  FORK {"fromStep": 2, "turn": 3, "restoreMs": 164.2118330000012, "match": false, "firstDiff": {"at": 2, "got": {"turn": 4, "ours": ["Probopass* 308/427 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Snorlax 522/824", "Gyarados 570/570", "Golbat 493/493", "Reshiram 577/577"], "foes": ["Gigalith* 525/525 [0,0,0,0,0,0,0]", "Carracosta 467/467", "Tyranitar 569/569", "Stonjourner 574/574", "Barbaracle 460/460", "Coalossal 711/711"], "won": false, "lost": false}, "want": {"turn": 4, "ours": ["Probopass* 305/427 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Snorlax 522/824", "Gyarados 570/570", "Golbat 493/493", "Reshiram 577/577"], "foes": ["Gigalith* 525/525 [0,0,0,0,0,0,0]", "Carracosta 467/467", "Tyranitar 569/569", "Stonjourner 574/574", "Barbaracle 460/460", "Coalossal 711/711"], "won": false, "lost": false}}}
+
+== foe-charge: 8 steps; chained vs straight diffs 7; stale/error steps 0; restore changed state at 2; fork mismatches 1/7
+  0 T 2 >Snorlax         legal[HYPER_VOICE T:HYPER_VOICE BLUE_FLARE T:BLUE_FLARE FICKLE_BEAM T:FICKLE_BEAM DRAGON_PULSE T:DRAGON_PULSE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Snorlax* 773/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Gigalith* 525/525 [0,0,0,0,0,0,0] q=['FLY:2'] tags=['FLYING:1', 'CHARGING:1']
+      pp left: BODY_SLAM:15 BELLY_DRUM:10 SLEEP_TALK:10 REST:5
+      saved: moveQueue=[] tags=[]
+      msgs: Foe Gigalith flew up high!
+      RESTORE CHANGED {"live": {"turn": 2, "ours": ["Snorlax* 773/824 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Reshiram 577/577", "Gyarados 570/570", "Golbat 493/493", "Probopass 427/427"], "foes": ["Gigalith* 525/525 [0,0,0,0,0,0,0]", "Carracosta 467/467", "Tyranitar 569/569", "Stonjourner 574/574", "Barbaracle 460/460", "Coalossal 711/711"], "fx": {"ours": {"q": [], "tags": []}, "foe": {"q": ["FLY:2"], "tags": ["FLYING:1", "CHARGING:1"]}}}, "back": {"turn": 2, "ours": ["Snorlax* 773/824 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Reshiram 577/577", "Gyarados 570/570", "Golbat 493/493", "Probopass 427/427"], "foes": ["Gi
+  1 T 3 >Probopass       legal[BODY_SLAM T:BODY_SLAM BELLY_DRUM T:BELLY_DRUM SLEEP_TALK T:SLEEP_TALK REST T:REST >Leavanny >Reshiram >Gyarados >Golbat >Probopass]
+      ours Probopass* 427/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Gigalith* 525/525 [0,0,0,0,0,0,0] q=['FLY:2'] tags=['FLYING:1', 'CHARGING:1']
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+      msgs: Foe Gigalith flew up high!
+      RESTORE CHANGED {"live": {"turn": 3, "ours": ["Probopass* 427/427 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Reshiram 577/577", "Gyarados 570/570", "Golbat 493/493", "Snorlax 773/824"], "foes": ["Gigalith* 525/525 [0,0,0,0,0,0,0]", "Carracosta 467/467", "Tyranitar 569/569", "Stonjourner 574/574", "Barbaracle 460/460", "Coalossal 711/711"], "fx": {"ours": {"q": [], "tags": []}, "foe": {"q": ["FLY:2"], "tags": ["FLYING:1", "CHARGING:1"]}}}, "back": {"turn": 3, "ours": ["Probopass* 427/427 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Reshiram 577/577", "Gyarados 570/570", "Golbat 493/493", "Snorlax 773/824"], "foes": ["Gi
+  2 T 4 >Snorlax         legal[TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_GEM T:POWER_GEM >Leavanny >Reshiram >Gyarados >Golbat >Snorlax]
+      ours Snorlax* 722/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: BODY_SLAM:15 BELLY_DRUM:10 SLEEP_TALK:10 REST:5
+      saved: moveQueue=[] tags=[]
+  3 T 5 >Probopass       legal[BODY_SLAM T:BODY_SLAM BELLY_DRUM T:BELLY_DRUM SLEEP_TALK T:SLEEP_TALK REST T:REST >Leavanny >Reshiram >Gyarados >Golbat >Probopass]
+      ours Probopass* 382/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+  4 T 6 >Snorlax         legal[TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_GEM T:POWER_GEM >Leavanny >Reshiram >Gyarados >Golbat >Snorlax]
+      ours Snorlax* 575/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: BODY_SLAM:15 BELLY_DRUM:10 SLEEP_TALK:10 REST:5
+      saved: moveQueue=[] tags=[]
+  5 T 7 >Probopass       legal[BODY_SLAM T:BODY_SLAM BELLY_DRUM T:BELLY_DRUM SLEEP_TALK T:SLEEP_TALK REST T:REST >Leavanny >Reshiram >Gyarados >Golbat >Probopass]
+      ours Probopass* 335/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+  6 T 8 >Snorlax         legal[TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_GEM T:POWER_GEM >Leavanny >Reshiram >Gyarados >Golbat >Snorlax]
+      ours Snorlax* 431/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: BODY_SLAM:15 BELLY_DRUM:10 SLEEP_TALK:10 REST:5
+      saved: moveQueue=[] tags=[]
+  7 T 9 >Probopass       legal[BODY_SLAM T:BODY_SLAM BELLY_DRUM T:BELLY_DRUM SLEEP_TALK T:SLEEP_TALK REST T:REST >Leavanny >Reshiram >Gyarados >Golbat >Probopass]
+      ours Probopass* 232/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+  DIFF {"step": 1, "straight": {"turn": 3, "ours": ["Probopass* 403/427 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Reshiram 577/577", "Gyarados 570/570", "Golbat 493/493", "Snorlax 773/824"], "foes": ["Gigalith* 525/525 [0,0,0,0,0,0,0]", "Carracosta 467/467", "Tyranitar 569/569", "Stonjourner 574/574", "Barbaracle 460/460", "Coalossal 711/711"], "fx": {"ours": {"q": [], "tags": []}, "foe": {"q": [], "tags": []}}, "won": false, "lost": false, "stalePrompts": 0}, "chained": {"turn": 3, "ours": ["Probopass* 427/427 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Reshiram 577/577", "Gyarados 570/570", "Golbat 493/493", "Snorlax 773/824"], "foes": ["Gigalith* 525/525 [0,0,0,0,0,0,0]", "Carracosta 467/467", "Tyranitar 569/569", "Stonjourner 574/574", "Barbaracle 460/460", "Coalossal 711/711"], "fx": {"ours": {"q": [], "tags": []}, "foe": {"q": ["FLY:2"], "tags": ["FLYING:1", "CHARGING:1"]}}, "won": false, "lost":
+  DIFF {"step": 2, "straight": {"turn": 4, "ours": ["Snorlax* 722/824 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Reshiram 577/577", "Gyarados 570/570", "Golbat 493/493", "Probopass 403/427"], "foes": ["Carracosta* 467/467 [0,0,0,0,0,0,0]", "Gigalith 525/525", "Tyranitar 569/569", "Stonjourner 574/574", "Barbaracle 460/460", "Coalossal 711/711"], "fx": {"ours": {"q": [], "tags": []}, "foe": {"q": [], "tags": []}}, "won": false, "lost": false, "stalePrompts": 0}, "chained": {"turn": 4, "ours": ["Snorlax* 722/824 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Reshiram 577/577", "Gyarados 570/570", "Golbat 493/493", "Probopass 427/427"], "foes": ["Carracosta* 467/467 [0,0,0,0,0,0,0]", "Gigalith 525/525", "Tyranitar 569/569", "Stonjourner 574/574", "Barbaracle 460/460", "Coalossal 711/711"], "fx": {"ours": {"q": [], "tags": []}, "foe": {"q": [], "tags": []}}, "won": false, "lost": false, "stalePrompts": 0}}
+  FORK {"fromStep": 1, "turn": 2, "restoreMs": 161.59195799999725, "match": false, "firstDiff": {"at": 1, "got": {"turn": 3, "ours": ["Probopass* 427/427 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Reshiram 577/577", "Gyarados 570/570", "Golbat 493/493", "Snorlax 773/824"], "foes": ["Gigalith* 525/525 [0,0,0,0,0,0,0]", "Carracosta 467/467", "Tyranitar 569/569", "Stonjourner 574/574", "Barbaracle 460/460", "Coalossal 711/711"], "won": false, "lost": false}, "want": {"turn": 3, "ours": ["Probopass* 403/427 [0,0,0,0,0,0,0]", "Leavanny 497/497", "Reshiram 577/577", "Gyarados 570/570", "Golbat 493/493", "Snorlax 773/824"], "foes": ["Gigalith* 525/525 [0,0,0,0,0,0,0]", "Carracosta 467/467", "Tyranitar 569/569", "Stonjourner 574/574", "Barbaracle 460/460", "Coalossal 711/711"], "won": false, "lost": false}}}

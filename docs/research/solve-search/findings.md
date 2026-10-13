@@ -122,6 +122,65 @@ alternative, replaying from T1, costs about 0.23 s per turn.
   - Asked for a move the game would not offer, the harness plays something else, or waits 20 s.
   - `play()` now checks the step against `legal()` first, so a diverged replay fails at once.
 
+### Forced moves
+
+Bounce's second turn was found by accident. This checks the other turns the game plays for you, on cases built from
+the W180 save with the test framework's own overrides: `game.move.changeMoveset` for a moveset, PP set directly, on one
+of ours or on the foe's lead (`harness/mkforced.py`, the `forced` job in `solve.test.ts`). Each case is played
+chained (restore, step, snapshot, as the search does) and straight from the save, then fork-checked
+(`runs/forced/cases.txt`).
+
+| Case | Steps | Forced turns in it | Chained = straight | Fork check | Unasked prompts or timeouts |
+|---|---|---|---|---|---|
+| Struggle (Snorlax, one Body Slam left) | 6 | 1 Struggle | yes | 5/5 | 0 |
+| Struggle with Tera, out and back in | 7 | 2 Struggle, one with Tera | yes | 6/6 | 0 |
+| Struggle until Reshiram's Leppa Berry | 2 | none: the berry refills Hyper Voice | yes | 1/1 | 0 |
+| Hyper Beam, Giga Impact (Reshiram) | 6 | 1 recharge | yes | 5/5 | 0 |
+| Outrage, Thrash, Petal Dance (Reshiram) | 6 | 2 rampage turns, then confusion | yes | 5/5 | 0 |
+| Solar Beam, Fly, Dig (Reshiram) | 13 | 5 charge turns | yes | 12/12 | 0 |
+| Bounce (Gyarados, as saved) | 7 | 2 | yes | 6/6 | 0 |
+| Foe Gigalith with only Hyper Beam | 8 | 1 foe recharge | yes | 7/7 | 0 |
+| Foe Gigalith with only Outrage | 8 | 4 forced foe turns over 3 Outrages, confused in between | yes | 7/7 | 0 |
+| Foe Gigalith with only Fly | 8 | 1 foe charge | yes | 7/7 | 0 |
+
+- **Struggle was broken; it is fixed.** **[verified]** in source, the fix **[verified]** by the table.
+  - `legal()` listed only moves that pass `isUsable`, so a mon with no PP was offered only switches. As the last mon
+    standing it was offered nothing, and the search dropped the node without a word: an empty action list expands to
+    no children. **[inference]** from `search.py`, not run.
+  - The game turns any fight command into Struggle when no move is usable (`CommandPhase.handleFightCommand`,
+    `useStruggle`). The move helper refuses a move with no PP, so `play()` sends that fight command itself.
+  - `legal()` now offers Struggle, and Tera Struggle while Tera is available, exactly when no move is usable.
+  - In the Leppa case `legal()` went back to offering Hyper Voice once the berry refilled it, and offered no Struggle.
+- **Recharges, rampages and charge moves were already right.** **[verified]** The Bounce fix (a queued move means
+  "wait") covers them. Every forced turn was offered as "wait" only, and the game asked for nothing: no step left an
+  unasked prompt and none timed out.
+- **The queue check now mirrors the game.** `CommandPhase.tryExecuteQueuedMove` first drops queued moves the mon can no
+  longer use, and asks after all when one is missing from the moveset. `legal()` copies that rule now. **[verified]**
+  in source. No case reached it (Gravity under Fly, say, or Disable during a rampage). **[unverified]**
+- **The state signature now carries the on-field move queues**, so the search cannot merge two nodes that differ only
+  by a pending recharge, rampage turn or charge turn. **[verified]** that this changes nothing in W180: see the
+  regression below.
+- **What a save keeps for these states.**
+  - **Ours: everything.** **[verified]** The save holds the active mon's `summonData.moveQueue` and the `RECHARGING`,
+    `FRENZY` (with its turn count), `CHARGING`, `FLYING` and `UNDERGROUND` tags. After the reload they came back
+    unchanged at every decision in every case. PP and a used Leppa Berry come back too.
+  - **The foe's: nothing without the augmented export.** **[verified]** With the foe's on-field `summonData` patch
+    turned off (`SS_NO_ENEMY_SUMMON=1`, `runs/forced/cases-no-enemy-summon.txt`), the reload came back with an empty
+    queue and no tags where the foe was recharging, mid-Outrage or in the air. All three foe cases then split from the
+    straight replay at the next step: 7 differing steps each, and 1, 6 and 1 fork mismatches.
+  - So replay-fidelity's field "the enemy's on-field `summonData`" is load-bearing for forced foe turns, and the field
+    list needs nothing new for them. **[verified]** Our own confusion surviving a restore was not reached: the
+    confused Reshiram fainted on the same turn. **[unverified]**
+- **A side effect of editing a benched foe:** giving Carracosta a single move changed which foe the trainer sent in
+  next (Tyranitar, not Carracosta). The foe cases edit the lead instead. **[verified]**
+- **A search with forced moves in the movesets** (`runs/forced/search-setup.txt`): Reshiram with Outrage, Hyper Beam,
+  Solar Beam and Dragon Pulse, and Snorlax with no PP. Width 8 found an 8-turn Outrage sweep, with 5 of its 9 decisions
+  forced. It took 565 expansions, with no errors, and 5 of 5 wins replayed from T1. **[verified]** Snorlax never came
+  in, so no searched line has a Struggle in it.
+- **Regression** (`runs/forced/regress-w8p8-stall6.txt`): width 8, 8 workers, `--stall 6` from T1. It matched the
+  `runs/stall/` baseline node for node: the same beam and scores at all 14 layers, 1,657 expansions, the same 21 wins,
+  and 5 of 5 replayed from T1. **[verified]**
+
 **What this means for the product** **[inference]**:
 
 - Snapshot forking is sound, but only behind a gate: every line a search finds must replay from the save. That is
@@ -350,19 +409,24 @@ The mid-fight roots above are other positions in the same fight, not another fig
 | `runs/sweep/<run>/summary.json`, `mem.jsonl`, `runs/sweep/<run>.txt` | Raw results of each run |
 | `runs/stall/` | The stall-rule reruns at widths 2, 4 and 8, in the same layout, and their `tally.md` |
 | `runs/probes/` | The many-lines, fork, chain and Bounce probes, before and after the fixes |
+| `harness/mkforced.py`, `harness/show_forced.py` | The forced-move cases (setup, script) and their summary |
+| `runs/forced/` | Forced-move cases with and without the foe's `summonData` patch, a search with a forced-move setup (`search-setup.json`), and the width-8 regression |
 | `session-w180.json` | The Gordie W180 T1 export, the same file as the kit's |
 
 `solve.test.ts` in more detail:
 
 - snapshot capture and patch;
-- `legal()`;
-- `play()`, with the game-over retarget, the illegal-step refusal and the stale-prompt clearing;
-- the fork check and the chain check.
+- a job's `setup`: a moveset or PP edit applied to the T1 save with the test framework's overrides;
+- `legal()`, with the game's queued-move rule and Struggle;
+- `play()`, with the game-over retarget, the illegal-step refusal, the stale-prompt clearing and Struggle;
+- the fork check, the chain check and the `forced` check.
 
-To rerun a single search:
+To rerun a single search, or the forced-move cases:
 
 ```sh
-python3 -I docs/research/solve-search/harness/search.py /tmp/run --workers 8 --width 8 [--prefix A1:20] [--stall 6]
+python3 -I docs/research/solve-search/harness/search.py /tmp/run --workers 8 --width 8 [--prefix A1:20] [--stall 6] [--setup FILE]
+mkdir -p /tmp/forced && python3 -I docs/research/solve-search/harness/mkforced.py /tmp/forced/job.json
+docs/research/solve-search/harness/probe.sh /tmp/forced && python3 -I docs/research/solve-search/harness/show_forced.py /tmp/forced/out.json
 ```
 
 ## Not yet measured
@@ -375,5 +439,8 @@ python3 -I docs/research/solve-search/harness/search.py /tmp/run --workers 8 --w
 - **Throughput on an actual 4-core, 8 GB machine.** §3's laptop numbers are scaled, not measured.
 - **A second trainer fight.** None exists yet.
 - **A real augmented export from the live tab as a root.** The mid-fight roots here were made in the harness.
-- **A line with Struggle** (every move out of PP). `legal()` offers no step for it, so such a child would time out and
-  be pruned as an error.
+- **A searched line that uses Struggle.** The forced-move cases play Struggle chained and straight, but the one search
+  with a PP-less mon never sent it in.
+- **A queued move the game drops before running it**, such as Fly under Gravity or Outrage after Disable. `legal()`
+  copies the game's rule for it, untested.
+- **Our own confusion across a restore**, as a rampage leaves it. The foe's was covered.

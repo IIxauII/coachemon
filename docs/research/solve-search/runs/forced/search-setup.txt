@@ -1,0 +1,116 @@
+L 1 nodes   1 children   13 distinct   13 wins   0 losses   0 err 0    7.2s total 13 rss 3284MB
+L 2 nodes  18 children   36 distinct   32 wins   0 losses   0 err 0    5.4s total 49 rss 3284MB
+L 3 nodes  20 children   48 distinct   48 wins   0 losses   0 err 0    3.4s total 97 rss 3284MB
+L 4 nodes  22 children  108 distinct  108 wins   0 losses   0 err 0   10.9s total 205 rss 3284MB
+L 5 nodes  20 children   88 distinct   88 wins   0 losses   0 err 0    8.4s total 293 rss 3284MB
+L 6 nodes  20 children  112 distinct  111 wins   0 losses   0 err 0   10.5s total 405 rss 3284MB
+L 7 nodes  16 children   52 distinct   52 wins   0 losses   0 err 0    5.0s total 457 rss 3284MB
+L 8 nodes  20 children  108 distinct   63 wins  15 losses   0 err 0    9.8s total 565 rss 3284MB
+replayed from T1: [{'name': 'win0', 'result': 'WIN', 'turns': 8}, {'name': 'win1', 'result': 'WIN', 'turns': 8}, {'name': 'win2', 'result': 'WIN', 'turns': 8}, {'name': 'win3', 'result': 'WIN', 'turns': 8}, {'name': 'win4', 'result': 'WIN', 'turns': 8}]
+{
+ "args": {
+  "out": "/Users/xau/.claude/jobs/bf9a05d3/tmp/brief7/s-setup",
+  "workers": 8,
+  "width": 8,
+  "depth": 40,
+  "prefix": "",
+  "all_wins": false,
+  "ours_weight": 0.5,
+  "session": "/Users/xau/Documents/projects/coachemon/.claude/worktrees/agent-a1e353e64d8160dfe/docs/research/solve-search/harness/../session-w180.json",
+  "budget_children": 0,
+  "stall": 6,
+  "setup": "docs/research/solve-search/runs/forced/search-setup.json"
+ },
+ "workers": 8,
+ "boot_secs": 18.7,
+ "search_secs": 60.5,
+ "children_total": 565,
+ "losses_total": 0,
+ "errors_total": 0,
+ "stalled_total": 0,
+ "first_win": {
+  "depth": 8,
+  "children_so_far": 565,
+  "secs": 60.5,
+  "path": [
+   {
+    "m": "OUTRAGE"
+   },
+   {
+    "w": true
+   },
+   {
+    "w": true
+   },
+   {
+    "m": "OUTRAGE"
+   },
+   {
+    "w": true
+   },
+   {
+    "m": "OUTRAGE"
+   },
+   {
+    "w": true
+   },
+   {
+    "m": "OUTRAGE"
+   }
+  ],
+  "end": {
+   "turn": 9,
+   "ours": [
+    "Reshiram* 472/577 [3,0,1,1,0,0,0]",
+    "Leavanny 497/497",
+    "Snorlax 824/824",
+    "Gyarados 570/570",
+    "Golbat 493/493",
+    "Probopass 427/427"
+   ],
+   "foes": [
+    "Stonjourner 0/574 st7",
+    "Gigalith 0/525 st7",
+    "Coalossal 0/711 st7",
+    "Tyranitar 0/569 st7",
+    "Carracosta 0/467 st7",
+    "Barbaracle 0/460 st7"
+   ]
+  }
+ },
+ "wins": 15,
+ "memory": {
+  "peak_total_mb": 3284.265625,
+  "peak_worker_mb": 482.078125,
+  "samples": 173
+ },
+ "children_per_sec": 9.33,
+ "validated": [
+  {
+   "name": "win0",
+   "result": "WIN",
+   "turns": 8
+  },
+  {
+   "name": "win1",
+   "result": "WIN",
+   "turns": 8
+  },
+  {
+   "name": "win2",
+   "result": "WIN",
+   "turns": 8
+  },
+  {
+   "name": "win3",
+   "result": "WIN",
+   "turns": 8
+  },
+  {
+   "name": "win4",
+   "result": "WIN",
+   "turns": 8
+  }
+ ],
+ "validate_secs": 11.9
+}

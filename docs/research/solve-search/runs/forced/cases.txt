@@ -1,0 +1,324 @@
+boot ms 794 stats {'boots': 1, 'reloads': 162, 'rebootsAfterLoss': 0, 'reloadThrows': 0, 'lastReloadError': '', 'stalePrompts': 0}
+
+== struggle: 6 steps; chained vs straight diffs 0; stale/error steps 0; restore changed state at 0; fork mismatches 0/5
+  0 T 2 DRAGON_PULSE     legal[HYPER_VOICE T:HYPER_VOICE BLUE_FLARE T:BLUE_FLARE FICKLE_BEAM T:FICKLE_BEAM DRAGON_PULSE T:DRAGON_PULSE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Reshiram* 577/577 [0,0,0,0,0,0,0] q=[] tags=[] | foe Gigalith* 282/525 [0,0,0,0,0,0,0]
+      pp left: HYPER_VOICE:10 BLUE_FLARE:8 FICKLE_BEAM:5 DRAGON_PULSE:9
+      saved: moveQueue=[] tags=[]
+  1 T 3 >Probopass       legal[HYPER_VOICE T:HYPER_VOICE BLUE_FLARE T:BLUE_FLARE FICKLE_BEAM T:FICKLE_BEAM DRAGON_PULSE T:DRAGON_PULSE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Probopass* 359/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+  2 T 4 >Snorlax         legal[TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_GEM T:POWER_GEM >Leavanny >Snorlax >Gyarados >Golbat >Reshiram]
+      ours Snorlax* 689/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: BODY_SLAM:1 BELLY_DRUM:0 SLEEP_TALK:0 REST:0
+      saved: moveQueue=[] tags=[]
+  3 T 5 BODY_SLAM        legal[BODY_SLAM T:BODY_SLAM >Leavanny >Probopass >Gyarados >Golbat >Reshiram]
+      ours Snorlax* 463/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: BODY_SLAM:1 BELLY_DRUM:0 SLEEP_TALK:0 REST:0
+      saved: moveQueue=[] tags=[]
+  4 T 6 BODY_SLAM        legal[BODY_SLAM T:BODY_SLAM >Leavanny >Probopass >Gyarados >Golbat >Reshiram]
+      ours Snorlax* 316/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 343/467 [0,0,0,0,0,0,0]
+      pp left: BODY_SLAM:0 BELLY_DRUM:0 SLEEP_TALK:0 REST:0
+      saved: moveQueue=[] tags=[]
+  5 T 7 STRUGGLE         legal[STRUGGLE T:STRUGGLE >Leavanny >Probopass >Gyarados >Golbat >Reshiram]
+      ours Leavanny* 497/497 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 292/467 [0,0,0,0,0,0,0]
+      pp left: LEAF_STORM:5 BUG_BITE:20 HELPING_HAND:20 POLLEN_PUFF:15
+      saved: moveQueue=[] tags=[]
+      msgs: Snorlax used Struggle!
+
+== struggle-tera: 7 steps; chained vs straight diffs 0; stale/error steps 0; restore changed state at 0; fork mismatches 0/6
+  0 T 2 DRAGON_PULSE     legal[HYPER_VOICE T:HYPER_VOICE BLUE_FLARE T:BLUE_FLARE FICKLE_BEAM T:FICKLE_BEAM DRAGON_PULSE T:DRAGON_PULSE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Reshiram* 577/577 [0,0,0,0,0,0,0] q=[] tags=[] | foe Gigalith* 282/525 [0,0,0,0,0,0,0]
+      pp left: HYPER_VOICE:10 BLUE_FLARE:8 FICKLE_BEAM:5 DRAGON_PULSE:9
+      saved: moveQueue=[] tags=[]
+  1 T 3 >Probopass       legal[HYPER_VOICE T:HYPER_VOICE BLUE_FLARE T:BLUE_FLARE FICKLE_BEAM T:FICKLE_BEAM DRAGON_PULSE T:DRAGON_PULSE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Probopass* 359/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+  2 T 4 >Snorlax         legal[TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_GEM T:POWER_GEM >Leavanny >Snorlax >Gyarados >Golbat >Reshiram]
+      ours Snorlax* 689/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: BODY_SLAM:0 BELLY_DRUM:0 SLEEP_TALK:0 REST:0
+      saved: moveQueue=[] tags=[]
+  3 T 5 T:STRUGGLE       legal[STRUGGLE T:STRUGGLE >Leavanny >Probopass >Gyarados >Golbat >Reshiram]
+      ours Snorlax* 463/824 TERA [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: BODY_SLAM:0 BELLY_DRUM:0 SLEEP_TALK:0 REST:0
+      saved: moveQueue=[] tags=[]
+  4 T 6 >Reshiram        legal[STRUGGLE >Leavanny >Probopass >Gyarados >Golbat >Reshiram]
+      ours Reshiram* 535/577 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: HYPER_VOICE:10 BLUE_FLARE:8 FICKLE_BEAM:5 DRAGON_PULSE:9
+      saved: moveQueue=[] tags=[]
+  5 T 7 >Snorlax         legal[HYPER_VOICE BLUE_FLARE FICKLE_BEAM DRAGON_PULSE >Leavanny >Probopass >Gyarados >Golbat >Snorlax]
+      ours Snorlax* 227/824 TERA [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: BODY_SLAM:0 BELLY_DRUM:0 SLEEP_TALK:0 REST:0
+      saved: moveQueue=[] tags=[]
+  6 T 8 STRUGGLE         legal[STRUGGLE >Leavanny >Probopass >Gyarados >Golbat >Reshiram]
+      ours Leavanny* 497/497 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 400/467 [0,0,0,0,0,0,0]
+      pp left: LEAF_STORM:5 BUG_BITE:20 HELPING_HAND:20 POLLEN_PUFF:15
+      saved: moveQueue=[] tags=[]
+      msgs: Snorlax used Struggle!
+
+== struggle-leppa: 2 steps; chained vs straight diffs 0; stale/error steps 0; restore changed state at 0; fork mismatches 0/1
+  0 T 2 DRAGON_PULSE     legal[DRAGON_PULSE T:DRAGON_PULSE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Reshiram* 577/577 [0,0,0,0,0,0,0] q=[] tags=[] | foe Gigalith* 282/525 [0,0,0,0,0,0,0]
+      pp left: HYPER_VOICE:10 BLUE_FLARE:0 FICKLE_BEAM:0 DRAGON_PULSE:0
+      saved: moveQueue=[] tags=[]
+      msgs: Reshiram restored PP to its move Hyper Voice using its Leppa Berry!
+  1 T 3 HYPER_VOICE      legal[HYPER_VOICE T:HYPER_VOICE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Reshiram* 285/577 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: HYPER_VOICE:9 BLUE_FLARE:0 FICKLE_BEAM:0 DRAGON_PULSE:0
+      saved: moveQueue=[] tags=[]
+
+== recharge: 6 steps; chained vs straight diffs 0; stale/error steps 0; restore changed state at 0; fork mismatches 0/5
+  0 T 2 DRAGON_PULSE     legal[HYPER_BEAM T:HYPER_BEAM GIGA_IMPACT T:GIGA_IMPACT DRAGON_PULSE T:DRAGON_PULSE BLUE_FLARE T:BLUE_FLARE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Reshiram* 577/577 [0,0,0,0,0,0,0] q=[] tags=[] | foe Gigalith* 282/525 [0,0,0,0,0,0,0]
+      pp left: HYPER_BEAM:5 GIGA_IMPACT:5 DRAGON_PULSE:9 BLUE_FLARE:5
+      saved: moveQueue=[] tags=[]
+  1 T 3 >Probopass       legal[HYPER_BEAM T:HYPER_BEAM GIGA_IMPACT T:GIGA_IMPACT DRAGON_PULSE T:DRAGON_PULSE BLUE_FLARE T:BLUE_FLARE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Probopass* 359/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+  2 T 4 >Reshiram        legal[TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_GEM T:POWER_GEM >Leavanny >Snorlax >Gyarados >Golbat >Reshiram]
+      ours Reshiram* 544/577 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: HYPER_BEAM:5 GIGA_IMPACT:5 DRAGON_PULSE:9 BLUE_FLARE:5
+      saved: moveQueue=[] tags=[]
+  3 T 5 HYPER_BEAM       legal[HYPER_BEAM T:HYPER_BEAM GIGA_IMPACT T:GIGA_IMPACT DRAGON_PULSE T:DRAGON_PULSE BLUE_FLARE T:BLUE_FLARE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Reshiram* 469/577 [0,0,0,0,0,0,0] q=['NONE:1'] tags=['RECHARGING:1'] | foe Carracosta* 337/467 [0,0,0,0,0,0,0]
+      pp left: HYPER_BEAM:4 GIGA_IMPACT:5 DRAGON_PULSE:9 BLUE_FLARE:5
+      saved: moveQueue=[{"move": 0, "targets": [], "useMode": 1}] tags=[{"tagType": "RECHARGING", "turnCount": 1, "sourceMove": 63}]
+  4 T 6 w                legal[w]
+      ours Reshiram* 221/577 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 337/467 [0,0,0,0,0,0,0]
+      pp left: HYPER_BEAM:4 GIGA_IMPACT:5 DRAGON_PULSE:9 BLUE_FLARE:5
+      saved: moveQueue=[] tags=[]
+      msgs: Reshiram must recharge!
+  5 T 7 GIGA_IMPACT      legal[HYPER_BEAM T:HYPER_BEAM GIGA_IMPACT T:GIGA_IMPACT DRAGON_PULSE T:DRAGON_PULSE BLUE_FLARE T:BLUE_FLARE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Leavanny* 497/497 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 241/467 [0,0,0,0,0,0,0]
+      pp left: LEAF_STORM:5 BUG_BITE:20 HELPING_HAND:20 POLLEN_PUFF:15
+      saved: moveQueue=[] tags=[]
+
+== rampage: 6 steps; chained vs straight diffs 0; stale/error steps 0; restore changed state at 0; fork mismatches 0/5
+  0 T 2 DRAGON_PULSE     legal[OUTRAGE T:OUTRAGE THRASH T:THRASH PETAL_DANCE T:PETAL_DANCE DRAGON_PULSE T:DRAGON_PULSE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Reshiram* 577/577 [0,0,0,0,0,0,0] q=[] tags=[] | foe Gigalith* 282/525 [0,0,0,0,0,0,0]
+      pp left: OUTRAGE:10 THRASH:10 PETAL_DANCE:10 DRAGON_PULSE:9
+      saved: moveQueue=[] tags=[]
+  1 T 3 >Probopass       legal[OUTRAGE T:OUTRAGE THRASH T:THRASH PETAL_DANCE T:PETAL_DANCE DRAGON_PULSE T:DRAGON_PULSE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Probopass* 359/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+  2 T 4 >Reshiram        legal[TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_GEM T:POWER_GEM >Leavanny >Snorlax >Gyarados >Golbat >Reshiram]
+      ours Reshiram* 544/577 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: OUTRAGE:10 THRASH:10 PETAL_DANCE:10 DRAGON_PULSE:9
+      saved: moveQueue=[] tags=[]
+  3 T 5 OUTRAGE          legal[OUTRAGE T:OUTRAGE THRASH T:THRASH PETAL_DANCE T:PETAL_DANCE DRAGON_PULSE T:DRAGON_PULSE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Reshiram* 460/577 [0,0,0,0,0,0,0] q=['OUTRAGE:2', 'OUTRAGE:2'] tags=['FRENZY:2'] | foe Carracosta* 235/467 [0,0,0,0,0,0,0]
+      pp left: OUTRAGE:9 THRASH:10 PETAL_DANCE:10 DRAGON_PULSE:9
+      saved: moveQueue=[{"move": 200, "targets": [2], "useMode": 2}, {"move": 200, "targets": [2], "useMode": 2}] tags=[{"tagType": "FRENZY", "turnCount": 2, "sourceMove": 200, "sourceId": 1598497808}]
+  4 T 6 w                legal[w]
+      ours Reshiram* 496/577 [0,0,0,0,0,0,0] q=['OUTRAGE:2'] tags=['FRENZY:1'] | foe Barbaracle* 460/460 [0,0,0,0,0,0,0]
+      pp left: OUTRAGE:9 THRASH:10 PETAL_DANCE:10 DRAGON_PULSE:9
+      saved: moveQueue=[{"move": 200, "targets": [2], "useMode": 2}] tags=[{"tagType": "FRENZY", "turnCount": 1, "sourceMove": 200, "sourceId": 1598497808}]
+  5 T 7 w                legal[w]
+      ours Leavanny* 497/497 [0,0,0,0,0,0,0] q=[] tags=[] | foe Barbaracle* 339/460 [0,0,0,0,0,0,0]
+      pp left: LEAF_STORM:5 BUG_BITE:20 HELPING_HAND:20 POLLEN_PUFF:15
+      saved: moveQueue=[] tags=[]
+      msgs: Reshiram became confused!
+
+== charge: 13 steps; chained vs straight diffs 0; stale/error steps 0; restore changed state at 0; fork mismatches 0/12
+  0 T 2 DRAGON_PULSE     legal[SOLAR_BEAM T:SOLAR_BEAM FLY T:FLY DIG T:DIG DRAGON_PULSE T:DRAGON_PULSE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Reshiram* 577/577 [0,0,0,0,0,0,0] q=[] tags=[] | foe Gigalith* 282/525 [0,0,0,0,0,0,0]
+      pp left: SOLAR_BEAM:10 FLY:15 DIG:10 DRAGON_PULSE:9
+      saved: moveQueue=[] tags=[]
+  1 T 3 >Probopass       legal[SOLAR_BEAM T:SOLAR_BEAM FLY T:FLY DIG T:DIG DRAGON_PULSE T:DRAGON_PULSE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Probopass* 359/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+  2 T 4 >Reshiram        legal[TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_GEM T:POWER_GEM >Leavanny >Snorlax >Gyarados >Golbat >Reshiram]
+      ours Reshiram* 544/577 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: SOLAR_BEAM:10 FLY:15 DIG:10 DRAGON_PULSE:9
+      saved: moveQueue=[] tags=[]
+  3 T 5 SOLAR_BEAM       legal[SOLAR_BEAM T:SOLAR_BEAM FLY T:FLY DIG T:DIG DRAGON_PULSE T:DRAGON_PULSE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Reshiram* 472/577 [0,0,0,0,0,0,0] q=['SOLAR_BEAM:2'] tags=['CHARGING:1'] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: SOLAR_BEAM:9 FLY:15 DIG:10 DRAGON_PULSE:9
+      saved: moveQueue=[{"move": 76, "targets": [2], "useMode": 2}] tags=[{"tagType": "CHARGING", "turnCount": 1, "sourceMove": 76, "sourceId": 1598497808}]
+      msgs: Reshiram absorbed light!
+  4 T 6 w                legal[w]
+      ours Reshiram* 508/577 [0,0,0,0,0,0,0] q=[] tags=[] | foe Barbaracle* 460/460 [0,0,0,0,0,0,0]
+      pp left: SOLAR_BEAM:9 FLY:15 DIG:10 DRAGON_PULSE:9
+      saved: moveQueue=[] tags=[]
+  5 T 7 FLY              legal[SOLAR_BEAM T:SOLAR_BEAM FLY T:FLY DIG T:DIG DRAGON_PULSE T:DRAGON_PULSE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Reshiram* 544/577 [0,0,0,0,0,0,0] q=['FLY:2'] tags=['FLYING:1', 'CHARGING:1'] | foe Barbaracle* 460/460 [0,0,0,0,0,0,0]
+      pp left: SOLAR_BEAM:9 FLY:14 DIG:10 DRAGON_PULSE:9
+      saved: moveQueue=[{"move": 19, "targets": [2], "useMode": 2}] tags=[{"tagType": "FLYING", "turnCount": 1, "sourceMove": 19}, {"tagType": "CHARGING", "turnCount": 1, "sourceMove": 19, "sourceId": 1598497808}]
+      msgs: Reshiram flew up high!
+  6 T 8 w                legal[w]
+      ours Reshiram* 231/577 [0,0,0,0,0,0,0] q=[] tags=[] | foe Barbaracle* 396/460 [0,0,0,0,0,0,0]
+      pp left: SOLAR_BEAM:9 FLY:14 DIG:10 DRAGON_PULSE:9
+      saved: moveQueue=[] tags=[]
+  7 T 9 DIG              legal[SOLAR_BEAM T:SOLAR_BEAM FLY T:FLY DIG T:DIG DRAGON_PULSE T:DRAGON_PULSE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Reshiram* 303/577 [0,0,0,0,0,0,0] q=['DIG:2'] tags=['UNDERGROUND:1', 'CHARGING:1'] | foe Barbaracle* 396/460 [0,0,0,0,0,0,0]
+      pp left: SOLAR_BEAM:9 FLY:14 DIG:9 DRAGON_PULSE:9
+      saved: moveQueue=[{"move": 91, "targets": [2], "useMode": 2}] tags=[{"tagType": "UNDERGROUND", "turnCount": 1, "sourceMove": 91}, {"tagType": "CHARGING", "turnCount": 1, "sourceMove": 91, "sourceId": 1598497808}]
+  8 T10 w                legal[w]
+      ours Reshiram* 339/577 [0,0,0,0,0,0,0] q=[] tags=[] | foe Barbaracle* 295/460 [0,0,0,0,0,0,0]
+      pp left: SOLAR_BEAM:9 FLY:14 DIG:9 DRAGON_PULSE:9
+      saved: moveQueue=[] tags=[]
+  9 T11 SOLAR_BEAM       legal[SOLAR_BEAM T:SOLAR_BEAM FLY T:FLY DIG T:DIG DRAGON_PULSE T:DRAGON_PULSE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Reshiram* 375/577 [0,0,0,0,0,0,0] q=['SOLAR_BEAM:2'] tags=['CHARGING:1'] | foe Barbaracle* 295/460 [0,0,0,0,0,0,0]
+      pp left: SOLAR_BEAM:8 FLY:14 DIG:9 DRAGON_PULSE:9
+      saved: moveQueue=[{"move": 76, "targets": [2], "useMode": 2}] tags=[{"tagType": "CHARGING", "turnCount": 1, "sourceMove": 76, "sourceId": 1598497808}]
+      msgs: Reshiram absorbed light!
+ 10 T12 w                legal[w]
+      ours Reshiram* 411/577 [0,0,0,0,0,0,0] q=[] tags=[] | foe Coalossal* 711/711 [0,0,0,0,0,0,0]
+      pp left: SOLAR_BEAM:8 FLY:14 DIG:9 DRAGON_PULSE:9
+      saved: moveQueue=[] tags=[]
+ 11 T13 FLY              legal[SOLAR_BEAM T:SOLAR_BEAM FLY T:FLY DIG T:DIG DRAGON_PULSE T:DRAGON_PULSE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Reshiram* 447/577 [0,0,0,0,0,0,0] q=['FLY:2'] tags=['FLYING:1', 'CHARGING:1'] | foe Coalossal* 711/711 TERA [0,0,0,0,0,0,0]
+      pp left: SOLAR_BEAM:8 FLY:13 DIG:9 DRAGON_PULSE:9
+      saved: moveQueue=[{"move": 19, "targets": [2], "useMode": 2}] tags=[{"tagType": "FLYING", "turnCount": 1, "sourceMove": 19}, {"tagType": "CHARGING", "turnCount": 1, "sourceMove": 19, "sourceId": 1598497808}]
+      msgs: Reshiram flew up high!
+ 12 T14 w                legal[w]
+      ours Leavanny* 497/497 [0,0,0,0,0,0,0] q=[] tags=[] | foe Coalossal* 649/711 TERA [0,0,0,0,0,0,0]
+      pp left: LEAF_STORM:5 BUG_BITE:20 HELPING_HAND:20 POLLEN_PUFF:15
+      saved: moveQueue=[] tags=[]
+
+== foe-recharge: 8 steps; chained vs straight diffs 0; stale/error steps 0; restore changed state at 0; fork mismatches 0/7
+  0 T 2 >Snorlax         legal[HYPER_VOICE T:HYPER_VOICE BLUE_FLARE T:BLUE_FLARE FICKLE_BEAM T:FICKLE_BEAM DRAGON_PULSE T:DRAGON_PULSE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Snorlax* 653/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Gigalith* 525/525 [0,0,0,0,0,0,0] q=['NONE:1'] tags=['RECHARGING:1']
+      pp left: BODY_SLAM:15 BELLY_DRUM:10 SLEEP_TALK:10 REST:5
+      saved: moveQueue=[] tags=[]
+  1 T 3 >Probopass       legal[BODY_SLAM T:BODY_SLAM BELLY_DRUM T:BELLY_DRUM SLEEP_TALK T:SLEEP_TALK REST T:REST >Leavanny >Reshiram >Gyarados >Golbat >Probopass]
+      ours Probopass* 427/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Gigalith* 525/525 [0,0,0,0,0,0,0]
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+      msgs: Foe Gigalith must recharge!
+  2 T 4 >Snorlax         legal[TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_GEM T:POWER_GEM >Leavanny >Reshiram >Gyarados >Golbat >Snorlax]
+      ours Snorlax* 602/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: BODY_SLAM:15 BELLY_DRUM:10 SLEEP_TALK:10 REST:5
+      saved: moveQueue=[] tags=[]
+  3 T 5 >Probopass       legal[BODY_SLAM T:BODY_SLAM BELLY_DRUM T:BELLY_DRUM SLEEP_TALK T:SLEEP_TALK REST T:REST >Leavanny >Reshiram >Gyarados >Golbat >Probopass]
+      ours Probopass* 382/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+  4 T 6 >Snorlax         legal[TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_GEM T:POWER_GEM >Leavanny >Reshiram >Gyarados >Golbat >Snorlax]
+      ours Snorlax* 455/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: BODY_SLAM:15 BELLY_DRUM:10 SLEEP_TALK:10 REST:5
+      saved: moveQueue=[] tags=[]
+  5 T 7 >Probopass       legal[BODY_SLAM T:BODY_SLAM BELLY_DRUM T:BELLY_DRUM SLEEP_TALK T:SLEEP_TALK REST T:REST >Leavanny >Reshiram >Gyarados >Golbat >Probopass]
+      ours Probopass* 335/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+  6 T 8 >Snorlax         legal[TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_GEM T:POWER_GEM >Leavanny >Reshiram >Gyarados >Golbat >Snorlax]
+      ours Snorlax* 311/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: BODY_SLAM:15 BELLY_DRUM:10 SLEEP_TALK:10 REST:5
+      saved: moveQueue=[] tags=[]
+  7 T 9 >Probopass       legal[BODY_SLAM T:BODY_SLAM BELLY_DRUM T:BELLY_DRUM SLEEP_TALK T:SLEEP_TALK REST T:REST >Leavanny >Reshiram >Gyarados >Golbat >Probopass]
+      ours Probopass* 284/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+
+== foe-rampage: 8 steps; chained vs straight diffs 0; stale/error steps 0; restore changed state at 0; fork mismatches 0/7
+  0 T 2 >Probopass       legal[HYPER_VOICE T:HYPER_VOICE BLUE_FLARE T:BLUE_FLARE FICKLE_BEAM T:FICKLE_BEAM DRAGON_PULSE T:DRAGON_PULSE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Probopass* 365/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Gigalith* 525/525 [0,0,0,0,0,0,0] q=['OUTRAGE:2'] tags=['FRENZY:1']
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+  1 T 3 >Snorlax         legal[TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_GEM T:POWER_GEM >Leavanny >Snorlax >Gyarados >Golbat >Reshiram]
+      ours Snorlax* 522/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Gigalith* 525/525 [0,0,0,0,0,0,0] q=[] tags=['CONFUSED:4']
+      pp left: BODY_SLAM:15 BELLY_DRUM:10 SLEEP_TALK:10 REST:5
+      saved: moveQueue=[] tags=[]
+      msgs: Foe Gigalith became confused!
+  2 T 4 >Probopass       legal[BODY_SLAM T:BODY_SLAM BELLY_DRUM T:BELLY_DRUM SLEEP_TALK T:SLEEP_TALK REST T:REST >Leavanny >Probopass >Gyarados >Golbat >Reshiram]
+      ours Probopass* 305/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Gigalith* 525/525 [0,0,0,0,0,0,0] q=['OUTRAGE:2'] tags=['CONFUSED:3', 'FRENZY:1']
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+      msgs: Foe Gigalith is confused!
+  3 T 5 >Snorlax         legal[TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_GEM T:POWER_GEM >Leavanny >Snorlax >Gyarados >Golbat >Reshiram]
+      ours Snorlax* 471/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Gigalith* 470/525 [0,0,0,0,0,0,0] q=[] tags=['CONFUSED:2']
+      pp left: BODY_SLAM:15 BELLY_DRUM:10 SLEEP_TALK:10 REST:5
+      saved: moveQueue=[] tags=[]
+      msgs: Foe Gigalith is confused! / It hurt itself in its confusion! / Foe Gigalith is already confused!
+  4 T 6 >Probopass       legal[BODY_SLAM T:BODY_SLAM BELLY_DRUM T:BELLY_DRUM SLEEP_TALK T:SLEEP_TALK REST T:REST >Leavanny >Probopass >Gyarados >Golbat >Reshiram]
+      ours Probopass* 249/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Gigalith* 470/525 [0,0,0,0,0,0,0] q=['OUTRAGE:2', 'OUTRAGE:2'] tags=['CONFUSED:1', 'FRENZY:2']
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+      msgs: Foe Gigalith is confused!
+  5 T 7 >Snorlax         legal[TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_GEM T:POWER_GEM >Leavanny >Snorlax >Gyarados >Golbat >Reshiram]
+      ours Snorlax* 182/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Gigalith* 470/525 [0,0,0,0,0,0,0] q=['OUTRAGE:2'] tags=['FRENZY:1']
+      pp left: BODY_SLAM:15 BELLY_DRUM:10 SLEEP_TALK:10 REST:5
+      saved: moveQueue=[] tags=[]
+      msgs: Foe Gigalith snapped out of confusion!
+  6 T 8 >Probopass       legal[BODY_SLAM T:BODY_SLAM BELLY_DRUM T:BELLY_DRUM SLEEP_TALK T:SLEEP_TALK REST T:REST >Leavanny >Probopass >Gyarados >Golbat >Reshiram]
+      ours Probopass* 188/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Gigalith* 470/525 [0,0,0,0,0,0,0] q=[] tags=['CONFUSED:3']
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+      msgs: Foe Gigalith became confused!
+  7 T 9 >Snorlax         legal[TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_GEM T:POWER_GEM >Leavanny >Snorlax >Gyarados >Golbat >Reshiram]
+      ours Snorlax* 131/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: BODY_SLAM:15 BELLY_DRUM:10 SLEEP_TALK:10 REST:5
+      saved: moveQueue=[] tags=[]
+
+== foe-charge: 8 steps; chained vs straight diffs 0; stale/error steps 0; restore changed state at 0; fork mismatches 0/7
+  0 T 2 >Snorlax         legal[HYPER_VOICE T:HYPER_VOICE BLUE_FLARE T:BLUE_FLARE FICKLE_BEAM T:FICKLE_BEAM DRAGON_PULSE T:DRAGON_PULSE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Snorlax* 773/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Gigalith* 525/525 [0,0,0,0,0,0,0] q=['FLY:2'] tags=['FLYING:1', 'CHARGING:1']
+      pp left: BODY_SLAM:15 BELLY_DRUM:10 SLEEP_TALK:10 REST:5
+      saved: moveQueue=[] tags=[]
+      msgs: Foe Gigalith flew up high!
+  1 T 3 >Probopass       legal[BODY_SLAM T:BODY_SLAM BELLY_DRUM T:BELLY_DRUM SLEEP_TALK T:SLEEP_TALK REST T:REST >Leavanny >Reshiram >Gyarados >Golbat >Probopass]
+      ours Probopass* 403/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Gigalith* 525/525 [0,0,0,0,0,0,0]
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+  2 T 4 >Snorlax         legal[TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_GEM T:POWER_GEM >Leavanny >Reshiram >Gyarados >Golbat >Snorlax]
+      ours Snorlax* 722/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: BODY_SLAM:15 BELLY_DRUM:10 SLEEP_TALK:10 REST:5
+      saved: moveQueue=[] tags=[]
+  3 T 5 >Probopass       legal[BODY_SLAM T:BODY_SLAM BELLY_DRUM T:BELLY_DRUM SLEEP_TALK T:SLEEP_TALK REST T:REST >Leavanny >Reshiram >Gyarados >Golbat >Probopass]
+      ours Probopass* 358/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+  4 T 6 >Snorlax         legal[TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_GEM T:POWER_GEM >Leavanny >Reshiram >Gyarados >Golbat >Snorlax]
+      ours Snorlax* 575/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: BODY_SLAM:15 BELLY_DRUM:10 SLEEP_TALK:10 REST:5
+      saved: moveQueue=[] tags=[]
+  5 T 7 >Probopass       legal[BODY_SLAM T:BODY_SLAM BELLY_DRUM T:BELLY_DRUM SLEEP_TALK T:SLEEP_TALK REST T:REST >Leavanny >Reshiram >Gyarados >Golbat >Probopass]
+      ours Probopass* 311/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+  6 T 8 >Snorlax         legal[TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_GEM T:POWER_GEM >Leavanny >Reshiram >Gyarados >Golbat >Snorlax]
+      ours Snorlax* 431/824 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: BODY_SLAM:15 BELLY_DRUM:10 SLEEP_TALK:10 REST:5
+      saved: moveQueue=[] tags=[]
+  7 T 9 >Probopass       legal[BODY_SLAM T:BODY_SLAM BELLY_DRUM T:BELLY_DRUM SLEEP_TALK T:SLEEP_TALK REST T:REST >Leavanny >Reshiram >Gyarados >Golbat >Probopass]
+      ours Probopass* 208/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+
+== bounce: 7 steps; chained vs straight diffs 0; stale/error steps 0; restore changed state at 0; fork mismatches 0/6
+  0 T 2 DRAGON_PULSE     legal[HYPER_VOICE T:HYPER_VOICE BLUE_FLARE T:BLUE_FLARE FICKLE_BEAM T:FICKLE_BEAM DRAGON_PULSE T:DRAGON_PULSE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Reshiram* 577/577 [0,0,0,0,0,0,0] q=[] tags=[] | foe Gigalith* 282/525 [0,0,0,0,0,0,0]
+      pp left: HYPER_VOICE:10 BLUE_FLARE:8 FICKLE_BEAM:5 DRAGON_PULSE:9
+      saved: moveQueue=[] tags=[]
+  1 T 3 >Probopass       legal[HYPER_VOICE T:HYPER_VOICE BLUE_FLARE T:BLUE_FLARE FICKLE_BEAM T:FICKLE_BEAM DRAGON_PULSE T:DRAGON_PULSE >Leavanny >Snorlax >Gyarados >Golbat >Probopass]
+      ours Probopass* 359/427 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [0,0,0,0,0,0,0]
+      pp left: TRI_ATTACK:10 ZAP_CANNON:6 EARTH_POWER:10 POWER_GEM:20
+      saved: moveQueue=[] tags=[]
+  2 T 4 >Gyarados        legal[TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_GEM T:POWER_GEM >Leavanny >Snorlax >Gyarados >Golbat >Reshiram]
+      ours Gyarados* 485/570 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [-1,0,0,0,0,0,0]
+      pp left: HURRICANE:10 TWISTER:20 BOUNCE:5 HYDRO_PUMP:8
+      saved: moveQueue=[] tags=[]
+  3 T 5 BOUNCE           legal[HURRICANE T:HURRICANE TWISTER T:TWISTER BOUNCE T:BOUNCE HYDRO_PUMP T:HYDRO_PUMP >Leavanny >Snorlax >Probopass >Golbat >Reshiram]
+      ours Gyarados* 450/570 [0,0,0,0,0,0,0] q=['BOUNCE:2'] tags=['FLYING:1', 'CHARGING:1'] | foe Carracosta* 467/467 [-1,0,0,0,0,0,0]
+      pp left: HURRICANE:10 TWISTER:20 BOUNCE:4 HYDRO_PUMP:8
+      saved: moveQueue=[{"move": 340, "targets": [2], "useMode": 2}] tags=[{"tagType": "FLYING", "turnCount": 1, "sourceMove": 340}, {"tagType": "CHARGING", "turnCount": 1, "sourceMove": 340, "sourceId": 3173823494}]
+      msgs: Gyarados sprang up!
+  4 T 6 w                legal[w]
+      ours Gyarados* 336/570 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 467/467 [-1,0,0,0,0,0,0]
+      pp left: HURRICANE:10 TWISTER:20 BOUNCE:4 HYDRO_PUMP:8
+      saved: moveQueue=[] tags=[]
+  5 T 7 BOUNCE           legal[HURRICANE T:HURRICANE TWISTER T:TWISTER BOUNCE T:BOUNCE HYDRO_PUMP T:HYDRO_PUMP >Leavanny >Snorlax >Probopass >Golbat >Reshiram]
+      ours Gyarados* 301/570 [0,0,0,0,0,0,0] q=['BOUNCE:2'] tags=['FLYING:1', 'CHARGING:1'] | foe Carracosta* 467/467 [-1,0,0,0,0,0,0]
+      pp left: HURRICANE:10 TWISTER:20 BOUNCE:3 HYDRO_PUMP:8
+      saved: moveQueue=[{"move": 340, "targets": [2], "useMode": 2}] tags=[{"tagType": "FLYING", "turnCount": 1, "sourceMove": 340}, {"tagType": "CHARGING", "turnCount": 1, "sourceMove": 340, "sourceId": 3173823494}]
+      msgs: Gyarados sprang up!
+  6 T 8 w                legal[w]
+      ours Leavanny* 497/497 [0,0,0,0,0,0,0] q=[] tags=[] | foe Carracosta* 389/467 [-1,0,0,0,0,0,0]
+      pp left: LEAF_STORM:5 BUG_BITE:20 HELPING_HAND:20 POLLEN_PUFF:15
+      saved: moveQueue=[] tags=[]

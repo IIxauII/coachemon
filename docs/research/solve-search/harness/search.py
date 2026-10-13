@@ -2,7 +2,7 @@
 """Beam search over per-turn decisions, on a pool of long-lived solve.test.ts workers.
 
 usage: search.py <out-dir> [--workers P] [--width W] [--depth D] [--prefix NAME:N] [--all-wins] [--ours-weight X]
-                 [--session FILE] [--budget-children N]
+                 [--session FILE] [--budget-children N] [--stall N] [--setup FILE]
 
 Each layer expands every node in the beam by every legal action (moves, Tera + move while Tera is available,
 switches, and every legal replacement when one of ours faints), scores the children, drops losses, merges
@@ -27,7 +27,9 @@ ap.add_argument("--ours-weight", type=float, default=0.5)
 ap.add_argument("--session", default=os.path.join(HERE, "..", "session-w180.json"))
 ap.add_argument("--budget-children", type=int, default=0, help="stop after this many child evaluations")
 ap.add_argument("--stall", type=int, default=0, help="drop a node whose foes have lost no HP in this many turns")
+ap.add_argument("--setup", default="", help="JSON file: solve.test.ts setup applied to the T1 save (movesets, PP left)")
 a = ap.parse_args()
+SETUP = json.load(open(a.setup)) if a.setup else None
 
 out = os.path.abspath(a.out)
 shutil.rmtree(out, ignore_errors=True)
@@ -92,6 +94,8 @@ def submit(payload):
     job_seq += 1
     jid = f"{job_seq:07d}"
     payload["id"] = jid
+    if SETUP:
+        payload["setup"] = SETUP
     tmp = os.path.join(out, f".{jid}.tmp")
     json.dump(payload, open(tmp, "w"))
     os.rename(tmp, os.path.join(out, "jobs", f"{jid}.json"))
