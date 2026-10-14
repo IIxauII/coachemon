@@ -338,6 +338,20 @@ line is a price: what the rest of the fight loses by taking the turn this way.
 
 An **oracle line** that still holds stands in for the plan.
 
+## Boss-fight plan
+
+The **coach**'s written record of one boss fight — a gym leader, an Elite Four member, a champion, a rival or an
+evil-team leader — kept outside the session so that a new session, or a retry of the same fight through Continue,
+picks it up where the last one left it. The **card** is the live view of the fight; the boss-fight plan holds what
+spans turns: the call and what it rests on, the phases each ending in a check the player can read off the battle, the
+inputs to get right, what to do off the plan, and the principles behind them.
+
+Without an **oracle line** it is the **fight plan** written out across turns, never a second opinion: its call is the
+card's own verdict made conditional, and a call the coach knows is wrong is fixed in the card rather than overridden in
+the plan. With one, the oracle line is its plan.
+
+Distinct from the **fight plan**, which is the card's own read of the battle and lives only on the card.
+
 ## Turn score
 
 The single currency every number the **coach** weighs is denominated in: turns of ours. A move is worth the turns it

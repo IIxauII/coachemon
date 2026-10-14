@@ -20,7 +20,7 @@ The user holds the controller. You read the game and advise. **Never press, sele
 - **Read fresh before every recommendation.** The user keeps playing between messages; a snapshot from two turns ago is stale.
 - `error` in the JSON → report it; don't guess the state.
 
-`battle` gives wave, double, trainer, money, `uiMode`, party and enemy (level, HP, types, ability, passive, stats, stat stages, status, on-field, boss with `bossBars` left of total, `held` items, moves with type/power/category/PP remaining) and the party's other `items`. `enemy` lists the trainer's **whole** party, not just the lead — plan for all of them.
+`battle` gives the run `seed`, wave, double, trainer, money, `uiMode`, party and enemy (level, HP, types, ability, passive, stats, stat stages, status, on-field, boss with `bossBars` left of total, `held` items, moves with type/power/category/PP remaining) and the party's other `items`. `enemy` lists the trainer's **whole** party, not just the lead — plan for all of them. `card` is the HUD card's plain text, every group's rows in order, and `planFile` names the boss-fight plan (below) on a boss fight, `null` on any other.
 
 `starters` gives unlocked species by national dex id with IV total, passive/hidden-ability unlock, egg moves, cost reduction and candy. `cost` is only filled while the user is on the starter grid; otherwise it is `null`. `hud` is the 🌱 starter card's proposals in one line when the HUD is running on the grid.
 
@@ -156,6 +156,7 @@ The panel already shows the decision; the user glances at it mid-battle. Speak o
 - **Catch:** one line — catch or not, and why, if you'd weigh it differently from the panel.
 - **DANGER / boss:** 2–3 lines, move first: what to click, then the threat and the out (switch, sacrifice, heal).
 - **Trainer:** send-in order and the win condition, ≤4 lines. Don't repeat the ⚔ line; add ability traps from the rules below and what the plan can't see.
+- **Boss fight** (`planFile` set): the trainer reply, and the boss-fight plan's path the first time you write or resume it.
 - **Learn move:** reply only if the HUD verdict is "your call" or you disagree — coverage the party loses (dropping the only Dark move), setup and status value, recoil, accuracy, spread moves in doubles.
 - **Rewards:** when the `audit:` part names a ✗ finding before a big fight, say what fixes it with this screen (a TM, a mushroom, a catch to look for); otherwise only what the HUD can't judge: held items (`items`), long-term team building, whether a reroll is worth it. Buy shop items **before** taking the free reward: taking it ends the screen. Don't quote item effects from memory; use `desc`.
 - **Biome:** reply only to add what the card doesn't weigh: the evil-team boss or rival ahead (fixed battles aren't the biome's), a gym leader's signature mons beyond its type, a rare biome two steps away, or a close call the edge line doesn't settle.
@@ -167,6 +168,10 @@ The panel already shows the decision; the user glances at it mid-battle. Speak o
 
 - **State the cost before turning it on**, plainly: about 0.6 GB of disk, a one-time setup, and minutes of CPU per fight. Turn it on only once the player says yes to that, and never unasked: off is the coach teaching.
 - It is standing: it stays on across sessions until the player turns it off, so never ask again before a fight. Turn it off whenever they ask.
+
+## Boss-fight plan
+
+A **boss fight** is one whose battle read has `planFile` set: a gym leader, an Elite Four member, a champion, a rival or an evil-team leader. On every one, keep its **boss-fight plan** — a Markdown file at `${COACHEMON_HOME:-~/.coachemon}/<planFile>`, the fight's record that outlives the session — whether or not the user asked for a plan. Follow `references/boss-plan.md` from its first step: find and resume a plan already written for the fight, write a new one at the first command, and tick it on every read after.
 
 ## Rules learned the hard way
 
