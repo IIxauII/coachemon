@@ -13,9 +13,18 @@ import { CALL_BUDGET_MS } from "./settle.ts";
 
 const money = { money: 1000 };
 
-function drive(screen: FakeScreen) {
+/** Shared by every test that never writes a setting: one that does brings its own `tempHome`. */
+const UNWRITTEN_HOME = path.join(tmpdir(), "coachemon-driver-test");
+
+function drive(screen: FakeScreen, home = UNWRITTEN_HOME) {
   const fake = fakeGame(screen);
-  return { ...fake, driver: new Driver(fake.game, fake.clock) };
+  return { ...fake, driver: new Driver(fake.game, home, fake.clock) };
+}
+
+function tempHome(t: TestContext): string {
+  const home = mkdtempSync(path.join(tmpdir(), "coachemon-home-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  return home;
 }
 
 /**
@@ -963,7 +972,7 @@ test("read_card needs no grant: it never claims the tab another driver holds", a
     }),
     menu: () => commandMenu(0),
   });
-  const r = await outcome(new Driver(fake.game, fake.clock).readCard({}));
+  const r = await outcome(new Driver(fake.game, UNWRITTEN_HOME, fake.clock).readCard({}));
   assert.equal(r.status, "ok", JSON.stringify(r));
   assert.equal(r.kind, "learn");
 });
@@ -1046,7 +1055,7 @@ function steppedJob() {
 
 function jobDriver(kinds: JobKinds): Driver {
   const fake = fakeGame({});
-  return new Driver(fake.game, fake.clock, kinds);
+  return new Driver(fake.game, UNWRITTEN_HOME, fake.clock, kinds);
 }
 
 test("start_job returns at once with the job running, before the job has taken a step (#667)", async () => {
@@ -1169,35 +1178,24 @@ test("the plugin keeps the most recent ended jobs and drops the oldest, never a 
   assert.equal((await driver.pollJob(running)).state, "running", "a running job is never dropped");
 });
 
-/** A home of its own, removed after the test, and a fresh Driver on it per call over a game that scripts nothing. */
-function settingsHome(t: TestContext, screen: FakeScreen = {}) {
-  const home = mkdtempSync(path.join(tmpdir(), "coachemon-home-"));
-  t.after(() => rmSync(home, { recursive: true, force: true }));
-  return () => {
-    const fake = fakeGame(screen);
-    return new Driver(fake.game, fake.clock, {}, home);
-  };
-}
-
 test("solving is off until the player turns it on (#666)", async t => {
-  const driver = settingsHome(t);
-  assert.deepEqual(await driver().solving(), { status: "ok", solving: false });
+  assert.deepEqual(await drive({}, tempHome(t)).driver.solving(), { status: "ok", solving: false });
 });
 
 test("solving turned on stays on for a new Driver on the same home", async t => {
-  const driver = settingsHome(t);
-  assert.deepEqual(await driver().solving(true), { status: "ok", solving: true });
-  assert.deepEqual(await driver().solving(), { status: "ok", solving: true });
+  const home = tempHome(t);
+  assert.deepEqual(await drive({}, home).driver.solving(true), { status: "ok", solving: true });
+  assert.deepEqual(await drive({}, home).driver.solving(), { status: "ok", solving: true });
 });
 
 test("solving turned off again stays off for a new Driver on the same home", async t => {
-  const driver = settingsHome(t);
-  await driver().solving(true);
-  assert.deepEqual(await driver().solving(false), { status: "ok", solving: false });
-  assert.deepEqual(await driver().solving(), { status: "ok", solving: false });
+  const home = tempHome(t);
+  await drive({}, home).driver.solving(true);
+  assert.deepEqual(await drive({}, home).driver.solving(false), { status: "ok", solving: false });
+  assert.deepEqual(await drive({}, home).driver.solving(), { status: "ok", solving: false });
 });
 
 test("solving answers with nothing able to reach the game: it is the plugin's setting, not a read", async t => {
-  const driver = settingsHome(t, { unreachable: { rung: 1, code: "unreachable", line: "The Coachemon hub is not running." } });
-  assert.deepEqual(await driver().solving(true), { status: "ok", solving: true });
+  const unreachable = { rung: 1, code: "unreachable", line: "The Coachemon hub is not running." } as const;
+  assert.deepEqual(await drive({ unreachable }, tempHome(t)).driver.solving(true), { status: "ok", solving: true });
 });

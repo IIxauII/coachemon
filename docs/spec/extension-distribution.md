@@ -669,7 +669,7 @@ The coach reads through the same MCP server, never through `read.sh`. The coach 
 | `screenshot` | Needs the dev table. Against a store build it returns an error `unavailable`: *"screenshot needs a dev build of Coachemon. Use read_menu or get_state to see the screen."* |
 | `read_card`, `read_starters` | New, read-only (§11.4). |
 
-Every tool, acting or reading, first checks reachability. Unreachable → error `unreachable` carrying `rung` and `line` from §12.3. More than one tab → `tabs`, with the list. A needed command missing from the extension → `missing_command` with the rung 4 wording.
+Every tool that reaches the game, acting or reading, first checks reachability; `solving`, the plugin's own setting, never does (#666). Unreachable → error `unreachable` carrying `rung` and `line` from §12.3. More than one tab → `tabs`, with the list. A needed command missing from the extension → `missing_command` with the rung 4 wording.
 
 ### 12.3 `status` and the ladder
 

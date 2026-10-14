@@ -163,7 +163,7 @@ The panel already shows the decision; the user glances at it mid-battle. Speak o
 
 ## Solving
 
-**Solving** is the player's standing setting, off until they turn it on: while it is on, the coach may solve a trainer fight on the run's own seed for an **oracle line**, the inputs that win it. The `solving` tool reads it (no argument) and turns it on or off (`on: true` / `on: false`); it needs no game.
+**Solving** is the player's standing setting, off until they turn it on: while it is on, the coach may solve a trainer fight on the run's own seed for an **oracle line**, the inputs that win it, but never in a Daily run, whose seed every player shares. The `solving` tool reads it (no argument) and turns it on or off (`on: true` / `on: false`); it needs no game.
 
 - **State the cost before turning it on**, plainly: about 0.6 GB of disk, a one-time setup, and minutes of CPU per fight. Turn it on only once the player says yes to that, and never unasked: off is the coach teaching.
 - It is standing: it stays on across sessions until the player turns it off, so never ask again before a fight. Turn it off whenever they ask.

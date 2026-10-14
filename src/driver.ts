@@ -101,11 +101,11 @@ export class Driver {
   readonly #jobs: Jobs;
   readonly #home: string;
 
-  constructor(game: GamePort, clock: Clock = REAL_CLOCK, jobKinds: JobKinds = {}, home: string = coachemonHome()) {
+  constructor(game: GamePort, home: string, clock: Clock = REAL_CLOCK, jobKinds: JobKinds = {}) {
     this.#game = game;
+    this.#home = home;
     this.#clock = clock;
     this.#jobs = new Jobs(jobKinds);
-    this.#home = home;
     game.onRejection(t => this.#outcomes.rejection(t));
   }
 
@@ -113,18 +113,19 @@ export class Driver {
   static create(home: string = coachemonHome()): Driver {
     if (usesHub()) {
       const hub = new HubLink({ port: hubPort(), version: PLUGIN_VERSION });
-      return new Driver(new LinkGame(hub, hub), REAL_CLOCK, {}, home);
+      return new Driver(new LinkGame(hub, hub), home);
     }
     const link = new CdpLink(new CdpSession({ home }), driverLock(home));
-    return new Driver(new LinkGame(link, link), REAL_CLOCK, {}, home);
+    return new Driver(new LinkGame(link, link), home);
   }
 
+  /** The plugin's own setting, so it answers with nothing able to reach the game (extension-distribution.md §12.2). */
   async solving(on?: boolean): Promise<Record<string, unknown>> {
-    if (on !== undefined) writeSettings(this.#home, { ...readSettings(this.#home), solving: on });
+    if (on !== undefined) writeSettings(this.#home, { solving: on });
     return { status: "ok", solving: readSettings(this.#home).solving };
   }
 
-  /** The only tool that answers when the game is out of reach: it reports the failing rung instead of refusing (extension-distribution.md §12.3). */
+  /** The one game read that answers when the game is out of reach: it reports the failing rung instead of refusing (extension-distribution.md §12.3). */
   async status(): Promise<Record<string, unknown>> {
     const presence = await this.#game.presence();
     const head = { status: "ok", reachable: presence.reach === null, reach: presence.reach && { rung: presence.reach.rung, line: presence.reach.line }, ...presence.facts };
