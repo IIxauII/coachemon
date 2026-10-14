@@ -25,7 +25,7 @@ test("oracle:battle prints the gate's answer for a wave-start save and exits as 
   assert.equal(run.status, 2);
 });
 
-test("oracle:battle reads an augmented export's live extras (#659)", () => {
+test("oracle:battle reads a mid-fight export's live extras (#659)", () => {
   const run = oracle({ save: drayton, extras: { arenaTags: [{ tagType: "SAFEGUARD", side: ArenaTagSide.ENEMY }] } });
 
   assert.match(run.stdout, /^no answer: Safeguard is up/);
@@ -36,5 +36,19 @@ test("oracle:battle answers no answer, never a crash's exit code, when the expor
   const run = oracle("{ not json");
 
   assert.match(run.stdout, /^no answer: could not read .*export\.json/);
+  assert.equal(run.status, 2);
+});
+
+test("oracle:battle says the solver failed, not that the export was unreadable, when the solver throws (#659)", () => {
+  const run = oracle({ save: drayton, extras: {} });
+
+  assert.match(run.stdout, /^no answer: the solver failed: /);
+  assert.equal(run.status, 2);
+});
+
+test("oracle:battle reads the re-check record it ships with, which until the pin bump writes one is none (#659, #665)", () => {
+  const run = oracle(drayton);
+
+  assert.match(run.stdout, /^no answer: the oracle's harness hasn't been re-checked on game version 1\.12\.0\.11/);
   assert.equal(run.status, 2);
 });
