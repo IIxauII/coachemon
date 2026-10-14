@@ -350,6 +350,9 @@ Without an **oracle line** it is the **fight plan** written out across turns, ne
 card's own verdict made conditional, and a call the coach knows is wrong is fixed in the card rather than overridden in
 the plan. With one, the oracle line is its plan.
 
+A boss fight is named by who the trainer is, not by the wave: every tenth wave is a boss wave, and a boss is any foe
+behind **boss bars**, but only those five trainers make a boss fight.
+
 Distinct from the **fight plan**, which is the card's own read of the battle and lives only on the card.
 
 ## Turn score

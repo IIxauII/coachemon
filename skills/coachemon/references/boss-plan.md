@@ -1,35 +1,41 @@
 # Boss-fight plan
 
 The record of one boss fight, kept as a file so that it outlives the session. The HUD card is the live view of the
-fight; the plan holds what spans turns. Without an oracle line — every plan, until solving exists — it is the card's
-own **fight plan** written out across turns.
+fight; the plan holds what spans turns. Without an oracle line it is the card's own **fight plan** written out across
+turns.
 
-`<home>` is `$COACHEMON_HOME`, else `~/.coachemon`. The battle read's `planFile` is the plan's path under it:
-`plans/<seed>-w<wave>-<trainer>.md`.
+The plan lives at `<home>/<planFile>`. `<home>` is `$COACHEMON_HOME` when it is set, else `~/.coachemon`; `planFile`
+is the battle read's `plans/<seed>-w<wave>-<trainer>.md`. Everything up to `-w<wave>-` is the fight, and the trainer
+part follows the game's language.
 
 ## Steps
 
-1. **Find.** On every read of a boss fight, list `<home>/plans/<seed>-w<wave>-*.md`, with the seed and the wave from
-   the read. The seed and the wave are the fight; the trainer part of the name is only there to be read, and a
-   language switch can change it. Done when you know which case you are in:
+1. **Find.** On every read of a boss fight, list `<home>/<planFile>` with its trainer part as `*`
+   (`plans/U0QKEz8wXq3LmN7pR2sT9vYb-w145-*.md`). Done when you know which case you are in:
    - **Found, and the battle is at its first turn while the file has already ticked a check:** a retry through
      Continue — the same seed, the same wave, the same fight. Start the next attempt in the same file: carry what
      broke into *Off the plan*, clear the ticks, and count the attempt up in the status line. Then step 3.
-   - **Found, any other status:** a new session, a restart or a late join. Read the file's status line and the
-     battle, and resume at step 3.
+   - **Found, any other case:** the plan this fight already has — from this session, an earlier one, or before a
+     restart or a late join. Read its status line and the battle, and resume at step 3.
    - **Not found:** step 2.
-2. **Write** at the fight's first command, once the card shows its ⚔ call. At the intro the card can't ask the
-   engine and reads the fight off the type chart alone, so a plan written there argues with the card that follows.
-   Build every section below from the `plan` group in the read's `card` text, write the file (`mkdir -p` its
-   folder), and give the user its path in one line. Done when the file holds the status line and all seven sections.
+
+   The first time this session finds or writes the plan, give the user its path in one line.
+2. **Write** at the first command you see in the fight — its first, or the turn you joined on — once the card shows
+   its ⚔ call. At the intro the card can't ask the engine and reads the fight off the type chart alone, so a plan
+   written there argues with the card that follows. Build every section below from the `plan` group in the read's
+   `card` text; `card` is `null` while the HUD is off, so start it (`read.sh <browser> hud`) and read again. Write the
+   file, making its folder if need be. Done when the file holds its three opening lines and all seven sections.
 3. **Tick** on every read after. Mark each phase whose check has come due ✓ with what the battle showed, or ✗ with
    what came instead; the phase in play is ▸. A ✗ adds its break, and the play it leaves, to *Off the plan*. When the
    card's verdict changes (a `LIKELY LOST` line), rewrite the call to the card's new verdict and name the turn.
    Rewrite the status line each time. Done when the status line names the last check the battle has reached.
 
-The status line is the file's second line, and what the next session resumes from: `on the plan · checked through
-<phase> · attempt <n>`, `off the plan at <phase>: <what broke> · attempt <n>`, `won · attempt <n>` or `lost at
-<phase> · attempt <n>`.
+The file opens with three lines:
+- the title, `# Plan: <trainer> · W<wave> · singles` (or `doubles`);
+- the status line, which is what the next session resumes from: `on the plan · checked through <phase> · attempt
+  <n>`, `off the plan at <phase>: <what broke> · attempt <n>`, `won · attempt <n>` or `lost at <phase> · attempt <n>`;
+- the marks line, `Marks as on the card: none exact, ≈ estimate, ! proved wrong. Inputs and Off the plan claim
+  nothing.`
 
 ## One call
 
@@ -42,7 +48,7 @@ tell the user it is a gap in the card, and keep the plan on the card's call. The
 *Principles*, where the player weighs it for themselves.
 
 An oracle line is the one thing that takes the call from the card, and the card then draws the line's step in place
-of its own ⚔, so there is still one call. Solving isn't built yet.
+of its own ⚔, so there is still one call.
 
 ## Sections
 
@@ -50,8 +56,7 @@ In this order. Marks as on the card: no mark is exact, `~` replay, `≈` estimat
 
 1. **The call** — `≈`, conditional. The card's verdict word, `winnable` or `likely lost`, with the one condition it
    rests on: a check the player can read off the battle. `≈ winnable if Dragonite meets Rayquaza at full HP`,
-   `≈ likely lost unless Raichu breaks a bar before Outrage`. A lean, not a promise: on Gordie W180 the fight plan's
-   read of whether a position was winnable matched how the card's own play then went at only 9 of 22 points.
+   `≈ likely lost unless Raichu breaks a bar before Outrage`. A lean, not a promise.
 2. **Why trust it** — what the call rests on, one line each, each with its own mark:
    - both teams, held items, abilities and stats, from the battle read at the first command (exact);
    - each foe's move and the trainer's swaps, from the turn read, on the turn it reads them (exact, `~` where our
@@ -66,7 +71,7 @@ In this order. Marks as on the card: no mark is exact, `~` replay, `≈` estimat
 5. **Inputs to get right** — no claim. The presses a mistake costs here: faint replacements (who, and who never),
    waiting for the first command before reading the card, a Tera.
 6. **Off the plan** — no claim. The likely breaks, each with what the player does next, then `Anything else: the
-   card's turn line leads.` The plan carries on from where the game stands; a reload is never the answer.
+   card's turn line leads.` The plan carries on from where the game stands.
 7. **Principles** — the mechanics that decide this fight, exact (a boss bar stops a hit at its edge; an Enigma Berry
    heals 25% on a super-effective hit; Extreme Speed hits first whatever the Speed), and hand-worked damage `≈`. They
    are what the player plays by once off the plan.
@@ -74,9 +79,9 @@ In this order. Marks as on the card: no mark is exact, `~` replay, `≈` estimat
 ## Shape
 
 ```markdown
-# Plan: Rival Ivy · W145 · singles
+# Plan: Ivy · W145 · singles
 on the plan · checked through Kingdra · attempt 1
-Marks as on the card: none exact, `≈` estimate, `!` proved wrong. Inputs and Off the plan claim nothing.
+Marks as on the card: none exact, ≈ estimate, ! proved wrong. Inputs and Off the plan claim nothing.
 
 ## The call ≈
 **Winnable if Dragonite meets Rayquaza at full HP.** The card's verdict: a lean, not a promise.

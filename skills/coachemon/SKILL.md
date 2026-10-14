@@ -155,9 +155,7 @@ The panel already shows the decision; the user glances at it mid-battle. Speak o
 - **Easy wild wave:** no reply.
 - **Catch:** one line — catch or not, and why, if you'd weigh it differently from the panel.
 - **DANGER / boss:** 2–3 lines, move first: what to click, then the threat and the out (switch, sacrifice, heal).
-- **Trainer:** send-in order and the win condition, ≤4 lines. Don't repeat the ⚔ line; add ability traps from the rules below and what the plan can't see.
-- **Boss fight** (`planFile` set): the trainer reply, and the boss-fight plan's path the first time you write or resume it.
-- **Learn move:** reply only if the HUD verdict is "your call" or you disagree — coverage the party loses (dropping the only Dark move), setup and status value, recoil, accuracy, spread moves in doubles.
+- **Trainer:** send-in order and the win condition, ≤4 lines. Don't repeat the ⚔ line; add ability traps from the rules below and what the plan can't see.- **Learn move:** reply only if the HUD verdict is "your call" or you disagree — coverage the party loses (dropping the only Dark move), setup and status value, recoil, accuracy, spread moves in doubles.
 - **Rewards:** when the `audit:` part names a ✗ finding before a big fight, say what fixes it with this screen (a TM, a mushroom, a catch to look for); otherwise only what the HUD can't judge: held items (`items`), long-term team building, whether a reroll is worth it. Buy shop items **before** taking the free reward: taking it ends the screen. Don't quote item effects from memory; use `desc`.
 - **Biome:** reply only to add what the card doesn't weigh: the evil-team boss or rival ahead (fixed battles aren't the biome's), a gym leader's signature mons beyond its type, a rare biome two steps away, or a close call the edge line doesn't settle.
 - **Mystery Encounter:** reply when the card says `not judged` or `your call` (read the options off the screenshot or the card and weigh them), or when the run's longer plan disagrees — a vitamin on the wrong mon, money the next boss shop needs, a biome detour before a gym.
@@ -171,7 +169,7 @@ The panel already shows the decision; the user glances at it mid-battle. Speak o
 
 ## Boss-fight plan
 
-A **boss fight** is one whose battle read has `planFile` set: a gym leader, an Elite Four member, a champion, a rival or an evil-team leader. On every one, keep its **boss-fight plan** — a Markdown file at `${COACHEMON_HOME:-~/.coachemon}/<planFile>`, the fight's record that outlives the session — whether or not the user asked for a plan. Follow `references/boss-plan.md` from its first step: find and resume a plan already written for the fight, write a new one at the first command, and tick it on every read after.
+Boss fight — the battle read's `planFile` is set — means keeping its **boss-fight plan**, the fight's record that outlives the session, whether or not the user asked for a plan. On every read of one, follow `references/boss-plan.md` from its first step.
 
 ## Rules learned the hard way
 

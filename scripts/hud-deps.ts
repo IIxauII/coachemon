@@ -692,7 +692,7 @@ export const HUD_DEPS = {
     `src/ui/handlers/modifier-select-ui-handler.ts#ModifierSelectUiHandler.show`,
   ],
 
-  /** game-code.md §12. */
+  /** game-code.md §11, §12. */
   "56-boss-plan.js": [
     `src/data/trainers/trainer-config.ts#TrainerConfig.initForGymLeader`,
     `src/data/trainers/trainer-config.ts#TrainerConfig.initForEliteFour`,
@@ -701,6 +701,10 @@ export const HUD_DEPS = {
     `src/data/trainers/trainer-config.ts#TrainerConfig.initForEvilTeamAdmin`,
     `src/data/trainers/trainer-config.ts#TrainerConfig.clone`,
     `src/field/trainer.ts#Trainer.getName`,
+    `src/utils/common.ts#randomString`,
+    `src/phases/title-phase.ts#TitlePhase.initDailyRun`,
+    `src/api/daily-api.ts#PokerogueDailyApi.getSeed`,
+    `src/game-mode.ts#GameMode.trySetCustomDailyConfig`,
   ],
 
   "55-journal.js": [

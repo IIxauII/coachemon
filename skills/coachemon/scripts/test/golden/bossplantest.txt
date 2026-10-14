@@ -1,5 +1,7 @@
 == rivals, classic
+W8 Finn                       plans/U0QKEz8wXq3LmN7pR2sT9vYb-w8-finn.md
 W145 Ivy                      plans/U0QKEz8wXq3LmN7pR2sT9vYb-w145-ivy.md
+W195 Ivy                      plans/U0QKEz8wXq3LmN7pR2sT9vYb-w195-ivy.md
 == voucher trainers
 W180 Gordie                   plans/U0QKEz8wXq3LmN7pR2sT9vYb-w180-gordie.md
 W182 Lorelei                  plans/U0QKEz8wXq3LmN7pR2sT9vYb-w182-lorelei.md

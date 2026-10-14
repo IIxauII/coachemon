@@ -1,5 +1,3 @@
-// Names a boss fight's plan file (CONTEXT.md, `Boss-fight plan`). The name is the fight's key: a later session finds
-// the plan by it, so any read of the same fight has to give the same name.
 import { isRivalWave } from "./03-calendar.js";
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
@@ -12,10 +10,10 @@ const isBossFight = s => {
   return !!b.trainer.config?.hasVoucher || isRivalWave(s, b.waveIndex);
 };
 
-const dashed = (text, keep) => String(text ?? "").replace(keep, "-").replace(/^-+|-+$/g, "");
+const dashed = (text, drop) => String(text ?? "").replace(drop, "-").replace(/^-+|-+$/g, "");
 
-// Relative to the coachemon home directory. The seed keeps its case, since two seeds can differ only there, and a
-// Daily's can hold `/` (game-code.md §11).
+// Relative to the coachemon home directory. Everything up to `-w<wave>-` is the fight's key, the same from any read of
+// it; the trainer part follows the game's language. A Daily's seed can hold `/` (game-code.md §11).
 // @only probe, tests: planFile
 export const planFile = s => {
   if (!isBossFight(s)) return null;

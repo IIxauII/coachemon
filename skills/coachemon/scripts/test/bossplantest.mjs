@@ -6,10 +6,9 @@ const MODES = {
   classic: { isClassic: true, isWaveFinal: w => w === 200, isBoss: w => w % 10 === 0, isFixedBattle: w => CLASSIC_FIXED.has(w) },
   daily: { isDaily: true, isWaveFinal: w => w === 50, isBoss: w => w % 10 === 0, isFixedBattle: () => false },
 };
-const TRAINER = 1;
 const trainer = (name, { voucher = false } = {}) => ({ getName: () => name, config: { hasVoucher: voucher } });
-const scene = (wave, t, { mode = "classic", seed = "U0QKEz8wXq3LmN7pR2sT9vYb", battleType = TRAINER } = {}) =>
-  ({ seed, gameMode: MODES[mode], currentBattle: { waveIndex: wave, battleType, trainer: t } });
+const scene = (wave, t, { mode = "classic", seed = "U0QKEz8wXq3LmN7pR2sT9vYb" } = {}) =>
+  ({ seed, gameMode: MODES[mode], currentBattle: { waveIndex: wave, trainer: t } });
 
 globalThis.window = globalThis;
 globalThis.Phaser = { Math: { RND: { state: () => "!rnd,0" } },
@@ -27,9 +26,10 @@ const row = (label, s) => console.log(`${label.padEnd(30)}${planFile(s) ?? "—"
 // ---- Every rival is a boss fight
 {
   console.log("== rivals, classic");
-  const s = scene(145, trainer("Ivy"));
-  row("W145 Ivy", s);
-  assert.equal(planFile(s), "plans/U0QKEz8wXq3LmN7pR2sT9vYb-w145-ivy.md");
+  for (const [w, name] of [[8, "Finn"], [145, "Ivy"], [195, "Ivy"]]) row(`W${w} ${name}`, scene(w, trainer(name)));
+  assert.equal(planFile(scene(8, trainer("Finn"))), "plans/U0QKEz8wXq3LmN7pR2sT9vYb-w8-finn.md");
+  assert.equal(planFile(scene(145, trainer("Ivy"))), "plans/U0QKEz8wXq3LmN7pR2sT9vYb-w145-ivy.md");
+  assert.equal(planFile(scene(195, trainer("Ivy"))), "plans/U0QKEz8wXq3LmN7pR2sT9vYb-w195-ivy.md");
 }
 
 // ---- The trainers the game pays a voucher for are boss fights
@@ -49,11 +49,10 @@ const row = (label, s) => console.log(`${label.padEnd(30)}${planFile(s) ?? "—"
     ["W42 an ordinary trainer", scene(42, trainer("Youngster Joey"))],
     ["W35 the grunt", scene(35, trainer("Rocket Grunt"))],
     ["W66 the admin", scene(66, admin)],
-    ["W10 a wild boss", scene(10, null, { battleType: 0 })],
+    ["W10 a wild boss", scene(10, null)],
     ["W145 Daily, no rival there", scene(145, trainer("Ivy"), { mode: "daily" })],
     // The config Mysterious Challengers clones from a gym leader's (game-code.md §12).
-    ["W120 encounter's gym leader", scene(120, { ...trainer("Clair"), config: { hasVoucher: false, isBoss: true } },
-      { battleType: 3 })],
+    ["W120 encounter's gym leader", scene(120, { ...trainer("Clair"), config: { hasVoucher: false, isBoss: true } })],
   ];
   for (const [label, s] of cases) {
     row(label, s);
