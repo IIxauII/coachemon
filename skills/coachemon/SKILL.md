@@ -112,7 +112,7 @@ When the user wants the coach running for the whole session ("keep coaching", "w
      guess, and so is the grunt's name, which comes off the same unseeded rolls ("Magma Grunts" for the double, "Magma
      Grunt" for the single). Anywhere else the wave's trainer is drawn on the stream, so the party under it is no surer than the
      trainer, however precisely each member is computed: fields are marked `~` (holds only while the game
-     draws what the replay draws), `?` (a guess — the spawn pool shifts when the arena rebuilds it, entering a biome
+     draws what the replay draws), `≈` (an estimate — the spawn pool shifts when the arena rebuilds it, entering a biome
      and again at X5) or `!` (this run has already proved it wrong). Whether the wave is a trainer at all costs a
      draw only where the game really rolls for it: a gym wave, an X0, an X1, every Daily wave and every wave of an
      Endless run (which has no trainers) are settled by rule, and read `exact`. The card always closes with **"if nothing changes"**: a catch, an evolution, a shop

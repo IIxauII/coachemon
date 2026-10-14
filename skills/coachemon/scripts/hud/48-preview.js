@@ -277,7 +277,7 @@ export const previewFor = (run, w) => {
 };
 export const previewNext = run => previewFor(run, run.facts.wave + 1);
 
-const PREVIEW_MARK = { exact: "", replay: "~", estimate: "?" };
+const PREVIEW_MARK = { exact: "", replay: "~", estimate: "≈" };
 export const confidenceMark = c => PREVIEW_MARK[c] ?? "";
 export const previewMark = (m, field) => (m.missed?.includes(field) ? "!" : confidenceMark(m.confidence?.[field]));
 // A fixed battle is named in a word, not `★`: on the panel that means the pick (#349).

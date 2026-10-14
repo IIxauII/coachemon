@@ -368,8 +368,8 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   assert.deepEqual([read(1, 5).r.name, read(1, 5).r.confidence], ["Youngster W5", "exact"], "a fixed battle is exact");
   assert.deepEqual([read(14, 20).r.name, read(14, 20).r.confidence], ["Youngster W20~", "replay"],
     "a gym read in the biome it is fought in keeps its replay");
-  assert.deepEqual([read(100, 110).r.name, read(100, 110).r.confidence], ["Youngster W110?", "estimate"],
-    "read on the X0 before it, a gym leader is a guess (#591)");
+  assert.deepEqual([read(100, 110).r.name, read(100, 110).r.confidence], ["Youngster W110≈", "estimate"],
+    "read on the X0 before it, a gym leader is a guess (#591), marked as every estimate is (#678)");
   assert.equal(read(14, 30).r, null, "a fight past the road's next is no roster");
   assert.equal(read(1, 8).r, null, "nor is one the road reaches only after another");
   const { scene } = mount({ wave: 24, party: team() });

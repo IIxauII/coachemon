@@ -177,4 +177,21 @@ Tackle · Rock Slide
 Tackle · Rock Slide
 if nothing changes: a catch, evolution, shop pick or biome change re-rolls this
 summary "W8 fixed trainer Rival1 — Geodude L10, Machop L11, Machop L12"
+== card wave 21
+Next W21 wild
+· Onix L13≈ Rock Ground Sturdy
+Tackle
+the next biome brings its own spawn pool · ~ holds while nothing else draws first · if nothing changes: a catch, evolution, shop pick or biome change re-rolls this
+summary "W21 wild — Onix L13 [≈~]"
+== card wave 35
+Next W35 fixed trainer
+· Rocket Grunt0≈
+· Gengar L23 Ghost Poison Sturdy
+Tackle · Rock Slide
+· Machop L24 Fighting Sturdy
+Tackle · Rock Slide
+· Gengar L25 Ghost Poison Sturdy
+Tackle · Rock Slide
+this grunt's double is an unseeded roll: it can't be read ahead · if nothing changes: a catch, evolution, shop pick or biome change re-rolls this
+summary "W35 fixed trainer Rocket Grunt0 — Gengar L23, Machop L24, Gengar L25 [≈]"
 ok
