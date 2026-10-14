@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { Driver } from "./driver.ts";
-import { KEPT_ENDED, type JobKinds, type JobRun } from "./jobs.ts";
+import { KEPT_ENDED, type JobKinds, type JobWork } from "./jobs.ts";
 import { Button, MoveCategory, PokemonType, StatusEffect, UiMode } from "./enums/generated.ts";
 import { Refusal } from "./envelope.ts";
 import { fakeGame, type FakeScreen, type ScreenRead } from "./game/fake-game.ts";
@@ -1013,14 +1013,11 @@ test("a coach tool refuses by rung when nothing can reach the game (extension-di
   }
 });
 
-/**
- * A job that takes a step only when the test calls `step()`, reporting `step i of N`, and answers `{ steps: N }` after
- * the last. It stops at its next step once its signal aborts, and says so in `stopped`.
- */
+/** A job that takes a step only when the test calls `step()`. */
 function steppedJob() {
   const waiting: (() => void)[] = [];
   const seen = { stopped: false };
-  const run: JobRun = async (args, { signal, progress }) => {
+  const work: JobWork = async (args, { signal, progress }) => {
     const steps = Number(args.steps);
     for (let i = 1; i <= steps; i++) {
       await new Promise<void>(r => {
@@ -1036,7 +1033,7 @@ function steppedJob() {
     return { steps };
   };
   return {
-    run,
+    work,
     seen,
     step: async () => {
       waiting.shift()?.();
@@ -1052,7 +1049,7 @@ function jobDriver(kinds: JobKinds): Driver {
 
 test("start_job returns at once with the job running, before the job has taken a step (#667)", async () => {
   const job = steppedJob();
-  const driver = jobDriver({ stepped: job.run });
+  const driver = jobDriver({ stepped: job.work });
   const r = await outcome(driver.startJob("stepped", { steps: 3 }));
   assert.equal(r.state, "running", JSON.stringify(r));
   assert.equal(r.kind, "stepped");
@@ -1062,39 +1059,39 @@ test("start_job returns at once with the job running, before the job has taken a
 
 test("poll_job reads the progress line change as the job runs (#667)", async () => {
   const job = steppedJob();
-  const driver = jobDriver({ stepped: job.run });
+  const driver = jobDriver({ stepped: job.work });
   const { job: id } = await driver.startJob("stepped", { steps: 3 });
   await job.step();
-  assert.deepEqual(await driver.pollJob(String(id)), { job: id, kind: "stepped", state: "running", progress: "step 1 of 3" });
+  assert.deepEqual(await driver.pollJob(id), { job: id, kind: "stepped", state: "running", progress: "step 1 of 3" });
   await job.step();
-  assert.equal((await driver.pollJob(String(id))).progress, "step 2 of 3");
+  assert.equal((await driver.pollJob(id)).progress, "step 2 of 3");
 });
 
 test("read_job returns the job's answer once it is done, and only the state while it runs (#667)", async () => {
   const job = steppedJob();
-  const driver = jobDriver({ stepped: job.run });
+  const driver = jobDriver({ stepped: job.work });
   const { job: id } = await driver.startJob("stepped", { steps: 2 });
   await job.step();
-  const running = await driver.readJob(String(id));
+  const running = await driver.readJob(id);
   assert.equal(running.state, "running");
   assert.equal("result" in running, false, JSON.stringify(running));
   await job.step();
-  assert.deepEqual(await driver.readJob(String(id)), { job: id, kind: "stepped", state: "done", progress: "step 2 of 2", result: { steps: 2 } });
-  assert.equal((await driver.pollJob(String(id))).state, "done");
+  assert.deepEqual(await driver.readJob(id), { job: id, kind: "stepped", state: "done", progress: "step 2 of 2", result: { steps: 2 } });
+  assert.equal((await driver.pollJob(id)).state, "done");
 });
 
 test("cancel_job stops the job, and its result says cancelled (#667)", async () => {
   const job = steppedJob();
-  const driver = jobDriver({ stepped: job.run });
+  const driver = jobDriver({ stepped: job.work });
   const { job: id } = await driver.startJob("stepped", { steps: 3 });
   await job.step();
-  assert.equal((await driver.cancelJob(String(id))).state, "cancelled");
+  assert.equal((await driver.cancelJob(id)).state, "cancelled");
   await job.step();
   assert.equal(job.seen.stopped, true, "the job saw its signal and stopped");
-  assert.deepEqual(await driver.readJob(String(id)), { job: id, kind: "stepped", state: "cancelled", progress: "step 1 of 3" });
+  assert.deepEqual(await driver.readJob(id), { job: id, kind: "stepped", state: "cancelled", progress: "step 1 of 3" });
 });
 
-test("a cancelled job stays as it was cancelled, even when its run keeps reporting and then answers (#667)", async () => {
+test("a cancelled job stays as it was cancelled, even when its work keeps reporting and then answers (#667)", async () => {
   let release = () => {};
   const driver = jobDriver({
     deaf: async (_args, { progress }) => {
@@ -1105,19 +1102,19 @@ test("a cancelled job stays as it was cancelled, even when its run keeps reporti
     },
   });
   const { job: id } = await driver.startJob("deaf", {});
-  await driver.cancelJob(String(id));
+  await driver.cancelJob(id);
   release();
   await new Promise(r => setImmediate(r));
-  assert.deepEqual(await driver.readJob(String(id)), { job: id, kind: "deaf", state: "cancelled", progress: "searching" });
+  assert.deepEqual(await driver.readJob(id), { job: id, kind: "deaf", state: "cancelled", progress: "searching" });
 });
 
 test("cancel_job leaves a job that already ended as it ended (#667)", async () => {
   const job = steppedJob();
-  const driver = jobDriver({ stepped: job.run });
+  const driver = jobDriver({ stepped: job.work });
   const { job: id } = await driver.startJob("stepped", { steps: 1 });
   await job.step();
-  assert.equal((await driver.cancelJob(String(id))).state, "done");
-  assert.deepEqual((await driver.readJob(String(id))).result, { steps: 1 });
+  assert.equal((await driver.cancelJob(id)).state, "done");
+  assert.deepEqual((await driver.readJob(id)).result, { steps: 1 });
 });
 
 test("a job that throws ends failed with its error, not hung, whether it throws at once or later (#667)", async () => {
@@ -1134,19 +1131,19 @@ test("a job that throws ends failed with its error, not hung, whether it throws 
   const later = await driver.startJob("later", {});
   const atOnce = await driver.startJob("atOnce", {});
   await new Promise(r => setImmediate(r));
-  assert.deepEqual(await driver.readJob(String(later.job)), { job: later.job, kind: "later", state: "failed", progress: null, failure: "the clone is gone" });
-  assert.deepEqual(await driver.readJob(String(atOnce.job)), { job: atOnce.job, kind: "atOnce", state: "failed", progress: null, failure: "no clone to set up" });
+  assert.deepEqual(await driver.readJob(later.job), { job: later.job, kind: "later", state: "failed", progress: null, failure: "the clone is gone" });
+  assert.deepEqual(await driver.readJob(atOnce.job), { job: atOnce.job, kind: "atOnce", state: "failed", progress: null, failure: "no clone to set up" });
 });
 
 test("a job kind the plugin does not run refuses, naming the kinds it does (#667)", async () => {
-  const driver = jobDriver({ stepped: steppedJob().run });
+  const driver = jobDriver({ stepped: steppedJob().work });
   const r = await outcome(driver.startJob("solve", {}));
   assert.equal(r.error, "unknown_job_kind", JSON.stringify(r));
   assert.deepEqual(r.kinds, ["stepped"]);
 });
 
 test("a job id the plugin does not hold refuses on poll, read and cancel, naming the jobs it does (#667)", async () => {
-  const driver = jobDriver({ stepped: steppedJob().run });
+  const driver = jobDriver({ stepped: steppedJob().work });
   const { job: id } = await driver.startJob("stepped", { steps: 1 });
   for (const call of [(d: Driver) => d.pollJob("stepped-99"), (d: Driver) => d.readJob("stepped-99"), (d: Driver) => d.cancelJob("stepped-99")]) {
     const r = await outcome(call(driver));
@@ -1158,14 +1155,14 @@ test("a job id the plugin does not hold refuses on poll, read and cancel, naming
 test("the plugin keeps the most recent ended jobs and drops the oldest, never a running one (#667)", async () => {
   const slow = steppedJob();
   const quick = steppedJob();
-  const driver = jobDriver({ slow: slow.run, quick: quick.run });
+  const driver = jobDriver({ slow: slow.work, quick: quick.work });
   const { job: running } = await driver.startJob("slow", { steps: 1 });
-  const ended: unknown[] = [];
+  const ended: string[] = [];
   for (let i = 0; i <= KEPT_ENDED; i++) {
     ended.push((await driver.startJob("quick", { steps: 1 })).job);
     await quick.step();
   }
-  assert.equal((await outcome(driver.readJob(String(ended[0])))).error, "unknown_job", "the oldest ended job is gone");
-  assert.equal((await driver.readJob(String(ended[1]))).state, "done");
-  assert.equal((await driver.pollJob(String(running))).state, "running", "a running job is never dropped");
+  assert.equal((await outcome(driver.readJob(ended[0]))).error, "unknown_job", "the oldest ended job is gone");
+  assert.equal((await driver.readJob(ended[1])).state, "done");
+  assert.equal((await driver.pollJob(running)).state, "running", "a running job is never dropped");
 });

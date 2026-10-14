@@ -1,15 +1,16 @@
-/** Work that outlasts one tool call, held in this process only: a restart loses every job (#667). */
 import { Refusal } from "./envelope.ts";
 
 /**
- * A run stops its work once `signal` aborts. Its job has ended cancelled by then, so whatever it reports, returns or
- * throws afterwards is dropped.
+ * Work stops once `signal` aborts. Its job has ended cancelled by then, so whatever the work reports, returns or throws
+ * afterwards is dropped.
  */
-export type JobRun = (args: Record<string, unknown>, ctl: { signal: AbortSignal; progress: (line: string) => void }) => Promise<unknown>;
+export type JobWork = (args: Record<string, unknown>, ctl: { signal: AbortSignal; progress: (line: string) => void }) => Promise<unknown>;
 
-export type JobKinds = Readonly<Record<string, JobRun>>;
+export type JobKinds = Readonly<Record<string, JobWork>>;
 
 export type JobState = "running" | "done" | "failed" | "cancelled";
+
+export type JobView = { job: string; kind: string; state: JobState; progress: string | null; result?: unknown; failure?: string };
 
 export const KEPT_ENDED = 16;
 
@@ -25,9 +26,9 @@ export class Jobs {
     this.#kinds = kinds;
   }
 
-  start(kind: string, args: Record<string, unknown>): Record<string, unknown> {
+  start(kind: string, args: Record<string, unknown>): JobView {
     if (!Object.hasOwn(this.#kinds, kind)) throw new Refusal("unknown_job_kind", `This plugin runs no job of kind ${JSON.stringify(kind)}.`, { kinds: Object.keys(this.#kinds) });
-    const run = this.#kinds[kind];
+    const work = this.#kinds[kind];
     const job: Job = { id: `${kind}-${++this.#started}`, kind, state: "running", progress: null, controller: new AbortController() };
     this.#jobs.set(job.id, job);
     const ctl = {
@@ -36,25 +37,25 @@ export class Jobs {
         if (job.state === "running") job.progress = line;
       },
     };
-    void new Promise(resolve => resolve(run(args, ctl))).then(
+    void new Promise(resolve => resolve(work(args, ctl))).then(
       result => this.#end(job, { state: "done", result }),
       (e: unknown) => this.#end(job, { state: "failed", failure: e instanceof Error ? e.message : String(e) }),
     );
     return view(job);
   }
 
-  poll(id: string): Record<string, unknown> {
+  poll(id: string): JobView {
     return view(this.#job(id));
   }
 
-  read(id: string): Record<string, unknown> {
+  read(id: string): JobView {
     const job = this.#job(id);
     if (job.state === "done") return { ...view(job), result: job.result };
     if (job.state === "failed") return { ...view(job), failure: job.failure };
     return view(job);
   }
 
-  cancel(id: string): Record<string, unknown> {
+  cancel(id: string): JobView {
     const job = this.#job(id);
     if (this.#end(job, { state: "cancelled" })) job.controller.abort();
     return view(job);
@@ -77,6 +78,6 @@ export class Jobs {
   }
 }
 
-function view(job: Job): Record<string, unknown> {
+function view(job: Job): JobView {
   return { job: job.id, kind: job.kind, state: job.state, progress: job.progress };
 }

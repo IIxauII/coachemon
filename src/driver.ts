@@ -11,7 +11,7 @@ import { Refusal } from "./envelope.ts";
 import { ladderFor, PINNED_GAME_VERSION } from "./escape-ladder/lookup.ts";
 import { LinkGame } from "./game/link-game.ts";
 import { HubLink, hubPort, usesHub } from "./hub/link.ts";
-import { Jobs, type JobKinds } from "./jobs.ts";
+import { Jobs, type JobKinds, type JobView } from "./jobs.ts";
 import { PLUGIN_VERSION } from "./plugin-version.ts";
 import type { CommandName } from "./protocol/commands.ts";
 import { MOVED, type Act, type CursorTarget, type GamePort, type MenuOption, type MenuRead, type Ready, type SnapshotDetail } from "./game/port.ts";
@@ -192,19 +192,19 @@ export class Driver {
     });
   }
 
-  async startJob(kind: string, args: Record<string, unknown>): Promise<Record<string, unknown>> {
+  async startJob(kind: string, args: Record<string, unknown>): Promise<JobView> {
     return this.#jobs.start(kind, args);
   }
 
-  async pollJob(id: string): Promise<Record<string, unknown>> {
+  async pollJob(id: string): Promise<JobView> {
     return this.#jobs.poll(id);
   }
 
-  async readJob(id: string): Promise<Record<string, unknown>> {
+  async readJob(id: string): Promise<JobView> {
     return this.#jobs.read(id);
   }
 
-  async cancelJob(id: string): Promise<Record<string, unknown>> {
+  async cancelJob(id: string): Promise<JobView> {
     return this.#jobs.cancel(id);
   }
 

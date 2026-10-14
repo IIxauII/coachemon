@@ -163,7 +163,7 @@ export function toolServer(driver: Driver): McpServer {
     },
   );
 
-  const job = z.string().describe("The job's id, as start_job returned it");
+  const jobId = z.string().describe("The job's id, as start_job returned it");
 
   server.registerTool(
     "start_job",
@@ -183,7 +183,7 @@ export function toolServer(driver: Driver): McpServer {
     {
       description:
         "A background job's state (running, done, failed or cancelled) and its latest progress line, short enough to relay as it is. Read-only and cheap: poll as often as needed. Refuses unknown_job for an id this server does not hold, listing the ones it does.",
-      inputSchema: { job },
+      inputSchema: { job: jobId },
     },
     async ({ job }) => run("poll_job", { job }, () => driver.pollJob(job)),
   );
@@ -193,7 +193,7 @@ export function toolServer(driver: Driver): McpServer {
     {
       description:
         "A background job's answer: poll_job's fields, plus `result` once it is done or `failure` once it has failed. A cancelled job has neither, and a running one reads as poll_job does.",
-      inputSchema: { job },
+      inputSchema: { job: jobId },
     },
     async ({ job }) => run("read_job", { job }, () => driver.readJob(job)),
   );
@@ -202,7 +202,7 @@ export function toolServer(driver: Driver): McpServer {
     "cancel_job",
     {
       description: "Stop a running background job: it ends cancelled at once and its work stops. A job that has already ended is left as it ended, and the result says how.",
-      inputSchema: { job },
+      inputSchema: { job: jobId },
     },
     async ({ job }) => run("cancel_job", { job }, () => driver.cancelJob(job)),
   );
