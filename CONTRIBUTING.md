@@ -29,10 +29,11 @@ The server **attaches to an existing `pokerogue.net` tab on debug port 9222 if t
 - `node scripts/autoplay.ts --waves N` — drives waves on the card's act group (`scripts/lag-run/policy.ts`) and logs every call to `.cache/autoplay.jsonl` (the soak driver for [#25](https://github.com/IIxauII/coachemon/issues/25))
 - `npm run lag:run -- --slot N` and `npm run lag:report -- <log>` — the lag run and its report ([`docs/lag-run.md`](docs/lag-run.md), [#499](https://github.com/IIxauII/coachemon/issues/499))
 - `node scripts/eval.ts '<js body>'` — evaluates against the live scene
-- `npm run enums:gen` — regenerates the enum tables from the pinned game tag (`--check` fails if `src/enums/generated.ts` is stale, and CI runs it on every PR)
+- `npm run enums:gen` — regenerates the enum tables, and the item registry a save is loaded against, from the pinned game tag (`--check` fails if `src/enums/generated.ts` or `src/enums/modifiers.ts` is stale, and CI runs it on every PR)
 - `npm run randbats:gen` — refreshes the coach's bundled moveset-prior snapshot (`--check` fails if it is stale; `.github/workflows/randbats.yml` re-runs it weekly and opens a pull request carrying the new snapshot and the regenerated goldens)
 - `npm run drift:check` — checks the escape ladder and the coach HUD's game-code deps against a candidate build (`ladder:drift` is kept as an alias)
 - `npm run oracle:encounter` — plays each Mystery Encounter headless in the pinned clone and checks the coach's encounter card against what the game actually does (its header says what the clone needs first)
+- `npm run oracle:battle <export.json>` — runs the solver a player's plugin runs, on a wave-start save or an augmented export (`{ save, extras }`), against the pinned game version, so a player's "no answer" can be reproduced. Only its refusal gate is built so far, so it prints "no answer" with the gate's reason, or "solving not built yet". It exits 0 on an oracle line and 2 on no answer, and never passes a child process's exit code through ([#659](https://github.com/IIxauII/coachemon/issues/659))
 - `npm run oracle:preview` — walks seeded Classic runs headless in the pinned clone and tables how often a preview misses its wave, per field and by how far ahead it was read (`--from <records.json>` prints a saved walk again)
 
 Only the enums check is a CI gate: it rebuilds from an immutable pin, so a mismatch is always real drift, while randbats rebuilds from live upstream and would go red the day the data moves.

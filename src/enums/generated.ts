@@ -631,6 +631,15 @@ export const EvoLevelThresholdKind = {
 } as const;
 export type EvoLevelThresholdKind = (typeof EvoLevelThresholdKind)[keyof typeof EvoLevelThresholdKind];
 
+export const GameModes = {
+  CLASSIC: 0,
+  ENDLESS: 1,
+  SPLICED_ENDLESS: 2,
+  DAILY: 3,
+  CHALLENGE: 4,
+} as const;
+export type GameModes = (typeof GameModes)[keyof typeof GameModes];
+
 export const Gender = {
   GENDERLESS: -1,
   MALE: 0,
@@ -2947,6 +2956,13 @@ export const TrainerSlot = {
 } as const;
 export type TrainerSlot = (typeof TrainerSlot)[keyof typeof TrainerSlot];
 
+export const TrainerVariant = {
+  DEFAULT: 0,
+  FEMALE: 1,
+  DOUBLE: 2,
+} as const;
+export type TrainerVariant = (typeof TrainerVariant)[keyof typeof TrainerVariant];
+
 export const WeatherType = {
   NONE: 0,
   SUNNY: 1,
@@ -2983,6 +2999,7 @@ export const NAMES = {
   ClassicFixedBossWaves: invert(ClassicFixedBossWaves),
   Command: invert(Command),
   EvoLevelThresholdKind: invert(EvoLevelThresholdKind),
+  GameModes: invert(GameModes),
   Gender: invert(Gender),
   HitResult: invert(HitResult),
   ModifierPoolType: invert(ModifierPoolType),
@@ -3008,6 +3025,7 @@ export const NAMES = {
   TimeOfDay: invert(TimeOfDay),
   TrainerPoolTier: invert(TrainerPoolTier),
   TrainerSlot: invert(TrainerSlot),
+  TrainerVariant: invert(TrainerVariant),
   WeatherType: invert(WeatherType),
 } as const;
 
