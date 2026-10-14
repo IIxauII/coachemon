@@ -11,6 +11,7 @@ import { Refusal } from "./envelope.ts";
 import { ladderFor, PINNED_GAME_VERSION } from "./escape-ladder/lookup.ts";
 import { LinkGame } from "./game/link-game.ts";
 import { HubLink, hubPort, usesHub } from "./hub/link.ts";
+import { Jobs, type JobKinds } from "./jobs.ts";
 import { PLUGIN_VERSION } from "./plugin-version.ts";
 import type { CommandName } from "./protocol/commands.ts";
 import { MOVED, type Act, type CursorTarget, type GamePort, type MenuOption, type MenuRead, type Ready, type SnapshotDetail } from "./game/port.ts";
@@ -95,10 +96,12 @@ export class Driver {
   readonly #game: GamePort;
   readonly #outcomes = new CallOutcomes();
   readonly #clock: Clock;
+  readonly #jobs: Jobs;
 
-  constructor(game: GamePort, clock: Clock = REAL_CLOCK) {
+  constructor(game: GamePort, clock: Clock = REAL_CLOCK, jobKinds: JobKinds = {}) {
     this.#game = game;
     this.#clock = clock;
+    this.#jobs = new Jobs(jobKinds);
     game.onRejection(t => this.#outcomes.rejection(t));
   }
 
@@ -187,6 +190,22 @@ export class Driver {
       const menu = await this.#game.menu();
       return { menu, fields: this.#menuPayload(ready, menu) };
     });
+  }
+
+  async startJob(kind: string, args: Record<string, unknown>): Promise<Record<string, unknown>> {
+    return this.#jobs.start(kind, args);
+  }
+
+  async pollJob(id: string): Promise<Record<string, unknown>> {
+    return this.#jobs.poll(id);
+  }
+
+  async readJob(id: string): Promise<Record<string, unknown>> {
+    return this.#jobs.read(id);
+  }
+
+  async cancelJob(id: string): Promise<Record<string, unknown>> {
+    return this.#jobs.cancel(id);
   }
 
   /**
