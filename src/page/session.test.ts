@@ -25,7 +25,7 @@ function battleScene(slot: number) {
   };
 }
 
-test("the session read hands back the slot's stored copies, the session as it stands, and the battle's wave and seed (#669)", t => {
+test("the session read hands back the slot's stored copies, the session as it stands, and the battle's wave and seed (extension-distribution.md §10.1)", t => {
   onPage(t, battleScene(1));
   storage(t, {
     "data_alice": "system",
@@ -42,13 +42,13 @@ test("the session read hands back the slot's stored copies, the session as it st
   assert.deepEqual(r.export, EXPORT);
 });
 
-test("slot 0's key carries no digit, so another slot's copies never match it (#669)", t => {
+test("slot 0's key carries no digit, so another slot's copies never match it (game-code.md §28)", t => {
   onPage(t, battleScene(0));
   storage(t, { "sessionData_alice": "slot 0", "sessionData1_alice": "slot 1", "sessionData4_alice": "slot 4" });
   assert.deepEqual(send("session", {}).stored, ["slot 0"]);
 });
 
-test("with no battle there is no session to read, and the export is never built (#669)", t => {
+test("with no battle there is no session to read, and the export is never built (extension-distribution.md §10.1)", t => {
   let built = false;
   onPage(t, { ui: { mode: 0, handlers: {} }, sessionSlotId: 0, currentBattle: null, gameData: { getSessionSaveData: () => { built = true; return {}; } } });
   storage(t, {});

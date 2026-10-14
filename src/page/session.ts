@@ -5,10 +5,8 @@ export type SessionResult =
   | { ok: false; why: "no-battle" };
 
 /**
- * `stored` is every copy of the wave-start save under the live slot, still encrypted: the key ends in a username the
- * scene never carries, so each account that played this slot in this browser has one (game-code.md §28). Never
- * `gameData.getSession`: it is async, and with the key missing it fetches the save and writes the key. Self-contained
- * (extension-distribution.md §10.5).
+ * `stored`: every copy of the wave-start save under the live slot, still encrypted (game-code.md §28). Never
+ * `gameData.getSession`, which can fetch and write (§28). Self-contained (extension-distribution.md §10.5).
  */
 export function session(L: Located, _args: Record<string, never>): SessionResult {
   const battle = L.scene.currentBattle;

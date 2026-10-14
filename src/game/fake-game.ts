@@ -1,6 +1,6 @@
 /**
- * The in-memory game port, for tests only (#127). `read`, `menu`, `starters`, `card`, `session` and every act throw `unexpected <op>`
- * where the screen does not script them; the rest have benign defaults.
+ * The in-memory game port, for tests only (#127). An op the screen does not script throws `unexpected <op>`, unless it
+ * has a benign default.
  */
 import type { Clock } from "../driver.ts";
 import type { Button } from "../enums/generated.ts";

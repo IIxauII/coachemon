@@ -11,7 +11,8 @@ Coachemon is a browser extension that draws a coach overlay on the PokéRogue ga
 ## What it reads
 
 Coachemon reads the PokéRogue game in your tab — your party, the enemy, the wave, the menu on screen — to draw the
-coach, and reads your run's save only to pass it to the local program described below. It runs on `pokerogue.net` and nowhere else, and it reads nothing until you open that site yourself.
+coach. It reads your run's save only to pass it to the local program described below. It runs on `pokerogue.net` and
+nowhere else, and it reads nothing until you open that site yourself.
 
 ## Where it goes
 
@@ -22,11 +23,12 @@ text to that program over a local connection (`127.0.0.1`), and only while a `po
 it does that only after you click the Coachemon toolbar icon once. What that program does with what it receives is
 governed by that program, not by this policy.
 
-When that program asks, the extension also passes it a copy of your run's save: the run as it stands, and the save
-PokéRogue keeps in the page's `localStorage` at the start of each wave, the one Continue loads. PokéRogue keeps one such
-save per account that has played that save slot in this browser, and the extension passes each of them, still
-encrypted the way the game stores them; the program keeps the one belonging to the run you are playing. It goes over
-the same local connection and nowhere else.
+When that program asks, the extension also passes it your run's save: the run as it stands, and the save PokéRogue
+keeps in the page's `localStorage` at the start of each wave, the one Continue loads. PokéRogue keeps one such save per
+account that has played that save slot in this browser, and the extension passes every one of them, as the game stores
+them. The game's encryption of a save uses a key built into the game, so it hides nothing from that program: it opens
+each one and keeps the one belonging to the run you are playing. It goes over the same local connection and nowhere
+else.
 
 Nothing you type into the game — your account name, your password, anything in a form — is ever read or passed on.
 

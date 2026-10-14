@@ -7,6 +7,7 @@ import type { Button } from "../enums/generated.ts";
 import type { CardResult } from "../page/card.ts";
 import type { ConsoleLine } from "../page/errors.ts";
 import type { MenuOption } from "../page/menu.ts";
+import type { SessionResult } from "../page/session.ts";
 import type { SnapshotDetail } from "../page/snapshot.ts";
 import type { StartersResult } from "../page/starters.ts";
 import type { Tab } from "./link.ts";
@@ -117,8 +118,11 @@ export type StarterGrid = StartersResult;
 
 export type CardRead = Extract<CardResult, { ok: true }>;
 
-/** `waveStart` is null where no stored copy carries the run's seed; one at another wave is still the run's (#636). */
-export type SessionRead = { ok: true; wave: number; battleSeed: string; waveStart: Save | null; export: Save };
+/**
+ * `waveStart` is null where no stored copy carries the run's seed. One at another wave than the battle's still comes
+ * back: matching it to the battle is the caller's check (#636).
+ */
+export type SessionRead = Omit<Extract<SessionResult, { ok: true }>, "stored"> & { waveStart: Save | null };
 
 export type { MenuOption, SnapshotDetail, ConsoleLine };
 
@@ -138,7 +142,7 @@ export interface GamePort extends Tab {
   starters(): Promise<StarterGrid | Failed>;
   /** The card the panel is showing (extension-distribution.md §11.1). No panel → `{ ok: false, why: "no-hud" }`. */
   card(): Promise<CardRead | Failed>;
-  /** The wave-start save, opened, and the session export, with the battle's wave and seed from the same read (game-code.md §28). */
+  /** `wave` and `battleSeed` come from the same read as the saves. */
   session(): Promise<SessionRead | Failed>;
   snapshot(d: SnapshotDetail): Promise<{ ok: true; snapshot: Record<string, unknown> } | Failed>;
   /** A base64 PNG. */

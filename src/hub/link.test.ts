@@ -6,7 +6,7 @@ import { Hub, startHub } from "./hub.ts";
 import { Driver } from "../driver.ts";
 import { Button, UiMode } from "../enums/generated.ts";
 import { Refusal } from "../envelope.ts";
-import { OTHER_RUN, RUN, W180 } from "../game/fixtures/saves.ts";
+import { OTHER_RUN_W180, RUN_SEED, RUN_W180 } from "../game/fixtures/saves.ts";
 import { isFault } from "../game/link.ts";
 import { LinkGame } from "../game/link-game.ts";
 import { disc } from "../page/disc.ts";
@@ -146,8 +146,8 @@ test("the session read crosses the hub to the Driver with the run's wave-start s
     t: "reply", id: f.id, ok: true,
     result: { readable: true, mode: UiMode.COMMAND, handler: "CommandUiHandler", family: "command", options: [], cursor: 0, text: null, messagePending: false, extra: {}, disc: disc(null) },
   }));
-  const exported = { seed: RUN, waveIndex: 180, gameVersion: "1.12.0.11", timestamp: 2 };
-  ext.answering(cmd("session"), f => ({ t: "reply", id: f.id, ok: true, result: { ok: true, wave: 180, battleSeed: "U0QKEz8wJ8ea7832", stored: [OTHER_RUN, W180], export: exported } }));
+  const exported = { seed: RUN_SEED, waveIndex: 180, gameVersion: "1.12.0.11", timestamp: 2 };
+  ext.answering(cmd("session"), f => ({ t: "reply", id: f.id, ok: true, result: { ok: true, wave: 180, battleSeed: "U0QKEz8wJ8ea7832", stored: [OTHER_RUN_W180, RUN_W180], export: exported } }));
 
   let t = 0;
   const driver = new Driver(new LinkGame(link, link), { now: () => t, sleep: async ms => { t += ms; } });
@@ -155,7 +155,7 @@ test("the session read crosses the hub to the Driver with the run's wave-start s
   assert.equal(r.status, "ok", JSON.stringify(r));
   assert.equal(r.battle_wave, 180);
   assert.equal(r.battle_seed, "U0QKEz8wJ8ea7832");
-  assert.deepEqual(r.wave_start, { seed: RUN, waveIndex: 180, gameVersion: "1.12.0.11" });
+  assert.deepEqual(r.wave_start, { seed: RUN_SEED, waveIndex: 180, gameVersion: "1.12.0.11" });
   assert.deepEqual(r.export, exported);
 });
 

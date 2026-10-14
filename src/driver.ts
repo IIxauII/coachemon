@@ -186,10 +186,7 @@ export class Driver {
     });
   }
 
-  /**
-   * The oracle's input (#669): the wave-start save, the session export, and the battle's wave and seed for the oracle to
-   * check the save against. `battle_wave` is the read's own, beside the settled game's `wave`.
-   */
+  /** `battle_wave` comes from the same read as the saves, beside the settled game's `wave`. */
   readSession(ctx: CallContext): Promise<Record<string, unknown>> {
     return this.#read("read_session", ctx, async () => {
       const s = await this.#game.session();

@@ -2700,8 +2700,9 @@ that does not sync (`src/system/game-data.ts:596-601`, `:1373-1374`); a syncing 
 errors and resolves `false` (`src/api/savedata-api.ts:23-33`). Of a run's played waves only the first is an
 `EncounterPhase`: later ones are `NextEncounterPhase` or `NewBiomeEncounterPhase` (`src/battle-scene.ts:1611-1614`),
 subclasses with their own `phaseName` that inherit this save. Continue, Load Game and a retry after a loss push an
-`EncounterPhase` too, with `loaded` set, which never saves (§28). The hung phase sits in MESSAGE with no `onActionInput`, the state a healthy one
-also passes through during its 2 s intro tween and its unprompted wild-wave text (`encounter-phase.ts:350-366`, `:429`).
+`EncounterPhase` too, with `loaded` set, which never saves (§28). The hung phase sits in MESSAGE with no
+`onActionInput`, the state a healthy one also passes through during its 2 s intro tween and its unprompted wild-wave
+text (`encounter-phase.ts:350-366`, `:429`).
 
 **Settings.** Six settings carry `requireReload` (`src/system/settings/settings.ts`: Language `:438`, UI theme `:455`,
 candy upgrade display `:549`, time-of-day widget `:578`, sprite set `:611`, battle music `:732`). Changing one only
@@ -2761,11 +2762,11 @@ stands: seed, game mode, both parties, both modifier lists, the arena, money, `w
 `gameVersion`, the challenges, the ME save data and more. It writes nothing: each `*Data` constructor and
 `getSerializedDailyRunConfig` only read their source (`src/system/pokemon-data.ts:80-147`,
 `src/system/modifier-data.ts:15-29`, `src/system/arena-data.ts:28-57`, `src/system/trainer-data.ts:12-23`,
-`src/system/challenge-data.ts:9-13`, `src/data/daily-seed/daily-seed-utils.ts:66-82`). Some fields are the live objects,
-not copies: `pokeballCounts`, `mysteryEncounterSaveData`, the arena's `weather`, `terrain` and `positionalTags`, and each
-Pokémon's `stats` and `ivs`. Its JSON holds no `bigint`: `saveAll` stringifies it with no replacer
-(`src/system/game-data.ts:1368`), which would throw on one. It reads `currentBattle.waveIndex`, so it throws with no
-battle.
+`src/system/challenge-data.ts:9-13`, `src/data/daily-seed/daily-seed-utils.ts:66-82`). Some fields are the live
+objects, not copies: `pokeballCounts`, `mysteryEncounterSaveData`, the arena's `weather`, `terrain` and
+`positionalTags`, and each Pokémon's `stats` and `ivs`. Its JSON holds no `bigint`: `saveAll` stringifies it with no
+replacer (`src/system/game-data.ts:1368`), which would throw on one. It reads `currentBattle.waveIndex`, so it throws
+with no battle.
 
 **The wave-start save.** On a wave it did not load, `EncounterPhase` and its subclasses (§26) generate the enemy side,
 set new-biome weather and terrain, then call `saveAll(true, sync)`, all before `doEncounter` and so before any summon
@@ -2791,6 +2792,6 @@ fetches the save from the server and writes the key.
 - **The encryption.** `encrypt(data, bypassLogin)` (`src/utils/data.ts:47-52`) is crypto-js 4.2.0's
   `AES.encrypt(data, saveKey).toString()`. `saveKey` (`src/constants.ts:56`) is a string, so crypto-js takes it as a
   passphrase: the output is Base64 of `Salted__`, a random 8-byte salt and the ciphertext, with key and IV from
-  EVP_BytesToKey over MD5, one iteration, and AES-256-CBC with PKCS#7. The salt is new on every call, so the same session
-  never encrypts the same way twice. With `bypassLogin` (`VITE_BYPASS_LOGIN=1`, which dev and app builds set,
+  EVP_BytesToKey over MD5, one iteration, and AES-256-CBC with PKCS#7. The salt is new on every call, so the same
+  session never encrypts the same way twice. With `bypassLogin` (`VITE_BYPASS_LOGIN=1`, which dev and app builds set,
   `src/constants/app-constants.ts:21`) it is `btoa(encodeURIComponent(data))` instead.
