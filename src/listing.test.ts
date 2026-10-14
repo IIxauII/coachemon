@@ -83,6 +83,12 @@ test("the privacy policy says what extension-distribution.md §6 says, and where
   }
 });
 
+test("the privacy policy and the store disclosure name the read of a fight's live state (#676)", () => {
+  for (const [doc, text] of [["PRIVACY.md", privacy()], ["store-disclosure.md", listing("store-disclosure.md")]]) {
+    for (const claim of ["leaves out of its save", "random-number state"]) assert.equal(text.includes(claim), true, `${doc} is missing ${claim}`);
+  }
+});
+
 test("both store disclosures answer every form field", () => {
   const filed = listing("store-disclosure.md");
   for (const field of ["Single purpose", "Host access", "Remote code", "Data usage", PRIVACY_URL,

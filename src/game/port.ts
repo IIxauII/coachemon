@@ -6,6 +6,7 @@
 import type { Button } from "../enums/generated.ts";
 import type { CardResult } from "../page/card.ts";
 import type { ConsoleLine } from "../page/errors.ts";
+import type { ExtrasResult } from "../page/extras.ts";
 import type { MenuOption } from "../page/menu.ts";
 import type { SessionResult } from "../page/session.ts";
 import type { SnapshotDetail } from "../page/snapshot.ts";
@@ -124,6 +125,8 @@ export type CardRead = Extract<CardResult, { ok: true }>;
  */
 export type SessionRead = Omit<Extract<SessionResult, { ok: true }>, "stored"> & { waveStart: Save | null };
 
+export type ExtrasRead = Extract<ExtrasResult, { ok: true }>;
+
 export type { MenuOption, SnapshotDetail, ConsoleLine };
 
 export interface GamePort extends Tab {
@@ -144,6 +147,7 @@ export interface GamePort extends Tab {
   card(): Promise<CardRead | Failed>;
   /** `wave` and `battleSeed` come from the same read as the saves. */
   session(): Promise<SessionRead | Failed>;
+  extras(): Promise<ExtrasRead | Failed>;
   snapshot(d: SnapshotDetail): Promise<{ ok: true; snapshot: Record<string, unknown> } | Failed>;
   /** A base64 PNG. */
   screenshot(): Promise<string>;

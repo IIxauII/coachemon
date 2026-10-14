@@ -51,6 +51,22 @@ test("a command crosses the hub and its result comes back as the page's own (ext
   assert.deepEqual(await menu, { readable: true, mode: 2, family: "command", options: [], cursor: 0, text: null, extra: {} });
 });
 
+test("the live extras cross the hub as their own read and come back as the page's own (#676)", async () => {
+  const { ext, link } = await linked();
+  const extras = link.extras();
+  const page = { ok: true, wave: 180, battleSeed: "s33d", turn: 5, rnd: "!rnd,1,0.25,0.5,0.75", battleSeedState: null, enemySwitchCounter: 1, unread: [] };
+  const sent = await answer(ext, page);
+  assert.deepEqual(sent, { name: "extras", args: {} });
+  assert.deepEqual(await extras, page);
+});
+
+test("an extension older than the extras read refuses the Driver's read missing_command at rung 4, sending nothing (#676, extension-distribution.md §8.5)", async () => {
+  const { ext, link } = await linked({ commands: COMMAND_NAMES.filter(n => n !== "extras") });
+  const driver = new Driver(new LinkGame(link, link));
+  await assert.rejects(driver.readExtras({}), (e: Refusal) => e.code === "missing_command" && e.detail.rung === 4);
+  assert.deepEqual(ext.seen.filter(f => f.t === "cmd"), []);
+});
+
 test("a relay refusal becomes a Fault, so LinkGame cannot tell the transports apart (extension-distribution.md §9.7, §12.1)", async () => {
   const { ext, link } = await linked();
   const menu = link.menu();

@@ -85,6 +85,7 @@ const TOOL_COMMANDS = {
   read_card: ["probe", "menu", "card"],
   read_starters: ["probe", "menu", "starters"],
   read_session: ["probe", "menu", "session"],
+  read_extras: ["probe", "menu", "extras"],
   press: ["probe", "press"],
   select_option: ["probe", "menu", "press"],
   start_run: ["probe", "menu", "starters", "press"],
@@ -206,6 +207,14 @@ export class Driver {
           ? { battle_wave: s.wave, battle_seed: s.battleSeed, wave_start: s.waveStart, export: s.export }
           : { battle_wave: null, battle_seed: null, wave_start: null, export: null, session_error: s.why },
       };
+    });
+  }
+
+  readExtras(ctx: CallContext): Promise<Record<string, unknown>> {
+    return this.#read("read_extras", ctx, async () => {
+      const read = await this.#game.extras();
+      const { ok: _ok, ...extras } = read;
+      return { menu: await this.#game.menu(), fields: read.ok ? { extras } : { extras_error: read.why } };
     });
   }
 

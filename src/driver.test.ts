@@ -922,7 +922,7 @@ test("a frame read that fails is not a frozen loop", async () => {
 });
 
 /** Scripts nothing but the reads a coach tool makes. */
-function coachTab(over: Pick<FakeScreen, "card" | "starters" | "session" | "unreachable" | "lockHolder">) {
+function coachTab(over: Pick<FakeScreen, "card" | "starters" | "session" | "extras" | "unreachable" | "lockHolder">) {
   const read = (): ScreenRead => ({
     ready: true, settled: true, reason: "menu-open", mode: UiMode.COMMAND, screen: "COMMAND", phaseName: "CommandPhase", wave: 12, turn: 1,
     runLive: true, tutorialActive: false, handler: null, cursor: 0, modeChain: [], messageText: null, onActionInput: false,
@@ -1040,9 +1040,35 @@ test("get_state names the coach's enums on both sides of the field (extension-di
   assert.deepEqual(enemy[0].types, ["FIRE", "FLYING"]);
 });
 
+test("the extras read hands back every live extra whole, beside the settled game's own wave (#676)", async () => {
+  const waveData = { endured: false, abilityRevealed: false, abilitiesApplied: [] };
+  const extras = {
+    wave: 180, battleSeed: "s33d", turn: 5, rnd: "!rnd,1,0.25,0.5,0.75", battleSeedState: null, enemySwitchCounter: 1, lastMove: 450, enemyFaints: 0,
+    playerFaintsHistory: [], enemyFaintsHistory: [],
+    foes: [{ id: 77, initialTeamIndex: 5, bossSegmentIndex: null, toxicTurnCount: null, tempSummonData: { turnCount: 2, waveTurnCount: 4 }, waveData, onField: true, summonData: { statStages: [0, 0, 0, 0, 0, 0, 0] } }],
+    party: [{ id: 12, toxicTurnCount: 3, tempSummonData: { turnCount: 1, waveTurnCount: 1 }, waveData }],
+    unread: [],
+  };
+  const tab = coachTab({ lockHolder: 4242, extras: () => ({ ok: true, ...extras }) });
+  const r = await outcome(tab.driver.readExtras({}));
+  assert.equal(r.status, "ok", JSON.stringify(r));
+  assert.equal(r.screen, "COMMAND");
+  assert.equal(r.wave, 12, "the envelope's wave is the settled game's, never overwritten by the read's");
+  assert.deepEqual(r.extras, extras);
+  assert.equal(r.extras_error, undefined);
+});
+
+test("an extras read the page refused is reported, never an empty set of extras (#676)", async () => {
+  const tab = coachTab({ extras: () => ({ ok: false, why: "no-battle" }) });
+  const r = await outcome(tab.driver.readExtras({}));
+  assert.equal(r.status, "ok", JSON.stringify(r));
+  assert.equal(r.extras_error, "no-battle");
+  assert.equal(r.extras, undefined);
+});
+
 test("a coach tool refuses by rung when nothing can reach the game (extension-distribution.md §12.3)", async () => {
   const unreachable = { rung: 2, code: "unreachable", line: "No browser is connected to the hub." } as const;
-  for (const call of [(d: Driver) => d.readCard({}), (d: Driver) => d.readStarters({}), (d: Driver) => d.readSession({})]) {
+  for (const call of [(d: Driver) => d.readCard({}), (d: Driver) => d.readStarters({}), (d: Driver) => d.readSession({}), (d: Driver) => d.readExtras({})]) {
     const r = await outcome(call(coachTab({ unreachable }).driver));
     assert.equal(r.error, "unreachable", JSON.stringify(r));
     assert.equal(r.rung, 2);

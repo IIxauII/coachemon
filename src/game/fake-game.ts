@@ -5,7 +5,7 @@
 import type { Clock } from "../driver.ts";
 import type { Button } from "../enums/generated.ts";
 import type { Reach } from "../hub/ladder.ts";
-import type { Act, CardRead, CursorTarget, Failed, GamePort, MenuRead, PredicateRead, Ready, SessionRead, SnapshotDetail, StarterGrid } from "./port.ts";
+import type { Act, CardRead, CursorTarget, ExtrasRead, Failed, GamePort, MenuRead, PredicateRead, Ready, SessionRead, SnapshotDetail, StarterGrid } from "./port.ts";
 
 /** A predicate read as a screen gives it: the fake stamps the frame. */
 export type ScreenRead = Omit<Ready, "frame"> | Extract<PredicateRead, { ready: false }>;
@@ -16,6 +16,7 @@ export type FakeScreen = {
   starters?: () => StarterGrid | Failed;
   card?: () => CardRead | Failed;
   session?: () => SessionRead | Failed;
+  extras?: () => ExtrasRead | Failed;
   /** A press the screen reacts to, given the fingerprint it was sent on; returning nothing means it reached `processInput`. */
   onPress?: (b: Button, fine: string) => Act | void;
   onSetCursor?: (t: CursorTarget, fine: string) => Act & { species?: string };
@@ -70,6 +71,7 @@ export function fakeGame(screen: FakeScreen) {
     starters: async () => (screen.starters ?? unexpected("starters"))(),
     card: async () => (screen.card ?? unexpected("card"))(),
     session: async () => (screen.session ?? unexpected("session"))(),
+    extras: async () => (screen.extras ?? unexpected("extras"))(),
     snapshot: async d => ({ ok: true, snapshot: screen.snapshot?.(d) ?? {} }),
     rawKey: async b => (screen.onRawKey ?? unexpected("rawKey"))(b),
     keepAlive: async () => {},
