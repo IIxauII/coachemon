@@ -51,10 +51,17 @@ test("a command crosses the hub and its result comes back as the page's own (ext
   assert.deepEqual(await menu, { readable: true, mode: 2, family: "command", options: [], cursor: 0, text: null, extra: {} });
 });
 
-test("the live extras cross the hub as their own read and come back as the page's own (#676)", async () => {
+test("every live extra crosses the hub as its own read and comes back as the page's own (#676)", async () => {
   const { ext, link } = await linked();
   const extras = link.extras();
-  const page = { ok: true, wave: 180, battleSeed: "s33d", turn: 5, rnd: "!rnd,1,0.25,0.5,0.75", battleSeedState: null, enemySwitchCounter: 1, unread: [] };
+  const waveData = { endured: false, abilityRevealed: true, abilitiesApplied: [70] };
+  const page = {
+    ok: true, wave: 180, battleSeed: "s33d", turn: 5, rndState: "!rnd,1,0.25,0.5,0.75", battleSeedState: null, enemySwitchCounter: 1, lastMove: 450,
+    enemyFaints: 1, playerFaintsHistory: [], enemyFaintsHistory: [{ id: 79, turn: 3 }],
+    foes: [{ id: 77, initialTeamIndex: 5, bossSegmentIndex: null, toxicTurnCount: 3, tempSummonData: { turnCount: 2, waveTurnCount: 4 }, waveData, onField: true, summonData: { statStages: [1, 0, 0, 0, 0, 0, 0], tags: [{ tagType: "CONFUSED" }] } }],
+    party: [{ id: 12, toxicTurnCount: null, tempSummonData: { turnCount: 3, waveTurnCount: 5 }, waveData }],
+    unread: [],
+  };
   const sent = await answer(ext, page);
   assert.deepEqual(sent, { name: "extras", args: {} });
   assert.deepEqual(await extras, page);

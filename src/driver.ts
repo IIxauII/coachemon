@@ -76,7 +76,7 @@ const NO_CARD = { kind: null, key: null, wave: null, verdict: null, groups: null
 const NO_CARD_NEXT = "The coach panel is not running on this tab, so there is no card to read. The panel ships with Coachemon and its own header reopens it; get_state and read_menu read the game without it.";
 
 /**
- * What each tool sends into the tab, so a tool whose commands the extension never registered refuses alone
+ * What each tool or Driver read sends into the tab, so one whose commands the extension never registered refuses alone
  * (extension-distribution.md §8.5). The cursor commands stay out: a family without its setter is walked with presses.
  */
 const TOOL_COMMANDS = {

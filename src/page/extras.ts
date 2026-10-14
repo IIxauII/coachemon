@@ -18,8 +18,7 @@ export type ExtrasResult =
       wave: number | null;
       battleSeed: string | null;
       turn: number | null;
-      /** `Phaser.Math.RND.state()`. */
-      rnd: string | null;
+      rndState: string | null;
       battleSeedState: string | null;
       enemySwitchCounter: number | null;
       lastMove: number | null;
@@ -33,9 +32,9 @@ export type ExtrasResult =
   | { ok: false; why: "no-battle" };
 
 /**
- * The live fight's state that the session save lacks or a reload resets, under the game's own field names
- * (game-code.md §28). A field the page could not read is null and named in `unread` by its path in this result; every
- * other null is the game's own. Self-contained (extension-distribution.md §10.5).
+ * The live fight's state that the session save lacks or a reload resets (game-code.md §28). A field the page could not
+ * read is null and named in `unread` by its path in this result; every other null is the game's own. Self-contained
+ * (extension-distribution.md §10.5).
  */
 export function extras(L: Located, _args: Record<string, never>): ExtrasResult {
   const unread: string[] = [];
@@ -44,13 +43,13 @@ export function extras(L: Located, _args: Record<string, never>): ExtrasResult {
   };
   const b = L.scene.currentBattle;
   if (!b) return { ok: false, why: "no-battle" };
-  // `pokemon` is the live mon, whose container is circular: only its id crosses.
+  // `pokemon` is the live mon, whose container is circular: only its id crosses (game-code.md §28).
   const faints = (path: string): FaintEntry[] | null => read(path, () => b[path].map((f: any) => ({ id: f.pokemon.id, turn: f.turn })));
   const mon = (path: string, p: any): MonExtras => ({
     id: read(`${path}.id`, () => p.id),
     toxicTurnCount: read(`${path}.toxicTurnCount`, () => (p.status ? p.status.toxicTurnCount : null)),
     tempSummonData: read(`${path}.tempSummonData`, () => ({ ...p.tempSummonData })),
-    // `abilitiesApplied` is a Set, which JSON writes as `{}`.
+    // `abilitiesApplied` is a Set, which JSON writes as `{}` (game-code.md §28).
     waveData: read(`${path}.waveData`, () => ({ endured: p.waveData.endured, abilityRevealed: p.waveData.abilityRevealed, abilitiesApplied: [...p.waveData.abilitiesApplied] })),
   });
   const foe = (p: any, i: number): FoeExtras => {
@@ -70,7 +69,7 @@ export function extras(L: Located, _args: Record<string, never>): ExtrasResult {
     wave: read("wave", () => b.waveIndex),
     battleSeed: read("battleSeed", () => b.battleSeed),
     turn: read("turn", () => b.turn),
-    rnd: read("rnd", () => (globalThis as any).Phaser.Math.RND.state()),
+    rndState: read("rndState", () => (globalThis as any).Phaser.Math.RND.state()),
     battleSeedState: read("battleSeedState", () => b.battleSeedState),
     enemySwitchCounter: read("enemySwitchCounter", () => b.enemySwitchCounter),
     lastMove: read("lastMove", () => b.lastMove),

@@ -1043,7 +1043,7 @@ test("get_state names the coach's enums on both sides of the field (extension-di
 test("the extras read hands back every live extra whole, beside the settled game's own wave (#676)", async () => {
   const waveData = { endured: false, abilityRevealed: false, abilitiesApplied: [] };
   const extras = {
-    wave: 180, battleSeed: "s33d", turn: 5, rnd: "!rnd,1,0.25,0.5,0.75", battleSeedState: null, enemySwitchCounter: 1, lastMove: 450, enemyFaints: 0,
+    wave: 180, battleSeed: "s33d", turn: 5, rndState: "!rnd,1,0.25,0.5,0.75", battleSeedState: null, enemySwitchCounter: 1, lastMove: 450, enemyFaints: 0,
     playerFaintsHistory: [], enemyFaintsHistory: [],
     foes: [{ id: 77, initialTeamIndex: 5, bossSegmentIndex: null, toxicTurnCount: null, tempSummonData: { turnCount: 2, waveTurnCount: 4 }, waveData, onField: true, summonData: { statStages: [0, 0, 0, 0, 0, 0, 0] } }],
     party: [{ id: 12, toxicTurnCount: 3, tempSummonData: { turnCount: 1, waveTurnCount: 1 }, waveData }],

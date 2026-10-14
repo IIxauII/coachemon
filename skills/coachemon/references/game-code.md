@@ -2800,8 +2800,7 @@ fetches the save from the server and writes the key.
 
 ## 30. The session save, and what a reload resets mid-fight
 
-Read at the pinned tag (`v1.12.0.11`), for the `extras` read (`src/page/extras.ts`) and whatever puts its fields back
-after a reload.
+Read at the pinned tag (`v1.12.0.11`), for the `extras` read (`src/page/extras.ts`).
 
 **What the save never carries.** `getSessionSaveData()` writes each mon through `new PokemonData(p)`
 (`src/system/game-data.ts:889`). None of these are in it, and a reload starts each one fresh:
@@ -2809,7 +2808,7 @@ after a reload.
 - `Battle.turn` (`src/battle.ts:70`): `newBattle` → `incrementTurn` sets it to 1 (`src/battle-scene.ts:1333`,
   `src/battle.ts:171-176`).
 - `enemySwitchCounter` (`:69`), the AI's switch damping (§7); `lastMove` (`:80`), which Copycat reads
-  (`src/data/moves/move.ts:8191`); `enemyFaints` (`:95`), which Last Respects (`move.ts:12516`) and Supreme Overlord
+  (`src/data/moves/move.ts:8191`); `enemyFaints` (`battle.ts:95`), which Last Respects (`move.ts:12516`) and Supreme Overlord
   (`src/data/battler-tags.ts:3716`) count.
 - `playerFaintsHistory` and `enemyFaintsHistory` (`battle.ts:96-97`). An entry is `{ pokemon, turn }` (`:50-53`), and
   `pokemon` is the live mon: a Phaser container, circular. Its readers take only `pokemon.id` (`Trainer.shouldTera`,
