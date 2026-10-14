@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { test, type TestContext } from "node:test";
 import { Driver } from "./driver.ts";
 import { KEPT_ENDED, type JobKinds, type JobWork } from "./jobs.ts";
 import { Button, MoveCategory, PokemonType, StatusEffect, UiMode } from "./enums/generated.ts";
@@ -1164,4 +1167,37 @@ test("the plugin keeps the most recent ended jobs and drops the oldest, never a 
   assert.equal((await outcome(driver.readJob(ended[0]))).error, "unknown_job", "the oldest ended job is gone");
   assert.equal((await driver.readJob(ended[1])).state, "done");
   assert.equal((await driver.pollJob(running)).state, "running", "a running job is never dropped");
+});
+
+/** A home of its own, removed after the test, and a fresh Driver on it per call over a game that scripts nothing. */
+function settingsHome(t: TestContext, screen: FakeScreen = {}) {
+  const home = mkdtempSync(path.join(tmpdir(), "coachemon-home-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  return () => {
+    const fake = fakeGame(screen);
+    return new Driver(fake.game, fake.clock, {}, home);
+  };
+}
+
+test("solving is off until the player turns it on (#666)", async t => {
+  const driver = settingsHome(t);
+  assert.deepEqual(await driver().solving(), { status: "ok", solving: false });
+});
+
+test("solving turned on stays on for a new Driver on the same home", async t => {
+  const driver = settingsHome(t);
+  assert.deepEqual(await driver().solving(true), { status: "ok", solving: true });
+  assert.deepEqual(await driver().solving(), { status: "ok", solving: true });
+});
+
+test("solving turned off again stays off for a new Driver on the same home", async t => {
+  const driver = settingsHome(t);
+  await driver().solving(true);
+  assert.deepEqual(await driver().solving(false), { status: "ok", solving: false });
+  assert.deepEqual(await driver().solving(), { status: "ok", solving: false });
+});
+
+test("solving answers with nothing able to reach the game: it is the plugin's setting, not a read", async t => {
+  const driver = settingsHome(t, { unreachable: { rung: 1, code: "unreachable", line: "The Coachemon hub is not running." } });
+  assert.deepEqual(await driver().solving(true), { status: "ok", solving: true });
 });

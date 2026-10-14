@@ -25,7 +25,7 @@ async function call(client: Client, name: string, args: Record<string, unknown>)
 test("the server offers exactly these tools", async () => {
   const { tools } = await (await connect()).listTools();
   assert.deepEqual(tools.map(t => t.name).sort(), [
-    "cancel_job", "get_state", "poll_job", "press", "read_card", "read_job", "read_menu", "read_starters", "screenshot", "select_option", "start_job", "start_run", "status",
+    "cancel_job", "get_state", "poll_job", "press", "read_card", "read_job", "read_menu", "read_starters", "screenshot", "select_option", "solving", "start_job", "start_run", "status",
   ]);
 });
 

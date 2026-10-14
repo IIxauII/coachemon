@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { mkdirSync, openSync } from "node:fs";
-import { homedir } from "node:os";
 import path from "node:path";
+import { coachemonHome } from "../home.ts";
 
 export type SessionOptions = {
   port: number;
@@ -13,7 +13,7 @@ export type SessionOptions = {
 
 export const DEFAULTS: SessionOptions = {
   port: Number(process.env.COACHEMON_PORT ?? 9222),
-  home: process.env.COACHEMON_HOME ?? path.join(homedir(), ".coachemon"),
+  home: coachemonHome(),
   chromePath: process.env.COACHEMON_CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
   url: "https://pokerogue.net",
   log: line => process.stderr.write(`[coachemon] ${line}\n`),

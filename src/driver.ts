@@ -5,11 +5,12 @@
 import { CallOutcomes, type CallEnd, type Outcome } from "./call-outcome.ts";
 import { driverLock } from "./cdp/lock.ts";
 import { CdpLink } from "./cdp/link.ts";
-import { CdpSession, DEFAULTS } from "./cdp/session.ts";
+import { CdpSession } from "./cdp/session.ts";
 import { Button, NAMES, UiMode } from "./enums/generated.ts";
 import { Refusal } from "./envelope.ts";
 import { ladderFor, PINNED_GAME_VERSION } from "./escape-ladder/lookup.ts";
 import { LinkGame } from "./game/link-game.ts";
+import { coachemonHome } from "./home.ts";
 import { HubLink, hubPort, usesHub } from "./hub/link.ts";
 import { Jobs, type JobKinds, type JobView } from "./jobs.ts";
 import { PLUGIN_VERSION } from "./plugin-version.ts";
@@ -18,6 +19,7 @@ import { MOVED, type Act, type CursorTarget, type GamePort, type MenuOption, typ
 import { matchLabel, normalizeLabel, optionAnswersTo } from "./labels.ts";
 import { planSelect, step, type Plan, type Walk } from "./menu-family.ts";
 import { isSettingsMode, modeName } from "./screen.ts";
+import { readSettings, writeSettings } from "./settings.ts";
 import { isOverwriteConfirm, planSlot, slotLabel } from "./slots.ts";
 import { CALL_BUDGET_MS, settle, type SettleResult } from "./settle.ts";
 import type { Choice } from "./stuck/detector.ts";
@@ -97,22 +99,29 @@ export class Driver {
   readonly #outcomes = new CallOutcomes();
   readonly #clock: Clock;
   readonly #jobs: Jobs;
+  readonly #home: string;
 
-  constructor(game: GamePort, clock: Clock = REAL_CLOCK, jobKinds: JobKinds = {}) {
+  constructor(game: GamePort, clock: Clock = REAL_CLOCK, jobKinds: JobKinds = {}, home: string = coachemonHome()) {
     this.#game = game;
     this.#clock = clock;
     this.#jobs = new Jobs(jobKinds);
+    this.#home = home;
     game.onRejection(t => this.#outcomes.rejection(t));
   }
 
   /** CDP unless `COACHEMON_TRANSPORT=hub` opts into the hub (extension-distribution.md §12.1). */
-  static create(home: string = DEFAULTS.home): Driver {
+  static create(home: string = coachemonHome()): Driver {
     if (usesHub()) {
       const hub = new HubLink({ port: hubPort(), version: PLUGIN_VERSION });
-      return new Driver(new LinkGame(hub, hub));
+      return new Driver(new LinkGame(hub, hub), REAL_CLOCK, {}, home);
     }
     const link = new CdpLink(new CdpSession({ home }), driverLock(home));
-    return new Driver(new LinkGame(link, link));
+    return new Driver(new LinkGame(link, link), REAL_CLOCK, {}, home);
+  }
+
+  async solving(on?: boolean): Promise<Record<string, unknown>> {
+    if (on !== undefined) writeSettings(this.#home, { ...readSettings(this.#home), solving: on });
+    return { status: "ok", solving: readSettings(this.#home).solving };
   }
 
   /** The only tool that answers when the game is out of reach: it reports the failing rung instead of refusing (extension-distribution.md §12.3). */
