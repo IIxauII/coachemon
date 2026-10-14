@@ -3,12 +3,16 @@ import { after, test } from "node:test";
 import { fakeClient, fakeExtension, Peer, readyTab } from "./fake-ext.ts";
 import { HubLink, hubPort } from "./link.ts";
 import { Hub, startHub } from "./hub.ts";
-import { Button } from "../enums/generated.ts";
+import { Driver } from "../driver.ts";
+import { Button, UiMode } from "../enums/generated.ts";
 import { Refusal } from "../envelope.ts";
+import { OTHER_RUN, RUN, W180 } from "../game/fixtures/saves.ts";
 import { isFault } from "../game/link.ts";
+import { LinkGame } from "../game/link-game.ts";
+import { disc } from "../page/disc.ts";
 import { COMMAND_NAMES } from "../protocol/commands.ts";
 import { DEV_PORT, PROTOCOL, STORE_PORT } from "../protocol/version.ts";
-import type { FromExtension, ToExtension } from "../protocol/wire.ts";
+import type { ExtensionCmd, FromExtension, ToExtension } from "../protocol/wire.ts";
 
 const shut: (() => void)[] = [];
 
@@ -124,6 +128,46 @@ test("the command list is the routed extension's, not what two browsers happen t
   other.send({ t: "tab", tab: 9, state: "gone", title: "PokéRogue" });
   for (let i = 0; i < 50 && (await link.presence()).reach !== null; i++) await new Promise(r => setTimeout(r, 20));
   assert.deepEqual([...link.commands].sort(), ["menu", "probe", "starters"]);
+});
+
+test("the session read crosses the hub to the Driver with the run's wave-start save opened out of the slot's copies (#669)", async () => {
+  const { ext, link } = await linked();
+  const cmd = (name: string) => (f: ToExtension): f is ExtensionCmd => f.t === "cmd" && f.name === name;
+  let frame = 0;
+  ext.answering(cmd("probe"), f => ({
+    t: "reply", id: f.id, ok: true,
+    result: {
+      ready: true, settled: true, reason: "menu-open", mode: UiMode.COMMAND, phaseName: "CommandPhase", wave: 180, turn: 1, money: 0,
+      runLive: true, tutorialActive: false, handler: "CommandUiHandler", cursor: 0, modeChain: [], messageText: null, onActionInput: false,
+      awaitingActionInput: false, fine: "command|0", frame: ++frame, domMode: null, gameVersion: "1.12.0.11", disc: disc(null), pumped: false, errorAt: null,
+    },
+  }));
+  ext.answering(cmd("menu"), f => ({
+    t: "reply", id: f.id, ok: true,
+    result: { readable: true, mode: UiMode.COMMAND, handler: "CommandUiHandler", family: "command", options: [], cursor: 0, text: null, messagePending: false, extra: {}, disc: disc(null) },
+  }));
+  const exported = { seed: RUN, waveIndex: 180, gameVersion: "1.12.0.11", timestamp: 2 };
+  ext.answering(cmd("session"), f => ({ t: "reply", id: f.id, ok: true, result: { ok: true, wave: 180, battleSeed: "U0QKEz8wJ8ea7832", stored: [OTHER_RUN, W180], export: exported } }));
+
+  let t = 0;
+  const driver = new Driver(new LinkGame(link, link), { now: () => t, sleep: async ms => { t += ms; } });
+  const r = await driver.readSession({});
+  assert.equal(r.status, "ok", JSON.stringify(r));
+  assert.equal(r.battle_wave, 180);
+  assert.equal(r.battle_seed, "U0QKEz8wJ8ea7832");
+  assert.deepEqual(r.wave_start, { seed: RUN, waveIndex: 180, gameVersion: "1.12.0.11" });
+  assert.deepEqual(r.export, exported);
+});
+
+test("an extension from before the session read refuses it alone, at rung 4 (#669, extension-distribution.md §8.5)", async () => {
+  const { link } = await linked({ commands: COMMAND_NAMES.filter(n => n !== "session") });
+  const r = await link.session();
+  assert.ok(isFault(r) && r.fault === "missing-command", JSON.stringify(r));
+  await assert.rejects(
+    new Driver(new LinkGame(link, link)).readSession({}),
+    (e: Refusal) => e.code === "missing_command" && e.detail.rung === 4 && /too old for this plugin\. Update the extension\./.test(e.message),
+  );
+  assert.equal((await link.presence(["probe", "menu", "card"])).reach, null, "every other read still reaches the tab");
 });
 
 test("the raw-key rung goes out as the key command, on the fingerprint it was decided on (extension-distribution.md §10.4)", async () => {

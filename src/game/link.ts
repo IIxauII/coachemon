@@ -8,6 +8,7 @@ import type { CardResult } from "../page/card.ts";
 import type { ConsoleLine } from "../page/errors.ts";
 import type { MenuResult } from "../page/menu.ts";
 import type { ProbeArgs, ProbeResult } from "../page/probe.ts";
+import type { SessionResult } from "../page/session.ts";
 import type { SnapshotDetail } from "../page/snapshot.ts";
 import type { StartersResult } from "../page/starters.ts";
 import type { Reach } from "../hub/ladder.ts";
@@ -33,6 +34,7 @@ export interface GameLink {
   snapshot(args: { detail: SnapshotDetail }): Promise<Record<string, unknown> | Unready | Fault>;
   starters(): Promise<StartersResult | Unready | Fault>;
   card(): Promise<CardResult | Unready | Fault>;
+  session(): Promise<SessionResult | Unready | Fault>;
   press(args: Args<"press">): Promise<PressResult | Fault>;
   key(args: Args<"key">): Promise<KeyResult | Fault>;
   cursorOption(args: Args<"cursor.option">): Promise<CursorOptionResult | Fault>;

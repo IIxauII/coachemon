@@ -910,7 +910,7 @@ test("a frame read that fails is not a frozen loop", async () => {
 });
 
 /** Scripts nothing but the reads a coach tool makes. */
-function coachTab(over: Pick<FakeScreen, "card" | "starters" | "unreachable">) {
+function coachTab(over: Pick<FakeScreen, "card" | "starters" | "session" | "unreachable" | "lockHolder">) {
   const read = (): ScreenRead => ({
     ready: true, settled: true, reason: "menu-open", mode: UiMode.COMMAND, screen: "COMMAND", phaseName: "CommandPhase", wave: 12, turn: 1,
     runLive: true, tutorialActive: false, handler: null, cursor: 0, modeChain: [], messageText: null, onActionInput: false,
@@ -984,6 +984,30 @@ test("read_starters reports a failed read rather than an empty grid", async () =
   assert.equal(r.owned, undefined);
 });
 
+test("read_session returns the wave-start save with the battle's wave and seed, beside the session export, and claims nothing (#669)", async () => {
+  const waveStart = { seed: "VTAUX0Kaz7T3GDMR7LXP1Bhn", waveIndex: 12, gameVersion: "1.12.0.11" };
+  const exported = { ...waveStart, timestamp: 2 };
+  const tab = coachTab({ lockHolder: 4242, session: () => ({ ok: true, wave: 12, battleSeed: "U0QKEz8wJ8ea7832", waveStart, export: exported }) });
+  const r = await outcome(tab.driver.readSession({}));
+  assert.equal(r.status, "ok", JSON.stringify(r));
+  assert.equal(r.screen, "COMMAND");
+  assert.equal(r.battle_wave, 12);
+  assert.equal(r.battle_seed, "U0QKEz8wJ8ea7832");
+  assert.deepEqual(r.wave_start, waveStart);
+  assert.deepEqual(r.export, exported);
+  assert.equal(r.session_error, undefined);
+});
+
+test("read_session reports a failed read rather than an empty save (#669)", async () => {
+  const tab = coachTab({ session: () => ({ ok: false, why: "no-battle" }) });
+  const r = await outcome(tab.driver.readSession({}));
+  assert.equal(r.status, "ok", JSON.stringify(r));
+  assert.equal(r.session_error, "no-battle");
+  assert.equal(r.wave_start, null);
+  assert.equal(r.export, null);
+  assert.equal(r.battle_seed, null);
+});
+
 test("read_card keeps the panel's own wave when it is a refresh behind the game", async () => {
   const tab = coachTab({ card: () => ({ ok: true, kind: "battle", key: "11", wave: 11, verdict: "easy", groups: [], text: "⚔", summary: null }) });
   const r = await outcome(tab.driver.readCard({}));
@@ -1006,7 +1030,7 @@ test("get_state names the coach's enums on both sides of the field (extension-di
 
 test("a coach tool refuses by rung when nothing can reach the game (extension-distribution.md §12.3)", async () => {
   const unreachable = { rung: 2, code: "unreachable", line: "No browser is connected to the hub." } as const;
-  for (const call of [(d: Driver) => d.readCard({}), (d: Driver) => d.readStarters({})]) {
+  for (const call of [(d: Driver) => d.readCard({}), (d: Driver) => d.readStarters({}), (d: Driver) => d.readSession({})]) {
     const r = await outcome(call(coachTab({ unreachable }).driver));
     assert.equal(r.error, "unreachable", JSON.stringify(r));
     assert.equal(r.rung, 2);

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import vm from "node:vm";
 import { Button } from "../enums/generated.ts";
+import { COMMAND_NAMES } from "../protocol/commands.ts";
 import { CdpLink, type LinkSession } from "./link.ts";
 import type { Thrown } from "./session.ts";
 
@@ -101,8 +102,7 @@ test("every command attaches first, screenshot too", async () => {
 
 test("the link offers the whole store table", () => {
   const link = new CdpLink(tabSession({}).session);
-  assert.equal(link.commands.size, 12);
-  assert.ok(link.commands.has("cursor.learn"));
+  assert.deepEqual([...link.commands].sort(), [...COMMAND_NAMES].sort());
 });
 
 test("rawKey sends a button's keyboard equivalent, and nothing for a button without one", async () => {

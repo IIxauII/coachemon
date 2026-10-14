@@ -1,11 +1,11 @@
 /**
- * The in-memory game port, for tests only (#127). `read`, `menu`, `starters`, `card` and every act throw `unexpected <op>`
+ * The in-memory game port, for tests only (#127). `read`, `menu`, `starters`, `card`, `session` and every act throw `unexpected <op>`
  * where the screen does not script them; the rest have benign defaults.
  */
 import type { Clock } from "../driver.ts";
 import type { Button } from "../enums/generated.ts";
 import type { Reach } from "../hub/ladder.ts";
-import type { Act, CardRead, CursorTarget, Failed, GamePort, MenuRead, PredicateRead, Ready, SnapshotDetail, StarterGrid } from "./port.ts";
+import type { Act, CardRead, CursorTarget, Failed, GamePort, MenuRead, PredicateRead, Ready, SessionRead, SnapshotDetail, StarterGrid } from "./port.ts";
 
 /** A predicate read as a screen gives it: the fake stamps the frame. */
 export type ScreenRead = Omit<Ready, "frame"> | Extract<PredicateRead, { ready: false }>;
@@ -15,6 +15,7 @@ export type FakeScreen = {
   menu?: () => MenuRead;
   starters?: () => StarterGrid | Failed;
   card?: () => CardRead | Failed;
+  session?: () => SessionRead | Failed;
   /** A press the screen reacts to, given the fingerprint it was sent on; returning nothing means it reached `processInput`. */
   onPress?: (b: Button, fine: string) => Act | void;
   onSetCursor?: (t: CursorTarget, fine: string) => Act & { species?: string };
@@ -68,6 +69,7 @@ export function fakeGame(screen: FakeScreen) {
     modalButton: async (i, fine) => moved(fine) ?? (screen.onModalButton ?? unexpected("modalButton"))(i, fine),
     starters: async () => (screen.starters ?? unexpected("starters"))(),
     card: async () => (screen.card ?? unexpected("card"))(),
+    session: async () => (screen.session ?? unexpected("session"))(),
     snapshot: async d => ({ ok: true, snapshot: screen.snapshot?.(d) ?? {} }),
     rawKey: async b => (screen.onRawKey ?? unexpected("rawKey"))(b),
     keepAlive: async () => {},

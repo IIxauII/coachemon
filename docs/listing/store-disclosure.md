@@ -22,7 +22,7 @@ Shared facts:
 | **Single purpose** | A coaching overlay for PokéRogue. The agent link is an optional way for the player's own AI assistant to use the same coach. |
 | **Host access** (`https://pokerogue.net/*`) | Runs the coach overlay on pokerogue.net and nowhere else. |
 | **Remote code** | **Yes**. Justification: the overlay loads pokerogue.net's own JavaScript modules, from pokerogue.net, inside pokerogue.net's page, to read the game's tables. No code is loaded from anywhere else. |
-| **Data usage** | *Website content* only: the game state on the page. Processed on the device, and optionally passed to a program on the same computer. Not sold, not transferred to third parties, not used for anything but the single purpose, not used for creditworthiness or lending. |
+| **Data usage** | *Website content* only: the game state on the page, including the run's save that the game keeps in the page's `localStorage`. Processed on the device, and optionally passed to a program on the same computer. Not sold, not transferred to third parties, not used for anything but the single purpose, not used for creditworthiness or lending. |
 | **Data certifications** | All three boxes are true and get ticked: not sold to third parties, not used or transferred for a purpose unrelated to the single purpose, not used or transferred to determine creditworthiness. |
 | **Privacy policy URL** | as above |
 | **Category / language** | Workflow & Planning; English. |
@@ -39,7 +39,7 @@ and no remote data table behind it (§1.2).
 | **Data collection** | The manifest declares it: `data_collection_permissions` is `{ required: ["none"], optional: ["websiteContent"] }`. Required: none. Optional: website content, and only when the player turns the agent link on by clicking the toolbar icon. |
 | **Privacy policy URL** | as above |
 | **Source code submission** | Required, because the artifact is bundled: upload `coachemon-<version>-sources.zip` from the same GitHub Release. Build instructions are `SOURCES.md` inside that zip, and the form gets the same three lines: Node >= 23.6 and npm; `cd extension && npm ci && npx wxt build -b firefox --mode store`; output `extension/.output/firefox-mv3-store/`. |
-| **Notes to reviewer** | The extension requests no permissions. The overlay imports pokerogue.net's own modules inside that page to read the game's tables; nothing is fetched from any other origin. The toolbar button is the consent click that enables the optional local-agent link on Firefox; without a local program listening on `127.0.0.1:47147` it does nothing. |
+| **Notes to reviewer** | The extension requests no permissions. The overlay imports pokerogue.net's own modules inside that page to read the game's tables; nothing is fetched from any other origin. The toolbar button is the consent click that enables the optional local-agent link on Firefox; without a local program listening on `127.0.0.1:47147` it does nothing. Over that link the local program can read the game state, the coach's card, and the run's save: the save the game itself keeps in the page's `localStorage` at the start of each wave, passed still encrypted as the game stores it, and the run as it stands. |
 | **Categories / tags** | Games; `coach`, `overlay`, `turn advice`, `battle helper`, `roguelite`. |
 
 ## Safari

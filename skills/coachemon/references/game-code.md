@@ -2697,9 +2697,10 @@ save takes this path: `EncounterPhase` calls it when `gameData.saveAll` resolves
 calls `end()`, and the rejection goes unhandled. The rejecting call is the unguarded verify fetch
 (`src/api/system-savedata-api.ts:40-45`, `src/api/api-base.ts:97`), which `saveAll` reaches only on a logged-in wave
 that does not sync (`src/system/game-data.ts:596-601`, `:1373-1374`); a syncing wave's `updateAll` catches its own
-errors and resolves `false` (`src/api/savedata-api.ts:23-33`). Only the run's first wave is an `EncounterPhase`: later
-ones are `NextEncounterPhase` or `NewBiomeEncounterPhase` (`src/battle-scene.ts:1611-1614`), subclasses with their own
-`phaseName` that inherit this save. The hung phase sits in MESSAGE with no `onActionInput`, the state a healthy one
+errors and resolves `false` (`src/api/savedata-api.ts:23-33`). Of a run's played waves only the first is an
+`EncounterPhase`: later ones are `NextEncounterPhase` or `NewBiomeEncounterPhase` (`src/battle-scene.ts:1611-1614`),
+subclasses with their own `phaseName` that inherit this save. Continue, Load Game and a retry after a loss push an
+`EncounterPhase` too, with `loaded` set, which never saves (§28). The hung phase sits in MESSAGE with no `onActionInput`, the state a healthy one
 also passes through during its 2 s intro tween and its unprompted wild-wave text (`encounter-phase.ts:350-366`, `:429`).
 
 **Settings.** Six settings carry `requireReload` (`src/system/settings/settings.ts`: Language `:438`, UI theme `:455`,
@@ -2750,3 +2751,46 @@ modifier type is registered under the item's `typeId` (`getModifierTypeFuncById`
 `src/modifier/modifier-type.ts:2485`), and when building the item throws, as `Reflect.construct` does for a `className`
 that `#modifiers/modifier` does not export (`src/system/modifier-data.ts:31-62`); that throw reaches only
 `console.error` (`:58-60`). A stack above `getMaxStackCount()` is clamped to it (`:53-55`).
+
+## 29. The wave-start save and the session export
+
+Read at the pinned tag (`v1.12.0.11`), for the `session` command (`src/page/session.ts`) and the oracle's input.
+
+**The session export.** `gameData.getSessionSaveData()` (`src/system/game-data.ts:882-909`) builds the session as it
+stands: seed, game mode, both parties, both modifier lists, the arena, money, `waveIndex`, `battleType`, the trainer,
+`gameVersion`, the challenges, the ME save data and more. It writes nothing: each `*Data` constructor and
+`getSerializedDailyRunConfig` only read their source (`src/system/pokemon-data.ts:80-147`,
+`src/system/modifier-data.ts:15-29`, `src/system/arena-data.ts:28-57`, `src/system/trainer-data.ts:12-23`,
+`src/system/challenge-data.ts:9-13`, `src/data/daily-seed/daily-seed-utils.ts:66-82`). Some fields are the live objects,
+not copies: `pokeballCounts`, `mysteryEncounterSaveData`, the arena's `weather`, `terrain` and `positionalTags`, and each
+Pokémon's `stats` and `ivs`. Its JSON holds no `bigint`: `saveAll` stringifies it with no replacer
+(`src/system/game-data.ts:1368`), which would throw on one. It reads `currentBattle.waveIndex`, so it throws with no
+battle.
+
+**The wave-start save.** On a wave it did not load, `EncounterPhase` and its subclasses (§26) generate the enemy side,
+set new-biome weather and terrain, then call `saveAll(true, sync)`, all before `doEncounter` and so before any summon
+(`src/phases/encounter-phase.ts:290-309`). `loaded` is set by Continue and Load Game (`src/phases/title-phase.ts:87-89`,
+`:163-170`, `:209`, `:371`) and by a retry after a loss (`src/phases/game-over-phase.ts:91`); a loaded wave is not saved
+again, so the copy stays the one that was loaded. Whatever its `sync`, `saveAll` writes the session to `localStorage`
+under `getSessionDataLocalStorageKey(sessionSlotId)` (`src/system/game-data.ts:1366-1369`); `sync` only decides the
+save icon and the server push after the write (`:1345-1347`, `:1373-1383`). It returns before the write only on a failed
+user-info check, which `skipVerification` skips here (`:1321-1326`), or on failed system-data validation (`:1340-1342`).
+`gameData.getSession(slot)` reads it back (`:911-941`), but it is async, and with the key missing on a real login it
+fetches the save from the server and writes the key.
+
+- **The key** is `sessionData${slotId || ""}_${loggedInUser?.username}` (`src/account.ts:59-67`), so slot 0 has no
+  digit; under `bypassLogin` the user is `Guest` (`:22-28`). `loggedInUser` is a module binding (`:6`). Nothing on the
+  scene stores the username as data: it appears only inside display text, such as the title screen's `usernameLabel`
+  (`src/ui/handlers/title-ui-handler.ts:38-52`), and not at all under `hideUsername`.
+- **Who clears it.** Log Out removes only the session cookie (`src/ui/handlers/menu-ui-handler.ts:680-689`,
+  `src/api/account-api.ts:83-95`). `clearLocalData` removes only the current account's keys
+  (`src/system/game-data.ts:612-620`), so one browser can hold a copy per account per slot. It runs at login unless the
+  cached system is newer than the server's (`:452-460`), and from `reinitializeSaveData` (`:627-636`): on failed
+  validation, or when the server calls the save out of date, which can happen right after this save's write (`:608`,
+  `:1390-1393`).
+- **The encryption.** `encrypt(data, bypassLogin)` (`src/utils/data.ts:47-52`) is crypto-js 4.2.0's
+  `AES.encrypt(data, saveKey).toString()`. `saveKey` (`src/constants.ts:56`) is a string, so crypto-js takes it as a
+  passphrase: the output is Base64 of `Salted__`, a random 8-byte salt and the ciphertext, with key and IV from
+  EVP_BytesToKey over MD5, one iteration, and AES-256-CBC with PKCS#7. The salt is new on every call, so the same session
+  never encrypts the same way twice. With `bypassLogin` (`VITE_BYPASS_LOGIN=1`, which dev and app builds set,
+  `src/constants/app-constants.ts:21`) it is `btoa(encodeURIComponent(data))` instead.

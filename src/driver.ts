@@ -82,6 +82,7 @@ const TOOL_COMMANDS = {
   read_menu: ["probe", "menu"],
   read_card: ["probe", "menu", "card"],
   read_starters: ["probe", "menu", "starters"],
+  read_session: ["probe", "menu", "session"],
   press: ["probe", "press"],
   select_option: ["probe", "menu", "press"],
   start_run: ["probe", "menu", "starters", "press"],
@@ -182,6 +183,22 @@ export class Driver {
       const read = await this.#game.starters();
       const { ok: _ok, ...starters } = read;
       return { menu: await this.#game.menu(), fields: read.ok ? starters : { starters_error: read.why } };
+    });
+  }
+
+  /**
+   * The oracle's input (#669): the wave-start save, the session export, and the battle's wave and seed for the oracle to
+   * check the save against. `battle_wave` is the read's own, beside the settled game's `wave`.
+   */
+  readSession(ctx: CallContext): Promise<Record<string, unknown>> {
+    return this.#read("read_session", ctx, async () => {
+      const s = await this.#game.session();
+      return {
+        menu: await this.#game.menu(),
+        fields: s.ok
+          ? { battle_wave: s.wave, battle_seed: s.battleSeed, wave_start: s.waveStart, export: s.export }
+          : { battle_wave: null, battle_seed: null, wave_start: null, export: null, session_error: s.why },
+      };
     });
   }
 
