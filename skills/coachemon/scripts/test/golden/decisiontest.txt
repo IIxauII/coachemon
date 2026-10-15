@@ -93,6 +93,8 @@ W13 T1, Ember                        #41 command/battle w13 ready 0 input 0 draw
 W13 T2, as the oracle line said      #42 command/battle w13 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
 T2 | done now later
 W13 T2, Ember                        #42 command/battle w13 ready 0 input 0 drawn 0 end 16 
+W13 T2, a boss comes in              · | send-in:battle ‖ redrawn
 W13 T3, the foe at 45                #43 command/battle w13 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
 T3 | ! Paras 40/100, came 45/100
+journalled [[1,true,"unavailable",{"state":"on","turn":1,"of":3}],[2,false,"unavailable",{"state":"on","turn":2,"of":3}]]
 after stop: watch frames 0, refreshes 0

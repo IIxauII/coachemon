@@ -93,7 +93,7 @@ function cardOracleLine(v: unknown): CardOracleLine | null | undefined {
   if (Object.keys(d).sort().join(",") !== "of,state,turn" || (d.state !== "on" && d.state !== "off")) return undefined;
   const { state, turn, of } = d;
   if (!Number.isInteger(turn) || !Number.isInteger(of) || (turn as number) < 1 || (of as number) < 1) return undefined;
-  // Off the line, `turn` is the miss's, and a fight lost past the oracle line's last step misses after it.
+  // (extension-distribution.md §11.1)
   if (state === "on" && (turn as number) > (of as number)) return undefined;
   return { state, turn: turn as number, of: of as number };
 }

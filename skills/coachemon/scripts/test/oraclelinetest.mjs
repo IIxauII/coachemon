@@ -96,6 +96,8 @@ const hand = (label, line) => {
   hand("the wave after", { ...LINE, wave: 181 });
   hand("no steps", { ...LINE, steps: [] });
   hand("its turns out of order", { ...LINE, steps: [LINE.steps[1], LINE.steps[0]] });
+  // The relay refuses a card whose oracle line state counts from turn 0, and with it the whole card (#675).
+  hand("a step before the first turn", { ...LINE, steps: [{ ...LINE.steps[0], turn: 0 }, ...LINE.steps.slice(1)] });
   assert.equal(oracleLineModel(scene), null, "nothing ignored is held");
   assert.equal(hand("Gordie's W180", LINE).ok, true);
   assert.equal(hand("another run's seed, with one held", { ...LINE, seed: "x9AbQ" }).ok, false);
@@ -263,7 +265,6 @@ const after = (turn, tweak = () => {}, line = LINE) => {
 const bySpecies = (side, key) => side.find(m => m.species === SpeciesId[key]);
 // A frame inside `turn`, once the player has committed `cmd`, and the decision the game reaches next.
 const play = (turn, cmd, opts) => oracleLineSeen(at(turn, { phase: { phaseName: "MovePhase" }, cmd, ...opts }));
-// `scored`: what the decision scored, for the journal.
 let scored = null;
 const decide = (turn, opts) => { const s = at(turn, opts); scored = oracleLineCheck(s); return s; };
 const scoredText = sc => (sc ? `T${sc.turn}/${sc.of} ${sc.misses.length ? `miss${sc.wrong ? " !" : ""} ${sc.misses.map(m => `${m.name} ${m.expected} · ${m.came}`).join("; ")}` : "match"}` : "nothing");

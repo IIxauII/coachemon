@@ -32,17 +32,16 @@ export function cardLine(c: CardFacts): string | null {
   return `${label}${wave}${verdict}${text === "" ? "" : ` | ${text}`}`;
 }
 
-/** `key` is the oracle line's: every later card of its fight still carries `off` (extension-distribution.md §11.1). */
-export function offLine(c: CardFacts): { key: string; line: string } | null {
-  const o = c.oracleLine;
-  if (typeof o !== "object" || o === null) return null;
-  const { state, turn, of } = o as Record<string, unknown>;
-  if (state !== "off") return null;
-  const wave = typeof c.wave === "number" ? ` w${c.wave}` : "";
-  return { key: `${String(c.wave)}|${String(turn)}|${String(of)}`, line: `OFF LINE${wave} · T${String(turn)}/${String(of)}` };
-}
+const lineOf = (c: CardFacts): Record<string, unknown> | null =>
+  typeof c.oracleLine === "object" && c.oracleLine !== null ? (c.oracleLine as Record<string, unknown>) : null;
 
-const leads = (c: CardFacts) => typeof c.oracleLine === "object" && c.oracleLine !== null && (c.oracleLine as Record<string, unknown>).state === "on";
+/** `key` names the oracle line (extension-distribution.md §11.2). */
+export function offLine(c: CardFacts): { key: string; line: string } | null {
+  const o = lineOf(c);
+  if (o?.state !== "off") return null;
+  const wave = typeof c.wave === "number" ? ` w${c.wave}` : "";
+  return { key: `${String(c.wave)}|${String(o.turn)}|${String(o.of)}`, line: `OFF LINE${wave} · T${String(o.turn)}/${String(o.of)}` };
+}
 
 export function feedLine(f: ClientEvent | Notice): string | null {
   if (f.t === "notice") return f.kind === "resume" ? "RESUMED" : `TABS ${tabsLine(f.tabs)}`;
@@ -84,11 +83,11 @@ export async function runWatch(o: WatchOptions): Promise<void> {
     if (line !== null) print(line);
   };
 
-  /** The oracle line already said to be off; an oracle line that leads again is a new one. */
+  /** The oracle line already said to be off. */
   let offKey: string | null = null;
   const sayCard = (c: CardFacts) => {
     say(cardLine(c));
-    if (leads(c)) offKey = null;
+    if (lineOf(c)?.state === "on") offKey = null;
     const off = offLine(c);
     if (off === null || off.key === offKey) return;
     offKey = off.key;

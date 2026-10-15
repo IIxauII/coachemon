@@ -109,15 +109,15 @@ const sentIn = s => {
   fronts(s);
   return true;
 };
-const forget = () => { copy(built, NONE); field.from = null; field.battle = null; cache.length = 0; };
+// The last battle card built or shown for a decision, which a send-in's redraw, unlike `field.from`, does not replace.
+let decided = null;
+const keepDecided = rec => { if (rec?.card?.kind === "battle") decided = rec; };
+const forget = () => { copy(built, NONE); field.from = null; field.battle = null; cache.length = 0; decided = null; };
 
-// The battle card the step was played from, in the wire's shape. A card that will not flatten journals none, and the
-// build goes on.
 const playedOn = () => {
   try {
-    const rec = field.from;
-    const ev = rec ? cardEvent(rec.card) : null;
-    return ev ? { ...ev, groups: wireCard(groupsOf(rec)).groups } : null;
+    const ev = decided ? cardEvent(decided.card) : null;
+    return ev ? { ...ev, groups: wireCard(groupsOf(decided)).groups } : null;
   } catch { return null; }
 };
 const journalScored = (s, scored) => { if (scored) journalCheckpoint(s, scored, playedOn()); };
@@ -214,7 +214,7 @@ const build = (road, sendIn = false) => {
     const rec = record(card, landed);
     takeField(s, rec);
     if (sendIn) logged("redrawn");
-    else { remember(rec); logged("built"); if (landed) logged("road landed"); }
+    else { remember(rec); keepDecided(rec); logged("built"); if (landed) logged("road landed"); }
     draw(rec);
   } catch (e) { fail(e); }
 };
@@ -226,6 +226,7 @@ const show = rec => {
     if (!s?.ui) { hide(); return; }
     screenNote(s, rec.card);
     takeField(s, rec);
+    keepDecided(rec);
     logged("cached");
     draw(rec);
   } catch (e) { fail(e); }

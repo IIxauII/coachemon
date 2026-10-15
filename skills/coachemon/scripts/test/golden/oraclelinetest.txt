@@ -3,6 +3,7 @@ another run's seed                      other-fight
 the wave after                          other-fight
 no steps                                malformed
 its turns out of order                  malformed
+a step before the first turn            malformed
 Gordie's W180                           held
 another run's seed, with one held       other-fight
 == W180 T15

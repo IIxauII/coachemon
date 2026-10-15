@@ -177,12 +177,12 @@ const show = (title, value) => out.push(`---- ${title}\n${JSON.stringify(value, 
 }
 
 // A step of an oracle line as `oracleLineCheck` scores it, and the card the player saw it on.
-const claim = (hp, foeHp) => ({
+const checkpoint = (hp, foeHp) => ({
   ours: [{ slot: 0, species: 25, onField: true, hp, maxHp: 60, status: 0, statStages: [0, 0, 0, 0, 0, 0, 0], tera: false }],
   foes: [{ slot: 0, species: 143, onField: true, hp: foeHp, maxHp: 140, status: 0, statStages: [0, 0, 0, 0, 0, 0, 0], tera: false }],
 });
 const scored = (turn, misses = [], wrong = false) => ({
-  turn, of: 19, input: { kind: "move", move: 85, tera: false }, checkpoint: claim(60 - turn, 140 - 10 * turn),
+  turn, of: 19, input: { kind: "move", move: 85, tera: false }, checkpoint: checkpoint(60 - turn, 140 - 10 * turn),
   misses: misses.map(m => ({ icon: { atlas: "pokemon_icons_1", frame: "143" }, ...m })), wrong,
 });
 const shownCard = turn => ({ kind: "battle", key: "180", wave: 180, verdict: "trainer", oracleLine: { state: "on", turn, of: 19 },

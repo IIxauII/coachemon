@@ -287,7 +287,6 @@ test("`cardBody` carries the oracle line's state, its turn of its last, and noth
   const card = (oracleLine: unknown) => ({ build: BUILD, kind: "battle", key: "180", wave: 180, verdict: "trainer", groups: [], text: "t", oracleLine });
   assert.deepEqual(cardBody(card({ state: "on", turn: 7, of: 19 }))?.oracleLine, { state: "on", turn: 7, of: 19 });
   assert.deepEqual(cardBody(card({ state: "off", turn: 13, of: 19 }))?.oracleLine, { state: "off", turn: 13, of: 19 });
-  // A fight lost after the oracle line's last step is off the line on the turn it was lost.
   assert.deepEqual(cardBody(card({ state: "off", turn: 21, of: 19 }))?.oracleLine, { state: "off", turn: 21, of: 19 });
   assert.equal(cardBody(card(null))?.oracleLine, null);
   for (const bad of [

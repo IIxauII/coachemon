@@ -7,6 +7,7 @@ const KEY = "coach-me-journal";
 const MAX_ENTRIES = 40, MAX_STEPS = 60;
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
+const copyOf = v => tryDo(() => JSON.parse(JSON.stringify(v)));
 
 let journal = null;
 let persist = null; // null until the store has been probed once; false once it has refused
@@ -88,7 +89,7 @@ const startEntry = (s, me, wave) => {
 const record = (s, card) => {
   let milestone = false;
   if (!open.card && card?.kind === "encounter" && card.wave === open.wave) {
-    open.card = tryDo(() => JSON.parse(JSON.stringify(card)));
+    open.card = copyOf(card);
     open.name = card.name ?? null;
     milestone = true;
   }
@@ -129,7 +130,7 @@ export const journalCheck = (s, card) => {
   } catch {}
 };
 
-// `scored` is `oracleLineCheck`'s: one entry per checkpoint, written as it is scored.
+// `scored` is what `oracleLineCheck` or `oracleLineSeen` returned: one entry per checkpoint scored, written as it is.
 // @only 98-watch, tests: journalCheckpoint
 export const journalCheckpoint = (s, scored, card) => {
   try {
@@ -138,9 +139,9 @@ export const journalCheckpoint = (s, scored, card) => {
     j.push({
       kind: "checkpoint", at: new Date().toISOString(), seed: s.seed ?? null, game: gameVersionOf(s),
       wave: s.currentBattle?.waveIndex ?? null, turn: scored.turn, of: scored.of,
-      input: tryDo(() => JSON.parse(JSON.stringify(scored.input))), checkpoint: tryDo(() => JSON.parse(JSON.stringify(scored.checkpoint))),
+      input: copyOf(scored.input), checkpoint: copyOf(scored.checkpoint),
       matched: !scored.misses.length, misses: scored.misses.map(m => ({ name: m.name, expected: m.expected, came: m.came })),
-      wrong: scored.wrong, card: tryDo(() => JSON.parse(JSON.stringify(card))),
+      wrong: scored.wrong, card: copyOf(card),
     });
     while (j.length > MAX_ENTRIES) j.shift();
     save();

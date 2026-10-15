@@ -500,10 +500,21 @@ scene = game;
   step("W13 T2, as the oracle line said", command(2, 70));
   console.log(`T2 | ${state()}`);
   assert.equal(state(), "done now later");
+  const decidedOn = cards().at(-1);
   step("W13 T2, Ember", ember);
+  // A boss sent in mid-turn redraws the card with another verdict; the step was still played from the one before it.
+  const onix = foe(27, "Onix");
+  onix.isBoss = () => true;
+  for (const f of [paras, onix]) f.isOnField = () => g.foes[0] === f;
+  assert.deepEqual(step("W13 T2, a boss comes in", () => { g.foes = [onix, paras]; g.phase = { phaseName: "SwitchSummonPhase" }; }), ["send-in:battle"]);
+  assert.notEqual(__coachHud.last().verdict, decidedOn.verdict, "the redraw's verdict is its own");
   step("W13 T3, the foe at 45", command(3, 45));
   console.log(`T3 | ${state()}`);
   assert.equal(state(), "! Paras 40/100, came 45/100");
+  const journalled = __coachHud.journal().filter(e => e.kind === "checkpoint").map(e => [e.turn, e.matched, e.card?.verdict, e.card?.oracleLine]);
+  console.log(`journalled ${JSON.stringify(journalled)}`);
+  assert.deepEqual(journalled, [[1, true, cards().findLast(c => c.wave === 13 && c.oracleLine?.turn === 1)?.verdict, { state: "on", turn: 1, of: 3 }],
+    [2, false, decidedOn.verdict, { state: "on", turn: 2, of: 3 }]], "each checkpoint keeps the card its step was decided on");
   delete game.seed;
   delete full.species.speciesId;
 }

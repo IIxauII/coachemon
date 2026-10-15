@@ -32,7 +32,7 @@ const mons = side => Array.isArray(side) && side.every(isObject);
 // The page is not trusted (extension-distribution.md §9.5), and an oracle line `oracleLineModel` cannot read would fail
 // every card built for its fight.
 const shaped = line => typeof line?.seed === "string" && Number.isInteger(line.wave) && Array.isArray(line.steps) && line.steps.length > 0
-  && line.steps.every((st, i) => Number.isInteger(st?.turn) && (i === 0 || st.turn > line.steps[i - 1].turn)
+  && line.steps.every((st, i) => Number.isInteger(st?.turn) && st.turn >= 1 && (i === 0 || st.turn > line.steps[i - 1].turn)
     && (st.input === null || (isObject(st.input) && (st.input.kind !== "switch" || isObject(st.input.to))))
     && (st.input?.replacement === undefined || isObject(st.input.replacement)) && mons(st.checkpoint?.ours) && mons(st.checkpoint?.foes));
 
@@ -62,7 +62,7 @@ const pickedOther = (s, st, mover) => {
   const front = frontOf(s);
   return front !== mover && front !== want;
 };
-// Steps `from` exclusive to `i` inclusive are behind us now, and `misses` came of them. True when the claim was wrong.
+// Steps `from` exclusive to `i` inclusive are behind us now, and `misses` came of them.
 const miss = (h, from, i, misses, picked) => {
   h.off = { turn: h.line.steps[i].turn, misses };
   const wrong = !picked && !h.strayed && h.line.steps.slice(from + 1, i + 1).every(st => matchesLine(st, h.played[st.turn]));
