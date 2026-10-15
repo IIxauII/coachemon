@@ -53,7 +53,7 @@ if (values.replay !== undefined) {
   }
   const inClone: Clone = async ({ name, source, input }) => {
     const found = findPinnedClone();
-    if ("missing" in found) return { missing: `${found.missing} ${found.how}` };
+    if ("missing" in found) return { missing: `${found.missing} Set it up with \`${found.how}\`` };
     return testInClone({ clone: found.clone, name, source, input, echo: false });
   };
   let result: ReplayResult;

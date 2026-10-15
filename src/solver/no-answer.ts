@@ -57,7 +57,7 @@ function cause(reason: Reason): string {
       );
     }
     case "no_clone":
-      return `the oracle's clone of game version ${reason.version} couldn't be set up: ${reason.cause}.`;
+      return `the oracle's clone of game version ${reason.version} isn't set up: ${reason.cause}.`;
     case "clone_version":
       return `the oracle's clone is game version ${reason.clone}, not the ${reason.pinned} it is pinned to.`;
     case "load_hygiene":
@@ -70,7 +70,7 @@ function cause(reason: Reason): string {
       return `input ${reason.index + 1}, ${describeInput(reason.tried)}, ${reason.why} at turn ${reason.turn}${offered}.`;
     }
     case "harness_failed":
-      return `the oracle's harness failed: ${reason.why}`;
+      return `the oracle's harness failed: ${reason.why}${/[.!?]$/.test(reason.why) ? "" : "."}`;
     case "not_built":
       return "solving not built yet";
   }

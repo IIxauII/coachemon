@@ -28,7 +28,6 @@ const totals = (items: SessionSave["modifiers"]) => {
   return out;
 };
 
-/** What the harness writes for a fight that loaded clean and won in two turns, the second with no input. */
 const clean = () => ({
   version: PIN,
   hygiene: {
@@ -191,15 +190,12 @@ test("a faint on a turn with no input of its own stops the replay with no answer
 });
 
 test("no clone to run in gives no answer naming what is missing (#660)", async () => {
-  const { clone } = fakeClone({ missing: "No pinned clone at .cache/pokerogue/v1.12.0.11." });
+  const missing = "No pinned clone at .cache/pokerogue/v1.12.0.11. Set it up with `npm run drift:check`";
+  const { clone } = fakeClone({ missing });
   const result = await replay({ ...drayton, cloneVersion: PIN }, [bounce], clone);
 
-  assert.deepEqual(reason(result).reason, {
-    code: "no_clone",
-    version: PIN,
-    cause: "No pinned clone at .cache/pokerogue/v1.12.0.11.",
-  });
-  assert.match(reason(result).message, /No pinned clone/);
+  assert.deepEqual(reason(result).reason, { code: "no_clone", version: PIN, cause: missing });
+  assert.match(reason(result).message, /isn't set up: No pinned clone .*`npm run drift:check`\. The card still coaches\.$/);
 });
 
 test("a clone at another game version than the pin gives no answer (#660)", async () => {
@@ -217,9 +213,10 @@ test("a harness that failed is no answer, never a win or a loss (#660)", async (
   ];
   for (const [report, why] of failed) {
     const { clone } = fakeClone({ out: report === undefined || typeof report === "string" ? report : JSON.stringify(report) });
-    const { reason: said } = reason(await replay({ ...drayton, cloneVersion: PIN }, [bounce], clone));
+    const { reason: said, message } = reason(await replay({ ...drayton, cloneVersion: PIN }, [bounce], clone));
 
     assert.equal(said.code, "harness_failed");
     assert.match(said.code === "harness_failed" ? said.why : "", why);
+    assert.match(message, /[^.!?][.!?] The card still coaches\.$/);
   }
 });

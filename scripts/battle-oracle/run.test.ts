@@ -61,7 +61,7 @@ test("oracle:battle --replay answers no answer naming what the clone lacks when 
 
   assert.match(
     run.stdout,
-    /^no answer: the oracle's clone of game version 1\.12\.0\.11 couldn't be set up: No pinned clone at .*v1\.12\.0\.11\. npm run drift:check/,
+    /^no answer: the oracle's clone of game version 1\.12\.0\.11 isn't set up: No pinned clone at .*v1\.12\.0\.11\. Set it up with `npm run drift:check/,
   );
   assert.equal(run.status, 2);
 });

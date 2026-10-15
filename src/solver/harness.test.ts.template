@@ -153,8 +153,8 @@ async function turn(input: Input | null): Promise<Turn> {
   // Stopped short of GameOverPhase, which clears the party.
   if (scene().phaseManager.getCurrentPhase().is("GameOverPhase")) return "lost";
   if (game.isVictory()) {
-    // Live shows the last turn's end-of-turn effects and the foes' items dropped (BattleEndPhase), and a wave that
-    // ends a biome has no SelectModifierPhase to wait for (#660).
+    // Where `Checkpoint` (oracle-line.ts) reads the last: not SelectModifierPhase, which a tenth wave never reaches
+    // (game-code.md §12).
     await game.phaseInterceptor.to("BattleEndPhase");
     return "won";
   }
