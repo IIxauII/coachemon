@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { after, test } from "node:test";
 import { fakeClient, fakeExtension, Peer, readyTab } from "./fake-ext.ts";
 import { HubLink, hubPort } from "./link.ts";
@@ -15,6 +17,8 @@ import { DEV_PORT, PROTOCOL, STORE_PORT } from "../protocol/version.ts";
 import type { ExtensionCmd, FromExtension, ToExtension } from "../protocol/wire.ts";
 
 const shut: (() => void)[] = [];
+/** The `Driver`'s home: no test here writes a setting. */
+const UNWRITTEN_HOME = path.join(tmpdir(), "coachemon-hub-link-test");
 
 after(() => {
   for (const s of shut) s();
@@ -150,7 +154,7 @@ test("the session read crosses the hub to the Driver with the run's wave-start s
   ext.answering(cmd("session"), f => ({ t: "reply", id: f.id, ok: true, result: { ok: true, wave: 180, battleSeed: "U0QKEz8wJ8ea7832", stored: [OTHER_RUN_W180, RUN_W180], export: exported } }));
 
   let t = 0;
-  const driver = new Driver(new LinkGame(link, link), { now: () => t, sleep: async ms => { t += ms; } });
+  const driver = new Driver(new LinkGame(link, link), UNWRITTEN_HOME, { now: () => t, sleep: async ms => { t += ms; } });
   const r = await driver.readSession({});
   assert.equal(r.status, "ok", JSON.stringify(r));
   assert.equal(r.battle_wave, 180);
@@ -164,7 +168,7 @@ test("an extension from before the session read refuses it alone, at rung 4 (#66
   const r = await link.session();
   assert.ok(isFault(r) && r.fault === "missing-command", JSON.stringify(r));
   await assert.rejects(
-    new Driver(new LinkGame(link, link)).readSession({}),
+    new Driver(new LinkGame(link, link), UNWRITTEN_HOME).readSession({}),
     (e: Refusal) => e.code === "missing_command" && e.detail.rung === 4 && /too old for this plugin\. Update the extension\./.test(e.message),
   );
   assert.equal((await link.presence(["probe", "menu", "card"])).reach, null, "every other read still reaches the tab");
