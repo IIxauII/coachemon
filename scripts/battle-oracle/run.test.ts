@@ -8,14 +8,17 @@ import { fileURLToPath } from "node:url";
 import { ArenaTagSide, GameModes } from "../../src/enums/generated.ts";
 
 const RUN = fileURLToPath(new URL("./run.ts", import.meta.url));
-const drayton = JSON.parse(
-  readFileSync(new URL("../../src/solver/fixtures/drayton-w188.wave-start.json", import.meta.url), "utf8"),
-);
+const FIXTURES = fileURLToPath(new URL("../../src/solver/fixtures/", import.meta.url));
+const exported = JSON.parse(readFileSync(path.join(FIXTURES, "drayton-w188.json"), "utf8"));
+const drayton = exported.save;
+const SCRIPT = path.join(FIXTURES, "drayton-w188.win.script.json");
 
-const oracle = (exported: unknown) => {
-  const file = path.join(mkdtempSync(path.join(tmpdir(), "battle-oracle-")), "export.json");
+const oracle = (exported: unknown, flags: string[] = []) => {
+  // Never the repo's own `.cache`: it may hold a provisioned clone, which these tests mean never to start.
+  const dir = mkdtempSync(path.join(tmpdir(), "battle-oracle-"));
+  const file = path.join(dir, "export.json");
   writeFileSync(file, typeof exported === "string" ? exported : JSON.stringify(exported));
-  return spawnSync(process.execPath, [RUN, file], { encoding: "utf8" });
+  return spawnSync(process.execPath, [RUN, ...flags, file], { encoding: "utf8", cwd: dir });
 };
 
 test("oracle:battle prints the gate's answer for a wave-start save and exits as no answer (#659)", () => {
@@ -50,5 +53,39 @@ test("oracle:battle reads the re-check record it ships with, which until the pin
   const run = oracle(drayton);
 
   assert.match(run.stdout, /^no answer: the oracle's harness hasn't been re-checked on game version 1\.12\.0\.11/);
+  assert.equal(run.status, 2);
+});
+
+test("oracle:battle --replay answers no answer naming what the clone lacks when it isn't provisioned (#660)", () => {
+  const run = oracle(exported, ["--replay", SCRIPT]);
+
+  assert.match(
+    run.stdout,
+    /^no answer: the oracle's clone of game version 1\.12\.0\.11 couldn't be set up: No pinned clone at .*v1\.12\.0\.11\. npm run drift:check/,
+  );
+  assert.equal(run.status, 2);
+});
+
+test("oracle:battle --replay answers with the gate's refusal before it looks for a clone (#660)", () => {
+  const run = oracle({ ...exported, save: { ...drayton, gameMode: GameModes.DAILY } }, ["--replay", SCRIPT]);
+
+  assert.match(run.stdout, /^no answer: a Daily's seed/);
+  assert.equal(run.status, 2);
+});
+
+test("oracle:battle --replay answers no answer when the save comes with no live battle to match (#660)", () => {
+  const run = oracle(drayton, ["--replay", SCRIPT]);
+
+  assert.match(run.stdout, /^no answer: no live battle came with the save/);
+  assert.equal(run.status, 2);
+});
+
+test("oracle:battle --replay answers no answer naming the script it couldn't read, and where it strays (#660)", () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "battle-oracle-"));
+  const script = path.join(dir, "typo.script.json");
+  writeFileSync(script, JSON.stringify({ inputs: [{ kind: "move", move: "DRAGON_PULS", tera: false }] }));
+  const run = oracle(exported, ["--replay", script]);
+
+  assert.match(run.stdout, /^no answer: could not read .*typo\.script\.json: .*inputs\[0\]\.move/s);
   assert.equal(run.status, 2);
 });

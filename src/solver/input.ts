@@ -4,9 +4,13 @@ export type SolveInput = {
   /** The wave-start save, or the session export when `extras` comes with it. */
   save: SessionSave;
   extras?: MidFightExtras;
+  /** The battle on the live tab, from the read that gave the save (`SessionRead`). */
+  live?: Battle;
   cloneVersion: string;
   budget: Budget;
 };
+
+export type Battle = { wave: number; battleSeed: string };
 
 /** The fields of upstream's `SessionSaveData` the solver reads; the rest rides along untouched. */
 export type SessionSave = {
@@ -22,7 +26,7 @@ export type SessionSave = {
   enemyModifiers: readonly SavedItem[];
 };
 
-export type SavedItem = { typeId: string; className: string };
+export type SavedItem = { typeId: string; className: string; stackCount: number };
 
 /** The live mid-fight reads a save lacks (#664). */
 export type MidFightExtras = {

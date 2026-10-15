@@ -1,0 +1,253 @@
+// The oracle's harness: it loads the save handed at COACH_IN, plays the inputs forward on the battle's seed and writes
+// what it saw to COACH_OUT. It judges nothing: `src/solver/replay.ts` reads the report.
+import { readFileSync, writeFileSync } from "node:fs";
+import { BattleScene } from "#app/battle-scene";
+import { activeOverrides, defaultOverrides } from "#app/overrides";
+import { Button } from "#enums/buttons";
+import { Command } from "#enums/command";
+import { MoveId } from "#enums/move-id";
+import { isIgnorePP, isVirtual, MoveUseMode } from "#enums/move-use-mode";
+import { SpeciesId } from "#enums/species-id";
+import { StatusEffect } from "#enums/status-effect";
+import { UiMode } from "#enums/ui-mode";
+import type { CommandPhase } from "#phases/command-phase";
+import { GameManager } from "#test/framework/game-manager";
+import type { PartyUiHandler } from "#ui/party-ui-handler";
+import { canTerastallize } from "#utils/pokemon-utils";
+import { beforeAll, describe, it } from "vitest";
+
+// `GameManager`'s constructor swaps the prototype's for a max roll (#632).
+const realRand = BattleScene.prototype.randBattleSeedInt;
+const OVERRIDES = [
+  "IVS_OVERRIDE",
+  "ENEMY_IVS_OVERRIDE",
+  "NATURE_OVERRIDE",
+  "ENEMY_NATURE_OVERRIDE",
+  "SHINY_OVERRIDE",
+  "ENEMY_SHINY_OVERRIDE",
+] as const;
+
+type PartySlot = { slot: number; species: string };
+type Input = ({ kind: "move"; move: string; tera: boolean } | { kind: "switch"; to: PartySlot }) & {
+  replacement?: PartySlot;
+};
+type Turn = "won" | "lost" | "on" | { illegal: string };
+
+const job: { save: any; inputs: Input[] } = JSON.parse(readFileSync(process.env.COACH_IN as string, "utf8"));
+const report: Record<string, unknown> = {};
+
+let phaserGame: Phaser.Game;
+let game: GameManager;
+const scene = () => game.scene as any;
+const species = (p: any): string => SpeciesId[p.species.speciesId];
+
+const mon = (p: any, slot: number) => ({
+  slot,
+  species: species(p),
+  onField: p.isOnField(),
+  hp: p.hp,
+  maxHp: p.getMaxHp(),
+  status: StatusEffect[p.status?.effect ?? StatusEffect.NONE],
+  statStages: [...p.getStatStages()],
+  tera: p.isTerastallized,
+  // Index 0 is the last bar (game-code.md §3).
+  ...(p.isBoss() && { bossBars: p.isFainted() ? 0 : p.bossSegmentIndex + 1 }),
+});
+const checkpoint = () => ({ ours: scene().getPlayerParty().map(mon), foes: scene().getEnemyParty().map(mon) });
+
+function stackTotals(items: any[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const item of items) out[item.type.id] = (out[item.type.id] ?? 0) + item.stackCount;
+  return out;
+}
+
+/** The IVs, natures and shininess the load gave the mons, where they differ from the save's. */
+function unlikeTheSave(side: string, mons: any[], saved: any[]): string[] {
+  return mons.flatMap((p, i) =>
+    [
+      JSON.stringify(p.ivs) !== JSON.stringify(saved[i]?.ivs) && "IVs",
+      p.nature !== saved[i]?.nature && "nature",
+      p.shiny !== saved[i]?.shiny && "shininess",
+    ]
+      .filter(Boolean)
+      .map(what => `${side} ${species(p)}'s ${what}`),
+  );
+}
+
+// Mirrors `CommandPhase.tryExecuteQueuedMove`: true when the turn runs a queued move (a two-turn move's second turn, a
+// rampage, a recharge) without asking for a command.
+function queuedRuns(active: any): boolean {
+  const moveset: any[] = active.getMoveset();
+  const next = active
+    .getMoveQueue()
+    .find(
+      (q: any) =>
+        q.move === MoveId.NONE ||
+        isVirtual(q.useMode) ||
+        (moveset.find(m => m.moveId === q.move)?.isUsable(active, isIgnorePP(q.useMode), true)?.[0] ?? false),
+    );
+  return next !== undefined && (next.move === MoveId.NONE || isVirtual(next.useMode) || moveset.some(m => m.moveId === next.move));
+}
+
+function legal(): Input[] {
+  const active = scene().getPlayerField()[0];
+  const usable = active.getMoveset().filter((m: any) => m.isUsable(active, false, true)[0]);
+  // With nothing usable, the fight command plays Struggle (`CommandPhase.handleFightCommand`).
+  const moves: string[] = usable.length > 0 ? usable.map((m: any) => MoveId[m.moveId]) : ["STRUGGLE"];
+  const tera = canTerastallize(active);
+  const out: Input[] = moves.flatMap(move => [
+    { kind: "move" as const, move, tera: false },
+    ...(tera ? [{ kind: "move" as const, move, tera: true }] : []),
+  ]);
+  if (!active.isTrapped()) {
+    scene()
+      .getPlayerParty()
+      .forEach((p: any, slot: number) => {
+        if (!p.isFainted() && !p.isOnField()) out.push({ kind: "switch", to: { slot, species: species(p) } });
+      });
+  }
+  return out;
+}
+
+const same = (a: Input, b: Input) =>
+  a.kind === "move"
+    ? b.kind === "move" && a.move === b.move && a.tera === b.tera
+    : b.kind === "switch" && a.to.slot === b.to.slot && a.to.species === b.to.species;
+
+// A prompt left queued for a decision the game never asks for is taken by the next one, and every later input lands a
+// turn late (#632).
+function strayPrompts(): number {
+  const prompts: unknown[] = (game.promptHandler as any).prompts;
+  const stray = prompts.length;
+  prompts.length = 0;
+  return stray;
+}
+
+function command(input: Input | null) {
+  if (input === null) return;
+  if (input.kind === "switch") return game.doSwitchPokemon(input.to.slot);
+  const move = MoveId[input.move as keyof typeof MoveId];
+  if (move !== MoveId.STRUGGLE) return input.tera ? game.move.selectWithTera(move) : game.move.select(move);
+  // The move helper refuses a move with no PP left, so this sends what the menu would.
+  game.onNextPrompt("CommandPhase", UiMode.COMMAND, () => {
+    scene().ui.setMode(UiMode.FIGHT, (scene().phaseManager.getCurrentPhase() as CommandPhase).getFieldIndex());
+  });
+  game.onNextPrompt("CommandPhase", UiMode.FIGHT, () => {
+    const phase = scene().phaseManager.getCurrentPhase() as CommandPhase;
+    phase.handleCommand(input.tera ? Command.TERA : Command.FIGHT, 0, MoveUseMode.NORMAL);
+  });
+}
+
+/** One turn, to the next decision or to the battle's end. */
+async function turn(input: Input | null): Promise<Turn> {
+  command(input);
+  const interceptor: any = game.phaseInterceptor;
+  // A wipe never reaches TurnEndPhase; the interceptor reads its target afresh on every pass (#632).
+  const watch = setInterval(() => {
+    if (scene().phaseManager.getCurrentPhase()?.is("GameOverPhase")) interceptor.target = "GameOverPhase";
+  }, 1);
+  try {
+    await interceptor.to("TurnEndPhase", false);
+  } finally {
+    clearInterval(watch);
+  }
+  // Stopped short of GameOverPhase, which clears the party.
+  if (scene().phaseManager.getCurrentPhase().is("GameOverPhase")) return "lost";
+  if (game.isVictory()) {
+    // Live shows the last turn's end-of-turn effects and the foes' items dropped (BattleEndPhase), and a wave that
+    // ends a biome has no SelectModifierPhase to wait for (#660).
+    await game.phaseInterceptor.to("BattleEndPhase");
+    return "won";
+  }
+  await game.phaseInterceptor.to("TurnEndPhase");
+  const fainted = scene().getPlayerField()[0]?.isFainted() ?? false;
+  const replacement = input?.replacement;
+  if (fainted && replacement === undefined) return { illegal: "leaves a faint replacement to pick, and names none" };
+  if (!fainted && replacement !== undefined) return { illegal: "names a faint replacement, but nothing of ours fainted" };
+  if (replacement !== undefined) {
+    const pick = scene().getPlayerParty()[replacement.slot];
+    if (pick === undefined || species(pick) !== replacement.species || pick.isFainted() || pick.isOnField()) {
+      return { illegal: `names a faint replacement the party can't send in` };
+    }
+    // Registered once the faint has happened: up front, it blocks the command prompts queued behind it (#632).
+    game.onNextPrompt("SwitchPhase", UiMode.PARTY, () => {
+      const handler = scene().ui.getHandler() as PartyUiHandler;
+      handler.setCursor(replacement.slot);
+      handler.processInput(Button.ACTION);
+      handler.processInput(Button.ACTION);
+    });
+  }
+  await game.phaseInterceptor.to("CommandPhase");
+  return "on";
+}
+
+async function load() {
+  game = new GameManager(phaserGame);
+  BattleScene.prototype.randBattleSeedInt = realRand;
+  const realRng = { constructed: scene().randBattleSeedInt === realRand, reloaded: false };
+  game.override.normalizeIVs = false;
+  game.override.normalizeNatures = false;
+  game.override.disableShinies = false;
+  await game.classicMode.startBattle(1 as any);
+
+  (game.reload as any).sessionData = scene().gameData.parseSessionData(JSON.stringify(job.save));
+  // `initSessionFromData` clears `modifiers` and never `enemyModifiers` (#632).
+  scene().enemyModifiers = [];
+  scene().modifiers = [];
+  const enemyItemsBeforeReload = scene().enemyModifiers.length;
+  await game.reload.reloadSession();
+  BattleScene.prototype.randBattleSeedInt = realRand;
+  realRng.reloaded = scene().randBattleSeedInt === realRand;
+
+  report.hygiene = {
+    realRng,
+    overrides: [
+      ...OVERRIDES.filter(name => activeOverrides[name] !== defaultOverrides[name]),
+      ...unlikeTheSave("our", scene().getPlayerParty(), job.save.party),
+      ...unlikeTheSave("the foe's", scene().getEnemyParty(), job.save.enemyParty),
+    ],
+    enemyItemsBeforeReload,
+    items: { ours: stackTotals(scene().modifiers), foes: stackTotals(scene().enemyModifiers) },
+  };
+  report.battle = { wave: scene().currentBattle.waveIndex, battleSeed: scene().currentBattle.battleSeed };
+}
+
+async function play() {
+  const steps: unknown[] = [];
+  report.steps = steps;
+  let next = 0;
+  for (;;) {
+    const at = scene().currentBattle.turn;
+    let input: Input | null = null;
+    if (!queuedRuns(scene().getPlayerField()[0])) {
+      if (next === job.inputs.length) return "open";
+      input = job.inputs[next];
+      const offered = legal();
+      if (!offered.some(o => same(o, input as Input))) {
+        return { illegal: { input: next, turn: at, why: "isn't offered", legal: offered } };
+      }
+      next++;
+    }
+    const ended = await turn(input);
+    if (typeof ended === "object") return { illegal: { input: next - 1, turn: at, why: ended.illegal, legal: [] } };
+    steps.push({ turn: at, input, checkpoint: checkpoint(), strayPrompts: strayPrompts() });
+    if (ended !== "on") return ended;
+  }
+}
+
+describe("coach harness", () => {
+  beforeAll(() => {
+    phaserGame = new Phaser.Game({ type: Phaser.HEADLESS });
+  });
+
+  it("replay", async () => {
+    try {
+      report.version = JSON.parse(readFileSync("package.json", "utf8")).version;
+      await load();
+      report.end = await play();
+    } catch (err) {
+      report.error = err instanceof Error ? (err.stack ?? err.message) : String(err);
+    }
+    writeFileSync(process.env.COACH_OUT as string, JSON.stringify(report));
+  }, 600_000);
+});

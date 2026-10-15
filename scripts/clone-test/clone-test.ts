@@ -12,29 +12,39 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const HUD = path.resolve(HERE, "../../skills/coachemon/scripts/hud");
 const VITEST = ["npx", "--yes", `pnpm@${reviewed.pinned.pnpm}`, "exec", "vitest"];
 
-/** The clone pinned to the reviewed game version, or exit 2: no answer (game-code.md §13). */
-export const pinnedClone = (): string => {
+/** The clone pinned to the reviewed game version, or what it lacks and the command that provides it. */
+export const findPinnedClone = (): { clone: string } | { missing: string; how: string } => {
   const clone = path.resolve(".cache/pokerogue", `v${reviewed.pinned.gameVersion}`);
-  const missing = (what: string, how: string): never => {
-    console.error(`${what}\n\n  ${how}\n`);
-    process.exit(2);
-  };
   if (!existsSync(clone)) {
     // A worktree's `drift:check` leaves a bare clone, and provisioning it re-fetches the 815 MB `assets` submodule
     // (#296).
-    missing(`No pinned clone at ${clone}.`, "npm run drift:check   # in a worktree: ln -s <main-checkout>/.cache .cache");
+    return {
+      missing: `No pinned clone at ${clone}.`,
+      how: "npm run drift:check   # in a worktree: ln -s <main-checkout>/.cache .cache",
+    };
   }
   if (!existsSync(path.join(clone, "node_modules"))) {
-    missing(`The clone at ${clone} has no dependencies.`, `cd ${clone} && pnpm install --frozen-lockfile`);
+    return { missing: `The clone at ${clone} has no dependencies.`, how: `cd ${clone} && pnpm install --frozen-lockfile` };
   }
   // An empty submodule is the quiet failure: every battle a test starts dies in `populateMoveAnim` with no hint of
   // why, and the failure passes for the oracle's answer.
   for (const sub of ["assets", "locales"]) {
     if (readdirSync(path.join(clone, sub)).length === 0) {
-      missing(`The clone's \`${sub}\` submodule is empty.`, `cd ${clone} && git submodule update --init --depth 1 ${sub}`);
+      return {
+        missing: `The clone's \`${sub}\` submodule is empty.`,
+        how: `cd ${clone} && git submodule update --init --depth 1 ${sub}`,
+      };
     }
   }
-  return clone;
+  return { clone };
+};
+
+/** The clone pinned to the reviewed game version, or exit 2: no answer (game-code.md §13). */
+export const pinnedClone = (): string => {
+  const found = findPinnedClone();
+  if ("clone" in found) return found.clone;
+  console.error(`${found.missing}\n\n  ${found.how}\n`);
+  process.exit(2);
 };
 
 export const hudBundle = (): string => {
@@ -61,7 +71,9 @@ export type CloneTest = {
   /** The test file's text. */
   source: string;
   /** The bundle's text: the test is handed its path as `COACH_BUNDLE`. */
-  bundle: string;
+  bundle?: string;
+  /** Handed to the test as a file at `COACH_IN`. */
+  input?: string;
   args?: string[];
   env?: Record<string, string>;
   /** Forward vitest's stdout as it comes; its stderr always is. */
@@ -94,6 +106,7 @@ export const testInClone = async (t: CloneTest): Promise<CloneTestResult> => {
   const bundlePath = path.join(tests, `.${stem}.bundle.js`);
   const testPath = path.join(tests, `${stem}.test.ts`);
   const reportPath = path.join(tests, `.${stem}.report.json`);
+  const inPath = path.join(tests, `.${stem}.in.json`);
   const outPath = path.join(tests, `.${stem}.out.json`);
   // Naming a reporter on the command line replaces the clone's own, whose per-test banners are all that separate one
   // case's phase log from the next's: this shim names it back beside the JSON one.
@@ -104,7 +117,8 @@ export const testInClone = async (t: CloneTest): Promise<CloneTestResult> => {
   const stop = (signal: NodeJS.Signals) => interrupt.abort(signal);
   process.on("SIGINT", stop).on("SIGTERM", stop);
   try {
-    writeFileSync(bundlePath, t.bundle);
+    if (t.bundle !== undefined) writeFileSync(bundlePath, t.bundle);
+    if (t.input !== undefined) writeFileSync(inPath, t.input);
     writeFileSync(testPath, t.source);
     writeFileSync(reporterPath, 'export { CustomDefaultReporter as default } from "./custom-default-reporter";\n');
     const [file, ...prefix] = t.vitest ?? VITEST;
@@ -126,7 +140,8 @@ export const testInClone = async (t: CloneTest): Promise<CloneTestResult> => {
         env: {
           ...process.env,
           ...t.env,
-          COACH_BUNDLE: bundlePath,
+          ...(t.bundle !== undefined && { COACH_BUNDLE: bundlePath }),
+          ...(t.input !== undefined && { COACH_IN: inPath }),
           COACH_OUT: outPath,
           COREPACK_ENABLE_DOWNLOAD_PROMPT: "0",
         },
@@ -134,7 +149,7 @@ export const testInClone = async (t: CloneTest): Promise<CloneTestResult> => {
     );
     return { report: readOr(reportPath, JSON.parse), out: readOr(outPath, text => text), output };
   } finally {
-    for (const artifact of [bundlePath, testPath, reportPath, outPath, reporterPath]) {
+    for (const artifact of [bundlePath, inPath, testPath, reportPath, outPath, reporterPath]) {
       rmSync(artifact, { force: true });
     }
     process.off("SIGINT", stop).off("SIGTERM", stop);

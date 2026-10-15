@@ -1,0 +1,29 @@
+{
+  "inputs": [
+    { "kind": "switch", "to": { "slot": 3, "species": "PROBOPASS" } },
+    { "kind": "move", "move": "EARTH_POWER", "tera": false },
+    { "kind": "switch", "to": { "slot": 2, "species": "RESHIRAM" } },
+    { "kind": "move", "move": "BLUE_FLARE", "tera": false },
+    { "kind": "move", "move": "FICKLE_BEAM", "tera": false },
+    { "kind": "move", "move": "FICKLE_BEAM", "tera": true },
+    { "kind": "move", "move": "DRAGON_PULSE", "tera": false },
+    { "kind": "move", "move": "HYPER_VOICE", "tera": false },
+    { "kind": "move", "move": "HYPER_VOICE", "tera": false },
+    { "kind": "move", "move": "HYPER_VOICE", "tera": false }
+  ],
+  "known": {
+    "outcome": "won",
+    "after": [
+      { "turn": 1, "ours": { "PROBOPASS": { "onField": true, "hp": 346, "statStages": [-1, 0, 0, 0, 0, 0, 0] } } },
+      { "turn": 2, "foes": { "ARCHALUDON": { "onField": true, "hp": 289 } } },
+      { "turn": 3, "ours": { "RESHIRAM": { "onField": true, "hp": 587 } } },
+      { "turn": 4, "ours": { "RESHIRAM": { "hp": 622 } }, "foes": { "ARCHALUDON": { "hp": 0 }, "TATSUGIRI": { "onField": true } } },
+      { "turn": 5, "foes": { "TATSUGIRI": { "hp": 0 }, "HAXORUS": { "onField": true } } },
+      { "turn": 6, "ours": { "RESHIRAM": { "hp": 318, "tera": true } }, "foes": { "HAXORUS": { "hp": 0 }, "DRAGONITE": { "onField": true } } },
+      { "turn": 7, "ours": { "RESHIRAM": { "hp": 307 } }, "foes": { "DRAGONITE": { "hp": 226, "statStages": [2, 0, 0, 0, 0, 0, 0] } } },
+      { "turn": 8, "ours": { "RESHIRAM": { "hp": 383 } }, "foes": { "DRAGONITE": { "hp": 0 }, "FLYGON": { "onField": true } } },
+      { "turn": 9, "ours": { "RESHIRAM": { "hp": 221 } }, "foes": { "FLYGON": { "hp": 0 }, "SCEPTILE": { "onField": true } } },
+      { "turn": 10, "ours": { "RESHIRAM": { "hp": 114 } }, "foes": { "SCEPTILE": { "hp": 0 } } }
+    ]
+  }
+}

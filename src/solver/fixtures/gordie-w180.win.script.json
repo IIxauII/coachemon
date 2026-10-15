@@ -1,0 +1,51 @@
+{
+  "inputs": [
+    { "kind": "move", "move": "DRAGON_PULSE", "tera": false },
+    { "kind": "switch", "to": { "slot": 5, "species": "PROBOPASS" } },
+    { "kind": "switch", "to": { "slot": 1, "species": "LEAVANNY" } },
+    { "kind": "move", "move": "POLLEN_PUFF", "tera": false },
+    { "kind": "move", "move": "BUG_BITE", "tera": false },
+    { "kind": "move", "move": "LEAF_STORM", "tera": false },
+    { "kind": "move", "move": "BUG_BITE", "tera": false },
+    { "kind": "move", "move": "LEAF_STORM", "tera": false },
+    { "kind": "switch", "to": { "slot": 5, "species": "RESHIRAM" } },
+    { "kind": "move", "move": "DRAGON_PULSE", "tera": false },
+    { "kind": "switch", "to": { "slot": 5, "species": "LEAVANNY" } },
+    { "kind": "move", "move": "LEAF_STORM", "tera": false },
+    { "kind": "move", "move": "BUG_BITE", "tera": false, "replacement": { "slot": 4, "species": "GOLBAT" } },
+    { "kind": "move", "move": "TOXIC", "tera": false },
+    { "kind": "move", "move": "VENOSHOCK", "tera": false, "replacement": { "slot": 3, "species": "GYARADOS" } },
+    { "kind": "move", "move": "HYDRO_PUMP", "tera": true },
+    { "kind": "move", "move": "HYDRO_PUMP", "tera": false },
+    { "kind": "move", "move": "HYDRO_PUMP", "tera": false },
+    { "kind": "move", "move": "HYDRO_PUMP", "tera": false }
+  ],
+  "known": {
+    "outcome": "won",
+    "after": [
+      { "turn": 1, "ours": { "RESHIRAM": { "hp": 577 } }, "foes": { "GIGALITH": { "hp": 282 } } },
+      { "turn": 2, "ours": { "PROBOPASS": { "onField": true, "hp": 359 } }, "foes": { "GIGALITH": { "hp": 0 }, "CARRACOSTA": { "onField": true } } },
+      { "turn": 3, "ours": { "LEAVANNY": { "onField": true, "hp": 413 } } },
+      { "turn": 4, "ours": { "LEAVANNY": { "hp": 382 } }, "foes": { "COALOSSAL": { "onField": true, "hp": 657 } } },
+      { "turn": 5, "ours": { "LEAVANNY": { "hp": 351 } }, "foes": { "COALOSSAL": { "hp": 515, "tera": true } } },
+      { "turn": 6, "ours": { "LEAVANNY": { "hp": 320, "statStages": [0, 0, -2, 0, 0, 0, 0] } }, "foes": { "COALOSSAL": { "hp": 238 } } },
+      { "turn": 7, "ours": { "LEAVANNY": { "hp": 413 } }, "foes": { "CARRACOSTA": { "onField": true, "hp": 380 } } },
+      { "turn": 8, "ours": { "LEAVANNY": { "hp": 382, "statStages": [0, 0, -4, 0, 0, 0, 0] } }, "foes": { "CARRACOSTA": { "hp": 121 } } },
+      { "turn": 9, "ours": { "RESHIRAM": { "onField": true, "hp": 577 } }, "foes": { "STONJOURNER": { "onField": true, "hp": 574 } } },
+      { "turn": 10, "ours": { "RESHIRAM": { "hp": 577 } }, "foes": { "STONJOURNER": { "hp": 0 }, "BARBARACLE": { "onField": true } } },
+      { "turn": 11, "ours": { "LEAVANNY": { "onField": true, "hp": 280 } } },
+      { "turn": 12, "ours": { "LEAVANNY": { "hp": 249, "statStages": [0, 0, -2, 0, 0, 0, 0] } }, "foes": { "BARBARACLE": { "hp": 0 }, "TYRANITAR": { "onField": true } } },
+      { "turn": 13, "ours": { "LEAVANNY": { "hp": 0 }, "GOLBAT": { "onField": true, "hp": 493 } }, "foes": { "TYRANITAR": { "hp": 512 } } },
+      { "turn": 14, "ours": { "GOLBAT": { "hp": 463 } }, "foes": { "TYRANITAR": { "hp": 477, "status": "TOXIC" } } },
+      { "turn": 15, "ours": { "GOLBAT": { "hp": 0 }, "GYARADOS": { "onField": true, "hp": 570 } }, "foes": { "TYRANITAR": { "hp": 339, "statStages": [-1, 0, 0, 0, 0, 0, 0] } } },
+      { "turn": 16, "ours": { "GYARADOS": { "hp": 351, "tera": true } }, "foes": { "TYRANITAR": { "hp": 109 } } },
+      { "turn": 17, "ours": { "GYARADOS": { "hp": 316 } }, "foes": { "TYRANITAR": { "hp": 0 }, "CARRACOSTA": { "onField": true } } },
+      { "turn": 18, "ours": { "GYARADOS": { "hp": 423 } }, "foes": { "CARRACOSTA": { "hp": 0 }, "COALOSSAL": { "onField": true } } },
+      {
+        "turn": 19,
+        "ours": { "GYARADOS": { "hp": 423 }, "PROBOPASS": { "hp": 359 }, "SNORLAX": { "hp": 824 }, "RESHIRAM": { "hp": 577 } },
+        "foes": { "COALOSSAL": { "hp": 0 } }
+      }
+    ]
+  }
+}
