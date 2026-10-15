@@ -1,5 +1,6 @@
 import { describeInput } from "./describe.ts";
 import type { BeamEnd, HygieneRule, NoAnswer, Reason } from "./oracle-line.ts";
+
 const BROKE: Record<HygieneRule, string> = {
   max_rolls: "rolled every battle draw at its maximum",
   overrides: "loaded the teams through upstream's test overrides",
@@ -17,7 +18,8 @@ export const noAnswer = (reason: Reason): NoAnswer => ({
   message: `${cause(reason)} The card still coaches.`,
 });
 
-function cause(reason: Reason): string {
+/** Ends in a full stop. */
+export function cause(reason: Reason): string {
   switch (reason.code) {
     case "daily":
       return "a Daily's seed is shared by every player, so solving is never offered there.";
@@ -80,8 +82,9 @@ function cause(reason: Reason): string {
     case "harness_failed":
       return `the oracle's harness failed: ${reason.why}${/[.!?]$/.test(reason.why) ? "" : "."}`;
     case "no_win": {
+      const n = reason.unreplayed.length;
       const unreplayed =
-        reason.unreplayed === 0 ? "" : ` ${reason.unreplayed} win${reason.unreplayed === 1 ? "" : "s"} it found didn't replay.`;
+        n === 0 ? "" : ` ${n} win${n === 1 ? "" : "s"} it found didn't replay, the last because ${reason.unreplayed.at(-1)}`;
       const dropped =
         reason.dropped === 0 ? "" : ` ${reason.dropped} turn${reason.dropped === 1 ? "" : "s"} the harness couldn't play were dropped.`;
       return `no winning path turned up: ${reason.beams.map(beamEnd).join("; ")}.${unreplayed}${dropped}`;

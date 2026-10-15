@@ -1,11 +1,11 @@
 import reviewed from "../escape-ladder/reviewed.json" with { type: "json" };
 import { refuse } from "./gate.ts";
-import type { Budget, Recheck, SolveInput } from "./input.ts";
+import type { Budget, Recheck, SessionSave, SolveInput } from "./input.ts";
 import { noAnswer } from "./no-answer.ts";
 import type { Input, NoAnswer, SolveResult } from "./oracle-line.ts";
 import { type Clone, replay } from "./replay.ts";
 import { type Progress, search } from "./search.ts";
-import { type Checks, type NotStarted, startWorker } from "./worker.ts";
+import { type Checks, startWorker, type Worker } from "./worker.ts";
 
 export type * from "./input.ts";
 export type * from "./oracle-line.ts";
@@ -26,58 +26,60 @@ export type SolveDeps = {
 };
 
 export async function solve(input: SolveInput, { clone, progress, unchecked = false }: SolveDeps): Promise<SolveResult> {
-  const refused = refuse(input, unchecked ? { gameVersion: input.cloneVersion } : RECHECK);
+  const refused = refuse(input, unchecked ? passed(input.cloneVersion) : RECHECK);
   if (refused) return refused;
-  // Validation steps 1–4 hold for every path or for none, so a broken harness says so before the search, not after it.
-  const before = await replay(input, { inputs: [] }, clone);
-  if (before.kind === "no_answer") return before;
+  const loaded = await replay(input, { inputs: [] }, clone);
+  if (loaded.kind === "no_answer") return loaded;
 
-  const worker = await startWorker(clone, input.save);
-  if (!("root" in worker)) return notStarted(worker, input.cloneVersion);
-  try {
-    const found = await search({
+  return withWorker(clone, input, async worker => {
+    const searched = await search({
       root: worker.root,
       pool: worker,
       validate: inputs => replay(input, { inputs: [...inputs] }, clone),
       budget: input.budget,
       progress,
     });
-    if (found.kind === "no_answer") return found;
-    const { steps, receipt } = found.replay;
+    if (searched.kind === "no_answer") return searched;
+    const { steps, receipt } = searched.replay;
     return {
       kind: "oracle_line",
       oracleLine: { seed: input.save.seed, wave: input.save.waveIndex, gameVersion: input.cloneVersion, steps, receipt, luck: [] },
     };
-  } finally {
-    await worker.close();
-  }
+  });
 }
 
-/**
- * The fork check and the chained-restore check on a line from the wave-start save: the harness plumbing a search
- * forks through, which a straight replay never exercises (#655).
- */
+/** The fork check and the chained-restore check on a script's inputs from the wave-start save (#655). */
 export async function checkForks(
   given: Pick<SolveInput, "save" | "extras" | "cloneVersion">,
   inputs: readonly Input[],
   clone: Clone,
 ): Promise<{ kind: "checked"; checks: Checks } | NoAnswer> {
   // The checks are what the harness re-check runs (#665), so they can't wait on one having passed.
-  const refused = refuse(given, { gameVersion: given.cloneVersion });
+  const refused = refuse(given, passed(given.cloneVersion));
   if (refused) return refused;
   if (given.extras) return noAnswer({ code: "not_wave_start" });
-  const worker = await startWorker(clone, given.save);
-  if (!("root" in worker)) return notStarted(worker, given.cloneVersion);
+  return withWorker(clone, given, async worker => {
+    try {
+      return { kind: "checked", checks: await worker.check(inputs) };
+    } catch (e) {
+      return noAnswer({ code: "harness_failed", why: e instanceof Error ? e.message : String(e) });
+    }
+  });
+}
+
+const passed = (gameVersion: string): Recheck => ({ gameVersion });
+
+async function withWorker<T>(
+  clone: Clone,
+  { save, cloneVersion }: { save: SessionSave; cloneVersion: string },
+  use: (worker: Worker) => Promise<T>,
+): Promise<T | NoAnswer> {
+  const worker = await startWorker(clone, save);
+  if ("missing" in worker) return noAnswer({ code: "no_clone", version: cloneVersion, cause: worker.missing });
+  if ("failed" in worker) return noAnswer({ code: "harness_failed", why: worker.failed });
   try {
-    return { kind: "checked", checks: await worker.check(inputs) };
-  } catch (e) {
-    return noAnswer({ code: "harness_failed", why: e instanceof Error ? e.message : String(e) });
+    return await use(worker);
   } finally {
     await worker.close();
   }
 }
-
-const notStarted = (worker: NotStarted, version: string) =>
-  "missing" in worker
-    ? noAnswer({ code: "no_clone", version, cause: worker.missing })
-    : noAnswer({ code: "harness_failed", why: worker.failed });

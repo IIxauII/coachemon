@@ -1,6 +1,6 @@
 import type { Budget } from "./input.ts";
-import { noAnswer } from "./no-answer.ts";
-import type { BeamEnd, Input, NoAnswer, Replay, ReplayResult } from "./oracle-line.ts";
+import { cause, noAnswer } from "./no-answer.ts";
+import type { Beam, BeamEnd, Input, NoAnswer, Replay, ReplayResult } from "./oracle-line.ts";
 
 /** `null` is a turn the game plays for us, such as a two-turn move's second: it takes no input. */
 export type Action = Input | null;
@@ -23,9 +23,6 @@ export type Pool = {
   expand(forkPoint: string, inputs: readonly Action[]): Promise<Child[]>;
 };
 
-/** `ours` weighs our side's HP beside the foes' HP lost. */
-export type Beam = { width: number; ours: number };
-
 // (#655)
 export const PORTFOLIO: readonly Beam[] = [
   { width: 8, ours: 0.5 },
@@ -34,7 +31,6 @@ export const PORTFOLIO: readonly Beam[] = [
 ];
 
 const STALL_TURNS = 6;
-const REPLAYS_PER_LAYER = 5;
 
 /** Expansions, each one turn played from a fork point, against every beam's budget together. */
 export type Progress = { spent: number; budget: number };
@@ -54,35 +50,51 @@ export type SearchInput = {
 
 type Node = { path: readonly Action[]; at: Position; hist: readonly number[]; score: number };
 
-type BeamRun = Beam & { index: number; dispatched: number; spent: number; inFlight: number; ended?: BeamEnd };
+type BeamRun = Beam & {
+  index: number;
+  dispatched: number;
+  spent: number;
+  inFlight: number;
+  outOfBudget: boolean;
+  ended?: BeamEnd;
+};
 
 type Job = { beam: BeamRun; forkPoint: string; inputs: readonly Action[]; done: (children: Child[]) => void; fail: (e: Error) => void };
 
-class OutOfBudget extends Error {}
-class Over extends Error {}
+class SearchOver extends Error {}
+
+// A clone gone or swapped mid-search fails every replay alike; anything else may be this path's alone.
+const ENVIRONMENT_GONE = new Set(["no_clone", "clone_version"]);
 
 const sum = (xs: readonly number[]) => xs.reduce((a, b) => a + b, 0);
 const foeLost = (hp: Hp) => sum(hp.foes.map(f => 1 - f));
 const played = (path: readonly Action[]) => path.filter((a): a is Input => a !== null);
 
 /**
- * Beams over per-turn decisions, sharing the pool fairly by actions dispatched, until a win replays. "No answer" comes
- * only once every beam has emptied, stalled, reached the turn limit or spent its budget.
+ * Beams over per-turn decisions, sharing the pool fairly by actions dispatched, until a win replays. For want of a win,
+ * "no answer" comes only once every beam has emptied, stalled, reached the turn limit or spent its budget.
  */
 export function search({ root, pool, validate, budget, portfolio = PORTFOLIO, progress }: SearchInput): Promise<Found | NoAnswer> {
   return new Promise(resolve => {
-    const beams: BeamRun[] = portfolio.map((beam, index) => ({ ...beam, index, dispatched: 0, spent: 0, inFlight: 0 }));
+    const beams: BeamRun[] = portfolio.map((beam, index) => ({
+      ...beam,
+      index,
+      dispatched: 0,
+      spent: 0,
+      inFlight: 0,
+      outOfBudget: false,
+    }));
     const queue: Job[] = [];
+    const unreplayed: string[] = [];
     let busy = 0;
     let over = false;
-    let unreplayed = 0;
     let dropped = 0;
     let validating: Promise<unknown> = Promise.resolve();
 
     const finish = (result: Found | NoAnswer) => {
       if (over) return;
       over = true;
-      for (const job of queue.splice(0)) job.fail(new Over());
+      for (const job of queue.splice(0)) job.fail(new SearchOver());
       resolve(result);
     };
     const failed = (e: unknown) =>
@@ -94,7 +106,8 @@ export function search({ root, pool, validate, budget, portfolio = PORTFOLIO, pr
         queue.splice(queue.indexOf(next), 1);
         const { beam, inputs } = next;
         if (beam.spent + beam.inFlight >= budget.expansions) {
-          next.fail(new OutOfBudget());
+          beam.outOfBudget = true;
+          next.done([]);
           continue;
         }
         busy++;
@@ -106,7 +119,9 @@ export function search({ root, pool, validate, budget, portfolio = PORTFOLIO, pr
             beam.inFlight -= inputs.length;
             if (over) return;
             beam.spent += children.length;
-            progress?.({ spent: sum(beams.map(b => b.spent)), budget: budget.expansions * beams.length });
+            // A turn's other faint replacements can carry a beam past its budget by part of a job.
+            const spent = sum(beams.map(b => Math.min(b.spent, budget.expansions)));
+            progress?.({ spent, budget: budget.expansions * beams.length });
             next.done(children);
             pump();
           },
@@ -120,7 +135,7 @@ export function search({ root, pool, validate, budget, portfolio = PORTFOLIO, pr
 
     const expand = (beam: BeamRun, forkPoint: string, inputs: readonly Action[]) =>
       new Promise<Child[]>((done, fail) => {
-        if (over) return fail(new Over());
+        if (over) return fail(new SearchOver());
         queue.push({ beam, forkPoint, inputs, done, fail });
         pump();
       });
@@ -144,13 +159,12 @@ export function search({ root, pool, validate, budget, portfolio = PORTFOLIO, pr
 
     const end = (beam: BeamRun, ended: BeamEnd["ended"], turn: number) => {
       beam.ended = { width: beam.width, ours: beam.ours, ended, turn, expansions: beam.spent };
-      for (const job of queue.filter(j => j.beam === beam)) queue.splice(queue.indexOf(job), 1);
       if (beams.every(b => b.ended)) {
         finish(noAnswer({ code: "no_win", beams: beams.map(b => b.ended as BeamEnd), unreplayed, dropped }));
       }
     };
 
-    /** True when the win replayed, false when it didn't; anything else has ended the search. */
+    /** True once the win has replayed and ended the search. */
     const replaysAsWin = async (path: readonly Action[]): Promise<boolean> => {
       const inputs = played(path);
       const verdict = await replays(inputs);
@@ -160,12 +174,11 @@ export function search({ root, pool, validate, budget, portfolio = PORTFOLIO, pr
           finish({ kind: "found", inputs, replay: verdict.replay });
           return true;
         }
-      } else if (verdict.reason.code !== "illegal_step") {
-        // The harness, not this path, is what failed: no other path would fare better.
-        finish(verdict);
+        unreplayed.push(verdict.replay.outcome === "lost" ? "it lost on replay." : "its inputs ran out with the fight still on.");
         return false;
       }
-      unreplayed++;
+      if (ENVIRONMENT_GONE.has(verdict.reason.code)) finish(verdict);
+      else unreplayed.push(cause(verdict.reason));
       return false;
     };
 
@@ -176,18 +189,17 @@ export function search({ root, pool, validate, budget, portfolio = PORTFOLIO, pr
         try {
           children = await layer(beam, nodes);
         } catch (e) {
-          if (e instanceof OutOfBudget) return end(beam, "budget", turn - 1);
-          if (e instanceof Over) return;
+          if (e instanceof SearchOver) return;
           throw e;
         }
         if (over) return;
-        const wins: { path: Action[]; ours: number }[] = [];
+        const wins: { path: Action[]; oursLeft: number }[] = [];
         const kept = new Map<string, Node>();
         let stalled = 0;
         for (const { node, child } of children) {
           const path = [...node.path, child.input];
           if (child.end === "dropped") dropped++;
-          if (child.end === "won") wins.push({ path, ours: sum(child.hp.ours) });
+          if (child.end === "won") wins.push({ path, oursLeft: sum(child.hp.ours) });
           if (child.end !== "on") continue;
           const lost = foeLost(child.at.hp);
           const hist = [...node.hist, lost];
@@ -199,11 +211,12 @@ export function search({ root, pool, validate, budget, portfolio = PORTFOLIO, pr
           const same = kept.get(child.at.sig);
           if (same === undefined || score > same.score) kept.set(child.at.sig, { path, at: child.at, hist, score });
         }
-        wins.sort((a, b) => b.ours - a.ours);
-        for (const win of wins.slice(0, REPLAYS_PER_LAYER)) {
+        wins.sort((a, b) => b.oursLeft - a.oursLeft);
+        for (const win of wins) {
           if (await replaysAsWin(win.path)) return;
           if (over) return;
         }
+        if (beam.outOfBudget) return end(beam, "budget", turn);
         nodes = [...kept.values()].sort((a, b) => b.score - a.score).slice(0, beam.width);
         if (nodes.length === 0) return end(beam, stalled > 0 ? "stalled" : "emptied", turn);
         if (turn >= budget.turns) return end(beam, "turns", turn);
@@ -214,5 +227,4 @@ export function search({ root, pool, validate, budget, portfolio = PORTFOLIO, pr
   });
 }
 
-/** The beam that has had fewer actions dispatched, the earlier one in the portfolio on a tie. */
 const fairer = (a: BeamRun, b: BeamRun) => a.dispatched < b.dispatched || (a.dispatched === b.dispatched && a.index < b.index);

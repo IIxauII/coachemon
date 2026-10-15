@@ -91,18 +91,14 @@ export type Reason =
   | { code: "scene_mismatch"; differences: readonly string[] }
   | { code: "known_turn_missed"; misses: readonly string[] }
   | { code: "harness_failed"; why: string }
-  /** `unreplayed` counts the wins found that failed replay; `dropped`, the turns the harness couldn't play. */
-  | { code: "no_win"; beams: readonly BeamEnd[]; unreplayed: number; dropped: number };
+  /** `unreplayed` says why each win found failed replay; `dropped` counts the turns the harness couldn't play. */
+  | { code: "no_win"; beams: readonly BeamEnd[]; unreplayed: readonly string[]; dropped: number };
+
+/** `ours` weighs our side's HP beside the foes' HP lost. */
+export type Beam = { width: number; ours: number };
 
 /** `turn` counts from where the solve started. */
-export type BeamEnd = {
-  width: number;
-  /** The weight on our side's HP beside the foes' HP lost. */
-  ours: number;
-  ended: "emptied" | "stalled" | "turns" | "budget";
-  turn: number;
-  expansions: number;
-};
+export type BeamEnd = Beam & { ended: "emptied" | "stalled" | "turns" | "budget"; turn: number; expansions: number };
 
 /** The harness traps a replay checks it stayed out of (#632). */
 export type HygieneRule = "max_rolls" | "overrides" | "enemy_items" | "item_totals" | "stray_prompt";

@@ -50,7 +50,6 @@ const missed = ({ from, turn, want, got }: Miss) => {
   return `restored at T${from}, T${turn} played otherwise: ${[...end, ...off].join("; ")}`;
 };
 
-/** Passed when neither check found a turn that played otherwise. */
 export function printChecks({ straight, fork, chain }: Checks): { passed: boolean; text: string } {
   const forks = Math.max(straight.length - 1, 0);
   const forkFrom = new Set(fork.map(m => m.from));

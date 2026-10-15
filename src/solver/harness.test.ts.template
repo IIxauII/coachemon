@@ -270,12 +270,7 @@ async function play() {
   }
 }
 
-// ---- serving the search -----------------------------------------------------------------------------------------
-
-/**
- * Where a turn can be replayed from: the save at a decision, and the live fields a reload loses or resets, which
- * replay-fidelity's augmented export lists (#636) — the toxic and sleep counters beside them (#655).
- */
+/** The save at a decision, and the live fields a reload loses or resets (#636, #655). */
 function forkPoint(): string {
   const s = scene();
   const battle = s.currentBattle;
@@ -356,10 +351,7 @@ const hp = () => {
   return { ours: s.getPlayerParty().map(share), foes: s.getEnemyParty().map(share) };
 };
 
-/**
- * Two decisions with one signature are one to the search. The draws are left out, so a merge keeps one path's; level
- * and experience are in, since a mid-fight level-up moves stats the HP alone doesn't show (#662).
- */
+/** Leaves the draws out: of two paths it merges, the search keeps one's draws and drops the other's (#655). */
 function sig(): string {
   const s = scene();
   const pokemon = (p: any) =>
@@ -400,7 +392,6 @@ const position = () => ({
   forkPoint: forkPoint(),
 });
 
-/** Every input played from the fork point, and again for each other faint replacement its turn could take. */
 async function expand(at: string, inputs: (Input | null)[]) {
   const children: unknown[] = [];
   const queue = [...inputs];
@@ -434,11 +425,7 @@ async function expand(at: string, inputs: (Input | null)[]) {
 
 type Played = { input: Input | null; turn: number; checkpoint: unknown; end: Turn };
 
-/**
- * The fork check and the chained-restore check on one line (#655). Played straight from the save first, with a fork
- * point at each decision; then from each fork point to the end, and as a search plays it: restore, one turn, a fork
- * point, again. Each must play every turn the same as the straight line.
- */
+/** The fork check and the chained-restore check on a script's inputs, each against the straight run (#655). */
 async function checks(inputs: Input[]) {
   await loadSession(JSON.stringify(job.save));
   const straight: Played[] = [];
@@ -529,7 +516,8 @@ describe("coach harness", () => {
   it.runIf(PORT !== undefined)(
     "serve",
     async () => {
-      // The game logs every phase, and a worker plays thousands of turns into a buffer nobody reads.
+      // Left on, the game's log of every phase piles up in the runner's copy of vitest's output for the worker's whole
+      // life (#662).
       for (const quiet of ["log", "info", "debug", "warn"] as const) console[quiet] = () => {};
       try {
         report.version = JSON.parse(readFileSync("package.json", "utf8")).version;

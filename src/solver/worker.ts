@@ -7,7 +7,7 @@ import type { SessionSave } from "./input.ts";
 import type { Checkpoint, Input } from "./oracle-line.ts";
 import type { Clone } from "./replay.ts";
 import { checkpoint, input } from "./schema.ts";
-import type { Child, Pool, Position } from "./search.ts";
+import type { Child, Hp, Pool, Position } from "./search.ts";
 
 // (#655)
 const RECYCLE_AFTER = 250;
@@ -16,28 +16,33 @@ const EXPAND_MS = 300_000;
 const CHECKS_MS = 3_600_000;
 const CLOSE_MS = 60_000;
 
-const hp = z.object({ ours: z.array(z.number()), foes: z.array(z.number()) });
-const position = z.object({ sig: z.string(), hp, legal: z.array(input.nullable()), forkPoint: z.string() });
+type TurnEnd = "won" | "lost" | "on" | { illegal: string };
+export type Played = { input: Input | null; turn: number; checkpoint: Checkpoint; end: TurnEnd };
+/** `from` is the turn the straight run was restored at, `turn` the first one it played otherwise. */
+export type Miss = { from: number; turn: number; want: Played; got: Played };
+/** The fork check and the chained-restore check, and the straight run both were held to (#655). */
+export type Checks = { straight: readonly { turn: number; end: TurnEnd }[]; fork: readonly Miss[]; chain: readonly Miss[] };
+
+const hp = z.object({ ours: z.array(z.number()), foes: z.array(z.number()) }) satisfies z.ZodType<Hp>;
+const position = z.object({
+  sig: z.string(),
+  hp,
+  legal: z.array(input.nullable()),
+  forkPoint: z.string(),
+}) satisfies z.ZodType<Position>;
 const child = z.discriminatedUnion("end", [
   z.object({ input: input.nullable(), end: z.literal("on"), at: position }),
   z.object({ input: input.nullable(), end: z.enum(["won", "lost"]), hp }),
   z.object({ input: input.nullable(), end: z.literal("dropped"), why: z.string() }),
-]);
-const turnEnd = z.union([z.enum(["won", "lost", "on"]), z.object({ illegal: z.string() })]);
-const played = z.object({ input: input.nullable(), turn: z.int(), checkpoint, end: turnEnd });
+]) satisfies z.ZodType<Child>;
+const turnEnd = z.union([z.enum(["won", "lost", "on"]), z.object({ illegal: z.string() })]) satisfies z.ZodType<TurnEnd>;
+const played = z.object({ input: input.nullable(), turn: z.int(), checkpoint, end: turnEnd }) satisfies z.ZodType<Played>;
 const miss = z.object({ from: z.int(), turn: z.int(), want: played, got: played });
 const checks = z.object({
   straight: z.array(z.object({ turn: z.int(), end: turnEnd })),
   fork: z.array(miss),
   chain: z.array(miss),
-});
-
-type TurnEnd = "won" | "lost" | "on" | { illegal: string };
-export type Played = { input: Input | null; turn: number; checkpoint: Checkpoint; end: TurnEnd };
-/** `from` is the turn the line was restored at, `turn` the first one it played otherwise. */
-export type Miss = { from: number; turn: number; want: Played; got: Played };
-/** The fork check and the chained-restore check, and the straight line both were held to (#655). */
-export type Checks = { straight: readonly { turn: number; end: TurnEnd }[]; fork: readonly Miss[]; chain: readonly Miss[] };
+}) satisfies z.ZodType<Checks>;
 
 export type Worker = Pool & {
   root: Position;
@@ -56,13 +61,13 @@ export async function startWorker(clone: Clone, save: SessionSave): Promise<Work
   const first = await spawn(clone, save);
   if (!("root" in first)) return first;
   let current = first;
-  let played = 0;
+  let turnsPlayed = 0;
   const fresh = async () => {
-    if (played < RECYCLE_AFTER) return current;
+    if (turnsPlayed < RECYCLE_AFTER) return current;
     await current.close();
     const next = await spawn(clone, save);
     if (!("root" in next)) throw new Error(`a fresh worker didn't start: ${"missing" in next ? next.missing : next.failed}`);
-    played = 0;
+    turnsPlayed = 0;
     current = next;
     return current;
   };
@@ -72,7 +77,7 @@ export async function startWorker(clone: Clone, save: SessionSave): Promise<Work
     async expand(forkPoint, inputs): Promise<Child[]> {
       const answer = await (await fresh()).ask({ kind: "expand", forkPoint, inputs }, EXPAND_MS);
       const { children } = z.object({ children: z.array(child) }).parse(answer);
-      played += children.length;
+      turnsPlayed += children.length;
       return children;
     },
     async check(inputs) {

@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { noAnswer } from "./no-answer.ts";
 import type { Input, Outcome, ReplayResult } from "./oracle-line.ts";
-import { type Action, type Beam, type Child, type Pool, type Position, type Progress, search } from "./search.ts";
+import type { Beam } from "./oracle-line.ts";
+import { type Action, type Child, type Pool, type Position, type Progress, search } from "./search.ts";
 
 /** What a move does from a path: our side's HP fraction and the foe's total HP lost so far, or how the fight ends. */
 type Play = (path: readonly string[], move: string) => { foeLost: number; ours: number } | "won" | "lost";
@@ -111,13 +112,34 @@ test("a win that hits an illegal step on replay is passed over like one that los
   assert.match(result.kind === "no_answer" ? result.message : "", /1 win .* didn't replay/);
 });
 
-test("a harness that breaks on replay ends the solve with its own reason, never a win (#662)", async () => {
+test("a replay the harness fails on is never a win, and the no answer says why it failed (#662)", async () => {
   const { root, pool } = tree(["TACKLE"], { "": { TACKLE: "won" } });
-  const broken = noAnswer({ code: "harness_failed", why: "the harness wrote no report" });
+  const broken = noAnswer({ code: "harness_failed", why: "the replay timed out after 540 s" });
 
-  const result = await search({ root, pool, validate: async () => broken, budget: BUDGET });
+  const result = await search({ root, pool, validate: async () => broken, budget: BUDGET, portfolio: [NARROW[0]] });
 
-  assert.deepEqual(result, broken);
+  assert.equal(result.kind === "no_answer" && result.reason.code, "no_win");
+  assert.match(result.kind === "no_answer" ? result.message : "", /the last because the oracle's harness failed: the replay timed out/);
+});
+
+test("a clone gone mid-search ends the solve with its own reason, since no replay could pass (#662)", async () => {
+  const { root, pool } = tree(["TACKLE"], { "": { TACKLE: "won" } });
+  const gone = noAnswer({ code: "no_clone", version: "1.12.0.11", cause: "No pinned clone" });
+
+  const result = await search({ root, pool, validate: async () => gone, budget: BUDGET });
+
+  assert.deepEqual(result, gone);
+});
+
+test("a win found in the turn a beam's budget ran out is still replayed (#662)", async () => {
+  // Two jobs of one move each: the first wins, and the second finds the budget spent.
+  const { root, pool } = tree(["TACKLE", "GROWL"], { "": { TACKLE: "won", GROWL: [0, 1] } });
+  const { asked, validate } = replaysAll();
+
+  const result = await search({ root, pool, validate, budget: { expansions: 1, turns: 40 }, portfolio: [NARROW[0]] });
+
+  assert.equal(result.kind, "found");
+  assert.deepEqual(asked, [["TACKLE"]]);
 });
 
 test("one beam emptying is no answer while another still searches, and the other's win comes back (#662)", async () => {
