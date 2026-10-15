@@ -60,15 +60,20 @@ export type NotStarted = { missing: string } | { failed: string };
 export async function startWorker(clone: Clone, save: SessionSave): Promise<Worker | NotStarted> {
   const first = await spawn(clone, save);
   if (!("root" in first)) return first;
-  let current = first;
+  // A promise, so `close` reaches a process still starting: closed before it connects, it would outlive the solve and
+  // leave its files in the clone (#662).
+  let current: Promise<Running> = Promise.resolve(first);
   let turnsPlayed = 0;
-  const fresh = async () => {
+  const fresh = () => {
     if (turnsPlayed < RECYCLE_AFTER) return current;
-    await current.close();
-    const next = await spawn(clone, save);
-    if (!("root" in next)) throw new Error(`a fresh worker didn't start: ${"missing" in next ? next.missing : next.failed}`);
     turnsPlayed = 0;
-    current = next;
+    const old = current;
+    current = (async () => {
+      await (await old).close();
+      const next = await spawn(clone, save);
+      if (!("root" in next)) throw new Error(`a fresh worker didn't start: ${"missing" in next ? next.missing : next.failed}`);
+      return next;
+    })();
     return current;
   };
   return {
@@ -83,7 +88,7 @@ export async function startWorker(clone: Clone, save: SessionSave): Promise<Work
     async check(inputs) {
       return checks.parse(await (await fresh()).ask({ kind: "checks", inputs }, CHECKS_MS));
     },
-    close: () => current.close(),
+    close: () => current.then(running => running.close(), () => {}),
   };
 }
 

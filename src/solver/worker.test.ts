@@ -14,8 +14,9 @@ const root = { sig: "root", hp: { ours: [1], foes: [1] }, legal: [tackle], forkP
 /** Stands in for the harness's serve mode: `answer` replies to each job, or ends the run with what it returns. */
 function fakeHarness(answer: (job: { kind: string; inputs: unknown[] }) => object | { exit: CloneRun }) {
   const runs: { input: string; env?: Record<string, string> }[] = [];
+  let finished = 0;
   const clone: Clone = ({ input, env }) =>
-    new Promise(resolve => {
+    new Promise<CloneRun>(resolve => {
       runs.push({ input, env });
       const socket = connect(Number(env?.COACH_PORT), "127.0.0.1", () => {
         socket.write(`${JSON.stringify({ kind: "root", root })}\n`);
@@ -30,8 +31,8 @@ function fakeHarness(answer: (job: { kind: string; inputs: unknown[] }) => objec
         socket.write(`${JSON.stringify({ id: job.id, ...reply })}\n`);
       });
       socket.on("close", () => resolve({ out: undefined }));
-    });
-  return { clone, runs };
+    }).finally(() => finished++);
+  return { clone, runs, ended: () => finished };
 }
 
 const won = (inputs: unknown[]) => ({ children: inputs.map(input => ({ input, end: "won", hp: { ours: [1], foes: [0] } })) });
@@ -59,6 +60,20 @@ test("a worker starts afresh in a new process once it has played 250 turns (#655
   await worker.close();
 
   assert.equal(runs.length, 2);
+});
+
+test("a worker closed while it starts afresh closes the fresh process too, so none outlives the solve (#662)", async () => {
+  const { clone, runs, ended } = fakeHarness(job => won(job.inputs));
+  const worker = await startWorker(clone, save);
+  assert.ok("root" in worker);
+  for (let i = 0; i < 25; i++) await worker.expand("root", Array(10).fill(tackle));
+
+  const recycling = worker.expand("root", [tackle]).catch(() => {});
+  await worker.close();
+  await recycling;
+
+  assert.equal(runs.length, 2);
+  assert.equal(ended(), 2);
 });
 
 test("a clone that isn't set up is a worker that never started, naming what it lacks (#662)", async () => {
