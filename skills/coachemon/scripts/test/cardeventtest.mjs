@@ -2,6 +2,7 @@ import assert from "node:assert";
 import { bundle } from "../hud-bundle.mjs";
 import { hudScript, stamp } from "../../../../extension/src/build/artifact.ts";
 import { EVENT, GROUP_IDS, cardBody, coachErrorBody } from "../../../../extension/src/relay/channel.ts";
+import { UiMode } from "../../../../src/enums/generated.ts";
 
 // The strip's two lines at reference width: only the act summary's leading clause must fit (#349).
 const CLAUSE_BUDGET = 115;
@@ -145,8 +146,7 @@ const errors = () => seen(EVENT.coachError);
     const s = battle(false);
     s.seed = "eventSeed";
     s.currentBattle.turn = turn;
-    // The party screen (UiMode.PARTY) is up at a faint's replacement.
-    if (phase) Object.assign(s, { phaseManager: { getCurrentPhase: () => phase }, ui: { getMode: () => 8, getHandler: () => ({}) } });
+    if (phase) Object.assign(s, { phaseManager: { getCurrentPhase: () => phase }, ui: { getMode: () => UiMode.PARTY, getHandler: () => ({}) } });
     return s;
   };
   const mon = (species, hp) => ({ slot: 0, species, onField: true, hp, maxHp: 100, status: 0, statStages: [0, 0, 0, 0, 0, 0, 0], tera: false });
