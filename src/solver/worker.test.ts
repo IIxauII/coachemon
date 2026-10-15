@@ -57,43 +57,28 @@ test("a worker hands the harness the save and its port, and comes back with the 
   assert.match(runs[0].env?.COACH_PORT ?? "", /^\d+$/);
 });
 
-test("a worker started mid-fight hands the harness the fork point it starts at, again on every fresh start (#664)", async () => {
+test("a worker started mid-fight hands the harness the fork point it starts at (#664)", async () => {
   const { clone, runs } = fakeHarness(job => won(job.inputs));
   const worker = await startWorker(clone, save, "at T5");
   assert.ok("root" in worker);
 
-  for (let i = 0; i < 26; i++) await worker.expand("root", Array(10).fill(tackle));
-  await worker.close();
-
-  assert.equal(runs.length, 2);
-  for (const run of runs) assert.deepEqual(JSON.parse(run.input), { save, inputs: [], at: "at T5" });
-});
-
-test("a worker starts afresh in a new process once it has played 250 turns (#655, #662)", async () => {
-  const { clone, runs } = fakeHarness(job => won(job.inputs));
-  const worker = await startWorker(clone, save);
-  assert.ok("root" in worker);
-
-  for (let i = 0; i < 25; i++) await worker.expand("root", Array(10).fill(tackle));
-  assert.equal(runs.length, 1);
   await worker.expand("root", [tackle]);
   await worker.close();
 
-  assert.equal(runs.length, 2);
+  assert.equal(runs.length, 1);
+  assert.deepEqual(JSON.parse(runs[0].input), { save, inputs: [], at: "at T5" });
 });
 
-test("a worker closed while it starts afresh closes the fresh process too, so none outlives the solve (#662)", async () => {
+test("a worker plays every job in one process, and ends it when closed (#663)", async () => {
   const { clone, runs, ended } = fakeHarness(job => won(job.inputs));
   const worker = await startWorker(clone, save);
   assert.ok("root" in worker);
-  for (let i = 0; i < 25; i++) await worker.expand("root", Array(10).fill(tackle));
 
-  const recycling = worker.expand("root", [tackle]).catch(() => {});
+  for (let i = 0; i < 100; i++) await worker.expand("root", Array(10).fill(tackle));
   await worker.close();
-  await recycling;
 
-  assert.equal(runs.length, 2);
-  assert.equal(ended(), 2);
+  assert.equal(runs.length, 1);
+  assert.equal(ended(), 1);
 });
 
 test("a clone that isn't set up is a worker that never started, naming what it lacks (#662)", async () => {

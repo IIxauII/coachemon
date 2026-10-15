@@ -10,7 +10,6 @@ import { checkpoint, input } from "./schema.ts";
 import type { Action, Child, Hp, Position } from "./search.ts";
 
 // (#655)
-const RECYCLE_AFTER = 250;
 const HEAP_MB = 768;
 const BOOT_MS = 600_000;
 const EXPAND_MS = 300_000;
@@ -69,42 +68,25 @@ export class WorkerDied extends Error {}
 
 /**
  * One long-lived harness in the clone, serving the search: it restores a fork point and plays one turn, as many times
- * as it is asked. Started again in a fresh process after every `RECYCLE_AFTER` turns it has played.
+ * as it is asked.
  */
 export async function startWorker(clone: Clone, save: SessionSave, at?: string): Promise<Worker | NotStarted> {
-  const first = await spawn(clone, save, at);
-  if (!("root" in first)) return first;
-  // A promise, so `close` reaches a process still starting: closed before it connects, it would outlive the solve and
-  // leave its files in the clone (#662).
-  let current: Promise<Running> = Promise.resolve(first);
-  let turnsPlayed = 0;
+  const running = await spawn(clone, save, at);
+  if (!("root" in running)) return running;
   let heap: HeapUse | null = null;
-  const fresh = () => {
-    if (turnsPlayed < RECYCLE_AFTER) return current;
-    turnsPlayed = 0;
-    const old = current;
-    current = (async () => {
-      await (await old).close();
-      const next = await spawn(clone, save, at);
-      if (!("root" in next)) throw new WorkerDied(`a fresh worker didn't start: ${"missing" in next ? next.missing : next.failed}`);
-      return next;
-    })();
-    return current;
-  };
   return {
-    root: first.root,
+    root: running.root,
     async expand(forkPoint, inputs): Promise<Child[]> {
-      const answer = await (await fresh()).ask({ kind: "expand", forkPoint, inputs }, EXPAND_MS);
+      const answer = await running.ask({ kind: "expand", forkPoint, inputs }, EXPAND_MS);
       const parsed = z.object({ children: z.array(child), heap: heapUse }).parse(answer);
-      turnsPlayed += parsed.children.length;
       heap = parsed.heap;
       return parsed.children;
     },
     heap: () => heap,
     async check(inputs) {
-      return checks.parse(await (await fresh()).ask({ kind: "checks", inputs }, CHECKS_MS));
+      return checks.parse(await running.ask({ kind: "checks", inputs }, CHECKS_MS));
     },
-    close: () => current.then(running => running.close(), () => {}),
+    close: running.close,
   };
 }
 
