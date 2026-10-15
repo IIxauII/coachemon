@@ -228,6 +228,7 @@ async function boot() {
   PromptHandler.runInterval = undefined;
   game = new GameManager(phaserGame);
   boots++;
+  kept = undefined;
   BattleScene.prototype.randBattleSeedInt = realRand;
   const constructed = scene().randBattleSeedInt === realRand;
   game.override.normalizeIVs = false;
@@ -237,15 +238,63 @@ async function boot() {
   return constructed;
 }
 
+type Holder = { items(): Iterable<unknown>; drop(item: unknown): void };
+
+/**
+ * Where a replaced battle's objects stay reachable. A test reload skips the reset that destroys the old battle, and a
+ * mock container drops its children without destroying them: every reload left about 1.1 MB alive until the worker
+ * ran out of heap (#663).
+ */
+function holders(): Holder[] {
+  const s = scene();
+  const canvases = Phaser.Display.Canvas.CanvasPool as any;
+  const icons: any[] = s.ui.handlers.flatMap((h: any) => (h?.iconAnimHandler?.icons ? [h.iconAnimHandler] : []));
+  return [
+    // Destroyed, not only dropped: a foe's battle info listens on the scene for the berries and moves it shows.
+    { items: () => [...s.field.list], drop: o => s.field.remove(o, true) },
+    { items: () => [...s.fieldUI.list], drop: o => s.fieldUI.remove(o, true) },
+    { items: () => [...s.spriteSparkleHandler.sprites], drop: o => s.spriteSparkleHandler.remove(o) },
+    ...icons.map(h => ({ items: () => [...h.icons.keys()], drop: (o: unknown) => h.remove(o) })),
+    { items: () => canvases.pool.flatMap((c: any) => c.parent ?? []), drop: o => canvases.remove(o) },
+  ];
+}
+
+/** What the holders held before this GameManager's first reload, which no reload replaces. */
+let kept: Set<unknown> | undefined;
+
 /** `before` runs once the session is parsed, and before it loads. */
 async function reload(session: string, before = () => {}) {
-  (game.reload as any).sessionData = scene().gameData.parseSessionData(session);
+  const s = scene();
+  const replaced = new Set(holders().flatMap(h => [...h.items()]));
+  kept ??= replaced;
+  (game.reload as any).sessionData = s.gameData.parseSessionData(session);
   // `initSessionFromData` clears `modifiers` and never `enemyModifiers` (#632).
-  scene().enemyModifiers = [];
-  scene().modifiers = [];
+  s.enemyModifiers = [];
+  s.modifiers = [];
+  // `initSession` destroys the old timer without taking it off the clock, which ticks it for the worker's life (#663).
+  if (s.playTimeTimer) s.time.removeEvent(s.playTimeTimer);
   before();
   await game.reload.reloadSession();
   BattleScene.prototype.randBattleSeedInt = realRand;
+  sweep(replaced);
+}
+
+function sweep(replaced: Set<unknown>) {
+  for (const holder of holders()) {
+    for (const item of holder.items()) if (replaced.has(item) && !kept?.has(item)) holder.drop(item);
+  }
+  const s = scene();
+  // Never booted, so it never updates: what it queues stays queued.
+  s.sys.updateList._pending.length = 0;
+  s.sys.updateList._toProcess = 0;
+  // Each sprite's animation state listens for an animation's removal, which only a biome change makes, and only ever
+  // stops an animation a mock sprite never plays.
+  s.game.anims.off("remove");
+  // Records the test framework keeps and nothing here reads.
+  s.textures.list.length = 0;
+  vi.clearAllMocks();
+  game.phaseInterceptor.clearLogs();
+  game.textInterceptor.clearLogs();
 }
 
 async function load() {
