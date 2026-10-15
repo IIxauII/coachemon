@@ -283,7 +283,7 @@ test("`cardBody` rejects every shape but the one the HUD sends (extension-distri
   }
 });
 
-test("`cardBody` carries the oracle line's state, on the line at turn n of N, and nothing else (extension-distribution.md §11.1, #671)", () => {
+test("`cardBody` carries the oracle line's state, its turn of its last, and nothing else (extension-distribution.md §11.1, #671)", () => {
   const card = (oracleLine: unknown) => ({ build: BUILD, kind: "battle", key: "180", wave: 180, verdict: "trainer", groups: [], text: "t", oracleLine });
   assert.deepEqual(cardBody(card({ state: "on", turn: 7, of: 19 }))?.oracleLine, { state: "on", turn: 7, of: 19 });
   assert.equal(cardBody(card(null))?.oracleLine, null);

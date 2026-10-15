@@ -137,7 +137,7 @@ const errors = () => seen(EVENT.coachError);
   console.log(`mid-wave ${wave.map(c => c.verdict).join(" → ")}`);
   assert.deepEqual(wave.map(c => c.oracleLine), [null, null], "no oracle line held, none carried");
 
-  // ---- The card event carries the oracle line's state, the relay admits it, and each turn on the line is an event of its own
+  // ---- The card event carries the oracle line's state, the relay admits it, and each turn the oracle line leads is an event of its own
   party[0].species.speciesId = 6;
   party[0].moveset[0].moveId = 53;
   party[0].moveset[0].getMove = () => ({ name: "Flamethrower", type: TY.indexOf("Fire"), power: 90, category: cat.S, moveTarget: 3 });

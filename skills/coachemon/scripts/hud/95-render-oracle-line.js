@@ -14,7 +14,7 @@ const act = a => {
   ];
 };
 
-// Every checkpoint is a replay claim (CONTEXT.md, `Oracle line`).
+// A checkpoint's `~` (CONTEXT.md, `Confidence`).
 const after = st => [h("span", { flex: "1" }), h("span", { ...dim, margin: "0 3px" }, "→ ~"),
   ...st.after.flatMap((m, i) => [i ? h("span", dim, "·") : null, mon(m.icon, m.name, ICON.ref), h("span", dim, `${m.hp}/${m.maxHp}`)])];
 const turnOf = st => h("span", { ...dim, marginRight: "3px" }, `T${st.turn}`);
@@ -26,11 +26,10 @@ export const drawOracleLine = m => (m?.steps ?? []).map(st => line(MARK[st.at],
   ...(st.send ? [h("span", { ...dim, margin: "0 3px" }, "· send"), mon(st.send.icon, st.send.name, ICON.mon)] : []),
   ...(st.at === "later" ? [] : after(st))));
 
-// The `act` group while the oracle line holds: this turn's step, then the inputs that are easy to get wrong.
 export const drawOracleStep = m => {
   const st = oracleLineNow(m);
   if (!st) return [];
-  const picking = m.pick && st.send;
+  const picking = m.faintPick && st.send;
   return [
     picking ? line("⚔", ...sendTo("send", st), ...after(st))
       : line(st.act ? "⚔" : "·", turnOf(st), ...act(st.act), ...after(st)),

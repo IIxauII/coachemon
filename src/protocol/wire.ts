@@ -39,7 +39,7 @@ export type EventKind = "card" | "coach-error";
 /** A card's group, its rows flattened to one string each (extension-distribution.md §11.1). */
 export type CardGroup = { id: string; label: string; summary: string | null; rows: string[] };
 
-/** A held oracle line's state, null while none leads (extension-distribution.md §11.1). */
+/** (extension-distribution.md §11.1) */
 export type CardOracleLine = { state: "on"; turn: number; of: number };
 
 /**

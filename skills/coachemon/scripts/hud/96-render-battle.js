@@ -141,7 +141,6 @@ export const drawBattle = m => {
   // The same rows as 96-render-rewards' road, which a file on this layer can't import: change both.
   const road = [...drawPreview(m.preview), ...drawAhead(m.ahead)];
   return [
-    // While the oracle line holds, its step is the call and the turn line's is hidden; the enemy's own switches stay.
     some("act", "Now", actSummary(m), oracle.length ? [...enemySwitches, ...oracle] : field),
     some("foes", "Foes", foesSummary(m), [team, ...rows]),
     some("catch", "Catch", catchSummary(m.catch), drawCatch(m)),
