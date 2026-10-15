@@ -36,10 +36,11 @@ export const checkpoint = z.strictObject({ ours: z.array(monState), foes: z.arra
 
 export const outcome = z.enum(["won", "lost", "open"]) satisfies z.ZodType<Outcome>;
 
-const drawn = {
+const drawFields = {
+  /** Whose draw: the move's user, the item's holder, the mon whose status rolled. */
   side: z.enum(["ours", "foes"]),
   species: keyOf(SpeciesId, "species"),
-  /** Of what `kind` names happening: the move hitting, a crit, the effect, the item's proc, full paralysis, a self-hit. */
+  /** Of the thing `kind` names happening, whichever way it went: a foe's hit, never its miss. */
   chance: z.number().min(0).max(1),
   happened: z.boolean(),
 };
@@ -51,12 +52,11 @@ const effect = z.union([
   z.strictObject({ attr: z.string() }),
 ]);
 
-/** A battle draw the harness saw roll, on either side. `side` is whose: the move's user, the item's holder, the mon whose status rolled. */
 export const draw = z.discriminatedUnion("kind", [
-  z.strictObject({ kind: z.enum(["accuracy", "crit"]), move: keyOf(MoveId, "move"), ...drawn }),
-  z.strictObject({ kind: z.literal("effect"), move: keyOf(MoveId, "move"), effect, ...drawn }),
-  z.strictObject({ kind: z.literal("item"), item: z.string(), ...drawn }),
-  z.strictObject({ kind: z.enum(["paralysis", "confusion"]), ...drawn }),
+  z.strictObject({ kind: z.enum(["accuracy", "crit"]), move: keyOf(MoveId, "move"), ...drawFields }),
+  z.strictObject({ kind: z.literal("effect"), move: keyOf(MoveId, "move"), effect, ...drawFields }),
+  z.strictObject({ kind: z.literal("item"), item: z.string(), ...drawFields }),
+  z.strictObject({ kind: z.enum(["paralysis", "confusion"]), ...drawFields }),
 ]);
 
 export type Draw = z.infer<typeof draw>;

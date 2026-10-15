@@ -1,56 +1,60 @@
-import type { Stat } from "../enums/generated.ts";
-import { title } from "./describe.ts";
+import { Stat } from "../enums/generated.ts";
+import { STAGES, title } from "./describe.ts";
 import type { Luck } from "./oracle-line.ts";
 import type { Draw } from "./schema.ts";
-
-const STATS: Record<keyof typeof Stat, string> = {
-  HP: "HP",
-  ATK: "Atk",
-  DEF: "Def",
-  SPATK: "SpA",
-  SPDEF: "SpD",
-  SPD: "Spe",
-  ACC: "Acc",
-  EVA: "Eva",
-};
 
 const percent = (chance: number) => {
   const rounded = Math.round(chance * 100);
   return rounded === 0 ? "<1%" : rounded === 100 ? ">99%" : `${rounded}%`;
 };
 
-const added = (effect: Extract<Draw, { kind: "effect" }>["effect"]) => {
+const effectName = (effect: Extract<Draw, { kind: "effect" }>["effect"]) => {
   if ("status" in effect) return title(effect.status);
   if ("tag" in effect) return title(effect.tag);
   if ("attr" in effect) return effect.attr;
-  return `${effect.stats.map(s => STATS[s]).join("/")} ${effect.stages > 0 ? "+" : "−"}${Math.abs(effect.stages)}`;
+  const stats = effect.stats.map(s => STAGES[Stat[s] - Stat.ATK]).join("/");
+  return `${stats} ${effect.stages > 0 ? "+" : "−"}${Math.abs(effect.stages)}`;
 };
 
-/** What went our way, worded with the chance it had: null for a draw that went against us or was never in doubt. */
-function ourWay(draw: Draw): string | null {
+/** Whether a draw of ours that happened went our way. A foe's goes our way the other way round. */
+const HAPPENING_HELPS_US: Record<Draw["kind"], boolean> = {
+  accuracy: true,
+  crit: true,
+  effect: true,
+  item: true,
+  paralysis: false,
+  confusion: false,
+};
+
+// A foe's crit, effect or proc that never came would put most of its hits on the list.
+const FOES_COUNTED = new Set<Draw["kind"]>(["accuracy", "paralysis", "confusion"]);
+
+function said(draw: Draw): string {
   const who = `${draw.side === "foes" ? "the foe's " : ""}${title(draw.species)}`;
-  const ours = draw.side === "ours";
-  // The chance of what happened, which for a foe's miss is the chance it had to miss.
-  const odds = draw.happened ? draw.chance : 1 - draw.chance;
-  if (odds >= 1) return null;
   switch (draw.kind) {
     case "accuracy":
-      if (ours !== draw.happened) return null;
-      return `${who}'s ${title(draw.move)} ${ours ? "hits" : "misses"} (${percent(odds)})`;
+      return `${who}'s ${title(draw.move)} ${draw.happened ? "hits" : "misses"}`;
     case "crit":
-      return ours && draw.happened ? `${who}'s ${title(draw.move)} crits (${percent(odds)})` : null;
+      return `${who}'s ${title(draw.move)} crits`;
     case "effect":
-      return ours && draw.happened ? `${who}'s ${title(draw.move)} adds ${added(draw.effect)} (${percent(odds)})` : null;
+      return `${who}'s ${title(draw.move)} adds ${effectName(draw.effect)}`;
     case "item":
-      return ours && draw.happened ? `${who}'s ${title(draw.item)} activates (${percent(odds)})` : null;
+      return `${who}'s ${title(draw.item)} activates`;
     case "paralysis":
-      return !ours && draw.happened ? `${who} is fully paralysed (${percent(odds)})` : null;
+      return draw.happened ? `${who} is fully paralysed` : `${who} moves through its paralysis`;
     case "confusion":
-      return !ours && draw.happened ? `${who} hurts itself in its confusion (${percent(odds)})` : null;
+      return draw.happened ? `${who} hurts itself in its confusion` : `${who} keeps from hurting itself in its confusion`;
   }
 }
 
-/** The draws that went our way, in the order they rolled. */
+function ourWay(draw: Draw): string | null {
+  const ours = draw.side === "ours";
+  if (!ours && !FOES_COUNTED.has(draw.kind)) return null;
+  if (draw.happened !== (HAPPENING_HELPS_US[draw.kind] === ours)) return null;
+  const odds = draw.happened ? draw.chance : 1 - draw.chance;
+  return odds < 1 ? `${said(draw)} (${percent(odds)})` : null;
+}
+
 export function luckOf(steps: readonly { turn: number; draws: readonly Draw[] }[]): Luck[] {
   return steps.flatMap(({ turn, draws }) =>
     draws.flatMap(draw => {

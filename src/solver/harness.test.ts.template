@@ -256,10 +256,12 @@ async function load() {
 
 type Roll = { range: number; value: number };
 
-/** Every battle draw since `readDraws`, in the order rolled. */
+/** Every call on the battle RNG since `readDraws`, which the hooks read their draws from. */
 const rolls: Roll[] = [];
-/** The step's draws: a crit, a hit check, an added effect, an item proc, full paralysis, a confusion self-hit. */
 let draws: unknown[] = [];
+
+/** The chance that `randBattleSeedInt(100)` falls under a threshold that need not be whole (game-code.md §5). */
+const under100 = (threshold: number) => Math.min(100, Math.max(0, Math.ceil(threshold))) / 100;
 
 const drew = (p: any, kind: string, chance: number, happened: boolean, about: object = {}) =>
   draws.push({ kind, side: p.isPlayer() ? "ours" : "foes", species: species(p), ...about, chance, happened });
@@ -309,9 +311,9 @@ function readDraws() {
   wrap(MoveEffectPhase, "hitCheck", (f, phase, args) => {
     multiplier = undefined;
     const entry = f.apply(phase, args);
-    // Asked for only on the way to the roll: a hit check that never rolled leaves it unset.
+    // Asked for only on the way to the roll: a hit check that never rolled leaves it unset (game-code.md §5).
     if (multiplier !== undefined) {
-      drew(phase.getUserPokemon(), "accuracy", Math.min(1, (accuracy * multiplier) / 100), entry[0] === HitCheckResult.HIT, {
+      drew(phase.getUserPokemon(), "accuracy", under100(accuracy * multiplier), entry[0] === HitCheckResult.HIT, {
         move: MoveId[phase.move.id],
       });
     }
@@ -321,7 +323,7 @@ function readDraws() {
   wrap(Pokemon, "getCriticalHitResult", (f, target, args) => {
     const [source, move] = args;
     const [crit, during] = rolled(() => f.apply(target, args));
-    // No roll where the crit was sure or impossible.
+    // No roll where the crit was sure or impossible (game-code.md §1).
     if (during.length > 0) drew(source, "crit", 1 / during[0].range, crit, { move: MoveId[move.id] });
     return crit;
   });
@@ -345,7 +347,7 @@ function readDraws() {
         try {
           const applied = apply.call(this, user, ...rest);
           if (mine.passed !== undefined) {
-            drew(user, "effect", (mine.chance as number) / 100, mine.passed && applied !== false, {
+            drew(user, "effect", under100(mine.chance as number), mine.passed && applied !== false, {
               move: MoveId[move.id],
               effect: effectOf(attr),
             });

@@ -73,10 +73,7 @@ export type Receipt = readonly {
 
 export type ValidationStep = "versions" | "load_hygiene" | "wave_start_save" | "scene_matches" | "known_turn";
 
-/**
- * A draw the oracle line needs to go its way, with less than a sure chance: our hit, crit, added effect or item proc, or
- * the foe's miss, full paralysis or confusion self-hit. `what` names the chance it had.
- */
+/** A draw that went the oracle line's way with less than a sure chance (#701). `what` names that chance. */
 export type Luck = { turn: number; what: string };
 
 export type NoAnswer = { kind: "no_answer"; reason: Reason; message: string };

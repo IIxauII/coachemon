@@ -327,7 +327,6 @@ test("a harness that failed is no answer, never a win or a loss (#660)", async (
     [{ ...clean(), end: undefined }, /stopped without saying how the fight ended/],
     [{ ...clean(), error: "Error: the replay timed out after 540 s" }, /timed out after 540 s$/],
     [{ ...clean(), steps: [{ ...clean().steps[0], checkpoint: { ...atTurn(346), ours: [] } }] }, /our party was empty after turn 1/],
-    // Read as no luck, a step whose draws went unread would vouch for a line nothing checked (#701).
     [{ ...clean(), steps: [{ ...clean().steps[0], draws: undefined }] }, /draws/],
   ];
   for (const [report, why] of failed) {

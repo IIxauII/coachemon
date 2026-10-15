@@ -1,8 +1,6 @@
-import { describeInput, title } from "../../src/solver/describe.ts";
+import { describeInput, STAGES, title } from "../../src/solver/describe.ts";
 import type { Checks, Miss } from "../../src/solver/worker.ts";
 import type { Luck, MonState, OracleLine, Receipt, Replay, Step } from "../../src/solver/oracle-line.ts";
-
-const STAGES = ["Atk", "Def", "SpA", "SpD", "Spe", "Acc", "Eva"];
 
 const mon = (m: MonState) =>
   [
@@ -30,8 +28,8 @@ const receipted = (receipt: Receipt) => [
 const ridden = (luck: readonly Luck[]) =>
   luck.length === 0
     ? [
-        "luck: rides none: nothing of ours (a hit, a crit, an added effect, an item proc) and nothing of the foe's " +
-          "(a miss, full paralysis, a confusion self-hit) went its way on a draw",
+        "luck: rides none: nothing of ours (a hit, a crit, an added effect, an item proc, moving through paralysis or " +
+          "confusion) and nothing of the foe's (a miss, full paralysis, a confusion self-hit) went its way on a draw",
       ]
     : [`luck: rides ${luck.length} draw${luck.length === 1 ? "" : "s"}`, ...luck.map(({ turn, what }) => `    ${`T${turn}`.padEnd(4)}${what}`)];
 

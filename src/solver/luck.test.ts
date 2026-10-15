@@ -44,6 +44,23 @@ test("a foe's miss, full paralysis and confusion self-hit are luck, with the cha
   ]);
 });
 
+test("our mon moving through its paralysis or its confusion is luck, as the foe's full paralysis is (#701)", () => {
+  const luck = luckOf([
+    {
+      turn: 4,
+      draws: [
+        { ...ours, kind: "paralysis", chance: 0.125, happened: false },
+        { ...ours, kind: "confusion", chance: 1 / 3, happened: false },
+      ],
+    },
+  ]);
+
+  assert.deepEqual(luck, [
+    { turn: 4, what: "Reshiram moves through its paralysis (88%)" },
+    { turn: 4, what: "Reshiram keeps from hurting itself in its confusion (67%)" },
+  ]);
+});
+
 test("an added effect is luck when it lands for us, named by what it adds (#701)", () => {
   const luck = luckOf([
     {
@@ -68,7 +85,7 @@ test("an added effect is luck when it lands for us, named by what it adds (#701)
   );
 });
 
-test("a draw that went against us, or that we were sure of, is not luck (#701)", () => {
+test("a draw that went against us, a foe's crit, effect or proc that never came, or a sure thing, is not luck (#701)", () => {
   const against: Draw[] = [
     { ...ours, kind: "accuracy", move: "BLUE_FLARE", chance: 0.85, happened: false },
     { ...ours, kind: "crit", move: "BLUE_FLARE", chance: 1 / 24, happened: false },
@@ -81,6 +98,10 @@ test("a draw that went against us, or that we were sure of, is not luck (#701)",
     { ...foes, kind: "effect", move: "SCALD", effect: { status: "BURN" }, chance: 0.3, happened: true },
     { ...foes, kind: "item", item: "QUICK_CLAW", chance: 0.1, happened: true },
     { ...foes, kind: "paralysis", chance: 0.125, happened: false },
+    { ...foes, kind: "confusion", chance: 1 / 3, happened: false },
+    { ...foes, kind: "crit", move: "TERA_STARSTORM", chance: 1 / 24, happened: false },
+    { ...foes, kind: "effect", move: "SCALD", effect: { status: "BURN" }, chance: 0.3, happened: false },
+    { ...foes, kind: "item", item: "FOCUS_BAND", chance: 0.1, happened: false },
     { ...ours, kind: "accuracy", move: "THUNDER", chance: 1, happened: true },
   ];
 
