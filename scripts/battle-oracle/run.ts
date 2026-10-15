@@ -42,7 +42,7 @@ const { values, positionals } = parseArgs({
 });
 const [file] = positionals;
 if (file === undefined) {
-  console.error("usage: npm run oracle:battle -- [--replay <script.json> | --check <script.json> | --unchecked [--workers <n>]] <export.json>");
+  console.error("usage: npm run oracle:battle -- [--replay <script.json> | --check <script.json> | --unchecked] [--workers <n>] <export.json>");
   process.exit(NO_ANSWER);
 }
 
@@ -92,8 +92,9 @@ if (workers !== undefined && !(Number.isInteger(workers) && workers > 0)) exitNo
 let shown = -PROGRESS_EVERY;
 let last: PoolStats | undefined;
 const started = Date.now();
-const poolLine = ({ size, died, peakHeapMb, heapLimitMb }: PoolStats) =>
-  `${size} workers, ${died} died, heap peak ${peakHeapMb ?? "?"} of ${heapLimitMb ?? "?"} MB`;
+const poolLine = ({ size, died, lastDeath, peakHeapMb, heapLimitMb }: PoolStats) =>
+  `${size} workers, ${died} died${lastDeath === null ? "" : ` (the last: ${lastDeath})`}, ` +
+  `heap peak ${peakHeapMb ?? "?"} of ${heapLimitMb ?? "?"} MB`;
 let result: SolveResult;
 try {
   result = await solve(

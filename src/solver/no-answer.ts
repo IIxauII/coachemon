@@ -94,7 +94,7 @@ export function cause(reason: Reason): string {
       return `the oracle's harness failed: ${reason.why}${/[.!?]$/.test(reason.why) ? "" : "."}`;
     case "workers_died":
       return (
-        `the oracle's workers kept dying, three of them on one turn's job (${reason.died} in all; the last: ` +
+        `the oracle's workers kept dying, each one the same turns were tried on (${reason.died} in all; the last: ` +
         `${reason.why.replace(/\.$/, "")}).`
       );
     case "no_win": {

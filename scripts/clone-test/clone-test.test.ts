@@ -17,18 +17,18 @@ const testFile = args[1];
 const report = args.find(a => a.startsWith("--outputFile.json="))?.slice("--outputFile.json=".length);
 const mode = process.env.FAKE;
 const mark = name => writeFileSync(new URL(name + "-" + process.pid, import.meta.url), "");
-process.on("SIGTERM", () => setTimeout(() => {
+process.on("SIGTERM", () => mode !== "deaf" && setTimeout(() => {
   writeFileSync(process.env.COACH_OUT, "late");
   mark("exited");
   process.exit(1);
 }, 100));
-if (mode === "hang") mark("listening");
+if (mode === "hang" || mode === "deaf") mark("listening");
 if (mode === "fork") {
   const { spawn } = await import("node:child_process");
   const fork = spawn(process.execPath, ["-e", "setTimeout(() => {}, 60_000)"], { stdio: "inherit" });
   writeFileSync(new URL("forked-" + fork.pid, import.meta.url), "");
 }
-await new Promise(r => setTimeout(r, { slow: 300, hang: 60_000, fork: 60_000 }[mode] ?? 0));
+await new Promise(r => setTimeout(r, { slow: 300, hang: 60_000, fork: 60_000, deaf: 60_000 }[mode] ?? 0));
 process.stdout.write("vitest says hello\\n");
 process.stderr.write("vitest grumbles\\n");
 if (mode === "no-report") process.exit(1);
@@ -136,6 +136,19 @@ test("a test ended by its signal settles once every process it started has ended
   for (let i = 0; i < 100 && alive(fork); i++) await sleep(20);
   assert.equal(alive(fork), false);
   assert.equal(out, "late");
+  assert.deepEqual(s.leftovers(), UPSTREAM);
+});
+
+test("a test that never acts on its SIGTERM is killed, so ending it is bounded (#663)", async t => {
+  const s = scratch(t);
+  const stop = new AbortController();
+  const run = testInClone({ ...s.options("deaf"), signal: stop.signal });
+  while (s.marks("listening") < 1) await sleep(20);
+  const asked = Date.now();
+  stop.abort();
+  await run;
+
+  assert.ok(Date.now() - asked < 15_000);
   assert.deepEqual(s.leftovers(), UPSTREAM);
 });
 

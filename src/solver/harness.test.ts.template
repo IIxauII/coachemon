@@ -287,8 +287,7 @@ function sweep(replaced: Set<unknown>) {
   // Never booted, so it never updates: what it queues stays queued.
   s.sys.updateList._pending.length = 0;
   s.sys.updateList._toProcess = 0;
-  // Each sprite's animation state listens for an animation's removal, which only a biome change makes, and only ever
-  // stops an animation a mock sprite never plays.
+  // Every sprite's animation state adds a listener here that nothing takes off.
   s.game.anims.off("remove");
   // Records the test framework keeps and nothing here reads.
   s.textures.list.length = 0;

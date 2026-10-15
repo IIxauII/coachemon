@@ -43,7 +43,7 @@ export async function solve(
 
   const at = augmentedExport(input)?.forkPoint;
   const started = await startPool(workers, () => startWorker(clone, input.save, at), input.cloneVersion);
-  return using<WorkerPool, SolveResult>(started, input.cloneVersion, async pool => {
+  return withStarted<WorkerPool, SolveResult>(started, input.cloneVersion, async pool => {
     const searched = await search({
       root: pool.root,
       pool,
@@ -70,7 +70,7 @@ export async function checkForks(
   // The checks are what the harness re-check runs (#665), so they can't wait on one having passed.
   const refused = refuse(given, passed(given.cloneVersion));
   if (refused) return refused;
-  return using(await startWorker(clone, given.save, augmentedExport(given)?.forkPoint), given.cloneVersion, async worker => {
+  return withStarted(await startWorker(clone, given.save, augmentedExport(given)?.forkPoint), given.cloneVersion, async worker => {
     try {
       return { kind: "checked", checks: await worker.check(inputs) };
     } catch (e) {
@@ -81,7 +81,7 @@ export async function checkForks(
 
 const passed = (gameVersion: string): Recheck => ({ gameVersion });
 
-async function using<W extends Worker | WorkerPool, T>(
+async function withStarted<W extends Worker | WorkerPool, T>(
   started: W | NotStarted,
   version: string,
   use: (worker: W) => Promise<T>,

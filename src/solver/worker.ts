@@ -7,7 +7,7 @@ import type { SessionSave } from "./input.ts";
 import type { Checkpoint, Input } from "./oracle-line.ts";
 import { type Clone, harnessJob } from "./replay.ts";
 import { checkpoint, input } from "./schema.ts";
-import type { Action, Child, Hp, Position } from "./search.ts";
+import type { Child, Hp, Pool, Position } from "./search.ts";
 
 // (#655)
 const HEAP_MB = 768;
@@ -47,10 +47,8 @@ const checks = z.object({
   chain: z.array(miss),
 }) satisfies z.ZodType<Checks>;
 
-export type Worker = {
+export type Worker = Pick<Pool, "expand"> & {
   root: Position;
-  /** A child per input, and one more per other faint replacement an input's turn could have taken. */
-  expand(forkPoint: string, inputs: readonly Action[]): Promise<Child[]>;
   /** The last job's report; `null` before one has finished. */
   heap(): HeapUse | null;
   check(inputs: readonly Input[]): Promise<Checks>;

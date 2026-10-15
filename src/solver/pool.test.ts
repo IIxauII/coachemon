@@ -14,8 +14,8 @@ const BUDGET = { expansions: 3000, turns: 40 };
 type Fake = { n: number; jobs: number; closed: boolean };
 
 /**
- * Workers started by a script: `job` answers the nth worker's jobs, `die` says it died, and `boot` the nth start's
- * fate, if not a worker that started.
+ * Workers started by a script: `job` answers a worker's jobs, or "die" for it to die on one; `boot` is the nth start's
+ * fate, `null` for a worker that started; `heapMb` is what a worker's jobs leave on its heap.
  */
 function fakeWorkers({
   job = (_w: Fake, inputs: readonly Action[]): Child[] | "die" => won(inputs),
@@ -91,6 +91,25 @@ test("a dead worker's job goes to a fresh worker, and the solve completes (#663)
   assert.equal(fakes.started.length, 2);
   assert.ok(fakes.started[0].closed);
   assert.equal(pool.stats().died, 1);
+  assert.equal(pool.stats().lastDeath, "the worker stopped, writing nothing");
+});
+
+test("closing a pool ends the jobs it is playing, and no worker closed under one counts as dead (#663)", async () => {
+  // A closed worker's job fails as the real one's does: its process ends under it.
+  const fakes = fakeWorkers({ job: (w, inputs) => (w.closed ? "die" : won(inputs)) });
+  const pool = await startPool(2, fakes.start, "1.12.0.11");
+  assert.ok("expand" in pool);
+
+  const playing = [pool.expand("root", [tackle]), pool.expand("root", [tackle]), pool.expand("root", [tackle])];
+  await pool.close();
+  const settled = await Promise.allSettled(playing);
+
+  assert.deepEqual(
+    settled.map(s => s.status === "rejected" && (s.reason as Error).message),
+    ["the pool closed", "the pool closed", "the pool closed"],
+  );
+  assert.equal(pool.stats().died, 0);
+  assert.equal(fakes.started.length, 2);
 });
 
 test("a search on a pool whose workers keep dying still finds the win (#663)", async () => {
@@ -179,5 +198,5 @@ test("a pool reports the most heap any of its workers has used (#663)", async ()
   await Promise.all(Array.from({ length: 4 }, () => pool.expand("root", [tackle])));
   await pool.close();
 
-  assert.deepEqual(pool.stats(), { size: 2, died: 0, peakHeapMb: 400, heapLimitMb: 864 });
+  assert.deepEqual(pool.stats(), { size: 2, died: 0, lastDeath: null, peakHeapMb: 400, heapLimitMb: 864 });
 });
