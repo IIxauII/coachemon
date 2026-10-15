@@ -27,8 +27,8 @@ export const pinnedClone = (): string => {
   if (!existsSync(path.join(clone, "node_modules"))) {
     missing(`The clone at ${clone} has no dependencies.`, `cd ${clone} && pnpm install --frozen-lockfile`);
   }
-  // An empty submodule is the quiet failure: every option that starts a battle dies in `populateMoveAnim` with no
-  // hint of why, and the red run looks like the card's fault.
+  // An empty submodule is the quiet failure: every battle a test starts dies in `populateMoveAnim` with no hint of
+  // why, and the failure passes for the oracle's answer.
   for (const sub of ["assets", "locales"]) {
     if (readdirSync(path.join(clone, sub)).length === 0) {
       missing(`The clone's \`${sub}\` submodule is empty.`, `cd ${clone} && git submodule update --init --depth 1 ${sub}`);
@@ -71,8 +71,7 @@ export type CloneTest = {
 
 /**
  * `report` is vitest's JSON report and `out` whatever the test wrote at `COACH_OUT`, each absent if the test never wrote
- * it; `output` is vitest's stdout and stderr together. There is no exit code: the clone's own i18n rejection makes it 1
- * however the cases went (game-code.md §13).
+ * it; `output` is vitest's stdout and stderr together. vitest's exit code is left out (game-code.md §13).
  */
 export type CloneTestResult = { report: VitestReport | undefined; out: string | undefined; output: string };
 
@@ -101,7 +100,7 @@ export const testInClone = async (t: CloneTest): Promise<CloneTestResult> => {
   // Left to its default, Ctrl-C ends this process before the `finally`, and no later test removes files named for this
   // one alone (#658).
   const interrupt = new AbortController();
-  const stop = () => interrupt.abort();
+  const stop = (signal: NodeJS.Signals) => interrupt.abort(signal);
   process.on("SIGINT", stop).on("SIGTERM", stop);
   try {
     writeFileSync(bundlePath, t.bundle);
@@ -134,10 +133,13 @@ export const testInClone = async (t: CloneTest): Promise<CloneTestResult> => {
     );
     return { report: readOr(reportPath, JSON.parse), out: readOr(outPath, text => text), output };
   } finally {
-    process.off("SIGINT", stop).off("SIGTERM", stop);
     for (const artifact of [bundlePath, testPath, reportPath, outPath, reporterPath]) {
       rmSync(artifact, { force: true });
     }
+    process.off("SIGINT", stop).off("SIGTERM", stop);
+    // Raised again, so the process still ends as the signal ended it: what an interrupted test read never passes for an
+    // answer (#658).
+    if (interrupt.signal.aborted) process.kill(process.pid, interrupt.signal.reason);
   }
 };
 
@@ -157,10 +159,12 @@ const tee = (
     forward(child.stdout, echo ? process.stdout : undefined);
     forward(child.stderr, process.stderr);
     child.on("error", (err: Error) => {
+      if (err.name === "AbortError") return;
       const said = `\noracle: could not run vitest — ${err.message}\n`;
       output += said;
       process.stderr.write(said);
-      resolve(output);
     });
+    // Never on `error`: an abort fires it while vitest still runs and can write, and `close` waits for every process
+    // holding the pipes, a failed start included.
     child.on("close", () => resolve(output));
   });
