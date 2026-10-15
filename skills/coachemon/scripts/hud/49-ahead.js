@@ -177,7 +177,7 @@ export const learnRoster = model => {
 
 export const aheadIn = n => (n === 1 ? "next wave" : `in ${n}`);
 
-// The trainer's own confidence, not the roster's: a grunt's name is unsure under an exact roster (#623).
+// The trainer's own confidence, not the roster's: a grunt's name is an estimate under an exact roster (#623).
 export const aheadWho = a => (a.next.trainer ? `${a.next.trainer}${confidenceMark(a.next.confidence?.trainer)}` : a.next.label);
 
 export const aheadSummary = a => {
