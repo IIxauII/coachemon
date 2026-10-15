@@ -27,15 +27,17 @@ part follows the game's language.
    file, making its folder if need be. Done when the file holds its three opening lines and all seven sections.
 3. **Tick** on every read after. Mark each phase whose check has come due ✓ with what the battle showed, or ✗ with
    what came instead; the phase in play is ▸. A ✗ adds its break, and the play it leaves, to *Off the plan*. When the
-   card's verdict changes (a `LIKELY LOST` line), rewrite the call to the card's new verdict and name the turn.
-   Rewrite the status line each time. Done when the status line names the last check the battle has reached.
+   call's verdict word is not the card's, rewrite the call to the card's verdict and name the turn: a `LIKELY LOST`
+   line fires only once a wave and only toward lost, and a resume or a retry never sees it. Rewrite the status line
+   each time. Done when the call's verdict is the card's and the status line names the last check the battle has
+   reached.
 
 The file opens with three lines:
 - the title, `# Plan: <trainer> · W<wave> · singles` (or `doubles`);
 - the status line, which is what the next session resumes from: `on the plan · checked through <phase> · attempt
   <n>`, `off the plan at <phase>: <what broke> · attempt <n>`, `won · attempt <n>` or `lost at <phase> · attempt <n>`;
-- the marks line, `Marks as on the card: none exact, ≈ estimate, ! proved wrong. Inputs and Off the plan claim
-  nothing.`
+- the marks line, `Marks as on the card: none exact, ~ replay, ≈ estimate, ! proved wrong. Inputs and Off the plan
+  claim nothing.`
 
 ## One call
 
@@ -43,9 +45,9 @@ The plan's call is the card's call. Now, the card's `plan` group and this file s
 card's fight plan re-cut into phases: its call is the card's verdict, its phases follow the card's step order, the
 mons it keeps back (⤵) and its sacrifices, and its first phase opens with what the card calls now.
 
-A call you know is wrong — Moonblast into an Enigma Berry, a hit from a mon that never gets to act — is a **card gap**:
-tell the user it is a gap in the card, and keep the plan on the card's call. The mechanic behind it belongs under
-*Principles*, where the player weighs it for themselves.
+A call you know is wrong — Moonblast into an Enigma Berry, a hit from a mon that never gets to act — is a gap in the
+card: tell the user so, and keep the plan on the card's call. The mechanic behind it belongs under *Principles*, where
+the player weighs it for themselves.
 
 An oracle line is the one thing that takes the call from the card, and the card then draws the line's step in place
 of its own ⚔, so there is still one call.
@@ -66,12 +68,12 @@ In this order. Marks as on the card: no mark is exact, `~` replay, `≈` estimat
    is kept back for it. Then the fight in the phases it falls into, one per foe that matters in the trainer's send-in
    order. Each phase is what to do and the **check** that ends it, something the player can read off the battle: HP,
    bars left, a berry spent, who is standing.
-4. **Where the card disagrees** — without the oracle, nowhere. The section is the one line `Nowhere: this plan is the
-   card's own.`
+4. **Where the card disagrees** — without an oracle line, nowhere. The section is the one line `Nowhere: this plan is
+   the card's own.`
 5. **Inputs to get right** — no claim. The presses a mistake costs here: faint replacements (who, and who never),
    waiting for the first command before reading the card, a Tera.
 6. **Off the plan** — no claim. The likely breaks, each with what the player does next, then `Anything else: the
-   card's turn line leads.` The plan carries on from where the game stands.
+   card's turn line leads, from where the game stands. No reload.`
 7. **Principles** — the mechanics that decide this fight, exact (a boss bar stops a hit at its edge; an Enigma Berry
    heals 25% on a super-effective hit; Extreme Speed hits first whatever the Speed), and hand-worked damage `≈`. They
    are what the player plays by once off the plan.
@@ -81,7 +83,7 @@ In this order. Marks as on the card: no mark is exact, `~` replay, `≈` estimat
 ```markdown
 # Plan: Ivy · W145 · singles
 on the plan · checked through Kingdra · attempt 1
-Marks as on the card: none exact, ≈ estimate, ! proved wrong. Inputs and Off the plan claim nothing.
+Marks as on the card: none exact, ~ replay, ≈ estimate, ! proved wrong. Inputs and Off the plan claim nothing.
 
 ## The call ≈
 **Winnable if Dragonite meets Rayquaza at full HP.** The card's verdict: a lean, not a promise.
@@ -106,7 +108,7 @@ Nowhere: this plan is the card's own.
 
 ## Off the plan
 - Multiscale broke before Rayquaza: Dragonite's jobs become Torterra and the priority finish.
-- Anything else: the card's turn line leads.
+- Anything else: the card's turn line leads, from where the game stands. No reload.
 
 ## Principles
 - A boss bar stops a hit at its edge unless the hit is big enough to break more than one.
