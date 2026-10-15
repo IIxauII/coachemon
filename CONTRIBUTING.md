@@ -21,7 +21,7 @@ claude --plugin-dir .            # a session with this checkout's server and ski
 
 There is no project `.mcp.json`: a plugin at the repo root merges the root `.mcp.json` into its own servers, and a cwd-relative path there breaks once the plugin is copied into the cache. `--plugin-dir .` loads exactly what an installed plugin gets. Don't run it alongside an installed copy — two servers contend for one tab.
 
-The server **attaches to an existing `pokerogue.net` tab on debug port 9222 if there is one, otherwise launches Chrome** with the persistent profile (`~/.coachemon/chrome-profile`; log in by hand once — the server never touches credentials, see [#5](https://github.com/IIxauII/coachemon/issues/5)). It never closes the tab or Chrome. One driver per tab: a lock at `~/.coachemon/driver.lock` makes a second server report `tab_contended` and refuse to press, because [#6](https://github.com/IIxauII/coachemon/issues/6) had three sessions interleaving presses on one live save. The lock is taken the first time a server acts, not when it starts, so any number of servers can read the same tab while one plays it. The player's **solving** setting lives beside it, in `~/.coachemon/settings.json`. `COACHEMON_HOME` moves the whole directory.
+The server **attaches to an existing `pokerogue.net` tab on debug port 9222 if there is one, otherwise launches Chrome** with the persistent profile (`~/.coachemon/chrome-profile`; log in by hand once — the server never touches credentials, see [#5](https://github.com/IIxauII/coachemon/issues/5)). It never closes the tab or Chrome. One driver per tab: a lock at `~/.coachemon/driver.lock` makes a second server report `tab_contended` and refuse to press, because [#6](https://github.com/IIxauII/coachemon/issues/6) had three sessions interleaving presses on one live save. The lock is taken the first time a server acts, not when it starts, so any number of servers can read the same tab while one plays it. The player's **solving** setting lives beside it, in `~/.coachemon/settings.json`, and so does the game clone solving runs in, in `~/.coachemon/clone/`: the pinned game version's alone, about 0.6 GB, never the dev clone under `.cache/`. `COACHEMON_HOME` moves the whole directory.
 
 ## Dev scripts
 
@@ -35,6 +35,7 @@ The server **attaches to an existing `pokerogue.net` tab on debug port 9222 if t
 - `npm run oracle:encounter` — plays each Mystery Encounter headless in the pinned clone and checks the coach's encounter card against what the game actually does (its header says what the clone needs first)
 - `npm run oracle:battle <export.json>` — runs the solver a player's plugin runs, on a wave-start save or a mid-fight session export with its live extras (`{ save, extras }`), against the pinned game version, so a player's "no answer" can be reproduced. Only its refusal gate is built so far, so it prints "no answer" with the gate's reason, or "solving not built yet". It exits 0 on an oracle line and 2 on no answer, and never passes a child process's exit code through ([#659](https://github.com/IIxauII/coachemon/issues/659))
 - `npm run oracle:preview` — walks seeded Classic runs headless in the pinned clone and tables how often a preview misses its wave, per field and by how far ahead it was read (`--from <records.json>` prints a saved walk again)
+- `npm run clone:smoke` — sets up the player's clone in the coachemon home as the plugin's `clone` job does (the game and locales tarballs, one battle animation and a pnpm install, no git), then boots the harness in it and plays a turn; it needs the network and about 0.6 GB, so it is not a CI check ([#668](https://github.com/IIxauII/coachemon/issues/668))
 
 Only the enums check is a CI gate: it rebuilds from an immutable pin, so a mismatch is always real drift, while randbats rebuilds from live upstream and would go red the day the data moves.
 
@@ -53,6 +54,7 @@ src/driver.ts        settle → press → auto-advance → detect → envelope
 src/jobs.ts          background jobs: work that outlasts one tool call (#667)
 src/home.ts          the coachemon home directory (`COACHEMON_HOME`, else `~/.coachemon`)
 src/settings.ts      the plugin's settings, persisted in the home directory: solving, off by default
+src/solver/          the solver behind an oracle line, and the player's clone it runs in
 src/settle.ts        the settle loop and its budgets (#14)
 src/game/port.ts     the typed game operations the driver reaches the game through (#127)
 src/game/link-game.ts that port over a GameLink; a page throw never leaves it as a throw

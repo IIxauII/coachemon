@@ -1,0 +1,23 @@
+// Runs inside the player's clone, never this repo: `testInClone` copies it in and removes it again, so every `#…` import
+// is upstream's.
+import { MoveId } from "#enums/move-id";
+import { SpeciesId } from "#enums/species-id";
+import { GameManager } from "#test/framework/game-manager";
+import Phaser from "phaser";
+import { beforeAll, expect, it } from "vitest";
+
+let phaserGame: Phaser.Game;
+
+beforeAll(() => {
+  phaserGame = new Phaser.Game({ type: Phaser.HEADLESS });
+});
+
+it("boots the harness, starts a battle and plays a turn", async () => {
+  const game = new GameManager(phaserGame);
+  game.override.battleStyle("single").enemySpecies(SpeciesId.MAGIKARP).enemyMoveset(MoveId.SPLASH).moveset([MoveId.TACKLE]);
+  await game.classicMode.startBattle(SpeciesId.BULBASAUR);
+  game.move.select(MoveId.TACKLE);
+  await game.toNextTurn();
+  const foe = game.scene.getEnemyPokemon()!;
+  expect(foe.hp).toBeLessThan(foe.getMaxHp());
+});

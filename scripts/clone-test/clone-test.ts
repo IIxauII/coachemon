@@ -6,14 +6,14 @@ import type { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
 // @ts-expect-error: plain .mjs without type declarations
 import { bundle } from "../../skills/coachemon/scripts/hud-bundle.mjs";
+import reviewed from "../../src/escape-ladder/reviewed.json" with { type: "json" };
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const HUD = path.resolve(HERE, "../../skills/coachemon/scripts/hud");
-const VITEST = ["npx", "--yes", "pnpm@10.33.2", "exec", "vitest"];
+const VITEST = ["npx", "--yes", `pnpm@${reviewed.pinned.pnpm}`, "exec", "vitest"];
 
 /** The clone pinned to the reviewed game version, or exit 2: no answer (game-code.md §13). */
 export const pinnedClone = (): string => {
-  const reviewed = JSON.parse(readFileSync(path.resolve(HERE, "../../src/escape-ladder/reviewed.json"), "utf8"));
   const clone = path.resolve(".cache/pokerogue", `v${reviewed.pinned.gameVersion}`);
   const missing = (what: string, how: string): never => {
     console.error(`${what}\n\n  ${how}\n`);

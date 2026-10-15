@@ -2,7 +2,10 @@
   "pinned": {
     "gameVersion": "1.12.0.11",
     "tag": "v1.12.0.11",
-    "sha": "e4e9b5383be7c9e171d32a9daaea2658d475c521"
+    "sha": "e4e9b5383be7c9e171d32a9daaea2658d475c521",
+    "locales": "e46279a0a511e5b6f552dfcab522644822b2908a",
+    "assets": "909b43612324622608023b3beb2f24f4ef159c1d",
+    "pnpm": "10.33.2"
   },
   "hashes": {
     "src/ai/ai-species-gen.ts#calcEvoChance": "546de3878f0fb729",

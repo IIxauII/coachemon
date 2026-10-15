@@ -33,6 +33,8 @@ function cause(reason: Reason): string {
         `the oracle's clone would drop ${reason.items.join(", ")} on load, so an oracle line would be found for a ` +
         "different team."
       );
+    case "no_clone":
+      return `the oracle's clone of game version ${reason.version} couldn't be set up: ${reason.cause}.`;
     case "not_built":
       return "solving not built yet";
   }
