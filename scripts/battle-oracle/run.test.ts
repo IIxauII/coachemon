@@ -80,6 +80,21 @@ test("oracle:battle --replay answers no answer when the save comes with no live 
   assert.equal(run.status, 2);
 });
 
+test("oracle:battle --unchecked passes the re-check's gate and no other, so it still needs the clone (#662)", () => {
+  const run = oracle(exported, ["--unchecked"]);
+
+  assert.match(run.stderr, /--unchecked solves on a game version the harness re-check hasn't passed/);
+  assert.match(run.stdout, /^no answer: the oracle's clone of game version 1\.12\.0\.11 isn't set up/);
+  assert.equal(run.status, 2);
+});
+
+test("oracle:battle --check answers no answer naming what the clone lacks when it isn't provisioned (#662)", () => {
+  const run = oracle(exported, ["--check", SCRIPT]);
+
+  assert.match(run.stdout, /^no answer: the oracle's clone of game version 1\.12\.0\.11 isn't set up: No pinned clone/);
+  assert.equal(run.status, 2);
+});
+
 test("oracle:battle --replay answers no answer naming the script it couldn't read, and where it strays (#660)", () => {
   const dir = mkdtempSync(path.join(tmpdir(), "battle-oracle-"));
   const script = path.join(dir, "typo.script.json");
