@@ -5,7 +5,7 @@ import path from "node:path";
 import { createInterface } from "node:readline";
 import { setTimeout as sleep } from "node:timers/promises";
 import reviewed from "../escape-ladder/reviewed.json" with { type: "json" };
-import type { JobWork } from "../jobs.ts";
+import type { JobControl, JobWork } from "../jobs.ts";
 import { noAnswer } from "./no-answer.ts";
 import type { NoAnswer } from "./oracle-line.ts";
 
@@ -16,22 +16,20 @@ export type CloneSetup = { kind: "clone"; gameVersion: string; dir: string } | N
 
 export type CloneDeps = { pin: ClonePin; fetch?: typeof globalThis.fetch; npx?: readonly string[] };
 
-type Ctl = Parameters<JobWork>[1];
-
 export const CLONE_JOB = "clone";
 
 export const cloneJob =
-  (home: string, deps: CloneDeps = { pin: reviewed.pinned }): JobWork =>
+  (home: string, deps?: CloneDeps): JobWork =>
   (_args, ctl) =>
     setUpClone(home, ctl, deps);
 
 const STEPS = 4;
 
-export async function setUpClone(home: string, { signal, progress }: Ctl, deps: CloneDeps): Promise<CloneSetup> {
+export async function setUpClone(home: string, { signal, progress }: JobControl, deps: CloneDeps = { pin: reviewed.pinned }): Promise<CloneSetup> {
   const { pin, fetch = globalThis.fetch, npx = ["npx"] } = deps;
   const root = path.join(home, "clone");
-  const version = path.join(root, `v${pin.gameVersion}`);
-  const dir = path.join(version, "game");
+  const versionDir = path.join(root, `v${pin.gameVersion}`);
+  const dir = path.join(versionDir, "game");
   const step = (n: number, what: string) => progress(`setting up the clone for ${pin.gameVersion}, step ${n} of ${STEPS}: ${what}`);
   const download = async (url: string, what: string): Promise<Buffer> => {
     const host = new URL(url).host;
@@ -47,18 +45,18 @@ export async function setUpClone(home: string, { signal, progress }: Ctl, deps: 
 
   const unpack = (what: string, tarball: Buffer, into: string) => {
     mkdirSync(into, { recursive: true });
-    return run(`unpacking ${what}`, ["tar", "-xzf", "-", "--strip-components", "1", "-C", into], { cwd: into, signal, input: tarball });
+    return execute(`unpacking ${what}`, ["tar", "-xzf", "-", "--strip-components", "1", "-C", into], { cwd: into, signal, input: tarball });
   };
 
   // Written last: a version without it is a setup that never finished, and the next one starts it over.
-  const ready = path.join(version, "ready");
+  const ready = path.join(versionDir, "ready");
   const clone: CloneSetup = { kind: "clone", gameVersion: pin.gameVersion, dir };
   if (existsSync(ready)) return clone;
   const waiting = () => progress(`setting up the clone for ${pin.gameVersion}: waiting on another setup of it to finish`);
   return locked(root, signal, waiting, async () => {
     if (existsSync(ready)) return clone;
     try {
-      rmSync(version, { recursive: true, force: true });
+      rmSync(versionDir, { recursive: true, force: true });
       step(1, "fetching the game");
       await unpack("the game", await download(`https://codeload.github.com/pagefaultgames/pokerogue/tar.gz/${pin.sha}`, "the game"), dir);
       step(2, "fetching the game's locales");
@@ -71,8 +69,8 @@ export async function setUpClone(home: string, { signal, progress }: Ctl, deps: 
         await download(`https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/${pin.assets}/battle-anims/tackle.json`, "a battle animation"),
       );
       step(4, "installing the game's dependencies");
-      const install = [...npx, "--yes", `pnpm@${pin.pnpm}`, "install", "--frozen-lockfile", "--ignore-scripts", "--store-dir", path.join(version, "store")];
-      await run("installing the game's dependencies", install, {
+      const install = [...npx, "--yes", `pnpm@${pin.pnpm}`, "install", "--frozen-lockfile", "--ignore-scripts", "--store-dir", path.join(versionDir, "store")];
+      await execute("installing the game's dependencies", install, {
         cwd: dir,
         signal,
         onLine: line => {
@@ -80,13 +78,13 @@ export async function setUpClone(home: string, { signal, progress }: Ctl, deps: 
           if (counted) step(4, `installing the game's dependencies (${counted[1]})`);
         },
       });
-      writeFileSync(ready, "");
       for (const other of readdirSync(root)) {
-        if (other !== path.basename(version) && !other.startsWith(LOCK)) rmSync(path.join(root, other), { recursive: true, force: true });
+        if (other !== path.basename(versionDir) && !other.startsWith(LOCK)) rmSync(path.join(root, other), { recursive: true, force: true });
       }
+      writeFileSync(ready, "");
       return clone;
     } catch (e) {
-      rmSync(version, { recursive: true, force: true });
+      rmSync(versionDir, { recursive: true, force: true });
       if (e instanceof SetupFailed) return noAnswer({ code: "no_clone", version: pin.gameVersion, cause: e.message });
       throw e;
     }
@@ -162,10 +160,12 @@ function causeOf(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
-type Run = { cwd: string; signal: AbortSignal; input?: Buffer; onLine?: (line: string) => void };
+type Execution = { cwd: string; signal: AbortSignal; input?: Buffer; onLine?: (line: string) => void };
 
-/** Fails with the command's own error line: pnpm's `ERR_PNPM_…` where it printed one, else the last line it printed. */
-async function run(doing: string, [file, ...args]: readonly string[], { cwd, signal, input, onLine }: Run): Promise<void> {
+/** Most telling first: npm's own failure, fetching pnpm, ends on a pointer to its log. */
+const CAUSES = [/ERR_PNPM_/, /^npm error .*reason:/, /^npm error code /];
+
+async function execute(doing: string, [file, ...args]: readonly string[], { cwd, signal, input, onLine }: Execution): Promise<void> {
   const { code, output } = await new Promise<{ code: number | null; output: string }>(resolve => {
     const child = spawn(file, args, { cwd, signal, stdio: ["pipe", "pipe", "pipe"] });
     let output = "";
@@ -184,5 +184,6 @@ async function run(doing: string, [file, ...args]: readonly string[], { cwd, sig
   signal.throwIfAborted();
   if (code === 0) return;
   const lines = output.split("\n").map(line => line.trim()).filter(Boolean);
-  throw new SetupFailed(`${doing} failed: ${lines.findLast(line => line.includes("ERR_PNPM_")) ?? lines.at(-1) ?? `exit code ${code}`}`);
+  const cause = CAUSES.map(telling => lines.findLast(line => telling.test(line))).find(line => line !== undefined);
+  throw new SetupFailed(`${doing} failed: ${cause ?? lines.at(-1) ?? `exit code ${code}`}`);
 }

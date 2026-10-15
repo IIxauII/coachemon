@@ -4,7 +4,9 @@ import { Refusal } from "./envelope.ts";
  * `signal` aborts once the job has ended cancelled, and nothing stops the work but itself: whatever it reports, returns
  * or throws after that is dropped.
  */
-export type JobWork = (args: Record<string, unknown>, ctl: { signal: AbortSignal; progress: (line: string) => void }) => Promise<unknown>;
+export type JobWork = (args: Record<string, unknown>, ctl: JobControl) => Promise<unknown>;
+
+export type JobControl = { signal: AbortSignal; progress: (line: string) => void };
 
 export type JobKinds = Readonly<Record<string, JobWork>>;
 

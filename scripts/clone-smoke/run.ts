@@ -5,14 +5,13 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import reviewed from "../../src/escape-ladder/reviewed.json" with { type: "json" };
 import { coachemonHome } from "../../src/home.ts";
 import { setUpClone } from "../../src/solver/clone.ts";
 import { testInClone } from "../clone-test/clone-test.ts";
 
 const TEMPLATE = path.join(path.dirname(fileURLToPath(import.meta.url)), "smoke.test.ts.template");
 
-const setup = await setUpClone(coachemonHome(), { signal: new AbortController().signal, progress: line => console.log(line) }, { pin: reviewed.pinned });
+const setup = await setUpClone(coachemonHome(), { signal: new AbortController().signal, progress: line => console.log(line) });
 if (setup.kind !== "clone") {
   console.error(`\nclone: no answer — ${setup.message}`);
   process.exit(2);

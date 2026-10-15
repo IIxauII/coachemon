@@ -12,13 +12,13 @@ import ts from "typescript";
 import { GLOBAL_DEPS, LADDER } from "../src/escape-ladder/table.ts";
 import { HUD_DEPS } from "./hud-deps.ts";
 import type { Entry } from "../src/escape-ladder/types.ts";
+import type { ClonePin } from "../src/solver/clone.ts";
 
 const REPO = "https://github.com/pagefaultgames/pokerogue.git";
 const REVIEWED = new URL("../src/escape-ladder/reviewed.json", import.meta.url);
 
 type Reviewed = {
-  /** `locales`, `assets` and `pnpm` are what the player's clone is set up from (#668). */
-  pinned: { gameVersion: string; tag: string; sha: string; locales: string; assets: string; pnpm: string };
+  pinned: ClonePin & { tag: string };
   hashes: Record<string, string>;
 };
 
