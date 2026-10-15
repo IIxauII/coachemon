@@ -26,8 +26,12 @@ export class Jobs {
     this.#kinds = kinds;
   }
 
+  runs(kind: string): boolean {
+    return Object.hasOwn(this.#kinds, kind);
+  }
+
   start(kind: string, args: Record<string, unknown>): JobView {
-    if (!Object.hasOwn(this.#kinds, kind)) throw new Refusal("unknown_job_kind", `This server runs no job of kind ${JSON.stringify(kind)}.`, { kinds: Object.keys(this.#kinds) });
+    if (!this.runs(kind)) throw new Refusal("unknown_job_kind", `This server runs no job of kind ${JSON.stringify(kind)}.`, { kinds: Object.keys(this.#kinds) });
     const work = this.#kinds[kind];
     const job: Job = { id: `${kind}-${++this.#started}`, kind, state: "running", progress: null, controller: new AbortController() };
     this.#jobs.set(job.id, job);

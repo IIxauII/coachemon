@@ -62,4 +62,5 @@ export type Reason =
   | { code: "double" }
   | { code: "safeguard" }
   | { code: "dropped_item"; items: readonly string[] }
+  | { code: "no_clone"; version: string; cause: string }
   | { code: "not_built" };

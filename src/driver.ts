@@ -20,6 +20,7 @@ import { matchLabel, normalizeLabel, optionAnswersTo } from "./labels.ts";
 import { planSelect, step, type Plan, type Walk } from "./menu-family.ts";
 import { isSettingsMode, modeName } from "./screen.ts";
 import { readSettings, writeSettings } from "./settings.ts";
+import { CLONE_JOB, cloneJob } from "./solver/clone.ts";
 import { isOverwriteConfirm, planSlot, slotLabel } from "./slots.ts";
 import { CALL_BUDGET_MS, settle, type SettleResult } from "./settle.ts";
 import type { Choice } from "./stuck/detector.ts";
@@ -93,6 +94,8 @@ const TOOL_COMMANDS = {
   screenshot: [],
 } as const satisfies Record<string, readonly CommandName[]>;
 
+const SOLVING_JOBS: ReadonlySet<string> = new Set([CLONE_JOB]);
+
 /** Modes where an acting tool's own press legitimately leads to `LoginPhase` (Save & Quit, Log Out). */
 const MENU_MODES = new Set<number>([UiMode.MENU, UiMode.MENU_OPTION_SELECT]);
 
@@ -113,12 +116,13 @@ export class Driver {
 
   /** CDP unless `COACHEMON_TRANSPORT=hub` opts into the hub (extension-distribution.md §12.1). */
   static create(home: string = coachemonHome()): Driver {
+    const jobKinds = { [CLONE_JOB]: cloneJob(home) };
     if (usesHub()) {
       const hub = new HubLink({ port: hubPort(), version: PLUGIN_VERSION });
-      return new Driver(new LinkGame(hub, hub), home);
+      return new Driver(new LinkGame(hub, hub), home, REAL_CLOCK, jobKinds);
     }
     const link = new CdpLink(new CdpSession({ home }), driverLock(home));
-    return new Driver(new LinkGame(link, link), home);
+    return new Driver(new LinkGame(link, link), home, REAL_CLOCK, jobKinds);
   }
 
   /** The plugin's own setting, so it answers with nothing able to reach the game (extension-distribution.md §12.2). */
@@ -226,6 +230,9 @@ export class Driver {
   }
 
   async startJob(kind: string, args: Record<string, unknown>): Promise<JobView> {
+    if (SOLVING_JOBS.has(kind) && this.#jobs.runs(kind) && !readSettings(this.#home).solving) {
+      throw new Refusal("solving_off", "Solving is off, so nothing is set up or solved for it: the player turns it on with the solving tool.");
+    }
     return this.#jobs.start(kind, args);
   }
 

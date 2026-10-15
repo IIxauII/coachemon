@@ -179,9 +179,13 @@ export function toolServer(driver: Driver): McpServer {
     "start_job",
     {
       description:
-        "Start a background job: work that outlasts one tool call. Returns at once with the job's id, and the job runs on after the call ends: poll_job reads its progress, read_job its answer, cancel_job stops it. A job lasts only as long as this server process. Refuses unknown_job_kind, naming the kinds this server runs.",
+        "Start a background job: work that outlasts one tool call. Returns at once with the job's id, and the job runs on after the call ends: poll_job reads its progress, read_job its answer, cancel_job stops it. A job lasts only as long as this server process. Refuses unknown_job_kind, naming the kinds this server runs, and solving_off for a solving job while the player has solving off.",
       inputSchema: {
-        kind: z.string().describe("Which job to run"),
+        kind: z
+          .string()
+          .describe(
+            "Which job to run. clone sets up the game clone solving runs in: once per pinned game version, answering at once when it is already set up, else with the clone or a no answer naming the cause.",
+          ),
         args: z.record(z.string(), z.unknown()).optional().describe("The job's own arguments"),
       },
     },

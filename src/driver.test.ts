@@ -10,6 +10,7 @@ import { Refusal } from "./envelope.ts";
 import { fakeGame, type FakeScreen, type ScreenRead } from "./game/fake-game.ts";
 import type { MenuRead } from "./game/port.ts";
 import { CALL_BUDGET_MS } from "./settle.ts";
+import { CLONE_JOB } from "./solver/clone.ts";
 
 const money = { money: 1000 };
 
@@ -1243,6 +1244,45 @@ test("solving turned off again stays off for a new Driver on the same home", asy
   await drive({}, home).driver.solving(true);
   assert.deepEqual(await drive({}, home).driver.solving(false), { status: "ok", solving: false });
   assert.deepEqual(await drive({}, home).driver.solving(), { status: "ok", solving: false });
+});
+
+test("setting up the clone refuses while solving is off, before any setup starts (#668)", async t => {
+  const fake = fakeGame({});
+  let started = false;
+  const driver = new Driver(fake.game, tempHome(t), fake.clock, {
+    [CLONE_JOB]: async () => {
+      started = true;
+    },
+  });
+  const r = await outcome(driver.startJob(CLONE_JOB, {}));
+  assert.equal(r.error, "solving_off", JSON.stringify(r));
+  assert.equal(started, false);
+});
+
+test("a server that doesn't set up the clone refuses it as an unknown kind, solving off or not (#668)", async t => {
+  const fake = fakeGame({});
+  const r = await outcome(new Driver(fake.game, tempHome(t), fake.clock, {}).startJob(CLONE_JOB, {}));
+  assert.equal(r.error, "unknown_job_kind", JSON.stringify(r));
+});
+
+test("with solving on, the clone is set up as a background job that reports its progress and answers with the clone (#668)", async t => {
+  const fake = fakeGame({});
+  let finish = () => {};
+  const clone = { kind: "clone", gameVersion: "1.12.0.11", dir: "/home/.coachemon/clone/v1.12.0.11/game" };
+  const driver = new Driver(fake.game, tempHome(t), fake.clock, {
+    [CLONE_JOB]: async (_args, { progress }) => {
+      progress("setting up the clone for 1.12.0.11, step 1 of 4: fetching the game");
+      await new Promise<void>(r => (finish = r));
+      return clone;
+    },
+  });
+  await driver.solving(true);
+  const { job: id, state } = await driver.startJob(CLONE_JOB, {});
+  assert.equal(state, "running");
+  assert.match((await driver.pollJob(id)).progress ?? "", /fetching the game/);
+  finish();
+  await new Promise(r => setImmediate(r));
+  assert.deepEqual((await driver.readJob(id)).result, clone);
 });
 
 test("solving answers with nothing able to reach the game (extension-distribution.md §12.2)", async t => {

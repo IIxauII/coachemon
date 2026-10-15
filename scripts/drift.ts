@@ -17,7 +17,8 @@ const REPO = "https://github.com/pagefaultgames/pokerogue.git";
 const REVIEWED = new URL("../src/escape-ladder/reviewed.json", import.meta.url);
 
 type Reviewed = {
-  pinned: { gameVersion: string; tag: string; sha: string };
+  /** `locales`, `assets` and `pnpm` are what the player's clone is set up from (#668). */
+  pinned: { gameVersion: string; tag: string; sha: string; locales: string; assets: string; pnpm: string };
   hashes: Record<string, string>;
 };
 
@@ -183,9 +184,18 @@ if (args.stamp) {
     );
     process.exit(1);
   }
-  const next: Reviewed = { pinned: { gameVersion: version, tag: `v${version}`, sha }, hashes: current };
+  const gitlink = (submodule: string) =>
+    execFileSync("git", ["-C", source, "rev-parse", `HEAD:${submodule}`], { encoding: "utf8" }).trim();
+  const packageManager = JSON.parse(readFileSync(path.join(source, "package.json"), "utf8")).packageManager ?? "";
+  const pnpm = /^pnpm@([^+]+)/.exec(packageManager)?.[1];
+  if (pnpm === undefined) {
+    console.error("\nRefusing to stamp: the game's package.json names no pnpm `packageManager` to set the player's clone up with.");
+    process.exit(1);
+  }
+  const pinned = { gameVersion: version, tag: `v${version}`, sha, locales: gitlink("locales"), assets: gitlink("assets"), pnpm };
+  const next: Reviewed = { pinned, hashes: current };
   writeFileSync(REVIEWED, `${JSON.stringify(next, null, 2)}\n`);
-  console.log(`\nStamped ${refs.length} hashes; pin is now ${version} @ ${sha.slice(0, 7)}.`);
+  console.log(`\nStamped ${refs.length} hashes; pin is now ${version} @ ${sha.slice(0, 7)}, set up with pnpm ${pnpm}.`);
   process.exit(0);
 }
 

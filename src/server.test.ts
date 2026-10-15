@@ -37,6 +37,12 @@ test("solving turned on survives a restart of the plugin, and stays with the hom
   assert.deepEqual(await solving(await plugin(t, tempHome(t)), {}), { status: "ok", solving: false });
 });
 
+test("the plugin runs the clone's setup as a job, and refuses it while solving is off (#668)", async t => {
+  const res = await (await plugin(t, tempHome(t))).callTool({ name: "start_job", arguments: { kind: "clone" } });
+  assert.equal(res.isError, true);
+  assert.equal(JSON.parse((res.content as { text: string }[])[0].text).error, "solving_off");
+});
+
 test("the solving tool and the coach skill both state what turning solving on costs (#666)", async t => {
   const { tools } = await (await plugin(t, tempHome(t))).listTools();
   const description = tools.find(tool => tool.name === "solving")?.description ?? "";
