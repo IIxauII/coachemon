@@ -668,8 +668,9 @@ The coach reads through the same MCP server, never through `read.sh`. The coach 
 | `select_option`, `press`, `start_run` | Send `claim` at call start; refuse `contended` if refused. `loop_frozen` is removed; the settle pumps (§10.3). The raw-key rung uses `key`. |
 | `screenshot` | Needs the dev table. Against a store build it returns an error `unavailable`: *"screenshot needs a dev build of Coachemon. Use read_menu or get_state to see the screen."* |
 | `read_card`, `read_starters` | New, read-only (§11.4). |
+| `solving` | New. The plugin's own setting: it never reaches the game, so it never checks reachability (#666). |
 
-Every tool that reaches the game, acting or reading, first checks reachability; `solving`, the plugin's own setting, never does (#666). Unreachable → error `unreachable` carrying `rung` and `line` from §12.3. More than one tab → `tabs`, with the list. A needed command missing from the extension → `missing_command` with the rung 4 wording.
+Every tool that reaches the game, acting or reading, first checks reachability. Unreachable → error `unreachable` carrying `rung` and `line` from §12.3. More than one tab → `tabs`, with the list. A needed command missing from the extension → `missing_command` with the rung 4 wording.
 
 ### 12.3 `status` and the ladder
 

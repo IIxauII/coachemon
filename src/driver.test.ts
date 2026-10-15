@@ -1195,7 +1195,7 @@ test("solving turned off again stays off for a new Driver on the same home", asy
   assert.deepEqual(await drive({}, home).driver.solving(), { status: "ok", solving: false });
 });
 
-test("solving answers with nothing able to reach the game: it is the plugin's setting, not a read", async t => {
+test("solving answers with nothing able to reach the game (extension-distribution.md §12.2)", async t => {
   const unreachable = { rung: 1, code: "unreachable", line: "The Coachemon hub is not running." } as const;
   assert.deepEqual(await drive({ unreachable }, tempHome(t)).driver.solving(true), { status: "ok", solving: true });
 });
