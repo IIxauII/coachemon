@@ -19,9 +19,9 @@ export type CloneDeps = { pin: ClonePin; fetch?: typeof globalThis.fetch; npx?: 
 export const CLONE_JOB = "clone";
 
 export const cloneJob =
-  (home: string, deps?: CloneDeps): JobWork =>
+  (home: string): JobWork =>
   (_args, ctl) =>
-    setUpClone(home, ctl, deps);
+    setUpClone(home, ctl);
 
 const STEPS = 4;
 
@@ -78,8 +78,11 @@ export async function setUpClone(home: string, { signal, progress }: JobControl,
           if (counted) step(4, `installing the game's dependencies (${counted[1]})`);
         },
       });
+      // Older versions only: a plugin left running across an update shares this home, and pruning every other version
+      // would have each setup delete the other's clone (#668).
       for (const other of readdirSync(root)) {
-        if (other !== path.basename(versionDir) && !other.startsWith(LOCK)) rmSync(path.join(root, other), { recursive: true, force: true });
+        const older = other.localeCompare(path.basename(versionDir), undefined, { numeric: true }) < 0;
+        if (older && !other.startsWith(LOCK)) rmSync(path.join(root, other), { recursive: true, force: true });
       }
       writeFileSync(ready, "");
       return clone;
@@ -162,7 +165,7 @@ function causeOf(e: unknown): string {
 
 type Execution = { cwd: string; signal: AbortSignal; input?: Buffer; onLine?: (line: string) => void };
 
-/** Most telling first: npm's own failure, fetching pnpm, ends on a pointer to its log. */
+/** Most telling first: npm's own failure, fetching pnpm, ends on a pointer to its log (#668). */
 const CAUSES = [/ERR_PNPM_/, /^npm error .*reason:/, /^npm error code /];
 
 async function execute(doing: string, [file, ...args]: readonly string[], { cwd, signal, input, onLine }: Execution): Promise<void> {

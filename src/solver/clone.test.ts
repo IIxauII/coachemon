@@ -48,7 +48,7 @@ function github(t: TestContext, pin: ClonePin = PIN) {
 
 /**
  * Stands in for `npx`: records the arguments it was run with, and installs a `node_modules` with pnpm's progress line —
- * or, given `fail`, prints it as pnpm's error and exits 1 halfway through, or given `hang`, runs until its parent dies.
+ * or, given `fail`, prints it and exits 1 halfway through, or given `hang`, runs until its parent dies.
  */
 function fakeNpx(t: TestContext, { fail, hang }: { fail?: string; hang?: boolean } = {}): string[] {
   const script = path.join(tempDir(t, "coachemon-npx-"), "npx.mjs");
@@ -84,8 +84,7 @@ function ctl() {
 
 test("setup lands the pinned version's clone in the home directory, from GitHub and pnpm alone (#668)", async t => {
   const home = tempDir(t, "coachemon-home-");
-  const { fetch } = github(t);
-  const result = await setUpClone(home, ctl(), deps(t, { fetch }));
+  const result = await setUpClone(home, ctl(), deps(t));
 
   assert.equal(result.kind, "clone", JSON.stringify(result));
   if (result.kind !== "clone") return;
@@ -134,6 +133,17 @@ test("setting up a new pin removes the old version's clone, and only once the ne
   assert.equal(after.kind, "clone", JSON.stringify(after));
   assert.ok(!existsSync(before.dir), `${before.dir} is gone`);
   assert.deepEqual(filesUnder(home).filter(file => file.includes("1.12.0.10")), []);
+});
+
+test("setting up an older pin, from a plugin left running across an update, keeps the newer version's clone (#668)", async t => {
+  const home = tempDir(t, "coachemon-home-");
+  const newer = await setUpClone(home, ctl(), deps(t));
+  assert.equal(newer.kind, "clone", JSON.stringify(newer));
+  if (newer.kind !== "clone") return;
+
+  const old: ClonePin = { gameVersion: "1.12.0.9", sha: "d3adbeef", locales: "1ocale5", assets: "a55e7s", pnpm: "10.30.0" };
+  assert.equal((await setUpClone(home, ctl(), deps(t, { pin: old }))).kind, "clone");
+  assert.ok(existsSync(path.join(newer.dir, "package.json")), `${newer.dir} is kept`);
 });
 
 test("a setup cancelled mid-install stops the install and leaves nothing behind for the next to trip on (#668)", async t => {
@@ -190,7 +200,6 @@ test("a setup whose process was killed mid-install is taken over and done again 
   assert.equal(gh.fetched.length, 3, "the leftover was set up again from scratch");
 });
 
-/** Directories don't count: a setup leaves the clone's root behind, empty. */
 const filesUnder = (dir: string): string[] =>
   readdirSync(dir, { recursive: true, withFileTypes: true })
     .filter(entry => !entry.isDirectory())
