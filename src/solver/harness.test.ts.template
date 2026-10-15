@@ -131,7 +131,6 @@ const same = (a: Input, b: Input) =>
     ? b.kind === "move" && a.move === b.move && a.tera === b.tera
     : a.kind === "switch" && b.kind === "switch" && a.to.slot === b.to.slot && a.to.species === b.to.species;
 
-const queuedInput = (inputs: Input[], next: number): Input | null => (inputs[next]?.kind === "queued" ? inputs[next] : null);
 
 // A prompt left queued for a decision the game never asks for is taken by the next one, and every later input lands a
 // turn late (#632).
@@ -204,6 +203,20 @@ async function turn(input: Input | null, choose = (_offered: PartySlot[]) => inp
   }
   await game.phaseInterceptor.to("CommandPhase");
   return "on";
+}
+
+/**
+ * A turn the game plays for us takes the next input only when that is a `queued` one and our lead faints: a rampage
+ * plays two or three such turns, and the faint can fall on any of them (#702).
+ */
+async function queuedTurn(inputs: Input[], next: number): Promise<{ input: Input | null; ended: Turn }> {
+  const queued = inputs[next]?.kind === "queued" ? inputs[next] : null;
+  let taken = false;
+  const ended = await turn(null, () => {
+    taken = queued !== null;
+    return queued?.replacement;
+  });
+  return { input: taken ? queued : null, ended };
 }
 
 async function boot() {
@@ -392,9 +405,11 @@ async function play() {
   let next = 0;
   for (;;) {
     const at = scene().currentBattle.turn;
-    let input: Input | null = null;
+    let input: Input | null;
+    let ended: Turn;
     if (queuedRuns(scene().getPlayerField()[0])) {
-      input = queuedInput(job.inputs, next);
+      draws = [];
+      ({ input, ended } = await queuedTurn(job.inputs, next));
       if (input) next++;
     } else {
       if (next === job.inputs.length) return "open";
@@ -404,9 +419,9 @@ async function play() {
         return { illegal: { index: next, turn: at, why: "isn't offered", legal: offered } };
       }
       next++;
+      draws = [];
+      ended = await turn(input);
     }
-    draws = [];
-    const ended = await turn(input);
     if (typeof ended === "object") {
       return { illegal: { index: input === null ? null : next - 1, turn: at, why: ended.illegal, legal: [] } };
     }
@@ -575,15 +590,21 @@ async function checks(inputs: Input[]) {
   const forks: string[] = [];
   let next = 0;
   for (;;) {
-    let input: Input | null | undefined;
-    if (queuedRuns(scene().getPlayerField()[0])) {
-      input = queuedInput(inputs, next);
-      if (input) next++;
-    } else input = inputs[next++];
-    if (input === undefined) break;
-    forks.push(forkPoint());
     const at = scene().currentBattle.turn;
-    const end = await turn(input);
+    let input: Input | null;
+    let end: Turn;
+    if (queuedRuns(scene().getPlayerField()[0])) {
+      forks.push(forkPoint());
+      ({ input, ended: end } = await queuedTurn(inputs, next));
+      if (input) next++;
+    } else {
+      input = inputs[next] ?? null;
+      if (input === null) break;
+      if (input.kind === "queued") throw new Error(`input ${next + 1} is for a turn the game plays for us, but turn ${at} asks for one`);
+      next++;
+      forks.push(forkPoint());
+      end = await turn(input);
+    }
     straight.push({ input, turn: at, checkpoint: checkpoint(), end });
     if (end !== "on") break;
   }

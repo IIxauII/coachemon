@@ -36,7 +36,7 @@ const shaped = line => typeof line?.seed === "string" && Number.isInteger(line.w
     && (st.input === null || (isObject(st.input) && (st.input.kind !== "switch" || isObject(st.input.to))
       && (st.input.kind !== "queued" || isObject(st.input.replacement))))
     && (st.input?.replacement === undefined || isObject(st.input.replacement)) && mons(st.checkpoint?.ours) && mons(st.checkpoint?.foes));
-// A `queued` input asks for no press (oracle-line.ts, `Input`).
+// A turn the game plays for us asks for no press, even one that names a faint replacement.
 const pressed = input => (input?.kind === "queued" ? null : input);
 
 // @only 98-watch, tests: holdOracleLine
@@ -173,7 +173,7 @@ export const oracleLineModel = s => {
   const steps = line.steps.map((st, i) => {
     const by = moverOf(h, i);
     const mover = by == null ? null : ours(by);
-    const input = pressed(st.input);
+    const input = pressed(st.input), sent = st.input?.replacement;
     const act = !input ? null
       : input.kind === "switch" ? { kind: "switch", to: named(ours(input.to.species), input.to.species) }
       : { kind: "move", by: by == null ? null : named(mover, by), ...moveOf(party, input.move),
@@ -182,7 +182,7 @@ export const oracleLineModel = s => {
       turn: st.turn,
       at: st.turn < turn ? "done" : st.turn === turn ? "now" : "later",
       act,
-      send: st.input?.replacement ? named(ours(st.input.replacement.species), st.input.replacement.species) : null,
+      send: sent ? named(ours(sent.species), sent.species) : null,
       after: [...inFront(st.checkpoint.ours, ours), ...inFront(st.checkpoint.foes, theirs)],
     };
   });
