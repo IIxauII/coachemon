@@ -1,5 +1,5 @@
-// Runs inside the pinned clone, never this repo: `run.ts` copies it in and removes it again, so every `#…` import is
-// upstream's.
+// Runs inside the pinned clone, never this repo: `testInClone` copies it in and removes it again, so every `#…` import
+// is upstream's.
 import { readFileSync, writeFileSync } from "node:fs";
 import { timedEventManager } from "#app/global-event-manager";
 import { speciesDataRegistry } from "#app/global-species-data-registry";
