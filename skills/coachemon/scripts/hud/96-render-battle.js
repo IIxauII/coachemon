@@ -1,9 +1,11 @@
 import { STATUS_FRAMES } from "./01-core.js";
 import { catchSummary } from "./45-catch.js";
+import { oracleLineSummary } from "./57-oracle-line.js";
 import { actSummary, deadEndText, foesSummary, hitsText, planSummary, roadSummary } from "./60-card.js";
 import { badge, caption, dim, group, gutterMark, h, hpBar, ICON, img, IMMUNE, ink, line, mon, ROW, rung, some } from "./90-render.js";
 import { drawAhead } from "./95-render-ahead.js";
 import { drawCatch } from "./95-render-catch.js";
+import { drawOracleLine } from "./95-render-oracle-line.js";
 import { drawPreview } from "./95-render-preview.js";
 import { drawTeamPlan } from "./95-render-team.js";
 
@@ -139,7 +141,9 @@ export const drawBattle = m => {
     some("act", "Now", actSummary(m), field),
     some("foes", "Foes", foesSummary(m), [team, ...rows]),
     some("catch", "Catch", catchSummary(m.catch), drawCatch(m)),
-    some("plan", "Plan", planSummary(m.teamPlan), drawTeamPlan(m)),
+    m.oracleLine
+      ? some("plan", "Plan", oracleLineSummary(m.oracleLine), drawOracleLine(m.oracleLine))
+      : some("plan", "Plan", planSummary(m.teamPlan), drawTeamPlan(m)),
     some("road", "Road", roadSummary(m.preview, m.ahead), road),
   ].filter(Boolean);
 };

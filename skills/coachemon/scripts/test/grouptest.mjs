@@ -199,6 +199,20 @@ const catchAdvice = {
   assert.ok(text.includes("\nFoes\nfoes weak to: Ice ×2 Fire ×1\n"), text);
   assert.equal(groups[2].summary, "winnable · 💀 Garchomp KOs 2/4 · Roserade outspeeds the whole bench");
   assert.ok(!groups.some(g => g.id === "catch"));
+
+  // As `57-oracle-line.js` models a held line: a switch played, a Tera move with a faint pick now, a turn with no input.
+  const ref = name => ({ icon: null, name });
+  const hp = (name, now, max) => ({ ...ref(name), hp: now, maxHp: max });
+  const oracleLine = { turns: 3, left: 3, of: 4, steps: [
+    { turn: 4, at: "done", act: { kind: "switch", to: ref("Lapras") }, send: null, after: [hp("Lapras", 301, 380), hp("Roserade", 250, 250)] },
+    { turn: 5, at: "now", act: { kind: "move", by: ref("Lapras"), move: "Ice Beam", type: "Ice", tera: { type: "Ice" } }, send: ref("Blastoise"),
+      after: [hp("Blastoise", 362, 362), hp("Garchomp", 120, 420)] },
+    { turn: 6, at: "later", act: null, send: null, after: [hp("Blastoise", 362, 362), hp("Garchomp", 0, 420)] },
+  ] };
+  const lined = show("trainer · an oracle line in place of the fight plan", { ...card, oracleLine });
+  assert.deepEqual(lined.groups.map(g => g.id), ["act", "foes", "plan", "road"]);
+  assert.equal(lined.groups[2].summary, "~ line wins in 3 turns · 3 of 4 left");
+  assert.deepEqual(lined.groups[2].rows.map(r => [...r][0]), ["✓", "▸", "·"]);
 }
 
 // ---- A double with a return: the foe coming back from the other slot this same turn (#285)

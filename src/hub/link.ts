@@ -77,6 +77,7 @@ export class HubLink implements GameLink, Tab {
   card() { return this.#run("card", {}); }
   session() { return this.#run("session", {}); }
   extras() { return this.#run("extras", {}); }
+  oracleLine(args: Args<"oracle.line">) { return this.#run("oracle.line", args); }
   press(args: Args<"press">) { return this.#run("press", args); }
   key(args: Args<"key">) { return this.#run("key", args); }
   cursorOption(args: Args<"cursor.option">) { return this.#run("cursor.option", args); }

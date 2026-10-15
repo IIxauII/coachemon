@@ -162,7 +162,7 @@ The ordered steps here are also called **rungs**, as on the **escape ladder**, b
 
 ## Command
 
-One step the **hub** carries to a game tab: either a read or an act, each a single look at the game or a single input to it. The set of commands is closed, fixed by the extension a player installed, and nothing else can be sent. A tool call issues many commands, and all the waiting, walking and judging between them belongs to the process that issued them. Only acts need the **driver**.
+One step the **hub** carries to a game tab: a read, an act or a handoff — a single look at the game, a single input to it, or something given to the **overlay** to hold, which changes the overlay alone and never the game. The set of commands is closed, fixed by the extension a player installed, and nothing else can be sent. A tool call issues many commands, and all the waiting, walking and judging between them belongs to the process that issued them. Only acts need the **driver**.
 
 Not to be confused with the game's own command menu (Fight, Ball, Pokémon, Run), which is a **screen**.
 

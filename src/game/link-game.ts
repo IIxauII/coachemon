@@ -9,7 +9,9 @@ import type { MenuResult } from "../page/menu.ts";
 import type { SessionResult } from "../page/session.ts";
 import { screenId, type Discriminators } from "../screen.ts";
 import type { CommandName } from "../protocol/commands.ts";
+import type { OracleLine } from "../solver/solver.ts";
 import { isFault, type Claim, type Fault, type GameLink, type Presence, type Tab, type Unready } from "./link.ts";
+import { pageLine } from "./oracle-line.ts";
 import type { Act, CardRead, ConsoleLine, CursorTarget, ExtrasRead, Failed, GamePort, MenuRead, PredicateRead, SessionRead, SnapshotDetail, StarterGrid } from "./port.ts";
 import { waveStartSave } from "./save.ts";
 
@@ -96,6 +98,10 @@ export class LinkGame implements GamePort {
 
   async extras(): Promise<ExtrasRead | Failed> {
     return answered<ExtrasRead>(await this.#link.extras());
+  }
+
+  async oracleLine(line: OracleLine): Promise<{ ok: true } | Failed> {
+    return answered(await this.#link.oracleLine({ line: pageLine(line) }));
   }
 
   async snapshot(detail: SnapshotDetail): Promise<{ ok: true; snapshot: Record<string, unknown> } | Failed> {

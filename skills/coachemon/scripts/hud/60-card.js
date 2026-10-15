@@ -17,6 +17,7 @@ import { auditSummary } from "./50-audit.js";
 import { spliceScreen, fusionModel, fusionSummary } from "./49-fusion.js";
 import { rewardsModel, rewardsSummary } from "./52-shop.js";
 import { starterScreen, starterModel, startersSummary } from "./51-starters.js";
+import { oracleLineModel, oracleLineSummary } from "./57-oracle-line.js";
 
 export const hitsText = n => `${n} hit${n === 1 ? "" : "s"}`;
 // A spread move KOing the two foes on different turns carries `koEach` instead of one `ko`: the slower one counts.
@@ -58,6 +59,8 @@ export const composeBattleCard = (turn, account) => {
 };
 
 const battleCard = (s, account, estimate) => readTurn(s, turn => composeBattleCard(turn, account), { estimate });
+
+export const readOracleLine = (s, card) => { if (card?.kind === "battle") card.oracleLine = oracleLineModel(s); };
 
 // Our side's 💀 / ⚠ tags. `after`: a likely KO once the mon has acted.
 const dangerTags = m => (m.field ? [...m.field.slots.map(sl => [sl.name, sl.threat]), ...m.field.switches.map(sw => [sw.out?.name, sw.out?.threat])] : [])
@@ -129,6 +132,7 @@ export const readCard = (s, account, { road = true, estimate = false } = {}) => 
     const party = s.getPlayerParty().filter(p => p.hp > 0);
     if (!b || !foes.length || !party.length) return null;
     card = battleCard(s, account, estimate);
+    readOracleLine(s, card);
   }
   if (!card) return null;
   card.wave = s.currentBattle?.waveIndex ?? null;
@@ -247,5 +251,5 @@ export const cardSummary = card => {
     field: actSummary(card),
     danger: dangerList(card)
       .map(({ mon: name, from, move, level }) => ({ mon: name, from, move, level: level === "ko" ? "ko" : "after", saveFor: saveFor(name) })),
-    plan: planSummary(card.teamPlan) };
+    plan: card.oracleLine ? oracleLineSummary(card.oracleLine) : planSummary(card.teamPlan) };
 };

@@ -427,6 +427,45 @@ scene = game;
   }
 }
 
+// ---- an oracle line handed to the battle card shown lands on it at once, streamed again, and the next decision builds with it
+{
+  game.seed = "decisionSeed";
+  full.species.speciesId = 5;
+  const paras = foe(25);
+  paras.species.speciesId = 46;
+  const mon = (species, hp) => ({ slot: 0, species, onField: true, hp, maxHp: 100, status: 0, statStages: [0, 0, 0, 0, 0, 0, 0], tera: false });
+  // As the plugin hands it (`src/game/oracle-line.ts`): Ember on the first two turns.
+  const line = { seed: "decisionSeed", wave: 12, gameVersion: "1.12.0.11", receipt: [], luck: [],
+    steps: [1, 2].map(turn => ({ turn, input: { kind: "move", move: 52, tera: false }, checkpoint: { ours: [mon(5, 100)], foes: [mon(46, 100 - 50 * turn)] } })) };
+  const freeSwitch = turn => () => {
+    g.battle = battle(12, turn); g.party = [full, three]; g.foes = [paras];
+    g.phase = { phaseName: "CheckSwitchPhase", fieldIndex: 0 }; g.mode = UiMode.CONFIRM; g.handler = {}; g.handlers = {};
+  };
+  // This DOM keeps no children, so a row flattens to nothing: the group is read by its summary, the steps off the card.
+  const plan = () => __coachHud.card()?.groups.find(x => x.id === "plan")?.summary ?? null;
+  const at = () => __coachHud.last().oracleLine?.steps.map(st => st.at) ?? null;
+  lifecycle();
+  opened();
+  step("W12, a free switch", freeSwitch(1));
+  assert.equal(plan(), null, "a wild battle has no fight plan to stand in for");
+  const before = cards().length;
+  const ignored = __coachHud.oracleLine({ ...line, wave: 11 });
+  console.log(`a line for W11: ${ignored.ok ? "held" : ignored.why}`);
+  assert.deepEqual([ignored, lifecycle(), plan()], [{ ok: false, why: "other-fight" }, [], null]);
+  assert.deepEqual(__coachHud.oracleLine(line), { ok: true });
+  console.log(`the line for W12 | ${plan()} | ${at().join(" ")}`);
+  assert.deepEqual(lifecycle(), ["oracle line landed"]);
+  assert.deepEqual([plan(), at()], ["~ line wins in 2 turns · 1 of 1 left", ["now", "later"]]);
+  const sent = cards().slice(before);
+  assert.equal(sent.length, 1, "the card goes again once the line lands");
+  assert.equal(sent[0].groups.find(x => x.id === "plan").summary, plan());
+  step("W12, turn 2", freeSwitch(2));
+  console.log(`turn 2 | ${plan()} | ${at().join(" ")}`);
+  assert.deepEqual(at(), ["done", "now"]);
+  delete game.seed;
+  delete full.species.speciesId;
+}
+
 // ---- `stop()` unhooks the frame callback
 {
   const watched = __coachMeter.stats().watch.frames;

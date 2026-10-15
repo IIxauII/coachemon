@@ -8,6 +8,7 @@ import type { CardResult } from "../page/card.ts";
 import type { ConsoleLine } from "../page/errors.ts";
 import type { ExtrasResult } from "../page/extras.ts";
 import type { MenuResult } from "../page/menu.ts";
+import type { OracleLineResult } from "../page/oracle-line.ts";
 import type { ProbeArgs, ProbeResult } from "../page/probe.ts";
 import type { SessionResult } from "../page/session.ts";
 import type { SnapshotDetail } from "../page/snapshot.ts";
@@ -37,6 +38,7 @@ export interface GameLink {
   card(): Promise<CardResult | Unready | Fault>;
   session(): Promise<SessionResult | Unready | Fault>;
   extras(): Promise<ExtrasResult | Unready | Fault>;
+  oracleLine(args: Args<"oracle.line">): Promise<OracleLineResult | Unready | Fault>;
   press(args: Args<"press">): Promise<PressResult | Fault>;
   key(args: Args<"key">): Promise<KeyResult | Fault>;
   cursorOption(args: Args<"cursor.option">): Promise<CursorOptionResult | Fault>;

@@ -8,6 +8,7 @@ import { KEPT_ENDED, type JobKinds, type JobWork } from "./jobs.ts";
 import { ArenaTagSide, Button, MoveCategory, PokemonType, StatusEffect, UiMode } from "./enums/generated.ts";
 import { Refusal } from "./envelope.ts";
 import { fakeGame, type FakeScreen, type ScreenRead } from "./game/fake-game.ts";
+import { GORDIE_LINE } from "./game/fixtures/oracle-line.ts";
 import type { MenuRead } from "./game/port.ts";
 import { CALL_BUDGET_MS } from "./settle.ts";
 
@@ -1066,9 +1067,25 @@ test("an extras read the page refused is reported, never an empty set of extras 
   assert.equal(r.extras, undefined);
 });
 
+test("the handoff gives the panel the oracle line and asks nothing else of the game: no read, no settle, no grant (#670)", async () => {
+  const handed: unknown[] = [];
+  const fake = fakeGame({ lockHolder: 4242, oracleLine: line => { handed.push(line); return { ok: true }; } });
+  const r = await outcome(new Driver(fake.game, UNWRITTEN_HOME, fake.clock).handOracleLine(GORDIE_LINE));
+  assert.deepEqual(r, { status: "ok", held: true });
+  assert.deepEqual(handed, [GORDIE_LINE]);
+});
+
+test("a line the panel did not take comes back unheld, with the panel's reason (#670)", async () => {
+  for (const why of ["other-fight", "no-hud"]) {
+    const fake = fakeGame({ oracleLine: () => ({ ok: false, why }) });
+    const r = await outcome(new Driver(fake.game, UNWRITTEN_HOME, fake.clock).handOracleLine(GORDIE_LINE));
+    assert.deepEqual(r, { status: "ok", held: false, line_error: why });
+  }
+});
+
 test("a coach tool refuses by rung when nothing can reach the game (extension-distribution.md §12.3)", async () => {
   const unreachable = { rung: 2, code: "unreachable", line: "No browser is connected to the hub." } as const;
-  for (const call of [(d: Driver) => d.readCard({}), (d: Driver) => d.readStarters({}), (d: Driver) => d.readSession({}), (d: Driver) => d.readExtras({})]) {
+  for (const call of [(d: Driver) => d.readCard({}), (d: Driver) => d.readStarters({}), (d: Driver) => d.readSession({}), (d: Driver) => d.readExtras({}), (d: Driver) => d.handOracleLine(GORDIE_LINE)]) {
     const r = await outcome(call(coachTab({ unreachable }).driver));
     assert.equal(r.error, "unreachable", JSON.stringify(r));
     assert.equal(r.rung, 2);

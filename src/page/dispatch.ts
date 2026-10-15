@@ -1,3 +1,4 @@
+import type { CommandSpec } from "../protocol/commands.ts";
 import type { Discriminators } from "./disc.ts";
 import type { Located, Page, Scene, Unlocated } from "./locate.ts";
 import type { PageModes } from "./modes.ts";
@@ -9,7 +10,7 @@ export function dispatch(
   disc: (h: Page) => Discriminators,
   handler: (L: any, args: any) => unknown,
   name: string,
-  kind: "read" | "act",
+  kind: CommandSpec["kind"],
   modes: PageModes,
   args: Record<string, unknown>,
 ): unknown {

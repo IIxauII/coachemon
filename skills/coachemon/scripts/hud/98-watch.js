@@ -6,7 +6,8 @@ import { gameEvents, gameTables } from "./04-game-tables.js";
 import { previewArm, previewCheck } from "./48-preview.js";
 import { rerollArm, rerollCheck } from "./50-reroll.js";
 import { journalCheck } from "./55-journal.js";
-import { hasRoad, keepRoad, readCard, readRoad } from "./60-card.js";
+import { holdOracleLine } from "./57-oracle-line.js";
+import { hasRoad, keepRoad, readCard, readOracleLine, readRoad } from "./60-card.js";
 import { battleScene, clearMissed, controls, drawer, dropGame, el, glyph, missedSprite, openGroup, PANEL_W, panelState, setRedraw, strip } from "./90-render.js";
 import { captionBattle, drawBattle } from "./96-render-battle.js";
 import { captionEncounter, drawEncounter } from "./96-render-encounter.js";
@@ -27,7 +28,8 @@ const KIND = {
   biome: { draw: drawBiome, caption: captionBiome },
 };
 
-// The lifecycle, in order, for the watch's test: `built`, `cached`, `redrawn`, `road landed`, `hidden`, `failed`.
+// The lifecycle, in order, for the watch's test: `built`, `cached`, `redrawn`, `road landed`, `oracle line landed`,
+// `hidden`, `failed`.
 const LOG = 64;
 const log = [];
 const logged = what => { log.push(what); if (log.length > LOG) log.shift(); };
@@ -250,6 +252,26 @@ const landLater = () => {
   setTimeout(() => {
     if (shown === rec && rec.road === "owed" && isBuilt() && el.isConnected !== false) run("road", land);
   }, 0);
+};
+
+// A line handed to a battle card already built lands on it, in its own refresh as a road group does (#670).
+// @only 99-start: watchOracleLine
+export const watchOracleLine = line => {
+  let answer = { ok: false, why: "no-battle" };
+  run("oracle-line", () => {
+    try {
+      const s = battleScene();
+      answer = holdOracleLine(s, line);
+      const rec = shown;
+      if (!answer.ok || rec?.card?.kind !== "battle") return;
+      screenNote(s, rec.card);
+      readOracleLine(s, rec.card);
+      changed(rec);
+      logged("oracle line landed");
+      draw(rec);
+    } catch (e) { fail(e); }
+  });
+  return answer;
 };
 
 // A look that throws is no decision, and the fallback's next tick reports it: with frames, nothing else would.

@@ -5,6 +5,7 @@
 import type { Clock } from "../driver.ts";
 import type { Button } from "../enums/generated.ts";
 import type { Reach } from "../hub/ladder.ts";
+import type { OracleLine } from "../solver/solver.ts";
 import type { Act, CardRead, CursorTarget, ExtrasRead, Failed, GamePort, MenuRead, PredicateRead, Ready, SessionRead, SnapshotDetail, StarterGrid } from "./port.ts";
 
 /** A predicate read as a screen gives it: the fake stamps the frame. */
@@ -17,6 +18,7 @@ export type FakeScreen = {
   card?: () => CardRead | Failed;
   session?: () => SessionRead | Failed;
   extras?: () => ExtrasRead | Failed;
+  oracleLine?: (line: OracleLine) => { ok: true } | Failed;
   /** A press the screen reacts to, given the fingerprint it was sent on; returning nothing means it reached `processInput`. */
   onPress?: (b: Button, fine: string) => Act | void;
   onSetCursor?: (t: CursorTarget, fine: string) => Act & { species?: string };
@@ -72,6 +74,7 @@ export function fakeGame(screen: FakeScreen) {
     card: async () => (screen.card ?? unexpected("card"))(),
     session: async () => (screen.session ?? unexpected("session"))(),
     extras: async () => (screen.extras ?? unexpected("extras"))(),
+    oracleLine: async line => (screen.oracleLine ?? unexpected("oracleLine"))(line),
     snapshot: async d => ({ ok: true, snapshot: screen.snapshot?.(d) ?? {} }),
     rawKey: async b => (screen.onRawKey ?? unexpected("rawKey"))(b),
     keepAlive: async () => {},

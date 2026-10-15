@@ -101,12 +101,11 @@ test("every command attaches first, screenshot too", async () => {
   assert.equal(s.ensured(), 3);
 });
 
-test("the link offers the store table but the session read, which goes over the hub only (extension-distribution.md §10.1)", async () => {
+test("the link offers the store table but the session read and the oracle-line handoff, which go over the hub only (extension-distribution.md §10.1)", async () => {
   const tab = tabSession({});
   const link = new CdpLink(tab.session);
-  assert.deepEqual([...link.commands].sort(), COMMAND_NAMES.filter(n => n !== "session").sort());
-  const r = await link.session();
-  assert.ok(isFault(r) && r.fault === "missing-command", JSON.stringify(r));
+  assert.deepEqual([...link.commands].sort(), COMMAND_NAMES.filter(n => n !== "session" && n !== "oracle.line").sort());
+  for (const r of [await link.session(), await link.oracleLine()]) assert.ok(isFault(r) && r.fault === "missing-command", JSON.stringify(r));
   assert.deepEqual(tab.sent, [], "nothing is asked of the tab");
 });
 
