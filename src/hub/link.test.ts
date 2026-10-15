@@ -19,8 +19,6 @@ import type { ExtensionCmd, FromExtension, ToExtension } from "../protocol/wire.
 const shut: (() => void)[] = [];
 const UNWRITTEN_HOME = path.join(tmpdir(), "coachemon-hub-link-test");
 
-const UNWRITTEN_HOME = path.join(tmpdir(), "coachemon-hub-test");
-
 after(() => {
   for (const s of shut) s();
 });
