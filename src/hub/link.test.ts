@@ -17,7 +17,6 @@ import { DEV_PORT, PROTOCOL, STORE_PORT } from "../protocol/version.ts";
 import type { ExtensionCmd, FromExtension, ToExtension } from "../protocol/wire.ts";
 
 const shut: (() => void)[] = [];
-/** The `Driver`'s home: no test here writes a setting. */
 const UNWRITTEN_HOME = path.join(tmpdir(), "coachemon-hub-link-test");
 
 after(() => {
