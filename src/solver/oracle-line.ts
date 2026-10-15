@@ -38,7 +38,10 @@ export type Input = (
 
 export type PartySlot = { slot: number; species: keyof typeof SpeciesId };
 
-/** The last step's is read at the rewards screen, once the end-of-turn effects after the last faint have run (#660). */
+/**
+ * A won fight's last is read once the battle has ended: after the end-of-turn effects that follow the last faint, with
+ * the foes' held items dropped, as live shows it (#660).
+ */
 export type Checkpoint = { ours: readonly MonState[]; foes: readonly MonState[] };
 
 export type MonState = PartySlot & {
@@ -77,7 +80,8 @@ export type Reason =
   | { code: "no_clone"; version: string; cause: string }
   | { code: "clone_version"; clone: string; pinned: string }
   | { code: "load_hygiene"; rule: HygieneRule; detail: string }
-  | { code: "illegal_step"; input: number; turn: number; why: string; tried: Input; legal: readonly Input[] }
+  /** `index` into the inputs, null on a turn that took none. */
+  | { code: "illegal_step"; index: number | null; turn: number; why: string; tried: Input | null; legal: readonly Input[] }
   | { code: "harness_failed"; why: string }
   | { code: "not_built" };
 

@@ -53,7 +53,7 @@ function cause(reason: Reason): string {
       const seed = reason.save.battleSeed === undefined ? "" : ` with battle seed ${reason.save.battleSeed}`;
       return (
         `the save is for wave ${reason.save.wave}${seed}, but the live battle is wave ${reason.live.wave} with battle ` +
-        `seed ${reason.live.battleSeed}, so a line from it would be another fight's.`
+        `seed ${reason.live.battleSeed}, so an oracle line found on it would be another fight's.`
       );
     }
     case "no_clone":
@@ -63,8 +63,11 @@ function cause(reason: Reason): string {
     case "load_hygiene":
       return `the oracle's harness ${BROKE[reason.rule]} (${reason.detail}), so the fight it played was not the game's.`;
     case "illegal_step": {
+      if (reason.index === null || reason.tried === null) {
+        return `turn ${reason.turn}, which has no input of its own, ${reason.why}.`;
+      }
       const offered = reason.legal.length > 0 ? `; the game offers ${reason.legal.map(describeInput).join(", ")}` : "";
-      return `input ${reason.input + 1}, ${describeInput(reason.tried)}, ${reason.why} at turn ${reason.turn}${offered}.`;
+      return `input ${reason.index + 1}, ${describeInput(reason.tried)}, ${reason.why} at turn ${reason.turn}${offered}.`;
     }
     case "harness_failed":
       return `the oracle's harness failed: ${reason.why}`;

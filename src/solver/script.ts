@@ -2,7 +2,7 @@ import { z } from "zod";
 import { SpeciesId } from "../enums/generated.ts";
 import { title } from "./describe.ts";
 import type { Replay } from "./oracle-line.ts";
-import { input, monFacts } from "./schema.ts";
+import { input, monFacts, outcome } from "./schema.ts";
 
 const bySpecies = z
   .record(z.string(), monFacts.partial())
@@ -17,7 +17,7 @@ const script = z.strictObject({
   inputs: z.array(input),
   known: z
     .strictObject({
-      outcome: z.enum(["won", "lost", "open"]),
+      outcome,
       after: z.array(z.strictObject({ turn: z.int().min(1), ours: bySpecies.optional(), foes: bySpecies.optional() })),
     })
     .optional(),
@@ -44,11 +44,10 @@ export function misses(known: Known, replay: Replay): string[] {
       out.push(`turn ${after.turn}: the replay never played it`);
       continue;
     }
-    for (const [side, recorded] of [
-      ["our", after.ours],
-      ["the foe's", after.foes],
+    for (const [side, recorded, mons] of [
+      ["our", after.ours, step.checkpoint.ours],
+      ["the foe's", after.foes, step.checkpoint.foes],
     ] as const) {
-      const mons = side === "our" ? step.checkpoint.ours : step.checkpoint.foes;
       for (const [species, facts] of Object.entries(recorded ?? {})) {
         const mon = mons.find(m => m.species === species);
         if (mon === undefined) {

@@ -4,7 +4,7 @@ import { refuse } from "./gate.ts";
 import type { SavedItem, SolveInput } from "./input.ts";
 import { noAnswer } from "./no-answer.ts";
 import type { HygieneRule, Input, NoAnswer, ReplayResult } from "./oracle-line.ts";
-import { checkpoint, input } from "./schema.ts";
+import { checkpoint, input, outcome } from "./schema.ts";
 
 /** Runs the oracle's harness in the clone of the pinned game version. `out` is what it wrote, absent if nothing. */
 export type Clone = (run: { name: string; source: string; input: string }) => Promise<CloneRun>;
@@ -29,8 +29,10 @@ const report = z.object({
   steps: z.array(z.object({ turn: z.int(), input: input.nullable(), checkpoint, strayPrompts: z.int() })).optional(),
   end: z
     .union([
-      z.enum(["won", "lost", "open"]),
-      z.object({ illegal: z.object({ input: z.int(), turn: z.int(), why: z.string(), legal: z.array(input) }) }),
+      outcome,
+      z.object({
+        illegal: z.object({ index: z.int().nullable(), turn: z.int(), why: z.string(), legal: z.array(input) }),
+      }),
     ])
     .optional(),
 });
@@ -40,10 +42,7 @@ type Hygiene = NonNullable<z.infer<typeof report>["hygiene"]>;
 const failed = (why: string) => noAnswer({ code: "harness_failed", why });
 const broke = (rule: HygieneRule, detail: string) => noAnswer({ code: "load_hygiene", rule, detail });
 
-/**
- * Plays the inputs forward from the wave-start save on the battle's seed, a step per turn, until the fight or the inputs
- * end. A turn that asks for no input, such as a two-turn move's second, is a step with a null input.
- */
+/** Plays the inputs forward from the wave-start save on the battle's seed, a step per turn, until the fight or they end. */
 export async function replay(
   given: Pick<SolveInput, "save" | "extras" | "live" | "cloneVersion">,
   inputs: readonly Input[],
@@ -85,8 +84,9 @@ export async function replay(
   const stray = steps.find(step => step.strayPrompts > 0);
   if (stray) return broke("stray_prompt", `${stray.strayPrompts} after turn ${stray.turn}`);
   if (typeof end === "object") {
-    const tried = inputs[end.illegal.input];
-    if (tried === undefined) return failed(`it stopped on input ${end.illegal.input + 1} of ${inputs.length}`);
+    const { index } = end.illegal;
+    const tried = index === null ? null : inputs[index];
+    if (tried === undefined) return failed(`it stopped on input ${(index ?? 0) + 1} of ${inputs.length}`);
     return noAnswer({ code: "illegal_step", ...end.illegal, tried });
   }
 

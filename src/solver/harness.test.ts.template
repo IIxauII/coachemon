@@ -61,7 +61,6 @@ function stackTotals(items: any[]): Record<string, number> {
   return out;
 }
 
-/** The IVs, natures and shininess the load gave the mons, where they differ from the save's. */
 function unlikeTheSave(side: string, mons: any[], saved: any[]): string[] {
   return mons.flatMap((p, i) =>
     [
@@ -162,6 +161,9 @@ async function turn(input: Input | null): Promise<Turn> {
   await game.phaseInterceptor.to("TurnEndPhase");
   const fainted = scene().getPlayerField()[0]?.isFainted() ?? false;
   const replacement = input?.replacement;
+  if (fainted && input === null) {
+    return { illegal: "leaves a faint replacement to pick, and a turn with no input can't name one" };
+  }
   if (fainted && replacement === undefined) return { illegal: "leaves a faint replacement to pick, and names none" };
   if (!fainted && replacement !== undefined) return { illegal: "names a faint replacement, but nothing of ours fainted" };
   if (replacement !== undefined) {
@@ -224,12 +226,14 @@ async function play() {
       input = job.inputs[next];
       const offered = legal();
       if (!offered.some(o => same(o, input as Input))) {
-        return { illegal: { input: next, turn: at, why: "isn't offered", legal: offered } };
+        return { illegal: { index: next, turn: at, why: "isn't offered", legal: offered } };
       }
       next++;
     }
     const ended = await turn(input);
-    if (typeof ended === "object") return { illegal: { input: next - 1, turn: at, why: ended.illegal, legal: [] } };
+    if (typeof ended === "object") {
+      return { illegal: { index: input === null ? null : next - 1, turn: at, why: ended.illegal, legal: [] } };
+    }
     steps.push({ turn: at, input, checkpoint: checkpoint(), strayPrompts: strayPrompts() });
     if (ended !== "on") return ended;
   }

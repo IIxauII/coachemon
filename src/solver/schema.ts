@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { MoveId, SpeciesId, StatusEffect } from "../enums/generated.ts";
-import type { Checkpoint, Input, MonState, PartySlot } from "./oracle-line.ts";
+import type { Checkpoint, Input, MonState, Outcome, PartySlot } from "./oracle-line.ts";
 
 const keyOf = <T extends object>(table: T, what: string) =>
   z.custom<keyof T & string>(v => typeof v === "string" && Object.hasOwn(table, v), `not a ${what}`);
@@ -30,7 +30,8 @@ export const monFacts = z.strictObject({
   bossBars: z.int().optional(),
 });
 
-export const checkpoint = z.strictObject({
-  ours: z.array(z.strictObject({ ...partySlot.shape, ...monFacts.shape }) satisfies z.ZodType<MonState>),
-  foes: z.array(z.strictObject({ ...partySlot.shape, ...monFacts.shape })),
-}) satisfies z.ZodType<Checkpoint>;
+const monState = z.strictObject({ ...partySlot.shape, ...monFacts.shape }) satisfies z.ZodType<MonState>;
+
+export const checkpoint = z.strictObject({ ours: z.array(monState), foes: z.array(monState) }) satisfies z.ZodType<Checkpoint>;
+
+export const outcome = z.enum(["won", "lost", "open"]) satisfies z.ZodType<Outcome>;

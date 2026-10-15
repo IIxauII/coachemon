@@ -24,7 +24,7 @@ const NO_ANSWER = 2;
 
 const messageOf = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
-function noAnswer(why: string): never {
+function exitNoAnswer(why: string): never {
   console.log(`no answer: ${why}`);
   process.exit(NO_ANSWER);
 }
@@ -41,7 +41,7 @@ try {
   const json = JSON.parse(readFileSync(file, "utf8"));
   exported = "save" in json ? json : { save: json };
 } catch (err) {
-  noAnswer(`could not read ${file}: ${messageOf(err)}`);
+  exitNoAnswer(`could not read ${file}: ${messageOf(err)}`);
 }
 
 if (values.replay !== undefined) {
@@ -49,7 +49,7 @@ if (values.replay !== undefined) {
   try {
     script = readScript(readFileSync(values.replay, "utf8"));
   } catch (err) {
-    noAnswer(`could not read ${values.replay}: ${messageOf(err)}`);
+    exitNoAnswer(`could not read ${values.replay}: ${messageOf(err)}`);
   }
   const inClone: Clone = async ({ name, source, input }) => {
     const found = findPinnedClone();
@@ -60,9 +60,9 @@ if (values.replay !== undefined) {
   try {
     result = await replay({ ...exported, cloneVersion: PINNED_GAME_VERSION }, script.inputs, inClone);
   } catch (err) {
-    noAnswer(`the replay failed: ${messageOf(err)}`);
+    exitNoAnswer(`the replay failed: ${messageOf(err)}`);
   }
-  if (result.kind === "no_answer") noAnswer(result.message);
+  if (result.kind === "no_answer") exitNoAnswer(result.message);
   console.log(printReplay(result.replay));
   if (script.known === undefined) process.exit(REPLAYED);
   const missed = misses(script.known, result.replay);
@@ -78,10 +78,10 @@ let result: SolveResult;
 try {
   result = await solve({ ...exported, cloneVersion: PINNED_GAME_VERSION, budget: DEFAULT_BUDGET });
 } catch (err) {
-  noAnswer(`the solver failed: ${messageOf(err)}`);
+  exitNoAnswer(`the solver failed: ${messageOf(err)}`);
 }
 if (result.kind === "oracle_line") {
   console.log(JSON.stringify(result.oracleLine, null, 2));
   process.exit(ORACLE_LINE);
 }
-noAnswer(result.message);
+exitNoAnswer(result.message);

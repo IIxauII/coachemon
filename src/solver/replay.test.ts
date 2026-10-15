@@ -81,7 +81,7 @@ test("a replay hands the harness the save and the inputs, and comes back with th
   ]);
 });
 
-test("a replay's receipt names validation steps 1-3 and what each one checked (#660)", async () => {
+test("a replay's receipt names the version, load-hygiene and wave-start-save checks, and what each one checked (#660)", async () => {
   const { result } = await ask(clean());
   const receipt = result.kind === "replayed" ? result.replay.receipt : assert.fail();
 
@@ -170,9 +170,9 @@ test("each load-hygiene rule that doesn't hold gives no answer naming it, never 
   }
 });
 
-test("an illegal step stops the line with no answer naming the input, its turn and what the game offers (#660)", async () => {
+test("an illegal step stops the replay with no answer naming the input, its turn and what the game offers (#660)", async () => {
   const fickle: Input = { kind: "move", move: "FICKLE_BEAM", tera: true };
-  const illegal = { input: 1, turn: 2, why: "isn't offered", legal: [bounce, toProbopass] };
+  const illegal = { index: 1, turn: 2, why: "isn't offered", legal: [bounce, toProbopass] };
   const { result } = await ask({ ...clean(), steps: clean().steps.slice(0, 1), end: { illegal } }, {
     inputs: [bounce, fickle],
   });
@@ -180,6 +180,14 @@ test("an illegal step stops the line with no answer naming the input, its turn a
   assert.deepEqual(reason(result).reason, { code: "illegal_step", ...illegal, tried: fickle });
   assert.match(reason(result).message, /input 2, Tera \+ Fickle Beam, isn't offered at turn 2/);
   assert.match(reason(result).message, /Bounce, switch → Probopass \(slot 3\)/);
+});
+
+test("a faint on a turn with no input of its own stops the replay with no answer naming that turn, not an input (#660)", async () => {
+  const why = "leaves a faint replacement to pick, and a turn with no input can't name one";
+  const { result } = await ask({ ...clean(), end: { illegal: { index: null, turn: 2, why, legal: [] } } });
+
+  assert.deepEqual(reason(result).reason, { code: "illegal_step", index: null, turn: 2, why, tried: null, legal: [] });
+  assert.match(reason(result).message, /^turn 2, which has no input of its own, leaves a faint replacement to pick/);
 });
 
 test("no clone to run in gives no answer naming what is missing (#660)", async () => {
