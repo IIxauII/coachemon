@@ -6,7 +6,7 @@ import { onPage, send } from "./fake-page.ts";
 type Tag = { tagType: string; serializable: boolean };
 type SummonInit = { statStages: number[]; tags: Tag[]; abilitiesApplied: Set<number> };
 
-/** The save's copy constructor and its `toJSON` (game-code.md §28). */
+/** The save's copy constructor and its `toJSON` (game-code.md §30). */
 class SummonData {
   statStages: number[];
   tags: Tag[];

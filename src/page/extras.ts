@@ -36,7 +36,7 @@ export type ExtrasResult =
   | { ok: false; why: "no-battle" };
 
 /**
- * The live fight's state that the session save lacks or a reload resets (game-code.md §28). A field the page could not
+ * The live fight's state that the session save lacks or a reload resets (game-code.md §30). A field the page could not
  * read is null and named in `unread` by its path in this result; every other null is the game's own. Self-contained
  * (extension-distribution.md §10.5).
  */
@@ -47,13 +47,13 @@ export function extras(L: Located, _args: Record<string, never>): ExtrasResult {
   };
   const b = L.scene.currentBattle;
   if (!b) return { ok: false, why: "no-battle" };
-  // `pokemon` is the live mon, whose container is circular: only its id crosses (game-code.md §28).
+  // `pokemon` is the live mon, whose container is circular: only its id crosses (game-code.md §30).
   const faints = (path: string): FaintEntry[] | null => read(path, () => b[path].map((f: any) => ({ id: f.pokemon.id, turn: f.turn })));
   const mon = (path: string, p: any): MonExtras => ({
     id: read(`${path}.id`, () => p.id),
     toxicTurnCount: read(`${path}.toxicTurnCount`, () => (p.status ? p.status.toxicTurnCount : null)),
     tempSummonData: read(`${path}.tempSummonData`, () => ({ ...p.tempSummonData })),
-    // `abilitiesApplied` is a Set, which JSON writes as `{}` (game-code.md §28).
+    // `abilitiesApplied` is a Set, which JSON writes as `{}` (game-code.md §30).
     waveData: read(`${path}.waveData`, () => ({ endured: p.waveData.endured, abilityRevealed: p.waveData.abilityRevealed, abilitiesApplied: [...p.waveData.abilitiesApplied] })),
   });
   const foe = (p: any, i: number): FoeExtras => {
@@ -64,7 +64,7 @@ export function extras(L: Located, _args: Record<string, never>): ExtrasResult {
       initialTeamIndex: read(`${path}.initialTeamIndex`, () => p.initialTeamIndex),
       bossSegmentIndex: read(`${path}.bossSegmentIndex`, () => p.bossSegmentIndex),
       onField,
-      // Copied as the save copies it, so it is the shape a load reads, less the tags a load drops (game-code.md §28).
+      // Copied as the save copies it, so it is the shape a load reads, less the tags a load drops (game-code.md §30).
       summonData: onField ? read(`${path}.summonData`, () => JSON.parse(JSON.stringify(new p.summonData.constructor(p.summonData)))) : null,
     };
   };
