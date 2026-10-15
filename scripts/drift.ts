@@ -1,7 +1,9 @@
 /**
  * Drift check for everything this repo reads out of PokéRogue's source, the escape ladder and the coach HUD, under one
  * pin and one stamp (0001-escape-ladder-hand-curated-checked-at-pin-bump.md). Run it at a pin bump, since at the
- * pinned ref no hash can move, and `--stamp` only after re-reading every entry it named: stamping is the sign-off.
+ * pinned ref no hash can move, and `--stamp` only after re-reading every entry it named: stamping is the sign-off. The
+ * stamp is solving's sign-off too: it runs the harness re-check in the source's clone and refuses while it fails
+ * (pin-bump.md).
  */
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -13,6 +15,9 @@ import { GLOBAL_DEPS, LADDER } from "../src/escape-ladder/table.ts";
 import { HUD_DEPS } from "./hud-deps.ts";
 import type { Entry } from "../src/escape-ladder/types.ts";
 import type { ClonePin } from "../src/solver/clone.ts";
+import { checkForks, type Recheck, replay } from "../src/solver/solver.ts";
+import { findClone, harnessIn } from "./clone-test/clone-test.ts";
+import { recheck } from "./recheck/recheck.ts";
 
 const REPO = "https://github.com/pagefaultgames/pokerogue.git";
 const REVIEWED = new URL("../src/escape-ladder/reviewed.json", import.meta.url);
@@ -20,6 +25,7 @@ const REVIEWED = new URL("../src/escape-ladder/reviewed.json", import.meta.url);
 type Reviewed = {
   pinned: ClonePin & { tag: string };
   hashes: Record<string, string>;
+  recheck?: Recheck;
 };
 
 const { values: args } = parseArgs({
@@ -192,10 +198,27 @@ if (args.stamp) {
     console.error("\nRefusing to stamp: the game's package.json names no pnpm `packageManager` to set the player's clone up with.");
     process.exit(1);
   }
+  const inSource = harnessIn(() => findClone(source), pnpm);
+  console.log();
+  const { failed } = await recheck(
+    version,
+    {
+      replay: (given, script) => replay(given, script, inSource),
+      checkForks: (given, inputs) => checkForks(given, inputs, inSource),
+    },
+    console.log,
+  );
+  if (failed.length > 0) {
+    console.error(`\nRefusing to stamp: the harness re-check failed. ${failed.join("; ")}.`);
+    process.exit(1);
+  }
   const pinned = { gameVersion: version, tag: `v${version}`, sha, locales: gitlink("locales"), assets: gitlink("assets"), pnpm };
-  const next: Reviewed = { pinned, hashes: current };
+  const next: Reviewed = { pinned, hashes: current, recheck: { gameVersion: version } };
   writeFileSync(REVIEWED, `${JSON.stringify(next, null, 2)}\n`);
-  console.log(`\nStamped ${refs.length} hashes; pin is now ${version} @ ${sha.slice(0, 7)}, set up with pnpm ${pnpm}.`);
+  console.log(
+    `\nStamped ${refs.length} hashes and the harness re-check; pin is now ${version} @ ${sha.slice(0, 7)}, ` +
+      `set up with pnpm ${pnpm}.`,
+  );
   process.exit(0);
 }
 

@@ -12,5 +12,6 @@ The escape ladder (`src/escape-ladder/table.ts`) is written by hand from reading
 ## Consequences
 
 - Stamping (`--stamp`) is the review sign-off. It also moves the pin, which is why it refuses while any dep is missing or any entry's `mode`/`handler` disagrees with the candidate's `UiMode` enum and `UI.handlers` array.
+- The stamp is solving's sign-off too (ADR 0003): it refuses while the harness re-check fails, and records the version as re-checked when it passes ([pin-bump.md](../runbooks/pin-bump.md), #665).
 - Between bumps, a live build that has moved past the pin gets no ladder at all rather than a stale one. The stuck detector is version-independent and keeps running.
 - #2's enum codegen resolves `gameVersion` to a tag the same way, so the two should share that resolution when codegen is built.

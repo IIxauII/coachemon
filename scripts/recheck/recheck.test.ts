@@ -1,0 +1,103 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { noAnswer } from "../../src/solver/no-answer.ts";
+import type { Input, ReplayResult } from "../../src/solver/oracle-line.ts";
+import type { Script, SolveInput } from "../../src/solver/solver.ts";
+import type { Checks } from "../../src/solver/worker.ts";
+import { type CheckResult, recheck } from "./recheck.ts";
+
+const VERSION = "1.12.0.11";
+
+type Given = Pick<SolveInput, "save" | "live" | "liveExport" | "cloneVersion">;
+
+const replayed = (turns: number): ReplayResult => ({
+  kind: "replayed",
+  replay: {
+    confidence: "replay",
+    outcome: "won",
+    steps: Array.from({ length: turns }, (_, i) => ({ turn: i + 1, input: null, checkpoint: { ours: [], foes: [] } })),
+    receipt: [],
+  },
+});
+
+const passing = (turns: number): Checks => ({
+  straight: Array.from({ length: turns }, (_, i) => ({ turn: i + 1, end: i + 1 === turns ? "won" : "on" })),
+  fork: [],
+  chain: [],
+});
+
+const missed: Checks["fork"][number] = {
+  from: 3,
+  turn: 4,
+  want: { input: null, turn: 4, checkpoint: { ours: [], foes: [] }, end: "on" },
+  got: { input: null, turn: 4, checkpoint: { ours: [], foes: [] }, end: "lost" },
+};
+
+/** Fakes for the clone: each answers by the fight's wave, and every call is logged in order. */
+const fakes = ({
+  replays = {},
+  checks = {},
+}: { replays?: Record<number, ReplayResult>; checks?: Record<number, CheckResult> } = {}) => {
+  const calls: { kind: "replay" | "check"; wave: number; given: Given; inputs: readonly Input[]; script?: Script }[] = [];
+  return {
+    calls,
+    deps: {
+      replay: async (given: Given, script: Script) => {
+        calls.push({ kind: "replay", wave: given.save.waveIndex, given, inputs: script.inputs, script });
+        return replays[given.save.waveIndex] ?? replayed(script.inputs.length);
+      },
+      checkForks: async (given: Given, inputs: readonly Input[]) => {
+        calls.push({ kind: "check", wave: given.save.waveIndex, given, inputs });
+        return checks[given.save.waveIndex] ?? { kind: "checked" as const, checks: passing(inputs.length) };
+      },
+    },
+  };
+};
+
+test("the re-check replays the three known fights at the stamped version, then checks each, and passes (#665)", async () => {
+  const { calls, deps } = fakes();
+
+  const run = await recheck(VERSION, deps);
+
+  assert.deepEqual(run.failed, []);
+  assert.deepEqual(
+    calls.map(c => `${c.kind} ${c.wave}`),
+    ["replay 180", "replay 188", "replay 190", "check 180", "check 188", "check 190"],
+  );
+  for (const call of calls) assert.equal(call.given.cloneVersion, VERSION);
+  for (const call of calls.filter(c => c.kind === "replay")) {
+    assert.ok(call.given.live && call.given.liveExport, "a replay needs the live battle and its export");
+    assert.equal(call.script?.known?.outcome, "won", "a known line is held to every fact live recorded");
+  }
+  assert.match(run.text, /Gordie W180: replayed, won in 19 turns/);
+  assert.match(run.text, /Kieran W190\n\s+straight: 31 turns[^\n]*\n\s+fork check: 30 of 30 restores/);
+});
+
+test("a known fight that doesn't replay fails the re-check by name, and no check runs after it (#665)", async () => {
+  const { calls, deps } = fakes({ replays: { 188: noAnswer({ code: "harness_failed", why: "the harness wrote no report" }) } });
+
+  const run = await recheck(VERSION, deps);
+
+  assert.deepEqual(run.failed, ["Drayton W188 didn't replay"]);
+  assert.match(run.text, /Drayton W188: no answer: the oracle's harness failed/);
+  assert.match(run.text, /Kieran W190: replayed/, "the other fights still replay, so one run names every failure");
+  assert.equal(calls.filter(c => c.kind === "check").length, 0);
+});
+
+test("a fork or chained-restore miss fails the re-check by name, as does a check that gets no answer (#665)", async () => {
+  const { deps } = fakes({
+    checks: {
+      180: { kind: "checked", checks: { ...passing(19), fork: [missed] } },
+      190: noAnswer({ code: "harness_failed", why: "the worker took too long to start" }),
+    },
+  });
+
+  const run = await recheck(VERSION, deps);
+
+  assert.deepEqual(run.failed, [
+    "Gordie W180's fork or chained-restore check failed",
+    "Kieran W190's fork or chained-restore check failed",
+  ]);
+  assert.match(run.text, /Gordie W180\n[^]*fork check: 17 of 18 restores[^\n]*\n\s+restored at T3, T4 played otherwise/);
+  assert.match(run.text, /Kieran W190: no answer: .*the worker took too long to start/);
+});

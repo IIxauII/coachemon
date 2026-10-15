@@ -49,10 +49,11 @@ test("oracle:battle says the solver failed, not that the export was unreadable, 
   assert.equal(run.status, 2);
 });
 
-test("oracle:battle reads the re-check record it ships with, which until the pin bump writes one is none (#659, #665)", () => {
-  const run = oracle(drayton);
+test("oracle:battle reads the re-check record it ships with, so the gate lets the pin's version through to the clone (#659, #665)", () => {
+  const run = oracle(exported);
 
-  assert.match(run.stdout, /^no answer: the oracle's harness hasn't been re-checked on game version 1\.12\.0\.11/);
+  assert.doesNotMatch(run.stderr, /--unchecked/);
+  assert.match(run.stdout, /^no answer: the oracle's clone of game version 1\.12\.0\.11 isn't set up/);
   assert.equal(run.status, 2);
 });
 
