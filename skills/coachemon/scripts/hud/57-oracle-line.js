@@ -1,5 +1,5 @@
-// The oracle line handed to the overlay, held for the one fight it was solved for (CONTEXT.md, `Oracle line`). It
-// reads the battle the card is built on and writes nothing to the game.
+// The oracle line handed to the overlay, drawn only for the one fight it was solved for (CONTEXT.md, `Oracle line`).
+// It reads the battle the card is built on and writes nothing to the game.
 import { iconOf, TYPES } from "./01-core.js";
 import { isReplacement } from "./02-decision.js";
 import { gameTables } from "./04-game-tables.js";
