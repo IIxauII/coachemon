@@ -8,7 +8,7 @@ import { rerollStats } from "./50-reroll.js";
 import { journalClear, journalEntries, journalStats } from "./55-journal.js";
 import { cardEvent, cardSummary, streamable } from "./60-card.js";
 import { battleScene, el, spriteMisses, wireCard } from "./90-render.js";
-import { watchFallback, watchFrame, watchShown, watchStart } from "./98-watch.js";
+import { watchFallback, watchFrame, watchOracleLine, watchShown, watchStart } from "./98-watch.js";
 
 // By hand from the relay's `extension/src/relay/channel.ts`; `scripts/test/cardeventtest.mjs` fails when they drift.
 const CARD_EVENT = "coachemon:card", COACH_ERROR_EVENT = "coachemon:coach-error";
@@ -49,8 +49,8 @@ const stream = () => {
   if (!ev) return;
   // The kind rides in the signature because two kinds share a key on one wave: a biome choice and its battle are both
   // keyed on the wave alone. The road state rides too, so a card sent before its road group landed goes again once it
-  // has it (#542).
-  const sig = `${ev.kind}|${ev.key}|${ev.verdict}|${rec.road}`;
+  // has it (#542), and so does a card each oracle line handed lands on (#670).
+  const sig = `${ev.kind}|${ev.key}|${ev.verdict}|${rec.road}|${rec.card.oracleLine?.id ?? ""}`;
   if (sig === sentCard) return;
   const body = bodyOf(ev);
   if (typeof body?.text !== "string") return;
@@ -76,6 +76,7 @@ window.__coachHud = {
   last: shownCard,
   summary: () => cardSummary(shownCard()),
   card: () => cardNow(),
+  oracleLine: line => watchOracleLine(line),
   preview: () => previewStats(),
   reroll: () => rerollStats(),
   journal: () => journalEntries(),

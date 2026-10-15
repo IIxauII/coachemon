@@ -4,6 +4,7 @@ import { actSummary, deadEndText, foesSummary, hitsText, planSummary, roadSummar
 import { badge, caption, dim, group, gutterMark, h, hpBar, ICON, img, IMMUNE, ink, line, mon, ROW, rung, some } from "./90-render.js";
 import { drawAhead } from "./95-render-ahead.js";
 import { drawCatch } from "./95-render-catch.js";
+import { drawOracleLine } from "./95-render-oracle-line.js";
 import { drawPreview } from "./95-render-preview.js";
 import { drawTeamPlan } from "./95-render-team.js";
 
@@ -14,8 +15,11 @@ export const captionBattle = m => {
     ...order.flatMap((o, i) => [i ? h("span", dim, "›") : null, mon(o.icon, o.name, ICON.mon)]));
 };
 
+// An oracle line rests on no turn read, so a card without one keeps it (#670).
+const planGroup = m => some("plan", "Plan", planSummary(m), m.oracleLine ? drawOracleLine(m.oracleLine) : drawTeamPlan(m));
+
 export const drawBattle = m => {
-  if (m.unavailable) return [group("act", "Now", actSummary(m), [])];
+  if (m.unavailable) return [group("act", "Now", actSummary(m), []), planGroup(m)].filter(Boolean);
   const f = m.field;
 
   const threatTag = t => {
@@ -139,7 +143,7 @@ export const drawBattle = m => {
     some("act", "Now", actSummary(m), field),
     some("foes", "Foes", foesSummary(m), [team, ...rows]),
     some("catch", "Catch", catchSummary(m.catch), drawCatch(m)),
-    some("plan", "Plan", planSummary(m.teamPlan), drawTeamPlan(m)),
+    planGroup(m),
     some("road", "Road", roadSummary(m.preview, m.ahead), road),
   ].filter(Boolean);
 };

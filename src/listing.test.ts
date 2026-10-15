@@ -89,6 +89,12 @@ test("the privacy policy and the store disclosure name the read of a fight's liv
   }
 });
 
+test("the privacy policy and the store disclosure name the plan the local program hands the overlay, and that it is never stored (#670)", () => {
+  for (const [doc, text] of [["PRIVACY.md", privacy()], ["store-disclosure.md", listing("store-disclosure.md")]]) {
+    for (const claim of ["plan for the fight", "in the page's memory only"]) assert.equal(text.includes(claim), true, `${doc} is missing ${claim}`);
+  }
+});
+
 test("both store disclosures answer every form field", () => {
   const filed = listing("store-disclosure.md");
   for (const field of ["Single purpose", "Host access", "Remote code", "Data usage", PRIVACY_URL,

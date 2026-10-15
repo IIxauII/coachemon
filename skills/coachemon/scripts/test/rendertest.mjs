@@ -274,15 +274,15 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   assert.equal(pane.style.padding, `${rungs(0.5)} ${rungs(0.75)}`, "and the frame keeps the rows off itself");
   assert.deepEqual(GUTTER_INK, { good: "#78c850", bad: "#e13d3d", flat: "#a0a0a0" });
   const gutter = mark => { const g = line(mark).children[0]; return `${txt(g) || "·blank·"} ${g.style.color || "·none·"}`; };
-  console.log(`gutter ${[..."⚔➜★✓▲", "|", ..."↯✗✦⚠▼", "|", ..."⇄⤵≈↺·", IMMUNE, "|", "💀", "👑", "🎲", "🔒", ""].map(m => (m === "|" ? "|" : gutter(m))).join(" ")}`);
+  console.log(`gutter ${[..."⚔➜★✓▲", "|", ..."↯✗✦⚠▼", "|", ..."⇄⤵≈↺·▸", IMMUNE, "|", "💀", "👑", "🎲", "🔒", ""].map(m => (m === "|" ? "|" : gutter(m))).join(" ")}`);
   for (const m of "⚔➜★✓▲") assert.equal(line(m).children[0].style.color, GUTTER_INK.good, m);
   for (const m of "↯✗✦⚠▼") assert.equal(line(m).children[0].style.color, GUTTER_INK.bad, m);
-  for (const m of [..."⇄⤵≈↺·", IMMUNE]) assert.equal(line(m).children[0].style.color, GUTTER_INK.flat, m);
+  for (const m of [..."⇄⤵≈↺·▸", IMMUNE]) assert.equal(line(m).children[0].style.color, GUTTER_INK.flat, m);
   assert.equal(txt(line(IMMUNE).children[0]).trim(), "▼", "immune is a mark, not a shape: it wears ▼'s glyph");
   for (const m of ["💀", "👑", "🎲", "🔒"]) assert.equal(line(m).children[0].style.color, "", `${m} forfeits the ink`);
   assert.equal(line("").children[0].style.color, "", "a blank gutter makes no claim, so it takes no ink");
   // A mark added to `MARKS` and to neither set above would otherwise fall through to grey unnoticed.
-  const asked = [..."⚔➜★✓▲↯✗✦⚠▼⇄⤵≈↺·", "💀", "👑", "🎲", "🔒"];
+  const asked = [..."⚔➜★✓▲↯✗✦⚠▼⇄⤵≈↺·▸", "💀", "👑", "🎲", "🔒"];
   assert.deepEqual(MARKS.filter(m => !asked.includes(m)), [], "a mark the alphabet gained but the gutter was never told the news of");
   const under = n => (n == null || typeof n !== "object" ? [] : (n.children ?? []).flatMap(k => [k, ...under(k)]));
   const paneRows = (el.kids[3].children ?? []).flatMap(n => [n, ...under(n)]);

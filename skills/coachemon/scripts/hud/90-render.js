@@ -121,7 +121,7 @@ export const badge = (type, suffix = "", eff = false) => {
 const GUTTER = rung(1.75);
 // Good news and bad news are told apart by the mark's **shape**, never by its colour alone, so a new mark has to
 // differ from the rest by shape.
-export const MARKS = [..."⚔➜★✓▲↯✗✦⚠▼⇄⤵≈↺·", "💀", "👑", "🎲", "🔒"];
+export const MARKS = [..."⚔➜★✓▲↯✗✦⚠▼⇄⤵≈↺·▸", "💀", "👑", "🎲", "🔒"];
 // The gutter's ink is the mark's and not the caller's; an emoji keeps its own colour.
 export const GUTTER_INK = { good: "#78c850", bad: "#e13d3d", flat: LAW_INK.none };
 const GOOD = "⚔➜★✓▲", BAD = "↯✗✦⚠▼";

@@ -11,6 +11,7 @@ import type { MenuOption } from "../page/menu.ts";
 import type { SessionResult } from "../page/session.ts";
 import type { SnapshotDetail } from "../page/snapshot.ts";
 import type { StartersResult } from "../page/starters.ts";
+import type { OracleLine } from "../solver/solver.ts";
 import type { Tab } from "./link.ts";
 import type { Save } from "./save.ts";
 
@@ -148,6 +149,8 @@ export interface GamePort extends Tab {
   /** `wave` and `battleSeed` come from the same read as the saves. */
   session(): Promise<SessionRead | Failed>;
   extras(): Promise<ExtrasRead | Failed>;
+  /** The `oracle.line` handoff (extension-distribution.md §10.1). */
+  oracleLine(line: OracleLine): Promise<{ ok: true } | Failed>;
   snapshot(d: SnapshotDetail): Promise<{ ok: true; snapshot: Record<string, unknown> } | Failed>;
   /** A base64 PNG. */
   screenshot(): Promise<string>;

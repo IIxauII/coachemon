@@ -3,6 +3,7 @@ import { cursorLearn, cursorOption, cursorShop, cursorStarter, key, modal, press
 import { card } from "./card.ts";
 import { extras } from "./extras.ts";
 import { menu } from "./menu.ts";
+import { oracleLine } from "./oracle-line.ts";
 import { probe } from "./probe.ts";
 import { session } from "./session.ts";
 import { snapshot } from "./snapshot.ts";
@@ -17,6 +18,7 @@ export const COMMAND_HANDLERS = Object.freeze({
   card,
   session,
   extras,
+  "oracle.line": oracleLine,
   press,
   key,
   "cursor.option": cursorOption,

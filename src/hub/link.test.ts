@@ -8,9 +8,11 @@ import { Hub, startHub } from "./hub.ts";
 import { Driver } from "../driver.ts";
 import { ArenaTagSide, Button, UiMode } from "../enums/generated.ts";
 import { Refusal } from "../envelope.ts";
+import { GORDIE_LINE } from "../game/fixtures/oracle-line.ts";
 import { OTHER_RUN_W180, RUN_SEED, RUN_W180 } from "../game/fixtures/saves.ts";
 import { isFault } from "../game/link.ts";
 import { LinkGame } from "../game/link-game.ts";
+import { pageOracleLine } from "../game/oracle-line.ts";
 import { disc } from "../page/disc.ts";
 import { COMMAND_NAMES } from "../protocol/commands.ts";
 import { DEV_PORT, PROTOCOL, STORE_PORT } from "../protocol/version.ts";
@@ -75,6 +77,31 @@ test("an extension older than the extras read refuses the Driver's read missing_
   const driver = new Driver(new LinkGame(link, link), UNWRITTEN_HOME);
   await assert.rejects(driver.readExtras({}), (e: Refusal) => e.code === "missing_command" && e.detail.rung === 4);
   assert.deepEqual(ext.seen.filter(f => f.t === "cmd"), []);
+});
+
+test("the Driver's handoff crosses the hub as the one command it sends, the oracle line's keys as the game's ids (#670)", async () => {
+  const { ext, link } = await linked();
+  const held = new Driver(new LinkGame(link, link), UNWRITTEN_HOME).handOracleLine(GORDIE_LINE);
+  assert.deepEqual(await answer(ext, { ok: true }), { name: "oracle.line", args: { line: pageOracleLine(GORDIE_LINE) } });
+  assert.deepEqual(await held, { status: "ok", held: true });
+  assert.deepEqual(ext.seen.filter(f => f.t === "cmd"), [], "no probe and no settle, before or after");
+});
+
+test("an extension older than the handoff refuses it missing_command at rung 4, sending nothing (#670, extension-distribution.md §8.5)", async () => {
+  const { ext, link } = await linked({ commands: COMMAND_NAMES.filter(n => n !== "oracle.line") });
+  const driver = new Driver(new LinkGame(link, link), UNWRITTEN_HOME);
+  await assert.rejects(driver.handOracleLine(GORDIE_LINE), (e: Refusal) => e.code === "missing_command" && e.detail.rung === 4);
+  assert.deepEqual(ext.seen.filter(f => f.t === "cmd"), []);
+});
+
+test("the handoff needs no grant: it crosses while another session drives (#670, extension-distribution.md §7.5)", async () => {
+  const { hub, ext, link } = await linked();
+  const other = await fakeClient(hub.port);
+  other.send({ t: "claim" });
+  await other.take(f => f.t === "claimed");
+  const held = link.oracleLine({ line: pageOracleLine(GORDIE_LINE) });
+  assert.equal((await answer(ext, { ok: true })).name, "oracle.line");
+  assert.deepEqual(await held, { ok: true });
 });
 
 test("a relay refusal becomes a Fault, so LinkGame cannot tell the transports apart (extension-distribution.md §9.7, §12.1)", async () => {

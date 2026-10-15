@@ -7,13 +7,15 @@ export type Field =
   | { type: "boolean"; optional?: true }
   | { type: "number"; optional?: true }
   | { type: "string"; optional?: true }
-  | { type: "enum"; values: readonly string[]; optional?: true };
+  | { type: "enum"; values: readonly string[]; optional?: true }
+  | { type: "object"; optional?: true };
 
-export type CommandSpec = { kind: "read" | "act"; args: { readonly [name: string]: Field }; since: number };
+export type CommandSpec = { kind: "read" | "act" | "handoff"; args: { readonly [name: string]: Field }; since: number };
 
 const bool = { type: "boolean", optional: true } as const;
 const num = { type: "number" } as const;
 const fine = { type: "string" } as const;
+const obj = { type: "object" } as const;
 
 export const KEY_BUTTONS = ["UP", "DOWN", "LEFT", "RIGHT", "ACTION", "CANCEL", "SUBMIT", "MENU"] as const;
 
@@ -27,6 +29,7 @@ const TABLE = {
   card: { kind: "read", args: {}, since: 1 },
   session: { kind: "read", args: {}, since: 1 },
   extras: { kind: "read", args: {}, since: 1 },
+  "oracle.line": { kind: "handoff", args: { line: obj }, since: 1 },
   press: { kind: "act", args: { button: num, fine }, since: 1 },
   key: { kind: "act", args: { button: { type: "enum", values: KEY_BUTTONS }, fine }, since: 1 },
   "cursor.option": { kind: "act", args: { index: num, fine }, since: 1 },
@@ -42,6 +45,7 @@ type FieldValue<F> = F extends { type: "boolean" } ? boolean
   : F extends { type: "number" } ? number
   : F extends { type: "string" } ? string
   : F extends { type: "enum"; values: readonly (infer V)[] } ? V
+  : F extends { type: "object" } ? Record<string, unknown>
   : never;
 
 type Optional<A> = { [K in keyof A]: A[K] extends { optional: true } ? K : never }[keyof A];

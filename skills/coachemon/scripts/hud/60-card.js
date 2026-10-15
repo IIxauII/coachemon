@@ -17,6 +17,7 @@ import { auditSummary } from "./50-audit.js";
 import { spliceScreen, fusionModel, fusionSummary } from "./49-fusion.js";
 import { rewardsModel, rewardsSummary } from "./52-shop.js";
 import { starterScreen, starterModel, startersSummary } from "./51-starters.js";
+import { oracleLineModel, oracleLineSummary } from "./57-oracle-line.js";
 
 export const hitsText = n => `${n} hit${n === 1 ? "" : "s"}`;
 // A spread move KOing the two foes on different turns carries `koEach` instead of one `ko`: the slower one counts.
@@ -58,6 +59,8 @@ export const composeBattleCard = (turn, account) => {
 };
 
 const battleCard = (s, account, estimate) => readTurn(s, turn => composeBattleCard(turn, account), { estimate });
+
+export const readOracleLine = (s, card) => { if (card?.kind === "battle") card.oracleLine = oracleLineModel(s); };
 
 // Our side's 💀 / ⚠ tags. `after`: a likely KO once the mon has acted.
 const dangerTags = m => (m.field ? [...m.field.slots.map(sl => [sl.name, sl.threat]), ...m.field.switches.map(sw => [sw.out?.name, sw.out?.threat])] : [])
@@ -129,6 +132,7 @@ export const readCard = (s, account, { road = true, estimate = false } = {}) => 
     const party = s.getPlayerParty().filter(p => p.hp > 0);
     if (!b || !foes.length || !party.length) return null;
     card = battleCard(s, account, estimate);
+    readOracleLine(s, card);
   }
   if (!card) return null;
   card.wave = s.currentBattle?.waveIndex ?? null;
@@ -153,7 +157,7 @@ export const foesSummary = card => {
 export const roadSummary = (preview, ahead) =>
   [previewSummary(preview), aheadSummary(ahead)].filter(Boolean).join(" · ") || null;
 
-export const planSummary = tp => {
+const teamPlanSummary = tp => {
   if (!tp) return null;
   if (tp.summary) return tp.summary;
   const lost = tp.result !== "win";
@@ -163,6 +167,8 @@ export const planSummary = tp => {
     tp.sacrifice.length ? `sacrifice ${tp.sacrifice.map(x => `${x.name} → ${x.frees.name} in free`).join(", ")}` : null,
   ].filter(Boolean).join(" · ");
 };
+
+export const planSummary = card => (card.oracleLine ? oracleLineSummary(card.oracleLine) : teamPlanSummary(card.teamPlan));
 
 // Every summary carries every key, empty where it isn't that card's: a contract test holds each kind to exactly these,
 // so probe.js can pass the whole thing through.
@@ -234,7 +240,7 @@ export const cardSummary = card => {
   if (card.kind === "encounter") return { ...base, encounter: encounterSummary(card) };
   if (card.kind === "learn") return { ...base, learn: learnSummary(card) };
   if (card.kind === "rewards") return { ...base, rewards: rewardsSummary(card) };
-  if (card.unavailable) return { ...base, verdict: "unavailable", field: actSummary(card) };
+  if (card.unavailable) return { ...base, verdict: "unavailable", field: actSummary(card), plan: planSummary(card) };
   // The foe the fight plan is keeping that mon for: the win condition's answers, or the foes only it beats (#170).
   const saveFor = name => {
     const r = (card.teamPlan?.reserve ?? []).find(x => x.name === name);
@@ -247,5 +253,5 @@ export const cardSummary = card => {
     field: actSummary(card),
     danger: dangerList(card)
       .map(({ mon: name, from, move, level }) => ({ mon: name, from, move, level: level === "ko" ? "ko" : "after", saveFor: saveFor(name) })),
-    plan: planSummary(card.teamPlan) };
+    plan: planSummary(card) };
 };

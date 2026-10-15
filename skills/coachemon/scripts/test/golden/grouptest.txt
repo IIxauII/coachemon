@@ -68,6 +68,15 @@ road | Road | W90 wild — Toxicroak L71 · gym leader in 6 (W95) watch — noth
     ✗ nothing hits Garchomp super-effectively
     ✓ full heal entering W100 — HP, status, PP, revives, Tera
     · luck 3 (C) — 6% tier upgrade per reward
+== trainer · an oracle line in place of the fight plan
+act | Now | Charizard Flamethrower → Lycanroc · 2 hits
+    ⚔ Charizard Fire Flamethrower → Lycanroc 2 hits
+foes | Foes | —
+    Lycanroc Lycanroc L70 Rock 100% ▲ Water ×2
+plan | Plan | ~ oracle line wins in 3 turns · 3 of 4 left
+    ✓ T4 ⇄ Lapras → Lapras 301/380 · Roserade 250/250
+    ▸ T5 Lapras Tera Ice + Ice Ice Beam · send Blastoise → Blastoise 362/362 · Garchomp 120/420
+    · T6 no input
 == double · a return from the other slot
 act | Now | Blastoise Wave Crash → Ludicolo · 2 hits ; Venusaur Power Whip → Arcanine · 2 hits
     ⇄ Arcanine → Gyarados returns from the other slot — moves aimed at it

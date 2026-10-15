@@ -37,9 +37,9 @@ const PREFIX = Object.fromEntries(
 const UNCONTENDED: Contention = { contended: false, holder: null };
 
 /** The hub carries these to the plugin, or nothing does (extension-distribution.md §10.1). */
-const HUB_ONLY: ReadonlySet<CommandName> = new Set(["session"]);
+const HUB_ONLY: ReadonlySet<CommandName> = new Set(["session", "oracle.line"]);
 
-const hubOnly = (name: CommandName) => `The ${name} read goes over the Coachemon hub only, and this server reads the game over CDP: set COACHEMON_TRANSPORT=hub.`;
+const hubOnly = (name: CommandName) => `The ${name} command goes over the Coachemon hub only, and this server reads the game over CDP: set COACHEMON_TRANSPORT=hub.`;
 
 export class CdpLink implements GameLink, Tab {
   readonly commands: ReadonlySet<CommandName> = new Set(COMMAND_NAMES.filter(n => !HUB_ONLY.has(n)));
@@ -66,6 +66,7 @@ export class CdpLink implements GameLink, Tab {
   card() { return this.#run("card", {}); }
   async session(): Promise<Fault> { return { fault: "missing-command", message: hubOnly("session") }; }
   extras() { return this.#run("extras", {}); }
+  async oracleLine(): Promise<Fault> { return { fault: "missing-command", message: hubOnly("oracle.line") }; }
   press(args: Args<"press">) { return this.#run("press", args); }
   key(args: Args<"key">) { return this.#run("key", args); }
   cursorOption(args: Args<"cursor.option">) { return this.#run("cursor.option", args); }

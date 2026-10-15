@@ -6,7 +6,8 @@ import { gameEvents, gameTables } from "./04-game-tables.js";
 import { previewArm, previewCheck } from "./48-preview.js";
 import { rerollArm, rerollCheck } from "./50-reroll.js";
 import { journalCheck } from "./55-journal.js";
-import { hasRoad, keepRoad, readCard, readRoad } from "./60-card.js";
+import { holdOracleLine } from "./57-oracle-line.js";
+import { hasRoad, keepRoad, readCard, readOracleLine, readRoad } from "./60-card.js";
 import { battleScene, clearMissed, controls, drawer, dropGame, el, glyph, missedSprite, openGroup, PANEL_W, panelState, setRedraw, strip } from "./90-render.js";
 import { captionBattle, drawBattle } from "./96-render-battle.js";
 import { captionEncounter, drawEncounter } from "./96-render-encounter.js";
@@ -27,7 +28,8 @@ const KIND = {
   biome: { draw: drawBiome, caption: captionBiome },
 };
 
-// The lifecycle, in order, for the watch's test: `built`, `cached`, `redrawn`, `road landed`, `hidden`, `failed`.
+// The lifecycle, in order, for the watch's test: `built`, `cached`, `redrawn`, `road landed`, `oracle line landed`,
+// `hidden`, `failed`.
 const LOG = 64;
 const log = [];
 const logged = what => { log.push(what); if (log.length > LOG) log.shift(); };
@@ -228,20 +230,25 @@ let after = () => {};
 // Every refresh the watch opens ends with `after`: the stream, which 99-start wires in.
 const run = (why, fn) => refresh(why, () => { fn(); after(); });
 
-const land = () => {
-  const rec = shown;
-  if (rec?.road !== "owed") return;
+const landOn = (rec, name, read) => {
   try {
     const s = battleScene();
     if (!s?.ui) return;
     screenNote(s, rec.card);
-    stage("road", () => readRoad(s, rec.card));
-    rec.road = "landed";
+    read(s);
     changed(rec);
-    stage("arm", () => armPreview(rec.card));
-    logged("road landed");
+    logged(`${name} landed`);
     draw(rec);
   } catch (e) { fail(e); }
+};
+const land = () => {
+  const rec = shown;
+  if (rec?.road !== "owed") return;
+  landOn(rec, "road", s => {
+    stage("road", () => readRoad(s, rec.card));
+    rec.road = "landed";
+    stage("arm", () => armPreview(rec.card));
+  });
 };
 // The road group lands in its own task, so a press between the card and the task leaves it to the next decision (#487).
 // A re-inject's `stop()` removes the panel, and a task queued before it then lands nothing.
@@ -258,6 +265,15 @@ const scene = () => { try { return battleScene(); } catch { return null; } };
 const tryLook = s => { try { const fresh = look(s); lookFailed = null; return fresh; } catch (e) { lookFailed = e; return false; } };
 const trySentIn = s => { try { return sentIn(s); } catch (e) { lookFailed = e; return false; } };
 const gone = s => !s?.ui || (!open() && s.phaseManager?.getCurrentPhase?.()?.phaseName === "TitlePhase");
+
+// An oracle line handed with no battle card up is held all the same, and the next battle card built draws it (#670).
+// @only 99-start: watchOracleLine
+export const watchOracleLine = line => {
+  const answer = holdOracleLine(scene(), line);
+  const rec = shown;
+  if (answer.ok && rec?.card?.kind === "battle") run("oracle-line", () => landOn(rec, "oracle line", s => readOracleLine(s, rec.card)));
+  return answer;
+};
 
 // A frame since the last fallback tick: the watch is looking, so the fallback builds nothing.
 let framed = false;

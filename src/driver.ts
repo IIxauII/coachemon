@@ -23,6 +23,7 @@ import { readSettings, writeSettings } from "./settings.ts";
 import { CLONE_JOB, cloneJob } from "./solver/clone.ts";
 import { isOverwriteConfirm, planSlot, slotLabel } from "./slots.ts";
 import { CALL_BUDGET_MS, settle, type SettleResult } from "./settle.ts";
+import type { OracleLine } from "./solver/solver.ts";
 import type { Choice } from "./stuck/detector.ts";
 
 export const AUTO_ADVANCE_CAP = 12;
@@ -77,7 +78,7 @@ const NO_CARD = { kind: null, key: null, wave: null, verdict: null, groups: null
 const NO_CARD_NEXT = "The coach panel is not running on this tab, so there is no card to read. The panel ships with Coachemon and its own header reopens it; get_state and read_menu read the game without it.";
 
 /**
- * What each tool or Driver read sends into the tab, so one whose commands the extension never registered refuses alone
+ * What each tool or Driver call sends into the tab, so one whose commands the extension never registered refuses alone
  * (extension-distribution.md §8.5). The cursor commands stay out: a family without its setter is walked with presses.
  */
 const TOOL_COMMANDS = {
@@ -87,6 +88,7 @@ const TOOL_COMMANDS = {
   read_starters: ["probe", "menu", "starters"],
   read_session: ["probe", "menu", "session"],
   read_extras: ["probe", "menu", "extras"],
+  hand_oracle_line: ["oracle.line"],
   press: ["probe", "press"],
   select_option: ["probe", "menu", "press"],
   start_run: ["probe", "menu", "starters", "press"],
@@ -220,6 +222,13 @@ export class Driver {
       const { ok: _ok, ...extras } = read;
       return { menu: await this.#game.menu(), fields: read.ok ? { extras } : { extras_error: read.why } };
     });
+  }
+
+  /** Nothing is read or settled first: a handoff leaves the game alone (extension-distribution.md §10.1). */
+  async handOracleLine(line: OracleLine): Promise<Record<string, unknown>> {
+    await this.#reachable("hand_oracle_line");
+    const r = await this.#game.oracleLine(line);
+    return r.ok ? { status: "ok", held: true } : { status: "ok", held: false, oracle_line_error: r.why };
   }
 
   readMenu(ctx: CallContext): Promise<Record<string, unknown>> {

@@ -9,9 +9,9 @@ import { fine } from "../../../src/page/fine.ts";
 import { locate } from "../../../src/page/locate.ts";
 import { COMMAND_HANDLERS } from "../../../src/page/handlers.ts";
 import { PAGE_MODES } from "../../../src/page/modes.ts";
-import { STORE_COMMANDS } from "../../../src/protocol/commands.ts";
+import { STORE_COMMANDS, type CommandSpec } from "../../../src/protocol/commands.ts";
 
-export type Handler = { kind: "read" | "act"; run: (L: any, args: any) => unknown };
+export type Handler = { kind: CommandSpec["kind"]; run: (L: any, args: any) => unknown };
 
 /** The panel's meter, which the HUD bundle puts on `window` (`hud/01-meter.js`). */
 type Meter = { driver?: <T>(fn: () => T) => T };
