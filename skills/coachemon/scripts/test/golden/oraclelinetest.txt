@@ -144,6 +144,7 @@ strip | trainer Golbat Venoshock → Tyranitar · 3 hits
 strip | trainer Golbat Venoshock → Tyranitar · 3 hits
     ⚔ Golbat Poison Venoshock → Tyranitar 3 hits
 Gordie's W180, to score                 held
+scored T12/19 match
 == W180 T13, T12's checkpoint matched
 Plan | ~ oracle line wins in 9 turns · 4 of 6 left
     ✓ T11 ⇄ Leavanny → ~ Leavanny 280/497 · Barbaracle 480/480
@@ -163,6 +164,7 @@ strip | trainer ⚔ ~ T13/19 · Leavanny Bug Bite · then send Golbat
 strip | trainer off the line · ~ re-solving… · Golbat Venoshock → Tyranitar · 3 hits
     ✗ T13 Tyranitar expected 512/569 · came 455/569
     ⚔ Golbat Poison Venoshock → Tyranitar 3 hits
+scored T13/19 miss Tyranitar 512/569 · 455/569
 == W180 T15, the state as T14's checkpoint
 strip | trainer off the line · ~ re-solving… · Golbat Venoshock → Tyranitar · 3 hits
     ✗ T13 Tyranitar expected 512/569 · came 455/569
@@ -180,6 +182,7 @@ strip | trainer ⚔ ~ T15/19 · Golbat Venoshock · then send Gyarados
 strip | trainer off the line · ! re-solving… · Golbat Venoshock → Tyranitar · 3 hits
     ✗ T15 Tyranitar expected 339/569 · came 360/569
     ⚔ Golbat Poison Venoshock → Tyranitar 3 hits
+scored T15/19 miss ! Tyranitar 339/569 · 360/569
 a re-solve from T16, the same run       held
 == W180 T16, an oracle line after a wrong one
 strip | trainer ⚔ ! T16/19 · Gyarados Tera Water + Hydro Pump
@@ -214,6 +217,7 @@ strip | trainer off the line · ~ re-solving… · Golbat Venoshock → Tyranita
     ✗ T17 Snorlax expected benched · came in front
     ⚔ Golbat Poison Venoshock → Tyranitar 3 hits
 from T15, to a lost fight               held
+scored at the game over T15/19 miss ! the fight won · lost
 == T1, a Continue retry after the lost fight
 strip | trainer off the line · ! re-solving… · Golbat Venoshock → Tyranitar · 3 hits
     ✗ T15 the fight expected won · came lost
@@ -226,5 +230,5 @@ strip | trainer off the line · ! re-solving… · Golbat Venoshock → Tyranita
 W188 from T18                           held
 W188 rewards: done done | off null
 W180 from T19                           held
-W180 biome screen: off {"turn":19,"misses":[{"icon":null,"name":"Gyarados","expected":"423/570","came":"388/570"}],"mark":"!"}
+W180 biome screen: off {"turn":19,"misses":[{"icon":null,"name":"Gyarados","expected":"423/570","came":"388/570"}],"of":19,"mark":"!"}
 writes to the game: none

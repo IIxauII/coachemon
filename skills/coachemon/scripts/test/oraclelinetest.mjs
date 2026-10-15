@@ -263,7 +263,10 @@ const after = (turn, tweak = () => {}, line = LINE) => {
 const bySpecies = (side, key) => side.find(m => m.species === SpeciesId[key]);
 // A frame inside `turn`, once the player has committed `cmd`, and the decision the game reaches next.
 const play = (turn, cmd, opts) => oracleLineSeen(at(turn, { phase: { phaseName: "MovePhase" }, cmd, ...opts }));
-const decide = (turn, opts) => { const s = at(turn, opts); oracleLineCheck(s); return s; };
+// `scored`: what the decision scored, for the journal.
+let scored = null;
+const decide = (turn, opts) => { const s = at(turn, opts); scored = oracleLineCheck(s); return s; };
+const scoredText = sc => (sc ? `T${sc.turn}/${sc.of} ${sc.misses.length ? `miss${sc.wrong ? " !" : ""} ${sc.misses.map(m => `${m.name} ${m.expected} · ${m.came}`).join("; ")}` : "match"}` : "nothing");
 const offRows = act => act.rows.filter(r => r.startsWith("✗"));
 
 // ---- A checkpoint that matches ticks its step, and the oracle line leads on
@@ -272,6 +275,11 @@ const offRows = act => act.rows.filter(r => r.startsWith("✗"));
   hand("Gordie's W180, to score", LINE);
   play(12, { move: "LEAF_STORM" });
   const s = decide(13, { cp: after(12) });
+  console.log(`scored ${scoredText(scored)}`);
+  assert.deepEqual([scored.turn, scored.of, scored.misses, scored.wrong], [12, 19, [], false]);
+  assert.deepEqual(scored.checkpoint, LINE.steps.find(st => st.turn === 12).checkpoint, "the claim scored is the step's own");
+  assert.deepEqual(scored.input, LINE.steps.find(st => st.turn === 12).input);
+  assert.equal(oracleLineCheck(at(13, { cp: after(12) })), null, "the same decision again scores nothing");
   assert.equal(marks(plan("W180 T13, T12's checkpoint matched", s).rows), "✓✓▸······");
   assert.equal(now("W180 T13, on the oracle line", s).act.summary, "⚔ ~ T13/19 · Leavanny Bug Bite · then send Golbat");
 }
@@ -283,18 +291,21 @@ const offRows = act => act.rows.filter(r => r.startsWith("✗"));
   const { act, card: c, groups } = now("W180 T14, Leaf Storm where the oracle line said Bug Bite", s);
   assert.equal(act.summary, "off the line · ~ re-solving… · Golbat Venoshock → Tyranitar · 3 hits");
   assert.deepEqual(offRows(act), ["✗ T13 Tyranitar expected 512/569 · came 455/569"]);
+  console.log(`scored ${scoredText(scored)}`);
+  assert.deepEqual([scored.turn, scored.wrong], [13, false], "leaving the line is no wrong claim");
   assert.ok(act.rows.some(r => r.includes("Venoshock")), "the turn line's own call is back");
   const planned = groups.find(x => x.id === "plan");
   assert.ok(planned.summary.startsWith("likely lost"), planned.summary);
   assert.ok(planned.rows.some(r => r.includes("chips it")), "the fight plan is back");
   assert.equal(oracleLineModel(s), null);
-  assert.equal(cardEvent(c).oracleLine, null);
+  assert.deepEqual(cardEvent(c).oracleLine, { state: "off", turn: 13, of: 19 }, "the card event tells the coach the line is off");
 }
 
 // ---- An oracle line off the line stays void at every later decision of the run, a Continue retry of its wave included
 {
   play(14, { move: "TOXIC" });
   const s = decide(15, { cp: after(14) });
+  assert.equal(scored, null, "an oracle line off the line scores nothing more");
   assert.equal(oracleLineModel(s), null, "a later checkpoint that happens to match brings nothing back");
   assert.ok(now("W180 T15, the state as T14's checkpoint", s).act.summary.startsWith("off the line · ~ "));
   const retry = decide(1);
@@ -313,6 +324,8 @@ const offRows = act => act.rows.filter(r => r.startsWith("✗"));
   const { act } = now("W180 T16, Venoshock as the oracle line said, drawn otherwise", s);
   assert.equal(act.summary, "off the line · ! re-solving… · Golbat Venoshock → Tyranitar · 3 hits");
   assert.deepEqual(offRows(act), ["✗ T15 Tyranitar expected 339/569 · came 360/569"]);
+  console.log(`scored ${scoredText(scored)}`);
+  assert.equal(scored.wrong, true, "the miss that marks the claim ! says so");
 
   const fromT16 = { ...LINE, steps: LINE.steps.slice(5) };
   scene = at(16, { cp: after(15) });
@@ -371,7 +384,10 @@ const offRows = act => act.rows.filter(r => r.startsWith("✗"));
   scene = at(15, { seed, cp: after(14) });
   hand("from T15, to a lost fight", { ...LINE, seed, steps: LINE.steps.slice(4) });
   play(15, { move: "VENOSHOCK" }, { seed });
-  oracleLineSeen(at(15, { seed, cmd: { move: "VENOSHOCK" }, phase: { phaseName: "GameOverPhase" } }));
+  const lost = oracleLineSeen(at(15, { seed, cmd: { move: "VENOSHOCK" }, phase: { phaseName: "GameOverPhase" } }));
+  console.log(`scored at the game over ${scoredText(lost)}`);
+  assert.deepEqual([lost.turn, lost.wrong, lost.misses.map(m => m.came)], [15, true, ["lost"]]);
+  assert.equal(oracleLineSeen(at(15, { seed, cmd: { move: "VENOSHOCK" }, phase: { phaseName: "GameOverPhase" } })), null, "the next frame of the game over scores nothing");
   const retry = decide(1, { seed });
   assert.equal(oracleLineModel(retry), null);
   const { act } = now("T1, a Continue retry after the lost fight", retry);
@@ -404,6 +420,7 @@ const offRows = act => act.rows.filter(r => r.startsWith("✗"));
   const learn = decide(19, { seed, wave, phase: { phaseName: "LearnMovePhase" }, cp: after(19, cp => { bySpecies(cp.ours, "GYARADOS").hp = 388; }) });
   assert.notEqual(oracleLineModel(learn), null, "the move prompt scores nothing");
   const rewards = decide(20, { seed, wave, phase: { phaseName: "SelectModifierPhase" }, cp: after(19) });
+  assert.deepEqual([scored.turn, scored.of, scored.misses], [19, 19, []], "the final checkpoint is journalled as a match");
   console.log(`W188 rewards: ${oracleLineModel(rewards)?.steps.map(st => st.at).join(" ")} | off ${JSON.stringify(offTheLineModel(rewards))}`);
   assert.deepEqual(oracleLineModel(rewards).steps.map(st => st.at), ["done", "done"]);
   assert.equal(offTheLineModel(rewards), null);

@@ -283,9 +283,12 @@ test("`cardBody` rejects every shape but the one the HUD sends (extension-distri
   }
 });
 
-test("`cardBody` carries the oracle line's state, its turn of its last, and nothing else (extension-distribution.md §11.1, #671)", () => {
+test("`cardBody` carries the oracle line's state, its turn of its last, and nothing else (extension-distribution.md §11.1, #671, #675)", () => {
   const card = (oracleLine: unknown) => ({ build: BUILD, kind: "battle", key: "180", wave: 180, verdict: "trainer", groups: [], text: "t", oracleLine });
   assert.deepEqual(cardBody(card({ state: "on", turn: 7, of: 19 }))?.oracleLine, { state: "on", turn: 7, of: 19 });
+  assert.deepEqual(cardBody(card({ state: "off", turn: 13, of: 19 }))?.oracleLine, { state: "off", turn: 13, of: 19 });
+  // A fight lost after the oracle line's last step is off the line on the turn it was lost.
+  assert.deepEqual(cardBody(card({ state: "off", turn: 21, of: 19 }))?.oracleLine, { state: "off", turn: 21, of: 19 });
   assert.equal(cardBody(card(null))?.oracleLine, null);
   for (const bad of [
     "on",
@@ -296,6 +299,11 @@ test("`cardBody` carries the oracle line's state, its turn of its last, and noth
     { state: "on", turn: 7.5, of: 19 },
     { state: "on", turn: 20, of: 19 },
     { state: "on", turn: 0, of: 19 },
+    { state: "off", turn: 13 },
+    { state: "off", turn: 13, of: 19, misses: [] },
+    { state: "off", turn: 0, of: 19 },
+    { state: "off", turn: 13, of: 0 },
+    { state: "off", turn: 13.5, of: 19 },
   ]) {
     assert.equal(cardBody(card(bad)), null, JSON.stringify(bad));
   }

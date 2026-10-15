@@ -10,7 +10,7 @@ const RETRY_MS = 5_000;
  * Untyped on purpose: the event body and a read's result both arrive as `unknown`, a HUD mid-refresh sends nulls and an
  * older build may send nothing at all.
  */
-export type CardFacts = { kind?: unknown; wave?: unknown; verdict?: unknown; text?: unknown };
+export type CardFacts = { kind?: unknown; wave?: unknown; verdict?: unknown; text?: unknown; oracleLine?: unknown };
 
 /** The panel's own `rewards` streams as `reward` (extension-distribution.md §11.1). */
 const LABEL: Record<string, string> = {
@@ -31,6 +31,18 @@ export function cardLine(c: CardFacts): string | null {
   const text = summaryText(c.text);
   return `${label}${wave}${verdict}${text === "" ? "" : ` | ${text}`}`;
 }
+
+/** `key` is the oracle line's: every later card of its fight still carries `off` (extension-distribution.md §11.1). */
+export function offLine(c: CardFacts): { key: string; line: string } | null {
+  const o = c.oracleLine;
+  if (typeof o !== "object" || o === null) return null;
+  const { state, turn, of } = o as Record<string, unknown>;
+  if (state !== "off") return null;
+  const wave = typeof c.wave === "number" ? ` w${c.wave}` : "";
+  return { key: `${String(c.wave)}|${String(turn)}|${String(of)}`, line: `OFF LINE${wave} · T${String(turn)}/${String(of)}` };
+}
+
+const leads = (c: CardFacts) => typeof c.oracleLine === "object" && c.oracleLine !== null && (c.oracleLine as Record<string, unknown>).state === "on";
 
 export function feedLine(f: ClientEvent | Notice): string | null {
   if (f.t === "notice") return f.kind === "resume" ? "RESUMED" : `TABS ${tabsLine(f.tabs)}`;
@@ -72,11 +84,22 @@ export async function runWatch(o: WatchOptions): Promise<void> {
     if (line !== null) print(line);
   };
 
+  /** The oracle line already said to be off; an oracle line that leads again is a new one. */
+  let offKey: string | null = null;
+  const sayCard = (c: CardFacts) => {
+    say(cardLine(c));
+    if (leads(c)) offKey = null;
+    const off = offLine(c);
+    if (off === null || off.key === offKey) return;
+    offKey = off.key;
+    print(off.line);
+  };
+
   /** Settles the debt before it awaits, so a `resume` and the loop never both read on one return. A refusal is the ladder's to explain. */
   const readCard = async (): Promise<void> => {
     owed = false;
     const r = await client.send("card", {});
-    if (r.ok) say(cardLine(r.result as CardFacts));
+    if (r.ok) sayCard(r.result as CardFacts);
   };
 
   const client = new HubClient({
@@ -84,7 +107,8 @@ export async function runWatch(o: WatchOptions): Promise<void> {
     version: o.version,
     role: "watch",
     onEvent: f => {
-      say(feedLine(f));
+      if (f.t === "event" && f.kind === "card") sayCard(f.body as CardFacts);
+      else say(feedLine(f));
       if (f.t !== "notice") return;
       ladder = null;
       if (f.kind === "resume") void readCard();

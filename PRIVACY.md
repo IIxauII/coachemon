@@ -35,7 +35,8 @@ each one and keeps the one belonging to the run you are playing. It goes over th
 else.
 
 That program can also hand the extension a plan for the fight in front of you, which the coach overlay draws for that
-one fight. Coachemon keeps it in the page's memory only: it is never stored and never passed on.
+one fight. Coachemon keeps the plan in the page's memory only and never passes it on. As you play, the overlay checks
+each step of it against the game, and the journal below keeps what each check found.
 
 Nothing you type into the game — your account name, your password, anything in a form — is ever read or passed on.
 
@@ -45,8 +46,9 @@ Two entries, on your own machine, both in the page's `localStorage`:
 
 - `coach-hud-panel`: which view of the coach panel you last picked.
 - `coach-me-journal`: the coach's journal. For each Mystery Encounter you meet, it keeps the card the coach showed, the
-  option you picked and the state of your run around it, so the coach's advice can be checked against what happened.
-  It keeps only the most recent entries and drops the oldest.
+  option you picked and the state of your run around it. For each step of a fight plan the overlay checks, it keeps the
+  card the coach showed, what the plan expected and what came. That way the coach's advice can be checked against what
+  happened. It keeps only the most recent entries and drops the oldest.
 
 There is no account, no profile and no identifier of any kind.
 

@@ -62,29 +62,36 @@ const pickedOther = (s, st, mover) => {
   const front = frontOf(s);
   return front !== mover && front !== want;
 };
-// Steps `from` exclusive to `i` inclusive are behind us now, and `misses` came of them.
+// Steps `from` exclusive to `i` inclusive are behind us now, and `misses` came of them. True when the claim was wrong.
 const miss = (h, from, i, misses, picked) => {
   h.off = { turn: h.line.steps[i].turn, misses };
-  if (!picked && !h.strayed && h.line.steps.slice(from + 1, i + 1).every(st => matchesLine(st, h.played[st.turn]))) wrongSeed = h.line.seed;
+  const wrong = !picked && !h.strayed && h.line.steps.slice(from + 1, i + 1).every(st => matchesLine(st, h.played[st.turn]));
+  if (wrong) wrongSeed = h.line.seed;
+  return wrong;
 };
+const lastTurn = line => line.steps[line.steps.length - 1].turn;
+// What a decision scored, for the journal: the step whose checkpoint it was, or none for a fight lost past every step.
+const scoredOf = (h, st, turn, misses, wrong) => ({ turn, of: lastTurn(h.line), input: st?.input ?? null,
+  checkpoint: st?.checkpoint ?? null, misses, wrong });
 
 // The turn's command is cleared when the turn ends (game-code.md §5), so every frame takes it while it is there. The
 // free switch's party screen is a non-modal `SwitchPhase` (game-code.md §9), and a lost fight never reaches a decision.
 // @only 98-watch, tests: oracleLineSeen
 export const oracleLineSeen = s => {
   const h = leading(s);
-  if (!h) return;
+  if (!h) return null;
   const b = s.currentBattle, cmd = b.turnCommands?.[0], ph = phaseOf(s);
   if (ph?.phaseName === "SwitchPhase" && !ph.isModal) h.strayed = true;
   if (ph?.phaseName === "GameOverPhase") {
     // A fight lost to a TURN_END tag (Leech Seed, Curse…) ends after the turn has moved on (game-code.md §21).
     const turn = cmd ? b.turn : b.turn - 1;
     const i = h.line.steps.findLastIndex(st => st.turn <= turn);
-    if (i > h.scored) miss(h, h.scored, i, [LOST], false);
-    else h.off = { turn, misses: [LOST] };
-    return;
+    if (i > h.scored) return scoredOf(h, h.line.steps[i], h.line.steps[i].turn, [LOST], miss(h, h.scored, i, [LOST], false));
+    h.off = { turn, misses: [LOST] };
+    return scoredOf(h, null, turn, [LOST], false);
   }
   if (cmd && h.played[b.turn]?.cmd !== cmd) h.played[b.turn] = { cmd, tera: b.preTurnCommands?.[0]?.command === Command.TERA };
+  return null;
 };
 
 const signed = n => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : "0");
@@ -124,20 +131,21 @@ const SCORED_AT = new Set(["CommandPhase", "SelectModifierPhase", "SelectBiomePh
 // @only 98-watch, tests: oracleLineCheck
 export const oracleLineCheck = s => {
   const h = leading(s);
-  if (!h || !SCORED_AT.has(phaseOf(s)?.phaseName)) return;
+  if (!h || !SCORED_AT.has(phaseOf(s)?.phaseName)) return null;
   const i = lastBefore(h.line.steps, s.currentBattle.turn);
-  if (i <= h.scored) return;
-  const from = h.scored;
+  if (i <= h.scored) return null;
+  const from = h.scored, st = h.line.steps[i];
   h.scored = i;
-  const misses = missesOf(s, h.line.steps[i].checkpoint);
-  if (misses.length) miss(h, from, i, misses, pickedOther(s, h.line.steps[i], moverOf(h, i)));
-  else h.strayed = false;
+  const misses = missesOf(s, st.checkpoint);
+  if (misses.length) return scoredOf(h, st, st.turn, misses, miss(h, from, i, misses, pickedOther(s, st, moverOf(h, i))));
+  h.strayed = false;
+  return scoredOf(h, st, st.turn, [], false);
 };
 
 // @only 60-card, tests: offTheLineModel
 export const offTheLineModel = s => {
   const off = held?.off;
-  return off && sameFight(s, held.line) ? { ...off, mark: markOf(held.line) } : null;
+  return off && sameFight(s, held.line) ? { ...off, of: lastTurn(held.line), mark: markOf(held.line) } : null;
 };
 export const offTheLineSummary = o => (o ? `off the line · ${o.mark} re-solving…` : null);
 
@@ -214,7 +222,8 @@ export const oracleStepSummary = m => {
 };
 
 // The card event's `oracleLine` (extension-distribution.md §11.1).
-export const oracleLineState = m => {
+export const oracleLineState = (m, off) => {
   const st = oracleLineNow(m);
-  return st ? { state: "on", turn: st.turn, of: m.last } : null;
+  if (st) return { state: "on", turn: st.turn, of: m.last };
+  return off ? { state: "off", turn: off.turn, of: off.of } : null;
 };

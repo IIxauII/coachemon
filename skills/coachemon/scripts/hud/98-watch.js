@@ -5,10 +5,10 @@ import { detect } from "./02-decision.js";
 import { gameEvents, gameTables } from "./04-game-tables.js";
 import { previewArm, previewCheck } from "./48-preview.js";
 import { rerollArm, rerollCheck } from "./50-reroll.js";
-import { journalCheck } from "./55-journal.js";
+import { journalCheck, journalCheckpoint } from "./55-journal.js";
 import { holdOracleLine, oracleLineCheck, oracleLineSeen } from "./57-oracle-line.js";
-import { hasRoad, keepRoad, readCard, readOracleLine, readRoad } from "./60-card.js";
-import { battleScene, clearMissed, controls, drawer, dropGame, el, glyph, missedSprite, openGroup, PANEL_W, panelState, setRedraw, strip } from "./90-render.js";
+import { cardEvent, hasRoad, keepRoad, readCard, readOracleLine, readRoad } from "./60-card.js";
+import { battleScene, clearMissed, controls, drawer, dropGame, el, glyph, missedSprite, openGroup, PANEL_W, panelState, setRedraw, strip, wireCard } from "./90-render.js";
 import { captionBattle, drawBattle } from "./96-render-battle.js";
 import { captionEncounter, drawEncounter } from "./96-render-encounter.js";
 import { captionFusion, drawFusion } from "./96-render-fusion.js";
@@ -111,6 +111,17 @@ const sentIn = s => {
 };
 const forget = () => { copy(built, NONE); field.from = null; field.battle = null; cache.length = 0; };
 
+// The battle card the step was played from, in the wire's shape. A card that will not flatten journals none, and the
+// build goes on.
+const playedOn = () => {
+  try {
+    const rec = field.from;
+    const ev = rec ? cardEvent(rec.card) : null;
+    return ev ? { ...ev, groups: wireCard(groupsOf(rec)).groups } : null;
+  } catch { return null; }
+};
+const journalScored = (s, scored) => { if (scored) journalCheckpoint(s, scored, playedOn()); };
+
 // Drawn once per record version, for the shell and the stream alike (extension-distribution.md §11.1). `undefined` is
 // not drawn yet and `null` is drawn with nothing, so a renderer that yields nothing is not run again on every call.
 const groupsOf = rec => {
@@ -188,7 +199,7 @@ const build = (road, sendIn = false) => {
     if (!s?.ui) { hide(); return; }
     // Before `readCard`: `previewArm` and `rerollArm` overwrite the prediction these two score, and the card draws the
     // oracle line as its checkpoint left it.
-    stage("check", () => { rerollCheck(s); previewCheck(s); oracleLineCheck(s); });
+    stage("check", () => { rerollCheck(s); previewCheck(s); journalScored(s, oracleLineCheck(s)); });
     const card = stage("read", () => readCard(s, accountRead(s), { road, estimate: sendIn }));
     screenNote(s, card);
     stage("arm", () => {
@@ -267,7 +278,7 @@ const tryLook = s => { try { const fresh = look(s); lookFailed = null; return fr
 const trySentIn = s => { try { return sentIn(s); } catch (e) { lookFailed = e; return false; } };
 const gone = s => !s?.ui || (!open() && s.phaseManager?.getCurrentPhase?.()?.phaseName === "TitlePhase");
 // A frame the command can't be read on misses only that frame's look at it.
-const trySeen = s => { try { oracleLineSeen(s); } catch {} };
+const trySeen = s => { try { journalScored(s, oracleLineSeen(s)); } catch {} };
 
 // An oracle line handed with no battle card up is held all the same, and the next battle card built draws it (#670).
 // @only 99-start: watchOracleLine

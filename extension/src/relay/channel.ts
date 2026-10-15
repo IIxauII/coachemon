@@ -90,10 +90,12 @@ function cardOracleLine(v: unknown): CardOracleLine | null | undefined {
   if (v === null) return null;
   if (!v || typeof v !== "object" || Array.isArray(v)) return undefined;
   const d = v as Record<string, unknown>;
-  if (Object.keys(d).sort().join(",") !== "of,state,turn" || d.state !== "on") return undefined;
-  const { turn, of } = d;
-  if (!Number.isInteger(turn) || !Number.isInteger(of) || (turn as number) < 1 || (turn as number) > (of as number)) return undefined;
-  return { state: "on", turn: turn as number, of: of as number };
+  if (Object.keys(d).sort().join(",") !== "of,state,turn" || (d.state !== "on" && d.state !== "off")) return undefined;
+  const { state, turn, of } = d;
+  if (!Number.isInteger(turn) || !Number.isInteger(of) || (turn as number) < 1 || (of as number) < 1) return undefined;
+  // Off the line, `turn` is the miss's, and a fight lost past the oracle line's last step misses after it.
+  if (state === "on" && (turn as number) > (of as number)) return undefined;
+  return { state, turn: turn as number, of: of as number };
 }
 
 function cardGroups(v: unknown): CardGroup[] | null {
