@@ -101,7 +101,7 @@ test("every command attaches first, screenshot too", async () => {
   assert.equal(s.ensured(), 3);
 });
 
-test("the link offers the store table but the session read, which goes over the hub only (#669)", async () => {
+test("the link offers the store table but the session read, which goes over the hub only (extension-distribution.md §10.1)", async () => {
   const tab = tabSession({});
   const link = new CdpLink(tab.session);
   assert.deepEqual([...link.commands].sort(), COMMAND_NAMES.filter(n => n !== "session").sort());
@@ -110,7 +110,7 @@ test("the link offers the store table but the session read, which goes over the 
   assert.deepEqual(tab.sent, [], "nothing is asked of the tab");
 });
 
-test("a tool that needs the session read refuses alone on CDP, naming the hub (#669)", async () => {
+test("a tool that needs the session read refuses alone on CDP, naming the hub (extension-distribution.md §10.1)", async () => {
   const link = new CdpLink(tabSession({}).session);
   assert.equal((await link.presence(["probe", "menu", "card"])).reach, null);
   const short = (await link.presence(["probe", "menu", "session"])).reach;

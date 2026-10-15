@@ -36,7 +36,7 @@ const PREFIX = Object.fromEntries(
 
 const UNCONTENDED: Contention = { contended: false, holder: null };
 
-/** The hub carries these to the plugin, or nothing does (#669). */
+/** The hub carries these to the plugin, or nothing does (extension-distribution.md §10.1). */
 const HUB_ONLY: ReadonlySet<CommandName> = new Set(["session"]);
 
 const hubOnly = (name: CommandName) => `The ${name} read goes over the Coachemon hub only, and this server reads the game over CDP: set COACHEMON_TRANSPORT=hub.`;

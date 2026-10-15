@@ -12,7 +12,7 @@ export function waveStartSave(stored: readonly string[], live: { seed: unknown; 
   return ours.find(s => s.waveIndex === live.wave) ?? ours[0] ?? null;
 }
 
-/** The game's `encrypt`, reversed (game-code.md §28). Null for anything it did not write. */
+/** The game's `encrypt`, reversed (game-code.md §28). Null for anything else, a `bypassLogin` build's `btoa` copy included. */
 function decrypt(stored: string): Save | null {
   const raw = Buffer.from(stored, "base64");
   if (raw.length <= 16 || !raw.subarray(0, 8).equals(SALTED)) return null;

@@ -51,7 +51,7 @@ export interface Tab {
   /**
    * Whether a command can reach a game tab right now, and what `status` says about the transport. `needs` are the
    * commands the caller is about to use: one the connected extension never registered, or the transport never carries,
-   * refuses alone (extension-distribution.md §8.5).
+   * refuses alone (extension-distribution.md §8.5, §10.1).
    */
   presence(needs?: readonly CommandName[]): Promise<Presence>;
   /** Takes the right to act on the game for this session (extension-distribution.md §7.5). A refusal is a tool's, so it carries its own wording. */
