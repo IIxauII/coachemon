@@ -46,3 +46,19 @@ provisioning it again re-fetches the 815 MB `assets` submodule for no gain (#296
 [ "$PWD" != "$MAIN" ] && [ -d "$MAIN/.cache" ] && ln -s "$MAIN/.cache" .cache
 ```
 
+## Contended tab
+
+**Find the holder, then message only its session.** `tab_contended` gives the server pid as `holder`. The hub's
+`contended` gives none, so take candidates from `pgrep -fl src/server.ts` (every session with the plugin runs one).
+`ps -o ppid= -p <server-pid>` is its Claude session; `~/.claude/sessions/<session-pid>.json` has that session's `name`.
+
+**The tab frees only when that server exits**: there is no release tool, and the classifier denies killing another
+session's server. A holder mid-test keeps the tab. For a stale one (no live session, or its session is done), the user
+runs `! kill <server-pid>`.
+
+## Sideload builds
+
+**A build the user loads by hand** (unpacked or zip) goes to `~/Downloads`: give that path, not a worktree's
+`extension/.output/`. Swap a rebuild into the folder already loaded. Orion keys an unpacked extension by its path
+(#418), so a new folder loads as a second Coachemon without the site grant.
+

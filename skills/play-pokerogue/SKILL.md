@@ -11,12 +11,12 @@ The `coachemon` MCP server drives a live PokéRogue tab in Chrome over CDP. Stat
 
 - The server launches Chrome with its own profile (`~/.coachemon/chrome-profile`) if no tab is attached on debug port 9222. If `status` or `read_menu` shows a login/register screen, **stop and ask the user to log in by hand in that Chrome window.** Never type credentials.
 - It plays on the user's **real save**. `start_run` refuses an occupied slot unless `overwrite: true`. Never pass `overwrite: true` without the user's say-so for that slot.
-- One driver per tab. `tab_contended` means another session holds `~/.coachemon/driver.lock` — tell the user; don't retry in a loop.
+- One driver per tab. `tab_contended` (pid in `holder`) or the hub's `contended` (no pid) means another session is driving the tab. Ask that session to hand over if you can message it, else tell the user. Don't retry in a loop.
 
 ## The loop
 
 1. `status` — attached? run live? on `TITLE`?
-2. No run: `start_run` with the user's starters (species names as on the starter grid; default e.g. `["Bulbasaur","Charmander","Squirtle"]`). If the party is over the cost budget or a name isn't on the grid it refuses and backs out to `TITLE` first, so fix the party and call `start_run` again. If the refusal carries `next`, the back-out failed: do what `next` says.
+2. No run: to continue a saved run (the user says continue, or a handoff names a slot or wave), pick `Continue` on `TITLE` (the run played last) or `Load Game` and that slot; don't start a new one. Otherwise `start_run` with the user's starters (species names as on the starter grid). If they named none, call `read_starters`, take the strongest team the point budget buys and say why in one line. If the party is over the cost budget or a name isn't on the grid it refuses and backs out to `TITLE` first, so fix the party and call `start_run` again. If the refusal carries `next`, the back-out failed: do what `next` says.
 3. Until a result's `status` is `run_over` or `run_interrupted`:
    - Every acting result carries `menu` (screen, labels in cursor order, cursor, text). Decide from it. Call `read_menu` only when you need full option objects (move PP/power in `extra.moves`, shop costs, party HP) or `cancel_effect`.
    - Act with `select_option` using a label **exactly** as returned. If a label is duplicated (e.g. same item as free reward and in the shop), pass `index` (the option's `i` from `read_menu` this call). Pass `expect_screen` when acting on a screen read earlier.
