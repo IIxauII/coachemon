@@ -1,4 +1,13 @@
-import type { NoAnswer, Reason } from "./oracle-line.ts";
+import { describeInput } from "./describe.ts";
+import type { HygieneRule, NoAnswer, Reason } from "./oracle-line.ts";
+
+const BROKE: Record<HygieneRule, string> = {
+  max_rolls: "rolled every battle draw at its maximum",
+  overrides: "loaded the teams through upstream's test overrides",
+  enemy_items: "kept the foe's items from before the reload",
+  item_totals: "loaded other item stacks than the save holds",
+  stray_prompt: "left a prompt queued for a decision the game never asked",
+};
 
 export const noAnswer = (reason: Reason): NoAnswer => ({
   kind: "no_answer",
@@ -33,8 +42,35 @@ function cause(reason: Reason): string {
         `the oracle's clone would drop ${reason.items.join(", ")} on load, so an oracle line would be found for a ` +
         "different team."
       );
+    case "no_live_battle":
+      return "no live battle came with the save, so nothing shows the save is this fight's.";
+    case "not_wave_start":
+      return (
+        "only the wave-start save replays a fight from its first turn, and this is the session export, whose reload " +
+        "applies the entry effects twice."
+      );
+    case "save_mismatch": {
+      const seed = reason.save.battleSeed === undefined ? "" : ` with battle seed ${reason.save.battleSeed}`;
+      return (
+        `the save is for wave ${reason.save.wave}${seed}, but the live battle is wave ${reason.live.wave} with battle ` +
+        `seed ${reason.live.battleSeed}, so an oracle line found on it would be another fight's.`
+      );
+    }
     case "no_clone":
-      return `the oracle's clone of game version ${reason.version} couldn't be set up: ${reason.cause}.`;
+      return `the oracle's clone of game version ${reason.version} isn't set up: ${reason.cause}.`;
+    case "clone_version":
+      return `the oracle's clone is game version ${reason.clone}, not the ${reason.pinned} it is pinned to.`;
+    case "load_hygiene":
+      return `the oracle's harness ${BROKE[reason.rule]} (${reason.detail}), so the fight it played was not the game's.`;
+    case "illegal_step": {
+      if (reason.index === null || reason.tried === null) {
+        return `turn ${reason.turn}, which has no input of its own, ${reason.why}.`;
+      }
+      const offered = reason.legal.length > 0 ? `; the game offers ${reason.legal.map(describeInput).join(", ")}` : "";
+      return `input ${reason.index + 1}, ${describeInput(reason.tried)}, ${reason.why} at turn ${reason.turn}${offered}.`;
+    }
+    case "harness_failed":
+      return `the oracle's harness failed: ${reason.why}${/[.!?]$/.test(reason.why) ? "" : "."}`;
     case "not_built":
       return "solving not built yet";
   }

@@ -1,6 +1,15 @@
 import type { MoveId, SpeciesId, StatusEffect } from "../enums/generated.ts";
+import type { Battle } from "./input.ts";
 
 export type SolveResult = { kind: "oracle_line"; oracleLine: OracleLine } | NoAnswer;
+
+export type ReplayResult = { kind: "replayed"; replay: Replay } | NoAnswer;
+
+/** Scripted inputs played forward from the save to where they end. Not an oracle line: no win is promised (#660). */
+export type Replay = { outcome: Outcome; steps: readonly Step[]; receipt: Receipt };
+
+/** `open`: the inputs ran out with the fight still on. */
+export type Outcome = "won" | "lost" | "open";
 
 export type OracleLine = {
   /** With `wave`, keys the oracle line to its fight: the HUD ignores one for another (#670). */
@@ -29,7 +38,10 @@ export type Input = (
 
 export type PartySlot = { slot: number; species: keyof typeof SpeciesId };
 
-/** The last step's is read at the rewards screen, once the end-of-turn effects after the last faint have run (#660). */
+/**
+ * A won fight's last is read once the battle has ended: after the end-of-turn effects that follow the last faint, with
+ * the foes' held items dropped, as live shows it (#660).
+ */
 export type Checkpoint = { ours: readonly MonState[]; foes: readonly MonState[] };
 
 export type MonState = PartySlot & {
@@ -62,5 +74,16 @@ export type Reason =
   | { code: "double" }
   | { code: "safeguard" }
   | { code: "dropped_item"; items: readonly string[] }
+  | { code: "no_live_battle" }
+  | { code: "not_wave_start" }
+  | { code: "save_mismatch"; save: { wave: number; battleSeed?: string }; live: Battle }
   | { code: "no_clone"; version: string; cause: string }
+  | { code: "clone_version"; clone: string; pinned: string }
+  | { code: "load_hygiene"; rule: HygieneRule; detail: string }
+  /** `index` into the inputs, null on a turn that took none. */
+  | { code: "illegal_step"; index: number | null; turn: number; why: string; tried: Input | null; legal: readonly Input[] }
+  | { code: "harness_failed"; why: string }
   | { code: "not_built" };
+
+/** The harness traps a replay checks it stayed out of (#632). */
+export type HygieneRule = "max_rolls" | "overrides" | "enemy_items" | "item_totals" | "stray_prompt";

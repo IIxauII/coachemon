@@ -6,9 +6,7 @@ import { refuse } from "./gate.ts";
 import type { MidFightExtras, Recheck, SessionSave } from "./input.ts";
 
 const PIN = "1.12.0.11";
-const drayton: SessionSave = JSON.parse(
-  readFileSync(new URL("./fixtures/drayton-w188.wave-start.json", import.meta.url), "utf8"),
-);
+const drayton: SessionSave = JSON.parse(readFileSync(new URL("./fixtures/drayton-w188.json", import.meta.url), "utf8")).save;
 const doubleDrayton = { ...drayton, trainer: { trainerType: drayton.trainer!.trainerType, variant: TrainerVariant.DOUBLE } };
 
 const ask = (

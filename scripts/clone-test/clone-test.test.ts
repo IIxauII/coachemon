@@ -8,7 +8,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
 import { type CloneTest, type CloneTestResult, testInClone } from "./clone-test.ts";
 
-// Stands in for vitest: `FAKE` picks what it does, and the report echoes back the test and bundle it was handed. Like
+// Stands in for vitest: `FAKE` picks what it does, and the report echoes back the test, bundle and input it was handed. Like
 // vitest behind npx, it goes on writing for a while after a SIGTERM.
 const FAKE_VITEST = `
 import { readFileSync, writeFileSync } from "node:fs";
@@ -30,7 +30,9 @@ if (mode === "no-report") process.exit(1);
 writeFileSync(process.env.COACH_OUT, JSON.stringify({ wrote: "records" }));
 writeFileSync(report, JSON.stringify({
   success: true, numTotalTests: 1, numPassedTests: 1, numFailedTests: 0, numPendingTests: 0,
-  testFile, source: readFileSync(testFile, "utf8"), bundle: readFileSync(process.env.COACH_BUNDLE, "utf8"),
+  testFile, source: readFileSync(testFile, "utf8"),
+  bundle: process.env.COACH_BUNDLE ? readFileSync(process.env.COACH_BUNDLE, "utf8") : null,
+  input: process.env.COACH_IN ? readFileSync(process.env.COACH_IN, "utf8") : null,
 }));
 process.exit(1);
 `;
@@ -64,7 +66,7 @@ const scratch = (t: TestContext) => {
 };
 
 const echoed = ({ report }: CloneTestResult) =>
-  report as unknown as { testFile: string; source: string; bundle: string };
+  report as unknown as { testFile: string; source: string; bundle: string | null; input: string | null };
 
 test("a passing report reads as passing though vitest exits 1 (#658)", async t => {
   const s = scratch(t);
@@ -82,6 +84,14 @@ test("two tests started at once in one clone each run their own files and leave 
   assert.notEqual(a.testFile, b.testFile);
   assert.deepEqual([a.source, a.bundle], ["test A", "bundle for test A"]);
   assert.deepEqual([b.source, b.bundle], ["test B", "bundle for test B"]);
+  assert.deepEqual(s.leftovers(), UPSTREAM);
+});
+
+test("a test is handed its input at COACH_IN and needs no bundle, and leaves no files behind (#660)", async t => {
+  const s = scratch(t);
+  const { bundle: _, ...options } = s.options("pass");
+  const { input, bundle } = echoed(await testInClone({ ...options, input: "the job" }));
+  assert.deepEqual([input, bundle], ["the job", null]);
   assert.deepEqual(s.leftovers(), UPSTREAM);
 });
 
