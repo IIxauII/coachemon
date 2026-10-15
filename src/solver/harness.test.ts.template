@@ -4,6 +4,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { connect } from "node:net";
 import { createInterface } from "node:readline";
+import { getHeapStatistics } from "node:v8";
 import { BattleScene } from "#app/battle-scene";
 import { activeOverrides, defaultOverrides } from "#app/overrides";
 import { ConfusedTag } from "#data/battler-tags";
@@ -599,7 +600,9 @@ async function expand(at: string, inputs: (Input | null)[]) {
     else if (ended === "on") children.push({ input: played, end: "on", at: position() });
     else children.push({ input: played, end: ended, hp: hp() });
   }
-  return { children };
+  const { used_heap_size, heap_size_limit } = getHeapStatistics();
+  const mb = (bytes: number) => Math.round(bytes / 2 ** 20);
+  return { children, heap: { usedMb: mb(used_heap_size), limitMb: mb(heap_size_limit) } };
 }
 
 type Played = { input: Input | null; turn: number; checkpoint: unknown; end: Turn };

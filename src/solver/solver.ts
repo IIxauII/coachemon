@@ -1,3 +1,4 @@
+import { availableParallelism } from "node:os";
 import reviewed from "../escape-ladder/reviewed.json" with { type: "json" };
 import { augmentedExport } from "./extras.ts";
 import { refuse } from "./gate.ts";
@@ -5,14 +6,17 @@ import type { Budget, Recheck, SolveInput } from "./input.ts";
 import { noAnswer } from "./no-answer.ts";
 import type { Input, NoAnswer, SolveResult } from "./oracle-line.ts";
 import { type Clone, replay } from "./replay.ts";
-import { type Progress, search } from "./search.ts";
-import { type Checks, startWorker, type Worker } from "./worker.ts";
+import { type PoolStats, poolSize, startPool, type WorkerPool } from "./pool.ts";
+import { search, type Progress as Spent } from "./search.ts";
+import { type Checks, type NotStarted, startWorker, type Worker } from "./worker.ts";
 
 export type * from "./input.ts";
 export type * from "./oracle-line.ts";
 export { type Clone, type CloneRun, replay } from "./replay.ts";
 export { type Known, readScript, type Script } from "./script.ts";
-export type { Progress } from "./search.ts";
+export type { PoolStats } from "./pool.ts";
+
+export type Progress = Spent & { pool: PoolStats };
 export type { Checks, Miss } from "./worker.ts";
 
 export const DEFAULT_BUDGET: Budget = { expansions: 3000, turns: 40 };
@@ -24,21 +28,28 @@ export type SolveDeps = {
   progress?: (progress: Progress) => void;
   /** The dev's `oracle:battle --unchecked`: solve on a version the re-check hasn't passed. Never a player's (#665). */
   unchecked?: boolean;
+  /** The pool's size, sized for the machine unless given. */
+  workers?: number;
 };
 
-export async function solve(input: SolveInput, { clone, progress, unchecked = false }: SolveDeps): Promise<SolveResult> {
+export async function solve(
+  input: SolveInput,
+  { clone, progress, unchecked = false, workers = poolSize(availableParallelism()) }: SolveDeps,
+): Promise<SolveResult> {
   const refused = refuse(input, unchecked ? passed(input.cloneVersion) : RECHECK);
   if (refused) return refused;
   const loaded = await replay(input, { inputs: [] }, clone);
   if (loaded.kind === "no_answer") return loaded;
 
-  return withWorker(clone, input, async worker => {
+  const at = augmentedExport(input)?.forkPoint;
+  const started = await startPool(workers, () => startWorker(clone, input.save, at), input.cloneVersion);
+  return using<WorkerPool, SolveResult>(started, input.cloneVersion, async pool => {
     const searched = await search({
-      root: worker.root,
-      pool: worker,
+      root: pool.root,
+      pool,
       validate: inputs => replay(input, { inputs: [...inputs] }, clone),
       budget: input.budget,
-      progress,
+      progress: spent => progress?.({ ...spent, pool: pool.stats() }),
     });
     if (searched.kind === "no_answer") return searched;
     const { steps, receipt, luck } = searched.replay;
@@ -59,7 +70,7 @@ export async function checkForks(
   // The checks are what the harness re-check runs (#665), so they can't wait on one having passed.
   const refused = refuse(given, passed(given.cloneVersion));
   if (refused) return refused;
-  return withWorker(clone, given, async worker => {
+  return using(await startWorker(clone, given.save, augmentedExport(given)?.forkPoint), given.cloneVersion, async worker => {
     try {
       return { kind: "checked", checks: await worker.check(inputs) };
     } catch (e) {
@@ -70,18 +81,16 @@ export async function checkForks(
 
 const passed = (gameVersion: string): Recheck => ({ gameVersion });
 
-async function withWorker<T>(
-  clone: Clone,
-  given: Pick<SolveInput, "save" | "extras" | "cloneVersion">,
-  use: (worker: Worker) => Promise<T>,
+async function using<W extends Worker | WorkerPool, T>(
+  started: W | NotStarted,
+  version: string,
+  use: (worker: W) => Promise<T>,
 ): Promise<T | NoAnswer> {
-  const { save, cloneVersion } = given;
-  const worker = await startWorker(clone, save, augmentedExport(given)?.forkPoint);
-  if ("missing" in worker) return noAnswer({ code: "no_clone", version: cloneVersion, cause: worker.missing });
-  if ("failed" in worker) return noAnswer({ code: "harness_failed", why: worker.failed });
+  if ("missing" in started) return noAnswer({ code: "no_clone", version, cause: started.missing });
+  if ("failed" in started) return noAnswer({ code: "harness_failed", why: started.failed });
   try {
-    return await use(worker);
+    return await use(started);
   } finally {
-    await worker.close();
+    await started.close();
   }
 }

@@ -108,6 +108,8 @@ export type Reason =
   | { code: "scene_mismatch"; differences: readonly string[] }
   | { code: "known_turn_missed"; misses: readonly string[] }
   | { code: "harness_failed"; why: string }
+  /** `died` counts every worker that died in the solve; `why` is the last one's cause. */
+  | { code: "workers_died"; died: number; why: string }
   /** `unreplayed` says why each win found failed replay; `dropped` counts the turns the harness couldn't play. */
   | { code: "no_win"; beams: readonly BeamEnd[]; unreplayed: readonly string[]; dropped: number };
 
