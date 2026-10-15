@@ -266,11 +266,11 @@ plan**, which is the card's own read of the whole battle.
 ## Augmented export
 
 What the **oracle** solves from when the fight is already under way: the session export taken at a **decision**, and
-the extras read live at that same decision that the export lacks or a reload resets (the turn, the RNG state, the
-foes' team order, and the rest). It serves a coach that joined late and every re-solve once the game is off the line.
-Missing any one of the extras, it is "no answer", never a guess at what the reload would have kept.
+the extras read live at that same decision, which the export lacks or a reload resets. It serves a coach that joined
+late and every re-solve once the game is off the line. Missing any one of the extras, it is "no answer", never a guess
+at what the reload would have kept.
 
-Distinct from the wave-start save, which the game wrote before the first turn and which needs no extras.
+Distinct from the save the game writes at the start of a wave, which a solve from the first turn loads as it is.
 
 ## Game version
 

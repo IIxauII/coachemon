@@ -1,5 +1,5 @@
 import reviewed from "../escape-ladder/reviewed.json" with { type: "json" };
-import { readExtras } from "./extras.ts";
+import { midFight } from "./extras.ts";
 import { refuse } from "./gate.ts";
 import type { Budget, Recheck, SolveInput } from "./input.ts";
 import { noAnswer } from "./no-answer.ts";
@@ -70,15 +70,13 @@ export async function checkForks(
 
 const passed = (gameVersion: string): Recheck => ({ gameVersion });
 
-/** Past the gate, which refuses an augmented export missing any extra. */
 async function withWorker<T>(
   clone: Clone,
-  { save, extras, cloneVersion }: Pick<SolveInput, "save" | "extras" | "cloneVersion">,
+  given: Pick<SolveInput, "save" | "extras" | "cloneVersion">,
   use: (worker: Worker) => Promise<T>,
 ): Promise<T | NoAnswer> {
-  const midFight = extras && readExtras(save, extras);
-  if (midFight?.kind === "missing") return noAnswer({ code: "missing_extras", extras: midFight.extras });
-  const worker = await startWorker(clone, save, midFight?.forkPoint);
+  const { save, cloneVersion } = given;
+  const worker = await startWorker(clone, save, midFight(given)?.forkPoint);
   if ("missing" in worker) return noAnswer({ code: "no_clone", version: cloneVersion, cause: worker.missing });
   if ("failed" in worker) return noAnswer({ code: "harness_failed", why: worker.failed });
   try {

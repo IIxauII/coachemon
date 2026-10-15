@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { z } from "zod";
 import { NAMES } from "../enums/generated.ts";
 import { title } from "./describe.ts";
-import { readExtras } from "./extras.ts";
+import { midFight } from "./extras.ts";
 import { refuse } from "./gate.ts";
 import type { SavedItem, SessionSave, SolveInput } from "./input.ts";
 import { luckOf } from "./luck.ts";
@@ -61,17 +61,15 @@ export async function replay(
   const refused = refuse(given, { gameVersion: given.cloneVersion });
   if (refused) return refused;
   const { save } = given;
-  const midFight = given.extras && readExtras(save, given.extras);
-  if (midFight?.kind === "missing") return noAnswer({ code: "missing_extras", extras: midFight.extras });
-  // The augmented export is read at the decision, so it is its own live battle and live export.
-  const live = given.live ?? midFight?.live;
+  const augmented = midFight(given);
+  const live = given.live ?? augmented?.live;
   if (!live) return noAnswer({ code: "no_live_battle" });
   if (save.waveIndex !== live.wave) return noAnswer({ code: "save_mismatch", save: { wave: save.waveIndex }, live });
-  const liveExport = given.liveExport ?? (midFight && save);
+  const liveExport = given.liveExport ?? (augmented && save);
   if (!liveExport) return noAnswer({ code: "no_live_export" });
 
   const source = readFileSync(new URL("./harness.test.ts.template", import.meta.url), "utf8");
-  const run = await clone({ name: "replay", source, input: JSON.stringify(harnessJob(save, inputs, midFight?.forkPoint)) });
+  const run = await clone({ name: "replay", source, input: JSON.stringify(harnessJob(save, inputs, augmented?.forkPoint)) });
   if ("missing" in run) return noAnswer({ code: "no_clone", version: given.cloneVersion, cause: run.missing });
   if (run.out === undefined) return failed("the harness wrote no report");
   let parsed;
@@ -131,12 +129,12 @@ export async function replay(
             `cleared before the reload; ${stacks} item stacks totalled as the save's; no prompt left queued in ` +
             `${steps.length} turns`,
         },
-        midFight
+        augmented
           ? {
               step: "augmented_export",
               checked:
                 `the session export loaded wave ${battle.wave} with battle seed ${battle.battleSeed}, the live ` +
-                `battle's own, and the live read put back turn ${midFight.read.turn} and what else a reload resets`,
+                `battle's own, and the live read put back turn ${augmented.read.turn} and what else a reload resets`,
             }
           : {
               step: "wave_start_save",
@@ -165,7 +163,7 @@ export async function replay(
   };
 }
 
-/** What the harness reads at `COACH_IN`: `at` is the fork point it starts from, for a save that isn't the wave's start. */
+/** What `harness.test.ts.template` reads at `COACH_IN`. */
 export const harnessJob = (save: SessionSave, inputs: readonly Input[], at?: string) => ({
   save,
   inputs,

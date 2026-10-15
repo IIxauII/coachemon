@@ -29,7 +29,7 @@ test("oracle:battle prints the gate's answer for a wave-start save and exits as 
   assert.equal(run.status, 2);
 });
 
-test("oracle:battle reads a mid-fight export's live extras (#659)", () => {
+test("oracle:battle reads an augmented export's live extras (#659, #664)", () => {
   const arenaTags = [{ tagType: "SAFEGUARD", side: ArenaTagSide.ENEMY }];
   const run = oracle({ ...gordieT5, extras: { ...gordieT5.extras, arenaTags } });
 

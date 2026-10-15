@@ -12,7 +12,7 @@ const BROKE: Record<HygieneRule, string> = {
 const firstFew = (all: readonly string[]) =>
   all.length > 3 ? `${all.slice(0, 3).join("; ")}; and ${all.length - 3} more` : all.join("; ");
 
-const list = (all: readonly string[]) => (all.length > 1 ? `${all.slice(0, -1).join(", ")} and ${all.at(-1)}` : all.join(""));
+const andJoined = (all: readonly string[]) => (all.length > 1 ? `${all.slice(0, -1).join(", ")} and ${all.at(-1)}` : all.join(""));
 
 export const noAnswer = (reason: Reason): NoAnswer => ({
   kind: "no_answer",
@@ -54,7 +54,7 @@ export function cause(reason: Reason): string {
       return "no live export came with the save, so nothing shows the scene it loads is the one at the decision.";
     case "missing_extras":
       return (
-        `the live read of the fight lacks ${list(reason.extras)}, without which the oracle can't rebuild the turn ` +
+        `the live read of the fight lacks ${andJoined(reason.extras)}, without which the oracle can't rebuild the turn ` +
         "the export was taken at."
       );
     case "save_mismatch": {

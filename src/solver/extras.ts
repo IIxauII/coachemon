@@ -1,5 +1,6 @@
 import { z } from "zod";
-import type { Battle, MidFightExtras, SessionSave } from "./input.ts";
+import { ArenaTagSide } from "../enums/generated.ts";
+import type { Battle, MidFightExtras, SessionSave, SolveInput } from "./input.ts";
 
 const mon = z.object({
   id: z.int(),
@@ -27,18 +28,29 @@ const extras = z.object({
   enemyFaints: z.int(),
   playerFaintsHistory: faints,
   enemyFaintsHistory: faints,
-  arenaTags: z.array(z.object({ tagType: z.string(), side: z.int() })),
+  arenaTags: z.array(z.object({ tagType: z.string(), side: z.enum(ArenaTagSide) })),
   foes: z.array(foe),
   party: z.array(mon),
   unread: z.array(z.string()),
-});
+}) satisfies z.ZodType<MidFightExtras>;
 
-export type Extras = z.infer<typeof extras>;
+/** A `MidFightExtras` with every extra read. */
+export type CheckedExtras = z.infer<typeof extras>;
 
-export type ExtrasRead =
-  | { kind: "read"; read: Extras; live: Battle; forkPoint: string }
+export type MidFightRead = { kind: "read"; read: CheckedExtras; live: Battle; forkPoint: string };
+
+export type MidFightReadOrMissing =
+  | MidFightRead
   /** By each one's path in the read, as its `unread` names them. */
   | { kind: "missing"; extras: readonly string[] };
+
+/** For a caller past the gate, which answers "no answer" to an augmented export missing any extra. */
+export function midFight({ save, extras }: Pick<SolveInput, "save" | "extras">): MidFightRead | undefined {
+  if (!extras) return undefined;
+  const read = readExtras(save, extras);
+  if (read.kind === "missing") throw new Error(`the gate let through an augmented export lacking ${read.extras.join(", ")}`);
+  return read;
+}
 
 type SavedMon = {
   id: number;
@@ -47,10 +59,10 @@ type SavedMon = {
 };
 
 /** The augmented export as the fork point `harness.test.ts.template` restores, or each extra it lacks. */
-export function readExtras(save: SessionSave, given: MidFightExtras): ExtrasRead {
+export function readExtras(save: SessionSave, given: MidFightExtras): MidFightReadOrMissing {
   const parsed = extras.safeParse(given);
   const missing = new Set(parsed.success ? [] : parsed.error.issues.map(issue => issue.path.join(".")));
-  const raw = given as Partial<Record<keyof Extras, unknown>>;
+  const raw = given as Partial<Record<keyof CheckedExtras, unknown>>;
   for (const path of Array.isArray(raw.unread) ? raw.unread : []) missing.add(String(path));
   for (const [side, saved] of [
     ["foes", save.enemyParty],
@@ -58,9 +70,12 @@ export function readExtras(save: SessionSave, given: MidFightExtras): ExtrasRead
   ] as const) {
     const read = raw[side];
     if (!Array.isArray(read)) continue;
-    (saved as SavedMon[]).forEach(({ id }, slot) => {
-      if (!read.some(entry => entry?.id === id)) missing.add(`${side}.${slot}`);
-    });
+    // An entry with no id is named for that already.
+    if (read.every(entry => Number.isInteger(entry?.id))) {
+      (saved as SavedMon[]).forEach(({ id }, slot) => {
+        if (!read.some(entry => entry.id === id)) missing.add(`${side}.${slot}`);
+      });
+    }
     // A foe off the field has none (`src/page/extras.ts`).
     if (side === "foes") {
       read.forEach((entry, i) => {
@@ -76,7 +91,7 @@ export function readExtras(save: SessionSave, given: MidFightExtras): ExtrasRead
 }
 
 /** In the shape `forkPoint()` in `harness.test.ts.template` writes. */
-function forkPoint(save: SessionSave, read: Extras): string {
+function forkPoint(save: SessionSave, read: CheckedExtras): string {
   const ours = save.party as SavedMon[];
   const all = [...ours, ...(save.enemyParty as SavedMon[])];
   const toxic = new Map([...read.party, ...read.foes].map(m => [m.id, m.toxicTurnCount]));

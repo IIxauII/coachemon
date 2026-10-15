@@ -32,10 +32,7 @@ export type SessionSave = {
 
 export type SavedItem = { typeId: string; className: string; stackCount: number };
 
-/**
- * The extension's `read_extras`, taken at the same decision as the session export it comes with: together they are the
- * augmented export. Each field it couldn't read is null and named in `unread` (#664).
- */
+/** The extension's `read_extras` (`src/page/extras.ts`), from the same decision as the session export it comes with. */
 export type MidFightExtras = Omit<Extract<ExtrasResult, { ok: true }>, "ok">;
 
 /** Each search beam's own, its turns counted from where the solve starts (#655). */

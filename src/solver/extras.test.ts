@@ -38,7 +38,6 @@ test("the Gordie T5 read becomes the fork point the harness restores, and the ba
   assert.deepEqual(fork.temp[leavanny.id], { turnCount: 2, waveTurnCount: 2 });
   assert.deepEqual(fork.wave[coalossal.id], { endured: false, abilityRevealed: false, abilitiesApplied: [] });
   assert.deepEqual(fork.summon[coalossal.id], t5.extras.foes?.[0].summonData);
-  // Ours is the save's: a reload keeps it, and the read takes only the foe's (game-code.md §30).
   assert.deepEqual(fork.summon[leavanny.id], leavanny.summonData);
   assert.equal(fork.summon[gigalith.id], undefined);
   assert.deepEqual(fork.status[gigalith.id], { toxic: 0, sleep: 0 });
@@ -67,6 +66,13 @@ test("a foe's or our extra the read lacks is missing by its path, and a mon with
     "party.0.tempSummonData",
   ]);
   assert.deepEqual(missing({ ...t5.extras, foes: t5.extras.foes?.slice(0, 5) }), ["foes.5"]);
+});
+
+test("a foe the read gives no id is missing its id, not its slot as well (#664)", () => {
+  const foes = structuredClone(t5.extras.foes) ?? assert.fail();
+  delete (foes[2] as Partial<(typeof foes)[0]>).id;
+
+  assert.deepEqual(missing({ ...t5.extras, foes }), ["foes.2.id"]);
 });
 
 test("a read that names its own field unread is missing that field though it came back with a value (#664)", () => {
