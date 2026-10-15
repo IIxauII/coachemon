@@ -90,7 +90,7 @@ const errors = () => seen(EVENT.coachError);
 
   // `card()` answers the `card` command with the event a late joiner missed (extension-distribution.md §11.4).
   const made0 = made;
-  assert.deepEqual(window.__coachHud.card(), { kind: body.kind, key: body.key, wave: body.wave, verdict: body.verdict, groups: body.groups, text: body.text });
+  assert.deepEqual(window.__coachHud.card(), { kind: body.kind, key: body.key, wave: body.wave, verdict: body.verdict, groups: body.groups, text: body.text, oracleLine: null });
   assert.equal(made, made0, `the card read drew ${made - made0} nodes of its own`);
 
   tick();
@@ -135,6 +135,28 @@ const errors = () => seen(EVENT.coachError);
   assert.deepEqual(wave.map(c => [c.kind, c.key, c.verdict]), [["battle", "20", "easy"], ["battle", "20", "danger"]]);
   for (const c of wave) console.log(`groups ${wireOk(c).groups.map(g => g.id).join(" ")}`);
   console.log(`mid-wave ${wave.map(c => c.verdict).join(" → ")}`);
+  assert.deepEqual(wave.map(c => c.oracleLine), [null, null], "no oracle line held, none carried");
+
+  // ---- The card event carries the oracle line's state, the relay admits it, and each turn on the line is an event of its own
+  party[0].species.speciesId = 6;
+  party[0].moveset[0].moveId = 53;
+  party[0].moveset[0].getMove = () => ({ name: "Flamethrower", type: TY.indexOf("Fire"), power: 90, category: cat.S, moveTarget: 3 });
+  const onTurn = turn => { const s = battle(false); s.seed = "eventSeed"; s.currentBattle.turn = turn; return s; };
+  const mon = (species, hp) => ({ slot: 0, species, onField: true, hp, maxHp: 100, status: 0, statStages: [0, 0, 0, 0, 0, 0, 0], tera: false });
+  const line = { seed: "eventSeed", wave: 20, gameVersion: "1.12.0.11", receipt: [], luck: [],
+    steps: [1, 2].map(turn => ({ turn, input: { kind: "move", move: 53, tera: false }, checkpoint: { ours: [mon(6, 100)], foes: [mon(46, 50 * (2 - turn))] } })) };
+  const from = cards().length;
+  scene = onTurn(1);
+  tick();
+  assert.deepEqual(window.__coachHud.oracleLine(line), { ok: true });
+  scene = onTurn(2);
+  tick();
+  tick();
+  const onLine = cards().slice(from);
+  for (const c of onLine) console.log(`oracle line ${JSON.stringify(c.oracleLine)} | ${wireOk(c).groups[0].summary}`);
+  assert.deepEqual(onLine.map(c => c.oracleLine), [null, { state: "on", turn: 1, of: 2 }, { state: "on", turn: 2, of: 2 }]);
+  assert.equal(onLine[2].groups[0].summary, "⚔ ~ T2/2 · Charizard Flamethrower");
+  assert.deepEqual(window.__coachHud.card().oracleLine, { state: "on", turn: 2, of: 2 }, "the card read carries it too");
 }
 
 // ---- A failed refresh: one event per distinct message

@@ -205,7 +205,7 @@ const catchAdvice = {
 {
   const ref = name => ({ icon: null, name });
   const hp = (name, now, max) => ({ ...ref(name), hp: now, maxHp: max });
-  const oracleLine = { id: 1, turns: 3, left: 3, of: 4, steps: [
+  const oracleLine = { id: 1, pick: false, last: 6, turns: 3, left: 3, of: 4, steps: [
     { turn: 4, at: "done", act: { kind: "switch", to: ref("Lapras") }, send: null, after: [hp("Lapras", 301, 380), hp("Roserade", 250, 250)] },
     { turn: 5, at: "now", act: { kind: "move", by: ref("Lapras"), move: "Ice Beam", type: "Ice", tera: { type: "Ice" } }, send: ref("Blastoise"),
       after: [hp("Blastoise", 362, 362), hp("Garchomp", 120, 420)] },
@@ -216,6 +216,7 @@ const catchAdvice = {
   assert.deepEqual(groups.map(g => g.id), ["act", "foes", "plan"]);
   assert.equal(groups[2].summary, "~ oracle line wins in 3 turns · 3 of 4 left");
   assert.deepEqual(groups[2].rows.map(r => [...r][0]), ["✓", "▸", "·"]);
+  assert.equal(groups[0].summary, "⚔ ~ T5/6 · Lapras Tera Ice + Ice Beam · then send Blastoise");
 }
 
 // ---- A double with a return: the foe coming back from the other slot this same turn (#285)

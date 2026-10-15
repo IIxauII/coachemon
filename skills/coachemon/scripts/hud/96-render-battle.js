@@ -4,7 +4,7 @@ import { actSummary, deadEndText, foesSummary, hitsText, planSummary, roadSummar
 import { badge, caption, dim, group, gutterMark, h, hpBar, ICON, img, IMMUNE, ink, line, mon, ROW, rung, some } from "./90-render.js";
 import { drawAhead } from "./95-render-ahead.js";
 import { drawCatch } from "./95-render-catch.js";
-import { drawOracleLine } from "./95-render-oracle-line.js";
+import { drawOracleLine, drawOracleStep } from "./95-render-oracle-line.js";
 import { drawPreview } from "./95-render-preview.js";
 import { drawTeamPlan } from "./95-render-team.js";
 
@@ -19,7 +19,8 @@ export const captionBattle = m => {
 const planGroup = m => some("plan", "Plan", planSummary(m), m.oracleLine ? drawOracleLine(m.oracleLine) : drawTeamPlan(m));
 
 export const drawBattle = m => {
-  if (m.unavailable) return [group("act", "Now", actSummary(m), []), planGroup(m)].filter(Boolean);
+  const oracle = drawOracleStep(m.oracleLine);
+  if (m.unavailable) return [group("act", "Now", actSummary(m), oracle), planGroup(m)].filter(Boolean);
   const f = m.field;
 
   const threatTag = t => {
@@ -140,7 +141,8 @@ export const drawBattle = m => {
   // The same rows as 96-render-rewards' road, which a file on this layer can't import: change both.
   const road = [...drawPreview(m.preview), ...drawAhead(m.ahead)];
   return [
-    some("act", "Now", actSummary(m), field),
+    // While the oracle line holds, its step is the call and the turn line's is hidden; the enemy's own switches stay.
+    some("act", "Now", actSummary(m), oracle.length ? [...enemySwitches, ...oracle] : field),
     some("foes", "Foes", foesSummary(m), [team, ...rows]),
     some("catch", "Catch", catchSummary(m.catch), drawCatch(m)),
     planGroup(m),

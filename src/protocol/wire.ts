@@ -39,6 +39,9 @@ export type EventKind = "card" | "coach-error";
 /** A card's group, its rows flattened to one string each (extension-distribution.md §11.1). */
 export type CardGroup = { id: string; label: string; summary: string | null; rows: string[] };
 
+/** A held oracle line's state, null while none leads (extension-distribution.md §11.1). */
+export type CardOracleLine = { state: "on"; turn: number; of: number };
+
 /**
  * Never answered: the extension it reaches is about to restart. The hub sends it to `flavour: "dev"` browsers only
  * (extension-distribution.md §5.4, §5.5).

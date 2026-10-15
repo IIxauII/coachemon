@@ -17,7 +17,7 @@ import { auditSummary } from "./50-audit.js";
 import { spliceScreen, fusionModel, fusionSummary } from "./49-fusion.js";
 import { rewardsModel, rewardsSummary } from "./52-shop.js";
 import { starterScreen, starterModel, startersSummary } from "./51-starters.js";
-import { oracleLineModel, oracleLineSummary } from "./57-oracle-line.js";
+import { oracleLineModel, oracleLineState, oracleLineSummary, oracleStepSummary } from "./57-oracle-line.js";
 
 export const hitsText = n => `${n} hit${n === 1 ? "" : "s"}`;
 // A spread move KOing the two foes on different turns carries `koEach` instead of one `ko`: the slower one counts.
@@ -143,7 +143,7 @@ export const readCard = (s, account, { road = true, estimate = false } = {}) => 
 const slotText = sl => `${sl.name} ${sl.move ?? deadEndText(sl)}${sl.target === "both" ? " → both" : sl.target ? ` → ${sl.target.name}` : ""}${sl.then ? `, then ${sl.then}` : ""}${slowestKo(sl) > 0 && slowestKo(sl) <= 3 ? ` · ${hitsText(slowestKo(sl))}` : ""}`;
 
 // The act group's summary is this string verbatim, so the strip, the watch line and the structured read agree (#349).
-export const actSummary = card => (card.unavailable ? `no advice — ${card.unavailable}`
+export const actSummary = card => oracleStepSummary(card.oracleLine) ?? (card.unavailable ? `no advice — ${card.unavailable}`
   : card.field ? card.field.slots.map(slotText).join(" ; ") : null);
 
 // A mon the turn both attacks with and switches out carries its threat on two rows, so identical clauses collapse.
@@ -221,7 +221,8 @@ export const cardEvent = card => {
   const k = KINDS[card.kind];
   if (!k) return null;
   const s = cardSummary(card);
-  return { kind: k.event ?? card.kind, key: k.key(card), wave: card.wave ?? null, verdict: s ? k.call(s) : null };
+  return { kind: k.event ?? card.kind, key: k.key(card), wave: card.wave ?? null, verdict: s ? k.call(s) : null,
+    oracleLine: oracleLineState(card.oracleLine) };
 };
 // What the stream pushes and the relay's gate admits (extension-distribution.md §11.1).
 export const streamable = card => {
