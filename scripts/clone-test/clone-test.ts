@@ -85,7 +85,8 @@ const readOr = <T>(file: string, parse: (text: string) => T): T | undefined => {
 
 /**
  * Copies the test into the clone under a name no other test shares, runs vitest on it, and removes every file it copied
- * in.
+ * in. Interrupted by SIGINT or SIGTERM, it never settles: the signal ends the process once every test has removed its
+ * files (#658).
  */
 export const testInClone = async (t: CloneTest): Promise<CloneTestResult> => {
   const stem = `coach-${t.name}-${randomUUID().slice(0, 8)}`;
@@ -137,9 +138,12 @@ export const testInClone = async (t: CloneTest): Promise<CloneTestResult> => {
       rmSync(artifact, { force: true });
     }
     process.off("SIGINT", stop).off("SIGTERM", stop);
-    // Raised again, so the process still ends as the signal ended it: what an interrupted test read never passes for an
-    // answer (#658).
-    if (interrupt.signal.aborted) process.kill(process.pid, interrupt.signal.reason);
+    if (interrupt.signal.aborted) {
+      process.kill(process.pid, interrupt.signal.reason);
+      // A test still running catches the signal, and the process lives until it too has cleaned up: returning meanwhile
+      // would hand this one's partial result over as an answer.
+      await new Promise<never>(() => {});
+    }
   }
 };
 

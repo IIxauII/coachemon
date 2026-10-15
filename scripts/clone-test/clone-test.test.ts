@@ -16,7 +16,7 @@ const args = process.argv.slice(2);
 const testFile = args[1];
 const report = args.find(a => a.startsWith("--outputFile.json="))?.slice("--outputFile.json=".length);
 const mode = process.env.FAKE;
-const mark = name => writeFileSync(new URL(name, import.meta.url), "");
+const mark = name => writeFileSync(new URL(name + "-" + process.pid, import.meta.url), "");
 process.on("SIGTERM", () => setTimeout(() => {
   writeFileSync(process.env.COACH_OUT, "late");
   mark("exited");
@@ -59,7 +59,8 @@ const scratch = (t: TestContext) => {
   const run = (mode: string, source?: string) => testInClone(options(mode, source));
   const leftovers = () =>
     [...readdirSync(path.join(clone, "test/tests")), ...readdirSync(path.join(clone, "test/reporters"))].sort();
-  return { root, clone, options, run, leftovers };
+  const marks = (name: string) => readdirSync(root).filter(f => f.startsWith(`${name}-`)).length;
+  return { root, clone, options, run, leftovers, marks };
 };
 
 const echoed = ({ report }: CloneTestResult) =>
@@ -107,19 +108,23 @@ test("a test that throws while copying in removes what it already copied (#658)"
   assert.deepEqual(readdirSync(path.join(s.clone, "test/tests")), ["upstream.test.ts"]);
 });
 
-test("a test interrupted with SIGINT outlasts vitest, leaves no files behind, and still ends by the signal (#658)", async t => {
+test("two tests interrupted with SIGINT outlast vitest, leave no files behind, and never settle before the signal ends the process (#658)", async t => {
   const s = scratch(t);
   const caller = path.join(s.root, "caller.mjs");
+  const settled = path.join(s.root, "settled");
   const module = pathToFileURL(path.resolve(import.meta.dirname, "clone-test.ts")).href;
   writeFileSync(
     caller,
-    `import { testInClone } from ${JSON.stringify(module)};\nawait testInClone(${JSON.stringify(s.options("hang"))});\n`,
+    `import { writeFileSync } from "node:fs";\nimport { testInClone } from ${JSON.stringify(module)};\n` +
+      `for (const _ of [1, 2]) testInClone(${JSON.stringify(s.options("hang"))})` +
+      `.then(() => writeFileSync(${JSON.stringify(settled)}, ""));\n`,
   );
   const child = spawn(process.execPath, [caller], { stdio: "ignore" });
   const ended = new Promise(resolve => child.on("close", (_code, signal) => resolve(signal)));
-  while (!existsSync(path.join(s.root, "listening"))) await sleep(20);
+  while (s.marks("listening") < 2) await sleep(20);
   child.kill("SIGINT");
   assert.equal(await ended, "SIGINT");
-  assert.ok(existsSync(path.join(s.root, "exited")));
+  assert.equal(s.marks("exited"), 2);
+  assert.equal(existsSync(settled), false);
   assert.deepEqual(s.leftovers(), UPSTREAM);
 });
