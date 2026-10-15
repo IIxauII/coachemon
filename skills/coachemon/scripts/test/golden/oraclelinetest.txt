@@ -213,8 +213,13 @@ strip | trainer off the line · ~ re-solving… · Golbat Venoshock → Tyranita
     ✗ T17 Gyarados expected in front · came benched
     ✗ T17 Snorlax expected benched · came in front
     ⚔ Golbat Poison Venoshock → Tyranitar 3 hits
-from T15, to a wipe                     held
-== T1, a Continue retry after the wipe
+from T15, to a lost fight               held
+== T1, a Continue retry after the lost fight
+strip | trainer off the line · ! re-solving… · Golbat Venoshock → Tyranitar · 3 hits
+    ✗ T15 the fight expected won · came lost
+    ⚔ Golbat Poison Venoshock → Tyranitar 3 hits
+from T15, lost to Leech Seed            held
+== T1, a Continue retry after Leech Seed
 strip | trainer off the line · ! re-solving… · Golbat Venoshock → Tyranitar · 3 hits
     ✗ T15 the fight expected won · came lost
     ⚔ Golbat Poison Venoshock → Tyranitar 3 hits

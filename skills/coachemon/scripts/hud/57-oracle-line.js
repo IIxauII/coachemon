@@ -46,7 +46,6 @@ export const holdOracleLine = (s, line) => {
   return { ok: true };
 };
 
-// The oracle line wins, so a wipe is a miss, and the one that no decision follows.
 const LOST = { icon: null, name: "the fight", expected: "won", came: "lost" };
 
 const matchesLine = (st, played) => {
@@ -70,7 +69,7 @@ const miss = (h, from, i, misses, picked) => {
 };
 
 // The turn's command is cleared when the turn ends (game-code.md §5), so every frame takes it while it is there. The
-// free switch's party screen is a non-modal `SwitchPhase` (`02-decision.js`), and a wipe never reaches a decision.
+// free switch's party screen is a non-modal `SwitchPhase` (game-code.md §9), and a lost fight never reaches a decision.
 // @only 98-watch, tests: oracleLineSeen
 export const oracleLineSeen = s => {
   const h = leading(s);
@@ -78,9 +77,11 @@ export const oracleLineSeen = s => {
   const b = s.currentBattle, cmd = b.turnCommands?.[0], ph = phaseOf(s);
   if (ph?.phaseName === "SwitchPhase" && !ph.isModal) h.strayed = true;
   if (ph?.phaseName === "GameOverPhase") {
-    const i = h.line.steps.findLastIndex(st => st.turn <= b.turn);
+    // Lost to turn-end chip, the fight ends after the turn has moved on and its command is gone (game-code.md §21).
+    const turn = cmd ? b.turn : b.turn - 1;
+    const i = h.line.steps.findLastIndex(st => st.turn <= turn);
     if (i > h.scored) miss(h, h.scored, i, [LOST], false);
-    else h.off = { turn: b.turn, misses: [LOST] };
+    else h.off = { turn, misses: [LOST] };
     return;
   }
   if (cmd && h.played[b.turn]?.cmd !== cmd) h.played[b.turn] = { cmd, tera: b.preTurnCommands?.[0]?.command === Command.TERA };

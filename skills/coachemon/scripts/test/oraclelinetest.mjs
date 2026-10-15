@@ -369,12 +369,24 @@ const offRows = act => act.rows.filter(r => r.startsWith("✗"));
 {
   const seed = "a losing run";
   scene = at(15, { seed, cp: after(14) });
-  hand("from T15, to a wipe", { ...LINE, seed, steps: LINE.steps.slice(4) });
+  hand("from T15, to a lost fight", { ...LINE, seed, steps: LINE.steps.slice(4) });
   play(15, { move: "VENOSHOCK" }, { seed });
-  oracleLineSeen(at(15, { seed, phase: { phaseName: "GameOverPhase" } }));
+  oracleLineSeen(at(15, { seed, cmd: { move: "VENOSHOCK" }, phase: { phaseName: "GameOverPhase" } }));
   const retry = decide(1, { seed });
   assert.equal(oracleLineModel(retry), null);
-  const { act } = now("T1, a Continue retry after the wipe", retry);
+  const { act } = now("T1, a Continue retry after the lost fight", retry);
+  assert.ok(act.summary.startsWith("off the line · ! "), act.summary);
+  assert.deepEqual(offRows(act), ["✗ T15 the fight expected won · came lost"]);
+}
+
+// ---- A fight lost to turn-end chip is scored on the turn it was played, not the one the game has moved on to
+{
+  const seed = "a run lost at turn end";
+  scene = at(15, { seed, cp: after(14) });
+  hand("from T15, lost to Leech Seed", { ...LINE, seed, steps: LINE.steps.slice(4) });
+  play(15, { move: "VENOSHOCK" }, { seed });
+  oracleLineSeen(at(16, { seed, phase: { phaseName: "GameOverPhase" } }));
+  const { act } = now("T1, a Continue retry after Leech Seed", decide(1, { seed }));
   assert.ok(act.summary.startsWith("off the line · ! "), act.summary);
   assert.deepEqual(offRows(act), ["✗ T15 the fight expected won · came lost"]);
 }
