@@ -5,7 +5,7 @@ import { COMMAND_NAMES, STORE_COMMANDS } from "./commands.ts";
 
 test("the page registers exactly the store table's commands (extension-distribution.md §10.1)", () => {
   assert.deepEqual(Object.keys(COMMAND_HANDLERS).sort(), [...COMMAND_NAMES].sort());
-  assert.deepEqual([...COMMAND_NAMES].sort(), ["card", "cursor.learn", "cursor.option", "cursor.shop", "cursor.starter", "key", "menu", "modal", "press", "probe", "snapshot", "starters"]);
+  assert.deepEqual([...COMMAND_NAMES].sort(), ["card", "cursor.learn", "cursor.option", "cursor.shop", "cursor.starter", "key", "menu", "modal", "press", "probe", "session", "snapshot", "starters"]);
 });
 
 test("every act takes the fingerprint it was decided on, and no read does (extension-distribution.md §10.2)", () => {

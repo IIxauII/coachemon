@@ -25,6 +25,7 @@ const TABLE = {
   snapshot: { kind: "read", args: { detail: { type: "enum", values: SNAPSHOT_DETAILS } }, since: 1 },
   starters: { kind: "read", args: {}, since: 1 },
   card: { kind: "read", args: {}, since: 1 },
+  session: { kind: "read", args: {}, since: 1 },
   press: { kind: "act", args: { button: num, fine }, since: 1 },
   key: { kind: "act", args: { button: { type: "enum", values: KEY_BUTTONS }, fine }, since: 1 },
   "cursor.option": { kind: "act", args: { index: num, fine }, since: 1 },

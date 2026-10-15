@@ -6,10 +6,12 @@ import { UiMode, type Button } from "../enums/generated.ts";
 import type { Refused } from "../page/acts.ts";
 import { disc } from "../page/disc.ts";
 import type { MenuResult } from "../page/menu.ts";
+import type { SessionResult } from "../page/session.ts";
 import { screenId, type Discriminators } from "../screen.ts";
 import type { CommandName } from "../protocol/commands.ts";
 import { isFault, type Claim, type Fault, type GameLink, type Presence, type Tab, type Unready } from "./link.ts";
-import type { Act, CardRead, ConsoleLine, CursorTarget, Failed, GamePort, MenuRead, PredicateRead, SnapshotDetail, StarterGrid } from "./port.ts";
+import type { Act, CardRead, ConsoleLine, CursorTarget, Failed, GamePort, MenuRead, PredicateRead, SessionRead, SnapshotDetail, StarterGrid } from "./port.ts";
+import { waveStartSave } from "./save.ts";
 
 /** A menu read that located no handler has no discriminators: they read as off. */
 const NO_DISC: Discriminators = disc(null);
@@ -83,6 +85,13 @@ export class LinkGame implements GamePort {
   async card(): Promise<CardRead | Failed> {
     // `no-hud` is the page's own refusal (extension-distribution.md §10.1), so it degrades like any other unreadable read.
     return answered<CardRead>(await this.#link.card());
+  }
+
+  async session(): Promise<SessionRead | Failed> {
+    const r = answered<Extract<SessionResult, { ok: true }>>(await this.#link.session());
+    if (!r.ok) return r;
+    const { stored, ...read } = r;
+    return { ...read, waveStart: waveStartSave(stored, { seed: r.export.seed, wave: r.wave }) };
   }
 
   async snapshot(detail: SnapshotDetail): Promise<{ ok: true; snapshot: Record<string, unknown> } | Failed> {

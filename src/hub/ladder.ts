@@ -8,7 +8,7 @@ export type HubTrouble =
   | { kind: "skew-driving" }
   | { kind: "skew-hub-newer" };
 
-/** `rung` is null on version skew, which the ladder does not number (extension-distribution.md §7.3). */
+/** `rung` is null on version skew, which the ladder does not number, and on CDP, which has no ladder (extension-distribution.md §7.3, §12.3). */
 export type Reach = {
   code: "unreachable" | "tabs" | "missing_command";
   rung: number | null;

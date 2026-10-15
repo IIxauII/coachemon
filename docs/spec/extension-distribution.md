@@ -320,7 +320,7 @@ From [Permission set and privacy disclosure](https://github.com/IIxauII/coachemo
 | **AMO** | Licence: *GNU Affero General Public License v3.0 only*. The manifest's `data_collection_permissions` (§5.3). Source-code submission with the sources zip (§5.7). Privacy policy URL. |
 | **Safari (Developer ID)** | No store disclosure exists. `PRIVACY.md` is linked from the GitHub Release notes. |
 
-**`PRIVACY.md` says** (picked here, plain words): Coachemon reads the PokéRogue game in your tab to draw the coach. Nothing is sent to any server. If you run the Coachemon plugin for Claude Code on the same computer, the extension passes game state and coach text to that program over a local connection (`127.0.0.1`), and only while a pokerogue.net tab is open; on Firefox only after you click the Coachemon icon once. What that program does with it is governed by that program. No analytics, no accounts, no cookies of our own. Contact: the listing email.
+**`PRIVACY.md` says** (picked here, plain words): Coachemon reads the PokéRogue game in your tab to draw the coach. Nothing is sent to any server. If you run the Coachemon plugin for Claude Code on the same computer, the extension passes game state and coach text to that program over a local connection (`127.0.0.1`), and only while a pokerogue.net tab is open; on Firefox only after you click the Coachemon icon once. What that program does with it is governed by that program. No analytics, no accounts, no cookies of our own. Contact: the listing email. **Amended by [#669](https://github.com/IIxauII/coachemon/issues/669):** it names the `session` read (§10.1), which hands that program the run's save, and lists both of the page's `localStorage` entries, the panel view and the journal.
 
 ---
 
@@ -537,6 +537,7 @@ Every handler first runs the scene locator (today's `__locate`). If the game is 
 | `snapshot` | read | `{ detail: "lean" \| "party" \| "items" \| "full" }` | `snapshot(detail)`'s result; `full` adds the coach's battle fields (§11.4) | `snapshot(detail)` |
 | `starters` | read | `{}` | `STARTER_INFO`'s result plus `owned` (§11.4) | `STARTER_INFO`, `probe.js` starters |
 | `card` | read | `{}` | `{ ok: true, kind, key, wave, verdict, groups, text, summary }` (`groups` is the card's groups with their rows flattened — `[]` where the panel has nothing drawn, null where the panel is from a build before the field; `summary` is `__coachHud.summary()`), or `{ ok: false, why: "no-hud" }` | `probe.js`'s `hud` field |
+| `session` | read | `{}` | `{ ok: true, wave, battleSeed, stored, export }`: the battle's wave and seed; `stored`, every `localStorage` copy of the wave-start save under the live slot, as the game stores it, one per account that played it in this browser; `export`, `gameData.getSessionSaveData()`. Or `{ ok: false, why: "no-battle" }`. The plugin opens the copy carrying the run's seed (game-code.md §29, #669). Hub only: the CDP link refuses it | — |
 | `press` | act | `{ button: number, fine: string }` | `{ ok: true, mode }` | `press(n)` |
 | `key` | act | `{ button: "UP"\|"DOWN"\|"LEFT"\|"RIGHT"\|"ACTION"\|"CANCEL"\|"SUBMIT"\|"MENU", fine: string }` | `{ ok: true }` | CDP `rawKey` |
 | `cursor.option` | act | `{ index: number, fine: string }` (unskipped index) | `{ ok: true, fullCursor, cursor }` | `optionSelectSetCursor` |

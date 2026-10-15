@@ -3,6 +3,7 @@ import { cursorLearn, cursorOption, cursorShop, cursorStarter, key, modal, press
 import { card } from "./card.ts";
 import { menu } from "./menu.ts";
 import { probe } from "./probe.ts";
+import { session } from "./session.ts";
 import { snapshot } from "./snapshot.ts";
 import { starters } from "./starters.ts";
 
@@ -13,6 +14,7 @@ export const COMMAND_HANDLERS = Object.freeze({
   snapshot,
   starters,
   card,
+  session,
   press,
   key,
   "cursor.option": cursorOption,

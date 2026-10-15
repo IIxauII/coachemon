@@ -36,8 +36,13 @@ const PREFIX = Object.fromEntries(
 
 const UNCONTENDED: Contention = { contended: false, holder: null };
 
+/** The hub carries these to the plugin, or nothing does (extension-distribution.md §10.1). */
+const HUB_ONLY: ReadonlySet<CommandName> = new Set(["session"]);
+
+const hubOnly = (name: CommandName) => `The ${name} read goes over the Coachemon hub only, and this server reads the game over CDP: set COACHEMON_TRANSPORT=hub.`;
+
 export class CdpLink implements GameLink, Tab {
-  readonly commands: ReadonlySet<CommandName> = new Set(COMMAND_NAMES);
+  readonly commands: ReadonlySet<CommandName> = new Set(COMMAND_NAMES.filter(n => !HUB_ONLY.has(n)));
   /** CDP reads never advance a frozen loop: the guard still checks the frame and refuses `loop_frozen` (#23, extension-distribution.md §10.3). */
   readonly pumps = false;
   readonly #session: LinkSession;
@@ -59,6 +64,7 @@ export class CdpLink implements GameLink, Tab {
   snapshot(args: Args<"snapshot">) { return this.#run("snapshot", args); }
   starters() { return this.#run("starters", {}); }
   card() { return this.#run("card", {}); }
+  async session(): Promise<Fault> { return { fault: "missing-command", message: hubOnly("session") }; }
   press(args: Args<"press">) { return this.#run("press", args); }
   key(args: Args<"key">) { return this.#run("key", args); }
   cursorOption(args: Args<"cursor.option">) { return this.#run("cursor.option", args); }
@@ -73,7 +79,7 @@ export class CdpLink implements GameLink, Tab {
   }
 
   /** No rung of the ladder can be evaluated here: a tab that will not attach is simply not there (extension-distribution.md §12.3). */
-  async presence(): Promise<Presence> {
+  async presence(needs?: readonly CommandName[]): Promise<Presence> {
     let error: string | null = null;
     try {
       await this.#session.ensure();
@@ -82,8 +88,11 @@ export class CdpLink implements GameLink, Tab {
     }
     const contended = this.#lock?.contention() ?? UNCONTENDED;
     const attached = error === null && this.#session.attached;
+    const missing = needs?.find(n => !this.commands.has(n));
     return {
-      reach: attached ? null : { code: "unreachable", rung: null, line: error ?? "The server is not attached to a PokéRogue tab." },
+      reach: !attached
+        ? { code: "unreachable", rung: null, line: error ?? "The server is not attached to a PokéRogue tab." }
+        : missing !== undefined ? { code: "missing_command", rung: null, line: hubOnly(missing) } : null,
       facts: { attached, error, tab_contended: contended.contended, lock_holder: contended.holder, chrome_launched_by_server: this.#session.launchedChrome },
     };
   }

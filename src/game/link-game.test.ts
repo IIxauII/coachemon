@@ -19,7 +19,7 @@ function stubLink(answers: Partial<Record<keyof GameLink, (args: any) => unknown
   };
   const link = {
     commands: new Set(),
-    probe: method("probe"), menu: method("menu"), snapshot: method("snapshot"), starters: method("starters"), card: method("card"),
+    probe: method("probe"), menu: method("menu"), snapshot: method("snapshot"), starters: method("starters"), card: method("card"), session: method("session"),
     press: method("press"), key: method("key"), cursorOption: method("cursorOption"), cursorShop: method("cursorShop"),
     cursorStarter: method("cursorStarter"), cursorLearn: method("cursorLearn"), modal: method("modal"), screenshot: method("screenshot"),
   } as unknown as GameLink;
@@ -40,7 +40,7 @@ const always = (v: unknown) => () => v;
 
 function throwing() {
   const all = always(THREW);
-  return stubLink({ probe: all, menu: all, snapshot: all, starters: all, press: all, cursorOption: all, cursorShop: all, cursorStarter: all, cursorLearn: all, modal: all }).game;
+  return stubLink({ probe: all, menu: all, snapshot: all, starters: all, session: all, press: all, cursorOption: all, cursorShop: all, cursorStarter: all, cursorLearn: all, modal: all }).game;
 }
 
 test("a page throw on a read degrades to that read's not-readable value", async () => {
@@ -52,6 +52,7 @@ test("a page throw on a read degrades to that read's not-readable value", async 
   assert.equal(menu.why, THREW.message);
   assert.deepEqual(menu.options, []);
   assert.deepEqual(await game.starters(), { ok: false, why: THREW.message });
+  assert.deepEqual(await game.session(), { ok: false, why: THREW.message });
   assert.deepEqual(await game.snapshot("lean"), { ok: false, why: THREW.message });
 });
 

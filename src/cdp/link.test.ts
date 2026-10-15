@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import vm from "node:vm";
 import { Button } from "../enums/generated.ts";
+import { isFault } from "../game/link.ts";
+import { COMMAND_NAMES } from "../protocol/commands.ts";
 import { CdpLink, type LinkSession } from "./link.ts";
 import type { Thrown } from "./session.ts";
 
@@ -99,10 +101,21 @@ test("every command attaches first, screenshot too", async () => {
   assert.equal(s.ensured(), 3);
 });
 
-test("the link offers the whole store table", () => {
+test("the link offers the store table but the session read, which goes over the hub only (extension-distribution.md §10.1)", async () => {
+  const tab = tabSession({});
+  const link = new CdpLink(tab.session);
+  assert.deepEqual([...link.commands].sort(), COMMAND_NAMES.filter(n => n !== "session").sort());
+  const r = await link.session();
+  assert.ok(isFault(r) && r.fault === "missing-command", JSON.stringify(r));
+  assert.deepEqual(tab.sent, [], "nothing is asked of the tab");
+});
+
+test("a tool that needs the session read refuses alone on CDP, naming the hub (extension-distribution.md §10.1)", async () => {
   const link = new CdpLink(tabSession({}).session);
-  assert.equal(link.commands.size, 12);
-  assert.ok(link.commands.has("cursor.learn"));
+  assert.equal((await link.presence(["probe", "menu", "card"])).reach, null);
+  const short = (await link.presence(["probe", "menu", "session"])).reach;
+  assert.equal(short?.code, "missing_command");
+  assert.match(short?.line ?? "", /COACHEMON_TRANSPORT=hub/);
 });
 
 test("rawKey sends a button's keyboard equivalent, and nothing for a button without one", async () => {

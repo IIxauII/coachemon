@@ -8,6 +8,7 @@ import type { CardResult } from "../page/card.ts";
 import type { ConsoleLine } from "../page/errors.ts";
 import type { MenuResult } from "../page/menu.ts";
 import type { ProbeArgs, ProbeResult } from "../page/probe.ts";
+import type { SessionResult } from "../page/session.ts";
 import type { SnapshotDetail } from "../page/snapshot.ts";
 import type { StartersResult } from "../page/starters.ts";
 import type { Reach } from "../hub/ladder.ts";
@@ -26,13 +27,14 @@ export const isFault = (v: unknown): v is Fault => typeof v === "object" && v !=
 export type Unready = { ok: false; why: string };
 
 export interface GameLink {
-  /** The commands this link can send: the whole store table on CDP, the extension's hello on the hub. */
+  /** The commands this link can send: the store table less its hub-only reads on CDP, the extension's hello on the hub. */
   readonly commands: ReadonlySet<CommandName>;
   probe(args: ProbeArgs): Promise<ProbeResult | Fault>;
   menu(): Promise<MenuResult | Unready | Fault>;
   snapshot(args: { detail: SnapshotDetail }): Promise<Record<string, unknown> | Unready | Fault>;
   starters(): Promise<StartersResult | Unready | Fault>;
   card(): Promise<CardResult | Unready | Fault>;
+  session(): Promise<SessionResult | Unready | Fault>;
   press(args: Args<"press">): Promise<PressResult | Fault>;
   key(args: Args<"key">): Promise<KeyResult | Fault>;
   cursorOption(args: Args<"cursor.option">): Promise<CursorOptionResult | Fault>;
@@ -48,8 +50,8 @@ export interface GameLink {
 export interface Tab {
   /**
    * Whether a command can reach a game tab right now, and what `status` says about the transport. `needs` are the
-   * commands the caller is about to use: one the connected extension never registered refuses alone
-   * (extension-distribution.md §8.5).
+   * commands the caller is about to use: one the connected extension never registered, or the transport never carries,
+   * refuses alone (extension-distribution.md §8.5, §10.1).
    */
   presence(needs?: readonly CommandName[]): Promise<Presence>;
   /** Takes the right to act on the game for this session (extension-distribution.md §7.5). A refusal is a tool's, so it carries its own wording. */
