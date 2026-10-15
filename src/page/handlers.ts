@@ -1,6 +1,7 @@
 import type { CommandName } from "../protocol/commands.ts";
 import { cursorLearn, cursorOption, cursorShop, cursorStarter, key, modal, press } from "./acts.ts";
 import { card } from "./card.ts";
+import { extras } from "./extras.ts";
 import { menu } from "./menu.ts";
 import { probe } from "./probe.ts";
 import { session } from "./session.ts";
@@ -15,6 +16,7 @@ export const COMMAND_HANDLERS = Object.freeze({
   starters,
   card,
   session,
+  extras,
   press,
   key,
   "cursor.option": cursorOption,

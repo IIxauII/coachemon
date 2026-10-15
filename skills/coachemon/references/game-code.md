@@ -47,6 +47,7 @@ what was only observed on a tab) is in §22, not in the sections.
 | The canvas and its message window | §27 |
 | Loading a session save: doubles, Mystery Encounters, arena tags and items a reload keeps or loses | §28 |
 | The wave-start save and the session export | §29 |
+| The session save, and what a reload resets mid-fight | §30 |
 | HUD API built on the above | Recommended API for the HUD |
 
 ---
@@ -2760,8 +2761,8 @@ generic trainer (`src/data/trainers/trainer-config.ts`, `setDoubleOnly`), and th
 **Arena tags.** A save keeps only the `SerializableArenaTag` instances on the field: `ArenaData`'s constructor drops
 every other tag (`src/system/arena-data.ts:32-35`), both when the save is written (`src/system/game-data.ts:892`) and
 when it is read back (`:1280`). `SafeguardTag` extends plain `ArenaTag` (`src/data/arena-tag.ts:1333`), so Safeguard is
-never saved and a reload loses it. The type `SerializableArenaTagType` (`src/@types/arena-tags.ts:28-31`) does list
-`SAFEGUARD`; the runtime `instanceof` is what decides.
+never saved and a reload loses it. The type `SerializableArenaTagType` (`src/@types/arena-tags.ts:28-31`) includes
+`SAFEGUARD`, being every `ArenaTagType` outside `NonSerializableArenaTagType`; the runtime `instanceof` is what decides.
 
 **Items.** `loadSession` (`src/system/game-data.ts:989`, through `initSessionFromData`) rebuilds each saved item with
 `toModifier(Modifier[className])` and skips a `null` without a word (`:1115-1128`). `toModifier` returns `null` when no
@@ -2812,3 +2813,57 @@ fetches the save from the server and writes the key.
   EVP_BytesToKey over MD5, one iteration, and AES-256-CBC with PKCS#7. The salt is new on every call, so the same
   session never encrypts the same way twice. With `bypassLogin` (`VITE_BYPASS_LOGIN=1`, which dev and app builds set,
   `src/constants/app-constants.ts:21`) it is `btoa(encodeURIComponent(data))` instead.
+
+## 30. The session save, and what a reload resets mid-fight
+
+Read at the pinned tag (`v1.12.0.11`), for the `extras` read (`src/page/extras.ts`).
+
+**What the save never carries.** `getSessionSaveData()` writes each mon through `new PokemonData(p)`
+(`src/system/game-data.ts:889`). None of these are in it, and a reload starts each one fresh:
+
+- `Battle.turn` (`src/battle.ts:70`): `newBattle` → `incrementTurn` sets it to 1 (`src/battle-scene.ts:1333`,
+  `src/battle.ts:171-176`).
+- `enemySwitchCounter` (`:69`), the AI's switch damping (§7); `lastMove` (`:80`), which Copycat reads
+  (`src/data/moves/move.ts:8191`); `enemyFaints` (`battle.ts:95`), which Last Respects (`move.ts:12516`) and Supreme Overlord
+  (`src/data/battler-tags.ts:3716`) count.
+- `playerFaintsHistory` and `enemyFaintsHistory` (`battle.ts:96-97`). An entry is `{ pokemon, turn }` (`:50-53`), and
+  `pokemon` is the live mon: a Phaser container, circular. Its readers take only `pokemon.id` (`Trainer.shouldTera`,
+  `src/field/trainer.ts:789`) and `turn` (Retaliate, `move.ts:11207-11211`).
+- `EnemyPokemon.initialTeamIndex` (`src/field/pokemon.ts:6350`). The constructor sets it to the party's length so far
+  (`:6379`), and a reload builds the party in its saved slot order (`src/system/game-data.ts:1064-1070`), so the index
+  becomes the slot. That is wrong once a switch has swapped slots (`src/phases/switch-summon-phase.ts:190-191`).
+  Trainer instant Tera keys on it (`trainer.ts:788`).
+- `EnemyPokemon.bossSegmentIndex` (`pokemon.ts:6349`). Only `bossSegments` is saved, and `setBoss` starts the index on
+  a full set of bars (`:6463-6474`). It is `undefined` on a mon that is not a boss (§3).
+- `tempSummonData` (`pokemon.ts:291`): `turnCount` and `waveTurnCount`, both starting at 1
+  (`src/data/pokemon/pokemon-data.ts:262-276`). `waveData` (`pokemon.ts:293`): `endured`, `abilityRevealed`, and
+  `abilitiesApplied`, a `Set` (`pokemon-data.ts:308-320`). Neither class has a `toJSON`, so the Set serializes as `{}`.
+- The global `Phaser.Math.RND` state. A reload sows it again (`game-data.ts:1015-1016`, `battle-scene.ts:1291`).
+  `RND.state()` reads it as a `"!rnd,…"` string, and given that string sets it.
+- `Battle.battleSeedState` (`battle.ts:82`; private to TypeScript only), the battle stream's carry-over (§11,
+  `battle.ts:491-509`). **It is not always null at a command.** `incrementTurn` clears it (`:175`), but `TurnEndPhase`
+  draws from the battle stream after that: Grip Claw (`src/modifier/modifier.ts:3181`, `:3198`) and Moody
+  (`src/data/abilities/ab-attrs.ts:4301`, `:4310`). So it can be set at the next `CommandPhase`.
+- Every arena tag that is not a `SerializableArenaTag`, Safeguard among them (§28). The live tags are `Arena.tags`
+  (`src/field/arena.ts:66`), each with a `tagType`, an `ArenaTagType` string, and a `side`, an `ArenaTagSide`
+  (`src/data/arena-tag.ts:119`, `:125`).
+
+**What the save carries and a reload resets.**
+
+- The on-field enemy's `summonData`. `EncounterPhase` calls `fieldSetup(true)` on the enemy's field slots even on a load
+  (`src/phases/encounter-phase.ts:142-145`). That calls `resetSummonData()` (`pokemon.ts:5138-5154`), which replaces
+  both `summonData` and `tempSummonData`. Ours is kept.
+- The toxic counter, `status.toxicTurnCount` (`src/data/status-effect.ts:6-19`). A trainer reload summons the enemy
+  again (`encounter-phase.ts:446-448`), and `PostSummonPhase` zeroes the counter
+  (`src/phases/post-summon-phase.ts:18-20`). It then applies pending heals and entry hazards a second time (`:22-24`).
+
+**How the save copies summon data.** `new PokemonData(p)` copies it with `new PokemonSummonData(p.summonData)`
+(`src/system/pokemon-data.ts:140`). That copy constructor keeps only the `SerializableBattlerTag`s
+(`src/data/pokemon/pokemon-data.ts:197-202`), and rebuilds the Set and the moveset. The copy's `toJSON` writes species
+forms as `{ id, formIdx }`, an illusion's species as its id, and the Set as an array (`:224-258`). A load reads that
+shape back through the same constructor. A bare `JSON.stringify(p.summonData)` goes through `toJSON` too, but keeps
+the tags a load drops.
+
+**Identity.** `Pokemon.id` (`src/field/pokemon.ts:198-200`) is saved (`src/system/pokemon-data.ts:20`) and restored as
+it was (`pokemon.ts:356-357`), so it names the same mon on both sides of a reload. The saved party order is the order
+after any switches.

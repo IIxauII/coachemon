@@ -8,11 +8,12 @@ import { STORE_COMMANDS, type Args, type CommandName } from "../protocol/command
 
 type Globals = { Phaser?: unknown; document?: unknown };
 
-export function onPage(t: { after: (fn: () => void) => void }, scene: Record<string, unknown>, game: Record<string, unknown> = {}): void {
+/** `phaser`: the rest of the page's `Phaser` global, beside the canvas pool the locator walks. */
+export function onPage(t: { after: (fn: () => void) => void }, scene: Record<string, unknown>, game: Record<string, unknown> = {}, phaser: Record<string, unknown> = {}): void {
   const g = globalThis as Globals;
   const prev = { Phaser: g.Phaser, document: g.document };
   const theGame = { isBooted: true, isRunning: true, scene: { getScene: (key: string) => (key === "battle" ? scene : null) }, ...game };
-  g.Phaser = { Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: theGame } }] } } } };
+  g.Phaser = { ...phaser, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: theGame } }] } } } };
   // A tab without the touch-controls element, which the probe reads for its DOM mode.
   g.document = { getElementById: () => null };
   t.after(() => {

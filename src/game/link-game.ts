@@ -10,7 +10,7 @@ import type { SessionResult } from "../page/session.ts";
 import { screenId, type Discriminators } from "../screen.ts";
 import type { CommandName } from "../protocol/commands.ts";
 import { isFault, type Claim, type Fault, type GameLink, type Presence, type Tab, type Unready } from "./link.ts";
-import type { Act, CardRead, ConsoleLine, CursorTarget, Failed, GamePort, MenuRead, PredicateRead, SessionRead, SnapshotDetail, StarterGrid } from "./port.ts";
+import type { Act, CardRead, ConsoleLine, CursorTarget, ExtrasRead, Failed, GamePort, MenuRead, PredicateRead, SessionRead, SnapshotDetail, StarterGrid } from "./port.ts";
 import { waveStartSave } from "./save.ts";
 
 /** A menu read that located no handler has no discriminators: they read as off. */
@@ -92,6 +92,10 @@ export class LinkGame implements GamePort {
     if (!r.ok) return r;
     const { stored, ...read } = r;
     return { ...read, waveStart: waveStartSave(stored, { seed: r.export.seed, wave: r.wave }) };
+  }
+
+  async extras(): Promise<ExtrasRead | Failed> {
+    return answered<ExtrasRead>(await this.#link.extras());
   }
 
   async snapshot(detail: SnapshotDetail): Promise<{ ok: true; snapshot: Record<string, unknown> } | Failed> {

@@ -6,6 +6,7 @@ import type { Button } from "../enums/generated.ts";
 import type { CursorLearnResult, CursorOptionResult, CursorShopResult, CursorStarterResult, KeyResult, ModalResult, PressResult } from "../page/acts.ts";
 import type { CardResult } from "../page/card.ts";
 import type { ConsoleLine } from "../page/errors.ts";
+import type { ExtrasResult } from "../page/extras.ts";
 import type { MenuResult } from "../page/menu.ts";
 import type { ProbeArgs, ProbeResult } from "../page/probe.ts";
 import type { SessionResult } from "../page/session.ts";
@@ -35,6 +36,7 @@ export interface GameLink {
   starters(): Promise<StartersResult | Unready | Fault>;
   card(): Promise<CardResult | Unready | Fault>;
   session(): Promise<SessionResult | Unready | Fault>;
+  extras(): Promise<ExtrasResult | Unready | Fault>;
   press(args: Args<"press">): Promise<PressResult | Fault>;
   key(args: Args<"key">): Promise<KeyResult | Fault>;
   cursorOption(args: Args<"cursor.option">): Promise<CursorOptionResult | Fault>;

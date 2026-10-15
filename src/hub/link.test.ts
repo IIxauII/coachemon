@@ -6,7 +6,7 @@ import { fakeClient, fakeExtension, Peer, readyTab } from "./fake-ext.ts";
 import { HubLink, hubPort } from "./link.ts";
 import { Hub, startHub } from "./hub.ts";
 import { Driver } from "../driver.ts";
-import { Button, UiMode } from "../enums/generated.ts";
+import { ArenaTagSide, Button, UiMode } from "../enums/generated.ts";
 import { Refusal } from "../envelope.ts";
 import { OTHER_RUN_W180, RUN_SEED, RUN_W180 } from "../game/fixtures/saves.ts";
 import { isFault } from "../game/link.ts";
@@ -18,6 +18,8 @@ import type { ExtensionCmd, FromExtension, ToExtension } from "../protocol/wire.
 
 const shut: (() => void)[] = [];
 const UNWRITTEN_HOME = path.join(tmpdir(), "coachemon-hub-link-test");
+
+const UNWRITTEN_HOME = path.join(tmpdir(), "coachemon-hub-test");
 
 after(() => {
   for (const s of shut) s();
@@ -52,6 +54,29 @@ test("a command crosses the hub and its result comes back as the page's own (ext
   const sent = await answer(ext, { readable: true, mode: 2, family: "command", options: [], cursor: 0, text: null, extra: {} });
   assert.equal(sent.name, "menu");
   assert.deepEqual(await menu, { readable: true, mode: 2, family: "command", options: [], cursor: 0, text: null, extra: {} });
+});
+
+test("every live extra crosses the hub as its own read and comes back as the page's own (#676)", async () => {
+  const { ext, link } = await linked();
+  const extras = link.extras();
+  const waveData = { endured: false, abilityRevealed: true, abilitiesApplied: [70] };
+  const page = {
+    ok: true, wave: 180, battleSeed: "s33d", turn: 5, rndState: "!rnd,1,0.25,0.5,0.75", battleSeedState: null, enemySwitchCounter: 1, lastMove: 450,
+    enemyFaints: 1, playerFaintsHistory: [], enemyFaintsHistory: [{ id: 79, turn: 3 }], arenaTags: [{ tagType: "SAFEGUARD", side: ArenaTagSide.ENEMY }],
+    foes: [{ id: 77, initialTeamIndex: 5, bossSegmentIndex: null, toxicTurnCount: 3, tempSummonData: { turnCount: 2, waveTurnCount: 4 }, waveData, onField: true, summonData: { statStages: [1, 0, 0, 0, 0, 0, 0], tags: [{ tagType: "CONFUSED" }] } }],
+    party: [{ id: 12, toxicTurnCount: null, tempSummonData: { turnCount: 3, waveTurnCount: 5 }, waveData }],
+    unread: [],
+  };
+  const sent = await answer(ext, page);
+  assert.deepEqual(sent, { name: "extras", args: {} });
+  assert.deepEqual(await extras, page);
+});
+
+test("an extension older than the extras read refuses the Driver's read missing_command at rung 4, sending nothing (#676, extension-distribution.md §8.5)", async () => {
+  const { ext, link } = await linked({ commands: COMMAND_NAMES.filter(n => n !== "extras") });
+  const driver = new Driver(new LinkGame(link, link), UNWRITTEN_HOME);
+  await assert.rejects(driver.readExtras({}), (e: Refusal) => e.code === "missing_command" && e.detail.rung === 4);
+  assert.deepEqual(ext.seen.filter(f => f.t === "cmd"), []);
 });
 
 test("a relay refusal becomes a Fault, so LinkGame cannot tell the transports apart (extension-distribution.md §9.7, §12.1)", async () => {

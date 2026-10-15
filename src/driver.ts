@@ -76,7 +76,7 @@ const NO_CARD = { kind: null, key: null, wave: null, verdict: null, groups: null
 const NO_CARD_NEXT = "The coach panel is not running on this tab, so there is no card to read. The panel ships with Coachemon and its own header reopens it; get_state and read_menu read the game without it.";
 
 /**
- * What each tool sends into the tab, so a tool whose commands the extension never registered refuses alone
+ * What each tool or Driver read sends into the tab, so one whose commands the extension never registered refuses alone
  * (extension-distribution.md §8.5). The cursor commands stay out: a family without its setter is walked with presses.
  */
 const TOOL_COMMANDS = {
@@ -85,6 +85,7 @@ const TOOL_COMMANDS = {
   read_card: ["probe", "menu", "card"],
   read_starters: ["probe", "menu", "starters"],
   read_session: ["probe", "menu", "session"],
+  read_extras: ["probe", "menu", "extras"],
   press: ["probe", "press"],
   select_option: ["probe", "menu", "press"],
   start_run: ["probe", "menu", "starters", "press"],
@@ -206,6 +207,14 @@ export class Driver {
           ? { battle_wave: s.wave, battle_seed: s.battleSeed, wave_start: s.waveStart, export: s.export }
           : { battle_wave: null, battle_seed: null, wave_start: null, export: null, session_error: s.why },
       };
+    });
+  }
+
+  readExtras(ctx: CallContext): Promise<Record<string, unknown>> {
+    return this.#read("read_extras", ctx, async () => {
+      const read = await this.#game.extras();
+      const { ok: _ok, ...extras } = read;
+      return { menu: await this.#game.menu(), fields: read.ok ? { extras } : { extras_error: read.why } };
     });
   }
 

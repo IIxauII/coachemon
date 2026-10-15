@@ -65,6 +65,7 @@ export class CdpLink implements GameLink, Tab {
   starters() { return this.#run("starters", {}); }
   card() { return this.#run("card", {}); }
   async session(): Promise<Fault> { return { fault: "missing-command", message: hubOnly("session") }; }
+  extras() { return this.#run("extras", {}); }
   press(args: Args<"press">) { return this.#run("press", args); }
   key(args: Args<"key">) { return this.#run("key", args); }
   cursorOption(args: Args<"cursor.option">) { return this.#run("cursor.option", args); }
