@@ -5,9 +5,10 @@ import { GameModes } from "../enums/generated.ts";
 import type { Battle, SessionSave } from "./input.ts";
 import type { Checkpoint, Input, ReplayResult } from "./oracle-line.ts";
 import { type Clone, type CloneRun, replay } from "./replay.ts";
+import type { Known } from "./script.ts";
 
 const PIN = "1.12.0.11";
-const drayton: { live: Battle; save: SessionSave } = JSON.parse(
+const drayton: { live: Battle; liveExport: SessionSave; save: SessionSave } = JSON.parse(
   readFileSync(new URL("./fixtures/drayton-w188.json", import.meta.url), "utf8"),
 );
 
@@ -37,6 +38,7 @@ const clean = () => ({
     items: { ours: totals(drayton.save.modifiers), foes: totals(drayton.save.enemyModifiers) },
   },
   battle: { ...drayton.live },
+  scene: structuredClone(drayton.liveExport) as Record<string, any>,
   steps: [
     { turn: 1, input: bounce, checkpoint: atTurn(346), strayPrompts: 0 },
     { turn: 2, input: null, checkpoint: atTurn(300), strayPrompts: 0 },
@@ -55,12 +57,23 @@ const fakeClone = (run: CloneRun) => {
 
 const ask = async (
   report: unknown,
-  given: { save?: SessionSave; live?: Battle; extras?: { arenaTags: [] }; inputs?: Input[] } = {},
+  given: {
+    save?: SessionSave;
+    live?: Battle;
+    liveExport?: SessionSave;
+    extras?: { arenaTags: [] };
+    inputs?: Input[];
+    known?: Known;
+  } = {},
 ) => {
   const { clone, handed } = fakeClone({ out: JSON.stringify(report) });
   const live = "live" in given ? given.live : drayton.live;
-  const { save = drayton.save, extras, inputs = [bounce] } = given;
-  return { result: await replay({ save, live, extras, cloneVersion: PIN }, inputs, clone), handed };
+  const liveExport = "liveExport" in given ? given.liveExport : drayton.liveExport;
+  const { save = drayton.save, extras, inputs = [bounce], known } = given;
+  return {
+    result: await replay({ save, live, liveExport, extras, cloneVersion: PIN }, { inputs, known }, clone),
+    handed,
+  };
 };
 
 const reason = (result: ReplayResult) => {
@@ -80,17 +93,96 @@ test("a replay hands the harness the save and the inputs, and comes back with th
   ]);
 });
 
-test("a replay's receipt names the version, load-hygiene and wave-start-save checks, and what each one checked (#660)", async () => {
+test("a replay that passes every check claims replay, with a receipt naming each check and what it checked (#660, #661)", async () => {
+  const known: Known = { outcome: "won", after: [{ turn: 1, ours: { PROBOPASS: { hp: 346 } } }] };
+  const { result } = await ask(clean(), { known });
+  const replayed = result.kind === "replayed" ? result.replay : assert.fail();
+
+  assert.equal(replayed.confidence, "replay");
+  assert.deepEqual(
+    replayed.receipt.map(r => [r.step, r.pending ?? false]),
+    [
+      ["versions", false],
+      ["load_hygiene", false],
+      ["wave_start_save", false],
+      ["scene_matches", false],
+      ["known_turn", false],
+    ],
+  );
+  assert.match(replayed.receipt[0].checked, /1\.12\.0\.11/);
+  assert.match(replayed.receipt[2].checked, /wave 188/);
+  assert.match(replayed.receipt[2].checked, /DAihNIyy0o8ef1c1/);
+  assert.match(replayed.receipt[3].checked, /live tab's export/);
+  assert.match(replayed.receipt[4].checked, /1 turn/);
+  assert.match(replayed.receipt[4].checked, /won/);
+});
+
+test("a replay with no known turn leaves the known-turn check pending on its first turn, to be checked live (#661)", async () => {
   const { result } = await ask(clean());
   const receipt = result.kind === "replayed" ? result.replay.receipt : assert.fail();
 
-  assert.deepEqual(
-    receipt.map(r => r.step),
-    ["versions", "load_hygiene", "wave_start_save"],
-  );
-  assert.match(receipt[0].checked, /1\.12\.0\.11/);
-  assert.match(receipt[2].checked, /wave 188/);
-  assert.match(receipt[2].checked, /DAihNIyy0o8ef1c1/);
+  assert.equal(receipt[4].step, "known_turn");
+  assert.equal(receipt[4].pending, true);
+  assert.match(receipt[4].checked, /first turn is the test/);
+});
+
+test("a loaded scene that differs from the live one at the decision gives no answer naming the difference (#661)", async () => {
+  const report = clean();
+  report.scene.party[0].hp -= 40;
+  report.scene.enemyParty[0].summonData.statStages[0] = -1;
+  const { result } = await ask(report);
+  const { reason: why, message } = reason(result);
+
+  assert.equal(why.code, "scene_mismatch");
+  assert.match(message, /isn't the live one at the decision/);
+  assert.match(message, /our Gyarados \(slot 0\) hp: loaded 561, live 601/);
+  assert.match(message, /the foe's Dragonite \(slot 0\) summonData\.statStages\[0\]: loaded -1, live 0/);
+});
+
+test("a scene that differs only in play time, timestamp or the abilities applied on entry matches (#661)", async () => {
+  const report = clean();
+  report.scene.playTime += 48;
+  report.scene.timestamp += 1000;
+  report.scene.party[0].summonData.abilitiesApplied = [163];
+  const { result } = await ask(report);
+
+  assert.equal(result.kind, "replayed");
+});
+
+test("a play time or timestamp below the top of the export is compared like any other field (#661)", async () => {
+  const report = clean();
+  report.scene.arena.timestamp = 1;
+  const { result } = await ask(report);
+
+  assert.match(reason(result).message, /arena\.timestamp: loaded 1, live nothing/);
+});
+
+test("a scene the harness never reports gives no answer, never a replay (#661)", async () => {
+  const { result } = await ask({ ...clean(), scene: undefined });
+
+  assert.equal(reason(result).reason.code, "harness_failed");
+});
+
+test("a save with no live export to match the loaded scene against gets no answer, and the clone never runs (#661)", async () => {
+  const { result, handed } = await ask(clean(), { liveExport: undefined });
+
+  assert.deepEqual(reason(result).reason, { code: "no_live_export" });
+  assert.equal(handed.length, 0);
+});
+
+test("a known turn the replay doesn't reproduce gives no answer naming what differs (#661)", async () => {
+  const known: Known = { outcome: "won", after: [{ turn: 2, ours: { PROBOPASS: { hp: 280 } } }] };
+  const { result } = await ask(clean(), { known });
+  const { reason: why, message } = reason(result);
+
+  assert.deepEqual(why, { code: "known_turn_missed", misses: ["turn 2: our Probopass hp 300, live 280"] });
+  assert.match(message, /a turn whose outcome is known didn't reproduce: turn 2: our Probopass hp 300, live 280/);
+});
+
+test("a known outcome the replay doesn't reach gives no answer, even where every recorded turn matches (#661)", async () => {
+  const { result } = await ask(clean(), { known: { outcome: "lost", after: [] } });
+
+  assert.deepEqual(reason(result).reason, { code: "known_turn_missed", misses: ["the replay won, where live lost"] });
 });
 
 test("a lost replay and one whose inputs ran out come back as replays, not as no answer (#660)", async () => {
@@ -192,7 +284,7 @@ test("a faint on a turn with no input of its own stops the replay with no answer
 test("no clone to run in gives no answer naming what is missing (#660)", async () => {
   const missing = "No pinned clone at .cache/pokerogue/v1.12.0.11. Set it up with `npm run drift:check`";
   const { clone } = fakeClone({ missing });
-  const result = await replay({ ...drayton, cloneVersion: PIN }, [bounce], clone);
+  const result = await replay({ ...drayton, cloneVersion: PIN }, { inputs: [bounce] }, clone);
 
   assert.deepEqual(reason(result).reason, { code: "no_clone", version: PIN, cause: missing });
   assert.match(reason(result).message, /isn't set up: No pinned clone .*`npm run drift:check`\. The card still coaches\.$/);
@@ -210,10 +302,12 @@ test("a harness that failed is no answer, never a win or a loss (#660)", async (
     ["{ not json", /report/],
     [{ ...clean(), error: "Error: Timed out in waitUntil!\n    at …", end: undefined }, /Timed out in waitUntil!$/],
     [{ ...clean(), end: undefined }, /stopped without saying how the fight ended/],
+    [{ ...clean(), error: "Error: the replay timed out after 540 s" }, /timed out after 540 s$/],
+    [{ ...clean(), steps: [{ ...clean().steps[0], checkpoint: { ...atTurn(346), ours: [] } }] }, /our party was empty after turn 1/],
   ];
   for (const [report, why] of failed) {
     const { clone } = fakeClone({ out: report === undefined || typeof report === "string" ? report : JSON.stringify(report) });
-    const { reason: said, message } = reason(await replay({ ...drayton, cloneVersion: PIN }, [bounce], clone));
+    const { reason: said, message } = reason(await replay({ ...drayton, cloneVersion: PIN }, { inputs: [bounce] }, clone));
 
     assert.equal(said.code, "harness_failed");
     assert.match(said.code === "harness_failed" ? said.why : "", why);

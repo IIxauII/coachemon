@@ -5,7 +5,6 @@ import { PINNED_GAME_VERSION } from "../../src/escape-ladder/lookup.ts";
 import {
   type Clone,
   DEFAULT_BUDGET,
-  misses,
   type ReplayResult,
   readScript,
   replay,
@@ -19,7 +18,6 @@ import { printReplay } from "./print.ts";
 
 const ORACLE_LINE = 0;
 const REPLAYED = 0;
-const MISSES_LIVE = 1;
 const NO_ANSWER = 2;
 
 const messageOf = (err: unknown) => (err instanceof Error ? err.message : String(err));
@@ -36,7 +34,7 @@ if (file === undefined) {
   process.exit(NO_ANSWER);
 }
 
-let exported: Pick<SolveInput, "save" | "extras" | "live">;
+let exported: Pick<SolveInput, "save" | "extras" | "live" | "liveExport">;
 try {
   const json = JSON.parse(readFileSync(file, "utf8"));
   exported = "save" in json ? json : { save: json };
@@ -58,20 +56,13 @@ if (values.replay !== undefined) {
   };
   let result: ReplayResult;
   try {
-    result = await replay({ ...exported, cloneVersion: PINNED_GAME_VERSION }, script.inputs, inClone);
+    result = await replay({ ...exported, cloneVersion: PINNED_GAME_VERSION }, script, inClone);
   } catch (err) {
     exitNoAnswer(`the replay failed: ${messageOf(err)}`);
   }
   if (result.kind === "no_answer") exitNoAnswer(result.message);
   console.log(printReplay(result.replay));
-  if (script.known === undefined) process.exit(REPLAYED);
-  const missed = misses(script.known, result.replay);
-  console.log(
-    missed.length === 0
-      ? `live: every recorded fact matches, over ${script.known.after.length} turns`
-      : `live: ${missed.length} recorded facts differ\n${missed.map(miss => `    ${miss}`).join("\n")}`,
-  );
-  process.exit(missed.length === 0 ? REPLAYED : MISSES_LIVE);
+  process.exit(REPLAYED);
 }
 
 let result: SolveResult;

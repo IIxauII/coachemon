@@ -6,7 +6,7 @@ export type SolveResult = { kind: "oracle_line"; oracleLine: OracleLine } | NoAn
 export type ReplayResult = { kind: "replayed"; replay: Replay } | NoAnswer;
 
 /** Scripted inputs played forward from the save to where they end. Not an oracle line: no win is promised (#660). */
-export type Replay = { outcome: Outcome; steps: readonly Step[]; receipt: Receipt };
+export type Replay = { confidence: "replay"; outcome: Outcome; steps: readonly Step[]; receipt: Receipt };
 
 /** `open`: the inputs ran out with the fight still on. */
 export type Outcome = "won" | "lost" | "open";
@@ -56,8 +56,13 @@ export type MonState = PartySlot & {
   bossBars?: number;
 };
 
-/** Which steps of the replay protocol ran and passed, and what each one checked (#636). */
-export type Receipt = readonly { step: ValidationStep; checked: string }[];
+/** Which steps of the replay protocol passed, or wait on live, and what each one checked (#636). */
+export type Receipt = readonly {
+  step: ValidationStep;
+  checked: string;
+  /** Left to the first live checkpoint to pass, as a known turn is on a first attempt (#661). */
+  pending?: true;
+}[];
 
 export type ValidationStep = "versions" | "load_hygiene" | "wave_start_save" | "scene_matches" | "known_turn";
 
@@ -75,6 +80,7 @@ export type Reason =
   | { code: "safeguard" }
   | { code: "dropped_item"; items: readonly string[] }
   | { code: "no_live_battle" }
+  | { code: "no_live_export" }
   | { code: "not_wave_start" }
   | { code: "save_mismatch"; save: { wave: number; battleSeed?: string }; live: Battle }
   | { code: "no_clone"; version: string; cause: string }
@@ -82,6 +88,8 @@ export type Reason =
   | { code: "load_hygiene"; rule: HygieneRule; detail: string }
   /** `index` into the inputs, null on a turn that took none. */
   | { code: "illegal_step"; index: number | null; turn: number; why: string; tried: Input | null; legal: readonly Input[] }
+  | { code: "scene_mismatch"; differences: readonly string[] }
+  | { code: "known_turn_missed"; misses: readonly string[] }
   | { code: "harness_failed"; why: string }
   | { code: "not_built" };
 

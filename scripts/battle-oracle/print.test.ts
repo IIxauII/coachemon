@@ -16,6 +16,7 @@ const mon = (species: MonState["species"], hp: number, extra: Partial<MonState> 
 });
 
 const won: Replay = {
+  confidence: "replay",
   outcome: "won",
   receipt: [{ step: "versions", checked: "the save, the clone and the pin are all game version 1.12.0.11" }],
   steps: [
