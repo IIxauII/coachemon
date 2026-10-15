@@ -26,11 +26,13 @@ part follows the game's language.
    `card` text; `card` is `null` while the HUD is off, so start it (`read.sh <browser> hud`) and read again. Write the
    file, making its folder if need be. Done when the file holds its three opening lines and all seven sections.
 3. **Tick** on every read after. Mark each phase whose check has come due ✓ with what the battle showed, or ✗ with
-   what came instead; the phase in play is ▸. A ✗ adds its break, and the play it leaves, to *Off the plan*. When the
-   call's verdict word is not the card's, rewrite the call to the card's verdict and name the turn: a `LIKELY LOST`
-   line fires only once a wave and only toward lost, and a resume or a retry never sees it. Rewrite the status line
-   each time. Done when the call's verdict is the card's and the status line names the last check the battle has
-   reached.
+   what came instead; the phase in play is ▸. A ✗ adds its break, and the play it leaves, to *Off the plan*. From the
+   first command on, keep the file the card's, which works its fight plan out again every turn: when the call's word
+   is not the one the `plan` group opens with (`winnable` or `likely lost`), rewrite the call and name the turn; when
+   the card's step order, the mons it keeps back or its sacrifices have moved, rewrite the phases not yet ticked. A
+   `LIKELY LOST` line is no stand-in: a resume or a retry never sees it. With `card` null, start the HUD as in step 2.
+   Rewrite the status line each time. Done when the call and the phases ahead are the card's, and the status line
+   names the last check the battle has reached.
 
 The file opens with three lines:
 - the title, `# Plan: <trainer> · W<wave> · singles` (or `doubles`);
