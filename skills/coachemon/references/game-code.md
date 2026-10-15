@@ -2392,6 +2392,11 @@ Nothing in §21 is pure. RNG, by stream:
 - An enemy faint unshifts `VictoryPhase` (`faint-phase.ts:184`). Once no enemy is left, `VictoryPhase.start` pushes `BattleEndPhase`, `TrainerVictoryPhase`
   and the rewards to the bottom of the queue (`src/phases/victory-phase.ts:43-58`). They run after the turn-end phases.
   So on the turn a wave is won, the player's mons still take the chip, eat berries and heal, except on X0 waves (step 1).
+- The EXP is not pushed: `VictoryPhase.start` calls `applyPartyExp` (`victory-phase.ts:34`), which unshifts `ExpPhase` or `ShowPartyExpBarPhase`
+  (`src/battle-scene.ts:3434-3437`), whose level-up unshifts `LevelUpPhase` (`exp-phase.ts:41`, `show-party-exp-bar-phase.ts:30`) and in turn
+  `LearnMovePhase` (`level-up-phase.ts:93`). So **a move prompt from a KO by a move comes before that turn's `TurnEndPhase`**, Leftovers and all;
+  from a KO inside `TurnEndPhase` (Leech Seed, Curse, a trap, Toxic Orb), after it. `TurnEndPhase.start` increments the turn first
+  (`turn-end-phase.ts:26`), so the rewards screen after a win reads one past the winning turn.
 - A fainted player mon's replacement (`SwitchPhase`, `faint-phase.ts:181`) and a trainer's send-in (`SwitchSummonPhase`, `:192`) are also pushed.
   They arrive after `TurnEndPhase`, so the newcomer gets no turn-end effect that turn.
 

@@ -143,4 +143,72 @@ strip | trainer Golbat Venoshock → Tyranitar · 3 hits
 == W181
 strip | trainer Golbat Venoshock → Tyranitar · 3 hits
     ⚔ Golbat Poison Venoshock → Tyranitar 3 hits
+Gordie's W180, to score                 held
+== W180 T13, T12's checkpoint matched
+Plan | ~ oracle line wins in 9 turns · 4 of 6 left
+    ✓ T11 ⇄ Leavanny → ~ Leavanny 280/497 · Barbaracle 480/480
+    ✓ T12 Leavanny Grass Leaf Storm → ~ Leavanny 249/497 · Tyranitar 569/569
+    ▸ T13 Leavanny Bug Bug Bite · send Golbat → ~ Golbat 493/493 · Tyranitar 512/569
+    · T14 Golbat Poison Toxic
+    · T15 Golbat Poison Venoshock · send Gyarados
+    · T16 Gyarados Tera Water + Water Hydro Pump
+    · T17 Gyarados Water Hydro Pump
+    · T18 Gyarados Water Hydro Pump
+    · T19 Gyarados Water Hydro Pump
+== W180 T13, on the oracle line
+strip | trainer ⚔ ~ T13/19 · Leavanny Bug Bite · then send Golbat
+    ⚔ T13 Leavanny Bug Bug Bite → ~ Golbat 493/493 · Tyranitar 512/569
+    ⤵ then send Golbat at the faint prompt
+== W180 T14, Leaf Storm where the oracle line said Bug Bite
+strip | trainer off the line · ~ re-solving… · Golbat Venoshock → Tyranitar · 3 hits
+    ✗ T13 Tyranitar expected 512/569 · came 455/569
+    ⚔ Golbat Poison Venoshock → Tyranitar 3 hits
+== W180 T15, the state as T14's checkpoint
+strip | trainer off the line · ~ re-solving… · Golbat Venoshock → Tyranitar · 3 hits
+    ✗ T13 Tyranitar expected 512/569 · came 455/569
+    ⚔ Golbat Poison Venoshock → Tyranitar 3 hits
+== W180 T1, a Continue retry
+strip | trainer off the line · ~ re-solving… · Golbat Venoshock → Tyranitar · 3 hits
+    ✗ T13 Tyranitar expected 512/569 · came 455/569
+    ⚔ Golbat Poison Venoshock → Tyranitar 3 hits
+a re-solve from T15                     held
+== W180 T15, the re-solve
+strip | trainer ⚔ ~ T15/19 · Golbat Venoshock · then send Gyarados
+    ⚔ T15 Golbat Poison Venoshock → ~ Gyarados 570/570 · Tyranitar 339/569
+    ⤵ then send Gyarados at the faint prompt
+== W180 T16, Venoshock as the oracle line said, drawn otherwise
+strip | trainer off the line · ! re-solving… · Golbat Venoshock → Tyranitar · 3 hits
+    ✗ T15 Tyranitar expected 339/569 · came 360/569
+    ⚔ Golbat Poison Venoshock → Tyranitar 3 hits
+a re-solve from T16, the same run       held
+== W180 T16, an oracle line after a wrong one
+strip | trainer ⚔ ! T16/19 · Gyarados Tera Water + Hydro Pump
+    ⚔ T16 Gyarados Tera Water + Water Hydro Pump → ! Gyarados 351/570 · Tyranitar 109/569
+    · Tera: ← from Fight to the Tera button
+== W180 T16, its plan
+Plan | ! oracle line wins in 4 turns · 4 of 6 left
+    ▸ T16 Gyarados Tera Water + Water Hydro Pump → ! Gyarados 351/570 · Tyranitar 109/569
+    · T17 Gyarados Water Hydro Pump
+    · T18 Gyarados Water Hydro Pump
+    · T19 Gyarados Water Hydro Pump
+the same oracle line in another run     held
+== another run, T16
+strip | trainer ⚔ ~ T16/19 · Gyarados Tera Water + Hydro Pump
+    ⚔ T16 Gyarados Tera Water + Water Hydro Pump → ~ Gyarados 351/570 · Tyranitar 109/569
+    · Tera: ← from Fight to the Tera button
+from T11, a switch first                held
+== T12, the switch played, Leavanny took less
+strip | trainer off the line · ! re-solving… · Golbat Venoshock → Tyranitar · 3 hits
+    ✗ T11 Leavanny expected 280/497 · came 300/497
+    ⚔ Golbat Poison Venoshock → Tyranitar 3 hits
+from T13, Bug Bite then send Golbat     held
+== T14, Gyarados sent where the oracle line said Golbat
+strip | trainer off the line · ~ re-solving… · Golbat Venoshock → Tyranitar · 3 hits
+    ✗ T13 Gyarados expected benched · came in front
+    ✗ T13 Golbat expected in front · came benched
+    ⚔ Golbat Poison Venoshock → Tyranitar 3 hits
+W188 from T18                           held
+W188 rewards: done done | off null
+W180 from T19                           held
+W180 biome screen: off {"turn":19,"misses":[{"icon":null,"name":"Gyarados","expected":"423/570","came":"388/570"}],"mark":"!"}
 writes to the game: none

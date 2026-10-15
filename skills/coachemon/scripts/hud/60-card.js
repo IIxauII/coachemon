@@ -17,7 +17,7 @@ import { auditSummary } from "./50-audit.js";
 import { spliceScreen, fusionModel, fusionSummary } from "./49-fusion.js";
 import { rewardsModel, rewardsSummary } from "./52-shop.js";
 import { starterScreen, starterModel, startersSummary } from "./51-starters.js";
-import { oracleLineModel, oracleLineState, oracleLineSummary, oracleStepSummary } from "./57-oracle-line.js";
+import { offLineModel, offLineSummary, oracleLineModel, oracleLineState, oracleLineSummary, oracleStepSummary } from "./57-oracle-line.js";
 
 export const hitsText = n => `${n} hit${n === 1 ? "" : "s"}`;
 // A spread move KOing the two foes on different turns carries `koEach` instead of one `ko`: the slower one counts.
@@ -60,7 +60,11 @@ export const composeBattleCard = (turn, account) => {
 
 const battleCard = (s, account, estimate) => readTurn(s, turn => composeBattleCard(turn, account), { estimate });
 
-export const readOracleLine = (s, card) => { if (card?.kind === "battle") card.oracleLine = oracleLineModel(s); };
+export const readOracleLine = (s, card) => {
+  if (card?.kind !== "battle") return;
+  card.oracleLine = oracleLineModel(s);
+  card.offLine = offLineModel(s);
+};
 
 // Our side's 💀 / ⚠ tags. `after`: a likely KO once the mon has acted.
 const dangerTags = m => (m.field ? [...m.field.slots.map(sl => [sl.name, sl.threat]), ...m.field.switches.map(sw => [sw.out?.name, sw.out?.threat])] : [])
@@ -143,8 +147,10 @@ export const readCard = (s, account, { road = true, estimate = false } = {}) => 
 const slotText = sl => `${sl.name} ${sl.move ?? deadEndText(sl)}${sl.target === "both" ? " → both" : sl.target ? ` → ${sl.target.name}` : ""}${sl.then ? `, then ${sl.then}` : ""}${slowestKo(sl) > 0 && slowestKo(sl) <= 3 ? ` · ${hitsText(slowestKo(sl))}` : ""}`;
 
 // The act group's summary is this string verbatim, so the strip, the watch line and the structured read agree (#349).
-export const actSummary = card => oracleStepSummary(card.oracleLine) ?? (card.unavailable ? `no advice — ${card.unavailable}`
+const turnLineSummary = card => (card.unavailable ? `no advice — ${card.unavailable}`
   : card.field ? card.field.slots.map(slotText).join(" ; ") : null);
+export const actSummary = card => oracleStepSummary(card.oracleLine)
+  ?? ([offLineSummary(card.offLine), turnLineSummary(card)].filter(Boolean).join(" · ") || null);
 
 // A mon the turn both attacks with and switches out carries its threat on two rows, so identical clauses collapse.
 export const foesSummary = card => {

@@ -3,7 +3,7 @@ import { PerformanceObserver as NodeObserver, performance as nodePerf } from "no
 import { setFlagsFromString } from "node:v8";
 import { runInNewContext } from "node:vm";
 import { bundle } from "../hud-bundle.mjs";
-import { BattlerIndex, PartyUiMode, UiMode } from "../../../../src/enums/generated.ts";
+import { BattlerIndex, Command, PartyUiMode, UiMode } from "../../../../src/enums/generated.ts";
 import { guard, writes } from "./game-writes.mjs";
 
 setFlagsFromString("--expose-gc");
@@ -469,6 +469,41 @@ scene = game;
   step("W12, turn 2", freeSwitch(2));
   console.log(`turn 2 | ${plan()} | ${at().join(" ")}`);
   assert.deepEqual(at(), ["done", "now"]);
+  delete game.seed;
+  delete full.species.speciesId;
+}
+
+// ---- the watch takes the player's command from a turn's frames and scores that turn's checkpoint at the next command
+{
+  game.seed = "scoringSeed";
+  full.species.speciesId = 5;
+  full.hp = 100;
+  const paras = foe(26);
+  paras.species.speciesId = 46;
+  const mon = (species, hp) => ({ slot: 0, species, onField: true, hp, maxHp: 100, status: 0, statStages: [0, 0, 0, 0, 0, 0, 0], tera: false });
+  // Ember every turn, the foe down 30 a turn.
+  const line = { seed: "scoringSeed", wave: 13, gameVersion: "1.12.0.11", receipt: [], luck: [],
+    steps: [1, 2, 3].map(turn => ({ turn, input: { kind: "move", move: 52, tera: false }, checkpoint: { ours: [mon(5, 100)], foes: [mon(46, 100 - 30 * turn)] } })) };
+  const command = (turn, hp) => () => {
+    g.battle = battle(13, turn); g.party = [full]; g.foes = [paras]; paras.hp = hp;
+    g.phase = { phaseName: "CommandPhase", fieldIndex: 0 }; g.mode = UiMode.COMMAND; g.handler = {}; g.handlers = {};
+  };
+  const ember = () => { g.battle.turnCommands[0] = { command: Command.FIGHT, move: { move: 52 } }; g.phase = { phaseName: "MoveEffectPhase" }; g.mode = UiMode.MESSAGE; };
+  const state = () => {
+    const c = __coachHud.last();
+    return c.oracleLine ? c.oracleLine.steps.map(st => st.at).join(" ")
+      : `${c.offLine.mark} ${c.offLine.misses.map(x => `${x.name} ${x.expected}, came ${x.came}`).join("; ")}`;
+  };
+  step("W13 T1", command(1, 100));
+  assert.deepEqual(__coachHud.oracleLine(line), { ok: true });
+  step("W13 T1, Ember", ember);
+  step("W13 T2, as the oracle line said", command(2, 70));
+  console.log(`T2 | ${state()}`);
+  assert.equal(state(), "done now later");
+  step("W13 T2, Ember", ember);
+  step("W13 T3, the foe at 45", command(3, 45));
+  console.log(`T3 | ${state()}`);
+  assert.equal(state(), "! Paras 40/100, came 45/100");
   delete game.seed;
   delete full.species.speciesId;
 }

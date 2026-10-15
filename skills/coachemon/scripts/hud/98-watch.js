@@ -6,7 +6,7 @@ import { gameEvents, gameTables } from "./04-game-tables.js";
 import { previewArm, previewCheck } from "./48-preview.js";
 import { rerollArm, rerollCheck } from "./50-reroll.js";
 import { journalCheck } from "./55-journal.js";
-import { holdOracleLine } from "./57-oracle-line.js";
+import { holdOracleLine, oracleLineCheck, oracleLineSeen } from "./57-oracle-line.js";
 import { hasRoad, keepRoad, readCard, readOracleLine, readRoad } from "./60-card.js";
 import { battleScene, clearMissed, controls, drawer, dropGame, el, glyph, missedSprite, openGroup, PANEL_W, panelState, setRedraw, strip } from "./90-render.js";
 import { captionBattle, drawBattle } from "./96-render-battle.js";
@@ -186,8 +186,9 @@ const build = (road, sendIn = false) => {
   try {
     const s = battleScene();
     if (!s?.ui) { hide(); return; }
-    // Before `readCard`: `previewArm` and `rerollArm` overwrite the prediction these two score.
-    stage("check", () => { rerollCheck(s); previewCheck(s); });
+    // Before `readCard`: `previewArm` and `rerollArm` overwrite the prediction these two score, and the card draws the
+    // oracle line as its checkpoint left it.
+    stage("check", () => { rerollCheck(s); previewCheck(s); oracleLineCheck(s); });
     const card = stage("read", () => readCard(s, accountRead(s), { road, estimate: sendIn }));
     screenNote(s, card);
     stage("arm", () => {
@@ -265,6 +266,8 @@ const scene = () => { try { return battleScene(); } catch { return null; } };
 const tryLook = s => { try { const fresh = look(s); lookFailed = null; return fresh; } catch (e) { lookFailed = e; return false; } };
 const trySentIn = s => { try { return sentIn(s); } catch (e) { lookFailed = e; return false; } };
 const gone = s => !s?.ui || (!open() && s.phaseManager?.getCurrentPhase?.()?.phaseName === "TitlePhase");
+// A frame the command can't be read on misses only that frame's look at it.
+const trySeen = s => { try { oracleLineSeen(s); } catch {} };
 
 // An oracle line handed with no battle card up is held all the same, and the next battle card built draws it (#670).
 // @only 99-start: watchOracleLine
@@ -280,6 +283,7 @@ let framed = false;
 export const watchFrame = () => {
   framed = true;
   const s = scene();
+  trySeen(s);
   if (tryLook(s)) {
     run(cached() ? "cache" : "watch", () => decide(false));
     if (shown?.road === "owed") landLater();
@@ -292,7 +296,7 @@ export const watchFallback = () => run("fallback", () => {
   const quiet = !framed;
   framed = false;
   let s, fresh = false, away = false;
-  try { s = battleScene(); fresh = quiet && tryLook(s); away = gone(s); } catch (e) { lookFailed = e; }
+  try { s = battleScene(); trySeen(s); fresh = quiet && tryLook(s); away = gone(s); } catch (e) { lookFailed = e; }
   if (lookFailed) {
     fail(lookFailed);
     lookFailed = null;
