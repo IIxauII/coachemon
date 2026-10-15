@@ -223,6 +223,29 @@ const now = (label, s, over) => {
   hand("Gordie's W180, back", LINE);
 }
 
+// ---- A turn with no input of its own that faints our lead names the replacement, and the faint prompt is the call (#702)
+{
+  const toSnorlax = { kind: "queued", replacement: { slot: 2, species: "SNORLAX" } };
+  const steps = GORDIE_LINE.steps.map(st => (st.turn === 17 ? { ...st, input: { kind: "move", move: "BOUNCE", tera: false } }
+    : st.turn === 18 ? { ...st, input: toSnorlax } : st));
+  const FAINTS = pageOracleLine({ ...GORDIE_LINE, steps });
+  scene = at(17);
+  assert.equal(hand("a Bounce on T17, Gyarados down on T18", { ...FAINTS, steps: FAINTS.steps.map(st => (st.turn === 18 ? { ...st, input: { kind: "queued" } } : st)) }).why,
+    "malformed");
+  hand("a Bounce on T17, Gyarados down on T18", FAINTS);
+  const { act } = now("W180 T17, Bounce", scene);
+  assert.equal(act.summary, "⚔ ~ T17/19 · Gyarados Bounce");
+  assert.ok(act.rows.some(r => /^· T18 no input then send Snorlax → ~ /.test(r)), act.rows.join("\n"));
+  const { rows } = plan("W180 T17, Bounce", scene);
+  assert.ok(rows.some(r => /^· T18 no input · send Snorlax/.test(r)), rows.join("\n"));
+  const { act: lands } = now("W180 T18, Bounce lands", at(18));
+  assert.match(lands.summary, /^~ T18\/19 · no input · then send Snorlax · expect /);
+  const { act: pick } = now("W180 T18's faint, the turn already 19", at(19, { phase: { phaseName: "SwitchPhase", isModal: true, doReturn: false } }));
+  assert.equal(pick.summary, "⚔ ~ T18/19 · send Snorlax");
+  scene = at(12);
+  hand("Gordie's W180, back", LINE);
+}
+
 // ---- Each checkpoint claims replay; this turn's enemy move keeps the turn read's own confidence
 {
   const { act, groups } = now("W180 T12, Stone Edge read exact", at(12), { rows: [tyranitar("exact")] });

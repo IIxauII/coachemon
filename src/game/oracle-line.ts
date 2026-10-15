@@ -8,8 +8,10 @@ const slot = (p: PartySlot) => ({ ...p, species: SpeciesId[p.species] });
 
 const mon = (m: MonState) => ({ ...m, species: SpeciesId[m.species], status: StatusEffect[m.status] });
 
-function input({ replacement, ...i }: Input): NonNullable<PageStep["input"]> {
-  const ids = i.kind === "move" ? { ...i, move: MoveId[i.move] } : { ...i, to: slot(i.to) };
+function input(i: Input): NonNullable<PageStep["input"]> {
+  if (i.kind === "queued") return { ...i, replacement: slot(i.replacement) };
+  const { replacement, ...rest } = i;
+  const ids = rest.kind === "move" ? { ...rest, move: MoveId[rest.move] } : { ...rest, to: slot(rest.to) };
   return replacement === undefined ? ids : { ...ids, replacement: slot(replacement) };
 }
 

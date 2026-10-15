@@ -12,6 +12,9 @@ export const STAGES = ["Atk", "Def", "SpA", "SpD", "Spe", "Acc", "Eva"];
 const mon = ({ slot, species }: PartySlot) => `${title(species)} (slot ${slot})`;
 
 export function describeInput(input: Input): string {
-  const act = input.kind === "move" ? `${input.tera ? "Tera + " : ""}${title(input.move)}` : `switch → ${mon(input.to)}`;
+  const act =
+    input.kind === "move" ? `${input.tera ? "Tera + " : ""}${title(input.move)}`
+    : input.kind === "switch" ? `switch → ${mon(input.to)}`
+    : "played for us";
   return input.replacement ? `${act}, replacement ${mon(input.replacement)}` : act;
 }

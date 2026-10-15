@@ -126,6 +126,31 @@ strip | trainer ⚔ ~ T17/19 · Gyarados Bounce
 strip | trainer ~ T18/19 · no input · expect Gyarados 423/570 · Coalossal 238/711
     · T18 no input → ~ Gyarados 423/570 · Coalossal 238/711
 Gordie's W180, back                     held
+a Bounce on T17, Gyarados down on T18   malformed
+a Bounce on T17, Gyarados down on T18   held
+== W180 T17, Bounce
+strip | trainer ⚔ ~ T17/19 · Gyarados Bounce
+    ⚔ T17 Gyarados Flying Bounce → ~ Gyarados 316/570 · Carracosta 121/467
+    · T18 no input then send Snorlax → ~ Gyarados 423/570 · Coalossal 238/711
+== W180 T17, Bounce
+Plan | ~ oracle line wins in 9 turns · 4 of 6 left
+    ✓ T11 ⇄ Leavanny → ~ Leavanny 280/497 · Barbaracle 480/480
+    ✓ T12 Leavanny Grass Leaf Storm → ~ Leavanny 249/497 · Tyranitar 569/569
+    ✓ T13 Leavanny Bug Bug Bite · send Golbat → ~ Golbat 493/493 · Tyranitar 512/569
+    ✓ T14 Golbat Poison Toxic → ~ Golbat 463/493 · Tyranitar 477/569
+    ✓ T15 Golbat Poison Venoshock · send Gyarados → ~ Gyarados 570/570 · Tyranitar 339/569
+    ✓ T16 Gyarados Tera Water + Water Hydro Pump → ~ Gyarados 351/570 · Tyranitar 109/569
+    ▸ T17 Gyarados Flying Bounce → ~ Gyarados 316/570 · Carracosta 121/467
+    · T18 no input · send Snorlax
+    · T19 Gyarados Water Hydro Pump
+== W180 T18, Bounce lands
+strip | trainer ~ T18/19 · no input · then send Snorlax · expect Gyarados 423/570 · Coalossal 238/711
+    · T18 no input → ~ Gyarados 423/570 · Coalossal 238/711
+    ⤵ then send Snorlax at the faint prompt
+== W180 T18's faint, the turn already 19
+strip | trainer ⚔ ~ T18/19 · send Snorlax
+    ⚔ send Snorlax → ~ Gyarados 423/570 · Coalossal 238/711
+Gordie's W180, back                     held
 == W180 T12, Stone Edge read exact
 strip | trainer ⚔ ~ T12/19 · Leavanny Leaf Storm
     ⚔ T12 Leavanny Grass Leaf Storm → ~ Leavanny 249/497 · Tyranitar 569/569

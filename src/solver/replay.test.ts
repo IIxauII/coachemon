@@ -297,11 +297,32 @@ test("an illegal step stops the replay with no answer naming the input, its turn
 });
 
 test("a faint on a turn with no input of its own stops the replay with no answer naming that turn, not an input (#660)", async () => {
-  const why = "leaves a faint replacement to pick, and a turn with no input can't name one";
+  const why = "leaves a faint replacement to pick, and names none";
   const { result } = await ask({ ...clean(), end: { illegal: { index: null, turn: 2, why, legal: [] } } });
 
   assert.deepEqual(reason(result).reason, { code: "illegal_step", index: null, turn: 2, why, tried: null, legal: [] });
   assert.match(reason(result).message, /^turn 2, which has no input of its own, leaves a faint replacement to pick/);
+});
+
+test("a turn the game plays for us comes back with the faint replacement its input named (#702)", async () => {
+  const toGolbat: Input = { kind: "queued", replacement: { slot: 4, species: "GOLBAT" } };
+  const { result } = await ask(
+    { ...clean(), steps: [clean().steps[0], { ...clean().steps[1], input: toGolbat }] },
+    { inputs: [bounce, toGolbat] },
+  );
+
+  assert.deepEqual(result.kind === "replayed" && result.replay.steps.map(st => st.input), [bounce, toGolbat]);
+});
+
+test("an illegal replacement on a turn the game plays for us names that input and the turn (#702)", async () => {
+  const toGolbat: Input = { kind: "queued", replacement: { slot: 4, species: "GOLBAT" } };
+  const illegal = { index: 1, turn: 2, why: "names a faint replacement, but nothing of ours fainted", legal: [] };
+  const { result } = await ask({ ...clean(), steps: clean().steps.slice(0, 1), end: { illegal } }, { inputs: [bounce, toGolbat] });
+
+  assert.match(
+    reason(result).message,
+    /^input 2, played for us, replacement Golbat \(slot 4\), names a faint replacement, but nothing of ours fainted at turn 2\./,
+  );
 });
 
 test("no clone to run in gives no answer naming what is missing (#660)", async () => {

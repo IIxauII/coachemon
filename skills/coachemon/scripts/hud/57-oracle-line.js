@@ -33,8 +33,11 @@ const mons = side => Array.isArray(side) && side.every(isObject);
 // every card built for its fight.
 const shaped = line => typeof line?.seed === "string" && Number.isInteger(line.wave) && Array.isArray(line.steps) && line.steps.length > 0
   && line.steps.every((st, i) => Number.isInteger(st?.turn) && st.turn >= 1 && (i === 0 || st.turn > line.steps[i - 1].turn)
-    && (st.input === null || (isObject(st.input) && (st.input.kind !== "switch" || isObject(st.input.to))))
+    && (st.input === null || (isObject(st.input) && (st.input.kind !== "switch" || isObject(st.input.to))
+      && (st.input.kind !== "queued" || isObject(st.input.replacement))))
     && (st.input?.replacement === undefined || isObject(st.input.replacement)) && mons(st.checkpoint?.ours) && mons(st.checkpoint?.foes));
+// A `queued` input asks for no press (oracle-line.ts, `Input`).
+const pressed = input => (input?.kind === "queued" ? null : input);
 
 // @only 98-watch, tests: holdOracleLine
 export const holdOracleLine = (s, line) => {
@@ -49,7 +52,7 @@ export const holdOracleLine = (s, line) => {
 const LOST = { icon: null, name: "the fight", expected: "won", came: "lost" };
 
 const matchesLine = (st, played) => {
-  const input = st.input;
+  const input = pressed(st.input);
   if (!input) return true;
   const cmd = played?.cmd;
   if (input.kind === "switch") return cmd?.command === Command.POKEMON && cmd.cursor === input.to.slot;
@@ -170,7 +173,7 @@ export const oracleLineModel = s => {
   const steps = line.steps.map((st, i) => {
     const by = moverOf(h, i);
     const mover = by == null ? null : ours(by);
-    const input = st.input;
+    const input = pressed(st.input);
     const act = !input ? null
       : input.kind === "switch" ? { kind: "switch", to: named(ours(input.to.species), input.to.species) }
       : { kind: "move", by: by == null ? null : named(mover, by), ...moveOf(party, input.move),
@@ -179,7 +182,7 @@ export const oracleLineModel = s => {
       turn: st.turn,
       at: st.turn < turn ? "done" : st.turn === turn ? "now" : "later",
       act,
-      send: input?.replacement ? named(ours(input.replacement.species), input.replacement.species) : null,
+      send: st.input?.replacement ? named(ours(st.input.replacement.species), st.input.replacement.species) : null,
       after: [...inFront(st.checkpoint.ours, ours), ...inFront(st.checkpoint.foes, theirs)],
     };
   });
@@ -217,7 +220,7 @@ export const oracleStepSummary = m => {
   if (!st) return null;
   const at = `${m.mark} T${st.turn}/${m.last}`;
   if (m.faintPick && st.send) return `⚔ ${at} · send ${st.send.name}`;
-  if (!st.act) return `${at} · no input · expect ${expectText(st.after)}`;
+  if (!st.act) return [at, "no input", st.send ? `then send ${st.send.name}` : null, `expect ${expectText(st.after)}`].filter(Boolean).join(" · ");
   return [`⚔ ${at}`, actText(st.act), st.send ? `then send ${st.send.name}` : null].filter(Boolean).join(" · ");
 };
 
