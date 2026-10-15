@@ -17,6 +17,7 @@ const facts = (species: MonState["species"], hp: number, extra: Partial<MonState
 });
 
 const replayed: Replay = {
+  claim: "replay",
   outcome: "won",
   receipt: [],
   steps: [

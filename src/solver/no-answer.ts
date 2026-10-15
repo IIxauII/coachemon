@@ -9,6 +9,9 @@ const BROKE: Record<HygieneRule, string> = {
   stray_prompt: "left a prompt queued for a decision the game never asked",
 };
 
+const some = (all: readonly string[]) =>
+  all.length > 3 ? `${all.slice(0, 3).join("; ")}; and ${all.length - 3} more` : all.join("; ");
+
 export const noAnswer = (reason: Reason): NoAnswer => ({
   kind: "no_answer",
   reason,
@@ -44,6 +47,8 @@ function cause(reason: Reason): string {
       );
     case "no_live_battle":
       return "no live battle came with the save, so nothing shows the save is this fight's.";
+    case "no_live_export":
+      return "no live export came with the save, so nothing shows the scene it loads is the one at the decision.";
     case "not_wave_start":
       return (
         "only the wave-start save replays a fight from its first turn, and this is the session export, whose reload " +
@@ -69,6 +74,10 @@ function cause(reason: Reason): string {
       const offered = reason.legal.length > 0 ? `; the game offers ${reason.legal.map(describeInput).join(", ")}` : "";
       return `input ${reason.index + 1}, ${describeInput(reason.tried)}, ${reason.why} at turn ${reason.turn}${offered}.`;
     }
+    case "scene_mismatch":
+      return `the scene the oracle loaded isn't the live one at the decision: ${some(reason.differences)}.`;
+    case "known_turn_missed":
+      return `a turn whose outcome is known didn't reproduce: ${some(reason.misses)}.`;
     case "harness_failed":
       return `the oracle's harness failed: ${reason.why}${/[.!?]$/.test(reason.why) ? "" : "."}`;
     case "not_built":

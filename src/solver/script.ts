@@ -36,7 +36,7 @@ export function readScript(text: string): Script {
 const show = (fact: unknown) => (typeof fact === "string" ? fact : JSON.stringify(fact));
 
 /** Each fact live recorded that the replay shows otherwise, in turn order. */
-export function misses(known: Known, replay: Replay): string[] {
+export function misses(known: Known, replay: Pick<Replay, "outcome" | "steps">): string[] {
   const out = replay.outcome === known.outcome ? [] : [`the replay ${replay.outcome}, where live ${known.outcome}`];
   for (const after of known.after) {
     const step = replay.steps.find(s => s.turn === after.turn);

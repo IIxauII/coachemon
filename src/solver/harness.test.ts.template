@@ -16,6 +16,8 @@ import type { PartyUiHandler } from "#ui/party-ui-handler";
 import { canTerastallize } from "#utils/pokemon-utils";
 import { beforeAll, describe, it } from "vitest";
 
+const DEADLINE_MS = 540_000;
+
 // `GameManager`'s constructor swaps the prototype's for a max roll (#632).
 const realRand = BattleScene.prototype.randBattleSeedInt;
 const OVERRIDES = [
@@ -212,6 +214,9 @@ async function load() {
     items: { ours: stackTotals(scene().modifiers), foes: stackTotals(scene().enemyModifiers) },
   };
   report.battle = { wave: scene().currentBattle.waveIndex, battleSeed: scene().currentBattle.battleSeed };
+  // The reload stops at the first decision, where the live tab's own export was taken. Copied there: the export shares
+  // arrays with the mons, such as `moveHistory`, which the fight goes on to change.
+  report.scene = JSON.parse(JSON.stringify(scene().gameData.getSessionSaveData()));
 }
 
 async function play() {
@@ -245,13 +250,25 @@ describe("coach harness", () => {
   });
 
   it("replay", async () => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    // Inside vitest's own timeout, which would end the test before it writes the report.
+    const deadline = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`the replay timed out after ${DEADLINE_MS / 1000} s`)), DEADLINE_MS);
+    });
     try {
       report.version = JSON.parse(readFileSync("package.json", "utf8")).version;
-      await load();
-      report.end = await play();
+      await Promise.race([
+        (async () => {
+          await load();
+          report.end = await play();
+        })(),
+        deadline,
+      ]);
     } catch (err) {
       report.error = err instanceof Error ? (err.stack ?? err.message) : String(err);
+    } finally {
+      clearTimeout(timer);
     }
     writeFileSync(process.env.COACH_OUT as string, JSON.stringify(report));
-  }, 600_000);
+  }, DEADLINE_MS + 60_000);
 });

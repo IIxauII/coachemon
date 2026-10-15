@@ -6,6 +6,8 @@ export type SolveInput = {
   extras?: MidFightExtras;
   /** The battle on the live tab, from the read that gave the save (`SessionRead`). */
   live?: Battle;
+  /** The session export from that same read, taken at the decision: the scene a loaded save must match (#661). */
+  liveExport?: SessionSave;
   cloneVersion: string;
   budget: Budget;
 };
@@ -21,6 +23,7 @@ export type SessionSave = {
   battleType: BattleType;
   mysteryEncounterType?: MysteryEncounterType | -1;
   trainer?: { trainerType: number; variant: TrainerVariant } | null;
+  party: readonly unknown[];
   enemyParty: readonly unknown[];
   modifiers: readonly SavedItem[];
   enemyModifiers: readonly SavedItem[];

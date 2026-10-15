@@ -7,7 +7,7 @@ import type { SolveResult } from "./oracle-line.ts";
 export type * from "./input.ts";
 export type * from "./oracle-line.ts";
 export { type Clone, type CloneRun, replay } from "./replay.ts";
-export { type Known, misses, readScript, type Script } from "./script.ts";
+export { type Known, readScript, type Script } from "./script.ts";
 
 export const DEFAULT_BUDGET: Budget = { expansions: 3000, turns: 40 };
 

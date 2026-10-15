@@ -1,10 +1,13 @@
 import { readFileSync } from "node:fs";
 import { z } from "zod";
+import { NAMES } from "../enums/generated.ts";
+import { title } from "./describe.ts";
 import { refuse } from "./gate.ts";
-import type { SavedItem, SolveInput } from "./input.ts";
+import type { SavedItem, SessionSave, SolveInput } from "./input.ts";
 import { noAnswer } from "./no-answer.ts";
-import type { HygieneRule, Input, NoAnswer, ReplayResult } from "./oracle-line.ts";
+import type { HygieneRule, NoAnswer, ReplayResult } from "./oracle-line.ts";
 import { checkpoint, input, outcome } from "./schema.ts";
+import { misses, type Script } from "./script.ts";
 
 /** Runs the oracle's harness in the clone of the pinned game version. `out` is what it wrote, absent if nothing. */
 export type Clone = (run: { name: string; source: string; input: string }) => Promise<CloneRun>;
@@ -26,6 +29,8 @@ const report = z.object({
     })
     .optional(),
   battle: z.object({ wave: z.int(), battleSeed: z.string() }).optional(),
+  /** The loaded scene's own export, at the first decision. */
+  scene: z.record(z.string(), z.unknown()).optional(),
   steps: z.array(z.object({ turn: z.int(), input: input.nullable(), checkpoint, strayPrompts: z.int() })).optional(),
   end: z
     .union([
@@ -42,10 +47,13 @@ type Hygiene = NonNullable<z.infer<typeof report>["hygiene"]>;
 const failed = (why: string) => noAnswer({ code: "harness_failed", why });
 const broke = (rule: HygieneRule, detail: string) => noAnswer({ code: "load_hygiene", rule, detail });
 
-/** Plays the inputs forward from the wave-start save on the battle's seed, a step per turn, until the fight or they end. */
+/**
+ * Plays the inputs forward from the wave-start save on the battle's seed, a step per turn, until the fight or they end.
+ * `known` is what live showed where these inputs were played there.
+ */
 export async function replay(
-  given: Pick<SolveInput, "save" | "extras" | "live" | "cloneVersion">,
-  inputs: readonly Input[],
+  given: Pick<SolveInput, "save" | "extras" | "live" | "liveExport" | "cloneVersion">,
+  { inputs, known }: Pick<Script, "inputs" | "known">,
   clone: Clone,
 ): Promise<ReplayResult> {
   // A replay is what the harness re-check runs (#665), so it can't wait on one having passed.
@@ -55,6 +63,8 @@ export async function replay(
   if (given.extras) return noAnswer({ code: "not_wave_start" });
   if (!live) return noAnswer({ code: "no_live_battle" });
   if (save.waveIndex !== live.wave) return noAnswer({ code: "save_mismatch", save: { wave: save.waveIndex }, live });
+  const { liveExport } = given;
+  if (!liveExport) return noAnswer({ code: "no_live_export" });
 
   const source = readFileSync(new URL("./harness.test.ts.template", import.meta.url), "utf8");
   const run = await clone({ name: "replay", source, input: JSON.stringify({ save, inputs }) });
@@ -67,7 +77,7 @@ export async function replay(
     return failed("its report is not JSON");
   }
   if (!parsed.success) return failed(`its report doesn't read: ${z.prettifyError(parsed.error)}`);
-  const { version, error, hygiene, battle, steps, end } = parsed.data;
+  const { version, error, hygiene, battle, scene, steps, end } = parsed.data;
 
   if (version !== undefined && version !== given.cloneVersion) {
     return noAnswer({ code: "clone_version", clone: version, pinned: given.cloneVersion });
@@ -75,14 +85,21 @@ export async function replay(
   const unclean = hygiene && loadHygiene(hygiene, save);
   if (unclean) return unclean;
   if (error !== undefined) return failed(error.split("\n")[0]);
-  if (version === undefined || !hygiene || !battle || !steps || end === undefined) {
+  if (version === undefined || !hygiene || !battle || !scene || !steps || end === undefined) {
     return failed("the harness stopped without saying how the fight ended");
+  }
+  for (const { turn, checkpoint } of steps) {
+    // GameOverPhase empties the party, so a wipe the harness played past reads as one (#632).
+    if (checkpoint.ours.length === 0) return failed(`our party was empty after turn ${turn}`);
+    if (checkpoint.foes.length === 0) return failed(`the foe's party was empty after turn ${turn}`);
   }
   if (battle.wave !== live.wave || battle.battleSeed !== live.battleSeed) {
     return noAnswer({ code: "save_mismatch", save: battle, live });
   }
   const stray = steps.find(step => step.strayPrompts > 0);
   if (stray) return broke("stray_prompt", `${stray.strayPrompts} after turn ${stray.turn}`);
+  const differences = sceneDiffers(scene, liveExport);
+  if (differences.length > 0) return noAnswer({ code: "scene_mismatch", differences });
   if (typeof end === "object") {
     const { index } = end.illegal;
     const tried = index === null ? null : inputs[index];
@@ -90,12 +107,16 @@ export async function replay(
     return noAnswer({ code: "illegal_step", ...end.illegal, tried });
   }
 
+  const played = { outcome: end, steps: steps.map(({ turn, input, checkpoint }) => ({ turn, input, checkpoint })) };
+  const missed = known ? misses(known, played) : [];
+  if (missed.length > 0) return noAnswer({ code: "known_turn_missed", misses: missed });
+
   const stacks = Object.keys(hygiene.items.ours).length + Object.keys(hygiene.items.foes).length;
   return {
     kind: "replayed",
     replay: {
-      outcome: end,
-      steps: steps.map(({ turn, input, checkpoint }) => ({ turn, input, checkpoint })),
+      claim: "replay",
+      ...played,
       receipt: [
         { step: "versions", checked: `the save, the clone and the pin are all game version ${version}` },
         {
@@ -108,6 +129,20 @@ export async function replay(
         {
           step: "wave_start_save",
           checked: `the save loaded wave ${battle.wave} with battle seed ${battle.battleSeed}, the live battle's own`,
+        },
+        {
+          step: "scene_matches",
+          checked:
+            "the loaded scene's export at the first decision is the live tab's export at the decision, all but its " +
+            "play time, timestamp and the abilities applied on entry",
+        },
+        {
+          step: "known_turn",
+          checked: known
+            ? `every fact live recorded over ${known.after.length} turn${known.after.length === 1 ? "" : "s"} ` +
+              `reproduced, and the replay ${known.outcome === "open" ? "left the fight on" : known.outcome}, as live did`
+            : "no turn of this fight is known yet, so the oracle line's turn 1 is the test, checked live at the next " +
+              "decision",
         },
       ],
     },
@@ -131,6 +166,39 @@ function tally(items: readonly SavedItem[]): Record<string, number> {
   const out: Record<string, number> = {};
   for (const { typeId, stackCount } of items) out[typeId] = (out[typeId] ?? 0) + stackCount;
   return out;
+}
+
+// What two exports of one scene differ in anyway: the clock, and the abilities a reload applies on entry again (#636).
+const UNCOMPARED = new Set(["playTime", "timestamp", "abilitiesApplied"]);
+
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
+const show = (v: unknown) => JSON.stringify(v) ?? "nothing";
+
+const SIDES = { party: "our", enemyParty: "the foe's" } as const;
+
+function sceneDiffers(loaded: Record<string, unknown>, live: SessionSave): string[] {
+  return paths(loaded, live).map(([path, there, here]) => `${named(path, live)}: loaded ${show(there)}, live ${show(here)}`);
+}
+
+/** `party[2].hp` as `our Reshiram (slot 2) hp`, by the species live has in that slot. */
+function named(path: string, live: SessionSave): string {
+  const [, side, slot, rest] = /^(party|enemyParty)\[(\d+)\]\.(.*)$/.exec(path) ?? [];
+  if (side === undefined) return path;
+  const mon = live[side as keyof typeof SIDES][Number(slot)] as { species?: number } | undefined;
+  const species = mon?.species === undefined ? undefined : NAMES.SpeciesId[mon.species];
+  return species === undefined ? path : `${SIDES[side as keyof typeof SIDES]} ${title(species)} (slot ${slot}) ${rest}`;
+}
+
+function paths(loaded: unknown, live: unknown, at = ""): [string, unknown, unknown][] {
+  if (isRecord(loaded) && isRecord(live)) {
+    return [...new Set([...Object.keys(loaded), ...Object.keys(live)])]
+      .filter(key => !UNCOMPARED.has(key))
+      .flatMap(key => paths(loaded[key], live[key], at ? `${at}.${key}` : key));
+  }
+  if (Array.isArray(loaded) && Array.isArray(live) && loaded.length === live.length) {
+    return loaded.flatMap((item, i) => paths(item, live[i], `${at}[${i}]`));
+  }
+  return JSON.stringify(loaded) === JSON.stringify(live) ? [] : [[at, loaded, live]];
 }
 
 const differ = (side: string, saved: Record<string, number>, loaded: Record<string, number>) =>
