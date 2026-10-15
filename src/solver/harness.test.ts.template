@@ -425,7 +425,6 @@ async function expand(at: string, inputs: (Input | null)[]) {
 
 type Played = { input: Input | null; turn: number; checkpoint: unknown; end: Turn };
 
-/** The fork check and the chained-restore check on a script's inputs, each against the straight run (#655). */
 async function checks(inputs: Input[]) {
   await loadSession(JSON.stringify(job.save));
   const straight: Played[] = [];

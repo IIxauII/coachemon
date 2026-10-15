@@ -1,6 +1,6 @@
 import type { Budget } from "./input.ts";
 import { cause, noAnswer } from "./no-answer.ts";
-import type { Beam, BeamEnd, Input, NoAnswer, Replay, ReplayResult } from "./oracle-line.ts";
+import type { Beam, BeamEnd, Input, NoAnswer, Reason, Replay, ReplayResult } from "./oracle-line.ts";
 
 /** `null` is a turn the game plays for us, such as a two-turn move's second: it takes no input. */
 export type Action = Input | null;
@@ -63,8 +63,7 @@ type Job = { beam: BeamRun; forkPoint: string; inputs: readonly Action[]; done: 
 
 class SearchOver extends Error {}
 
-// A clone gone or swapped mid-search fails every replay alike; anything else may be this path's alone.
-const ENVIRONMENT_GONE = new Set(["no_clone", "clone_version"]);
+const ENVIRONMENT_GONE = new Set<Reason["code"]>(["no_clone", "clone_version"]);
 
 const sum = (xs: readonly number[]) => xs.reduce((a, b) => a + b, 0);
 const foeLost = (hp: Hp) => sum(hp.foes.map(f => 1 - f));

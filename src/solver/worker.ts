@@ -37,7 +37,7 @@ const child = z.discriminatedUnion("end", [
 ]) satisfies z.ZodType<Child>;
 const turnEnd = z.union([z.enum(["won", "lost", "on"]), z.object({ illegal: z.string() })]) satisfies z.ZodType<TurnEnd>;
 const played = z.object({ input: input.nullable(), turn: z.int(), checkpoint, end: turnEnd }) satisfies z.ZodType<Played>;
-const miss = z.object({ from: z.int(), turn: z.int(), want: played, got: played });
+const miss = z.object({ from: z.int(), turn: z.int(), want: played, got: played }) satisfies z.ZodType<Miss>;
 const checks = z.object({
   straight: z.array(z.object({ turn: z.int(), end: turnEnd })),
   fork: z.array(miss),

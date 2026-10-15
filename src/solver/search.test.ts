@@ -1,8 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { noAnswer } from "./no-answer.ts";
-import type { Input, Outcome, ReplayResult } from "./oracle-line.ts";
-import type { Beam } from "./oracle-line.ts";
+import type { Beam, Input, Outcome, ReplayResult } from "./oracle-line.ts";
 import { type Action, type Child, type Pool, type Position, type Progress, search } from "./search.ts";
 
 /** What a move does from a path: our side's HP fraction and the foe's total HP lost so far, or how the fight ends. */

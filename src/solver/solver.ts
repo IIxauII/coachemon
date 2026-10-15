@@ -48,7 +48,6 @@ export async function solve(input: SolveInput, { clone, progress, unchecked = fa
   });
 }
 
-/** The fork check and the chained-restore check on a script's inputs from the wave-start save (#655). */
 export async function checkForks(
   given: Pick<SolveInput, "save" | "extras" | "cloneVersion">,
   inputs: readonly Input[],
