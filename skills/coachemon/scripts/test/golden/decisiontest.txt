@@ -88,4 +88,11 @@ an oracle line for W11: other-fight
 the oracle line for W12 | ~ oracle line wins in 2 turns · 1 of 1 left | now later
 W12, turn 2                          #40 free-switch/battle w12 ready 0 input 0 drawn 0 end null | oracle-line:battle watch:battle road:battle ‖ oracle line landed, built, road landed
 turn 2 | ~ oracle line wins in 2 turns · 1 of 1 left | done now
+W13 T1                               #41 command/battle w13 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
+W13 T1, Ember                        #41 command/battle w13 ready 0 input 0 drawn 0 end 16 | oracle-line:battle ‖ oracle line landed
+W13 T2, as the oracle line said      #42 command/battle w13 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
+T2 | done now later
+W13 T2, Ember                        #42 command/battle w13 ready 0 input 0 drawn 0 end 16 
+W13 T3, the foe at 45                #43 command/battle w13 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
+T3 | ! Paras 40/100, came 45/100
 after stop: watch frames 0, refreshes 0

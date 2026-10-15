@@ -109,6 +109,7 @@ const BAD_ABILITIES = new Set(["Truant", "Slow Start", "Defeatist", "Klutz", "St
 export const abilityValue = name =>
   (GREAT_ABILITIES.has(name) ? GREAT_ABILITY : GOOD_ABILITIES.has(name) ? GOOD_ABILITY : BAD_ABILITIES.has(name) ? BAD_ABILITY : 0);
 export const STATUS_FRAMES = [null, "poison", "toxic", "paralysis", "sleep", "freeze", "burn"]; // by StatusEffect
+export const STAT_NAMES = ["HP", "Atk", "Def", "SpA", "SpD", "Spe", "Acc", "Eva"]; // by Stat
 export const iconOf = p => { try { return [p.getIconAtlasKey(), String(p.getIconId())]; } catch { return null; } };
 
 export const gameVersionOf = s => { try { return s?.game?.config?.gameVersion ?? null; } catch { return null; } };

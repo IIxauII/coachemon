@@ -2,7 +2,7 @@
 // the move, its attributes, the user and the user's held items, so it works outside a battle; what a trait is worth
 // stays with each caller.
 
-import { SPREAD_TARGETS } from "./01-core.js";
+import { SPREAD_TARGETS, STAT_NAMES } from "./01-core.js";
 
 // Subclasses count. Class names survive minification (game-code.md §22).
 const isAttr = (x, name) => {
@@ -132,7 +132,6 @@ export const moveTraits = (mv, user = null, { party = null, target = null } = {}
   };
 };
 
-const STAT_NAMES = ["HP", "Atk", "Def", "SpA", "SpD", "Spe", "Acc", "Eva"];
 const pct = x => `${Math.round(x)}%`;
 // `amounts`, where the caller has them: `recoil` as a share of max HP (0–1), `sun` whether the party can skip a weather
 // charge, `type` the move's live type.
