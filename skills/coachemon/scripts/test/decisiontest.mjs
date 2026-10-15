@@ -4,6 +4,7 @@ import { setFlagsFromString } from "node:v8";
 import { runInNewContext } from "node:vm";
 import { bundle } from "../hud-bundle.mjs";
 import { BattlerIndex, PartyUiMode, UiMode } from "../../../../src/enums/generated.ts";
+import { guard, writes } from "./game-writes.mjs";
 
 setFlagsFromString("--expose-gc");
 const gc = runInNewContext("gc");
@@ -427,7 +428,7 @@ scene = game;
   }
 }
 
-// ---- an oracle line handed to the battle card shown lands on it at once, streamed again, and the next decision builds with it
+// ---- an oracle line handed to the battle card shown lands on it at once, writing nothing to the game, streamed again, and the next decision builds with it
 {
   game.seed = "decisionSeed";
   full.species.speciesId = 5;
@@ -449,6 +450,7 @@ scene = game;
   step("W12, a free switch", freeSwitch(1));
   assert.equal(plan(), null, "a wild battle has no fight plan to stand in for");
   const before = cards().length;
+  scene = guard(game);
   const ignored = __coachHud.oracleLine({ ...line, wave: 11 });
   console.log(`an oracle line for W11: ${ignored.ok ? "held" : ignored.why}`);
   assert.deepEqual([ignored, lifecycle(), opened(), plan()], [{ ok: false, why: "other-fight" }, [], [], null]);
@@ -462,6 +464,8 @@ scene = game;
   const resolved = { ...line, steps: [line.steps[0], { ...line.steps[1], input: { kind: "move", move: 33, tera: false } }] };
   assert.deepEqual(__coachHud.oracleLine(resolved), { ok: true });
   assert.equal(cards().length - before, 2, "and again for each oracle line handed after it");
+  scene = game;
+  assert.deepEqual(writes, []);
   step("W12, turn 2", freeSwitch(2));
   console.log(`turn 2 | ${plan()} | ${at().join(" ")}`);
   assert.deepEqual(at(), ["done", "now"]);

@@ -220,7 +220,7 @@ export class Driver {
     });
   }
 
-  /** Nothing is read or settled first: the handoff changes the overlay alone, never the game (#670). */
+  /** Nothing is read or settled first: a handoff leaves the game alone (extension-distribution.md §10.1). */
   async handOracleLine(line: OracleLine): Promise<Record<string, unknown>> {
     await this.#reachable("hand_oracle_line");
     const r = await this.#game.oracleLine(line);

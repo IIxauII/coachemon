@@ -10,7 +10,7 @@ export type PageOracleLine = Ids<OracleLine>;
 
 export type OracleLineResult = { ok: true } | { ok: false; why: "no-hud" | "other-fight" | "malformed" };
 
-/** The overlay decides whether the oracle line is for the fight it is on (#670). Self-contained (extension-distribution.md §10.5). */
+/** The overlay decides whether the oracle line is for the fight it is on (extension-distribution.md §10.1). Self-contained (§10.5). */
 export function oracleLine(_L: Located, args: { line: PageOracleLine }): OracleLineResult {
   const hud = (globalThis as any).__coachHud;
   if (!hud || typeof hud.oracleLine !== "function") return { ok: false, why: "no-hud" };

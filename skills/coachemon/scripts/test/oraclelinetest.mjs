@@ -3,6 +3,7 @@ import { bundle } from "../hud-bundle.mjs";
 import { MoveId, PokemonType, SpeciesId } from "../../../../src/enums/generated.ts";
 import { GORDIE_LINE, GORDIE_SEED } from "../../../../src/game/fixtures/oracle-line.ts";
 import { pageOracleLine } from "../../../../src/game/oracle-line.ts";
+import { guard, writes } from "./game-writes.mjs";
 
 let scene = null;
 globalThis.window = globalThis;
@@ -20,18 +21,6 @@ const { flatGroups } = globalThis.__hud["90-render"];
 const { drawBattle } = globalThis.__hud["96-render-battle"];
 
 const LINE = pageOracleLine(GORDIE_LINE);
-
-// A write from the overlay anywhere in the game it is handed: a frozen object would refuse one only in strict code.
-const writes = [];
-const guarded = new WeakMap();
-const guard = v => {
-  if ((typeof v !== "object" && typeof v !== "function") || v === null) return v;
-  if (!guarded.has(v)) {
-    const wrote = (_, k) => { writes.push(String(k)); return true; };
-    guarded.set(v, new Proxy(v, { get: (t, k) => guard(Reflect.get(t, k)), set: wrote, defineProperty: wrote, deleteProperty: wrote }));
-  }
-  return guarded.get(v);
-};
 
 const move = (key, name, type) => ({ moveId: MoveId[key], getMove: () => ({ id: MoveId[key], name, type: PokemonType[type] }) });
 const mon = (key, name, hp, { field = false, moves = [], tera = null } = {}) => ({

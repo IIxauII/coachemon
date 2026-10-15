@@ -34,8 +34,8 @@ them. The game's encryption of a save uses a key built into the game, so it hide
 each one and keeps the one belonging to the run you are playing. It goes over the same local connection and nowhere
 else.
 
-That program can also hand the extension a plan for the fight in front of you, which the coach panel draws. Coachemon
-keeps it in the page's memory only, for that one fight: it is never stored and never passed on.
+That program can also hand the extension a plan for the fight in front of you, which the coach overlay draws for that
+one fight. Coachemon keeps it in the page's memory only: it is never stored and never passed on.
 
 Nothing you type into the game — your account name, your password, anything in a form — is ever read or passed on.
 
