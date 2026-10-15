@@ -170,7 +170,7 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   console.log(`== grunt ahead ${JSON.stringify({ wave: m.next.wave, who: m.next.trainer, exact: m.next.exact })}`);
   assert.equal(m.next.wave, 35);
   assert.equal(m.next.exact, true, "the party is keyed on the run seed");
-  assert.match(ah.aheadSummary(m), /Grunt~/, "but the name rides the unseeded double");
+  assert.match(ah.aheadSummary(m), /Grunt≈/, "but the name rides the unseeded double");
 }
 
 // ---- The Elite Four sits in a stretch with no heal, and Limited Support 1 has no heal at all
@@ -313,6 +313,7 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   assert.ok(six.readiness, "six waves out, readiness is judged against the gym's roster");
   assert.deepEqual(six.readiness.unanswered, [], "Ice Beam answers the Garchomp, Earthquake the Lucario");
   assert.equal(six.next.confidence.foes, "replay", "read in the biome it is fought in, the roster keeps its replay");
+  assert.ok(ah6.aheadSummary(six).startsWith("Youngster~ "), "and so does the trainer's name");
   assert.equal(ah6.learnRoster(six)?.wave, 20, "and a learned move is judged against the same fight");
   console.log(`== six out ${JSON.stringify({ wave: six.next.wave, who: six.next.trainer, verdict: six.readiness.verdict, confidence: six.next.confidence })}`);
   console.log(`== card\n${card(ah6, six)}`);
@@ -328,7 +329,7 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   assert.deepEqual(far.next.confidence, { type: "exact", trainer: "estimate", foes: "estimate", double: "estimate", levels: "estimate" },
     "read on the X0 before it, the gym leader is the old biome's");
   assert.equal(far.next.exact, false);
-  assert.equal(far.next.trainerExact, false);
+  assert.ok(ah2.aheadSummary(far).startsWith("Youngster≈ "), "the trainer's name is marked an estimate (#678)");
   const roster = ah2.learnRoster(far);
   assert.deepEqual(roster && [roster.wave, roster.exact], [110, false]);
   console.log(`== ten out ${JSON.stringify({ wave: far.next.wave, who: far.next.trainer, verdict: far.readiness.verdict, confidence: far.next.confidence })}`);
@@ -368,8 +369,8 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   assert.deepEqual([read(1, 5).r.name, read(1, 5).r.confidence], ["Youngster W5", "exact"], "a fixed battle is exact");
   assert.deepEqual([read(14, 20).r.name, read(14, 20).r.confidence], ["Youngster W20~", "replay"],
     "a gym read in the biome it is fought in keeps its replay");
-  assert.deepEqual([read(100, 110).r.name, read(100, 110).r.confidence], ["Youngster W110?", "estimate"],
-    "read on the X0 before it, a gym leader is a guess (#591)");
+  assert.deepEqual([read(100, 110).r.name, read(100, 110).r.confidence], ["Youngster W110≈", "estimate"],
+    "read on the X0 before it, a gym leader is an estimate (#591), marked ≈ (#678)");
   assert.equal(read(14, 30).r, null, "a fight past the road's next is no roster");
   assert.equal(read(1, 8).r, null, "nor is one the road reaches only after another");
   const { scene } = mount({ wave: 24, party: team() });

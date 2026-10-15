@@ -141,8 +141,6 @@ const build = (run, wave) => {
     next.double = named?.double ?? null;
     next.bars = (named?.foes ?? []).reduce((t, f) => t + Math.max(0, (f.segments ?? 0) - 1), 0);
     next.exact = named?.confidence?.foes === "exact";
-    // Not `exact`: a grunt's name is unsure under an exact roster (#623).
-    next.trainerExact = named?.confidence?.trainer === "exact";
     next.confidence = named?.confidence ?? null;
     next.rewards = rewardRules(s, next.wave);
   }
@@ -179,7 +177,8 @@ export const learnRoster = model => {
 
 export const aheadIn = n => (n === 1 ? "next wave" : `in ${n}`);
 
-export const aheadWho = a => (a.next.trainer ? `${a.next.trainer}${a.next.trainerExact ? "" : "~"}` : a.next.label);
+// The trainer's own confidence, not the roster's: a grunt's name is an estimate under an exact roster (#623).
+export const aheadWho = a => (a.next.trainer ? `${a.next.trainer}${confidenceMark(a.next.confidence?.trainer)}` : a.next.label);
 
 export const aheadSummary = a => {
   if (!a?.next) return null;

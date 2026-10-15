@@ -587,14 +587,20 @@ const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.doub
     + ` | in ${into.name} ×${into.e} ${into.max} pKo ${into.pKo}`);
 }
 
-// ---- The card and its one-line summary.
+// ---- The card and its one-line summary, which mark an estimate `≈` and never `?` (#678).
 {
   const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
-  for (const from of [12, 19, 7]) {
+  for (const from of [12, 19, 7, 20, 34]) {
     const { scene, pv } = mount({ wave: from });
     const m = pv.previewNext(scene);
-    console.log(`== card wave ${from + 1}\n${pv.drawPreview(m).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n")}`);
-    console.log(`summary ${JSON.stringify(pv.previewSummary(m))}`);
+    const card = pv.drawPreview(m).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n");
+    const summary = pv.previewSummary(m);
+    if (Object.values(m.confidence).includes("estimate")) {
+      assert.ok(card.includes("≈") && summary.includes("≈"), `an estimate is marked ≈:\n${card}\n${summary}`);
+    }
+    assert.ok(!`${card}${summary}`.includes("?"), `and never ?:\n${card}\n${summary}`);
+    console.log(`== card wave ${from + 1}\n${card}`);
+    console.log(`summary ${JSON.stringify(summary)}`);
   }
 }
 
