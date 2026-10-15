@@ -1,11 +1,13 @@
 // Every Mystery Encounter the player meets, recorded while they play: the card the coach showed, the option the game
-// recorded them picking (game-code.md §13), and the run state at each tick that moved. It judges nothing.
+// recorded them picking (game-code.md §13), and the run state at each tick that moved. And every checkpoint of an
+// oracle line, as the overlay scored it, with the card the player saw. It judges nothing.
 import { gameVersionOf } from "./01-core.js";
 
 const KEY = "coach-me-journal";
 const MAX_ENTRIES = 40, MAX_STEPS = 60;
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
+const copyOf = v => tryDo(() => JSON.parse(JSON.stringify(v)));
 
 let journal = null;
 let persist = null; // null until the store has been probed once; false once it has refused
@@ -87,7 +89,7 @@ const startEntry = (s, me, wave) => {
 const record = (s, card) => {
   let milestone = false;
   if (!open.card && card?.kind === "encounter" && card.wave === open.wave) {
-    open.card = tryDo(() => JSON.parse(JSON.stringify(card)));
+    open.card = copyOf(card);
     open.name = card.name ?? null;
     milestone = true;
   }
@@ -128,19 +130,43 @@ export const journalCheck = (s, card) => {
   } catch {}
 };
 
+// `scored` is what `oracleLineCheck` or `oracleLineSeen` returned: one entry per checkpoint scored, written as it is.
+// @only 98-watch, tests: journalCheckpoint
+export const journalCheckpoint = (s, scored, card) => {
+  try {
+    if (!scored) return;
+    const j = load();
+    j.push({
+      kind: "checkpoint", at: new Date().toISOString(), seed: s.seed ?? null, game: gameVersionOf(s),
+      wave: s.currentBattle?.waveIndex ?? null, turn: scored.turn, of: scored.of,
+      input: copyOf(scored.input), checkpoint: copyOf(scored.checkpoint),
+      matched: !scored.misses.length, misses: scored.misses.map(m => ({ name: m.name, expected: m.expected, came: m.came })),
+      wrong: scored.wrong, card: copyOf(card),
+    });
+    while (j.length > MAX_ENTRIES) j.shift();
+    save();
+  } catch {}
+};
+
 export const journalEntries = () => load().slice();
 
 export const journalStats = () => {
   const j = load();
-  const encounters = {};
+  const encounters = {}, checkpoints = { scored: 0, matched: 0, wrong: 0 };
   for (const e of j) {
+    if (e.kind === "checkpoint") {
+      checkpoints.scored++;
+      if (e.matched) checkpoints.matched++;
+      if (e.wrong) checkpoints.wrong++;
+      continue;
+    }
     const name = e.name ?? `#${e.type}`;
     const t = encounters[name] ?? (encounters[name] = { tier: e.card?.tier ?? e.tier ?? null, met: 0, judged: 0, picked: 0 });
     t.met++;
     if (e.card?.known) t.judged++;
     if (e.picked != null) t.picked++;
   }
-  return { entries: j.length, stored: storable(), encounters };
+  return { entries: j.length, stored: storable(), encounters, checkpoints };
 };
 
 export const journalClear = () => {

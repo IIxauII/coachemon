@@ -95,6 +95,12 @@ test("the privacy policy and the store disclosure name the plan the local progra
   }
 });
 
+test("the privacy policy and the store disclosure name what the journal keeps of each step of that plan (#675)", () => {
+  for (const [doc, text] of [["PRIVACY.md", privacy()], ["store-disclosure.md", listing("store-disclosure.md")]]) {
+    for (const claim of ["what the plan expected", "what came"]) assert.equal(text.includes(claim), true, `${doc} is missing ${claim}`);
+  }
+});
+
 test("both store disclosures answer every form field", () => {
   const filed = listing("store-disclosure.md");
   for (const field of ["Single purpose", "Host access", "Remote code", "Data usage", PRIVACY_URL,

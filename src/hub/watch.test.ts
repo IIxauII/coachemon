@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { after, test } from "node:test";
-import { cardLine, feedLine, runWatch } from "./watch.ts";
+import { cardLine, feedLine, offLine, runWatch } from "./watch.ts";
 import { deadPort, deadSpawn, fakeClient, readyTab, type Peer } from "./fake-ext.ts";
 import { startHub, type Hub } from "./hub.ts";
 import type { ExtensionCmd, FromExtension, HubState, ToExtension } from "../protocol/wire.ts";
@@ -144,6 +144,67 @@ test("a card event on the stream is one line, and the watch role never claims th
   other.send({ t: "state" });
   assert.equal((await other.take<HubState>(f => f.t === "state")).driver, null);
   other.close();
+  w.stop();
+  await w.done;
+});
+
+test("a card off the oracle line adds an OFF LINE line naming the turn it left on (extension-distribution.md §11.2)", () => {
+  const card = (oracleLine: unknown) => ({ kind: "battle", wave: 180, verdict: "trainer", text: "t", oracleLine });
+  assert.deepEqual(offLine(card({ state: "off", turn: 13, of: 19 }))?.line, "OFF LINE w180 · T13/19");
+  assert.equal(offLine(card({ state: "on", turn: 13, of: 19 })), null);
+  assert.equal(offLine(card(null)), null);
+  assert.equal(offLine(card(undefined)), null, "a build before the oracle line sends no state at all");
+  assert.equal(offLine(card("off")), null);
+});
+
+test("OFF LINE prints once per oracle line, not on every card after it (extension-distribution.md §11.2, #675)", async () => {
+  const h = await hub();
+  const ext = await readyTab(h.port);
+  const w = watching(h.port);
+  await answerCard(ext, NO_CARD);
+
+  const battle = (verdict: string, oracleLine: unknown, text: string) =>
+    ext.send({ t: "event", tab: 1, kind: "card", body: { kind: "battle", key: "180", wave: 180, verdict, text, oracleLine } });
+  battle("trainer", { state: "on", turn: 13, of: 19 }, "⚔ ~ T13/19 · Leavanny Bug Bite");
+  battle("trainer", { state: "off", turn: 13, of: 19 }, "off the line · ~ re-solving… · Golbat Venoshock");
+  battle("danger", { state: "off", turn: 13, of: 19 }, "off the line · ~ re-solving… · Golbat Toxic");
+  ext.send({ t: "event", tab: 1, kind: "card", body: { kind: "learn", key: "180|Golbat|Cross Poison", wave: 180, verdict: "your call", text: "Golbat wants Cross Poison", oracleLine: null } });
+  battle("danger", { state: "off", turn: 13, of: 19 }, "off the line · ~ re-solving… · Golbat Venoshock");
+  // A re-solve's oracle line leads, then misses too: that is a second line, and a second OFF LINE.
+  battle("trainer", { state: "on", turn: 15, of: 19 }, "⚔ ~ T15/19 · Golbat Venoshock");
+  battle("trainer", { state: "off", turn: 15, of: 19 }, "off the line · ! re-solving… · Golbat Venoshock");
+  await until(() => w.lines.length >= 9);
+  await new Promise(r => setTimeout(r, 50));
+  assert.deepEqual(w.lines, [
+    "BATTLE w180 · trainer | ⚔ ~ T13/19 · Leavanny Bug Bite",
+    "BATTLE w180 · trainer | off the line · ~ re-solving… · Golbat Venoshock",
+    "OFF LINE w180 · T13/19",
+    "BATTLE w180 · danger | off the line · ~ re-solving… · Golbat Toxic",
+    "LEARN w180 · your call | Golbat wants Cross Poison",
+    "BATTLE w180 · danger | off the line · ~ re-solving… · Golbat Venoshock",
+    "BATTLE w180 · trainer | ⚔ ~ T15/19 · Golbat Venoshock",
+    "BATTLE w180 · trainer | off the line · ! re-solving… · Golbat Venoshock",
+    "OFF LINE w180 · T15/19",
+  ]);
+  w.stop();
+  await w.done;
+});
+
+test("a CLI that joins a fight already off the line says so once (extension-distribution.md §11.2, #675)", async () => {
+  const h = await hub();
+  const ext = await readyTab(h.port);
+  const w = watching(h.port);
+  const off = { ...CARD, wave: 180, verdict: "trainer", text: "off the line · ~ re-solving…", oracleLine: { state: "off", turn: 13, of: 19 } };
+  await answerCard(ext, off);
+  await until(() => w.lines.length >= 2);
+  ext.send({ t: "event", tab: 1, kind: "card", body: { ...off, verdict: "danger" } });
+  await until(() => w.lines.length >= 3);
+  await new Promise(r => setTimeout(r, 50));
+  assert.deepEqual(w.lines, [
+    "BATTLE w180 · trainer | off the line · ~ re-solving…",
+    "OFF LINE w180 · T13/19",
+    "BATTLE w180 · danger | off the line · ~ re-solving…",
+  ]);
   w.stop();
   await w.done;
 });

@@ -17,4 +17,7 @@ oracle line null | Charizard Flamethrower → Paras · 1 hit
 oracle line {"state":"on","turn":1,"of":2} | ⚔ ~ T1/2 · Charizard Flamethrower · then send Charizard
 oracle line {"state":"on","turn":1,"of":2} | ⚔ ~ T1/2 · send Charizard
 oracle line {"state":"on","turn":2,"of":2} | ⚔ ~ T2/2 · Charizard Flamethrower
+off the line {"state":"off","turn":2,"of":2} | unavailable | off the line · ~ re-solving… · no advice — the live build's enemy AI moved past the pin
+off the line {"state":"off","turn":2,"of":2} | danger | off the line · ~ re-solving… · Charizard Flamethrower → Paras · 1 hit
+journalled T2 miss Charizard, #46 on ⚔ ~ T2/2 · Charizard Flamethrower
 coach error scene gone

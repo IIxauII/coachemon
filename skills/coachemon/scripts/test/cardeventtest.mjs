@@ -170,6 +170,33 @@ const errors = () => seen(EVENT.coachError);
   assert.equal(onLine[2].groups[0].summary, "⚔ ~ T1/2 · send Charizard");
   assert.equal(onLine[3].groups[0].summary, "⚔ ~ T2/2 · Charizard Flamethrower");
   assert.deepEqual(window.__coachHud.card().oracleLine, { state: "on", turn: 2, of: 2 }, "the card read carries it too");
+
+  // ---- Off the line the card event says so from the miss on, the relay admits it, and the checkpoint is journalled
+  // Only a command prompt scores; the target prompt after it is the decision whose verdict turns to danger.
+  const at = (turn, phaseName, boss) => {
+    const s = battle(boss);
+    s.seed = "eventSeed";
+    s.currentBattle.turn = turn;
+    s.phaseManager = { getCurrentPhase: (ph => () => ph)({ phaseName, fieldIndex: 0 }) };
+    return s;
+  };
+  const fromOff = cards().length;
+  scene = at(3, "CommandPhase", false);
+  tick();
+  tick();
+  scene = at(3, "SelectTargetPhase", true);
+  tick();
+  const offLine = cards().slice(fromOff);
+  for (const c of offLine) console.log(`off the line ${JSON.stringify(c.oracleLine)} | ${c.verdict} | ${wireOk(c).groups[0].summary}`);
+  assert.deepEqual(offLine.map(c => c.oracleLine), [{ state: "off", turn: 2, of: 2 }, { state: "off", turn: 2, of: 2 }],
+    "the miss is one event, and a later card of the fight still carries it");
+  assert.ok(offLine[0].groups[0].summary.startsWith("off the line · ~ re-solving…"), offLine[0].groups[0].summary);
+  assert.deepEqual(window.__coachHud.card().oracleLine, { state: "off", turn: 2, of: 2 }, "the card read carries it too");
+  const journalled = window.__coachHud.journal().filter(e => e.kind === "checkpoint");
+  console.log(`journalled ${journalled.map(e => `T${e.turn} ${e.matched ? "match" : `miss ${e.misses.map(m => m.name).join(", ")}`} on ${e.card.groups[0].summary}`).join("; ")}`);
+  assert.deepEqual(journalled.map(e => [e.wave, e.turn, e.matched]), [[20, 2, false]]);
+  assert.deepEqual(journalled[0].card.oracleLine, { state: "on", turn: 2, of: 2 }, "the card journalled is the one the step was played from");
+  assert.notEqual(cardBody({ build: BUILD, ...journalled[0].card, text: "" }), null, "it is the card in the shape the wire carries, less its text");
 }
 
 // ---- A failed refresh: one event per distinct message

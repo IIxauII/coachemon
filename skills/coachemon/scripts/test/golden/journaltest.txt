@@ -203,6 +203,11 @@
    "judged": 1,
    "picked": 1
   }
+ },
+ "checkpoints": {
+  "scored": 0,
+  "matched": 0,
+  "wrong": 0
  }
 }
 ---- stored after the encounter
@@ -218,6 +223,11 @@ entries 1, steps 4, picked 0
    "judged": 2,
    "picked": 2
   }
+ },
+ "checkpoints": {
+  "scored": 0,
+  "matched": 0,
+  "wrong": 0
  }
 }
 ---- reload mid-encounter
@@ -226,6 +236,188 @@ entries 1, picked 1, steps 2
 steps 60, truncated true
 ---- entry cap
 entries 40, first wave 6, last wave 45
+---- two checkpoints, a match then a miss
+[
+ {
+  "kind": "checkpoint",
+  "at": "<timestamp>",
+  "seed": "SEED123",
+  "game": "1.12.0.11",
+  "wave": 180,
+  "turn": 6,
+  "of": 19,
+  "input": {
+   "kind": "move",
+   "move": 85,
+   "tera": false
+  },
+  "checkpoint": {
+   "ours": [
+    {
+     "slot": 0,
+     "species": 25,
+     "onField": true,
+     "hp": 54,
+     "maxHp": 60,
+     "status": 0,
+     "statStages": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "tera": false
+    }
+   ],
+   "foes": [
+    {
+     "slot": 0,
+     "species": 143,
+     "onField": true,
+     "hp": 80,
+     "maxHp": 140,
+     "status": 0,
+     "statStages": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "tera": false
+    }
+   ]
+  },
+  "matched": true,
+  "misses": [],
+  "wrong": false,
+  "card": {
+   "kind": "battle",
+   "key": "180",
+   "wave": 180,
+   "verdict": "trainer",
+   "oracleLine": {
+    "state": "on",
+    "turn": 6,
+    "of": 19
+   },
+   "groups": [
+    {
+     "id": "act",
+     "label": "Now",
+     "summary": "⚔ ~ T6/19 · Pikachu Thunderbolt",
+     "rows": [
+      "▸ T6 Pikachu Thunderbolt"
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "kind": "checkpoint",
+  "at": "<timestamp>",
+  "seed": "SEED123",
+  "game": "1.12.0.11",
+  "wave": 180,
+  "turn": 7,
+  "of": 19,
+  "input": {
+   "kind": "move",
+   "move": 85,
+   "tera": false
+  },
+  "checkpoint": {
+   "ours": [
+    {
+     "slot": 0,
+     "species": 25,
+     "onField": true,
+     "hp": 53,
+     "maxHp": 60,
+     "status": 0,
+     "statStages": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "tera": false
+    }
+   ],
+   "foes": [
+    {
+     "slot": 0,
+     "species": 143,
+     "onField": true,
+     "hp": 70,
+     "maxHp": 140,
+     "status": 0,
+     "statStages": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "tera": false
+    }
+   ]
+  },
+  "matched": false,
+  "misses": [
+   {
+    "name": "Snorlax",
+    "expected": "70/140",
+    "came": "82/140"
+   }
+  ],
+  "wrong": true,
+  "card": {
+   "kind": "battle",
+   "key": "180",
+   "wave": 180,
+   "verdict": "trainer",
+   "oracleLine": {
+    "state": "on",
+    "turn": 7,
+    "of": 19
+   },
+   "groups": [
+    {
+     "id": "act",
+     "label": "Now",
+     "summary": "⚔ ~ T7/19 · Pikachu Thunderbolt",
+     "rows": [
+      "▸ T7 Pikachu Thunderbolt"
+     ]
+    }
+   ]
+  }
+ }
+]
+---- tally with checkpoints
+{
+ "entries": 2,
+ "stored": true,
+ "encounters": {},
+ "checkpoints": {
+  "scored": 2,
+  "matched": 1,
+  "wrong": 1
+ }
+}
+---- shared bound
+entries 40, encounters 2, checkpoints 38, first wave 4
 ---- refusing store
 entries 1, stored false
 ---- a broken scene

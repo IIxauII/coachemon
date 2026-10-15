@@ -64,7 +64,7 @@ Object.defineProperty(globalThis, "localStorage", { get: () => store, configurab
 // The store is probed once per panel session, so a refusing store needs a fresh `instance()`, not a swapped `store`.
 const src = bundle("hud", { expose: true });
 const instance = () => { new Function(src)(); return globalThis.__hud["55-journal"]; };
-const { journalCheck, journalEntries, journalStats, journalClear } = instance();
+const { journalCheck, journalCheckpoint, journalEntries, journalStats, journalClear } = instance();
 
 const out = [];
 const show = (title, value) => out.push(`---- ${title}\n${JSON.stringify(value, null, 1)}`);
@@ -174,6 +174,73 @@ const show = (title, value) => out.push(`---- ${title}\n${JSON.stringify(value, 
   assert.equal(j.length, 40, "entries stop at MAX_ENTRIES");
   assert.equal(j[0].wave, 6, "the oldest are the ones dropped");
   out.push(`---- entry cap\nentries ${j.length}, first wave ${j[0].wave}, last wave ${j.at(-1).wave}`);
+}
+
+// A step of an oracle line as `oracleLineCheck` scores it, and the card the player saw it on.
+const checkpoint = (hp, foeHp) => ({
+  ours: [{ slot: 0, species: 25, onField: true, hp, maxHp: 60, status: 0, statStages: [0, 0, 0, 0, 0, 0, 0], tera: false }],
+  foes: [{ slot: 0, species: 143, onField: true, hp: foeHp, maxHp: 140, status: 0, statStages: [0, 0, 0, 0, 0, 0, 0], tera: false }],
+});
+const scored = (turn, misses = [], wrong = false) => ({
+  turn, of: 19, input: { kind: "move", move: 85, tera: false }, checkpoint: checkpoint(60 - turn, 140 - 10 * turn),
+  misses: misses.map(m => ({ icon: { atlas: "pokemon_icons_1", frame: "143" }, ...m })), wrong,
+});
+const shownCard = turn => ({ kind: "battle", key: "180", wave: 180, verdict: "trainer", oracleLine: { state: "on", turn, of: 19 },
+  groups: [{ id: "act", label: "Now", summary: `⚔ ~ T${turn}/19 · Pikachu Thunderbolt`, rows: [`▸ T${turn} Pikachu Thunderbolt`] }] });
+const trainerFight = () => {
+  const s = scene();
+  s.currentBattle = { waveIndex: 180, turn: 8, battleType: 1, double: false };
+  return s;
+};
+
+// ---- Each checkpoint scored is an entry: the card as shown, the claim, and what came of it
+{
+  journalClear();
+  const s = trainerFight();
+  journalCheckpoint(s, scored(6), shownCard(6));
+  journalCheckpoint(s, scored(7, [{ name: "Snorlax", expected: "70/140", came: "82/140" }], true), shownCard(7));
+  journalCheckpoint(s, null, shownCard(8));
+  const j = journalEntries();
+  assert.equal(j.length, 2, "a decision that scored nothing adds no entry");
+  assert.deepEqual(j.map(e => [e.kind, e.turn, e.matched, e.wrong]), [["checkpoint", 6, true, false], ["checkpoint", 7, false, true]]);
+  assert.deepEqual(j[1].misses, [{ name: "Snorlax", expected: "70/140", came: "82/140" }], "a miss keeps its words, not its sprite");
+  assert.equal(j[1].card.groups[0].summary, "⚔ ~ T7/19 · Pikachu Thunderbolt", "the card is the one the player saw");
+  assert.equal(j[0].seed, "SEED123");
+  assert.equal(j[0].game, "1.12.0.11");
+  assert.equal(j[0].wave, 180);
+  show("two checkpoints, a match then a miss", clean(j));
+  show("tally with checkpoints", journalStats());
+
+  const stored = JSON.parse(store.getItem("coach-me-journal"));
+  assert.equal(stored.length, 2, "each checkpoint is written to the store as it is scored");
+  // An encounter after the fight opens its own entry, and the checkpoints before it are not taken for one.
+  openEncounter(s, 181, 1, 0);
+  journalCheck(s, card(181, "Mysterious Chest"));
+  assert.deepEqual(journalEntries().map(e => e.kind ?? "encounter"), ["checkpoint", "checkpoint", "encounter"]);
+  assert.equal(journalStats().encounters["Mysterious Chest"].met, 1);
+}
+
+// ---- Checkpoints share the encounters' bound: the oldest entries fall off whichever kind they are
+{
+  journalClear();
+  const s = scene();
+  for (let w = 1; w <= 5; w++) {
+    openEncounter(s, w, w % 3, 0);
+    journalCheck(s, null);
+  }
+  const fight = trainerFight();
+  for (let t = 1; t <= 38; t++) journalCheckpoint(fight, scored(t), shownCard(t));
+  const j = journalEntries();
+  assert.equal(j.length, 40, "entries stop at MAX_ENTRIES with checkpoints in them");
+  assert.deepEqual(j.slice(0, 2).map(e => e.wave), [4, 5], "the oldest encounters are the ones dropped");
+  assert.equal(j.filter(e => e.kind === "checkpoint").length, 38);
+  assert.equal(JSON.parse(store.getItem("coach-me-journal")).length, 40, "the store holds no more than the bound");
+  out.push(`---- shared bound\nentries ${j.length}, encounters ${j.length - 38}, checkpoints 38, first wave ${j[0].wave}`);
+
+  for (let t = 39; t <= 45; t++) journalCheckpoint(fight, scored(t), shownCard(t));
+  assert.equal(journalEntries().length, 40);
+  assert.equal(journalEntries().filter(e => e.kind !== "checkpoint").length, 0, "a long enough fight pushes every encounter out");
+  assert.equal(journalEntries()[0].turn, 6);
 }
 
 // ---- A store that refuses every write: the journal keeps recording in memory and says so.
