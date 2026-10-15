@@ -13,4 +13,8 @@ dedupe ok
 groups act foes
 groups act foes
 mid-wave easy → danger
+oracle line null | Charizard Flamethrower → Paras · 1 hit
+oracle line {"state":"on","turn":1,"of":2} | ⚔ ~ T1/2 · Charizard Flamethrower · then send Charizard
+oracle line {"state":"on","turn":1,"of":2} | ⚔ ~ T1/2 · send Charizard
+oracle line {"state":"on","turn":2,"of":2} | ⚔ ~ T2/2 · Charizard Flamethrower
 coach error scene gone

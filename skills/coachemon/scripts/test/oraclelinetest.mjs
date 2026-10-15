@@ -31,7 +31,7 @@ const mon = (key, name, hp, { field = false, moves = [], tera = null } = {}) => 
 const at = (turn, { wave = 180, seed = GORDIE_SEED, phase = { phaseName: "CommandPhase" } } = {}) => {
   const front = turn <= 11 ? "RESHIRAM" : turn <= 13 ? "LEAVANNY" : turn <= 15 ? "GOLBAT" : "GYARADOS";
   const party = [
-    mon("GYARADOS", "Gyarados", 570, { field: front === "GYARADOS", moves: [move("HYDRO_PUMP", "Hydro Pump", "WATER")], tera: "WATER" }),
+    mon("GYARADOS", "Gyarados", 570, { field: front === "GYARADOS", moves: [move("HYDRO_PUMP", "Hydro Pump", "WATER"), move("BOUNCE", "Bounce", "FLYING")], tera: "WATER" }),
     mon("PROBOPASS", "Probopass", 359),
     mon("SNORLAX", "Snorlax", 824),
     mon("RESHIRAM", "Reshiram", 577, { field: front === "RESHIRAM", moves: [move("DRAGON_PULSE", "Dragon Pulse", "DRAGON")] }),
@@ -137,6 +137,104 @@ const hand = (label, line) => {
   hand("from T12, handed on T13", fromT12);
   const late = plan("handed on T13, at T13", scene).rows;
   assert.match(late[0], /^✓ T12 Grass Leaf Storm/);
+}
+
+const { cardEvent } = globalThis.__hud["60-card"];
+const { strip } = globalThis.__hud["90-render"];
+const flat = n => (n == null ? "" : typeof n !== "object" ? String(n) : (n.children ?? []).map(flat).filter(Boolean).join(" "));
+const tyranitar = confidence => ({ icon: null, name: "Tyranitar", lv: 90, types: ["Rock", "Dark"], hp: 60, tera: false, boss: false, status: null,
+  traps: [], weak: [], avoid: [], likely: { move: "Stone Edge", type: "Rock", pct: 40, first: 100, at: null, hits: 0, confidence }, pick: null, notes: [] });
+const now = (label, s, over) => {
+  const c = card(oracleLineModel(s), over);
+  const drawn = drawBattle(c);
+  const groups = flatGroups(drawn);
+  const act = groups.find(x => x.id === "act");
+  const shown = flat(strip(c, null, drawn));
+  console.log(`== ${label}`);
+  console.log(`strip | ${shown}`);
+  for (const r of act.rows) console.log(`    ${r}`);
+  return { act, groups, card: c, strip: shown };
+};
+
+// ---- While the oracle line holds, the strip leads with this turn's step and the card's own ⚔ call is hidden
+{
+  scene = at(12);
+  hand("Gordie's W180, again", LINE);
+  const { act, card: c, strip: shown } = now("W180 T12", scene);
+  assert.equal(act.summary, "⚔ ~ T12/19 · Leavanny Leaf Storm");
+  assert.ok(shown.endsWith(act.summary), shown);
+  assert.equal(cardSummary(c).field, act.summary, "the summary's call is the oracle line's step too");
+  assert.ok(!act.rows.some(r => r.includes("Venoshock")), "none of the turn line's own call");
+  assert.equal(act.rows.filter(r => r.startsWith("⚔")).length, 1, "one call per card");
+  assert.deepEqual(cardEvent(c).oracleLine, { state: "on", turn: 12, of: 19 });
+}
+
+// ---- The faint-prompt pick is shown on the turn it falls to, and is the call at the prompt itself
+{
+  const { act } = now("W180 T13", at(13));
+  assert.equal(act.summary, "⚔ ~ T13/19 · Leavanny Bug Bite · then send Golbat");
+  const { act: pick, card: c } = now("W180 T13's faint, the turn already 14", at(14, { phase: { phaseName: "SwitchPhase", isModal: true, doReturn: false } }));
+  assert.equal(pick.summary, "⚔ ~ T13/19 · send Golbat");
+  assert.deepEqual(cardEvent(c).oracleLine, { state: "on", turn: 13, of: 19 });
+}
+
+// ---- Tera's input is shown on the turn it is played, and on no other
+{
+  const { act } = now("W180 T16", at(16));
+  assert.equal(act.summary, "⚔ ~ T16/19 · Gyarados Tera Water + Hydro Pump");
+  assert.ok(act.rows.some(r => r.includes("← from Fight to the Tera button")), act.rows.join("\n"));
+  const { act: next } = now("W180 T17", at(17));
+  assert.ok(!next.rows.some(r => r.includes("Tera button")), next.rows.join("\n"));
+}
+
+// ---- A turn with no input of its own shows what the oracle line expects and asks for no press; the count counts turns
+{
+  const BOUNCE = pageOracleLine({ ...GORDIE_LINE, steps: GORDIE_LINE.steps.map(st => (st.turn === 17 ? { ...st, input: { kind: "move", move: "BOUNCE", tera: false } }
+    : st.turn === 18 ? { ...st, input: null } : st)) });
+  scene = at(17);
+  hand("a Bounce on T17", BOUNCE);
+  const { act } = now("W180 T17, Bounce", scene);
+  assert.equal(act.summary, "⚔ ~ T17/19 · Gyarados Bounce");
+  assert.ok(act.rows.some(r => /^· T18 no input → ~ Gyarados 423\/570/.test(r)), act.rows.join("\n"));
+  const { act: lands, card: c } = now("W180 T18, Bounce lands", at(18));
+  assert.equal(lands.summary, "~ T18/19 · no input · expect Gyarados 423/570 · Coalossal 238/711");
+  assert.ok(!lands.rows.some(r => r.startsWith("⚔")), "no press asked for");
+  assert.deepEqual(cardEvent(c).oracleLine, { state: "on", turn: 18, of: 19 });
+  scene = at(12);
+  hand("Gordie's W180, back", LINE);
+}
+
+// ---- Each checkpoint claims replay; this turn's enemy move keeps the turn read's own confidence
+{
+  const { act, groups } = now("W180 T12, Stone Edge read exact", at(12), { rows: [tyranitar("exact")] });
+  assert.match(act.rows.find(r => r.startsWith("⚔")), /→ ~ Leavanny 249\/497/);
+  const planned = groups.find(x => x.id === "plan").rows.filter(r => r.includes("→"));
+  assert.ok(planned.length && planned.every(r => r.includes("→ ~ ")), planned.join("\n"));
+  const enemy = rows => rows.map(r => r.slice(r.indexOf("↯"))).find(r => r.startsWith("↯"));
+  const exact = enemy(groups.find(x => x.id === "foes").rows);
+  console.log(`foes | ${exact}`);
+  assert.ok(!exact.endsWith("· ~"), exact);
+  const { groups: replayed } = now("W180 T12, Stone Edge read on a replay", at(12), { rows: [tyranitar("replay")] });
+  assert.ok(enemy(replayed.find(x => x.id === "foes").rows).endsWith("· ~"));
+}
+
+// ---- A card that cannot read the turn still leads with the oracle line's step
+{
+  const { act, groups } = now("W180 T15, no exact enemy move", at(15), { unavailable: "the enemy's move can't be read" });
+  assert.equal(act.summary, "⚔ ~ T15/19 · Golbat Venoshock · then send Gyarados");
+  assert.deepEqual(groups.map(g => g.id), ["act", "plan"]);
+}
+
+// ---- Before the oracle line's first turn, and off its fight, the card's own turn line leads
+{
+  const fromT12 = { ...LINE, steps: LINE.steps.slice(1) };
+  scene = at(11);
+  hand("from T12, handed on T11", fromT12);
+  const { act, card: c } = now("handed on T11, at T11", scene);
+  assert.equal(act.summary, "Golbat Venoshock → Tyranitar · 3 hits");
+  assert.equal(cardEvent(c).oracleLine, null);
+  const { act: away } = now("W181", at(1, { wave: 181 }));
+  assert.equal(away.summary, "Golbat Venoshock → Tyranitar · 3 hits");
 }
 
 // ---- Neither a handoff nor a card drawn from it writes to the game

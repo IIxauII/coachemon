@@ -213,7 +213,7 @@ test("a card event crosses only with exactly the declared keys and types (extens
   t.relay();
   t.page();
   const groups = [{ id: "act", label: "Act", summary: "switch", rows: [] }];
-  const card = { build: BUILD, kind: "battle", key: "w12", wave: 12, verdict: "danger", groups, text: "switch" };
+  const card = { build: BUILD, kind: "battle", key: "w12", wave: 12, verdict: "danger", groups, text: "switch", oracleLine: null };
   t.emit(EVENT.card, card);
   t.emit(EVENT.card, { ...card, extra: 1 });
   t.emit(EVENT.card, { ...card, wave: "12" });
@@ -223,7 +223,7 @@ test("a card event crosses only with exactly the declared keys and types (extens
   t.emit(EVENT.coachError, { build: BUILD, message: "the HUD fell over" });
   t.emit(EVENT.coachError, { build: BUILD, message: 7 });
   assert.deepEqual(t.sent.filter(m => m.t === "event"), [
-    { t: "event", kind: "card", body: { kind: "battle", key: "w12", wave: 12, verdict: "danger", groups, text: "switch" } },
+    { t: "event", kind: "card", body: { kind: "battle", key: "w12", wave: 12, verdict: "danger", groups, text: "switch", oracleLine: null } },
     { t: "event", kind: "coach-error", body: { message: "the HUD fell over" } },
   ]);
 });
@@ -268,21 +268,41 @@ test("`pagehide` takes the tab out of the count (extension-distribution.md §9.3
 
 test("`cardBody` rejects every shape but the one the HUD sends (extension-distribution.md §9.5)", () => {
   const groups = [{ id: "act", label: "Act", summary: "keep Ember", rows: [] }, { id: "options", label: "Moves", summary: null, rows: ["✓ Ember"] }];
-  const good = { build: BUILD, kind: "learn", key: "w14-x", wave: 14, verdict: "your call", groups, text: "keep" };
-  assert.deepEqual(cardBody(good), { kind: "learn", key: "w14-x", wave: 14, verdict: "your call", groups, text: "keep" });
+  const good = { build: BUILD, kind: "learn", key: "w14-x", wave: 14, verdict: "your call", groups, text: "keep", oracleLine: null };
+  assert.deepEqual(cardBody(good), { kind: "learn", key: "w14-x", wave: 14, verdict: "your call", groups, text: "keep", oracleLine: null });
   for (const bad of [
     { ...good, wave: Number.NaN },
     { ...good, key: undefined },
     { build: BUILD, kind: "learn", key: "k", wave: 1, verdict: "v" },
     // No `groups`: the shape a build before #361 sent.
     { build: BUILD, kind: "learn", key: "k", wave: 1, verdict: "v", text: "t" },
+    // No `oracleLine`: the shape a build before #671 sent.
+    { build: BUILD, kind: "learn", key: "k", wave: 1, verdict: "v", groups, text: "t" },
   ]) {
     assert.equal(cardBody(bad as Record<string, unknown>), null, JSON.stringify(bad));
   }
 });
 
+test("`cardBody` carries the oracle line's state, its turn of its last, and nothing else (extension-distribution.md §11.1, #671)", () => {
+  const card = (oracleLine: unknown) => ({ build: BUILD, kind: "battle", key: "180", wave: 180, verdict: "trainer", groups: [], text: "t", oracleLine });
+  assert.deepEqual(cardBody(card({ state: "on", turn: 7, of: 19 }))?.oracleLine, { state: "on", turn: 7, of: 19 });
+  assert.equal(cardBody(card(null))?.oracleLine, null);
+  for (const bad of [
+    "on",
+    { state: "on", turn: 7 },
+    { state: "on", turn: 7, of: 19, step: 7 },
+    { state: "ahead", turn: 7, of: 19 },
+    { state: "on", turn: "7", of: 19 },
+    { state: "on", turn: 7.5, of: 19 },
+    { state: "on", turn: 20, of: 19 },
+    { state: "on", turn: 0, of: 19 },
+  ]) {
+    assert.equal(cardBody(card(bad)), null, JSON.stringify(bad));
+  }
+});
+
 test("`cardBody` checks the shape of every group, not just that `groups` is there (extension-distribution.md §9.5, #361)", () => {
-  const card = (groups: unknown) => ({ build: BUILD, kind: "battle" as const, key: "20", wave: 20, verdict: "easy", groups, text: "t" });
+  const card = (groups: unknown) => ({ build: BUILD, kind: "battle" as const, key: "20", wave: 20, verdict: "easy", groups, text: "t", oracleLine: null });
   // Nothing drawn is an empty list, which crosses: `text` is what says the card is empty.
   assert.deepEqual(cardBody(card([]))?.groups, []);
   for (const bad of [

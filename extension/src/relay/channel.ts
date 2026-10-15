@@ -2,7 +2,7 @@
  * A detail is always a JSON string, so Firefox Xray wrappers and `cloneInto` never come up (extension-distribution.md
  * §9.1). Only the relay imports the validators: only the upward direction is defended (§9.5).
  */
-import type { CardGroup, EventKind } from "../../../src/protocol/wire.ts";
+import type { CardGroup, CardOracleLine, EventKind } from "../../../src/protocol/wire.ts";
 
 export const EVENT = {
   hello: "coachemon:hello",
@@ -16,7 +16,16 @@ export const EVENT = {
 /** extension-distribution.md §9.7's `too-large`. */
 export const MAX_DETAIL_BYTES = 1024 * 1024;
 
-export type CardDetail = { build: string; kind: string; key: string; wave: number; verdict: string; groups: CardGroup[]; text: string };
+export type CardDetail = {
+  build: string;
+  kind: string;
+  key: string;
+  wave: number;
+  verdict: string;
+  groups: CardGroup[];
+  text: string;
+  oracleLine: CardOracleLine | null;
+};
 export type CoachErrorDetail = { build: string; message: string };
 
 /**
@@ -66,12 +75,25 @@ const str = (v: unknown): v is string => typeof v === "string";
  */
 export function cardBody(d: Record<string, unknown>): Omit<CardDetail, "build"> | null {
   const keys = Object.keys(d).sort().join(",");
-  if (keys !== "build,groups,key,kind,text,verdict,wave") return null;
+  if (keys !== "build,groups,key,kind,oracleLine,text,verdict,wave") return null;
   if (!str(d.kind) || !(EVENT_KINDS as readonly string[]).includes(d.kind)) return null;
   if (!str(d.key) || !str(d.verdict) || !str(d.text) || typeof d.wave !== "number" || !Number.isFinite(d.wave)) return null;
   const groups = cardGroups(d.groups);
   if (groups === null) return null;
-  return { kind: d.kind, key: d.key, wave: d.wave, verdict: d.verdict, groups, text: d.text };
+  const oracleLine = cardOracleLine(d.oracleLine);
+  if (oracleLine === undefined) return null;
+  return { kind: d.kind, key: d.key, wave: d.wave, verdict: d.verdict, groups, text: d.text, oracleLine };
+}
+
+/** `undefined` refuses the card: `null` is a card no oracle line leads. */
+function cardOracleLine(v: unknown): CardOracleLine | null | undefined {
+  if (v === null) return null;
+  if (!v || typeof v !== "object" || Array.isArray(v)) return undefined;
+  const d = v as Record<string, unknown>;
+  if (Object.keys(d).sort().join(",") !== "of,state,turn" || d.state !== "on") return undefined;
+  const { turn, of } = d;
+  if (!Number.isInteger(turn) || !Number.isInteger(of) || (turn as number) < 1 || (turn as number) > (of as number)) return undefined;
+  return { state: "on", turn: turn as number, of: of as number };
 }
 
 function cardGroups(v: unknown): CardGroup[] | null {

@@ -44,7 +44,8 @@ export const oracleLineModel = s => {
   if (!line || !sameFight(s, line)) return null;
   // At a faint's replacement the battle's turn has already moved on (game-code.md §9, §21), and the oracle line picks
   // that replacement inside the step whose turn it was.
-  const turn = s.currentBattle.turn - (isReplacement(tryDo(() => s.phaseManager.getCurrentPhase())) ? 1 : 0);
+  const faintPick = isReplacement(tryDo(() => s.phaseManager.getCurrentPhase()));
+  const turn = s.currentBattle.turn - (faintPick ? 1 : 0);
   const party = tryDo(() => s.getPlayerParty(), []), foes = tryDo(() => s.getEnemyParty(), []);
   const ours = id => party.find(p => p?.species?.speciesId === id) ?? null;
   const theirs = id => foes.find(p => p?.species?.speciesId === id) ?? null;
@@ -68,6 +69,8 @@ export const oracleLineModel = s => {
   const last = line.steps[line.steps.length - 1];
   return {
     id: held.id,
+    faintPick,
+    last: last.turn,
     turns: last.turn - line.steps[0].turn + 1,
     left: last.checkpoint.ours.filter(m => m.hp > 0).length,
     of: last.checkpoint.ours.length,
@@ -76,3 +79,32 @@ export const oracleLineModel = s => {
 };
 
 export const oracleLineSummary = m => (m ? `~ oracle line wins in ${m.turns} turn${m.turns === 1 ? "" : "s"} · ${m.left} of ${m.of} left` : null);
+
+const nowAt = m => (m ? m.steps.findIndex(st => st.at === "now") : -1);
+export const oracleLineNow = m => m?.steps[nowAt(m)] ?? null;
+// No decision comes for these, so this decision's card is the one up while they play out.
+export const oracleLineUnasked = m => {
+  const i = nowAt(m);
+  if (i < 0) return [];
+  const j = m.steps.findIndex((st, k) => k > i && st.act);
+  return m.steps.slice(i + 1, j < 0 ? m.steps.length : j);
+};
+
+const expectText = after => after.map(x => `${x.name} ${x.hp}/${x.maxHp}`).join(" · ");
+const actText = a => (a.kind === "switch" ? `switch to ${a.to.name}`
+  : [a.by?.name, ...(a.tera ? [`Tera ${a.tera.type ?? ""}`.trim(), "+"] : []), a.move].filter(Boolean).join(" "));
+
+export const oracleStepSummary = m => {
+  const st = oracleLineNow(m);
+  if (!st) return null;
+  const at = `~ T${st.turn}/${m.last}`;
+  if (m.faintPick && st.send) return `⚔ ${at} · send ${st.send.name}`;
+  if (!st.act) return `${at} · no input · expect ${expectText(st.after)}`;
+  return [`⚔ ${at}`, actText(st.act), st.send ? `then send ${st.send.name}` : null].filter(Boolean).join(" · ");
+};
+
+// The card event's `oracleLine` (extension-distribution.md §11.1).
+export const oracleLineState = m => {
+  const st = oracleLineNow(m);
+  return st ? { state: "on", turn: st.turn, of: m.last } : null;
+};
