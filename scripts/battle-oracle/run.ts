@@ -1,4 +1,4 @@
-/** The solver a player's plugin runs, on an export, against the pinned game version. */
+/** The solver a player's plugin runs. */
 import { readFileSync } from "node:fs";
 import { PINNED_GAME_VERSION } from "../../src/escape-ladder/lookup.ts";
 import { DEFAULT_BUDGET, solve, type SolveInput, type SolveResult } from "../../src/solver/solver.ts";
@@ -6,7 +6,7 @@ import { DEFAULT_BUDGET, solve, type SolveInput, type SolveResult } from "../../
 const ORACLE_LINE = 0;
 const NO_ANSWER = 2;
 
-const said = (err: unknown) => (err instanceof Error ? err.message : String(err));
+const messageOf = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
 const [file] = process.argv.slice(2);
 if (file === undefined) {
@@ -19,7 +19,7 @@ try {
   const json = JSON.parse(readFileSync(file, "utf8"));
   exported = "save" in json ? json : { save: json };
 } catch (err) {
-  console.log(`no answer: could not read ${file}: ${said(err)}`);
+  console.log(`no answer: could not read ${file}: ${messageOf(err)}`);
   process.exit(NO_ANSWER);
 }
 
@@ -27,7 +27,7 @@ let result: SolveResult;
 try {
   result = await solve({ ...exported, cloneVersion: PINNED_GAME_VERSION, budget: DEFAULT_BUDGET });
 } catch (err) {
-  console.log(`no answer: the solver failed: ${said(err)}`);
+  console.log(`no answer: the solver failed: ${messageOf(err)}`);
   process.exit(NO_ANSWER);
 }
 if (result.kind === "oracle_line") {

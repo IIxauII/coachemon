@@ -1,4 +1,4 @@
-import type { NoAnswer, Reason } from "./line.ts";
+import type { NoAnswer, Reason } from "./oracle-line.ts";
 
 export const noAnswer = (reason: Reason): NoAnswer => ({
   kind: "no_answer",

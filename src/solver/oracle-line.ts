@@ -29,7 +29,7 @@ export type Input = (
 
 export type PartySlot = { slot: number; species: keyof typeof SpeciesId };
 
-/** After the last step, read at the rewards screen, once the end-of-turn effects after the last faint have run (#660). */
+/** The last step's is read at the rewards screen, once the end-of-turn effects after the last faint have run (#660). */
 export type Checkpoint = { ours: readonly MonState[]; foes: readonly MonState[] };
 
 export type MonState = PartySlot & {
@@ -44,7 +44,7 @@ export type MonState = PartySlot & {
   bossBars?: number;
 };
 
-/** Which steps of the validation protocol ran and passed, and what each one checked (#636). */
+/** Which steps of the replay protocol ran and passed, and what each one checked (#636). */
 export type Receipt = readonly { step: ValidationStep; checked: string }[];
 
 export type ValidationStep = "versions" | "load_hygiene" | "wave_start_save" | "scene_matches" | "known_turn";

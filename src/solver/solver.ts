@@ -1,11 +1,11 @@
 import reviewed from "../escape-ladder/reviewed.json" with { type: "json" };
 import { refuse } from "./gate.ts";
 import type { Budget, Recheck, SolveInput } from "./input.ts";
-import type { SolveResult } from "./line.ts";
 import { noAnswer } from "./no-answer.ts";
+import type { SolveResult } from "./oracle-line.ts";
 
 export type * from "./input.ts";
-export type * from "./line.ts";
+export type * from "./oracle-line.ts";
 
 export const DEFAULT_BUDGET: Budget = { expansions: 3000, turns: 40 };
 

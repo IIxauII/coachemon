@@ -1,13 +1,13 @@
 import { BattleType, GameModes, TrainerVariant } from "../enums/generated.ts";
 import { MODIFIER_CLASSES, MODIFIER_TYPE_IDS } from "../enums/modifiers.ts";
 import type { Recheck, SolveInput } from "./input.ts";
-import type { NoAnswer } from "./line.ts";
 import { noAnswer } from "./no-answer.ts";
+import type { NoAnswer } from "./oracle-line.ts";
 
 /**
  * The fights no oracle line can be trusted in, read off the input alone, before any clone runs. A refusal that waits on
- * a release comes after every one that would outlast it, so no player waits in vain: Daily first, the re-check last.
- * The version check is the exception, since the pinned version's tables are what read the fight's own refusals.
+ * a release comes after every one that would outlast it, except the version check: the pinned version's tables are
+ * what read the fight's own refusals, so it goes ahead of them.
  */
 export function refuse(
   { save, extras, cloneVersion }: Pick<SolveInput, "save" | "extras" | "cloneVersion">,
