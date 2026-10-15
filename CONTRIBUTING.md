@@ -46,8 +46,10 @@ Claude  ──MCP──>  Coachemon  ──CDP──>  Chrome  ──>  pokerogu
 Thin wrapper. The server holds no game logic — the game is the source of truth. It holds one CDP page session against the tab and does `Runtime.evaluate` against the page, rediscovering the scene on every call. Focus emulation is re-applied on every attach so a hidden or minimised window keeps the Phaser loop running ([#23](https://github.com/IIxauII/coachemon/issues/23)).
 
 ```
-src/server.ts        MCP entry: seven tools over stdio
+src/server.ts        MCP entry: the tools over stdio
+src/tools.ts         the MCP tools, each a thin call into the driver
 src/driver.ts        settle → press → auto-advance → detect → envelope
+src/jobs.ts          background jobs: work that outlasts one tool call (#667)
 src/settle.ts        the settle loop and its budgets (#14)
 src/game/port.ts     the typed game operations the driver reaches the game through (#127)
 src/game/link-game.ts that port over a GameLink; a page throw never leaves it as a throw
