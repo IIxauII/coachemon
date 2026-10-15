@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import type { MonState, Replay } from "../../src/solver/oracle-line.ts";
-import { printReplay } from "./print.ts";
+import type { MonState, OracleLine, Replay } from "../../src/solver/oracle-line.ts";
+import type { Played } from "../../src/solver/worker.ts";
+import { printChecks, printOracleLine, printReplay } from "./print.ts";
 
 const mon = (species: MonState["species"], hp: number, extra: Partial<MonState> = {}): MonState => ({
   slot: 0,
@@ -38,6 +39,48 @@ const won: Replay = {
     },
   ],
 };
+
+test("an oracle line prints how it wins, then each turn, then its receipt with the checks left to live (#662)", () => {
+  const line: OracleLine = {
+    seed: "VTAUX0Kaz7T3GDMR7LXP1Bhn",
+    wave: 188,
+    gameVersion: "1.12.0.11",
+    steps: won.steps,
+    receipt: [{ step: "known_turn", checked: "checked live at the next decision", pending: true }],
+    luck: [],
+  };
+
+  const printed = printOracleLine(line).split("\n");
+
+  assert.equal(printed[0], "oracle line: wins in 7 turns with 1 of 1 left");
+  assert.equal(printed[1], "T6  Tera + Fickle Beam");
+  assert.equal(printed.at(-1), "    known_turn (pending): checked live at the next decision");
+});
+
+const played = (hp: number): Played => ({
+  input: null,
+  turn: 2,
+  checkpoint: { ours: [mon("RESHIRAM", hp, { onField: true })], foes: [] },
+  end: "on",
+});
+
+test("the checks pass when every restore and every chained turn played as the straight line did (#662)", () => {
+  const { passed, text } = printChecks({ straight: [1, 2, 3].map(turn => ({ turn, end: "on" })), fork: [], chain: [] });
+
+  assert.equal(passed, true);
+  assert.match(text, /fork check: 2 of 2 restores played the rest the same/);
+  assert.match(text, /chained-restore check: all 3 turns played the same chained/);
+});
+
+test("a restore that played otherwise fails the fork check, naming where and how (#662)", () => {
+  const miss = { from: 1, turn: 2, want: played(547), got: played(471) };
+
+  const { passed, text } = printChecks({ straight: [1, 2, 3].map(turn => ({ turn, end: "on" })), fork: [miss], chain: [] });
+
+  assert.equal(passed, false);
+  assert.match(text, /fork check: 1 of 2 restores/);
+  assert.match(text, /restored at T1, T2 played otherwise: Reshiram\* 471\/622, straight Reshiram\* 547\/622/);
+});
 
 test("a replay prints its outcome, then each turn's input and checkpoint, then its receipt (#660)", () => {
   assert.equal(

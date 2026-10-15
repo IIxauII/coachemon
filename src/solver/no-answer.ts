@@ -1,6 +1,5 @@
 import { describeInput } from "./describe.ts";
-import type { HygieneRule, NoAnswer, Reason } from "./oracle-line.ts";
-
+import type { BeamEnd, HygieneRule, NoAnswer, Reason } from "./oracle-line.ts";
 const BROKE: Record<HygieneRule, string> = {
   max_rolls: "rolled every battle draw at its maximum",
   overrides: "loaded the teams through upstream's test overrides",
@@ -15,7 +14,7 @@ const firstFew = (all: readonly string[]) =>
 export const noAnswer = (reason: Reason): NoAnswer => ({
   kind: "no_answer",
   reason,
-  message: reason.code === "not_built" ? cause(reason) : `${cause(reason)} The card still coaches.`,
+  message: `${cause(reason)} The card still coaches.`,
 });
 
 function cause(reason: Reason): string {
@@ -80,7 +79,26 @@ function cause(reason: Reason): string {
       return `a turn whose outcome is known didn't reproduce: ${firstFew(reason.misses)}.`;
     case "harness_failed":
       return `the oracle's harness failed: ${reason.why}${/[.!?]$/.test(reason.why) ? "" : "."}`;
-    case "not_built":
-      return "solving not built yet";
+    case "no_win": {
+      const unreplayed =
+        reason.unreplayed === 0 ? "" : ` ${reason.unreplayed} win${reason.unreplayed === 1 ? "" : "s"} it found didn't replay.`;
+      const dropped =
+        reason.dropped === 0 ? "" : ` ${reason.dropped} turn${reason.dropped === 1 ? "" : "s"} the harness couldn't play were dropped.`;
+      return `no winning path turned up: ${reason.beams.map(beamEnd).join("; ")}.${unreplayed}${dropped}`;
+    }
+  }
+}
+
+function beamEnd({ width, ours, ended, turn, expansions }: BeamEnd): string {
+  const beam = `width ${width} at our-HP weight ${ours}`;
+  switch (ended) {
+    case "emptied":
+      return `${beam} lost every path by turn ${turn}`;
+    case "stalled":
+      return `${beam} stalled by turn ${turn}, its foes no longer losing HP`;
+    case "turns":
+      return `${beam} reached turn ${turn}, the limit`;
+    case "budget":
+      return `${beam} ran out of its budget, ${expansions.toLocaleString("en")} turns played, by turn ${turn}`;
   }
 }

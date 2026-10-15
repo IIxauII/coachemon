@@ -1,8 +1,12 @@
-// The oracle's harness: it loads the save handed at COACH_IN, plays the inputs forward on the battle's seed and writes
-// what it saw to COACH_OUT. It judges nothing: `src/solver/replay.ts` reads the report.
-import { readFileSync, writeFileSync } from "node:fs";
+// The oracle's harness, in one of two modes. Handed a save and inputs at COACH_IN, it plays them forward on the
+// battle's seed and writes what it saw to COACH_OUT. Handed COACH_PORT as well, it serves the search's jobs over that
+// socket until the socket closes. It judges nothing: `src/solver/replay.ts` and `src/solver/worker.ts` read it.
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { connect } from "node:net";
+import { createInterface } from "node:readline";
 import { BattleScene } from "#app/battle-scene";
 import { activeOverrides, defaultOverrides } from "#app/overrides";
+import { PokemonSummonData } from "#data/pokemon-data";
 import { Button } from "#enums/buttons";
 import { Command } from "#enums/command";
 import { MoveId } from "#enums/move-id";
@@ -12,11 +16,13 @@ import { StatusEffect } from "#enums/status-effect";
 import { UiMode } from "#enums/ui-mode";
 import type { CommandPhase } from "#phases/command-phase";
 import { GameManager } from "#test/framework/game-manager";
+import { PromptHandler } from "#test/helpers/prompt-handler";
 import type { PartyUiHandler } from "#ui/party-ui-handler";
 import { canTerastallize } from "#utils/pokemon-utils";
-import { beforeAll, describe, it } from "vitest";
+import { beforeAll, describe, it, vi } from "vitest";
 
 const DEADLINE_MS = 540_000;
+const PORT = process.env.COACH_PORT;
 
 // `GameManager`'s constructor swaps the prototype's for a max roll (#632).
 const realRand = BattleScene.prototype.randBattleSeedInt;
@@ -40,6 +46,7 @@ const report: Record<string, unknown> = {};
 
 let phaserGame: Phaser.Game;
 let game: GameManager;
+let boots = 0;
 const scene = () => game.scene as any;
 const species = (p: any): string => SpeciesId[p.species.speciesId];
 
@@ -139,8 +146,11 @@ function command(input: Input | null) {
   });
 }
 
-/** One turn, to the next decision or to the battle's end. */
-async function turn(input: Input | null): Promise<Turn> {
+/**
+ * One turn, to the next decision or to the battle's end. `choose` picks the faint replacement the turn asks for from
+ * those the party can send in; by default, the one the input names.
+ */
+async function turn(input: Input | null, choose = (_offered: PartySlot[]) => input?.replacement): Promise<Turn> {
   command(input);
   const interceptor: any = game.phaseInterceptor;
   // A wipe never reaches TurnEndPhase; the interceptor reads its target afresh on every pass (#632).
@@ -161,16 +171,17 @@ async function turn(input: Input | null): Promise<Turn> {
     return "won";
   }
   await game.phaseInterceptor.to("TurnEndPhase");
+  const party: any[] = scene().getPlayerParty();
   const fainted = scene().getPlayerField()[0]?.isFainted() ?? false;
-  const replacement = input?.replacement;
-  if (fainted && input === null) {
-    return { illegal: "leaves a faint replacement to pick, and a turn with no input can't name one" };
+  if (!fainted && input?.replacement !== undefined) {
+    return { illegal: "names a faint replacement, but nothing of ours fainted" };
   }
-  if (fainted && replacement === undefined) return { illegal: "leaves a faint replacement to pick, and names none" };
-  if (!fainted && replacement !== undefined) return { illegal: "names a faint replacement, but nothing of ours fainted" };
-  if (replacement !== undefined) {
-    const pick = scene().getPlayerParty()[replacement.slot];
-    if (pick === undefined || species(pick) !== replacement.species || pick.isFainted() || pick.isOnField()) {
+  if (fainted) {
+    if (input === null) return { illegal: "leaves a faint replacement to pick, and a turn with no input can't name one" };
+    const offered = party.flatMap((p, slot) => (!p.isFainted() && !p.isOnField() ? [{ slot, species: species(p) }] : []));
+    const replacement = choose(offered);
+    if (replacement === undefined) return { illegal: "leaves a faint replacement to pick, and names none" };
+    if (!offered.some(o => o.slot === replacement.slot && o.species === replacement.species)) {
       return { illegal: `names a faint replacement the party can't send in` };
     }
     // Registered once the faint has happened: up front, it blocks the command prompts queued behind it (#632).
@@ -185,22 +196,38 @@ async function turn(input: Input | null): Promise<Turn> {
   return "on";
 }
 
-async function load() {
+async function boot() {
+  // A second GameManager in one process needs what vitest does between tests: wrapping the shared UI's spies twice
+  // recurses, and the old prompt interval would answer the new game's prompts (#655).
+  if (boots > 0) vi.restoreAllMocks();
+  clearInterval(PromptHandler.runInterval);
+  PromptHandler.runInterval = undefined;
   game = new GameManager(phaserGame);
+  boots++;
   BattleScene.prototype.randBattleSeedInt = realRand;
-  const realRng = { constructed: scene().randBattleSeedInt === realRand, reloaded: false };
+  const constructed = scene().randBattleSeedInt === realRand;
   game.override.normalizeIVs = false;
   game.override.normalizeNatures = false;
   game.override.disableShinies = false;
   await game.classicMode.startBattle(1 as any);
+  return constructed;
+}
 
-  (game.reload as any).sessionData = scene().gameData.parseSessionData(JSON.stringify(job.save));
+/** `before` runs once the session is parsed, and before it loads. */
+async function reload(session: string, before = () => {}) {
+  (game.reload as any).sessionData = scene().gameData.parseSessionData(session);
   // `initSessionFromData` clears `modifiers` and never `enemyModifiers` (#632).
   scene().enemyModifiers = [];
   scene().modifiers = [];
-  const enemyItemsBeforeReload = scene().enemyModifiers.length;
+  before();
   await game.reload.reloadSession();
   BattleScene.prototype.randBattleSeedInt = realRand;
+}
+
+async function load() {
+  const realRng = { constructed: await boot(), reloaded: false };
+  let enemyItemsBeforeReload = 0;
+  await reload(JSON.stringify(job.save), () => (enemyItemsBeforeReload = scene().enemyModifiers.length));
   realRng.reloaded = scene().randBattleSeedInt === realRand;
 
   report.hygiene = {
@@ -243,31 +270,277 @@ async function play() {
   }
 }
 
+// ---- serving the search -----------------------------------------------------------------------------------------
+
+/**
+ * Where a turn can be replayed from: the save at a decision, and the live fields a reload loses or resets, which
+ * replay-fidelity's augmented export lists (#636) — the toxic and sleep counters beside them (#655).
+ */
+function forkPoint(): string {
+  const s = scene();
+  const battle = s.currentBattle;
+  const all: any[] = [...s.getPlayerParty(), ...s.getEnemyParty()];
+  return JSON.stringify({
+    session: JSON.stringify(s.gameData.getSessionSaveData()),
+    turn: battle.turn,
+    rng: Phaser.Math.RND.state(),
+    battleSeedState: battle.battleSeedState,
+    switchCounter: battle.enemySwitchCounter,
+    lastMove: battle.lastMove,
+    enemyFaints: battle.enemyFaints,
+    teamIndex: Object.fromEntries(s.getEnemyParty().map((p: any) => [p.id, p.initialTeamIndex])),
+    bossIndex: Object.fromEntries(s.getEnemyParty().map((p: any) => [p.id, p.bossSegmentIndex])),
+    temp: Object.fromEntries(all.map(p => [p.id, { ...p.tempSummonData }])),
+    wave: Object.fromEntries(all.map(p => [p.id, { ...p.waveData, abilitiesApplied: [...p.waveData.abilitiesApplied] }])),
+    summon: Object.fromEntries(all.filter(p => p.isOnField()).map(p => [p.id, JSON.parse(JSON.stringify(p.summonData))])),
+    status: Object.fromEntries(
+      all.filter(p => p.status).map(p => [p.id, { toxic: p.status.toxicTurnCount, sleep: p.status.sleepTurnsRemaining }]),
+    ),
+  });
+}
+
+/** Set after a lost turn: the next reload may throw, and a fresh GameManager recovers (#655). */
+let dirty = false;
+
+async function loadSession(session: string) {
+  strayPrompts();
+  try {
+    await reload(session);
+  } catch (err) {
+    if (!dirty) throw err;
+    await boot();
+    await reload(session);
+  }
+  dirty = false;
+}
+
+async function restore(at: string) {
+  // Parsed afresh each time: `PokemonSummonData` keeps the arrays it is given, so a turn played after a restore
+  // would write back into a shared copy, and a fork point restored twice would come back changed (#655).
+  const fork = JSON.parse(at);
+  await loadSession(fork.session);
+  const s = scene();
+  const battle = s.currentBattle;
+  battle.turn = fork.turn;
+  battle.battleSeedState = fork.battleSeedState;
+  battle.enemySwitchCounter = fork.switchCounter;
+  battle.lastMove = fork.lastMove;
+  battle.enemyFaints = fork.enemyFaints;
+  Phaser.Math.RND.state(fork.rng);
+  for (const p of [...s.getPlayerParty(), ...s.getEnemyParty()]) {
+    Object.assign(p.tempSummonData, fork.temp[p.id]);
+    const wave = fork.wave[p.id];
+    p.waveData.endured = wave.endured;
+    p.waveData.abilityRevealed = wave.abilityRevealed;
+    p.waveData.abilitiesApplied = new Set(wave.abilitiesApplied);
+    const status = fork.status[p.id];
+    if (status && p.status) {
+      p.status.toxicTurnCount = status.toxic;
+      p.status.sleepTurnsRemaining = status.sleep;
+    }
+  }
+  for (const p of s.getEnemyParty()) {
+    p.initialTeamIndex = fork.teamIndex[p.id];
+    if (p.bossSegments) p.bossSegmentIndex = fork.bossIndex[p.id];
+  }
+  // Ours too, though the save keeps it: the reload's summon fires entry abilities again, and a foe's Intimidate took a
+  // second stage off our lead at every fork point it was on the field for (#662).
+  for (const p of [...s.getPlayerField(), ...s.getEnemyField()]) {
+    if (fork.summon[p.id]) p.summonData = new PokemonSummonData(fork.summon[p.id]);
+  }
+}
+
+const hp = () => {
+  const s = scene();
+  const share = (p: any) => (p.isFainted() ? 0 : p.hp / p.getMaxHp());
+  return { ours: s.getPlayerParty().map(share), foes: s.getEnemyParty().map(share) };
+};
+
+/**
+ * Two decisions with one signature are one to the search. The draws are left out, so a merge keeps one path's; level
+ * and experience are in, since a mid-fight level-up moves stats the HP alone doesn't show (#662).
+ */
+function sig(): string {
+  const s = scene();
+  const pokemon = (p: any) =>
+    [
+      p.species.speciesId,
+      p.level,
+      p.exp,
+      p.hp,
+      p.isOnField() ? 1 : 0,
+      p.status?.effect ?? 0,
+      p.status?.toxicTurnCount ?? 0,
+      p.status?.sleepTurnsRemaining ?? 0,
+      p.isTerastallized ? 1 : 0,
+      p.isOnField() ? p.getStatStages().join(".") : "",
+      p.isOnField() ? p.summonData.tags.map((t: any) => `${t.tagType}/${t.turnCount}`).join(".") : "",
+      // A pending recharge, rampage turn or charge turn (#655).
+      p.isOnField() ? p.getMoveQueue().map((q: any) => q.move).join(".") : "",
+      p.getMoveset().map((m: any) => m.ppUsed).join("."),
+      p.getHeldItems().map((item: any) => `${item.type.id}${item.stackCount}`).join("."),
+    ].join(":");
+  return [
+    s.currentBattle.turn,
+    s.arena.playerTerasUsed,
+    s.currentBattle.enemySwitchCounter,
+    s.arena.weather?.weatherType ?? 0,
+    s.arena.terrain?.terrainType ?? 0,
+    s.arena.tags.map((t: any) => `${t.tagType}/${t.side}/${t.turnCount}`).join("."),
+    ...s.getPlayerParty().map(pokemon),
+    "|",
+    ...s.getEnemyParty().map(pokemon),
+  ].join(",");
+}
+
+const position = () => ({
+  sig: sig(),
+  hp: hp(),
+  legal: queuedRuns(scene().getPlayerField()[0]) ? [null] : legal(),
+  forkPoint: forkPoint(),
+});
+
+/** Every input played from the fork point, and again for each other faint replacement its turn could take. */
+async function expand(at: string, inputs: (Input | null)[]) {
+  const children: unknown[] = [];
+  const queue = [...inputs];
+  while (queue.length > 0) {
+    const input = queue.shift() as Input | null;
+    await restore(at);
+    let offered: PartySlot[] = [];
+    let ended: Turn;
+    try {
+      ended = await turn(input, all => {
+        offered = all;
+        return input?.replacement ?? all[0];
+      });
+    } catch (err) {
+      dirty = true;
+      ended = { illegal: `threw ${err instanceof Error ? err.message : String(err)}`.split("\n")[0] };
+    }
+    const played = input && offered.length > 0 ? { ...input, replacement: input.replacement ?? offered[0] } : input;
+    if (input && input.replacement === undefined) {
+      queue.push(...offered.slice(1).map(replacement => ({ ...input, replacement })));
+    }
+    const stray = strayPrompts();
+    if (ended === "lost") dirty = true;
+    if (typeof ended === "object") children.push({ input: played, end: "dropped", why: ended.illegal });
+    else if (stray > 0) children.push({ input: played, end: "dropped", why: `left ${stray} prompts queued` });
+    else if (ended === "on") children.push({ input: played, end: "on", at: position() });
+    else children.push({ input: played, end: ended, hp: hp() });
+  }
+  return { children };
+}
+
+type Played = { input: Input | null; turn: number; checkpoint: unknown; end: Turn };
+
+/**
+ * The fork check and the chained-restore check on one line (#655). Played straight from the save first, with a fork
+ * point at each decision; then from each fork point to the end, and as a search plays it: restore, one turn, a fork
+ * point, again. Each must play every turn the same as the straight line.
+ */
+async function checks(inputs: Input[]) {
+  await loadSession(JSON.stringify(job.save));
+  const straight: Played[] = [];
+  const forks: string[] = [];
+  let next = 0;
+  for (;;) {
+    const input = queuedRuns(scene().getPlayerField()[0]) ? null : (inputs[next++] ?? undefined);
+    if (input === undefined) break;
+    forks.push(forkPoint());
+    const at = scene().currentBattle.turn;
+    const end = await turn(input);
+    straight.push({ input, turn: at, checkpoint: checkpoint(), end });
+    if (end !== "on") break;
+  }
+  const differs = (from: number, i: number, got: Played) =>
+    JSON.stringify([got.checkpoint, got.end]) === JSON.stringify([straight[i].checkpoint, straight[i].end])
+      ? []
+      : [{ from: straight[from].turn, turn: straight[i].turn, want: straight[i], got }];
+  const replayFrom = async (from: number, chained: boolean) => {
+    await restore(forks[from]);
+    const misses: unknown[] = [];
+    for (let i = from; i < straight.length; i++) {
+      if (chained && i > from) await restore(forkPoint());
+      const at = scene().currentBattle.turn;
+      const end = await turn(straight[i].input);
+      const got = { input: straight[i].input, turn: at, checkpoint: checkpoint(), end };
+      misses.push(...differs(from, i, got));
+      if (end !== "on" || misses.length > 0) break;
+    }
+    return misses;
+  };
+  const fork: unknown[] = [];
+  for (let from = 1; from < straight.length; from++) fork.push(...(await replayFrom(from, false)));
+  const chain = straight.length > 0 ? await replayFrom(0, true) : [];
+  return { straight: straight.map(({ turn, end }) => ({ turn, end })), fork, chain };
+}
+
+async function serve(port: number) {
+  const socket = connect(port, "127.0.0.1");
+  await new Promise<void>((resolve, reject) => socket.once("connect", resolve).once("error", reject));
+  const send = (message: unknown) => socket.write(`${JSON.stringify(message)}\n`);
+  await load();
+  send({ kind: "root", root: position() });
+  for await (const line of createInterface({ input: socket })) {
+    const asked = JSON.parse(line);
+    try {
+      const answer = asked.kind === "expand" ? await expand(asked.forkPoint, asked.inputs) : await checks(asked.inputs);
+      send({ id: asked.id, ...answer });
+    } catch (err) {
+      dirty = true;
+      send({ id: asked.id, error: err instanceof Error ? (err.stack ?? err.message) : String(err) });
+    }
+  }
+}
+
 describe("coach harness", () => {
   beforeAll(() => {
     phaserGame = new Phaser.Game({ type: Phaser.HEADLESS });
   });
 
-  it("replay", async () => {
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    // Inside vitest's own timeout, which would end the test before it writes the report.
-    const deadline = new Promise<never>((_, reject) => {
-      timer = setTimeout(() => reject(new Error(`the replay timed out after ${DEADLINE_MS / 1000} s`)), DEADLINE_MS);
-    });
-    try {
-      report.version = JSON.parse(readFileSync("package.json", "utf8")).version;
-      await Promise.race([
-        (async () => {
-          await load();
-          report.end = await play();
-        })(),
-        deadline,
-      ]);
-    } catch (err) {
-      report.error = err instanceof Error ? (err.stack ?? err.message) : String(err);
-    } finally {
-      clearTimeout(timer);
-    }
-    writeFileSync(process.env.COACH_OUT as string, JSON.stringify(report));
-  }, DEADLINE_MS + 60_000);
+  it.skipIf(PORT !== undefined)(
+    "replay",
+    async () => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      // Inside vitest's own timeout, which would end the test before it writes the report.
+      const deadline = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`the replay timed out after ${DEADLINE_MS / 1000} s`)), DEADLINE_MS);
+      });
+      try {
+        report.version = JSON.parse(readFileSync("package.json", "utf8")).version;
+        await Promise.race([
+          (async () => {
+            await load();
+            report.end = await play();
+          })(),
+          deadline,
+        ]);
+      } catch (err) {
+        report.error = err instanceof Error ? (err.stack ?? err.message) : String(err);
+      } finally {
+        clearTimeout(timer);
+      }
+      writeFileSync(process.env.COACH_OUT as string, JSON.stringify(report));
+    },
+    DEADLINE_MS + 60_000,
+  );
+
+  it.runIf(PORT !== undefined)(
+    "serve",
+    async () => {
+      // The game logs every phase, and a worker plays thousands of turns into a buffer nobody reads.
+      for (const quiet of ["log", "info", "debug", "warn"] as const) console[quiet] = () => {};
+      try {
+        report.version = JSON.parse(readFileSync("package.json", "utf8")).version;
+        await serve(Number(PORT));
+      } catch (err) {
+        report.error = err instanceof Error ? (err.stack ?? err.message) : String(err);
+      }
+      // An interrupted coordinator closes the socket and removes its files at once: written after that, the report
+      // would be left in the clone (#658).
+      if (existsSync(process.env.COACH_IN as string)) writeFileSync(process.env.COACH_OUT as string, JSON.stringify(report));
+    },
+    24 * 3_600_000,
+  );
 });
