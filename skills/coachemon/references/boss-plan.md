@@ -27,12 +27,12 @@ part follows the game's language.
    file, making its folder if need be. Done when the file holds its three opening lines and all seven sections.
 3. **Tick** on every read after. Mark each phase whose check has come due ✓ with what the battle showed, or ✗ with
    what came instead; the phase in play is ▸. A ✗ adds its break, and the play it leaves, to *Off the plan*. From the
-   first command on, keep the file the card's, which works its fight plan out again every turn: when the call's word
-   is not the one the `plan` group opens with (`winnable` or `likely lost`), rewrite the call and name the turn; when
-   the card's step order, the mons it keeps back or its sacrifices have moved, rewrite the phases not yet ticked. A
-   `LIKELY LOST` line is no stand-in: a resume or a retry never sees it. With `card` null, start the HUD as in step 2.
-   Rewrite the status line each time. Done when the call and the phases ahead are the card's, and the status line
-   names the last check the battle has reached.
+   first command on, keep the file the card's, since the card works its fight plan out again every turn: when the
+   call's word is not the one the `plan` group opens with (`winnable` or `likely lost`), rewrite the call and name the
+   turn; when the card's step order, the mons it keeps back or its sacrifices have moved, rewrite the phases not yet
+   ticked, and the call's condition with them. A `LIKELY LOST` line can't replace this check: a resume or a retry
+   never sees it. With `card` null, start the HUD as in step 2. Rewrite the status line each time. Done when the call
+   and the phases ahead are the card's, and the status line names the last check the battle has reached.
 
 The file opens with three lines:
 - the title, `# Plan: <trainer> · W<wave> · singles` (or `doubles`);
@@ -44,7 +44,7 @@ The file opens with three lines:
 ## One call
 
 The plan's call is the card's call. Now, the card's `plan` group and this file say one thing, because the file is the
-card's fight plan re-cut into phases: its call is the card's verdict, its phases follow the card's step order, the
+card's fight plan re-cut into phases: its call is the fight plan's verdict, its phases follow the card's step order, the
 mons it keeps back (⤵) and its sacrifices, and its first phase opens with what the card calls now.
 
 A call you know is wrong — Moonblast into an Enigma Berry, a hit from a mon that never gets to act — is a gap in the
@@ -58,7 +58,7 @@ of its own ⚔, so there is still one call.
 
 In this order. Marks as on the card: no mark is exact, `~` replay, `≈` estimate, `!` a claim already proved wrong.
 
-1. **The call** — `≈`, conditional. The card's verdict word, `winnable` or `likely lost`, with the one condition it
+1. **The call** — `≈`, conditional. The fight plan's verdict, `winnable` or `likely lost`, with the one condition it
    rests on: a check the player can read off the battle. `≈ winnable if Dragonite meets Rayquaza at full HP`,
    `≈ likely lost unless Raichu breaks a bar before Outrage`. A lean, not a promise.
 2. **Why trust it** — what the call rests on, one line each, each with its own mark:
@@ -88,7 +88,7 @@ on the plan · checked through Kingdra · attempt 1
 Marks as on the card: none exact, ~ replay, ≈ estimate, ! proved wrong. Inputs and Off the plan claim nothing.
 
 ## The call ≈
-**Winnable if Dragonite meets Rayquaza at full HP.** The card's verdict: a lean, not a promise.
+**Winnable if Dragonite meets Rayquaza at full HP.** The fight plan's verdict: a lean, not a promise.
 
 ## Why trust it
 - Both teams, items, abilities and stats: the battle read at T1.

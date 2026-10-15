@@ -347,8 +347,8 @@ spans turns: the call and what it rests on, the phases each ending in a check th
 inputs to get right, what to do off the plan, and the principles behind them.
 
 Without an **oracle line** it is the **fight plan** written out across turns, never a second opinion: its call is the
-card's own verdict made conditional, and a call the coach knows is wrong is fixed in the card rather than overridden in
-the plan. With one, the oracle line is its plan.
+fight plan's own verdict made conditional, and a call the coach knows is wrong is fixed in the card rather than
+overridden in the plan. With one, the oracle line is its plan.
 
 A boss fight is named by who the trainer is, not by the wave: every tenth wave is a boss wave, and a boss is any foe
 behind **boss bars**, but only those five trainers make a boss fight.
