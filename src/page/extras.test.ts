@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { StatusEffect } from "../enums/generated.ts";
+import { ArenaTagSide, StatusEffect } from "../enums/generated.ts";
 import { onPage, send } from "./fake-page.ts";
 
 type Tag = { tagType: string; serializable: boolean };
@@ -28,7 +28,10 @@ function mon(fields: Record<string, unknown>) {
   return m;
 }
 
-/** Gordie's W180 at T5's command: Coalossal leads from team slot 5, Probopass fainted on T3, Carracosta waits on its second bar. */
+/**
+ * Gordie's W180 at T5's command: Coalossal leads from team slot 5 behind Safeguard, Probopass fainted on T3, Carracosta
+ * waits on its second bar, and Stealth Rock is on our side.
+ */
 function gordieT5() {
   const coalossal = mon({
     id: 77, initialTeamIndex: 5, bossSegmentIndex: undefined, status: { effect: StatusEffect.TOXIC, toxicTurnCount: 3 },
@@ -43,7 +46,13 @@ function gordieT5() {
     waveIndex: 180, battleSeed: "s33d", turn: 5, battleSeedState: null, enemySwitchCounter: 1, lastMove: 450, enemyFaints: 1,
     playerFaintsHistory: [], enemyFaintsHistory: [{ pokemon: probopass, turn: 3 }], enemyParty: [coalossal, probopass, carracosta],
   };
-  return { ui: { mode: 0, handlers: {} }, currentBattle, getPlayerParty: () => [leavanny] };
+  const arena = {
+    tags: [
+      { tagType: "SAFEGUARD", side: ArenaTagSide.ENEMY, turnCount: 3, maxDuration: 5, sourceId: 77 },
+      { tagType: "STEALTH_ROCK", side: ArenaTagSide.PLAYER, turnCount: 0, maxDuration: 0, sourceId: 78 },
+    ],
+  };
+  return { ui: { mode: 0, handlers: {} }, currentBattle, arena, getPlayerParty: () => [leavanny] };
 }
 
 const RND = { Math: { RND: { state: () => "!rnd,1,0.25,0.5,0.75" } } };
@@ -57,6 +66,7 @@ test("a mid-fight read carries every extra the save lacks or a reload resets, wh
   assert.deepEqual(r, {
     ok: true, wave: 180, battleSeed: "s33d", turn: 5, rndState: "!rnd,1,0.25,0.5,0.75", battleSeedState: null,
     enemySwitchCounter: 1, lastMove: 450, enemyFaints: 1, playerFaintsHistory: [], enemyFaintsHistory: [{ id: 79, turn: 3 }],
+    arenaTags: [{ tagType: "SAFEGUARD", side: ArenaTagSide.ENEMY }, { tagType: "STEALTH_ROCK", side: ArenaTagSide.PLAYER }],
     foes: [
       {
         id: 77, initialTeamIndex: 5, bossSegmentIndex: null, toxicTurnCount: 3, tempSummonData: { turnCount: 2, waveTurnCount: 4 },

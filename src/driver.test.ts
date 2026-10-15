@@ -5,7 +5,7 @@ import path from "node:path";
 import { test, type TestContext } from "node:test";
 import { Driver } from "./driver.ts";
 import { KEPT_ENDED, type JobKinds, type JobWork } from "./jobs.ts";
-import { Button, MoveCategory, PokemonType, StatusEffect, UiMode } from "./enums/generated.ts";
+import { ArenaTagSide, Button, MoveCategory, PokemonType, StatusEffect, UiMode } from "./enums/generated.ts";
 import { Refusal } from "./envelope.ts";
 import { fakeGame, type FakeScreen, type ScreenRead } from "./game/fake-game.ts";
 import type { MenuRead } from "./game/port.ts";
@@ -1044,7 +1044,7 @@ test("the extras read hands back every live extra whole, beside the settled game
   const waveData = { endured: false, abilityRevealed: false, abilitiesApplied: [] };
   const extras = {
     wave: 180, battleSeed: "s33d", turn: 5, rndState: "!rnd,1,0.25,0.5,0.75", battleSeedState: null, enemySwitchCounter: 1, lastMove: 450, enemyFaints: 0,
-    playerFaintsHistory: [], enemyFaintsHistory: [],
+    playerFaintsHistory: [], enemyFaintsHistory: [], arenaTags: [{ tagType: "SAFEGUARD", side: ArenaTagSide.ENEMY }],
     foes: [{ id: 77, initialTeamIndex: 5, bossSegmentIndex: null, toxicTurnCount: null, tempSummonData: { turnCount: 2, waveTurnCount: 4 }, waveData, onField: true, summonData: { statStages: [0, 0, 0, 0, 0, 0, 0] } }],
     party: [{ id: 12, toxicTurnCount: 3, tempSummonData: { turnCount: 1, waveTurnCount: 1 }, waveData }],
     unread: [],

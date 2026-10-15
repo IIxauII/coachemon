@@ -1,6 +1,9 @@
+import type { ArenaTagSide } from "../enums/generated.ts";
 import type { Located } from "./locate.ts";
 
 export type FaintEntry = { id: number; turn: number };
+
+export type ArenaTagEntry = { tagType: string; side: ArenaTagSide };
 
 export type MonExtras = {
   id: number | null;
@@ -25,6 +28,7 @@ export type ExtrasResult =
       enemyFaints: number | null;
       playerFaintsHistory: FaintEntry[] | null;
       enemyFaintsHistory: FaintEntry[] | null;
+      arenaTags: ArenaTagEntry[] | null;
       foes: FoeExtras[] | null;
       party: MonExtras[] | null;
       unread: string[];
@@ -76,6 +80,8 @@ export function extras(L: Located, _args: Record<string, never>): ExtrasResult {
     enemyFaints: read("enemyFaints", () => b.enemyFaints),
     playerFaintsHistory: faints("playerFaintsHistory"),
     enemyFaintsHistory: faints("enemyFaintsHistory"),
+    // Every tag, saved or not (extension-distribution.md §10.1).
+    arenaTags: read("arenaTags", () => L.scene.arena.tags.map((t: any) => ({ tagType: t.tagType, side: t.side }))),
     foes: read("foes", () => b.enemyParty.map(foe)),
     party: read("party", () => L.scene.getPlayerParty().map((p: any, i: number) => mon(`party.${i}`, p))),
     unread,

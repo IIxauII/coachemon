@@ -2828,6 +2828,12 @@ Read at the pinned tag (`v1.12.0.11`), for the `extras` read (`src/page/extras.t
   `battle.ts:491-509`). **It is not always null at a command.** `incrementTurn` clears it (`:175`), but `TurnEndPhase`
   draws from the battle stream after that: Grip Claw (`src/modifier/modifier.ts:3181`, `:3198`) and Moody
   (`src/data/abilities/ab-attrs.ts:4301`, `:4310`). So it can be set at the next `CommandPhase`.
+- Every arena tag that is not a `SerializableArenaTag`. The save writes the arena as `new ArenaData(globalScene.arena)`
+  (`game-data.ts:892`) and reads it back the same way (`:1280`), and that constructor drops every other tag
+  (`src/system/arena-data.ts:32-35`). `SafeguardTag` extends plain `ArenaTag` (`src/data/arena-tag.ts:1333`), so a
+  reload loses Safeguard. `SerializableArenaTagType` (`src/@types/arena-tags.ts:28-31`) includes `SAFEGUARD`, being
+  every `ArenaTagType` outside `NonSerializableArenaTagType`; the runtime `instanceof` is what decides. The live tags are `Arena.tags` (`src/field/arena.ts:66`), each with a
+  `tagType`, an `ArenaTagType` string, and a `side`, an `ArenaTagSide` (`arena-tag.ts:119`, `:125`).
 
 **What the save carries and a reload resets.**
 

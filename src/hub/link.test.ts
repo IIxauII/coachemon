@@ -4,7 +4,7 @@ import { fakeClient, fakeExtension, Peer, readyTab } from "./fake-ext.ts";
 import { HubLink, hubPort } from "./link.ts";
 import { Hub, startHub } from "./hub.ts";
 import { Driver } from "../driver.ts";
-import { Button, UiMode } from "../enums/generated.ts";
+import { ArenaTagSide, Button, UiMode } from "../enums/generated.ts";
 import { Refusal } from "../envelope.ts";
 import { OTHER_RUN_W180, RUN_SEED, RUN_W180 } from "../game/fixtures/saves.ts";
 import { isFault } from "../game/link.ts";
@@ -57,7 +57,7 @@ test("every live extra crosses the hub as its own read and comes back as the pag
   const waveData = { endured: false, abilityRevealed: true, abilitiesApplied: [70] };
   const page = {
     ok: true, wave: 180, battleSeed: "s33d", turn: 5, rndState: "!rnd,1,0.25,0.5,0.75", battleSeedState: null, enemySwitchCounter: 1, lastMove: 450,
-    enemyFaints: 1, playerFaintsHistory: [], enemyFaintsHistory: [{ id: 79, turn: 3 }],
+    enemyFaints: 1, playerFaintsHistory: [], enemyFaintsHistory: [{ id: 79, turn: 3 }], arenaTags: [{ tagType: "SAFEGUARD", side: ArenaTagSide.ENEMY }],
     foes: [{ id: 77, initialTeamIndex: 5, bossSegmentIndex: null, toxicTurnCount: 3, tempSummonData: { turnCount: 2, waveTurnCount: 4 }, waveData, onField: true, summonData: { statStages: [1, 0, 0, 0, 0, 0, 0], tags: [{ tagType: "CONFUSED" }] } }],
     party: [{ id: 12, toxicTurnCount: null, tempSummonData: { turnCount: 3, waveTurnCount: 5 }, waveData }],
     unread: [],

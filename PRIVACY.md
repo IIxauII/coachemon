@@ -4,7 +4,7 @@ title: Coachemon privacy policy
 
 # Coachemon privacy policy
 
-Last updated: 14 October 2026.
+Last updated: 15 October 2026.
 
 Coachemon is a browser extension that draws a coach overlay on the PokéRogue game you are playing.
 
@@ -25,7 +25,7 @@ governed by that program, not by this policy.
 
 That game state includes, when the program asks for it during a fight, what the game keeps in memory but
 leaves out of its save: the turn, the opponents' battle counters, the last move used, how long each pokémon has been on
-the field, and the game's random-number state.
+the field, the effects on each side of the field, and the game's random-number state.
 
 When that program asks, the extension also passes it your run's save: the run as it stands, and the save PokéRogue
 keeps in the page's `localStorage` at the start of each wave, the one Continue loads. PokéRogue keeps one such save per
