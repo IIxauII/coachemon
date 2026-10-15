@@ -146,6 +146,16 @@ export function toolServer(driver: Driver): McpServer {
   );
 
   server.registerTool(
+    "solving",
+    {
+      description:
+        "Solving: the player's standing, opt-in setting that lets the coach solve a trainer fight on the run's own seed for an oracle line, never in a Daily run. Off until the player turns it on; it persists across sessions and restarts, so it is never asked per fight. Pass on to turn it on or off; omit on to read it. Turning it on costs about 0.6 GB of disk, a one-time setup and minutes of CPU per fight: tell the player that and turn it on only on their yes. Needs no game.",
+      inputSchema: { on: z.boolean().optional().describe("true turns solving on, false turns it off; omit to read the setting") },
+    },
+    async ({ on }) => run("solving", { on }, () => driver.solving(on)),
+  );
+
+  server.registerTool(
     "screenshot",
     {
       description: "A PNG of the game for the human reading the transcript. Never needed to play; ~100× slower and ~90× larger than a text read.",

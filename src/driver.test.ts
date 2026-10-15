@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { test, type TestContext } from "node:test";
 import { Driver } from "./driver.ts";
 import { KEPT_ENDED, type JobKinds, type JobWork } from "./jobs.ts";
 import { Button, MoveCategory, PokemonType, StatusEffect, UiMode } from "./enums/generated.ts";
@@ -10,9 +13,18 @@ import { CALL_BUDGET_MS } from "./settle.ts";
 
 const money = { money: 1000 };
 
-function drive(screen: FakeScreen) {
+/** Shared by every test that never writes a setting: one that does brings its own `tempHome`. */
+const UNWRITTEN_HOME = path.join(tmpdir(), "coachemon-driver-test");
+
+function drive(screen: FakeScreen, home = UNWRITTEN_HOME) {
   const fake = fakeGame(screen);
-  return { ...fake, driver: new Driver(fake.game, fake.clock) };
+  return { ...fake, driver: new Driver(fake.game, home, fake.clock) };
+}
+
+function tempHome(t: TestContext): string {
+  const home = mkdtempSync(path.join(tmpdir(), "coachemon-home-"));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  return home;
 }
 
 /**
@@ -960,7 +972,7 @@ test("read_card needs no grant: it never claims the tab another driver holds", a
     }),
     menu: () => commandMenu(0),
   });
-  const r = await outcome(new Driver(fake.game, fake.clock).readCard({}));
+  const r = await outcome(new Driver(fake.game, UNWRITTEN_HOME, fake.clock).readCard({}));
   assert.equal(r.status, "ok", JSON.stringify(r));
   assert.equal(r.kind, "learn");
 });
@@ -1043,7 +1055,7 @@ function steppedJob() {
 
 function jobDriver(kinds: JobKinds): Driver {
   const fake = fakeGame({});
-  return new Driver(fake.game, fake.clock, kinds);
+  return new Driver(fake.game, UNWRITTEN_HOME, fake.clock, kinds);
 }
 
 test("start_job returns at once with the job running, before the job has taken a step (#667)", async () => {
@@ -1164,4 +1176,26 @@ test("the plugin keeps the most recent ended jobs and drops the oldest, never a 
   assert.equal((await outcome(driver.readJob(ended[0]))).error, "unknown_job", "the oldest ended job is gone");
   assert.equal((await driver.readJob(ended[1])).state, "done");
   assert.equal((await driver.pollJob(running)).state, "running", "a running job is never dropped");
+});
+
+test("solving is off until the player turns it on (#666)", async t => {
+  assert.deepEqual(await drive({}, tempHome(t)).driver.solving(), { status: "ok", solving: false });
+});
+
+test("solving turned on stays on for a new Driver on the same home", async t => {
+  const home = tempHome(t);
+  assert.deepEqual(await drive({}, home).driver.solving(true), { status: "ok", solving: true });
+  assert.deepEqual(await drive({}, home).driver.solving(), { status: "ok", solving: true });
+});
+
+test("solving turned off again stays off for a new Driver on the same home", async t => {
+  const home = tempHome(t);
+  await drive({}, home).driver.solving(true);
+  assert.deepEqual(await drive({}, home).driver.solving(false), { status: "ok", solving: false });
+  assert.deepEqual(await drive({}, home).driver.solving(), { status: "ok", solving: false });
+});
+
+test("solving answers with nothing able to reach the game (extension-distribution.md §12.2)", async t => {
+  const unreachable = { rung: 1, code: "unreachable", line: "The Coachemon hub is not running." } as const;
+  assert.deepEqual(await drive({ unreachable }, tempHome(t)).driver.solving(true), { status: "ok", solving: true });
 });

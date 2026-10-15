@@ -2,15 +2,19 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { Driver } from "./driver.ts";
 import { fakeGame } from "./game/fake-game.ts";
 import type { JobKinds } from "./jobs.ts";
 import { toolServer } from "./tools.ts";
 
+const UNWRITTEN_HOME = path.join(tmpdir(), "coachemon-tools-test");
+
 async function connect(kinds: JobKinds = {}): Promise<Client> {
   const fake = fakeGame({});
   const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
-  await toolServer(new Driver(fake.game, fake.clock, kinds)).connect(serverSide);
+  await toolServer(new Driver(fake.game, UNWRITTEN_HOME, fake.clock, kinds)).connect(serverSide);
   const client = new Client({ name: "tools-test", version: "0" });
   await client.connect(clientSide);
   return client;
@@ -25,7 +29,7 @@ async function call(client: Client, name: string, args: Record<string, unknown>)
 test("the server offers exactly these tools", async () => {
   const { tools } = await (await connect()).listTools();
   assert.deepEqual(tools.map(t => t.name).sort(), [
-    "cancel_job", "get_state", "poll_job", "press", "read_card", "read_job", "read_menu", "read_starters", "screenshot", "select_option", "start_job", "start_run", "status",
+    "cancel_job", "get_state", "poll_job", "press", "read_card", "read_job", "read_menu", "read_starters", "screenshot", "select_option", "solving", "start_job", "start_run", "status",
   ]);
 });
 

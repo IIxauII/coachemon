@@ -21,7 +21,7 @@ claude --plugin-dir .            # a session with this checkout's server and ski
 
 There is no project `.mcp.json`: a plugin at the repo root merges the root `.mcp.json` into its own servers, and a cwd-relative path there breaks once the plugin is copied into the cache. `--plugin-dir .` loads exactly what an installed plugin gets. Don't run it alongside an installed copy — two servers contend for one tab.
 
-The server **attaches to an existing `pokerogue.net` tab on debug port 9222 if there is one, otherwise launches Chrome** with the persistent profile (`~/.coachemon/chrome-profile`; log in by hand once — the server never touches credentials, see [#5](https://github.com/IIxauII/coachemon/issues/5)). It never closes the tab or Chrome. One driver per tab: a lock at `~/.coachemon/driver.lock` makes a second server report `tab_contended` and refuse to press, because [#6](https://github.com/IIxauII/coachemon/issues/6) had three sessions interleaving presses on one live save. The lock is taken the first time a server acts, not when it starts, so any number of servers can read the same tab while one plays it.
+The server **attaches to an existing `pokerogue.net` tab on debug port 9222 if there is one, otherwise launches Chrome** with the persistent profile (`~/.coachemon/chrome-profile`; log in by hand once — the server never touches credentials, see [#5](https://github.com/IIxauII/coachemon/issues/5)). It never closes the tab or Chrome. One driver per tab: a lock at `~/.coachemon/driver.lock` makes a second server report `tab_contended` and refuse to press, because [#6](https://github.com/IIxauII/coachemon/issues/6) had three sessions interleaving presses on one live save. The lock is taken the first time a server acts, not when it starts, so any number of servers can read the same tab while one plays it. The player's **solving** setting lives beside it, in `~/.coachemon/settings.json`. `COACHEMON_HOME` moves the whole directory.
 
 ## Dev scripts
 
@@ -51,6 +51,8 @@ src/server.ts        MCP entry: the tools over stdio
 src/tools.ts         the MCP tools, each a thin call into the driver
 src/driver.ts        settle → press → auto-advance → detect → envelope
 src/jobs.ts          background jobs: work that outlasts one tool call (#667)
+src/home.ts          the coachemon home directory (`COACHEMON_HOME`, else `~/.coachemon`)
+src/settings.ts      the plugin's settings, persisted in the home directory: solving, off by default
 src/settle.ts        the settle loop and its budgets (#14)
 src/game/port.ts     the typed game operations the driver reaches the game through (#127)
 src/game/link-game.ts that port over a GameLink; a page throw never leaves it as a throw

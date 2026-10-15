@@ -1,6 +1,6 @@
 ---
 name: coachemon
-description: Coach the user through their own PokéRogue game without touching the controls — read the live tab (Chrome or Orion) and recommend starters, moves, switches, or a plan against a trainer. Use when the user is playing themselves and asks what to pick, what to do against their opponent, or how to beat a trainer/boss.
+description: Coach the user through their own PokéRogue game without touching the controls — read the live tab (Chrome or Orion) and recommend starters, moves, switches, or a plan against a trainer. Use when the user is playing themselves and asks what to pick, what to do against their opponent, or how to beat a trainer/boss, or wants solving turned on or off.
 ---
 
 # Coaching PokéRogue
@@ -160,6 +160,13 @@ The panel already shows the decision; the user glances at it mid-battle. Speak o
 - **Rewards:** when the `audit:` part names a ✗ finding before a big fight, say what fixes it with this screen (a TM, a mushroom, a catch to look for); otherwise only what the HUD can't judge: held items (`items`), long-term team building, whether a reroll is worth it. Buy shop items **before** taking the free reward: taking it ends the screen. Don't quote item effects from memory; use `desc`.
 - **Biome:** reply only to add what the card doesn't weigh: the evil-team boss or rival ahead (fixed battles aren't the biome's), a gym leader's signature mons beyond its type, a rare biome two steps away, or a close call the edge line doesn't settle.
 - **Mystery Encounter:** reply when the card says `not judged` or `your call` (read the options off the screenshot or the card and weigh them), or when the run's longer plan disagrees — a vitamin on the wrong mon, money the next boss shop needs, a biome detour before a gym.
+
+## Solving
+
+**Solving** is the player's standing setting, off until they turn it on: while it is on, the coach may solve a trainer fight on the run's own seed for an **oracle line**, the inputs that win it, but never in a Daily run, whose seed every player shares. The `solving` tool reads it (no argument) and turns it on or off (`on: true` / `on: false`); it needs no game.
+
+- **State the cost before turning it on**, plainly: about 0.6 GB of disk, a one-time setup, and minutes of CPU per fight. Turn it on only once the player says yes to that, and never unasked: off is the coach teaching.
+- It is standing: it stays on across sessions until the player turns it off, so never ask again before a fight. Turn it off whenever they ask.
 
 ## Rules learned the hard way
 
