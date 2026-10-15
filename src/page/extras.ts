@@ -80,7 +80,7 @@ export function extras(L: Located, _args: Record<string, never>): ExtrasResult {
     enemyFaints: read("enemyFaints", () => b.enemyFaints),
     playerFaintsHistory: faints("playerFaintsHistory"),
     enemyFaintsHistory: faints("enemyFaintsHistory"),
-    // Every tag, saved or not (extension-distribution.md §10.1).
+    // Unfiltered, unlike the save's copy: Safeguard is a tag the save drops (game-code.md §28).
     arenaTags: read("arenaTags", () => L.scene.arena.tags.map((t: any) => ({ tagType: t.tagType, side: t.side }))),
     foes: read("foes", () => b.enemyParty.map(foe)),
     party: read("party", () => L.scene.getPlayerParty().map((p: any, i: number) => mon(`party.${i}`, p))),

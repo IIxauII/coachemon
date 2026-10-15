@@ -921,7 +921,7 @@ test("a frame read that fails is not a frozen loop", async () => {
   assert.equal(presses, 1);
 });
 
-/** Scripts nothing but the reads a coach tool makes. */
+/** Scripts nothing but the reads a coach tool, or the session or extras read, makes. */
 function coachTab(over: Pick<FakeScreen, "card" | "starters" | "session" | "extras" | "unreachable" | "lockHolder">) {
   const read = (): ScreenRead => ({
     ready: true, settled: true, reason: "menu-open", mode: UiMode.COMMAND, screen: "COMMAND", phaseName: "CommandPhase", wave: 12, turn: 1,

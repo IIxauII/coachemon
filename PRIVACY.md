@@ -23,9 +23,9 @@ text to that program over a local connection (`127.0.0.1`), and only while a `po
 it does that only after you click the Coachemon toolbar icon once. What that program does with what it receives is
 governed by that program, not by this policy.
 
-That game state includes, when the program asks for it during a fight, what the game keeps in memory but
-leaves out of its save: the turn, the opponents' battle counters, the last move used, how long each pokémon has been on
-the field, the effects on each side of the field, and the game's random-number state.
+That game state includes, when the program asks for it during a fight, the effects on each side of the field and what
+the game keeps in memory but leaves out of its save: the turn, the opponents' battle counters, the last move used, how
+long each pokémon has been on the field, and the game's random-number state.
 
 When that program asks, the extension also passes it your run's save: the run as it stands, and the save PokéRogue
 keeps in the page's `localStorage` at the start of each wave, the one Continue loads. PokéRogue keeps one such save per
