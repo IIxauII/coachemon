@@ -6,7 +6,14 @@ export type SolveResult = { kind: "oracle_line"; oracleLine: OracleLine } | NoAn
 export type ReplayResult = { kind: "replayed"; replay: Replay } | NoAnswer;
 
 /** Scripted inputs played forward from the save to where they end. Not an oracle line: no win is promised (#660). */
-export type Replay = { confidence: "replay"; outcome: Outcome; steps: readonly Step[]; receipt: Receipt };
+export type Replay = {
+  confidence: "replay";
+  outcome: Outcome;
+  steps: readonly Step[];
+  receipt: Receipt;
+  /** Empty only where the harness reported every step's draws and none went our way (#701). */
+  luck: readonly Luck[];
+};
 
 /** `open`: the inputs ran out with the fight still on. */
 export type Outcome = "won" | "lost" | "open";
@@ -66,7 +73,10 @@ export type Receipt = readonly {
 
 export type ValidationStep = "versions" | "load_hygiene" | "wave_start_save" | "scene_matches" | "known_turn";
 
-/** A draw the oracle line needs to go its way, such as a crit or a miss. */
+/**
+ * A draw the oracle line needs to go its way, with less than a sure chance: our hit, crit, added effect or item proc, or
+ * the foe's miss, full paralysis or confusion self-hit. `what` names the chance it had.
+ */
 export type Luck = { turn: number; what: string };
 
 export type NoAnswer = { kind: "no_answer"; reason: Reason; message: string };

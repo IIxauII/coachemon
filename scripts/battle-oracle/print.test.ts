@@ -20,6 +20,10 @@ const won: Replay = {
   confidence: "replay",
   outcome: "won",
   receipt: [{ step: "versions", checked: "the save, the clone and the pin are all game version 1.12.0.11" }],
+  luck: [
+    { turn: 6, what: "Reshiram's Fickle Beam hits (90%)" },
+    { turn: 7, what: "the foe's Dragonite's Hurricane misses (30%)" },
+  ],
   steps: [
     {
       turn: 6,
@@ -57,6 +61,18 @@ test("an oracle line prints how it wins, then each turn, then its receipt with t
   assert.equal(printed.at(-1), "    known_turn (pending): checked live at the next decision");
 });
 
+test("an oracle line that rides no luck says so, naming the draws it read (#701)", () => {
+  const line: OracleLine = { seed: "VTAUX0Kaz7T3GDMR7LXP1Bhn", wave: 188, gameVersion: "1.12.0.11", steps: won.steps, receipt: [], luck: [] };
+
+  assert.match(printOracleLine(line), /^luck: rides none: .*hit.*crit.*added effect.*item proc.*miss.*full paralysis.*confusion/m);
+});
+
+test("an oracle line lists the luck it rides, a draw a line, before its receipt (#701)", () => {
+  const line: OracleLine = { seed: "VTAUX0Kaz7T3GDMR7LXP1Bhn", wave: 188, gameVersion: "1.12.0.11", steps: won.steps, receipt: [], luck: won.luck.slice(0, 1) };
+
+  assert.deepEqual(printOracleLine(line).split("\n").slice(-3), ["luck: rides 1 draw", "    T6  Reshiram's Fickle Beam hits (90%)", "receipt"]);
+});
+
 const played = (hp: number): Played => ({
   input: null,
   turn: 2,
@@ -82,7 +98,7 @@ test("a restore that played otherwise fails the fork check, naming where and how
   assert.match(text, /restored at T1, T2 played otherwise: Reshiram\* 471\/622, straight Reshiram\* 547\/622/);
 });
 
-test("a replay prints its outcome, then each turn's input and checkpoint, then its receipt (#660)", () => {
+test("a replay prints its outcome, then each turn's input and checkpoint, then its luck and its receipt (#660, #701)", () => {
   assert.equal(
     printReplay(won),
     [
@@ -93,6 +109,9 @@ test("a replay prints its outcome, then each turn's input and checkpoint, then i
       "T7  (no input)",
       "    ours  Reshiram* 307/622",
       "    foes  Haxorus 528/622 2 bars · Flygon 530/622 1 bar",
+      "luck: rides 2 draws",
+      "    T6  Reshiram's Fickle Beam hits (90%)",
+      "    T7  the foe's Dragonite's Hurricane misses (30%)",
       "receipt",
       "    versions: the save, the clone and the pin are all game version 1.12.0.11",
     ].join("\n"),

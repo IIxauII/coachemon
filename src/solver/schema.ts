@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { MoveId, SpeciesId, StatusEffect } from "../enums/generated.ts";
+import { MoveId, SpeciesId, Stat, StatusEffect } from "../enums/generated.ts";
 import type { Checkpoint, Input, MonState, Outcome, PartySlot } from "./oracle-line.ts";
 
 const keyOf = <T extends object>(table: T, what: string) =>
@@ -35,3 +35,28 @@ const monState = z.strictObject({ ...partySlot.shape, ...monFacts.shape }) satis
 export const checkpoint = z.strictObject({ ours: z.array(monState), foes: z.array(monState) }) satisfies z.ZodType<Checkpoint>;
 
 export const outcome = z.enum(["won", "lost", "open"]) satisfies z.ZodType<Outcome>;
+
+const drawn = {
+  side: z.enum(["ours", "foes"]),
+  species: keyOf(SpeciesId, "species"),
+  /** Of what `kind` names happening: the move hitting, a crit, the effect, the item's proc, full paralysis, a self-hit. */
+  chance: z.number().min(0).max(1),
+  happened: z.boolean(),
+};
+
+const effect = z.union([
+  z.strictObject({ status: keyOf(StatusEffect, "status") }),
+  z.strictObject({ tag: z.string() }),
+  z.strictObject({ stats: z.array(keyOf(Stat, "stat")).min(1), stages: z.int() }),
+  z.strictObject({ attr: z.string() }),
+]);
+
+/** A battle draw the harness saw roll, on either side. `side` is whose: the move's user, the item's holder, the mon whose status rolled. */
+export const draw = z.discriminatedUnion("kind", [
+  z.strictObject({ kind: z.enum(["accuracy", "crit"]), move: keyOf(MoveId, "move"), ...drawn }),
+  z.strictObject({ kind: z.literal("effect"), move: keyOf(MoveId, "move"), effect, ...drawn }),
+  z.strictObject({ kind: z.literal("item"), item: z.string(), ...drawn }),
+  z.strictObject({ kind: z.enum(["paralysis", "confusion"]), ...drawn }),
+]);
+
+export type Draw = z.infer<typeof draw>;

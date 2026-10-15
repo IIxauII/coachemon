@@ -43,7 +43,7 @@ const tree = (moves: readonly string[], table: Record<string, Record<string, [nu
 
 const replayed = (outcome: Outcome): ReplayResult => ({
   kind: "replayed",
-  replay: { confidence: "replay", outcome, steps: [], receipt: [] },
+  replay: { confidence: "replay", outcome, steps: [], receipt: [], luck: [] },
 });
 
 const replaysAll = () => {

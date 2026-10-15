@@ -6,15 +6,24 @@ import { connect } from "node:net";
 import { createInterface } from "node:readline";
 import { BattleScene } from "#app/battle-scene";
 import { activeOverrides, defaultOverrides } from "#app/overrides";
+import { ConfusedTag } from "#data/battler-tags";
+import { allMoves } from "#data/data-lists";
 import { PokemonSummonData } from "#data/pokemon-data";
 import { Button } from "#enums/buttons";
 import { Command } from "#enums/command";
+import { HitCheckResult } from "#enums/hit-check-result";
 import { MoveId } from "#enums/move-id";
 import { isIgnorePP, isVirtual, MoveUseMode } from "#enums/move-use-mode";
 import { SpeciesId } from "#enums/species-id";
+import { Stat } from "#enums/stat";
 import { StatusEffect } from "#enums/status-effect";
 import { UiMode } from "#enums/ui-mode";
+import { Pokemon } from "#field/pokemon";
+import { BypassSpeedChanceModifier, FlinchChanceModifier, SurviveDamageModifier } from "#modifiers/modifier";
+import { Move, MoveEffectAttr } from "#moves/move";
 import type { CommandPhase } from "#phases/command-phase";
+import { MoveEffectPhase } from "#phases/move-effect-phase";
+import { MovePhase } from "#phases/move-phase";
 import { GameManager } from "#test/framework/game-manager";
 import { PromptHandler } from "#test/helpers/prompt-handler";
 import type { PartyUiHandler } from "#ui/party-ui-handler";
@@ -245,6 +254,136 @@ async function load() {
   report.scene = JSON.parse(JSON.stringify(scene().gameData.getSessionSaveData()));
 }
 
+type Roll = { range: number; value: number };
+
+/** Every battle draw since `readDraws`, in the order rolled. */
+const rolls: Roll[] = [];
+/** The step's draws: a crit, a hit check, an added effect, an item proc, full paralysis, a confusion self-hit. */
+let draws: unknown[] = [];
+
+const drew = (p: any, kind: string, chance: number, happened: boolean, about: object = {}) =>
+  draws.push({ kind, side: p.isPlayer() ? "ours" : "foes", species: species(p), ...about, chance, happened });
+
+function rolled<T>(run: () => T): [T, Roll[]] {
+  const from = rolls.length;
+  const result = run();
+  return [result, rolls.slice(from)];
+}
+
+function wrap(owner: any, name: string, around: (original: (...args: any[]) => any, self: any, args: any[]) => any) {
+  const original = owner.prototype[name];
+  // Wrapped as missing, it would throw only on the turn that first reached it.
+  if (typeof original !== "function") throw new Error(`the game has no ${owner.name}.${name} to read draws from`);
+  owner.prototype[name] = function (this: any, ...args: any[]) {
+    return around(original, this, args);
+  };
+}
+
+const effectOf = (attr: any) => {
+  if (attr.is("StatusEffectAttr")) return { status: StatusEffect[attr.effect] };
+  if (attr.is("AddBattlerTagAttr") || attr.is("AddArenaTagAttr")) return { tag: attr.tagType };
+  if (attr.is("StatStageChangeAttr")) return { stats: attr.stats.map((s: number) => Stat[s]), stages: attr.stages };
+  return { attr: attr.constructor.name };
+};
+
+/**
+ * Reads each draw from the rolls the game's own method made, and changes nothing it plays: every wrapper hands back
+ * what the method returned (#701).
+ */
+function readDraws() {
+  const s = scene();
+  const rand = s.randBattleSeedInt;
+  /** The added effect being applied: its chance once asked, and whether the roll that follows it passed. */
+  let effect: { chance?: number; at?: number; passed?: boolean } | null = null;
+  s.randBattleSeedInt = function (this: any, range: number, min = 0) {
+    const value = rand.call(this, range, min);
+    rolls.push({ range, value: value - min });
+    if (effect?.chance !== undefined && effect.at === rolls.length - 1 && range === 100) effect.passed = value < effect.chance;
+    return value;
+  };
+
+  let accuracy = 0;
+  let multiplier: number | undefined;
+  wrap(Move, "calculateBattleAccuracy", (f, move, args) => (accuracy = f.apply(move, args)));
+  wrap(Pokemon, "getAccuracyMultiplier", (f, p, args) => (multiplier = f.apply(p, args)));
+  wrap(MoveEffectPhase, "hitCheck", (f, phase, args) => {
+    multiplier = undefined;
+    const entry = f.apply(phase, args);
+    // Asked for only on the way to the roll: a hit check that never rolled leaves it unset.
+    if (multiplier !== undefined) {
+      drew(phase.getUserPokemon(), "accuracy", Math.min(1, (accuracy * multiplier) / 100), entry[0] === HitCheckResult.HIT, {
+        move: MoveId[phase.move.id],
+      });
+    }
+    return entry;
+  });
+
+  wrap(Pokemon, "getCriticalHitResult", (f, target, args) => {
+    const [source, move] = args;
+    const [crit, during] = rolled(() => f.apply(target, args));
+    // No roll where the crit was sure or impossible.
+    if (during.length > 0) drew(source, "crit", 1 / during[0].range, crit, { move: MoveId[move.id] });
+    return crit;
+  });
+
+  // The game asks an effect's chance outside a hit too, scoring the foe's moves, and rolls nothing after.
+  wrap(MoveEffectAttr, "getMoveChance", (f, attr, args) => {
+    const chance = f.apply(attr, args);
+    if (effect && chance >= 0 && chance < 100) Object.assign(effect, { chance, at: rolls.length });
+    return chance;
+  });
+  // Each instance, not the class: a subclass's `apply` calls its parent's, and the instance's runs once per use. A roll
+  // that passed can still add nothing, such as a burn on a foe the hit knocked out.
+  for (const move of allMoves) {
+    for (const attr of move.attrs as any[]) {
+      if (!attr.is("MoveEffectAttr")) continue;
+      const apply = attr.apply;
+      attr.apply = function (this: any, user: any, ...rest: any[]) {
+        const outer = effect;
+        const mine: NonNullable<typeof effect> = {};
+        effect = mine;
+        try {
+          const applied = apply.call(this, user, ...rest);
+          if (mine.passed !== undefined) {
+            drew(user, "effect", (mine.chance as number) / 100, mine.passed && applied !== false, {
+              move: MoveId[move.id],
+              effect: effectOf(attr),
+            });
+          }
+          return applied;
+        } finally {
+          effect = outer;
+        }
+      };
+    }
+  }
+
+  const items: [any, (m: any) => number][] = [
+    [BypassSpeedChanceModifier, m => m.getStackCount() / 10],
+    [FlinchChanceModifier, m => (m.getStackCount() * m.chance) / 100],
+    [SurviveDamageModifier, m => m.getStackCount() / 10],
+  ];
+  for (const [item, chance] of items) {
+    wrap(item, "apply", (f, m, args) => {
+      const [procced, during] = rolled(() => f.apply(m, args));
+      if (during.length > 0) drew(args[0], "item", Math.min(1, chance(m)), procced, { item: m.type.id });
+      return procced;
+    });
+  }
+
+  wrap(MovePhase, "checkPara", (f, phase, args) => {
+    const [stopped, during] = rolled(() => f.apply(phase, args));
+    if (during.length > 0) drew(phase.pokemon, "paralysis", 1 / during[0].range, stopped);
+    return stopped;
+  });
+  wrap(ConfusedTag, "lapse", (f, tag, args) => {
+    const [kept, during] = rolled(() => f.apply(tag, args));
+    // The first roll is whether it hits itself, at 0; a self-hit then rolls its damage.
+    if (during.length > 0) drew(args[0], "confusion", 1 / during[0].range, during[0].value === 0);
+    return kept;
+  });
+}
+
 async function play() {
   const steps: unknown[] = [];
   report.steps = steps;
@@ -261,11 +400,12 @@ async function play() {
       }
       next++;
     }
+    draws = [];
     const ended = await turn(input);
     if (typeof ended === "object") {
       return { illegal: { index: input === null ? null : next - 1, turn: at, why: ended.illegal, legal: [] } };
     }
-    steps.push({ turn: at, input, checkpoint: checkpoint(), strayPrompts: strayPrompts() });
+    steps.push({ turn: at, input, checkpoint: checkpoint(), strayPrompts: strayPrompts(), draws });
     if (ended !== "on") return ended;
   }
 }
@@ -498,6 +638,7 @@ describe("coach harness", () => {
         await Promise.race([
           (async () => {
             await load();
+            readDraws();
             report.end = await play();
           })(),
           deadline,

@@ -40,10 +40,10 @@ export async function solve(input: SolveInput, { clone, progress, unchecked = fa
       progress,
     });
     if (searched.kind === "no_answer") return searched;
-    const { steps, receipt } = searched.replay;
+    const { steps, receipt, luck } = searched.replay;
     return {
       kind: "oracle_line",
-      oracleLine: { seed: input.save.seed, wave: input.save.waveIndex, gameVersion: input.cloneVersion, steps, receipt, luck: [] },
+      oracleLine: { seed: input.save.seed, wave: input.save.waveIndex, gameVersion: input.cloneVersion, steps, receipt, luck },
     };
   });
 }
