@@ -230,20 +230,25 @@ let after = () => {};
 // Every refresh the watch opens ends with `after`: the stream, which 99-start wires in.
 const run = (why, fn) => refresh(why, () => { fn(); after(); });
 
-const land = () => {
-  const rec = shown;
-  if (rec?.road !== "owed") return;
+const landOn = (rec, name, read) => {
   try {
     const s = battleScene();
     if (!s?.ui) return;
     screenNote(s, rec.card);
-    stage("road", () => readRoad(s, rec.card));
-    rec.road = "landed";
+    read(s);
     changed(rec);
-    stage("arm", () => armPreview(rec.card));
-    logged("road landed");
+    logged(`${name} landed`);
     draw(rec);
   } catch (e) { fail(e); }
+};
+const land = () => {
+  const rec = shown;
+  if (rec?.road !== "owed") return;
+  landOn(rec, "road", s => {
+    stage("road", () => readRoad(s, rec.card));
+    rec.road = "landed";
+    stage("arm", () => armPreview(rec.card));
+  });
 };
 // The road group lands in its own task, so a press between the card and the task leaves it to the next decision (#487).
 // A re-inject's `stop()` removes the panel, and a task queued before it then lands nothing.
@@ -254,32 +259,21 @@ const landLater = () => {
   }, 0);
 };
 
-// A line handed to a battle card already built lands on it, in its own refresh as a road group does (#670).
-// @only 99-start: watchOracleLine
-export const watchOracleLine = line => {
-  let answer = { ok: false, why: "no-battle" };
-  run("oracle-line", () => {
-    try {
-      const s = battleScene();
-      answer = holdOracleLine(s, line);
-      const rec = shown;
-      if (!answer.ok || rec?.card?.kind !== "battle") return;
-      screenNote(s, rec.card);
-      readOracleLine(s, rec.card);
-      changed(rec);
-      logged("oracle line landed");
-      draw(rec);
-    } catch (e) { fail(e); }
-  });
-  return answer;
-};
-
 // A look that throws is no decision, and the fallback's next tick reports it: with frames, nothing else would.
 let lookFailed = null;
 const scene = () => { try { return battleScene(); } catch { return null; } };
 const tryLook = s => { try { const fresh = look(s); lookFailed = null; return fresh; } catch (e) { lookFailed = e; return false; } };
 const trySentIn = s => { try { return sentIn(s); } catch (e) { lookFailed = e; return false; } };
 const gone = s => !s?.ui || (!open() && s.phaseManager?.getCurrentPhase?.()?.phaseName === "TitlePhase");
+
+// An oracle line handed with no battle card up is held all the same, and the next battle card built draws it (#670).
+// @only 99-start: watchOracleLine
+export const watchOracleLine = line => {
+  const answer = holdOracleLine(scene(), line);
+  const rec = shown;
+  if (answer.ok && rec?.card?.kind === "battle") run("oracle-line", () => landOn(rec, "oracle line", s => readOracleLine(s, rec.card)));
+  return answer;
+};
 
 // A frame since the last fallback tick: the watch is looking, so the fallback builds nothing.
 let framed = false;

@@ -1,21 +1,23 @@
-// The oracle line handed to the panel, held for the one fight it was solved for (CONTEXT.md, `Oracle line`). It reads
-// the battle the card is built on and writes nothing to the game.
+// The oracle line handed to the overlay, held for the one fight it was solved for (CONTEXT.md, `Oracle line`). It
+// reads the battle the card is built on and writes nothing to the game.
 import { iconOf, TYPES } from "./01-core.js";
+import { isReplacement } from "./02-decision.js";
 import { gameTables } from "./04-game-tables.js";
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 
-// `lead`: our mon in front when the line was handed on or before its first turn. A line's first move names no mover,
+// `lead`: our mon in front when the oracle line was handed on or before its first turn. Its first move names no mover,
 // and only then is the game still showing it.
-let held = null;
+let held = null, holds = 0;
 
 const sameFight = (s, line) => typeof s?.seed === "string" && s.seed === line.seed && s.currentBattle?.waveIndex === line.wave;
 const isObject = v => typeof v === "object" && v !== null;
 const mons = side => Array.isArray(side) && side.every(isObject);
-// The page is not trusted (extension-distribution.md §9.5), and a line the model cannot read would fail every card built
-// for its fight.
+// The page is not trusted (extension-distribution.md §9.5), and an oracle line `oracleLineModel` cannot read would fail
+// every card built for its fight.
 const shaped = line => typeof line?.seed === "string" && Number.isInteger(line.wave) && Array.isArray(line.steps) && line.steps.length > 0
-  && line.steps.every(st => Number.isInteger(st?.turn) && (st.input === null || (isObject(st.input) && (st.input.kind !== "switch" || isObject(st.input.to))))
+  && line.steps.every((st, i) => Number.isInteger(st?.turn) && (i === 0 || st.turn > line.steps[i - 1].turn)
+    && (st.input === null || (isObject(st.input) && (st.input.kind !== "switch" || isObject(st.input.to))))
     && (st.input?.replacement === undefined || isObject(st.input.replacement)) && mons(st.checkpoint?.ours) && mons(st.checkpoint?.foes));
 
 // @only 98-watch, tests: holdOracleLine
@@ -24,7 +26,7 @@ export const holdOracleLine = (s, line) => {
   if (!sameFight(s, line)) return { ok: false, why: "other-fight" };
   const lead = s.currentBattle.turn <= line.steps[0].turn
     ? tryDo(() => s.getPlayerParty().find(p => p?.isOnField?.()).species.speciesId) : null;
-  held = { line, lead };
+  held = { line, lead, id: ++holds };
   return { ok: true };
 };
 
@@ -36,13 +38,13 @@ const moveOf = (party, id) => {
   return { move: String(mv?.name ?? `#${id}`).replace(/ \(N\)$/, ""), type: TYPES[mv?.type] ?? null };
 };
 
-// Each step as the card draws it: `at` is `done`, `now` or `later` against the battle's own turn, and `after` the mons in
-// front once the step's turn has played, ours first.
 // @only 60-card, tests: oracleLineModel
 export const oracleLineModel = s => {
   const line = held?.line;
   if (!line || !sameFight(s, line)) return null;
-  const turn = s.currentBattle.turn;
+  // At a faint's replacement the battle's turn has already moved on (game-code.md §9, §21), and the oracle line picks
+  // that replacement inside the step whose turn it was.
+  const turn = s.currentBattle.turn - (isReplacement(tryDo(() => s.phaseManager.getCurrentPhase())) ? 1 : 0);
   const party = tryDo(() => s.getPlayerParty(), []), foes = tryDo(() => s.getEnemyParty(), []);
   const ours = id => party.find(p => p?.species?.speciesId === id) ?? null;
   const theirs = id => foes.find(p => p?.species?.speciesId === id) ?? null;
@@ -65,6 +67,7 @@ export const oracleLineModel = s => {
   });
   const last = line.steps[line.steps.length - 1];
   return {
+    id: held.id,
     turns: last.turn - line.steps[0].turn + 1,
     left: last.checkpoint.ours.filter(m => m.hp > 0).length,
     of: last.checkpoint.ours.length,
@@ -72,4 +75,4 @@ export const oracleLineModel = s => {
   };
 };
 
-export const oracleLineSummary = m => (m ? `~ line wins in ${m.turns} turn${m.turns === 1 ? "" : "s"} · ${m.left} of ${m.of} left` : null);
+export const oracleLineSummary = m => (m ? `~ oracle line wins in ${m.turns} turn${m.turns === 1 ? "" : "s"} · ${m.left} of ${m.of} left` : null);

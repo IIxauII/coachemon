@@ -1,8 +1,8 @@
 import { MoveId, SpeciesId, StatusEffect } from "../enums/generated.ts";
-import type { PageLine } from "../page/oracle-line.ts";
+import type { PageOracleLine } from "../page/oracle-line.ts";
 import type { Input, MonState, OracleLine, PartySlot } from "../solver/solver.ts";
 
-type PageStep = PageLine["steps"][number];
+type PageStep = PageOracleLine["steps"][number];
 
 const slot = (p: PartySlot) => ({ ...p, species: SpeciesId[p.species] });
 
@@ -13,7 +13,7 @@ function input({ replacement, ...i }: Input): NonNullable<PageStep["input"]> {
   return replacement === undefined ? ids : { ...ids, replacement: slot(replacement) };
 }
 
-export function pageLine(line: OracleLine): PageLine {
+export function pageOracleLine(line: OracleLine): PageOracleLine {
   return {
     ...line,
     steps: line.steps.map(st => ({

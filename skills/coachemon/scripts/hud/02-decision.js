@@ -33,6 +33,9 @@ const heldItems = mods => {
   return sig;
 };
 
+// A faint's replacement. `doReturn` is a mid-turn switch-in pick: U-turn's, Baton Pass's or Wimp Out's (game-code.md §9).
+export const isReplacement = ph => ph?.phaseName === "SwitchPhase" && !!ph.isModal && !ph.doReturn;
+
 export const detect = s => {
   const ph = s?.ui ? s.phaseManager?.getCurrentPhase?.() : null;
   if (!ph) return none();
@@ -47,8 +50,7 @@ export const detect = s => {
       return set("free-switch", b, ph.fieldIndex, null, null, mode === UiMode.CONFIRM && enemyFree(b), true);
     case "SwitchPhase":
       if (!ph.isModal) return set("free-switch", b, ph.fieldIndex, null, null, mode === UiMode.PARTY && enemyFree(b), true);
-      // `doReturn` is a mid-turn switch-in pick: U-turn's, Baton Pass's or Wimp Out's (game-code.md §9).
-      if (ph.doReturn) return none();
+      if (!isReplacement(ph)) return none();
       return set("replacement", ph, null, null, null, mode === UiMode.PARTY && enemyFree(b), true);
     case "SelectModifierPhase": {
       const h = ui.getHandler();

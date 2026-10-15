@@ -1067,7 +1067,7 @@ test("an extras read the page refused is reported, never an empty set of extras 
   assert.equal(r.extras, undefined);
 });
 
-test("the handoff gives the panel the oracle line and asks nothing else of the game: no read, no settle, no grant (#670)", async () => {
+test("the handoff gives the overlay the oracle line and asks nothing else of the game: no read, no settle, no grant (#670)", async () => {
   const handed: unknown[] = [];
   const fake = fakeGame({ lockHolder: 4242, oracleLine: line => { handed.push(line); return { ok: true }; } });
   const r = await outcome(new Driver(fake.game, UNWRITTEN_HOME, fake.clock).handOracleLine(GORDIE_LINE));
@@ -1075,11 +1075,11 @@ test("the handoff gives the panel the oracle line and asks nothing else of the g
   assert.deepEqual(handed, [GORDIE_LINE]);
 });
 
-test("a line the panel did not take comes back unheld, with the panel's reason (#670)", async () => {
+test("an oracle line the overlay did not take comes back unheld, with the overlay's reason (#670)", async () => {
   for (const why of ["other-fight", "no-hud"]) {
     const fake = fakeGame({ oracleLine: () => ({ ok: false, why }) });
     const r = await outcome(new Driver(fake.game, UNWRITTEN_HOME, fake.clock).handOracleLine(GORDIE_LINE));
-    assert.deepEqual(r, { status: "ok", held: false, line_error: why });
+    assert.deepEqual(r, { status: "ok", held: false, oracle_line_error: why });
   }
 });
 

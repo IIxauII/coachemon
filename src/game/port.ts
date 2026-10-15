@@ -149,7 +149,7 @@ export interface GamePort extends Tab {
   /** `wave` and `battleSeed` come from the same read as the saves. */
   session(): Promise<SessionRead | Failed>;
   extras(): Promise<ExtrasRead | Failed>;
-  /** The panel keeps only a line for the fight it is on, and answers `why: "other-fight"` to any other (#670). */
+  /** The overlay keeps an oracle line only for the fight it is on, and answers `why: "other-fight"` to any other (#670). */
   oracleLine(line: OracleLine): Promise<{ ok: true } | Failed>;
   snapshot(d: SnapshotDetail): Promise<{ ok: true; snapshot: Record<string, unknown> } | Failed>;
   /** A base64 PNG. */

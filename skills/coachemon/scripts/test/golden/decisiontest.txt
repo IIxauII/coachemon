@@ -84,8 +84,8 @@ drained 36 then #36 command/battle w8 ready 0 input 0 drawn 0 end 32
 shop: watch frames 200000 refreshes 0
 turn: watch frames 200000 refreshes 0
 W12, a free switch                   #39 free-switch/battle w12 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
-a line for W11: other-fight
-the line for W12 | ~ line wins in 2 turns · 1 of 1 left | now later
-W12, turn 2                          #40 free-switch/battle w12 ready 0 input 0 drawn 0 end null | oracle-line oracle-line:battle watch:battle road:battle ‖ built, road landed
-turn 2 | ~ line wins in 2 turns · 1 of 1 left | done now
+an oracle line for W11: other-fight
+the oracle line for W12 | ~ oracle line wins in 2 turns · 1 of 1 left | now later
+W12, turn 2                          #40 free-switch/battle w12 ready 0 input 0 drawn 0 end null | oracle-line:battle watch:battle road:battle ‖ oracle line landed, built, road landed
+turn 2 | ~ oracle line wins in 2 turns · 1 of 1 left | done now
 after stop: watch frames 0, refreshes 0

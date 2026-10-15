@@ -1,11 +1,12 @@
 == the handoff
 another run's seed                      other-fight
 the wave after                          other-fight
-a line with no steps                    malformed
+no steps                                malformed
+its turns out of order                  malformed
 Gordie's W180                           held
 another run's seed, with one held       other-fight
 == W180 T15
-Plan | ~ line wins in 9 turns · 4 of 6 left
+Plan | ~ oracle line wins in 9 turns · 4 of 6 left
     ✓ T11 ⇄ Leavanny → Leavanny 280/497 · Barbaracle 480/480
     ✓ T12 Leavanny Grass Leaf Storm → Leavanny 249/497 · Tyranitar 569/569
     ✓ T13 Leavanny Bug Bug Bite · send Golbat → Golbat 493/493 · Tyranitar 512/569
@@ -15,8 +16,8 @@ Plan | ~ line wins in 9 turns · 4 of 6 left
     · T17 Gyarados Water Hydro Pump
     · T18 Gyarados Water Hydro Pump
     · T19 Gyarados Water Hydro Pump
-== W180 T11, the line's first turn
-Plan | ~ line wins in 9 turns · 4 of 6 left
+== W180 T11, the oracle line's first turn
+Plan | ~ oracle line wins in 9 turns · 4 of 6 left
     ▸ T11 ⇄ Leavanny → Leavanny 280/497 · Barbaracle 480/480
     · T12 Leavanny Grass Leaf Storm
     · T13 Leavanny Bug Bug Bite · send Golbat
@@ -27,7 +28,7 @@ Plan | ~ line wins in 9 turns · 4 of 6 left
     · T18 Gyarados Water Hydro Pump
     · T19 Gyarados Water Hydro Pump
 == W180 T19, its last
-Plan | ~ line wins in 9 turns · 4 of 6 left
+Plan | ~ oracle line wins in 9 turns · 4 of 6 left
     ✓ T11 ⇄ Leavanny → Leavanny 280/497 · Barbaracle 480/480
     ✓ T12 Leavanny Grass Leaf Storm → Leavanny 249/497 · Tyranitar 569/569
     ✓ T13 Leavanny Bug Bug Bite · send Golbat → Golbat 493/493 · Tyranitar 512/569
@@ -37,6 +38,39 @@ Plan | ~ line wins in 9 turns · 4 of 6 left
     ✓ T17 Gyarados Water Hydro Pump → Gyarados 316/570 · Carracosta 121/467
     ✓ T18 Gyarados Water Hydro Pump → Gyarados 423/570 · Coalossal 238/711
     ▸ T19 Gyarados Water Hydro Pump → Gyarados 423/570 · Coalossal 0/711
+== W180 T13's faint, the turn already 14
+Plan | ~ oracle line wins in 9 turns · 4 of 6 left
+    ✓ T11 ⇄ Leavanny → Leavanny 280/497 · Barbaracle 480/480
+    ✓ T12 Leavanny Grass Leaf Storm → Leavanny 249/497 · Tyranitar 569/569
+    ▸ T13 Leavanny Bug Bug Bite · send Golbat → Golbat 493/493 · Tyranitar 512/569
+    · T14 Golbat Poison Toxic
+    · T15 Golbat Poison Venoshock · send Gyarados
+    · T16 Gyarados Tera Water + Water Hydro Pump
+    · T17 Gyarados Water Hydro Pump
+    · T18 Gyarados Water Hydro Pump
+    · T19 Gyarados Water Hydro Pump
+== W180 T14, a U-turn's pick
+Plan | ~ oracle line wins in 9 turns · 4 of 6 left
+    ✓ T11 ⇄ Leavanny → Leavanny 280/497 · Barbaracle 480/480
+    ✓ T12 Leavanny Grass Leaf Storm → Leavanny 249/497 · Tyranitar 569/569
+    ✓ T13 Leavanny Bug Bug Bite · send Golbat → Golbat 493/493 · Tyranitar 512/569
+    ▸ T14 Golbat Poison Toxic → Golbat 463/493 · Tyranitar 477/569
+    · T15 Golbat Poison Venoshock · send Gyarados
+    · T16 Gyarados Tera Water + Water Hydro Pump
+    · T17 Gyarados Water Hydro Pump
+    · T18 Gyarados Water Hydro Pump
+    · T19 Gyarados Water Hydro Pump
+== W180 T15, no exact enemy move
+Plan | ~ oracle line wins in 9 turns · 4 of 6 left
+    ✓ T11 ⇄ Leavanny → Leavanny 280/497 · Barbaracle 480/480
+    ✓ T12 Leavanny Grass Leaf Storm → Leavanny 249/497 · Tyranitar 569/569
+    ✓ T13 Leavanny Bug Bug Bite · send Golbat → Golbat 493/493 · Tyranitar 512/569
+    ✓ T14 Golbat Poison Toxic → Golbat 463/493 · Tyranitar 477/569
+    ▸ T15 Golbat Poison Venoshock · send Gyarados → Gyarados 570/570 · Tyranitar 339/569
+    · T16 Gyarados Tera Water + Water Hydro Pump
+    · T17 Gyarados Water Hydro Pump
+    · T18 Gyarados Water Hydro Pump
+    · T19 Gyarados Water Hydro Pump
 == W181
 Plan | likely lost · nothing outlasts Tyranitar
     Fight plan likely lost
@@ -44,7 +78,7 @@ Plan | likely lost · nothing outlasts Tyranitar
     ⚠ likely lost: nothing outlasts Tyranitar
 from T12, handed on T12                 held
 == handed on T12, at T12
-Plan | ~ line wins in 8 turns · 4 of 6 left
+Plan | ~ oracle line wins in 8 turns · 4 of 6 left
     ▸ T12 Leavanny Grass Leaf Storm → Leavanny 249/497 · Tyranitar 569/569
     · T13 Leavanny Bug Bug Bite · send Golbat
     · T14 Golbat Poison Toxic
@@ -55,7 +89,7 @@ Plan | ~ line wins in 8 turns · 4 of 6 left
     · T19 Gyarados Water Hydro Pump
 from T12, handed on T13                 held
 == handed on T13, at T13
-Plan | ~ line wins in 8 turns · 4 of 6 left
+Plan | ~ oracle line wins in 8 turns · 4 of 6 left
     ✓ T12 Grass Leaf Storm → Leavanny 249/497 · Tyranitar 569/569
     ▸ T13 Leavanny Bug Bug Bite · send Golbat → Golbat 493/493 · Tyranitar 512/569
     · T14 Golbat Poison Toxic
@@ -64,3 +98,4 @@ Plan | ~ line wins in 8 turns · 4 of 6 left
     · T17 Gyarados Water Hydro Pump
     · T18 Gyarados Water Hydro Pump
     · T19 Gyarados Water Hydro Pump
+writes to the game: none

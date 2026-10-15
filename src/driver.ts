@@ -220,11 +220,11 @@ export class Driver {
     });
   }
 
-  /** Nothing is read or settled first: the handoff changes the panel alone, never the game (#670). */
+  /** Nothing is read or settled first: the handoff changes the overlay alone, never the game (#670). */
   async handOracleLine(line: OracleLine): Promise<Record<string, unknown>> {
     await this.#reachable("hand_oracle_line");
     const r = await this.#game.oracleLine(line);
-    return r.ok ? { status: "ok", held: true } : { status: "ok", held: false, line_error: r.why };
+    return r.ok ? { status: "ok", held: true } : { status: "ok", held: false, oracle_line_error: r.why };
   }
 
   readMenu(ctx: CallContext): Promise<Record<string, unknown>> {

@@ -69,28 +69,14 @@ road | Road | W90 wild — Toxicroak L71 · gym leader in 6 (W95) watch — noth
     ✓ full heal entering W100 — HP, status, PP, revives, Tera
     · luck 3 (C) — 6% tier upgrade per reward
 == trainer · an oracle line in place of the fight plan
-act | Now | Blastoise Wave Crash → Garchomp · 2 hits
-    ⚔ Blastoise Water Wave Crash → Garchomp 2 hits
+act | Now | Charizard Flamethrower → Lycanroc · 2 hits
+    ⚔ Charizard Fire Flamethrower → Lycanroc 2 hits
 foes | Foes | —
-    foes weak to: Ice ×2 Fire ×1
-    Garchomp Garchomp L96 Dragon Ground 👑 100% ▲ Ice ×4 ↯ Ground Earthquake ~62% HP · moves first
-    Spiritomb Spiritomb L95 Ghost Dark 100% ✦ Pressure ▲ — ▼ Water ×½
-    Roserade Roserade L95 Grass Poison 100% ▲ Fire ×2 ➜ Lapras Ice Ice Beam ~71% · 2 hits later
-plan | Plan | ~ line wins in 3 turns · 3 of 4 left
+    Lycanroc Lycanroc L70 Rock 100% ▲ Water ×2
+plan | Plan | ~ oracle line wins in 3 turns · 3 of 4 left
     ✓ T4 ⇄ Lapras → Lapras 301/380 · Roserade 250/250
     ▸ T5 Lapras Tera Ice + Ice Ice Beam · send Blastoise → Blastoise 362/362 · Garchomp 120/420
     · T6 no input
-road | Road | W90 wild — Toxicroak L71 · gym leader in 6 (W95) watch — nothing hits Garchomp super-effectively
-    Next W90 wild
-    · Toxicroak L71 Poison Fighting Dry Skin
-    Sludge Bomb
-    if nothing changes: a catch, evolution, shop pick or biome change re-rolls this
-    Next big fight gym leader in 6 W95 👑 2 bars
-    · Garchomp L96
-    · it pays Rogue
-    ✗ nothing hits Garchomp super-effectively
-    ✓ full heal entering W100 — HP, status, PP, revives, Tera
-    · luck 3 (C) — 6% tier upgrade per reward
 == double · a return from the other slot
 act | Now | Blastoise Wave Crash → Ludicolo · 2 hits ; Venusaur Power Whip → Arcanine · 2 hits
     ⇄ Arcanine → Gyarados returns from the other slot — moves aimed at it

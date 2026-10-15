@@ -12,7 +12,7 @@ import { GORDIE_LINE } from "../game/fixtures/oracle-line.ts";
 import { OTHER_RUN_W180, RUN_SEED, RUN_W180 } from "../game/fixtures/saves.ts";
 import { isFault } from "../game/link.ts";
 import { LinkGame } from "../game/link-game.ts";
-import { pageLine } from "../game/oracle-line.ts";
+import { pageOracleLine } from "../game/oracle-line.ts";
 import { disc } from "../page/disc.ts";
 import { COMMAND_NAMES } from "../protocol/commands.ts";
 import { DEV_PORT, PROTOCOL, STORE_PORT } from "../protocol/version.ts";
@@ -79,10 +79,10 @@ test("an extension older than the extras read refuses the Driver's read missing_
   assert.deepEqual(ext.seen.filter(f => f.t === "cmd"), []);
 });
 
-test("the Driver's handoff crosses the hub as the one command it sends, the line's keys as the game's ids (#670)", async () => {
+test("the Driver's handoff crosses the hub as the one command it sends, the oracle line's keys as the game's ids (#670)", async () => {
   const { ext, link } = await linked();
   const held = new Driver(new LinkGame(link, link), UNWRITTEN_HOME).handOracleLine(GORDIE_LINE);
-  assert.deepEqual(await answer(ext, { ok: true }), { name: "oracle.line", args: { line: pageLine(GORDIE_LINE) } });
+  assert.deepEqual(await answer(ext, { ok: true }), { name: "oracle.line", args: { line: pageOracleLine(GORDIE_LINE) } });
   assert.deepEqual(await held, { status: "ok", held: true });
   assert.deepEqual(ext.seen.filter(f => f.t === "cmd"), [], "no probe and no settle, before or after");
 });
@@ -99,7 +99,7 @@ test("the handoff needs no grant: it crosses while another session drives (#670,
   const other = await fakeClient(hub.port);
   other.send({ t: "claim" });
   await other.take(f => f.t === "claimed");
-  const held = link.oracleLine({ line: pageLine(GORDIE_LINE) });
+  const held = link.oracleLine({ line: pageOracleLine(GORDIE_LINE) });
   assert.equal((await answer(ext, { ok: true })).name, "oracle.line");
   assert.deepEqual(await held, { ok: true });
 });
