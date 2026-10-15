@@ -20,7 +20,7 @@ The user holds the controller. You read the game and advise. **Never press, sele
 - **Read fresh before every recommendation.** The user keeps playing between messages; a snapshot from two turns ago is stale.
 - `error` in the JSON → report it; don't guess the state.
 
-`battle` gives wave, double, trainer, money, `uiMode`, party and enemy (level, HP, types, ability, passive, stats, stat stages, status, on-field, boss with `bossBars` left of total, `held` items, moves with type/power/category/PP remaining) and the party's other `items`. `enemy` lists the trainer's **whole** party, not just the lead — plan for all of them.
+`battle` gives the run `seed`, wave, double, trainer, money, `uiMode`, party and enemy (level, HP, types, ability, passive, stats, stat stages, status, on-field, boss with `bossBars` left of total, `held` items, moves with type/power/category/PP remaining) and the party's other `items`. `enemy` lists the trainer's **whole** party, not just the lead — plan for all of them. `card` is the HUD card's plain text, every group's rows in order, and `planFile` names the boss-fight plan (below) on a boss fight, `null` on any other.
 
 `starters` gives unlocked species by national dex id with IV total, passive/hidden-ability unlock, egg moves, cost reduction and candy. `cost` is only filled while the user is on the starter grid; otherwise it is `null`. `hud` is the 🌱 starter card's proposals in one line when the HUD is running on the grid.
 
@@ -167,6 +167,10 @@ The panel already shows the decision; the user glances at it mid-battle. Speak o
 
 - **State the cost before turning it on**, plainly: about 0.6 GB of disk, a one-time setup, and minutes of CPU per fight. Turn it on only once the player says yes to that, and never unasked: off is the coach teaching.
 - It is standing: it stays on across sessions until the player turns it off, so never ask again before a fight. Turn it off whenever they ask.
+
+## Boss-fight plan
+
+Boss fight — the battle read's `planFile` is set — means keeping its **boss-fight plan**, the fight's record that outlives the session, whether or not the user asked for a plan. On every read of one, follow `references/boss-plan.md` from its first step.
 
 ## Rules learned the hard way
 

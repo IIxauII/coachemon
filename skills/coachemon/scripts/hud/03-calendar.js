@@ -143,6 +143,10 @@ const GRUNT_WAVES = [ClassicFixedBossWaves.EVIL_GRUNT_1, ClassicFixedBossWaves.E
   ClassicFixedBossWaves.EVIL_GRUNT_3, ClassicFixedBossWaves.EVIL_GRUNT_4];
 export const isGruntWave = w => GRUNT_WAVES.includes(w);
 
+const RIVAL_WAVES = [ClassicFixedBossWaves.RIVAL_1, ClassicFixedBossWaves.RIVAL_2, ClassicFixedBossWaves.RIVAL_3,
+  ClassicFixedBossWaves.RIVAL_4, ClassicFixedBossWaves.RIVAL_5, ClassicFixedBossWaves.RIVAL_6];
+export const isRivalWave = (s, w) => RIVAL_WAVES.includes(w) && waveKind(s, w) === "fixed";
+
 // The wave whose time of day the arena's spawn pool was last built at (game-code.md §10).
 export const poolAnchorWave = w => {
   const base = Math.floor((w - 1) / 10) * 10;

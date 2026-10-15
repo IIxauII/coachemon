@@ -86,9 +86,11 @@ test("hud-off is the prelude alone, and the probe carries only its imports", () 
   assert.doesNotMatch(off, /01-core/);
   const probe = bundle("starters");
   assert.match(probe, /const MODE = "starters";/);
-  assert.deepEqual([...probe.matchAll(/^\/\/ ---- ([\w-]+\.js|enums)\b/gm)].map(m => m[1]), ["enums", "01-core.js", "02-screens.js", "probe.js"]);
+  assert.deepEqual([...probe.matchAll(/^\/\/ ---- ([\w-]+\.js|enums)\b/gm)].map(m => m[1]),
+    ["enums", "01-core.js", "02-screens.js", "03-calendar.js", "56-boss-plan.js", "probe.js"]);
   assert.match(probe, /^const \{ TYPES \} = __hud\["01-core"\];$/m);
   assert.match(probe, /^const \{ learnState, rewardsScreen \} = __hud\["02-screens"\];$/m);
+  assert.match(probe, /^const \{ planFile \} = __hud\["56-boss-plan"\];$/m);
 });
 
 test("the probe names Stellar, which the HUD's type chart leaves out", () => {

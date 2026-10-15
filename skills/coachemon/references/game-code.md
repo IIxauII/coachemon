@@ -1205,6 +1205,12 @@ re-sows in place. There is no draw counter.
   its own seed. It is reached as `BattleScene.randBattleSeedInt` (`src/battle-scene.ts:1126`) and
   `Pokemon.randBattleSeedInt` (`src/field/pokemon.ts:5638`, which falls back to `randSeedInt` with no battle).
 
+**The run seed itself.** A new run's is `randomString(24)` (`src/battle-scene.ts:1180`), drawn from `A–Z a–z 0–9`
+(`src/utils/common.ts:20`); a loaded session keeps its saved one (`src/system/game-data.ts:1015`). A Daily's is not:
+it is the text `GET /daily/seed` returns, unchecked (`src/api/daily-api.ts:11`), or offline the date through `btoa`,
+`==` included (`src/phases/title-phase.ts:345`), passed through `trySetCustomDailyConfig` (`src/game-mode.ts:448`),
+whose custom JSON form may set the seed to any string.
+
 Forks by offset, run seed unless marked: `isWaveTrainer` look-back `w`; ME roll `w * 3000`; which ME `w * 16`; ME
 `onInit` `w`; fixed-battle trainer `(seedOffsetWaveIndex || w) << 8`; `new Battle` `w << 3` (**wave** seed); boss bars
 `w << 2` (`getEncounterBossSegments`, `src/battle-scene.ts:1964`); a trainer's party members (below); Pokérus
@@ -1328,6 +1334,16 @@ seeds each member at `w + (derivedType << 10) + (((sameSeed ? 0 : i) + 1) << 8)`
 for `hasStaticParty` (rivals, admins, evil leaders, gym leaders, Elite Four, champions; `trainer-config.ts:459`), whose
 party is therefore the same at any wave of the run. A `partyMemberFuncs` slot (negative keys count back from the end,
 `index − template.size`) wins over `genNewPartyMemberSpecies` (§10).
+
+**Which trainers are bosses.** `TrainerConfig.isBoss` (`src/data/trainers/trainer-config.ts:149`) is set by `setBoss`
+(`:453`), which the evil-team admin (`:610`), Trainer's Test stat trainer (`:629`), evil-team leader (`:662`), gym
+leader (`:712`), Elite Four (`:768`) and champion (`:800`) inits call, and rivals 4–6 directly (`:5651`, `:5670`,
+`:5706`); rivals 1–3 never. `hasVoucher` (`:167`) is set true by exactly four inits — evil-team leader (`:664`), gym
+leader (`:714`), Elite Four (`:770`) and champion (`:802`) — and false by the admin's (`:607`); no rival sets one.
+`clone()` (`:911`) carries `isBoss` (`:922`) but never `hasVoucher`, so the gym leader that Mysterious Challengers'
+brutal option clones from the biome's boss pool (`src/data/mystery-encounters/encounters/mysterious-challengers-encounter.ts:89`)
+has none, and its battle stays `MYSTERY_ENCOUNTER` (`src/battle-scene.ts:1461`). A double trainer's `getName()`
+carries its double title even without `includeTitle`: `Gym Leader Duo Tate & Liza` (`src/field/trainer.ts:196`).
 
 **Full heals.** `VictoryPhase.start` (`src/phases/victory-phase.ts:23`) — phase queue — pushes `SelectBiomePhase` when
 `hasRandomBiomes || isNewBiome()` (line 125); `isNewBiome` (`src/battle-scene.ts:1271`, pure) is every X0, plus X5 with

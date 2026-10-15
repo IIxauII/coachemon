@@ -3,6 +3,7 @@
 // the DOM. hud-bundle.mjs sets `MODE` to read.sh's mode.
 import { TYPES } from "./hud/01-core.js";
 import { learnState, rewardsScreen } from "./hud/02-screens.js";
+import { planFile } from "./hud/56-boss-plan.js";
 
 (() => {
   const MODE = "__MODE__";
@@ -101,17 +102,21 @@ import { learnState, rewardsScreen } from "./hud/02-screens.js";
         rewards = { free: rh.options.map(item), shop: (rh.shopOptionsRows || []).flat().map(item), rerollCost: rh.rerollCost ?? null };
       }
 
-      let hud = null;
+      let hud = null, card = null;
       try { hud = window.__coachHud?.summary?.() ?? null; } catch {}
+      try { card = window.__coachHud?.card?.()?.text ?? null; } catch {}
 
       out = {
+        seed: s.seed ?? null,
         wave: b?.waveIndex ?? null,
         turn: b?.turn ?? null,
         double: b?.double ?? null,
         trainer: b?.trainer?.getName?.() ?? null,
+        planFile: planFile(s),
         money: s.money,
         hudActive: !!window.__coachHud,
         hud,
+        card,
         uiMode: document.getElementById("touchControls")?.dataset.uiMode ?? null,
         learn,
         rewards,
