@@ -48,11 +48,13 @@ export async function solve(input: SolveInput, { clone, progress, unchecked = fa
   });
 }
 
+export type CheckResult = { kind: "checked"; checks: Checks } | NoAnswer;
+
 export async function checkForks(
   given: Pick<SolveInput, "save" | "extras" | "cloneVersion">,
   inputs: readonly Input[],
   clone: Clone,
-): Promise<{ kind: "checked"; checks: Checks } | NoAnswer> {
+): Promise<CheckResult> {
   // The checks are what the harness re-check runs (#665), so they can't wait on one having passed.
   const refused = refuse(given, passed(given.cloneVersion));
   if (refused) return refused;

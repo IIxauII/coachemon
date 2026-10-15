@@ -1,9 +1,8 @@
 /**
  * Drift check for everything this repo reads out of PokéRogue's source, the escape ladder and the coach HUD, under one
  * pin and one stamp (0001-escape-ladder-hand-curated-checked-at-pin-bump.md). Run it at a pin bump, since at the
- * pinned ref no hash can move, and `--stamp` only after re-reading every entry it named: stamping is the sign-off. The
- * stamp is solving's sign-off too: it runs the harness re-check in the source's clone and refuses while it fails
- * (pin-bump.md).
+ * pinned ref no hash can move, and `--stamp` only after re-reading every entry it named: stamping is the sign-off,
+ * solving's included (pin-bump.md).
  */
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";

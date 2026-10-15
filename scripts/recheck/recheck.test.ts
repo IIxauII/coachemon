@@ -2,13 +2,10 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { noAnswer } from "../../src/solver/no-answer.ts";
 import type { Input, ReplayResult } from "../../src/solver/oracle-line.ts";
-import type { Script, SolveInput } from "../../src/solver/solver.ts";
-import type { Checks } from "../../src/solver/worker.ts";
-import { type CheckResult, recheck } from "./recheck.ts";
+import type { CheckResult, Checks, Script } from "../../src/solver/solver.ts";
+import { type Given, recheck } from "./recheck.ts";
 
 const VERSION = "1.12.0.11";
-
-type Given = Pick<SolveInput, "save" | "live" | "liveExport" | "cloneVersion">;
 
 const replayed = (turns: number): ReplayResult => ({
   kind: "replayed",
@@ -33,7 +30,6 @@ const missed: Checks["fork"][number] = {
   got: { input: null, turn: 4, checkpoint: { ours: [], foes: [] }, end: "lost" },
 };
 
-/** Fakes for the clone: each answers by the fight's wave, and every call is logged in order. */
 const fakes = ({
   replays = {},
   checks = {},
@@ -84,10 +80,11 @@ test("a known fight that doesn't replay fails the re-check by name, and no check
   assert.equal(calls.filter(c => c.kind === "check").length, 0);
 });
 
-test("a fork or chained-restore miss fails the re-check by name, as does a check that gets no answer (#665)", async () => {
+test("a fork or chained-restore miss fails the re-check naming the fight and the check, as does no answer (#665)", async () => {
   const { deps } = fakes({
     checks: {
       180: { kind: "checked", checks: { ...passing(19), fork: [missed] } },
+      188: { kind: "checked", checks: { ...passing(10), fork: [missed], chain: [missed] } },
       190: noAnswer({ code: "harness_failed", why: "the worker took too long to start" }),
     },
   });
@@ -95,9 +92,22 @@ test("a fork or chained-restore miss fails the re-check by name, as does a check
   const run = await recheck(VERSION, deps);
 
   assert.deepEqual(run.failed, [
-    "Gordie W180's fork or chained-restore check failed",
-    "Kieran W190's fork or chained-restore check failed",
+    "Gordie W180's fork check failed",
+    "Drayton W188's fork check failed",
+    "Drayton W188's chained-restore check failed",
+    "Kieran W190's checks got no answer",
   ]);
   assert.match(run.text, /Gordie W180\n[^]*fork check: 17 of 18 restores[^\n]*\n\s+restored at T3, T4 played otherwise/);
   assert.match(run.text, /Kieran W190: no answer: .*the worker took too long to start/);
+});
+
+test("checks whose straight run doesn't win as live did fail the re-check, though every restore matched it (#665)", async () => {
+  const lost = passing(19);
+  const { deps } = fakes({
+    checks: { 180: { kind: "checked", checks: { ...lost, straight: [...lost.straight.slice(0, -1), { turn: 19, end: "lost" }] } } },
+  });
+
+  const run = await recheck(VERSION, deps);
+
+  assert.deepEqual(run.failed, ['Gordie W180\'s straight run ended "lost", not as live did']);
 });

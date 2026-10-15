@@ -52,7 +52,7 @@ export const pinnedClone = (): string => {
   process.exit(2);
 };
 
-/** Runs the oracle's harness in the clone `find` names at each run, set up with `pnpm`. */
+/** `find` is asked again at each run. */
 export const harnessIn =
   (find: () => FoundClone, pnpm = reviewed.pinned.pnpm): Clone =>
   async ({ name, source, input, env }) => {
@@ -61,7 +61,7 @@ export const harnessIn =
     return testInClone({ clone: found.clone, name, source, input, env, echo: false, vitest: vitestOn(pnpm) });
   };
 
-export const hudBundle =(): string => {
+export const hudBundle = (): string => {
   // Never `99-start.js`: its refresh loop would tick game code against the harness's own game.
   const files = readdirSync(HUD)
     .filter(f => f.endsWith(".js") && f !== "99-start.js")

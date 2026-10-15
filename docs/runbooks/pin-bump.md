@@ -44,7 +44,8 @@ it runs the **harness re-check** in that clone:
    down to the win.
 2. Then it runs the fork check and the chained-restore check on each line (#662).
 
-Any failure stops the stamp, which names the fight and the check that failed. When all of them pass, the stamp writes
+Each check's straight run must also end as live did. Any failure stops the stamp, which names the fight and the check
+that failed. When all of them pass, the stamp writes
 the pin, the hashes and `recheck: { "gameVersion": "<new>" }`. The solver's refusal gate reads that record, and solves
 on a version without it get "no answer". Players have no override.
 
@@ -53,10 +54,12 @@ the new pin to players.
 
 ## When the re-check fails
 
-- **"the live game is 1.12.0.11, but solving runs on <new> only"**: the known fights are saves of the version they were
-  played on, and a replay refuses a save of another version. Record known fights on the new version before stamping.
-- **A fact live recorded that the replay shows otherwise** (`known_turn_missed`): the game's rules moved under the line,
-  or the harness drifted. Either way, no line found on this version can be trusted yet.
+- **"the live game is 1.12.0.11, but solving runs on <new> only"**: the known fights are 1.12.0.11 saves, and a replay
+  refuses a save of another version. So for now the re-check passes only on the version its fights were played on. How
+  a known fight reaches a new version is open (#703).
+- **A fact live recorded that the replay shows otherwise** (`known_turn_missed`): the harness drifted since the last
+  stamp, through this repo's own harness or the clone's test framework. No line the oracle finds can be trusted until
+  it is fixed.
 - **A restore that played a turn otherwise**: the fork point's restore lost state the straight run kept. #662 found one
   this way (Intimidate firing again on every reload).
 - **The clone isn't set up**: the message names the command that sets it up.
