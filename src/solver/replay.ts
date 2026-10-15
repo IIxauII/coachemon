@@ -47,10 +47,7 @@ type Hygiene = NonNullable<z.infer<typeof report>["hygiene"]>;
 const failed = (why: string) => noAnswer({ code: "harness_failed", why });
 const broke = (rule: HygieneRule, detail: string) => noAnswer({ code: "load_hygiene", rule, detail });
 
-/**
- * Plays the inputs forward from the wave-start save on the battle's seed, a step per turn, until the fight or they end.
- * `known` is what live showed where these inputs were played there.
- */
+/** Plays the inputs forward from the wave-start save on the battle's seed, a step per turn, until the fight or they end. */
 export async function replay(
   given: Pick<SolveInput, "save" | "extras" | "live" | "liveExport" | "cloneVersion">,
   { inputs, known }: Pick<Script, "inputs" | "known">,
@@ -115,7 +112,7 @@ export async function replay(
   return {
     kind: "replayed",
     replay: {
-      claim: "replay",
+      confidence: "replay",
       ...played,
       receipt: [
         { step: "versions", checked: `the save, the clone and the pin are all game version ${version}` },
@@ -136,14 +133,18 @@ export async function replay(
             "the loaded scene's export at the first decision is the live tab's export at the decision, all but its " +
             "play time, timestamp and the abilities applied on entry",
         },
-        {
-          step: "known_turn",
-          checked: known
-            ? `every fact live recorded over ${known.after.length} turn${known.after.length === 1 ? "" : "s"} ` +
-              `reproduced, and the replay ${known.outcome === "open" ? "left the fight on" : known.outcome}, as live did`
-            : "no turn of this fight is known yet, so the oracle line's turn 1 is the test, checked live at the next " +
-              "decision",
-        },
+        known
+          ? {
+              step: "known_turn",
+              checked:
+                `every fact live recorded over ${known.after.length} turn${known.after.length === 1 ? "" : "s"} ` +
+                `reproduced, and the replay ${known.outcome === "open" ? "left the fight on" : known.outcome}, as live did`,
+            }
+          : {
+              step: "known_turn",
+              checked: "no turn of this fight is known yet, so its first turn is the test, checked live at the next decision",
+              pending: true,
+            },
       ],
     },
   };
@@ -168,31 +169,37 @@ function tally(items: readonly SavedItem[]): Record<string, number> {
   return out;
 }
 
-// What two exports of one scene differ in anyway: the clock, and the abilities a reload applies on entry again (#636).
-const UNCOMPARED = new Set(["playTime", "timestamp", "abilitiesApplied"]);
+// (#636)
+const UNCOMPARED_AT_TOP = new Set(["playTime", "timestamp"]);
+const UNCOMPARED = new Set(["abilitiesApplied"]);
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
-const show = (v: unknown) => JSON.stringify(v) ?? "nothing";
+const json = (v: unknown) => JSON.stringify(v) ?? "nothing";
+const keysOf = (a: object, b: object) => [...new Set([...Object.keys(a), ...Object.keys(b)])];
 
 const SIDES = { party: "our", enemyParty: "the foe's" } as const;
 
 function sceneDiffers(loaded: Record<string, unknown>, live: SessionSave): string[] {
-  return paths(loaded, live).map(([path, there, here]) => `${named(path, live)}: loaded ${show(there)}, live ${show(here)}`);
+  return paths(loaded, live).map(
+    ([path, there, here]) => `${describePath(path, live)}: loaded ${json(there)}, live ${json(here)}`,
+  );
 }
 
 /** `party[2].hp` as `our Reshiram (slot 2) hp`, by the species live has in that slot. */
-function named(path: string, live: SessionSave): string {
-  const [, side, slot, rest] = /^(party|enemyParty)\[(\d+)\]\.(.*)$/.exec(path) ?? [];
-  if (side === undefined) return path;
-  const mon = live[side as keyof typeof SIDES][Number(slot)] as { species?: number } | undefined;
+function describePath(path: string, live: SessionSave): string {
+  const match = /^(party|enemyParty)\[(\d+)\]\.(.*)$/.exec(path);
+  if (match === null) return path;
+  const [, , slot, rest] = match;
+  const side = match[1] as keyof typeof SIDES;
+  const mon = live[side][Number(slot)] as { species?: number } | undefined;
   const species = mon?.species === undefined ? undefined : NAMES.SpeciesId[mon.species];
-  return species === undefined ? path : `${SIDES[side as keyof typeof SIDES]} ${title(species)} (slot ${slot}) ${rest}`;
+  return species === undefined ? path : `${SIDES[side]} ${title(species)} (slot ${slot}) ${rest}`;
 }
 
 function paths(loaded: unknown, live: unknown, at = ""): [string, unknown, unknown][] {
   if (isRecord(loaded) && isRecord(live)) {
-    return [...new Set([...Object.keys(loaded), ...Object.keys(live)])]
-      .filter(key => !UNCOMPARED.has(key))
+    return keysOf(loaded, live)
+      .filter(key => !UNCOMPARED.has(key) && !(at === "" && UNCOMPARED_AT_TOP.has(key)))
       .flatMap(key => paths(loaded[key], live[key], at ? `${at}.${key}` : key));
   }
   if (Array.isArray(loaded) && Array.isArray(live) && loaded.length === live.length) {
@@ -202,6 +209,6 @@ function paths(loaded: unknown, live: unknown, at = ""): [string, unknown, unkno
 }
 
 const differ = (side: string, saved: Record<string, number>, loaded: Record<string, number>) =>
-  [...new Set([...Object.keys(saved), ...Object.keys(loaded)])]
+  keysOf(saved, loaded)
     .filter(type => (saved[type] ?? 0) !== (loaded[type] ?? 0))
     .map(type => `${side} ${type} ${saved[type] ?? 0} → ${loaded[type] ?? 0}`);

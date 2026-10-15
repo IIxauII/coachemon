@@ -98,10 +98,16 @@ test("a replay that passes every check claims replay, with a receipt naming each
   const { result } = await ask(clean(), { known });
   const replayed = result.kind === "replayed" ? result.replay : assert.fail();
 
-  assert.equal(replayed.claim, "replay");
+  assert.equal(replayed.confidence, "replay");
   assert.deepEqual(
-    replayed.receipt.map(r => r.step),
-    ["versions", "load_hygiene", "wave_start_save", "scene_matches", "known_turn"],
+    replayed.receipt.map(r => [r.step, r.pending ?? false]),
+    [
+      ["versions", false],
+      ["load_hygiene", false],
+      ["wave_start_save", false],
+      ["scene_matches", false],
+      ["known_turn", false],
+    ],
   );
   assert.match(replayed.receipt[0].checked, /1\.12\.0\.11/);
   assert.match(replayed.receipt[2].checked, /wave 188/);
@@ -111,12 +117,13 @@ test("a replay that passes every check claims replay, with a receipt naming each
   assert.match(replayed.receipt[4].checked, /won/);
 });
 
-test("a replay with no known turn leaves the oracle line's turn 1 as the known-turn check, to be checked live (#661)", async () => {
+test("a replay with no known turn leaves the known-turn check pending on its first turn, to be checked live (#661)", async () => {
   const { result } = await ask(clean());
   const receipt = result.kind === "replayed" ? result.replay.receipt : assert.fail();
 
   assert.equal(receipt[4].step, "known_turn");
-  assert.match(receipt[4].checked, /turn 1 is the test/);
+  assert.equal(receipt[4].pending, true);
+  assert.match(receipt[4].checked, /first turn is the test/);
 });
 
 test("a loaded scene that differs from the live one at the decision gives no answer naming the difference (#661)", async () => {
@@ -140,6 +147,14 @@ test("a scene that differs only in play time, timestamp or the abilities applied
   const { result } = await ask(report);
 
   assert.equal(result.kind, "replayed");
+});
+
+test("a play time or timestamp below the top of the export is compared like any other field (#661)", async () => {
+  const report = clean();
+  report.scene.arena.timestamp = 1;
+  const { result } = await ask(report);
+
+  assert.match(reason(result).message, /arena\.timestamp: loaded 1, live nothing/);
 });
 
 test("a scene the harness never reports gives no answer, never a replay (#661)", async () => {

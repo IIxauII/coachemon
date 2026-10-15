@@ -9,7 +9,7 @@ const BROKE: Record<HygieneRule, string> = {
   stray_prompt: "left a prompt queued for a decision the game never asked",
 };
 
-const some = (all: readonly string[]) =>
+const firstFew = (all: readonly string[]) =>
   all.length > 3 ? `${all.slice(0, 3).join("; ")}; and ${all.length - 3} more` : all.join("; ");
 
 export const noAnswer = (reason: Reason): NoAnswer => ({
@@ -75,9 +75,9 @@ function cause(reason: Reason): string {
       return `input ${reason.index + 1}, ${describeInput(reason.tried)}, ${reason.why} at turn ${reason.turn}${offered}.`;
     }
     case "scene_mismatch":
-      return `the scene the oracle loaded isn't the live one at the decision: ${some(reason.differences)}.`;
+      return `the scene the oracle loaded isn't the live one at the decision: ${firstFew(reason.differences)}.`;
     case "known_turn_missed":
-      return `a turn whose outcome is known didn't reproduce: ${some(reason.misses)}.`;
+      return `a turn whose outcome is known didn't reproduce: ${firstFew(reason.misses)}.`;
     case "harness_failed":
       return `the oracle's harness failed: ${reason.why}${/[.!?]$/.test(reason.why) ? "" : "."}`;
     case "not_built":

@@ -214,8 +214,7 @@ async function load() {
     items: { ours: stackTotals(scene().modifiers), foes: stackTotals(scene().enemyModifiers) },
   };
   report.battle = { wave: scene().currentBattle.waveIndex, battleSeed: scene().currentBattle.battleSeed };
-  // The reload stops at the first decision, where the live tab's own export was taken. Copied there: the export shares
-  // arrays with the mons, such as `moveHistory`, which the fight goes on to change.
+  // Copied now: the export shares arrays with the mons, such as `moveHistory`, which the fight goes on to change.
   report.scene = JSON.parse(JSON.stringify(scene().gameData.getSessionSaveData()));
 }
 

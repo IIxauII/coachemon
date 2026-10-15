@@ -6,7 +6,7 @@ export type SolveResult = { kind: "oracle_line"; oracleLine: OracleLine } | NoAn
 export type ReplayResult = { kind: "replayed"; replay: Replay } | NoAnswer;
 
 /** Scripted inputs played forward from the save to where they end. Not an oracle line: no win is promised (#660). */
-export type Replay = { claim: "replay"; outcome: Outcome; steps: readonly Step[]; receipt: Receipt };
+export type Replay = { confidence: "replay"; outcome: Outcome; steps: readonly Step[]; receipt: Receipt };
 
 /** `open`: the inputs ran out with the fight still on. */
 export type Outcome = "won" | "lost" | "open";
@@ -56,8 +56,13 @@ export type MonState = PartySlot & {
   bossBars?: number;
 };
 
-/** Which steps of the replay protocol ran and passed, and what each one checked (#636). */
-export type Receipt = readonly { step: ValidationStep; checked: string }[];
+/** Which steps of the replay protocol passed, or wait on live, and what each one checked (#636). */
+export type Receipt = readonly {
+  step: ValidationStep;
+  checked: string;
+  /** Left to the first live checkpoint to pass, as a known turn is on a first attempt (#661). */
+  pending?: true;
+}[];
 
 export type ValidationStep = "versions" | "load_hygiene" | "wave_start_save" | "scene_matches" | "known_turn";
 
