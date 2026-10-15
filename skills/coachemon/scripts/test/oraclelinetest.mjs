@@ -379,7 +379,7 @@ const offRows = act => act.rows.filter(r => r.startsWith("✗"));
   assert.deepEqual(offRows(act), ["✗ T15 the fight expected won · came lost"]);
 }
 
-// ---- A fight lost to turn-end chip is scored on the turn it was played, not the one the game has moved on to
+// ---- A fight lost to a TURN_END tag is scored on the turn it was played, not the one the game has moved on to
 {
   const seed = "a run lost at turn end";
   scene = at(15, { seed, cp: after(14) });

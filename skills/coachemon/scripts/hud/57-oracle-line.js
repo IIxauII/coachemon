@@ -77,7 +77,7 @@ export const oracleLineSeen = s => {
   const b = s.currentBattle, cmd = b.turnCommands?.[0], ph = phaseOf(s);
   if (ph?.phaseName === "SwitchPhase" && !ph.isModal) h.strayed = true;
   if (ph?.phaseName === "GameOverPhase") {
-    // Lost to turn-end chip, the fight ends after the turn has moved on and its command is gone (game-code.md §21).
+    // A fight lost to a TURN_END tag (Leech Seed, Curse…) ends after the turn has moved on (game-code.md §21).
     const turn = cmd ? b.turn : b.turn - 1;
     const i = h.line.steps.findLastIndex(st => st.turn <= turn);
     if (i > h.scored) miss(h, h.scored, i, [LOST], false);
