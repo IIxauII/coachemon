@@ -48,7 +48,7 @@ function github(t: TestContext, pin: ClonePin = PIN) {
 
 /**
  * Stands in for `npx`: records the arguments it was run with, and installs a `node_modules` with pnpm's progress line —
- * or, given `fail`, prints it and exits 1 halfway through, or given `hang`, runs until its parent dies.
+ * or, given `fail`, prints `fail` and exits 1 halfway through, or given `hang`, runs until its parent dies.
  */
 function fakeNpx(t: TestContext, { fail, hang }: { fail?: string; hang?: boolean } = {}): string[] {
   const script = path.join(tempDir(t, "coachemon-npx-"), "npx.mjs");
@@ -141,8 +141,7 @@ test("setting up an older pin, from a plugin left running across an update, keep
   assert.equal(newer.kind, "clone", JSON.stringify(newer));
   if (newer.kind !== "clone") return;
 
-  const old: ClonePin = { gameVersion: "1.12.0.9", sha: "d3adbeef", locales: "1ocale5", assets: "a55e7s", pnpm: "10.30.0" };
-  assert.equal((await setUpClone(home, ctl(), deps(t, { pin: old }))).kind, "clone");
+  assert.equal((await setUpClone(home, ctl(), deps(t, { pin: { ...PIN, gameVersion: "1.12.0.9" } }))).kind, "clone");
   assert.ok(existsSync(path.join(newer.dir, "package.json")), `${newer.dir} is kept`);
 });
 

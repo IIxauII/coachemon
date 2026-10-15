@@ -78,8 +78,8 @@ export async function setUpClone(home: string, { signal, progress }: JobControl,
           if (counted) step(4, `installing the game's dependencies (${counted[1]})`);
         },
       });
-      // Older versions only: a plugin left running across an update shares this home, and pruning every other version
-      // would have each setup delete the other's clone (#668).
+      // A plugin left running across an update shares this home on an older pin: pruning every other version, not only
+      // older ones, would have each setup delete the other's clone (#668).
       for (const other of readdirSync(root)) {
         const older = other.localeCompare(path.basename(versionDir), undefined, { numeric: true }) < 0;
         if (older && !other.startsWith(LOCK)) rmSync(path.join(root, other), { recursive: true, force: true });
