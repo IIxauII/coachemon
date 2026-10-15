@@ -1,5 +1,6 @@
 import { BattleType, GameModes, TrainerVariant } from "../enums/generated.ts";
 import { MODIFIER_CLASSES, MODIFIER_TYPE_IDS } from "../enums/modifiers.ts";
+import { readExtras } from "./extras.ts";
 import type { Recheck, SolveInput } from "./input.ts";
 import { noAnswer } from "./no-answer.ts";
 import type { NoAnswer } from "./oracle-line.ts";
@@ -25,7 +26,11 @@ export function refuse(
   const double =
     save.battleType === BattleType.WILD ? save.enemyParty.length > 1 : save.trainer?.variant === TrainerVariant.DOUBLE;
   if (double) return noAnswer({ code: "double" });
-  if (extras?.arenaTags.some(tag => tag.tagType === "SAFEGUARD")) return noAnswer({ code: "safeguard" });
+  if (extras) {
+    const read = readExtras(save, extras);
+    if (read.kind === "missing") return noAnswer({ code: "missing_extras", extras: read.extras });
+    if (read.read.arenaTags.some(tag => tag.tagType === "SAFEGUARD")) return noAnswer({ code: "safeguard" });
+  }
   // The drops a save shows before a load; a throw inside the item's type, or a clamped stack, shows only after one
   // (game-code.md §28).
   const dropped = [...save.modifiers, ...save.enemyModifiers].filter(

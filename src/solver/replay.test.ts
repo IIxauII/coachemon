@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { GameModes } from "../enums/generated.ts";
-import type { Battle, SessionSave } from "./input.ts";
+import { readExtras } from "./extras.ts";
+import type { Battle, MidFightExtras, SessionSave } from "./input.ts";
 import type { Checkpoint, Input, ReplayResult } from "./oracle-line.ts";
 import { type Clone, type CloneRun, replay } from "./replay.ts";
 import type { Known } from "./script.ts";
@@ -61,7 +62,7 @@ const ask = async (
     save?: SessionSave;
     live?: Battle;
     liveExport?: SessionSave;
-    extras?: { arenaTags: [] };
+    extras?: MidFightExtras;
     inputs?: Input[];
     known?: Known;
   } = {},
@@ -256,10 +257,45 @@ test("a save with no live battle to match gets no answer (#660)", async () => {
   assert.equal(handed.length, 0);
 });
 
-test("a replay from the session export gets no answer: only the wave-start save replays from the first turn (#660)", async () => {
-  const { result, handed } = await ask(clean(), { extras: { arenaTags: [] } });
+const t5: { save: SessionSave; extras: MidFightExtras } = JSON.parse(
+  readFileSync(new URL("./fixtures/gordie-w180.t5.json", import.meta.url), "utf8"),
+);
+const fromT5 = (scene: SessionSave = t5.save) => ({
+  ...clean(),
+  hygiene: { ...clean().hygiene, items: { ours: totals(t5.save.modifiers), foes: totals(t5.save.enemyModifiers) } },
+  battle: { wave: 180, battleSeed: "U0QKEz8wJ8ea7832" },
+  scene: structuredClone(scene) as Record<string, any>,
+});
 
-  assert.deepEqual(reason(result).reason, { code: "not_wave_start" });
+test("a replay from the augmented export hands the harness the turn to start at, and its own battle and scene to match (#664)", async () => {
+  const { result, handed } = await ask(fromT5(), { ...t5, live: undefined, liveExport: undefined });
+  const read = readExtras(t5.save, t5.extras);
+
+  assert.deepEqual(JSON.parse(handed[0].input), {
+    save: t5.save,
+    inputs: [bounce],
+    at: read.kind === "read" ? read.forkPoint : assert.fail(),
+  });
+  const receipt = result.kind === "replayed" ? result.replay.receipt : assert.fail(JSON.stringify(result));
+  assert.equal(receipt[2].step, "augmented_export");
+  assert.match(receipt[2].checked, /wave 180 with battle seed U0QKEz8wJ8ea7832/);
+  assert.match(receipt[2].checked, /turn 5/);
+});
+
+test("a scene loaded from the augmented export that differs from the export gives no answer naming the difference (#664)", async () => {
+  const scene = structuredClone(t5.save);
+  (scene.enemyParty[0] as { hp: number }).hp -= 82;
+  const { result } = await ask(fromT5(scene), { ...t5, live: undefined, liveExport: undefined });
+
+  assert.equal(reason(result).reason.code, "scene_mismatch");
+  assert.match(reason(result).message, /the foe's Coalossal \(slot 0\) hp/);
+});
+
+test("an augmented export missing an extra gets no answer naming it, and the clone never runs (#664)", async () => {
+  const { lastMove: _gone, ...extras } = t5.extras;
+  const { result, handed } = await ask(fromT5(), { ...t5, extras: extras as MidFightExtras });
+
+  assert.deepEqual(reason(result).reason, { code: "missing_extras", extras: ["lastMove"] });
   assert.equal(handed.length, 0);
 });
 

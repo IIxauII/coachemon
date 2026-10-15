@@ -49,6 +49,18 @@ test("a worker hands the harness the save and its port, and comes back with the 
   assert.match(runs[0].env?.COACH_PORT ?? "", /^\d+$/);
 });
 
+test("a worker started mid-fight hands the harness the fork point it starts at, again on every fresh start (#664)", async () => {
+  const { clone, runs } = fakeHarness(job => won(job.inputs));
+  const worker = await startWorker(clone, save, "at T5");
+  assert.ok("root" in worker);
+
+  for (let i = 0; i < 26; i++) await worker.expand("root", Array(10).fill(tackle));
+  await worker.close();
+
+  assert.equal(runs.length, 2);
+  for (const run of runs) assert.deepEqual(JSON.parse(run.input), { save, inputs: [], at: "at T5" });
+});
+
 test("a worker starts afresh in a new process once it has played 250 turns (#655, #662)", async () => {
   const { clone, runs } = fakeHarness(job => won(job.inputs));
   const worker = await startWorker(clone, save);

@@ -1,4 +1,5 @@
-import type { ArenaTagSide, BattleType, GameModes, MysteryEncounterType, TrainerVariant } from "../enums/generated.ts";
+import type { BattleType, GameModes, MysteryEncounterType, TrainerVariant } from "../enums/generated.ts";
+import type { ExtrasResult } from "../page/extras.ts";
 
 export type SolveInput = {
   /** The wave-start save, or the session export when `extras` comes with it. */
@@ -31,11 +32,11 @@ export type SessionSave = {
 
 export type SavedItem = { typeId: string; className: string; stackCount: number };
 
-/** The live mid-fight reads a save lacks (#664). */
-export type MidFightExtras = {
-  /** Every arena tag on the field, Safeguard included, which no save keeps (game-code.md §28). */
-  arenaTags: readonly { tagType: string; side: ArenaTagSide }[];
-};
+/**
+ * The extension's `read_extras`, taken at the same decision as the session export it comes with: together they are the
+ * augmented export. Each field it couldn't read is null and named in `unread` (#664).
+ */
+export type MidFightExtras = Omit<Extract<ExtrasResult, { ok: true }>, "ok">;
 
 /** Each search beam's own, its turns counted from where the solve starts (#655). */
 export type Budget = { expansions: number; turns: number };

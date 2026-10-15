@@ -5,7 +5,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { z } from "zod";
 import type { SessionSave } from "./input.ts";
 import type { Checkpoint, Input } from "./oracle-line.ts";
-import type { Clone } from "./replay.ts";
+import { type Clone, harnessJob } from "./replay.ts";
 import { checkpoint, input } from "./schema.ts";
 import type { Child, Hp, Pool, Position } from "./search.ts";
 
@@ -57,8 +57,8 @@ export type NotStarted = { missing: string } | { failed: string };
  * One long-lived harness in the clone, serving the search: it restores a fork point and plays one turn, as many times
  * as it is asked. Started again in a fresh process after every `RECYCLE_AFTER` turns it has played.
  */
-export async function startWorker(clone: Clone, save: SessionSave): Promise<Worker | NotStarted> {
-  const first = await spawn(clone, save);
+export async function startWorker(clone: Clone, save: SessionSave, at?: string): Promise<Worker | NotStarted> {
+  const first = await spawn(clone, save, at);
   if (!("root" in first)) return first;
   // A promise, so `close` reaches a process still starting: closed before it connects, it would outlive the solve and
   // leave its files in the clone (#662).
@@ -70,7 +70,7 @@ export async function startWorker(clone: Clone, save: SessionSave): Promise<Work
     const old = current;
     current = (async () => {
       await (await old).close();
-      const next = await spawn(clone, save);
+      const next = await spawn(clone, save, at);
       if (!("root" in next)) throw new Error(`a fresh worker didn't start: ${"missing" in next ? next.missing : next.failed}`);
       return next;
     })();
@@ -94,13 +94,13 @@ export async function startWorker(clone: Clone, save: SessionSave): Promise<Work
 
 type Running = { root: Position; ask(message: object, ms: number): Promise<unknown>; close(): Promise<void> };
 
-async function spawn(clone: Clone, save: SessionSave): Promise<Running | NotStarted> {
+async function spawn(clone: Clone, save: SessionSave, at?: string): Promise<Running | NotStarted> {
   const server = createServer();
   await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
   const { port } = server.address() as { port: number };
   const connected = new Promise<Socket>(resolve => server.once("connection", resolve));
   const source = readFileSync(new URL("./harness.test.ts.template", import.meta.url), "utf8");
-  const run = clone({ name: "worker", source, input: JSON.stringify({ save, inputs: [] }), env: { COACH_PORT: String(port) } });
+  const run = clone({ name: "worker", source, input: JSON.stringify(harnessJob(save, [], at)), env: { COACH_PORT: String(port) } });
   const ended = run.then(result => {
     if ("missing" in result) return { missing: result.missing };
     return { failed: `the worker stopped${whyStopped(result.out)}` };

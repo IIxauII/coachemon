@@ -2861,6 +2861,13 @@ Read at the pinned tag (`v1.12.0.11`), for the `extras` read (`src/page/extras.t
 - The toxic counter, `status.toxicTurnCount` (`src/data/status-effect.ts:6-19`). A trainer reload summons the enemy
   again (`encounter-phase.ts:446-448`), and `PostSummonPhase` zeroes the counter
   (`src/phases/post-summon-phase.ts:18-20`). It then applies pending heals and entry hazards a second time (`:22-24`).
+- A foe's `teraType` (`src/system/pokemon-data.ts:124`, restored at `src/field/pokemon.ts:394`). A trainer battle runs
+  `trainer.genAI(enemyParty)` on a load too, with no `loaded` guard, after the party is rebuilt in its saved order
+  (`src/phases/encounter-phase.ts:286-288`, `src/system/game-data.ts:1064-1070`). `setRandomTeraModifiers` then gives
+  `party[slot]` the specialty type by its position in that array (`src/data/trainers/trainer-config.ts:534-551`). A
+  gym leader's slot is -1, the last (`:717-720`; Giovanni -2, Clair -3), and it Teras only from wave 100 (`:63`). Once a
+  switch has swapped slots (`src/phases/switch-summon-phase.ts:190-191`), the reload gives that type to whichever mon
+  now sits there. Nothing on the load path puts the saved type back.
 
 **How the save copies summon data.** `new PokemonData(p)` copies it with `new PokemonSummonData(p.summonData)`
 (`src/system/pokemon-data.ts:140`). That copy constructor keeps only the `SerializableBattlerTag`s

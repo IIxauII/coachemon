@@ -7,6 +7,9 @@ import type { MidFightExtras, Recheck, SessionSave } from "./input.ts";
 
 const PIN = "1.12.0.11";
 const drayton: SessionSave = JSON.parse(readFileSync(new URL("./fixtures/drayton-w188.json", import.meta.url), "utf8")).save;
+const t5: { save: SessionSave; extras: MidFightExtras } = JSON.parse(
+  readFileSync(new URL("./fixtures/gordie-w180.t5.json", import.meta.url), "utf8"),
+);
 const doubleDrayton = { ...drayton, trainer: { trainerType: drayton.trainer!.trainerType, variant: TrainerVariant.DOUBLE } };
 
 const ask = (
@@ -80,8 +83,20 @@ test("Safeguard up mid-fight gets no answer, on either side, though no save ever
       { tagType: "SAFEGUARD", side },
     ];
 
-    assert.deepEqual(ask({ extras: { arenaTags } })?.reason, { code: "safeguard" });
+    assert.deepEqual(ask({ ...t5, extras: { ...t5.extras, arenaTags } })?.reason, { code: "safeguard" });
   }
+});
+
+test("an augmented export with every extra passes the gate (#664)", () => {
+  assert.equal(ask(t5), null);
+});
+
+test("an augmented export missing any extra gets no answer naming each one it lacks (#664)", () => {
+  const { turn: _turn, rndState: _rnd, ...rest } = t5.extras;
+  const result = ask({ ...t5, extras: { ...rest, arenaTags: null, unread: ["arenaTags"] } as unknown as MidFightExtras });
+
+  assert.deepEqual(result?.reason, { code: "missing_extras", extras: ["arenaTags", "rndState", "turn"] });
+  assert.match(result.message, /lacks arenaTags, rndState and turn/);
 });
 
 test("an item the clone drops on load gets no answer naming it: a type or a class the pinned game lacks (#659)", () => {

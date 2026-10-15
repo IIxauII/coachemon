@@ -50,7 +50,8 @@ type Input = ({ kind: "move"; move: string; tera: boolean } | { kind: "switch"; 
 };
 type Turn = "won" | "lost" | "on" | { illegal: string };
 
-const job: { save: any; inputs: Input[] } = JSON.parse(readFileSync(process.env.COACH_IN as string, "utf8"));
+/** `at`: a fork point to start from, for a save that isn't the wave's start (`src/solver/extras.ts`). */
+const job: { save: any; inputs: Input[]; at?: string } = JSON.parse(readFileSync(process.env.COACH_IN as string, "utf8"));
 const report: Record<string, unknown> = {};
 
 let phaserGame: Phaser.Game;
@@ -238,6 +239,7 @@ async function load() {
   let enemyItemsBeforeReload = 0;
   await reload(JSON.stringify(job.save), () => (enemyItemsBeforeReload = scene().enemyModifiers.length));
   realRng.reloaded = scene().randBattleSeedInt === realRand;
+  if (job.at !== undefined) putBack(JSON.parse(job.at));
 
   report.hygiene = {
     realRng,
@@ -411,6 +413,9 @@ async function play() {
   }
 }
 
+// An entry's `pokemon` is the live mon, which only its id names across a reload (game-code.md §30).
+const faints = (history: any[]) => history.map(f => ({ id: f.pokemon.id, turn: f.turn }));
+
 /** The save at a decision, and the live fields a reload loses or resets (#636, #655). */
 function forkPoint(): string {
   const s = scene();
@@ -424,6 +429,7 @@ function forkPoint(): string {
     switchCounter: battle.enemySwitchCounter,
     lastMove: battle.lastMove,
     enemyFaints: battle.enemyFaints,
+    faints: { ours: faints(battle.playerFaintsHistory), foes: faints(battle.enemyFaintsHistory) },
     teamIndex: Object.fromEntries(s.getEnemyParty().map((p: any) => [p.id, p.initialTeamIndex])),
     bossIndex: Object.fromEntries(s.getEnemyParty().map((p: any) => [p.id, p.bossSegmentIndex])),
     temp: Object.fromEntries(all.map(p => [p.id, { ...p.tempSummonData }])),
@@ -455,15 +461,30 @@ async function restore(at: string) {
   // would write back into a shared copy, and a fork point restored twice would come back changed (#655).
   const fork = JSON.parse(at);
   await loadSession(fork.session);
+  putBack(fork);
+}
+
+/** Onto the scene its session just loaded. */
+function putBack(fork: any) {
   const s = scene();
   const battle = s.currentBattle;
+  const all: any[] = [...s.getPlayerParty(), ...s.getEnemyParty()];
   battle.turn = fork.turn;
   battle.battleSeedState = fork.battleSeedState;
   battle.enemySwitchCounter = fork.switchCounter;
   battle.lastMove = fork.lastMove;
   battle.enemyFaints = fork.enemyFaints;
+  const mons = (history: { id: number; turn: number }[]) =>
+    history.map(({ id, turn }) => ({ pokemon: all.find(p => p.id === id), turn }));
+  battle.playerFaintsHistory = mons(fork.faints.ours);
+  battle.enemyFaintsHistory = mons(fork.faints.foes);
   Phaser.Math.RND.state(fork.rng);
-  for (const p of [...s.getPlayerParty(), ...s.getEnemyParty()]) {
+  // A load gives the trainer's Tera slot its specialty type again, by party slot: after a switch, another mon's
+  // (game-code.md §30).
+  const { party, enemyParty } = JSON.parse(fork.session);
+  const teraTypes = new Map([...party, ...enemyParty].map((m: any) => [m.id, m.teraType]));
+  for (const p of all) {
+    p.teraType = teraTypes.get(p.id) ?? p.teraType;
     Object.assign(p.tempSummonData, fork.temp[p.id]);
     const wave = fork.wave[p.id];
     p.waveData.endured = wave.endured;
@@ -567,7 +588,8 @@ async function expand(at: string, inputs: (Input | null)[]) {
 type Played = { input: Input | null; turn: number; checkpoint: unknown; end: Turn };
 
 async function checks(inputs: Input[]) {
-  await loadSession(JSON.stringify(job.save));
+  if (job.at === undefined) await loadSession(JSON.stringify(job.save));
+  else await restore(job.at);
   const straight: Played[] = [];
   const forks: string[] = [];
   let next = 0;
