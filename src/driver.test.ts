@@ -1013,7 +1013,6 @@ test("a coach tool refuses by rung when nothing can reach the game (extension-di
   }
 });
 
-/** A job that takes a step only when the test calls `step()`. */
 function steppedJob() {
   const waiting: (() => void)[] = [];
   const seen = { stopped: false };
@@ -1135,14 +1134,14 @@ test("a job that throws ends failed with its error, not hung, whether it throws 
   assert.deepEqual(await driver.readJob(atOnce.job), { job: atOnce.job, kind: "atOnce", state: "failed", progress: null, failure: "no clone to set up" });
 });
 
-test("a job kind the plugin does not run refuses, naming the kinds it does (#667)", async () => {
+test("a job kind the server does not run refuses, naming the kinds it does (#667)", async () => {
   const driver = jobDriver({ stepped: steppedJob().work });
   const r = await outcome(driver.startJob("solve", {}));
   assert.equal(r.error, "unknown_job_kind", JSON.stringify(r));
   assert.deepEqual(r.kinds, ["stepped"]);
 });
 
-test("a job id the plugin does not hold refuses on poll, read and cancel, naming the jobs it does (#667)", async () => {
+test("a job id the server does not hold refuses on poll, read and cancel, naming the jobs it does (#667)", async () => {
   const driver = jobDriver({ stepped: steppedJob().work });
   const { job: id } = await driver.startJob("stepped", { steps: 1 });
   for (const call of [(d: Driver) => d.pollJob("stepped-99"), (d: Driver) => d.readJob("stepped-99"), (d: Driver) => d.cancelJob("stepped-99")]) {

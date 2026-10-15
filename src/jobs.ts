@@ -1,8 +1,8 @@
 import { Refusal } from "./envelope.ts";
 
 /**
- * Work stops once `signal` aborts. Its job has ended cancelled by then, so whatever the work reports, returns or throws
- * afterwards is dropped.
+ * `signal` aborts once the job has ended cancelled, and nothing stops the work but itself: whatever it reports, returns
+ * or throws after that is dropped.
  */
 export type JobWork = (args: Record<string, unknown>, ctl: { signal: AbortSignal; progress: (line: string) => void }) => Promise<unknown>;
 
@@ -27,7 +27,7 @@ export class Jobs {
   }
 
   start(kind: string, args: Record<string, unknown>): JobView {
-    if (!Object.hasOwn(this.#kinds, kind)) throw new Refusal("unknown_job_kind", `This plugin runs no job of kind ${JSON.stringify(kind)}.`, { kinds: Object.keys(this.#kinds) });
+    if (!Object.hasOwn(this.#kinds, kind)) throw new Refusal("unknown_job_kind", `This server runs no job of kind ${JSON.stringify(kind)}.`, { kinds: Object.keys(this.#kinds) });
     const work = this.#kinds[kind];
     const job: Job = { id: `${kind}-${++this.#started}`, kind, state: "running", progress: null, controller: new AbortController() };
     this.#jobs.set(job.id, job);
@@ -72,7 +72,7 @@ export class Jobs {
   #job(id: string): Job {
     const job = this.#jobs.get(id);
     if (job) return job;
-    throw new Refusal("unknown_job", `No job ${JSON.stringify(id)}: a job lasts only as long as the plugin process, and only the last ${KEPT_ENDED} to end are kept.`, {
+    throw new Refusal("unknown_job", `No job ${JSON.stringify(id)}: a job lasts only as long as the server process, and only the last ${KEPT_ENDED} to end are kept.`, {
       jobs: [...this.#jobs.keys()],
     });
   }
