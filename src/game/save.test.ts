@@ -5,11 +5,11 @@ import { waveStartSave } from "./save.ts";
 
 const LIVE = { seed: RUN_SEED, wave: 180 };
 
-test("the wave-start save opens to the JSON the game stored (game-code.md §28)", () => {
+test("the wave-start save opens to the JSON the game stored (game-code.md §29)", () => {
   assert.deepEqual(waveStartSave([RUN_W180], LIVE), { seed: RUN_SEED, waveIndex: 180, gameVersion: "1.12.0.11" });
 });
 
-test("of every account's copy for the slot, the wave-start save is the one carrying the run's seed (game-code.md §28)", () => {
+test("of every account's copy for the slot, the wave-start save is the one carrying the run's seed (game-code.md §29)", () => {
   assert.equal(waveStartSave([OTHER_RUN_W180, RUN_W180], LIVE)?.seed, RUN_SEED);
   assert.equal(waveStartSave([OTHER_RUN_W180], LIVE), null);
 });

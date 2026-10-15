@@ -42,7 +42,7 @@ test("the session read hands back the slot's stored copies, the session as it st
   assert.deepEqual(r.export, EXPORT);
 });
 
-test("slot 0's key carries no digit, so another slot's copies never match it (game-code.md §28)", t => {
+test("slot 0's key carries no digit, so another slot's copies never match it (game-code.md §29)", t => {
   onPage(t, battleScene(0));
   storage(t, { "sessionData_alice": "slot 0", "sessionData1_alice": "slot 1", "sessionData4_alice": "slot 4" });
   assert.deepEqual(send("session", {}).stored, ["slot 0"]);

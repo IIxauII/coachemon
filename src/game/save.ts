@@ -1,9 +1,9 @@
 import { createDecipheriv, createHash } from "node:crypto";
 
-/** The game's own JSON, as its save holds it (game-code.md §28). */
+/** The game's own JSON, as its save holds it (game-code.md §29). */
 export type Save = Record<string, unknown>;
 
-/** A pin bump that moves it leaves every copy unopened, so the wave-start save reads as missing (game-code.md §28). */
+/** A pin bump that moves it leaves every copy unopened, so the wave-start save reads as missing (game-code.md §29). */
 const SAVE_KEY = Buffer.from("x0i2O7WRiANTqPmZ");
 const SALTED = Buffer.from("Salted__");
 
@@ -12,7 +12,7 @@ export function waveStartSave(stored: readonly string[], live: { seed: unknown; 
   return ours.find(s => s.waveIndex === live.wave) ?? ours[0] ?? null;
 }
 
-/** The game's `encrypt`, reversed (game-code.md §28). Null for anything else, a `bypassLogin` build's `btoa` copy included. */
+/** The game's `encrypt`, reversed (game-code.md §29). Null for anything else, a `bypassLogin` build's `btoa` copy included. */
 function decrypt(stored: string): Save | null {
   const raw = Buffer.from(stored, "base64");
   if (raw.length <= 16 || !raw.subarray(0, 8).equals(SALTED)) return null;

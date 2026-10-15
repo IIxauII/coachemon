@@ -46,6 +46,7 @@ what was only observed on a tab) is in §22, not in the sections.
 | The screens the MCP driver walks | §26 |
 | The canvas and its message window | §27 |
 | Loading a session save: doubles, Mystery Encounters, arena tags and items a reload keeps or loses | §28 |
+| The wave-start save and the session export | §29 |
 | HUD API built on the above | Recommended API for the HUD |
 
 ---
@@ -2700,7 +2701,7 @@ that does not sync (`src/system/game-data.ts:596-601`, `:1373-1374`); a syncing 
 errors and resolves `false` (`src/api/savedata-api.ts:23-33`). Of a run's played waves only the first is an
 `EncounterPhase`: later ones are `NextEncounterPhase` or `NewBiomeEncounterPhase` (`src/battle-scene.ts:1611-1614`),
 subclasses with their own `phaseName` that inherit this save. Continue, Load Game and a retry after a loss push an
-`EncounterPhase` too, with `loaded` set, which never saves (§28). The hung phase sits in MESSAGE with no
+`EncounterPhase` too, with `loaded` set, which never saves (§29). The hung phase sits in MESSAGE with no
 `onActionInput`, the state a healthy one also passes through during its 2 s intro tween and its unprompted wild-wave
 text (`encounter-phase.ts:350-366`, `:429`).
 

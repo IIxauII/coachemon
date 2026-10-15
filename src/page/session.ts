@@ -5,8 +5,8 @@ export type SessionResult =
   | { ok: false; why: "no-battle" };
 
 /**
- * `stored`: every copy of the wave-start save under the live slot, as the game stores them (game-code.md §28). Never
- * `gameData.getSession`, which can fetch and write (§28). Self-contained (extension-distribution.md §10.5).
+ * `stored`: every copy of the wave-start save under the live slot, as the game stores them (game-code.md §29). Never
+ * `gameData.getSession`, which can fetch and write (§29). Self-contained (extension-distribution.md §10.5).
  */
 export function session(L: Located, _args: Record<string, never>): SessionResult {
   const battle = L.scene.currentBattle;
