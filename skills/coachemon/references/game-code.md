@@ -45,6 +45,7 @@ what was only observed on a tab) is in §22, not in the sections.
 | Menu cursors | §13 the encounter's options, §25 the command grid, the target cursor and a committed command's object |
 | The screens the MCP driver walks | §26 |
 | The canvas and its message window | §27 |
+| Loading a session save: doubles, Mystery Encounters, arena tags and items a reload keeps or loses | §28 |
 | HUD API built on the above | Recommended API for the HUD |
 
 ---
@@ -2718,3 +2719,34 @@ is stretched to the page by Phaser's default `expandParent`, so the drawn width 
 `src/battle-scene.ts:496-499`), with the `UI` container anchored at its bottom edge (`src/ui/ui.ts:131`). The battle
 message window is a 320×48 `bg` frame at origin `(0, 1)` there (`src/ui/handlers/battle-message-ui-handler.ts:37-40`):
 the bottom 48 of 180, so its top edge is at 11/15 of the height (canvas y 792).
+
+## 28. Loading a session save: what a reload keeps and what it loses
+
+Read at the pinned tag (`v1.12.0.11`), for the solver's refusal gate (`src/solver/gate.ts`), which refuses a fight a
+reload of its save would not rebuild.
+
+**Doubles.** A session save carries no double flag. `newBattle(fromSession)` decides it from the save
+(`src/battle-scene.ts:1348-1394`): a wild battle is double when `enemyParty` holds more than one mon, a trainer battle
+when its config is `doubleOnly`, or `hasDouble` with the trainer's `DOUBLE` variant, and a Mystery Encounter never. A
+save whose trainer carries `DOUBLE` with neither is loaded single (`:1366-1372`), and a `doubleOnly` trainer saved
+without `DOUBLE` is given it (`:1373-1380`). That answer then passes through `checkIsDouble` (`:1308`, `:1512`), which
+keeps a final wave and an Endless boss single whatever the save says (`:1519-1526`). Every `doubleOnly` config is a
+generic trainer (`src/data/trainers/trainer-config.ts`, `setDoubleOnly`), and the live game gives each one `DOUBLE`
+(§16), so on a save the live game wrote the variant alone tells a trainer's double from its single.
+
+**Mystery Encounters.** `mysteryEncounterType` is `-1` on a save from a wave with no encounter
+(`src/system/game-data.ts:905`, `src/@types/save-data.ts:69`), and `getNewBattleProps` reads `-1` as none
+(`src/battle-scene.ts:1362`).
+
+**Arena tags.** A save keeps only the `SerializableArenaTag` instances on the field: `ArenaData`'s constructor drops
+every other tag (`src/system/arena-data.ts:32-35`), both when the save is written (`src/system/game-data.ts:892`) and
+when it is read back (`:1280`). `SafeguardTag` extends plain `ArenaTag` (`src/data/arena-tag.ts:1333`), so Safeguard is
+never saved and a reload loses it. The type `SerializableArenaTagType` (`src/@types/arena-tags.ts:28-31`) does list
+`SAFEGUARD`; the runtime `instanceof` is what decides.
+
+**Items.** `loadSession` (`src/system/game-data.ts:989`, through `initSessionFromData`) rebuilds each saved item with
+`toModifier(Modifier[className])` and skips a `null` without a word (`:1115-1128`). `toModifier` returns `null` when no
+modifier type is registered under the item's `typeId` (`getModifierTypeFuncById`,
+`src/modifier/modifier-type.ts:2485`), and when building the item throws, as `Reflect.construct` does for a `className`
+that `#modifiers/modifier` does not export (`src/system/modifier-data.ts:31-62`); that throw reaches only
+`console.error` (`:58-60`). A stack above `getMaxStackCount()` is clamped to it (`:53-55`).
