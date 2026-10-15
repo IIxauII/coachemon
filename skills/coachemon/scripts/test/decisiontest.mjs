@@ -492,7 +492,7 @@ scene = game;
   const state = () => {
     const c = __coachHud.last();
     return c.oracleLine ? c.oracleLine.steps.map(st => st.at).join(" ")
-      : `${c.offLine.mark} ${c.offLine.misses.map(x => `${x.name} ${x.expected}, came ${x.came}`).join("; ")}`;
+      : `${c.offTheLine.mark} ${c.offTheLine.misses.map(x => `${x.name} ${x.expected}, came ${x.came}`).join("; ")}`;
   };
   step("W13 T1", command(1, 100));
   assert.deepEqual(__coachHud.oracleLine(line), { ok: true });

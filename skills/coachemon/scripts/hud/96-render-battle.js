@@ -4,7 +4,7 @@ import { actSummary, deadEndText, foesSummary, hitsText, planSummary, roadSummar
 import { badge, caption, dim, group, gutterMark, h, hpBar, ICON, img, IMMUNE, ink, line, mon, ROW, rung, some } from "./90-render.js";
 import { drawAhead } from "./95-render-ahead.js";
 import { drawCatch } from "./95-render-catch.js";
-import { drawOffLine, drawOracleLine, drawOracleStep } from "./95-render-oracle-line.js";
+import { drawOffTheLine, drawOracleLine, drawOracleStep } from "./95-render-oracle-line.js";
 import { drawPreview } from "./95-render-preview.js";
 import { drawTeamPlan } from "./95-render-team.js";
 
@@ -19,7 +19,7 @@ export const captionBattle = m => {
 const planGroup = m => some("plan", "Plan", planSummary(m), m.oracleLine ? drawOracleLine(m.oracleLine) : drawTeamPlan(m));
 
 export const drawBattle = m => {
-  const oracle = drawOracleStep(m.oracleLine), off = drawOffLine(m.offLine);
+  const oracle = drawOracleStep(m.oracleLine), off = drawOffTheLine(m.offTheLine);
   if (m.unavailable) return [group("act", "Now", actSummary(m), [...off, ...oracle]), planGroup(m)].filter(Boolean);
   const f = m.field;
 

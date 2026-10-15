@@ -207,6 +207,17 @@ strip | trainer off the line · ~ re-solving… · Golbat Venoshock → Tyranita
     ✗ T13 Gyarados expected benched · came in front
     ✗ T13 Golbat expected in front · came benched
     ⚔ Golbat Poison Venoshock → Tyranitar 3 hits
+from T17, Hydro Pump KOs Tyranitar      held
+== T18, Snorlax switched in for free
+strip | trainer off the line · ~ re-solving… · Golbat Venoshock → Tyranitar · 3 hits
+    ✗ T17 Gyarados expected in front · came benched
+    ✗ T17 Snorlax expected benched · came in front
+    ⚔ Golbat Poison Venoshock → Tyranitar 3 hits
+from T15, to a wipe                     held
+== T1, a Continue retry after the wipe
+strip | trainer off the line · ! re-solving… · Golbat Venoshock → Tyranitar · 3 hits
+    ✗ T15 the fight expected won · came lost
+    ⚔ Golbat Poison Venoshock → Tyranitar 3 hits
 W188 from T18                           held
 W188 rewards: done done | off null
 W180 from T19                           held

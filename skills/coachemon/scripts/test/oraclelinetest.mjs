@@ -15,7 +15,7 @@ globalThis.setInterval = () => 0;
 globalThis.clearInterval = () => {};
 globalThis.localStorage = { getItem: () => null, setItem() {} };
 eval(bundle("hud", { expose: true }));
-const { offLineModel, oracleLineCheck, oracleLineModel, oracleLineSeen } = globalThis.__hud["57-oracle-line"];
+const { offTheLineModel, oracleLineCheck, oracleLineModel, oracleLineSeen } = globalThis.__hud["57-oracle-line"];
 const { cardSummary } = globalThis.__hud["60-card"];
 const { flatGroups } = globalThis.__hud["90-render"];
 const { drawBattle } = globalThis.__hud["96-render-battle"];
@@ -71,7 +71,7 @@ const card = (oracleLine, over = {}) => ({
   catch: null, preview: null, ahead: null, oracleLine, ...over,
 });
 
-const cardAt = (s, over) => card(oracleLineModel(s), { offLine: offLineModel(s), ...over });
+const cardAt = (s, over) => card(oracleLineModel(s), { offTheLine: offTheLineModel(s), ...over });
 const plan = (label, s, over) => {
   const c = cardAt(s, over);
   const groups = flatGroups(drawBattle(c));
@@ -351,6 +351,34 @@ const offRows = act => act.rows.filter(r => r.startsWith("✗"));
   assert.deepEqual(offRows(act), ["✗ T13 Gyarados expected benched · came in front", "✗ T13 Golbat expected in front · came benched"]);
 }
 
+// ---- A free switch taken at "Will you switch?" is the player's input, not the oracle line's
+{
+  const seed = "a free-switching run";
+  scene = at(17, { seed, cp: after(16) });
+  hand("from T17, Hydro Pump KOs Tyranitar", { ...LINE, seed, steps: LINE.steps.slice(6) });
+  play(17, { move: "HYDRO_PUMP" }, { seed });
+  oracleLineSeen(at(18, { seed, phase: { phaseName: "SwitchPhase", isModal: false, doReturn: true } }));
+  const s = decide(18, { seed, cp: after(17, cp => {
+    bySpecies(cp.ours, "GYARADOS").onField = false;
+    bySpecies(cp.ours, "SNORLAX").onField = true;
+  }) });
+  assert.ok(now("T18, Snorlax switched in for free", s).act.summary.startsWith("off the line · ~ "));
+}
+
+// ---- A fight lost on the oracle line voids it, and a Continue retry of the wave leaves it void
+{
+  const seed = "a losing run";
+  scene = at(15, { seed, cp: after(14) });
+  hand("from T15, to a wipe", { ...LINE, seed, steps: LINE.steps.slice(4) });
+  play(15, { move: "VENOSHOCK" }, { seed });
+  oracleLineSeen(at(15, { seed, phase: { phaseName: "GameOverPhase" } }));
+  const retry = decide(1, { seed });
+  assert.equal(oracleLineModel(retry), null);
+  const { act } = now("T1, a Continue retry after the wipe", retry);
+  assert.ok(act.summary.startsWith("off the line · ! "), act.summary);
+  assert.deepEqual(offRows(act), ["✗ T15 the fight expected won · came lost"]);
+}
+
 // ---- The final turn is scored at the rewards screen, after the end-of-turn effects that follow the last faint
 {
   const seed = "a W188 run", wave = 188;
@@ -364,9 +392,9 @@ const offRows = act => act.rows.filter(r => r.startsWith("✗"));
   const learn = decide(19, { seed, wave, phase: { phaseName: "LearnMovePhase" }, cp: after(19, cp => { bySpecies(cp.ours, "GYARADOS").hp = 388; }) });
   assert.notEqual(oracleLineModel(learn), null, "the move prompt scores nothing");
   const rewards = decide(20, { seed, wave, phase: { phaseName: "SelectModifierPhase" }, cp: after(19) });
-  console.log(`W188 rewards: ${oracleLineModel(rewards)?.steps.map(st => st.at).join(" ")} | off ${JSON.stringify(offLineModel(rewards))}`);
+  console.log(`W188 rewards: ${oracleLineModel(rewards)?.steps.map(st => st.at).join(" ")} | off ${JSON.stringify(offTheLineModel(rewards))}`);
   assert.deepEqual(oracleLineModel(rewards).steps.map(st => st.at), ["done", "done"]);
-  assert.equal(offLineModel(rewards), null);
+  assert.equal(offTheLineModel(rewards), null);
 
   // A tenth wave has no rewards screen: the biome screen is the decision after its win (game-code.md §12).
   const x0 = "a W180 run to the biome screen";
@@ -374,9 +402,9 @@ const offRows = act => act.rows.filter(r => r.startsWith("✗"));
   hand("W180 from T19", { ...LINE, seed: x0, steps: LINE.steps.slice(8) });
   play(19, { move: "HYDRO_PUMP" }, { seed: x0 });
   const biome = decide(20, { seed: x0, phase: { phaseName: "SelectBiomePhase" }, cp: after(19, cp => { bySpecies(cp.ours, "GYARADOS").hp = 388; }) });
-  console.log(`W180 biome screen: off ${JSON.stringify(offLineModel(biome))}`);
+  console.log(`W180 biome screen: off ${JSON.stringify(offTheLineModel(biome))}`);
   assert.equal(oracleLineModel(biome), null);
-  assert.equal(offLineModel(biome).misses[0].came, "388/570");
+  assert.equal(offTheLineModel(biome).misses[0].came, "388/570");
 }
 
 // ---- Neither a handoff nor a card drawn from it writes to the game

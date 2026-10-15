@@ -221,9 +221,9 @@ const catchAdvice = {
 
 // ---- Off the oracle line, Now shows what it expected against what came, ahead of the turn line, and the fight plan is back
 {
-  const offLine = { turn: 5, mark: "!", misses: [{ icon: null, name: "Garchomp", expected: "120/420 Def −1", came: "160/420 Def 0" }] };
+  const offTheLine = { turn: 5, mark: "!", misses: [{ icon: null, name: "Garchomp", expected: "120/420 Def −1", came: "160/420 Def 0" }] };
   const teamPlan = { result: "win", summary: "winnable", win: null, reserve: [], only: [], sacrifice: [], prefers: null, warnings: [], notes: [], steps: [] };
-  const { groups } = show("trainer · off the oracle line", battle({ trainer: true, verdict: "trainer", title: "W89 · Cynthia", teamPlan, offLine }));
+  const { groups } = show("trainer · off the oracle line", battle({ trainer: true, verdict: "trainer", title: "W89 · Cynthia", teamPlan, offTheLine }));
   assert.ok(groups[0].summary.startsWith("off the line · ! re-solving… · "), groups[0].summary);
   assert.equal(groups[0].rows[0], "✗ T5 Garchomp expected 120/420 Def −1 · came 160/420 Def 0");
   assert.equal(groups.find(g => g.id === "plan").summary, "winnable");

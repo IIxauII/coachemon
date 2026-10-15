@@ -17,7 +17,7 @@ import { auditSummary } from "./50-audit.js";
 import { spliceScreen, fusionModel, fusionSummary } from "./49-fusion.js";
 import { rewardsModel, rewardsSummary } from "./52-shop.js";
 import { starterScreen, starterModel, startersSummary } from "./51-starters.js";
-import { offLineModel, offLineSummary, oracleLineModel, oracleLineState, oracleLineSummary, oracleStepSummary } from "./57-oracle-line.js";
+import { offTheLineModel, offTheLineSummary, oracleLineModel, oracleLineState, oracleLineSummary, oracleStepSummary } from "./57-oracle-line.js";
 
 export const hitsText = n => `${n} hit${n === 1 ? "" : "s"}`;
 // A spread move KOing the two foes on different turns carries `koEach` instead of one `ko`: the slower one counts.
@@ -63,7 +63,7 @@ const battleCard = (s, account, estimate) => readTurn(s, turn => composeBattleCa
 export const readOracleLine = (s, card) => {
   if (card?.kind !== "battle") return;
   card.oracleLine = oracleLineModel(s);
-  card.offLine = offLineModel(s);
+  card.offTheLine = offTheLineModel(s);
 };
 
 // Our side's 💀 / ⚠ tags. `after`: a likely KO once the mon has acted.
@@ -150,7 +150,7 @@ const slotText = sl => `${sl.name} ${sl.move ?? deadEndText(sl)}${sl.target === 
 const turnLineSummary = card => (card.unavailable ? `no advice — ${card.unavailable}`
   : card.field ? card.field.slots.map(slotText).join(" ; ") : null);
 export const actSummary = card => oracleStepSummary(card.oracleLine)
-  ?? ([offLineSummary(card.offLine), turnLineSummary(card)].filter(Boolean).join(" · ") || null);
+  ?? ([offTheLineSummary(card.offTheLine), turnLineSummary(card)].filter(Boolean).join(" · ") || null);
 
 // A mon the turn both attacks with and switches out carries its threat on two rows, so identical clauses collapse.
 export const foesSummary = card => {

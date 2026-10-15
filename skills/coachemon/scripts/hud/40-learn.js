@@ -1,5 +1,5 @@
 // The learn decision, for the level-up prompt and a TM alike, judged without battle state.
-import { ABILITY_IMMUNE, CHART, SPREAD_TARGETS, STATUS_FRAMES, TYPES, abilitiesOf, effectiveness, iconOf, moveHasFlag, typesOf, vs } from "./01-core.js";
+import { ABILITY_IMMUNE, CHART, SPREAD_TARGETS, STAT_NAMES, STATUS_FRAMES, TYPES, abilitiesOf, effectiveness, iconOf, moveHasFlag, typesOf, vs } from "./01-core.js";
 import { RANDBATS } from "./05-randbats.js";
 import { costNotes, moveTraits } from "./07-move-traits.js";
 import { partyProfile } from "./08-party.js";
@@ -10,7 +10,6 @@ export const learnMoveById = (party, id) => {
   try { return pm ? new pm.constructor(id).getMove() : null; } catch { return null; }
 };
 
-const STAT_NAMES = ["HP", "Atk", "Def", "SpA", "SpD", "Spe", "Acc", "Eva"];
 const attrsOf = (mv, name) => (mv.attrs || []).filter(a => a.constructor?.name === name);
 export const isDamaging = mv => !!mv && mv.category !== MoveCategory.STATUS && (mv.power > 0 || mv.power === -1);
 const unimplemented = mv => / \(N\)$/.test(mv.name ?? "");

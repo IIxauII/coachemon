@@ -14,7 +14,7 @@ const act = a => {
   ];
 };
 
-// A checkpoint's `~`, or `!` once one has been wrong this run (CONTEXT.md, `Confidence`).
+// A checkpoint's mark (CONTEXT.md, `Confidence`).
 const after = (st, mark) => [h("span", { flex: "1" }), h("span", { ...dim, margin: "0 3px" }, `→ ${mark}`),
   ...st.after.flatMap((m, i) => [i ? h("span", dim, "·") : null, mon(m.icon, m.name, ICON.ref), h("span", dim, `${m.hp}/${m.maxHp}`)])];
 const turnOf = st => h("span", { ...dim, marginRight: "3px" }, `T${st.turn}`);
@@ -39,6 +39,6 @@ export const drawOracleStep = m => {
   ].filter(Boolean);
 };
 
-export const drawOffLine = o => (o?.misses ?? []).map(x => line("✗", turnOf(o), mon(x.icon, x.name, ICON.mon),
+export const drawOffTheLine = o => (o?.misses ?? []).map(x => line("✗", turnOf(o), mon(x.icon, x.name, ICON.mon),
   h("span", { ...dim, margin: "0 3px" }, "expected"), h("span", {}, x.expected),
   h("span", { ...dim, margin: "0 3px" }, "· came"), h("span", { fontWeight: "bold" }, x.came)));

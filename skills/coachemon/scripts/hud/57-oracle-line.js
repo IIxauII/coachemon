@@ -1,27 +1,32 @@
-// The oracle line handed to the overlay, drawn only for the one fight it was solved for (CONTEXT.md, `Oracle line`).
-// It reads the battle the card is built on and writes nothing to the game.
-import { iconOf, STATUS_FRAMES, TYPES } from "./01-core.js";
+// The oracle line handed to the overlay, drawn only for the one fight it was solved for (CONTEXT.md, `Oracle line`),
+// and scored at each decision against the checkpoint before it. It reads the game and writes nothing to it.
+import { iconOf, STAT_NAMES, STATUS_FRAMES, TYPES } from "./01-core.js";
 import { isReplacement } from "./02-decision.js";
 import { gameTables } from "./04-game-tables.js";
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 
 // `lead`: our mon in front when the oracle line was handed on or before its first turn. Its first move names no mover,
-// and only then is the game still showing it. `scored`: the last step whose checkpoint is not left to score. `played`:
-// the player's command by turn, as the frames saw it.
+// and only then is the game still showing it. `scored`: the last step scored, or played before the handoff. `played`:
+// the player's command by turn, as the frames saw it. `strayed`: a free switch since the last step scored.
 let held = null, holds = 0;
-// The run whose oracle line has missed on its own input: its replay claim is `!` from then on (CONTEXT.md, `Confidence`).
-let wrongIn = null;
+// (CONTEXT.md, `Confidence`)
+let wrongSeed = null;
 
 const sameFight = (s, line) => typeof s?.seed === "string" && s.seed === line.seed && s.currentBattle?.waveIndex === line.wave;
-const markOf = line => (wrongIn === line.seed ? "!" : "~");
+// The held oracle line while it leads this scene's fight.
+const leading = s => (held && !held.off && sameFight(s, held.line) ? held : null);
+const markOf = line => (wrongSeed === line.seed ? "!" : "~");
+const phaseOf = s => tryDo(() => s.phaseManager.getCurrentPhase());
+const frontOf = s => tryDo(() => s.getPlayerParty().find(p => p?.isOnField?.()).species.speciesId);
 // At a faint's replacement the battle's turn has already moved on (game-code.md §9, §21), and the oracle line picks
 // that replacement inside the step whose turn it was.
-const turnOf = s => {
-  const faintPick = isReplacement(tryDo(() => s.phaseManager.getCurrentPhase()));
+const battleTurn = s => {
+  const faintPick = isReplacement(phaseOf(s));
   return { faintPick, turn: s.currentBattle.turn - (faintPick ? 1 : 0) };
 };
 const lastBefore = (steps, turn) => steps.findLastIndex(st => st.turn < turn);
+const moverOf = (h, i) => (i ? h.line.steps[i - 1].checkpoint.ours.find(m => m.onField)?.species ?? null : h.lead);
 const isObject = v => typeof v === "object" && v !== null;
 const mons = side => Array.isArray(side) && side.every(isObject);
 // The page is not trusted (extension-distribution.md §9.5), and an oracle line `oracleLineModel` cannot read would fail
@@ -35,23 +40,16 @@ const shaped = line => typeof line?.seed === "string" && Number.isInteger(line.w
 export const holdOracleLine = (s, line) => {
   if (!shaped(line)) return { ok: false, why: "malformed" };
   if (!sameFight(s, line)) return { ok: false, why: "other-fight" };
-  const lead = s.currentBattle.turn <= line.steps[0].turn
-    ? tryDo(() => s.getPlayerParty().find(p => p?.isOnField?.()).species.speciesId) : null;
+  const lead = s.currentBattle.turn <= line.steps[0].turn ? frontOf(s) : null;
   // The turns already played when it was handed are where the oracle line was solved from, not its claims.
-  held = { line, lead, id: ++holds, scored: lastBefore(line.steps, turnOf(s).turn), played: {}, off: null };
+  held = { line, lead, id: ++holds, scored: lastBefore(line.steps, battleTurn(s).turn), played: {}, strayed: false, off: null };
   return { ok: true };
 };
 
-// The turn's command is cleared when the turn ends (game-code.md §5), so every frame takes it while it is there.
-// Allocates only on a new command.
-// @only 98-watch, tests: oracleLineSeen
-export const oracleLineSeen = s => {
-  const b = s?.currentBattle, cmd = b?.turnCommands?.[0];
-  if (!cmd || !held || held.off || !sameFight(s, held.line) || held.played[b.turn]?.cmd === cmd) return;
-  held.played[b.turn] = { cmd, tera: b.preTurnCommands?.[0]?.command === Command.TERA };
-};
+// The oracle line wins, so a wipe is a miss, and the one that no decision follows.
+const LOST = { icon: null, name: "the fight", expected: "won", came: "lost" };
 
-const asPlayed = (st, played) => {
+const matchesLine = (st, played) => {
   const input = st.input;
   if (!input) return true;
   const cmd = played?.cmd;
@@ -62,11 +60,32 @@ const asPlayed = (st, played) => {
 const pickedOther = (s, st, mover) => {
   const want = st.input?.replacement?.species;
   if (want == null) return false;
-  const front = tryDo(() => s.getPlayerParty().find(p => p?.isOnField?.()).species.speciesId);
+  const front = frontOf(s);
   return front !== mover && front !== want;
 };
+// Steps `from` exclusive to `i` inclusive are behind us now, and `misses` came of them.
+const miss = (h, from, i, misses, picked) => {
+  h.off = { turn: h.line.steps[i].turn, misses };
+  if (!picked && !h.strayed && h.line.steps.slice(from + 1, i + 1).every(st => matchesLine(st, h.played[st.turn]))) wrongSeed = h.line.seed;
+};
 
-const STAGES = ["Atk", "Def", "SpA", "SpD", "Spe", "Acc", "Eva"];
+// The turn's command is cleared when the turn ends (game-code.md §5), so every frame takes it while it is there. The
+// free switch's party screen is a non-modal `SwitchPhase` (`02-decision.js`), and a wipe never reaches a decision.
+// @only 98-watch, tests: oracleLineSeen
+export const oracleLineSeen = s => {
+  const h = leading(s);
+  if (!h) return;
+  const b = s.currentBattle, cmd = b.turnCommands?.[0], ph = phaseOf(s);
+  if (ph?.phaseName === "SwitchPhase" && !ph.isModal) h.strayed = true;
+  if (ph?.phaseName === "GameOverPhase") {
+    const i = h.line.steps.findLastIndex(st => st.turn <= b.turn);
+    if (i > h.scored) miss(h, h.scored, i, [LOST], false);
+    else h.off = { turn: b.turn, misses: [LOST] };
+    return;
+  }
+  if (cmd && h.played[b.turn]?.cmd !== cmd) h.played[b.turn] = { cmd, tera: b.preTurnCommands?.[0]?.command === Command.TERA };
+};
+
 const signed = n => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : "0");
 // What `harness.test.ts.template`'s `mon` reads, read the same way off the live game.
 const liveOf = p => ({
@@ -81,7 +100,8 @@ const missOf = (want, p) => {
   differ(want.onField, got.onField, v => (v ? "in front" : "benched"));
   differ(want.hp, got.hp, v => `${v}/${want.maxHp}`);
   differ(want.status, got.status, v => STATUS_FRAMES[v] ?? "no status");
-  (Array.isArray(want.statStages) ? want.statStages : []).forEach((v, i) => differ(v, got.statStages[i] ?? 0, n => `${STAGES[i]} ${signed(n)}`));
+  // `statStages` has no HP slot.
+  (Array.isArray(want.statStages) ? want.statStages : []).forEach((v, i) => differ(v, got.statStages[i] ?? 0, n => `${STAT_NAMES[i + 1]} ${signed(n)}`));
   differ(want.tera, got.tera, v => (v ? "Tera" : "no Tera"));
   if (want.bossBars !== undefined) differ(want.bossBars, got.bossBars ?? 0, v => `${v} boss bar${v === 1 ? "" : "s"}`);
   return expected.length ? { ...named(p, want.species), expected: expected.join(" "), came: came.join(" ") } : null;
@@ -102,30 +122,23 @@ const missesOf = (s, cp) => [[cp.ours, tryDo(() => s.getPlayerParty(), [])], [cp
 const SCORED_AT = new Set(["CommandPhase", "SelectModifierPhase", "SelectBiomePhase"]);
 // @only 98-watch, tests: oracleLineCheck
 export const oracleLineCheck = s => {
-  if (!held || held.off || !sameFight(s, held.line)) return;
-  if (!SCORED_AT.has(tryDo(() => s.phaseManager.getCurrentPhase().phaseName))) return;
-  const { steps } = held.line;
-  const i = lastBefore(steps, s.currentBattle.turn);
-  if (i <= held.scored) return;
-  const from = held.scored;
-  held.scored = i;
-  const misses = missesOf(s, steps[i].checkpoint);
-  if (!misses.length) return;
-  held.off = { turn: steps[i].turn, misses };
-  const mover = moverOf(held, i);
-  if (steps.slice(from + 1, i + 1).every(st => asPlayed(st, held.played[st.turn])) && !pickedOther(s, steps[i], mover)) {
-    wrongIn = held.line.seed;
-  }
+  const h = leading(s);
+  if (!h || !SCORED_AT.has(phaseOf(s)?.phaseName)) return;
+  const i = lastBefore(h.line.steps, s.currentBattle.turn);
+  if (i <= h.scored) return;
+  const from = h.scored;
+  h.scored = i;
+  const misses = missesOf(s, h.line.steps[i].checkpoint);
+  if (misses.length) miss(h, from, i, misses, pickedOther(s, h.line.steps[i], moverOf(h, i)));
+  else h.strayed = false;
 };
 
-// @only 60-card, tests: offLineModel
-export const offLineModel = s => {
+// @only 60-card, tests: offTheLineModel
+export const offTheLineModel = s => {
   const off = held?.off;
   return off && sameFight(s, held.line) ? { ...off, mark: markOf(held.line) } : null;
 };
-export const offLineSummary = o => (o ? `off the line · ${o.mark} re-solving…` : null);
-
-const moverOf = (h, i) => (i ? h.line.steps[i - 1].checkpoint.ours.find(m => m.onField)?.species ?? null : h.lead);
+export const offTheLineSummary = o => (o ? `off the line · ${o.mark} re-solving…` : null);
 
 const named = (p, id) => ({ icon: p ? iconOf(p) : null,
   name: p?.name ?? tryDo(() => gameTables().species.getSpecies(id).name, `#${id}`) });
@@ -137,15 +150,16 @@ const moveOf = (party, id) => {
 
 // @only 60-card, tests: oracleLineModel
 export const oracleLineModel = s => {
-  const line = held?.line;
-  if (!line || held.off || !sameFight(s, line)) return null;
-  const { faintPick, turn } = turnOf(s);
+  const h = leading(s);
+  if (!h) return null;
+  const { line } = h;
+  const { faintPick, turn } = battleTurn(s);
   const party = tryDo(() => s.getPlayerParty(), []), foes = tryDo(() => s.getEnemyParty(), []);
   const ours = id => party.find(p => p?.species?.speciesId === id) ?? null;
   const theirs = id => foes.find(p => p?.species?.speciesId === id) ?? null;
   const inFront = (side, find) => side.filter(m => m.onField).map(m => ({ ...named(find(m.species), m.species), hp: m.hp, maxHp: m.maxHp }));
   const steps = line.steps.map((st, i) => {
-    const by = moverOf(held, i);
+    const by = moverOf(h, i);
     const mover = by == null ? null : ours(by);
     const input = st.input;
     const act = !input ? null
@@ -162,7 +176,7 @@ export const oracleLineModel = s => {
   });
   const last = line.steps[line.steps.length - 1];
   return {
-    id: held.id,
+    id: h.id,
     mark: markOf(line),
     faintPick,
     last: last.turn,
