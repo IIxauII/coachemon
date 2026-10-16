@@ -877,7 +877,7 @@ export const PAGE: Area = {
   mirrors: [
     { ours: "src/page/acts.ts#KEYS", of: ["src/configs/inputs/cfg-keyboard-qwerty.ts#CFG_KEYBOARD_QWERTY"] },
     {
-      ours: "src/page/acts.ts#starter-grid",
+      ours: ["src/page/acts.ts#starter-grid", "src/page/menu.ts#starter-grid", "src/page/starters.ts#starter-grid"],
       of: [
         "src/ui/handlers/starter-select-ui-handler.ts#calcStarterContainerPosition",
         "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.updateScroll",

@@ -8,7 +8,7 @@ import type { Entry } from "../../src/escape-ladder/types.ts";
 import type { Generated } from "../gen-enums.ts";
 import type { Registry, ScannedRead } from "../game-reads/check.ts";
 import type { Tables } from "../game-reads/scan.ts";
-import { type GameSet, refParts } from "../game-reads/types.ts";
+import { type GameSet, oursOf, refParts } from "../game-reads/types.ts";
 import { GameSource, hash } from "./source.ts";
 
 export type Group = "ladder" | "hud" | "reads";
@@ -190,7 +190,7 @@ export function drift(input: DriftInput): Drift {
         else for (const ref of r.at) if (ref.split("#", 1)[0] !== resolved) miss(`${ref} (${r.name} now resolves to ${resolved})`, [who]);
       }
     }
-    for (const m of a.mirrors ?? []) for (const ref of m.of) lean(ref, `${area}: mirror ${m.ours}`, "reads");
+    for (const m of a.mirrors ?? []) for (const ours of oursOf(m)) for (const ref of m.of) lean(ref, `${area}: mirror ${ours}`, "reads");
   }
 
   const hashes: Record<string, string> = {};

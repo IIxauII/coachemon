@@ -111,6 +111,17 @@ test("a mirror marker must resolve to a Mirror entry, and a Mirror must keep its
   ]);
 });
 
+test("one mirror marker may sit in several files, each named by the Mirror and each kept", () => {
+  const again = { file: `${FIXTURES}/hud-too.js`, text: "// @mirrors RARE\nexport const rareCount = () => 1;\n" };
+  const both: Repo = { ...repo(), reads: [...repo().reads, ...scan({ page: [], server: [], hud: [again], harness: [], templates: [] }, TABLES)] };
+  const registry: Registry = {
+    ...CLEAN,
+    hud: { ...CLEAN.hud, mirrors: [{ ours: [`${FIXTURES}/hud.js#RARE`, again.file + "#RARE"], of: ["src/data/balance/biomes.ts#biomeLinks"] }] },
+  };
+  assert.deepEqual(problems(both, registry), []);
+  assert.deepEqual(problems(repo(), registry), [`STALE [hud] mirror ${FIXTURES}/hud-too.js#RARE`]);
+});
+
 test("an enum member the generated table lacks fails", () => {
   const hud = fixture("hud.js").replace("BiomeId.SPACE", "BiomeId.SPACE, BiomeId.ISLAND");
   assert.deepEqual(problems(repo({ hud })), [`UNREGISTERED [hud] enum member BiomeId.ISLAND (${FIXTURES}/hud.js:2)`]);

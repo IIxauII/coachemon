@@ -61,6 +61,7 @@ export function starters(L: Located, _args: Record<string, never>): StartersResu
   const limit = __try(() => Number(/\/([\d.]+)$/.exec(h.valueLimitLabel.text)![1]));
   return {
     ok: true,
+    // @mirrors starter-grid
     cursor: __try(() => (typeof h.cursor === "number" ? h.scrollCursor * 9 + h.cursor : null)),
     scrollCursor: __try(() => h.scrollCursor),
     grid,

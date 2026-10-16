@@ -171,6 +171,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       const grid: number[] = h.filteredStarterIds || [];
       out.options = grid.map((id, i) => opt(i, nameOf(id), { cost: __try(() => gd.getSpeciesStarterValue(id)) }));
       // `cursor` is an on-screen container; the label reads `<party value>/<limit>`.
+      // @mirrors starter-grid
       out.cursor = h.scrollCursor * 9 + h.cursor;
       out.extra.scrollCursor = h.scrollCursor;
       const party = (h.partyStarterIds || []).map((id: number) => ({ name: nameOf(id), cost: __try(() => gd.getSpeciesStarterValue(id)) }));

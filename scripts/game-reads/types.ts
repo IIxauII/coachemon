@@ -32,10 +32,12 @@ export type GameRead = {
 export type GameSet = { at: SourceRef; known: readonly string[]; handledIn: readonly string[] };
 
 /**
- * A hand constant in our code that copies game data. `ours` is `<repo file>#<id>`, and that file carries
- * `// @mirrors <id>` above the constant.
+ * A hand constant in our code that copies game data. `ours` is `<repo file>#<id>`, or one per file when the copy recurs,
+ * and each file carries `// @mirrors <id>` above the constant.
  */
-export type Mirror = { ours: string; of: GameRef[] };
+export type Mirror = { ours: string | readonly string[]; of: GameRef[] };
+
+export const oursOf = (m: Mirror): readonly string[] => (typeof m.ours === "string" ? [m.ours] : m.ours);
 
 /** One area's share of the registry: what its scanned files read. */
 export type Area = {

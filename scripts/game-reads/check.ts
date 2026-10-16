@@ -8,7 +8,7 @@ import * as generated from "../../src/enums/generated.ts";
 import { type AreaName, ownFiles, scannedFiles } from "./files.ts";
 import ts from "typescript";
 import { builtinNames, declaredIn, type Found, readsIn, type Tables, type Typed } from "./scan.ts";
-import type { Area } from "./types.ts";
+import { type Area, oursOf, refParts } from "./types.ts";
 
 export type Registry = Readonly<Record<AreaName, Area>>;
 
@@ -66,8 +66,6 @@ export function loadRepo(root: string): Repo {
   return { reads: scan(files, tables, typed), own, builtin: builtinNames(root), tables };
 }
 
-const symbolOf = (ref: string) => ref.split("#", 2)[1]?.split(".", 1)[0];
-
 export function check(repo: Repo, registry: Registry): Problem[] {
   const problems: Problem[] = [];
   const all = Object.values(registry);
@@ -77,7 +75,7 @@ export function check(repo: Repo, registry: Registry): Problem[] {
   const keys = strings("storage-key");
   const imports = new Map<string, string[]>();
   for (const a of all) for (const r of a.reads) if (r.kind === "import") imports.set(r.name, [...(imports.get(r.name) ?? []), ...r.at]);
-  const mirrors = new Set(all.flatMap(a => (a.mirrors ?? []).map(m => m.ours)));
+  const mirrors = new Set(all.flatMap(a => (a.mirrors ?? []).flatMap(oursOf)));
   const where = (r: ScannedRead) => `${r.file}:${r.line}`;
   const seen = new Set<string>();
 
@@ -101,7 +99,7 @@ export function check(repo: Repo, registry: Registry): Problem[] {
       case "import": {
         const entry = imports.get(r.name);
         if (!entry) fail(`import ${r.name}`);
-        else for (const b of r.bindings) if (!entry.some(ref => symbolOf(ref) === b)) fail(`import ${r.name} { ${b} }`);
+        else for (const b of r.bindings) if (!entry.some(ref => refParts(ref).outer === b)) fail(`import ${r.name} { ${b} }`);
         break;
       }
       case "enum-member":
@@ -122,9 +120,11 @@ export function check(repo: Repo, registry: Registry): Problem[] {
       if (e.at.length === 0 && e.from === undefined) problems.push({ kind: "INVALID", area, what: `${e.kind} ${e.name} names no game ref` });
     }
     for (const m of entries.mirrors ?? []) {
-      const [file, id] = m.ours.split("#", 2);
-      if (!mine.some(r => r.kind === "mirror" && r.file === file && r.name === id)) problems.push({ kind: "STALE", area, what: `mirror ${m.ours}` });
-      if (m.of.length === 0) problems.push({ kind: "INVALID", area, what: `mirror ${m.ours} names no game ref` });
+      for (const ours of oursOf(m)) {
+        const { file, symbol: id } = refParts(ours);
+        if (!mine.some(r => r.kind === "mirror" && r.file === file && r.name === id)) problems.push({ kind: "STALE", area, what: `mirror ${ours}` });
+      }
+      if (m.of.length === 0) problems.push({ kind: "INVALID", area, what: `mirror ${oursOf(m).join(", ")} names no game ref` });
     }
   }
   return problems;
