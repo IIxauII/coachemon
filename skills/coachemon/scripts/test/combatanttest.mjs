@@ -198,6 +198,15 @@ const shown = x => x.map(o => `${o.name} ×${o.e} ${o.max}${o.pKo ? ` pKo ${o.pK
   console.log(`rotom ${row(at(undefined))} | heat ${row(at(1))}`);
 }
 
+// ---- A species with no live mon takes its ability through the form's own `getAbility`, where the Ability Randomizer answers
+{
+  // Garchomp's `ability1` is Sand Veil, and the randomizer has drawn Sturdy for it (game-code.md §24).
+  const randomized = { ...GARCHOMP, getAbility: i => (i === 0 ? 5 : 8) };
+  assert.equal(combatantOf({ species: randomized, level: 50 }).getAbility().name, "Sturdy");
+  assert.equal(combatantOf({ species: SNORLAX, level: 45, fuse: { species: randomized } }).getAbility().name, "Sturdy",
+    "a fusion's other half lends the randomized ability too");
+}
+
 // ---- A fusion of two halves is the mon the Splicer would make: the fused base stats, types and ability
 {
   // Garchomp ← Snorlax: base stats `ceil((a + b) / 2)` stat by stat, so [134, 120, 80, 73, 98, 66], which at level 50
