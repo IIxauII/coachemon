@@ -69,8 +69,7 @@ export const moveTraits = (mv, user = null, { party = null, target = null } = {}
   const recoil = rec
     ? { ratio: rec.damageRatio ?? 0.25, useHp: !!rec.useHp, blocked: !rec.unblockable && (guarded || hasAbAttr(user, "BlockRecoilDamageAttr")) }
     : null;
-  // A frenzy move's MissEffectAttr only ends its lock, so it never crashes (game-code.md §5).
-  const lock = attrsNamed(mv, "FrenzyAttr").length > 0;
+  const lock = attrsNamed(mv, "AddBattlerTagAttr").some(a => a.tagType === "FRENZY" && a.selfTarget);
   // Guaranteed self stat changes, boosts included.
   const drops = {};
   if (guaranteedChance(mv)) {
@@ -88,17 +87,14 @@ export const moveTraits = (mv, user = null, { party = null, target = null } = {}
   const inflicts = attrsNamed(mv, "StatusEffectAttr").map(a => ({ effect: a.effect, chance: mv?.chance ?? -1, ...sideFlags(mv, a), cls: a.constructor?.name ?? "" }));
   const tags = attrsNamed(mv, "AddBattlerTagAttr").map(a => ({ tag: a.tagType, ...sideFlags(mv, a), cls: a.constructor?.name ?? "" }));
   const healAttr = firstAttr(mv, "HealAttr");
+  // Gotcha: a `VariableHealAttr` is built with `healRatio` 1 and its `apply` overwrites it with the last use's ratio,
+  // so only `healFunc` answers for this user.
+  const ratioIn = (u = user) => {
+    if (typeof healAttr.healFunc !== "function") return healAttr.healRatio ?? 0.5;
+    try { return healAttr.healFunc(u); } catch { return 0.5; }
+  };
   const heal = healAttr
-    ? {
-      ratio: healAttr.healRatio ?? 0.5, self: healAttr.selfTarget !== false, cls: healAttr.constructor?.name ?? "",
-      ratioIn: (w, u = user, t = target) => {
-        try {
-          if (typeof healAttr.getWeatherHealRatio === "function") return healAttr.getWeatherHealRatio(w);
-          if (isAttr(healAttr, "BoostHealAttr")) return healAttr.condition?.(u, t, mv) ? healAttr.boostedHealRatio ?? healAttr.healRatio ?? 0.5 : healAttr.normalHealRatio ?? healAttr.healRatio ?? 0.5;
-        } catch {}
-        return healAttr.healRatio ?? 0.5;
-      },
-    }
+    ? { ratio: ratioIn(), self: healAttr.selfTarget !== false, cls: healAttr.constructor?.name ?? "", ratioIn }
     : null;
   const trap = firstAttr(mv, "AddArenaTrapTagAttr");
   const cut = firstAttr(mv, "CutHpStatStageBoostAttr");

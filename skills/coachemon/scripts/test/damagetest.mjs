@@ -428,6 +428,8 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(endOfTurnHp(m({ tags: ["UNDERGROUND"] }), { s: at(SAND) }), 0, "mid-Dig");
   const cloudNine = mon("cloud nine", { attrs: [abAttr("SuppressWeatherEffectAbAttr")] });
   assert.equal(endOfTurnHp(m(), { s: at(SAND, 0, { getField: () => [cloudNine] }) }), 0, "Cloud Nine on the field");
+  assert.equal(recOf(m(), at(SUN, 0, { getField: () => [cloudNine] })).weather, 0, "a move sees no weather past Cloud Nine");
+  assert.equal(recOf(m(), at(SUN)).weather, SUN);
   const drySkin = [abAttr("PostWeatherLapseHealAbAttr", { healFactor: 2, weatherTypes: [RAIN, 7] }), abAttr("PostWeatherLapseDamageAbAttr", { damageFactor: 2, weatherTypes: [SUN, 8] })];
   assert.equal(endOfTurnHp(m({ attrs: [abAttr("PostWeatherLapseHealAbAttr", { healFactor: 1, weatherTypes: [RAIN, 7] })] }), { s: at(RAIN) }), 10, "Rain Dish");
   assert.equal(endOfTurnHp(m({ attrs: drySkin }), { s: at(RAIN) }), 20, "Dry Skin in rain");
@@ -461,8 +463,8 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   const waveHeal = at(0, 0, { enemyModifiers: [held("EnemyTurnHealModifier", {}, 3)] });
   assert.equal(endOfTurnHp(m({ player: false }), { s: waveHeal }), 9, "enemy turn heal ×3");
   assert.equal(endOfTurnHp(m(), { s: waveHeal }), 0, "not for the player");
-  assert.equal(endOfTurnHp(m({ hp: 20, maxHp: 40, player: false }), { s: waveHeal }), 1, "the 1 HP floor covers all stacks");
-  assert.equal(endOfTurnHp(m({ items: [held("HitHealModifier", {}, 2)] }), { s: at(), dealt: 100 }), 24, "Shell Bell ×2");
+  assert.equal(endOfTurnHp(m({ hp: 20, maxHp: 40, player: false }), { s: waveHeal }), 2, "the stacks are floored together");
+  assert.equal(endOfTurnHp(m({ items: [held("HitHealModifier", {}, 2)] }), { s: at(), dealt: 100 }), 25, "Shell Bell ×2");
   assert.equal(endOfTurnHp(m({ items: [held("HitHealModifier")] }), { s: at() }), 0, "Shell Bell without damage");
   // Shell Bell heals in `MoveEffectPhase`, so Sitrus reads the HP after it (game-code.md §8).
   assert.equal(endOfTurnHp(m({ hp: 70, items: [new BerryModifier(0)] }), { s: at() }), 40, "70/160 eats the berry");
@@ -473,7 +475,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   const charmed = at(0, 0, { modifiers: [held("HealingBoosterModifier", { multiplier: 1.1 }, 2)] });
   assert.equal(endOfTurnHp(m({ items: [new TurnHealModifier()] }), { s: charmed }), 12, "Healing Charm ×2 on Leftovers");
   assert.equal(endOfTurnHp(m({ player: false, items: [new TurnHealModifier()] }), { s: charmed }), 10, "which is the player's, not the foe's");
-  assert.equal(endOfTurnHp(m({ hp: 155, player: false }), { s: at(0, 0, { enemyModifiers: [held("EnemyTurnHealModifier", {}, 3)] }) }), 4, "the token stops at max − 1");
+  assert.equal(endOfTurnHp(m({ hp: 155, player: false }), { s: at(0, 0, { enemyModifiers: [held("EnemyTurnHealModifier", {}, 3)] }) }), 5, "the token's max − 1 caps the amount, not the HP");
 
   // The TURN_END battler tags, read by class (game-code.md §21).
   const tag = name => new ({ [name]: class {} })[name]();
@@ -482,8 +484,8 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(endOfTurnHp(m({ battlerTags: [tag("NightmareTag")] }), { s: at() }), -40, "Nightmare");
   assert.equal(endOfTurnHp(m({ battlerTags: [tag("CursedTag")] }), { s: at() }), -40, "Curse");
   assert.equal(endOfTurnHp(m({ battlerTags: [new BindTag()] }), { s: at() }), -20, "a binding move");
-  assert.equal(endOfTurnHp(m({ battlerTags: [tag("SaltCuredTag")] }), { s: at() }), -10, "Salt Cure");
-  assert.equal(endOfTurnHp(m({ types: [10], battlerTags: [tag("SaltCuredTag")] }), { s: at() }), -20, "Salt Cure on a Water mon");
+  assert.equal(endOfTurnHp(m({ battlerTags: [tag("SaltCuredTag")] }), { s: at() }), -20, "Salt Cure");
+  assert.equal(endOfTurnHp(m({ types: [10], battlerTags: [tag("SaltCuredTag")] }), { s: at() }), -40, "Salt Cure on a Water mon");
   assert.equal(endOfTurnHp(m({ battlerTags: [tag("AquaRingTag")] }), { s: at() }), 10, "Aqua Ring");
   assert.equal(endOfTurnHp(m({ abilities: ["BlockNonDirectDamageAbAttr"], battlerTags: [tag("NightmareTag")] }), { s: at() }), 0, "Magic Guard vs Nightmare");
   const seed = Object.assign(tag("SeedTag"), { sourceIndex: 1 });
@@ -730,6 +732,10 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   const rolled = moveOutcome(scene, atk, pineco, pmOf(move(65, "Nuke", 0, 300)), { crit: false });
   assert.equal(rolled.pKo, 0, "Sturdy still holds a rolled hit");
   assert.ok(rolled.notes.includes("sturdy"));
+  const later = { ...scene, game: { config: { gameVersion: "1.12.1.0" } } };
+  const held = moveOutcome(later, atk, pineco, pmOf(move(64, "Seismic Toss", 1, 1, { attrs: [new FixedDamageAttr()] })));
+  assert.equal(held.pKo, 0, "from 1.12.1.0 Sturdy holds fixed damage too");
+  assert.ok(held.notes.includes("sturdy"));
 }
 
 // ---- False Swipe caps each roll, rather than spreading the rolls under the capped max

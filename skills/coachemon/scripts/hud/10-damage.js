@@ -75,7 +75,7 @@ const bossSegmentDamage = (dmg, hp, segSize, minIdx = 0, idx) => {
 };
 // The first game version whose Sturdy stops fixed damage (game-code.md §1), or null while no release has it.
 // `scripts/hud-deps.ts` watches Pokemon.getAttackDamage, so a pin bump that moves it asks again.
-const STURDY_VS_FIXED_FROM = null;
+const STURDY_VS_FIXED_FROM = "1.12.1.0";
 const fixedIgnoresSturdy = env => !STURDY_VS_FIXED_FROM || !versionAtLeast(gameVersionOf(env.s), STURDY_VS_FIXED_FROM);
 
 // @only 25-turn, 12-value, tests: targetFacts
@@ -358,8 +358,8 @@ const endOfTurnSteps = (env, p, { tookSuperEffective = false, hp = p.hp, dealt =
     steps.push({ d: -n });
     cur = Math.max(0, cur - n);
   };
-  const queued = (n, cap = max) => {
-    const v = blocked ? 0 : Math.floor(n * charm);
+  const queued = (n, cap = max, most = Infinity) => {
+    const v = blocked ? 0 : Math.min(Math.floor(n * charm), most);
     if (cur <= 0 || !(v > 0) || cur >= cap) return;
     steps.push({ d: v, cap });
     cur = Math.min(cap, cur + v);
@@ -367,7 +367,8 @@ const endOfTurnSteps = (env, p, { tookSuperEffective = false, hp = p.hp, dealt =
   // Heal Block doesn't stop a negative heal (game-code.md §18).
   const reverse = n => chip(Math.floor(n * charm));
 
-  if (dealt > 0) queued(frac(dealt, 8) * stack(p, "HitHealModifier"));
+  const shellBells = stack(p, "HitHealModifier");
+  if (dealt > 0 && shellBells > 0) queued(frac(dealt * shellBells, 8));
 
   if (WEATHER_SPARED[weather] && !guard && !types.some(t => WEATHER_SPARED[weather].includes(t))
     && !abAttrs(p, "BlockWeatherDamageAttr").some(a => !a.weatherTypes?.length || inWeather(a))
@@ -397,7 +398,7 @@ const endOfTurnSteps = (env, p, { tookSuperEffective = false, hp = p.hp, dealt =
     if (guard) continue;
     if (isA(t, "SeedTag") || isA(t, "DamagingTrapTag")) chip(frac(max, 8));
     else if (isA(t, "NightmareTag") || isA(t, "CursedTag")) chip(frac(max, 4));
-    else if (isA(t, "SaltCuredTag")) chip(frac(max, types.some(x => SALT_DOUBLED.includes(x)) ? 8 : 16));
+    else if (isA(t, "SaltCuredTag")) chip(frac(max, types.some(x => SALT_DOUBLED.includes(x)) ? 4 : 8));
   }
   // The seeder's payout reads the seeded mon's HP as it stands, so a seed that this turn's chip would fell first
   // still pays here.
@@ -412,7 +413,8 @@ const endOfTurnSteps = (env, p, { tookSuperEffective = false, hp = p.hp, dealt =
   if (env?.terrain === TerrainType.GRASSY && (p.isGrounded?.() ?? !types.includes(PokemonType.FLYING))) queued(frac(max, 16));
   if (p.isPlayer?.() === false) {
     for (const m of (env?.enemyModifiers ?? []).filter(x => x.constructor.name === "EnemyTurnHealModifier")) {
-      queued(Math.max(Math.floor(max / (100 / (m.healPercent ?? 2))) * (m.getStackCount?.() ?? 1), 1), max - 1);
+      // Gotcha: `preventFullHeal` caps the amount at max − 1, not the HP, so the token can heal to full.
+      queued((max * (m.getStackCount?.() ?? 1) * (m.healPercent ?? 2)) / 100, max, max - 1);
     }
   }
   if (abAttrs(p, "PostTurnStatusHealAbAttr").some(a => (a.effects ?? []).includes(effect))) queued(frac(max, 8));
