@@ -8,6 +8,7 @@ import { PINNED_GAME_VERSION } from "../../../../src/escape-ladder/lookup.ts";
 import { poolSize } from "../../../../src/solver/pool.ts";
 import type { Clone } from "../../../../src/solver/replay.ts";
 import { DEFAULT_BUDGET, solve } from "../../../../src/solver/solver.ts";
+import { asPinned } from "./pinned.ts";
 
 const [file, cloneDir, progressOut, workersArg] = process.argv.slice(2);
 // PATCH=<file>: the search's workers run the harness with the patch spliced in; the replay that validates a win
@@ -21,7 +22,7 @@ const clone: Clone = run => {
   return inClone({ ...run, source: run.source.replace(ANCHOR, ANCHOR + patch) });
 };
 const json = JSON.parse(readFileSync(file, "utf8"));
-const exported = "save" in json ? json : { save: json };
+const exported = asPinned("save" in json ? json : { save: json });
 const workers = workersArg ? Number(workersArg) : poolSize(availableParallelism());
 const started = Date.now();
 let first: number | null = null;

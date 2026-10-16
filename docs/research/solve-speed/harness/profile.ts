@@ -10,13 +10,14 @@ import type { Clone } from "../../../../src/solver/replay.ts";
 import type { Child } from "../../../../src/solver/search.ts";
 import { startWorker } from "../../../../src/solver/worker.ts";
 import { HANDLE, normalHash, Tree } from "./lab/tree.ts";
+import { asPinned } from "./pinned.ts";
 
 const [file, treeDir, outDir, count] = process.argv.slice(2);
 mkdirSync(outDir, { recursive: true });
 const prof = process.env.PROF === "1";
 const patch = process.env.PATCH ? readFileSync(process.env.PATCH, "utf8") : "";
 const json = JSON.parse(readFileSync(file, "utf8"));
-const save = ("save" in json ? json : { save: json }).save;
+const save = asPinned("save" in json ? json : { save: json }).save;
 const found = findPinnedClone();
 if (!("clone" in found)) throw new Error(found.missing);
 const ANCHOR = 'import { beforeAll, describe, it, vi } from "vitest";\n';

@@ -6,7 +6,7 @@
  "sim": null,
  "share": false,
  "budget": 9000,
- "seconds": 146.196,
+ "seconds": 127.998,
  "tally": {
   "requested": 4653,
   "unique": 4653,
@@ -22,7 +22,7 @@
   "size": 3,
   "died": 0,
   "lastDeath": null,
-  "peakHeapMb": 367,
+  "peakHeapMb": 350,
   "heapLimitMb": 864
  },
  "result": {

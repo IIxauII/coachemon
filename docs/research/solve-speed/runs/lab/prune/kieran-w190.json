@@ -1,0 +1,72 @@
+{
+ "tree": "/Users/xau/.claude/jobs/9733a109/tmp/trees/kieran-w190",
+ "tries": 12684,
+ "moveTries": 6953,
+ "noFoeEffect": 2390,
+ "dupExact": 2957,
+ "dupNoPp": 3581,
+ "lines": [
+  {
+   "from": "beam_8_1.json",
+   "turns": 25,
+   "movesThatLeftTheFoeUntouched": [
+    "10:{\"kind\":\"move\",\"move\":\"BOUNCE\",\"tera\":false}"
+   ]
+  },
+  {
+   "from": "bf_0.5_0.25.json",
+   "turns": 16,
+   "movesThatLeftTheFoeUntouched": []
+  },
+  {
+   "from": "bf_0.5_0.json",
+   "turns": 26,
+   "movesThatLeftTheFoeUntouched": [
+    "10:{\"kind\":\"move\",\"move\":\"BOUNCE\",\"tera\":false}",
+    "22:{\"kind\":\"move\",\"move\":\"HURRICANE\",\"tera\":false}"
+   ]
+  },
+  {
+   "from": "bf_1_0.25.json",
+   "turns": 15,
+   "movesThatLeftTheFoeUntouched": []
+  },
+  {
+   "from": "bf_1_0.json",
+   "turns": 22,
+   "movesThatLeftTheFoeUntouched": [
+    "10:{\"kind\":\"move\",\"move\":\"BOUNCE\",\"tera\":false}"
+   ]
+  },
+  {
+   "from": "iw_0.5.json",
+   "turns": 31,
+   "movesThatLeftTheFoeUntouched": [
+    "11:{\"kind\":\"move\",\"move\":\"BOUNCE\",\"tera\":false}",
+    "25:{\"kind\":\"move\",\"move\":\"BODY_SLAM\",\"tera\":false}",
+    "26:{\"kind\":\"move\",\"move\":\"REST\",\"tera\":false}"
+   ]
+  },
+  {
+   "from": "iw_1.json",
+   "turns": 25,
+   "movesThatLeftTheFoeUntouched": [
+    "10:{\"kind\":\"move\",\"move\":\"BOUNCE\",\"tera\":false}"
+   ]
+  },
+  {
+   "from": "lds_0.5_2_2.json",
+   "turns": 31,
+   "movesThatLeftTheFoeUntouched": [
+    "11:{\"kind\":\"move\",\"move\":\"BOUNCE\",\"tera\":false}",
+    "20:{\"kind\":\"move\",\"move\":\"TRI_ATTACK\",\"tera\":false}",
+    "28:{\"kind\":\"move\",\"move\":\"HURRICANE\",\"tera\":false}"
+   ]
+  },
+  {
+   "from": "lds_1_2_2.json",
+   "turns": 32,
+   "movesThatLeftTheFoeUntouched": []
+  }
+ ]
+}

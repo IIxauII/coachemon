@@ -1,11 +1,12 @@
 {
  "fight": "drayton-w188.json",
  "method": "beam:8:0.5",
+ "patch": null,
  "workers": 3,
  "sim": null,
  "share": false,
  "budget": 3000,
- "seconds": 262.152,
+ "seconds": 265.482,
  "tally": {
   "requested": 1309,
   "unique": 1309,
@@ -21,7 +22,7 @@
   "size": 3,
   "died": 0,
   "lastDeath": null,
-  "peakHeapMb": 294,
+  "peakHeapMb": 318,
   "heapLimitMb": 864
  },
  "result": {
@@ -150,7 +151,7 @@
      {
       "turn": 8,
       "spentAfter": 1165,
-      "kept": 89,
+      "kept": 92,
       "children": 104,
       "wins": 0,
       "stalled": 0

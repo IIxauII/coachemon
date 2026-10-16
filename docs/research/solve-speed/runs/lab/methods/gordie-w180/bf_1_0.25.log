@@ -1,0 +1,122 @@
+(node:96559) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:96557) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:96558) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[8 s] pool of 3 up
+(node:96722) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[33mBattlerTag SPIKY_SHIELD is missing a score![39m
+[33mBattlerTag SPIKY_SHIELD is missing a score![39m
+[33mBattlerTag SPIKY_SHIELD is missing a score![39m
+[33mBattlerTag SPIKY_SHIELD is missing a score![39m
+[33mBattlerTag BURNED_UP is missing a score![39m
+[33mBattlerTag BURNED_UP is missing a score![39m
+[33mBattlerTag TAUNT is missing a score![39m
+[33mBattlerTag TAUNT is missing a score![39m
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'getItem')
+ ❯ src/i18n.ts:202:36
+    200|     async () => {
+    201|       i18next.services.formatter?.add("money", i18nMoneyFormatter);
+    202|       await initFonts(localStorage.getItem("prLang") ?? undefined);
+       |                                    ^
+    203|     },
+    204|   );
+ ❯ finish node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1904:9
+ ❯ done node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:2031:21
+ ❯ node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:2045:9
+ ❯ Object.callback node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1941:9
+ ❯ node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1567:13
+ ❯ Connector.loaded node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1549:16
+ ❯ node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1649:12
+ ❯ resolver node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1600:7
+
+This error originated in "test/tests/coach-replay-3460aa32.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+[22 s] replayed a 10-input line: {"won":true,"why":"won"}
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'getItem')
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'getItem')
+ ❯ src/i18n.ts:202:36
+ ❯ src/i18n.ts:202:36
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'getItem')
+ ❯ src/i18n.ts:202:36
+    200|     async () => {
+    201|       i18next.services.formatter?.add("money", i18nMoneyFormatter);
+    202|       await initFonts(localStorage.getItem("prLang") ?? undefined);
+       |                                    ^
+    203|     },
+    204|   );
+ ❯ finish node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1904:9
+ ❯ done node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:2031:21
+ ❯ node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:2045:9
+ ❯ Object.callback node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1941:9
+ ❯ node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1567:13
+ ❯ Connector.loaded node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1549:16
+ ❯ node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1649:12
+ ❯ resolver node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1600:7
+
+    200|     async () => {
+    201|       i18next.services.formatter?.add("money", i18nMoneyFormatter);
+    202|       await initFonts(localStorage.getItem("prLang") ?? undefined);
+       |                                    ^
+    203|     },
+    204|   );
+ ❯ finish node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1904:9
+This error originated in "test/tests/coach-worker-29bd1658.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+ ❯ done node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:2031:21
+ ❯ node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:2045:9
+ ❯ Object.callback node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1941:9
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ ❯ node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1567:13
+ ❯ Connector.loaded node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1549:16
+ ❯ node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1649:12
+ ❯ resolver node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1600:7
+
+This error originated in "test/tests/coach-worker-cbd0d7cb.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+    200|     async () => {
+    201|       i18next.services.formatter?.add("money", i18nMoneyFormatter);
+    202|       await initFonts(localStorage.getItem("prLang") ?? undefined);
+       |                                    ^
+    203|     },
+    204|   );
+ ❯ finish node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1904:9
+ ❯ done node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:2031:21
+ ❯ node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:2045:9
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ ❯ Object.callback node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1941:9
+ ❯ node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1567:13
+ ❯ Connector.loaded node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1549:16
+ ❯ node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1649:12
+ ❯ resolver node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1600:7
+
+This error originated in "test/tests/coach-worker-993bb2b8.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+

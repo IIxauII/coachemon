@@ -1,11 +1,13 @@
 #!/bin/sh
-# The laptop VM's runs after the shipped baselines, with the game tab up as for them: Kieran's shipped solve again on a
-# quiet host, the patched solves, then throughput by worker count with the frame probe (frames.ts) beside it.
-# Runs inside the VM's solver container.
+# The laptop VM's runs, with the game tab up: the shipped solve on each fight, the same with the poll patch, then
+# throughput by worker count with the frame probe (frames.ts) beside it. Runs inside the VM's solver container, from
+# the repo root, after setup-clone.ts has put the pinned game's clone in /home/coach/clone.
 set -u
 here=$(dirname "$0")
 P="$here/patches/poll1.ts"
-sh "$here/laptop.sh" kieran-quiet src/solver/fixtures/kieran-w190.json
+for f in gordie:gordie-w180 drayton:drayton-w188 kieran:kieran-w190; do
+  sh "$here/laptop.sh" "${f%%:*}" "src/solver/fixtures/${f#*:}.json"
+done
 for f in drayton:drayton-w188 gordie:gordie-w180 kieran:kieran-w190; do
   PATCH=$P sh "$here/laptop.sh" "${f%%:*}-poll1" "src/solver/fixtures/${f#*:}.json"
 done

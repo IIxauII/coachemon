@@ -6,23 +6,23 @@
  "sim": null,
  "share": false,
  "budget": 9000,
- "seconds": 75.853,
+ "seconds": 31.685,
  "tally": {
-  "requested": 2168,
-  "unique": 2168,
-  "played": 1667,
-  "realJobs": 435
+  "requested": 772,
+  "unique": 772,
+  "played": 374,
+  "realJobs": 105
  },
  "replays": 1,
  "tree": {
-  "forks": 2473,
-  "turns": 2175
+  "forks": 3794,
+  "turns": 3148
  },
  "pool": {
   "size": 3,
   "died": 0,
   "lastDeath": null,
-  "peakHeapMb": 357,
+  "peakHeapMb": 354,
   "heapLimitMb": 864
  },
  "result": {
@@ -80,46 +80,34 @@
    },
    {
     "kind": "move",
-    "move": "FICKLE_BEAM",
+    "move": "BLUE_FLARE",
     "tera": false
    },
    {
     "kind": "move",
-    "move": "HYPER_VOICE",
+    "move": "DRAGON_PULSE",
+    "tera": false,
+    "replacement": {
+     "slot": 2,
+     "species": "PROBOPASS"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "TRI_ATTACK",
     "tera": false
    },
    {
     "kind": "switch",
     "to": {
-     "slot": 1,
-     "species": "SNORLAX"
-    }
-   },
-   {
-    "kind": "move",
-    "move": "SLEEP_TALK",
-    "tera": false
-   },
-   {
-    "kind": "move",
-    "move": "SLEEP_TALK",
-    "tera": false
-   },
-   {
-    "kind": "move",
-    "move": "BODY_SLAM",
-    "tera": false,
-    "replacement": {
      "slot": 5,
      "species": "LEAVANNY"
     }
    },
    {
-    "kind": "switch",
-    "to": {
-     "slot": 1,
-     "species": "RESHIRAM"
-    }
+    "kind": "move",
+    "move": "LEAF_STORM",
+    "tera": false
    },
    {
     "kind": "switch",
@@ -136,34 +124,72 @@
    {
     "kind": "switch",
     "to": {
-     "slot": 1,
+     "slot": 4,
      "species": "LEAVANNY"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "BUG_BITE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "BUG_BITE",
+    "tera": false,
+    "replacement": {
+     "slot": 4,
+     "species": "GOLBAT"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "POISON_FANG",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "POISON_FANG",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 1,
+     "species": "SNORLAX"
     }
    },
    {
     "kind": "switch",
     "to": {
-     "slot": 4,
-     "species": "RESHIRAM"
+     "slot": 5,
+     "species": "PROBOPASS"
     }
    },
    {
     "kind": "move",
-    "move": "HYPER_VOICE",
+    "move": "POWER_GEM",
     "tera": false
    },
    {
+    "kind": "switch",
+    "to": {
+     "slot": 1,
+     "species": "GOLBAT"
+    }
+   },
+   {
     "kind": "move",
-    "move": "FICKLE_BEAM",
+    "move": "POISON_FANG",
     "tera": false
    }
   ],
-  "turn": 21,
-  "tries": 2168,
+  "turn": 25,
+  "tries": 772,
   "extra": {
-   "peakFrontier": 1277,
-   "expanded": 174,
-   "closed": 174
+   "peakFrontier": 518,
+   "expanded": 59,
+   "closed": 59
   }
  }
 }

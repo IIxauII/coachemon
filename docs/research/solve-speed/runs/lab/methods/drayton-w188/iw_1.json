@@ -6,23 +6,23 @@
  "sim": null,
  "share": false,
  "budget": 3000,
- "seconds": 51.67,
+ "seconds": 48.346,
  "tally": {
-  "requested": 1574,
-  "unique": 1227,
-  "played": 1140,
-  "realJobs": 179
+  "requested": 1941,
+  "unique": 1594,
+  "played": 1121,
+  "realJobs": 204
  },
  "replays": 1,
  "tree": {
-  "forks": 943,
-  "turns": 827
+  "forks": 2935,
+  "turns": 2424
  },
  "pool": {
   "size": 3,
   "died": 0,
   "lastDeath": null,
-  "peakHeapMb": 355,
+  "peakHeapMb": 356,
   "heapLimitMb": 864
  },
  "result": {
@@ -189,11 +189,11 @@
    {
     "width": 4,
     "kind": "found",
-    "triesAfter": 1574,
+    "triesAfter": 1941,
     "beam": {
      "width": 4,
      "ours": 1,
-     "spent": 959,
+     "spent": 1326,
      "layers": [
       {
        "turn": 1,
@@ -269,55 +269,127 @@
       },
       {
        "turn": 10,
-       "spentAfter": 697,
-       "kept": 31,
-       "children": 56,
-       "wins": 0,
-       "stalled": 0
-      },
-      {
-       "turn": 11,
-       "spentAfter": 777,
-       "kept": 32,
+       "spentAfter": 721,
+       "kept": 68,
        "children": 80,
        "wins": 0,
        "stalled": 0
       },
       {
+       "turn": 11,
+       "spentAfter": 759,
+       "kept": 36,
+       "children": 38,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
        "turn": 12,
-       "spentAfter": 824,
-       "kept": 37,
-       "children": 47,
+       "spentAfter": 791,
+       "kept": 31,
+       "children": 32,
        "wins": 0,
        "stalled": 0
       },
       {
        "turn": 13,
-       "spentAfter": 874,
-       "kept": 36,
-       "children": 50,
+       "spentAfter": 819,
+       "kept": 28,
+       "children": 28,
        "wins": 0,
        "stalled": 0
       },
       {
        "turn": 14,
-       "spentAfter": 927,
-       "kept": 41,
-       "children": 53,
+       "spentAfter": 851,
+       "kept": 30,
+       "children": 32,
        "wins": 0,
        "stalled": 0
       },
       {
        "turn": 15,
-       "spentAfter": 959,
+       "spentAfter": 895,
+       "kept": 44,
+       "children": 44,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 16,
+       "spentAfter": 955,
+       "kept": 57,
+       "children": 60,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 17,
+       "spentAfter": 983,
+       "kept": 26,
+       "children": 28,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 18,
+       "spentAfter": 1043,
+       "kept": 24,
+       "children": 60,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 19,
+       "spentAfter": 1103,
+       "kept": 60,
+       "children": 60,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 20,
+       "spentAfter": 1131,
        "kept": 28,
-       "children": 32,
-       "wins": 4,
+       "children": 28,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 21,
+       "spentAfter": 1191,
+       "kept": 24,
+       "children": 60,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 22,
+       "spentAfter": 1227,
+       "kept": 36,
+       "children": 36,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 23,
+       "spentAfter": 1295,
+       "kept": 32,
+       "children": 68,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 24,
+       "spentAfter": 1326,
+       "kept": 19,
+       "children": 31,
+       "wins": 2,
        "stalled": 0
       }
      ]
     },
-    "turn": 15
+    "turn": 24
    }
   ],
   "path": [
@@ -373,20 +445,22 @@
    },
    {
     "kind": "move",
-    "move": "FICKLE_BEAM",
+    "move": "BLUE_FLARE",
     "tera": false
    },
    {
     "kind": "move",
-    "move": "HYPER_VOICE",
-    "tera": false
+    "move": "DRAGON_PULSE",
+    "tera": false,
+    "replacement": {
+     "slot": 4,
+     "species": "GOLBAT"
+    }
    },
    {
-    "kind": "switch",
-    "to": {
-     "slot": 2,
-     "species": "PROBOPASS"
-    }
+    "kind": "move",
+    "move": "POISON_FANG",
+    "tera": false
    },
    {
     "kind": "switch",
@@ -398,21 +472,80 @@
    {
     "kind": "switch",
     "to": {
-     "slot": 2,
-     "species": "RESHIRAM"
+     "slot": 5,
+     "species": "GOLBAT"
+    }
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 5,
+     "species": "LEAVANNY"
     }
    },
    {
     "kind": "move",
-    "move": "FICKLE_BEAM",
+    "move": "BUG_BITE",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 2,
+     "species": "PROBOPASS"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "TRI_ATTACK",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 2,
+     "species": "LEAVANNY"
+    }
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 2,
+     "species": "PROBOPASS"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "POWER_GEM",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 2,
+     "species": "LEAVANNY"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "POLLEN_PUFF",
     "tera": false
    },
    {
     "kind": "move",
-    "move": "FICKLE_BEAM",
+    "move": "LEAF_STORM",
+    "tera": false,
+    "replacement": {
+     "slot": 1,
+     "species": "SNORLAX"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "SLEEP_TALK",
     "tera": false
    }
   ],
-  "turn": 15
+  "turn": 24
  }
 }

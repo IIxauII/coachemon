@@ -6,23 +6,23 @@
  "sim": null,
  "share": false,
  "budget": 9000,
- "seconds": 109.269,
+ "seconds": 56.058,
  "tally": {
-  "requested": 3430,
-  "unique": 3430,
-  "played": 2889,
-  "realJobs": 482
+  "requested": 1960,
+  "unique": 1960,
+  "played": 1390,
+  "realJobs": 216
  },
  "replays": 1,
  "tree": {
-  "forks": 4356,
-  "turns": 3542
+  "forks": 4636,
+  "turns": 3763
  },
  "pool": {
   "size": 3,
   "died": 0,
   "lastDeath": null,
-  "peakHeapMb": 355,
+  "peakHeapMb": 342,
   "heapLimitMb": 864
  },
  "result": {
@@ -60,26 +60,22 @@
    {
     "kind": "switch",
     "to": {
-     "slot": 3,
-     "species": "GYARADOS"
-    }
-   },
-   {
-    "kind": "move",
-    "move": "BOUNCE",
-    "tera": false
-   },
-   null,
-   {
-    "kind": "switch",
-    "to": {
-     "slot": 3,
+     "slot": 4,
+     "species": "GOLBAT"
+    },
+    "replacement": {
+     "slot": 4,
      "species": "RESHIRAM"
     }
    },
    {
     "kind": "move",
-    "move": "HYPER_VOICE",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "DRAGON_PULSE",
     "tera": false
    },
    {
@@ -95,15 +91,29 @@
    {
     "kind": "move",
     "move": "HYPER_VOICE",
+    "tera": false,
+    "replacement": {
+     "slot": 1,
+     "species": "SNORLAX"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "SLEEP_TALK",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "SLEEP_TALK",
     "tera": false
    }
   ],
   "turn": 13,
-  "tries": 3430,
+  "tries": 1960,
   "extra": {
-   "peakFrontier": 1960,
-   "expanded": 187,
-   "closed": 187
+   "peakFrontier": 1036,
+   "expanded": 98,
+   "closed": 98
   }
  }
 }

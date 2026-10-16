@@ -17,6 +17,7 @@ import { beams, type Verdict } from "./beam.ts";
 import { bestFirst, lds } from "./methods.ts";
 import { LabPool } from "./pool.ts";
 import { Tree } from "./tree.ts";
+import { asPinned } from "../pinned.ts";
 
 const { values } = parseArgs({
   options: {
@@ -37,7 +38,7 @@ const method = values.method as string;
 const workers = Number(values.workers);
 const budget = Number(values.budget);
 const json = JSON.parse(readFileSync(fight, "utf8"));
-const exported = "save" in json ? json : { save: json };
+const exported = asPinned("save" in json ? json : { save: json });
 const input = { ...exported, cloneVersion: PINNED_GAME_VERSION };
 const inClone = harnessIn(findPinnedClone);
 // PATCH=<file>: the search's workers run the harness with the patch spliced in; replays run it untouched.

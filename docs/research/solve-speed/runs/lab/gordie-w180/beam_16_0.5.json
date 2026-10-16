@@ -1,11 +1,12 @@
 {
  "fight": "gordie-w180.json",
  "method": "beam:16:0.5",
+ "patch": null,
  "workers": 3,
  "sim": null,
  "share": false,
  "budget": 3000,
- "seconds": 361.486,
+ "seconds": 372.735,
  "tally": {
   "requested": 2026,
   "unique": 2026,
@@ -21,7 +22,7 @@
   "size": 3,
   "died": 0,
   "lastDeath": null,
-  "peakHeapMb": 294,
+  "peakHeapMb": 324,
   "heapLimitMb": 864
  },
  "result": {
@@ -113,7 +114,7 @@
      {
       "turn": 4,
       "spentAfter": 666,
-      "kept": 240,
+      "kept": 248,
       "children": 272,
       "wins": 0,
       "stalled": 0

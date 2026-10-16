@@ -1,38 +1,38 @@
 {
  "fight": "kieran-w190.json",
  "method": "beam:16:0.5",
- "patch": "poll1.ts",
+ "patch": null,
  "workers": 3,
  "sim": null,
  "share": false,
  "budget": 3000,
- "seconds": 67.951,
+ "seconds": 450.428,
  "tally": {
-  "requested": 3008,
-  "unique": 3008,
-  "played": 2667,
-  "realJobs": 212
+  "requested": 3011,
+  "unique": 3011,
+  "played": 2670,
+  "realJobs": 210
  },
  "replays": 0,
  "tree": {
   "forks": 5891,
-  "turns": 4671
+  "turns": 4663
  },
  "pool": {
   "size": 3,
   "died": 0,
   "lastDeath": null,
-  "peakHeapMb": 357,
+  "peakHeapMb": 337,
   "heapLimitMb": 864
  },
  "result": {
   "kind": "no_answer",
-  "spent": 3008,
+  "spent": 3011,
   "beams": [
    {
     "width": 16,
     "ours": 0.5,
-    "spent": 3008,
+    "spent": 3011,
     "layers": [
      {
       "turn": 1,
@@ -140,33 +140,33 @@
      },
      {
       "turn": 14,
-      "spentAfter": 2538,
-      "kept": 124,
-      "children": 196,
-      "wins": 0,
-      "stalled": 0
-     },
-     {
-      "turn": 15,
-      "spentAfter": 2666,
-      "kept": 111,
-      "children": 128,
-      "wins": 0,
-      "stalled": 0
-     },
-     {
-      "turn": 16,
-      "spentAfter": 2859,
-      "kept": 184,
+      "spentAfter": 2535,
+      "kept": 121,
       "children": 193,
       "wins": 0,
       "stalled": 0
      },
      {
+      "turn": 15,
+      "spentAfter": 2662,
+      "kept": 110,
+      "children": 127,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 16,
+      "spentAfter": 2861,
+      "kept": 190,
+      "children": 199,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
       "turn": 17,
-      "spentAfter": 3008,
-      "kept": 118,
-      "children": 149,
+      "spentAfter": 3011,
+      "kept": 116,
+      "children": 150,
       "wins": 0,
       "stalled": 0
      }

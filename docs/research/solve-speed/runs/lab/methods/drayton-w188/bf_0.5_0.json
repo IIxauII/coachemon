@@ -6,23 +6,23 @@
  "sim": null,
  "share": false,
  "budget": 9000,
- "seconds": 11.113,
+ "seconds": 30.239,
  "tally": {
-  "requested": 426,
-  "unique": 426,
-  "played": 68,
-  "realJobs": 12
+  "requested": 639,
+  "unique": 639,
+  "played": 380,
+  "realJobs": 87
  },
- "replays": 0,
+ "replays": 1,
  "tree": {
-  "forks": 1300,
-  "turns": 1132
+  "forks": 3488,
+  "turns": 2910
  },
  "pool": {
   "size": 3,
   "died": 0,
   "lastDeath": null,
-  "peakHeapMb": 259,
+  "peakHeapMb": 339,
   "heapLimitMb": 864
  },
  "result": {
@@ -81,27 +81,13 @@
      "species": "PROBOPASS"
     },
     "replacement": {
-     "slot": 1,
-     "species": "SNORLAX"
-    }
-   },
-   {
-    "kind": "move",
-    "move": "SLEEP_TALK",
-    "tera": false
-   },
-   {
-    "kind": "move",
-    "move": "BODY_SLAM",
-    "tera": false,
-    "replacement": {
      "slot": 2,
      "species": "LEAVANNY"
     }
    },
    {
     "kind": "move",
-    "move": "BUG_BITE",
+    "move": "POLLEN_PUFF",
     "tera": false
    },
    {
@@ -119,6 +105,15 @@
    {
     "kind": "move",
     "move": "HURRICANE",
+    "tera": false,
+    "replacement": {
+     "slot": 4,
+     "species": "GOLBAT"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "POISON_FANG",
     "tera": false
    },
    {
@@ -135,16 +130,44 @@
    },
    {
     "kind": "move",
-    "move": "FICKLE_BEAM",
+    "move": "HYPER_VOICE",
+    "tera": false,
+    "replacement": {
+     "slot": 3,
+     "species": "LEAVANNY"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "BUG_BITE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "LEAF_STORM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "LEAF_STORM",
+    "tera": false,
+    "replacement": {
+     "slot": 1,
+     "species": "SNORLAX"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "SLEEP_TALK",
     "tera": false
    }
   ],
-  "turn": 18,
-  "tries": 426,
+  "turn": 21,
+  "tries": 639,
   "extra": {
-   "peakFrontier": 237,
-   "expanded": 24,
-   "closed": 24
+   "peakFrontier": 336,
+   "expanded": 41,
+   "closed": 41
   }
  }
 }

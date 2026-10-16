@@ -6,7 +6,7 @@
  "sim": "2",
  "share": false,
  "budget": 3000,
- "seconds": 1.532,
+ "seconds": 1.544,
  "tally": {
   "requested": 2263,
   "unique": 1751,
@@ -15,8 +15,8 @@
  },
  "replays": 0,
  "tree": {
-  "forks": 4675,
-  "turns": 2915
+  "forks": 10243,
+  "turns": 7781
  },
  "pool": null,
  "result": {

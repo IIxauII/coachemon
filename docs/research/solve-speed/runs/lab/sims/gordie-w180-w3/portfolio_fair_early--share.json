@@ -6,7 +6,7 @@
  "sim": "2",
  "share": true,
  "budget": 3000,
- "seconds": 2.677,
+ "seconds": 2.706,
  "tally": {
   "requested": 4710,
   "unique": 3980,
@@ -15,8 +15,8 @@
  },
  "replays": 0,
  "tree": {
-  "forks": 4675,
-  "turns": 2915
+  "forks": 10243,
+  "turns": 7781
  },
  "pool": null,
  "result": {
@@ -359,7 +359,7 @@
      {
       "turn": 4,
       "spentAfter": 666,
-      "kept": 240,
+      "kept": 248,
       "children": 272,
       "wins": 0,
       "stalled": 0

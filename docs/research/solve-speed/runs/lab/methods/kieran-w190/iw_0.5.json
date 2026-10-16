@@ -6,7 +6,7 @@
  "sim": null,
  "share": false,
  "budget": 3000,
- "seconds": 40.513,
+ "seconds": 39.249,
  "tally": {
   "requested": 930,
   "unique": 930,
@@ -16,13 +16,13 @@
  "replays": 1,
  "tree": {
   "forks": 6417,
-  "turns": 5070
+  "turns": 5062
  },
  "pool": {
   "size": 3,
   "died": 0,
   "lastDeath": null,
-  "peakHeapMb": 354,
+  "peakHeapMb": 353,
   "heapLimitMb": 864
  },
  "result": {

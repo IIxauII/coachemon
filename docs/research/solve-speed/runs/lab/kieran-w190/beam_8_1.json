@@ -1,12 +1,12 @@
 {
  "fight": "kieran-w190.json",
  "method": "beam:8:1",
- "patch": "poll1.ts",
+ "patch": null,
  "workers": 3,
  "sim": null,
  "share": false,
  "budget": 3000,
- "seconds": 84.026,
+ "seconds": 393.931,
  "tally": {
   "requested": 2696,
   "unique": 2696,
@@ -22,7 +22,7 @@
   "size": 3,
   "died": 0,
   "lastDeath": null,
-  "peakHeapMb": 348,
+  "peakHeapMb": 332,
   "heapLimitMb": 864
  },
  "result": {

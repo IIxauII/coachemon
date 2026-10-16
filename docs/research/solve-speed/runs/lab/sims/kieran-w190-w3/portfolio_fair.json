@@ -6,17 +6,17 @@
  "sim": "2",
  "share": false,
  "budget": 3000,
- "seconds": 5.204,
+ "seconds": 5.246,
  "tally": {
-  "requested": 7650,
-  "unique": 6457,
+  "requested": 7647,
+  "unique": 6454,
   "played": 0,
   "realJobs": 0
  },
  "replays": 0,
  "tree": {
-  "forks": 5891,
-  "turns": 4671
+  "forks": 9833,
+  "turns": 7641
  },
  "pool": null,
  "result": {

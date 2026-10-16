@@ -6,17 +6,17 @@
  "sim": "2",
  "share": false,
  "budget": 3000,
- "seconds": 1.59,
+ "seconds": 1.565,
  "tally": {
-  "requested": 2314,
-  "unique": 2050,
+  "requested": 2289,
+  "unique": 2025,
   "played": 0,
   "realJobs": 0
  },
  "replays": 0,
  "tree": {
-  "forks": 4675,
-  "turns": 2915
+  "forks": 10243,
+  "turns": 7781
  },
  "pool": null,
  "result": {
@@ -74,7 +74,7 @@
     "tera": false
    }
   ],
-  "spent": 2290,
+  "spent": 2265,
   "beams": [
    {
     "width": 16,
@@ -108,7 +108,7 @@
      {
       "turn": 4,
       "spentAfter": 666,
-      "kept": 240,
+      "kept": 248,
       "children": 272,
       "wins": 0,
       "stalled": 0
@@ -150,7 +150,7 @@
    {
     "width": 8,
     "ours": 0.5,
-    "spent": 401,
+    "spent": 376,
     "layers": [
      {
       "turn": 1,

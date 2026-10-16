@@ -1,11 +1,16 @@
 {
- "tree": "/Users/xau/.claude/jobs/bac603b9/tmp/trees/gordie-w180",
- "tries": 11654,
- "moveTries": 7559,
- "noFoeEffect": 2338,
+ "tree": "/Users/xau/.claude/jobs/9733a109/tmp/trees/gordie-w180",
+ "tries": 11819,
+ "moveTries": 7645,
+ "noFoeEffect": 2342,
  "dupExact": 1774,
- "dupNoPp": 2651,
+ "dupNoPp": 2655,
  "lines": [
+  {
+   "from": "beam_16_0.5.json",
+   "turns": 9,
+   "movesThatLeftTheFoeUntouched": []
+  },
   {
    "from": "beam_8_0.5.json",
    "turns": 14,
@@ -20,9 +25,60 @@
    ]
   },
   {
-   "from": "beam_16_0.5.json",
-   "turns": 9,
+   "from": "bf_0.5_0.25.json",
+   "turns": 13,
    "movesThatLeftTheFoeUntouched": []
+  },
+  {
+   "from": "bf_0.5_0.json",
+   "turns": 35,
+   "movesThatLeftTheFoeUntouched": [
+    "10:{\"kind\":\"move\",\"move\":\"HYPER_VOICE\",\"tera\":false}",
+    "15:{\"kind\":\"move\",\"move\":\"REST\",\"tera\":false}",
+    "17:{\"kind\":\"move\",\"move\":\"BOUNCE\",\"tera\":false}"
+   ]
+  },
+  {
+   "from": "bf_1_0.25.json",
+   "turns": 10,
+   "movesThatLeftTheFoeUntouched": []
+  },
+  {
+   "from": "bf_1_0.json",
+   "turns": 14,
+   "movesThatLeftTheFoeUntouched": []
+  },
+  {
+   "from": "iw_0.5.json",
+   "turns": 25,
+   "movesThatLeftTheFoeUntouched": [
+    "10:{\"kind\":\"move\",\"move\":\"HYPER_VOICE\",\"tera\":false}",
+    "14:{\"kind\":\"move\",\"move\":\"BOUNCE\",\"tera\":false}"
+   ]
+  },
+  {
+   "from": "iw_1.json",
+   "turns": 24,
+   "movesThatLeftTheFoeUntouched": [
+    "17:{\"kind\":\"move\",\"move\":\"BOUNCE\",\"tera\":false}"
+   ]
+  },
+  {
+   "from": "lds_0.5_2_2.json",
+   "turns": 33,
+   "movesThatLeftTheFoeUntouched": [
+    "10:{\"kind\":\"move\",\"move\":\"HYPER_VOICE\",\"tera\":false}",
+    "14:{\"kind\":\"move\",\"move\":\"TRI_ATTACK\",\"tera\":false}",
+    "16:{\"kind\":\"move\",\"move\":\"REST\",\"tera\":false}",
+    "29:{\"kind\":\"move\",\"move\":\"BOUNCE\",\"tera\":false}"
+   ]
+  },
+  {
+   "from": "lds_1_2_2.json",
+   "turns": 24,
+   "movesThatLeftTheFoeUntouched": [
+    "17:{\"kind\":\"move\",\"move\":\"BOUNCE\",\"tera\":false}"
+   ]
   }
  ]
 }

@@ -6,23 +6,23 @@
  "sim": null,
  "share": false,
  "budget": 9000,
- "seconds": 42.569,
+ "seconds": 26.952,
  "tally": {
-  "requested": 400,
-  "unique": 400,
-  "played": 251,
-  "realJobs": 60
+  "requested": 405,
+  "unique": 405,
+  "played": 256,
+  "realJobs": 57
  },
  "replays": 1,
  "tree": {
-  "forks": 1115,
-  "turns": 986
+  "forks": 3112,
+  "turns": 2577
  },
  "pool": {
   "size": 3,
   "died": 0,
   "lastDeath": null,
-  "peakHeapMb": 337,
+  "peakHeapMb": 329,
   "heapLimitMb": 864
  },
  "result": {
@@ -96,20 +96,8 @@
     }
    },
    {
-    "kind": "switch",
-    "to": {
-     "slot": 5,
-     "species": "PROBOPASS"
-    }
-   },
-   {
     "kind": "move",
-    "move": "POWER_GEM",
-    "tera": false
-   },
-   {
-    "kind": "move",
-    "move": "POWER_GEM",
+    "move": "BODY_SLAM",
     "tera": false
    },
    {
@@ -120,9 +108,28 @@
     }
    },
    {
+    "kind": "move",
+    "move": "VENOSHOCK",
+    "tera": false
+   },
+   {
     "kind": "switch",
     "to": {
-     "slot": 4,
+     "slot": 5,
+     "species": "PROBOPASS"
+    }
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 5,
+     "species": "GOLBAT"
+    }
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 5,
      "species": "PROBOPASS"
     },
     "replacement": {
@@ -132,22 +139,8 @@
    },
    {
     "kind": "move",
-    "move": "BUG_BITE",
+    "move": "POLLEN_PUFF",
     "tera": false
-   },
-   {
-    "kind": "switch",
-    "to": {
-     "slot": 5,
-     "species": "SNORLAX"
-    }
-   },
-   {
-    "kind": "switch",
-    "to": {
-     "slot": 5,
-     "species": "LEAVANNY"
-    }
    },
    {
     "kind": "move",
@@ -155,8 +148,20 @@
     "tera": false
    },
    {
-    "kind": "switch",
-    "to": {
+    "kind": "move",
+    "move": "BUG_BITE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "LEAF_STORM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "LEAF_STORM",
+    "tera": false,
+    "replacement": {
      "slot": 3,
      "species": "RESHIRAM"
     }
@@ -167,31 +172,13 @@
     "tera": false
    },
    {
-    "kind": "switch",
-    "to": {
-     "slot": 3,
-     "species": "LEAVANNY"
-    },
-    "replacement": {
-     "slot": 3,
-     "species": "RESHIRAM"
-    }
-   },
-   {
-    "kind": "switch",
-    "to": {
-     "slot": 5,
-     "species": "SNORLAX"
-    }
-   },
-   {
     "kind": "move",
-    "move": "SLEEP_TALK",
+    "move": "FICKLE_BEAM",
     "tera": false
    }
   ],
-  "turn": 25,
-  "tries": 400,
+  "turn": 24,
+  "tries": 405,
   "extra": {
    "k": 0
   }

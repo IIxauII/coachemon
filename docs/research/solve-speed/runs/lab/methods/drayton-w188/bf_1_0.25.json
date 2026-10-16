@@ -6,23 +6,23 @@
  "sim": null,
  "share": false,
  "budget": 9000,
- "seconds": 136.851,
+ "seconds": 141.266,
  "tally": {
   "requested": 5419,
   "unique": 5419,
-  "played": 4144,
-  "realJobs": 846
+  "played": 4361,
+  "realJobs": 885
  },
  "replays": 1,
  "tree": {
-  "forks": 7507,
-  "turns": 6038
+  "forks": 7929,
+  "turns": 6376
  },
  "pool": {
   "size": 3,
   "died": 0,
   "lastDeath": null,
-  "peakHeapMb": 358,
+  "peakHeapMb": 356,
   "heapLimitMb": 864
  },
  "result": {

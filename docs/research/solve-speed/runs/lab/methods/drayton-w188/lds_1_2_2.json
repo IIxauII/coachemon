@@ -6,23 +6,23 @@
  "sim": null,
  "share": false,
  "budget": 9000,
- "seconds": 28.192,
+ "seconds": 24.528,
  "tally": {
-  "requested": 288,
-  "unique": 288,
-  "played": 184,
-  "realJobs": 42
+  "requested": 304,
+  "unique": 304,
+  "played": 187,
+  "realJobs": 51
  },
  "replays": 1,
  "tree": {
-  "forks": 1258,
-  "turns": 1100
+  "forks": 3258,
+  "turns": 2707
  },
  "pool": {
   "size": 3,
   "died": 0,
   "lastDeath": null,
-  "peakHeapMb": 313,
+  "peakHeapMb": 283,
   "heapLimitMb": 864
  },
  "result": {
@@ -87,21 +87,7 @@
    },
    {
     "kind": "move",
-    "move": "SLEEP_TALK",
-    "tera": false
-   },
-   {
-    "kind": "move",
     "move": "BODY_SLAM",
-    "tera": false,
-    "replacement": {
-     "slot": 2,
-     "species": "LEAVANNY"
-    }
-   },
-   {
-    "kind": "move",
-    "move": "BUG_BITE",
     "tera": false
    },
    {
@@ -118,8 +104,46 @@
    },
    {
     "kind": "move",
+    "move": "HYDRO_PUMP",
+    "tera": false
+   },
+   {
+    "kind": "move",
     "move": "HURRICANE",
     "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "HURRICANE",
+    "tera": false,
+    "replacement": {
+     "slot": 2,
+     "species": "LEAVANNY"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "BUG_BITE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "LEAF_STORM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "BUG_BITE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "LEAF_STORM",
+    "tera": false,
+    "replacement": {
+     "slot": 3,
+     "species": "SNORLAX"
+    }
    },
    {
     "kind": "switch",
@@ -139,8 +163,8 @@
     "tera": false
    }
   ],
-  "turn": 18,
-  "tries": 288,
+  "turn": 22,
+  "tries": 304,
   "extra": {
    "k": 0
   }
