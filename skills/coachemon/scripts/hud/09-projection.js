@@ -8,6 +8,7 @@ const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch 
 // game-less-backed
 // `getMaxExpLevel` (game-code.md §15). The game's own call answers for the wave the run stands on; a projection asks
 // about a wave ahead of it, and about the waves on the way.
+// @mirrors levelCapAt
 export const levelCapAt = (s, wave) => {
   const r = Math.ceil(Math.max(1, Math.floor(wave) || 1) / 10) * 10;
   const w = s?.gameMode?.isDaily ? r + 30 + Math.floor(r / 5) : r;
@@ -111,6 +112,7 @@ export const levelProjection = (s, { from = 0, fight = null } = {}) => {
   const cap = levelCapAt(s, fight ?? start);
   const of = (x, { participant = false, participants = 1 } = {}) => {
     const n = Math.max(1, Math.floor(participants) || 1);
+    // @mirrors exp-multipliers
     const share = participant ? 1 / n : 0.2 * expAll / n;
     // A Lucky Egg adds 40 % and a Golden Egg 100 % (game-code.md §17).
     const egg = 1 + 0.4 * heldStacks(s, x, "LUCKY_EGG") + heldStacks(s, x, "GOLDEN_EGG");

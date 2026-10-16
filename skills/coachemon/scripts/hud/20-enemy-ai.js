@@ -4,6 +4,7 @@
 import { SPREAD_TARGETS, TYPES, forcedRng, hasAttr, keepTurnData, sandbox, sandboxBreachCount, withPick } from "./01-core.js";
 
 // The AI skips their conditions (game-code.md §6).
+// @mirrors NO_CONDITION_CHECK
 const NO_CONDITION_CHECK = [MoveId.SUCKER_PUNCH, MoveId.UPPER_HAND, MoveId.THUNDERCLAP];
 const STRUGGLE = MoveId.STRUGGLE;
 const aiHas = (mv, name) => (mv.hasAttr ? mv.hasAttr(name) : hasAttr(mv, name));
@@ -41,6 +42,7 @@ const aiMoveTargets = (e, mv) => {
 };
 
 // `getNextTargets` as a distribution [{ targets, p }] (game-code.md §6).
+// @mirrors aiNextTargets
 const aiNextTargets = (env, e, mv) => {
   const dist = [];
   const active = env.field;
@@ -68,6 +70,7 @@ const aiNextTargets = (env, e, mv) => {
 
 // Step 7 of `getNextMove` for one target (game-code.md §6), as branches [{ score, p }]: a condition that draws runs
 // with the draw forced both ways, weighted 1/range. `p`: the target when it isn't the mon at field index `bi`.
+// @mirrors aiTargetScore
 export const aiTargetScore = (env, e, mv, bi, p = env.slots[bi]) => {
   let n = mv.getUserBenefitScore(e, p, mv) + mv.getTargetBenefitScore(e, p, mv) * ((bi < BattlerIndex.ENEMY) === e.isPlayer() ? 1 : -1);
   if (Number.isNaN(n)) n = 0;
@@ -121,6 +124,7 @@ const aiKoChance = (env, e, pm) => {
 };
 
 // Step 8: the chance the pick ends on each index of the score-sorted pool (game-code.md §6).
+// @mirrors aiChain
 const aiChain = (aiType, scores) => {
   const out = [];
   let reach = 1;
@@ -377,6 +381,7 @@ export const sceneSwitches = (env, active) => {
           const own = e.getOpponents().map(o => e.getMatchupScore(o));
           const avg = own.reduce((t, x) => t + x, 0) / own.length;
           const best = tr.getSortedPartyMemberMatchupScores(scores)[0][1];
+          // @mirrors enemy-switch-threshold
           const w = 1 - (counter ? 0.1 ** (1 / counter) : 0);
           if (best * w >= avg * (tr.config.isBoss ? 2 : 3)) {
             switched = true;

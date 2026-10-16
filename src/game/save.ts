@@ -4,7 +4,9 @@ import { createDecipheriv, createHash } from "node:crypto";
 export type Save = Record<string, unknown>;
 
 /** A pin bump that moves it leaves every copy unopened, so the wave-start save reads as missing (game-code.md §29). */
+// @mirrors SAVE_KEY
 const SAVE_KEY = Buffer.from("x0i2O7WRiANTqPmZ");
+// @mirrors SALTED
 const SALTED = Buffer.from("Salted__");
 
 export function waveStartSave(stored: readonly string[], live: { seed: unknown; wave: number }): Save | null {

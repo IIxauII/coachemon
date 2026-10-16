@@ -80,6 +80,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
     } else if (mode === m.BALL) {
       out.family = "ball";
       // One text of names, a line per `pokeballCounts` key then Cancel, beside `countsText` (#46, game-code.md §20).
+      // @mirrors ball-lines
       const names = __kids(h.pokeballSelectContainer).find((k: any) => k !== h.countsText && typeof k.text === "string" && k.text.indexOf("\n") > -1);
       const lines: string[] = names ? names.text.split("\n").map(__strip) : [];
       const counts = Object.entries(scene.pokeballCounts || {});
@@ -106,6 +107,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       const rows: { row: number; kind: string; items: { col: number; label: string | null; cost?: unknown; desc?: string | null }[] }[] = [];
       // Row 0's labels are the game's own text, never hardcoded (v1-tool-surface.md §7, §10).
       const btn = (c: any, col: number) => ({ col, label: __strip(__texts(c)[0]) || null, visible: !!(c && c.visible) });
+      // @mirrors shop-buttons
       const buttons = [btn(h.rerollButtonContainer, 0), btn(h.transferButtonContainer, 1), btn(h.checkButtonContainer, 2), btn(h.lockRarityButtonContainer, 3)];
       if (h.continueButtonContainer && h.continueButtonContainer.visible) buttons.push(btn(h.continueButtonContainer, 4));
       rows.push({ row: 0, kind: "buttons", items: buttons.filter(b => b.visible && b.label) });
@@ -114,6 +116,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       const shop = h.shopOptionsRows || [];
       for (let r = 0; r < shop.length; r++) {
         // Shop rows are indexed backwards (v1-tool-surface.md §7).
+        // @mirrors shop-rows-reversed
         rows.push({ row: 2 + r, kind: "shop", items: (shop[shop.length - 1 - r] || []).map(item) });
       }
       out.extra.rows = rows;
@@ -148,6 +151,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
         // Cancel is the fixed cursor 6, not `party.length` (v1-tool-surface.md §10).
         const party = __try(() => scene.getPlayerParty()) || [];
         out.options = party.map((p: any, i: number) => opt(i, p.name, { level: p.level, hp: p.hp, maxHp: __try(() => p.getMaxHp()), fainted: __try(() => p.isFainted()), active: __try(() => p.isActive(true)) }));
+        // @mirrors party-button-cursors
         out.options.push(opt(6, "Cancel", { synthetic: true }));
         if (__try(() => h.isItemManageMode()) === true) out.options.push(opt(7, __try(() => __texts(h.partyDiscardModeButton || h.partyTransferModeButton)[0]) || "Toggle", { synthetic: true }));
         out.cursor = h.cursor;
@@ -180,6 +184,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       const pp = (m: any) => __try(() => ({ pp: m.getMovePp() - m.ppUsed, maxPp: m.getMovePp() })) || {};
       out.options = ms.map((m: any, i: number) => opt(i, __try(() => m.getName()), Object.assign({ forget: true }, pp(m))));
       const nm = h.newMove;
+      // @mirrors learn-new-move-row
       if (nm) out.options.push(opt(4, __try(() => nm.name), { forget: false, new: true, pp: nm.pp, maxPp: nm.pp }));
       out.cursor = h.moveSelect === true ? h.moveCursor : null;
       out.extra.moveSelect = h.moveSelect === true;

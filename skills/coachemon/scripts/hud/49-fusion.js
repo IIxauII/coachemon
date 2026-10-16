@@ -22,6 +22,7 @@ const baseOf = p => [...(tryDo(() => p.getSpeciesForm(true), p.species)?.baseSta
 const bstOf = row => (row.length === 6 ? row.reduce((t, x) => t + x, 0) : null);
 // What the base runs on now and what the fused mon would: the halves' mean, as `calculateStats` takes it
 // (game-code.md §24), and under Spliced Endless an unfused mon runs on half its own row.
+// @mirrors bstPair
 const bstPair = (a, b, spliced) => {
   const ra = baseOf(a), rb = baseOf(b);
   if (ra.length < 6 || rb.length < 6) return { before: null, after: null };

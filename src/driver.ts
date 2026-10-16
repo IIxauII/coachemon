@@ -425,8 +425,10 @@ export class Driver {
       if (ready.mode !== UiMode.TITLE) {
         throw new Refusal("not_on_title", `start_run needs the TITLE screen; the game is on ${ready.screen}.`, { screen: ready.screen });
       }
+      // @mirrors starter-party-max
       if (species.length === 0 || species.length > 6) throw new Refusal("bad_party", "species must name 1–6 starters.");
 
+      // @mirrors save-slot-count
       if (slot !== undefined && (slot < 0 || slot > 4)) throw new Refusal("bad_slot", "slot must be 0–4.");
 
       const choice: Choice = { kind: "planned", name: "start_run" };
@@ -496,6 +498,7 @@ export class Driver {
     // New Game is the first title option unless Continue is offered, and Classic the first mode (game-code.md §26).
     let menu = await this.#game.menu();
     refuseMovedScreen(ready, menu);
+    // @mirrors title-new-game
     const newGameIndex = menu.options.length >= 5 ? 1 : 0;
     log.push(`title: ${menu.options.map(o => o.label).join(" | ")} → index ${newGameIndex}`);
     let s = await select(menu, menu.options[newGameIndex], ready.fine, "title");
@@ -503,6 +506,7 @@ export class Driver {
     let cur = await expect(s, "OPTION_SELECT", "title");
     menu = await this.#game.menu();
     log.push(`game mode: ${menu.options.map(o => o.label).join(" | ")} → index 0`);
+    // @mirrors title-classic
     s = await select(menu, menu.options[0], cur.fine, "game mode");
     presses++;
     cur = await expect(s, "STARTER_SELECT", "game mode");
@@ -539,6 +543,7 @@ export class Driver {
       cur = await expect(s, "OPTION_SELECT", `select ${pick.name}`);
       menu = await this.#game.menu();
       log.push(`${pick.name}: ${menu.options.map(o => o.label).join(" | ")} → index 0`);
+      // @mirrors starter-add-option
       s = await select(menu, menu.options[0], cur.fine, `add ${pick.name}`);
       presses++;
       cur = await expect(s, "STARTER_SELECT", `add ${pick.name}`);
@@ -555,6 +560,7 @@ export class Driver {
     cur = await expect(s, "CONFIRM", "submit");
     menu = await this.#game.menu();
     log.push(`confirm: ${menu.options.map(o => o.label).join(" | ")} → index 0`);
+    // @mirrors submit-confirm-yes
     s = await select(menu, menu.options[0], cur.fine, "confirm");
     presses++;
     cur = await expect(s, "SAVE_SLOT/SAVE", "confirm");
@@ -583,6 +589,7 @@ export class Driver {
       }
       menu = await this.#game.menu();
       log.push(`overwrite confirm: ${menu.options.map(o => o.label).join(" | ")} → index 0`);
+      // @mirrors overwrite-confirm-yes
       s = await select(menu, menu.options[0], r.fine, "overwrite confirm");
       presses++;
     }

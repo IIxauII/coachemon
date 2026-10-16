@@ -1,5 +1,7 @@
+// @mirrors TYPES
 export const TYPES = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 // attacker: [super effective, not very effective, no effect]
+// @mirrors CHART
 export const CHART = {
   Normal: [[], ["Rock","Steel"], ["Ghost"]],
   Fighting: [["Normal","Rock","Steel","Ice","Dark"], ["Flying","Poison","Bug","Psychic","Fairy"], ["Ghost"]],
@@ -20,6 +22,7 @@ export const CHART = {
   Dark: [["Ghost","Psychic"], ["Fighting","Dark","Fairy"], []],
   Fairy: [["Fighting","Dragon","Dark"], ["Poison","Steel","Fire"], []],
 };
+// @mirrors ABILITY_IMMUNE
 export const ABILITY_IMMUNE = {
   "Levitate": "Ground", "Earth Eater": "Ground",
   "Flash Fire": "Fire", "Well-Baked Body": "Fire",
@@ -27,6 +30,7 @@ export const ABILITY_IMMUNE = {
   "Volt Absorb": "Electric", "Lightning Rod": "Electric", "Motor Drive": "Electric",
   "Sap Sipper": "Grass",
 };
+// @mirrors ABILITY_IMMUNE_FLAG
 export const ABILITY_IMMUNE_FLAG = { "Soundproof": MoveFlags.SOUND_BASED, "Bulletproof": MoveFlags.BALLBOMB_MOVE, "Overcoat": MoveFlags.POWDER_MOVE, "Wind Rider": MoveFlags.WIND_MOVE };
 export const moveHasFlag = (mv, f) => (typeof mv?.hasFlag === "function" ? mv.hasFlag(f) : !!((mv?.flags ?? 0) & f));
 
@@ -51,8 +55,11 @@ export const effectiveness = (type, defender, mv) => {
   if (m >= 2 && ab.some(a => a === "Solid Rock" || a === "Filter" || a === "Prism Armor")) m *= 0.75;
   return m;
 };
+// @mirrors NATURE_STATS
 const NATURE_STATS = ["Atk", "Def", "Spe", "SpA", "SpD"];
+// @mirrors NATURE_STAT_IDS
 const NATURE_STAT_IDS = [Stat.ATK, Stat.DEF, Stat.SPD, Stat.SPATK, Stat.SPDEF];
+// @mirrors NATURES
 const NATURES = ["Hardy", "Lonely", "Brave", "Adamant", "Naughty", "Bold", "Docile", "Relaxed", "Impish", "Lax", "Timid",
   "Hasty", "Serious", "Jolly", "Naive", "Modest", "Mild", "Quiet", "Bashful", "Rash", "Calm", "Gentle", "Sassy",
   "Careful", "Quirky"];
@@ -79,6 +86,7 @@ export const squeezeDist = (points, k) => {
 };
 
 // Indexed by `ModifierTier`.
+// @mirrors TIER_NAMES
 export const TIER_NAMES = ["Common", "Great", "Ultra", "Rogue", "Master", "Luxury"];
 
 export const SPREAD_TARGETS = [MoveTarget.ALL_OTHERS, MoveTarget.ALL_NEAR_OTHERS, MoveTarget.ALL_NEAR_ENEMIES, MoveTarget.ALL_ENEMIES];
@@ -108,7 +116,9 @@ const GOOD_ABILITIES = new Set(["Sand Stream", "Snow Warning", "Thick Fat", "Fil
 const BAD_ABILITIES = new Set(["Truant", "Slow Start", "Defeatist", "Klutz", "Stall", "Normalize"]);
 export const abilityValue = name =>
   (GREAT_ABILITIES.has(name) ? GREAT_ABILITY : GOOD_ABILITIES.has(name) ? GOOD_ABILITY : BAD_ABILITIES.has(name) ? BAD_ABILITY : 0);
+// @mirrors STATUS_FRAMES
 export const STATUS_FRAMES = [null, "poison", "toxic", "paralysis", "sleep", "freeze", "burn"]; // by StatusEffect
+// @mirrors STAT_NAMES
 export const STAT_NAMES = ["HP", "Atk", "Def", "SpA", "SpD", "Spe", "Acc", "Eva"]; // by Stat
 export const iconOf = p => { try { return [p.getIconAtlasKey(), String(p.getIconId())]; } catch { return null; } };
 
@@ -124,6 +134,7 @@ export const versionAtLeast = (version, least) => {
   return true;
 };
 
+// @mirrors QUEUE_METHODS
 const QUEUE_METHODS = ["pushPhase", "unshiftPhase", "pushNew", "unshiftNew", "queueMessage", "queueAbilityDisplay", "hideAbilityBar", "queueFaintPhase"];
 let sandboxBreaches = 0;
 export const sandboxBreachCount = () => sandboxBreaches;

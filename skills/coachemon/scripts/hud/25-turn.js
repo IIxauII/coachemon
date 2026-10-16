@@ -154,6 +154,7 @@ const sceneSpeedTie = (env, facts, a, b) => {
     const s = env.s;
     if (!(facts.turn > 0) || typeof s.executeWithSeedOffset !== "function") return null;
     let draw = null;
+    // @mirrors speed-tie-seed
     s.executeWithSeedOffset(() => { draw = Phaser.Math.RND.integerInRange(0, 1); }, facts.turn * 1000 + 2, s.waveSeed);
     if (draw !== 0 && draw !== 1) return null;
     const playerFirst = (draw !== 0) !== !!facts.trickRoom;
@@ -161,6 +162,7 @@ const sceneSpeedTie = (env, facts, a, b) => {
   } catch { return null; }
 };
 
+// @mirrors TYPE_STATUS_IMMUNE
 const TYPE_STATUS_IMMUNE = {
   [StatusEffect.POISON]: ["Poison", "Steel"], [StatusEffect.TOXIC]: ["Poison", "Steel"],
   [StatusEffect.PARALYSIS]: ["Electric"], [StatusEffect.FREEZE]: ["Ice"], [StatusEffect.BURN]: ["Fire"],
@@ -220,6 +222,7 @@ const monRecord = (env, live, p) => {
     rockChip: (() => {
       if (tryDo(() => !!p.hasAbilityWithAttr?.("BlockNonDirectDamageAbAttr"), false)) return 0;
       const e = live ? tryDo(() => p.getAttackTypeEffectiveness(PokemonType.ROCK, { ignoreStrongWinds: true }), null) : null;
+      // @mirrors stealth-rock-chip
       return 0.125 * (e ?? effectiveness("Rock", p));
     })(),
     bars: (st, n, offence = false) => barBreakFactors(p, st, n, offence, trainer),

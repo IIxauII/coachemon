@@ -8,9 +8,11 @@ import { baseStatsOf, formOf } from "./08-party.js";
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 
 const NEUTRAL_IV = 15; // floor(31 / 2)
+// @mirrors NEUTRAL_NATURE
 const NEUTRAL_NATURE = 0; // Hardy: nothing up, nothing down
 const BASE_STAGES = [0, 0, 0, 0, 0, 0, 0];
 // Sturdy is the one ability the approx duel asks for by attr rather than by name (game-code.md §8).
+// @mirrors ATTRS_BY_ABILITY
 const ATTRS_BY_ABILITY = { Sturdy: ["PreDefendFullHpEndureAbAttr"] };
 
 // The " (N)" / " (P)" a nickname or a passive hangs off the game's ability names.

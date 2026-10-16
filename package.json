@@ -23,7 +23,8 @@
     "oracle:battle": "node scripts/battle-oracle/run.ts",
     "oracle:encounter": "node scripts/encounter-oracle/run.ts",
     "oracle:preview": "node scripts/preview-stability/run.ts",
-    "ladder:drift": "node scripts/drift.ts"
+    "ladder:drift": "node scripts/drift.ts",
+    "reads:check": "node scripts/game-reads/main.ts"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

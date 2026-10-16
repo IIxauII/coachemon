@@ -27,6 +27,7 @@ export type HangAssessment =
   | { status: "ok" }
   | { status: "run_interrupted"; cause: "save_hang"; hang: { heldMs: number; corroborated: boolean } };
 
+// @mirrors MESSAGE
 const MESSAGE = 0;
 
 export class HangWatch {

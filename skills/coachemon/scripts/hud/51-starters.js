@@ -102,6 +102,7 @@ const speciesValue = (s, h, sp, ctx, starter = null) => {
   if (ctx.pokerus.has(id)) why.push({ w: 2, text: "Pokérus 1.5× EXP" });
   // `getDexAttrLuck` (game-code.md §23).
   const caught = big(dex.caughtAttr);
+  // @mirrors luck
   const luck = ctx.fresh ? 0 : caught & 64n ? 3 : caught & 32n ? 2 : caught & 2n ? 1 : 0;
   if (luck) why.push({ w: 1.5 * luck, text: `luck +${luck}` });
 

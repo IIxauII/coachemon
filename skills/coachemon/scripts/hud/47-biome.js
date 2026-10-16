@@ -8,19 +8,27 @@ import { partyAtFight, partyLuck, partyProfile, typesOfSpecies } from "./08-part
 import { teamVerdict } from "./45-catch.js";
 
 // `generateNonBossBiomeTier` / `generateBossBiomeTier`'s cuts (game-code.md §10).
+// @mirrors TIER_CUTS
 const TIER_CUTS = [156, 32, 6, 1, 0];
+// @mirrors BOSS_CUTS
 const BOSS_CUTS = [20, 6, 1, 0];
 // In the order `TIER_CUTS` / `BOSS_CUTS` cut them.
+// @mirrors POOL_TIERS
 const POOL_TIERS = [BiomePoolTier.COMMON, BiomePoolTier.UNCOMMON, BiomePoolTier.RARE, BiomePoolTier.SUPER_RARE, BiomePoolTier.ULTRA_RARE];
+// @mirrors BOSS_POOL_TIERS
 const BOSS_POOL_TIERS = [BiomePoolTier.BOSS, BiomePoolTier.BOSS_RARE, BiomePoolTier.BOSS_SUPER_RARE, BiomePoolTier.BOSS_ULTRA_RARE];
+// @mirrors TRAINER_POOL_TIERS
 const TRAINER_POOL_TIERS = [TrainerPoolTier.COMMON, TrainerPoolTier.UNCOMMON, TrainerPoolTier.RARE, TrainerPoolTier.SUPER_RARE, TrainerPoolTier.ULTRA_RARE];
 const WINDOW = 10;
+// @mirrors CATCH_TIER
 const CATCH_TIER = [1, 1, 0.6, 0.3, 0.15];
 const TRAINER_TIER = 99; // an encounter from a trainer's party: not a catch
 const BOSS_FIT = 10;
 // `determineEnemySpecies`' random factor, indexed by `EvoLevelThresholdKind` (game-code.md §10).
+// @mirrors EVO_SPREAD
 const EVO_SPREAD = [1, 1.1, 1.2];
 // 46-encounter's `RARE_BIOMES` is the same set: change both.
+// @mirrors RARE_ONWARD
 const RARE_ONWARD = new Set([BiomeId.SPACE, BiomeId.FAIRY_CAVE, BiomeId.LABORATORY]);
 
 // `formsAt` and `trainerParty` cache the nothing they answer before the chunk scan lands, and the scan fills the tables
@@ -147,6 +155,7 @@ const trainerParty = type => {
   return value;
 };
 
+// @mirrors timeOfDayAt
 const timeOfDayAt = (s, w, biomeId) => {
   if (biomeId === BiomeId.ABYSS) return TimeOfDay.NIGHT;
   const c = (w + (s?.waveCycleOffset ?? 0)) % 40;
@@ -157,6 +166,7 @@ const timeOfDayAt = (s, w, biomeId) => {
 export const spawnTimeOfDay = (s, w, biomeId) => (w == null ? null : timeOfDayAt(s, poolAnchorWave(w), biomeId));
 
 // `getEncounterBossSegments`' random bosses off a tenth wave (game-code.md §10).
+// @mirrors randomBossChance
 const randomBossChance = (s, w) => (s?.gameMode?.hasRandomBosses
   ? Math.min(Math.max(Math.ceil((w - 250) / 50), 0) * 2, 30) / 100
   : 0);
@@ -172,6 +182,7 @@ const wavesIn = (s, biome, wave) => {
     const tod = spawnTimeOfDay(s, w, biome.biomeId);
     const trainer = trainerOdds(s, w, biome);
     // `isTrainerBoss` (game-code.md §10).
+    // @mirrors gym
     const gym = !!trainer && bossTrainers && (gm?.isDaily
       ? w > 10 && w < 50 && w % 10 === 0
       : kind === "gym" && (biome.biomeId !== BiomeId.END || !!gm?.isClassic));
@@ -200,6 +211,7 @@ const encounters = (s, biome, wave, luck = 0) => {
     total += 1;
     if (wv.wild > 0) {
       const difficulty = tryDo(() => gm.getWaveForDifficulty(wv.w, true), wv.w);
+      // @mirrors legalAt
       const legalAt = id => {
         const sp = speciesById(id);
         if (!sp) return false;
@@ -214,6 +226,7 @@ const encounters = (s, biome, wave, luck = 0) => {
         if (share <= 0) return;
         const tiers = asBoss ? BOSS_POOL_TIERS : POOL_TIERS;
         const pools = tiers.map(t => [...(biome.pokemonPool?.[t]?.[TimeOfDay.ALL] ?? []), ...(biome.pokemonPool?.[t]?.[wv.tod] ?? [])].filter(legalAt));
+        // @mirrors max
         const max = asBoss ? 64 - luck * 0.5 : 512 - luck * 2;
         for (const { tier, list, p } of odds(pools, tiers, asBoss ? BOSS_CUTS : TIER_CUTS, max, forced)) {
           for (const id of list) add(id, tier, share * p / list.length, asBoss ? "boss" : "wild");

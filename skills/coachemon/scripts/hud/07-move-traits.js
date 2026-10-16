@@ -28,8 +28,10 @@ const sideFlags = (mv, a) => ({ self: !!a?.selfTarget, side: SELF_SIDE.has(mv?.m
 const guaranteedChance = mv => !(mv?.chance > 0 && mv.chance < 100);
 // These read the target's chosen command, which doesn't exist yet while we choose (game-code.md §6). Upper Hand is
 // left out on purpose: it needs a priority move from the target, not just an attack.
+// @mirrors COMMAND_CONDITION
 const COMMAND_CONDITION = [MoveId.SUCKER_PUNCH, MoveId.THUNDERCLAP];
 // Gigaton Hammer and Blood Moon share one restriction, known here by its i18n key (game-code.md §5).
+// @mirrors NO_REPEAT_KEY
 const NO_REPEAT_KEY = "battle:moveDisabledConsecutive";
 
 // One use's hit count, before the target's HP or a boss bar cuts it short (game-code.md §2).
@@ -39,6 +41,7 @@ const hitShape = (mv, user, party, target) => {
   if (mh && attrsNamed(mv, "ChangeMultiHitTypeAttr").length && user?.species?.speciesId === SpeciesId.BATTLE_BOND_GRENINJA && user?.formIndex === 1) type = MultiHitType.THREE;
   const skillLink = hasAbAttr(user, "MaxMultiHitAbAttr");
   const beatUp = () => (party ?? []).reduce((t, p) => t + (p && (p.id === user?.id || !(p.status?.effect > StatusEffect.NONE)) ? 1 : 0), 0);
+  // @mirrors multi-hit-odds
   let dist = type == null ? [{ n: 1, p: 1 }]
     : type === MultiHitType.TWO_TO_FIVE ? (skillLink ? [{ n: 5, p: 1 }] : [{ n: 2, p: 0.35 }, { n: 3, p: 0.35 }, { n: 4, p: 0.15 }, { n: 5, p: 0.15 }])
     : [{ n: type === MultiHitType.TWO ? 2 : type === MultiHitType.THREE ? 3 : type === MultiHitType.TEN ? 10 : Math.max(1, beatUp()), p: 1 }];

@@ -26,6 +26,7 @@ export function press(L: Located, args: { button: number; fine: string }): Press
  * §10.4).
  */
 export function key(_L: Located, args: { button: string; fine: string }): KeyResult {
+  // @mirrors KEYS
   const KEYS: Record<string, [string, string, number]> = {
     UP: ["ArrowUp", "ArrowUp", 38],
     DOWN: ["ArrowDown", "ArrowDown", 40],
@@ -72,6 +73,7 @@ export function cursorStarter(L: Located, args: { index: number; fine: string })
   const h = L.ui.handlers[L.m.STARTER_SELECT];
   if (h.filterMode === true) return { ok: false, why: "filter-mode" };
   const n = (h.filteredStarterContainers || []).length;
+  // @mirrors starter-grid
   const rows = Math.ceil(n / 9);
   const row = Math.floor(args.index / 9);
   if (row < h.scrollCursor || row > h.scrollCursor + 8) {

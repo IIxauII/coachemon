@@ -4,6 +4,7 @@
 let tables = null, triedAt = -Infinity;
 // @only tests: setGameTables, setRewardFns
 export const setGameTables = t => { tables = t; };
+// @mirrors REWARD_FNS
 const REWARD_FNS = ["regenerateModifierPoolThresholds", "getPlayerModifierTypeOptions"];
 let rewardFns = null;
 export const setRewardFns = f => { rewardFns = f; };
@@ -12,16 +13,20 @@ const scan = (ns, found) => {
     let v;
     try { v = ns[k]; } catch { continue; } // an export still in its temporal dead zone
     if (!v) continue;
+    // @mirrors biome-table-shape
     if (v instanceof Map && !found.biomes) {
       const first = v.values().next().value;
       if (first && "biomeLinks" in first && "pokemonPool" in first) found.biomes = v;
+    // @mirrors species-registry-shape
     } else if (typeof v === "object" && typeof v.getSpecies === "function" && typeof v.getAllSpecies === "function") {
       found.species ??= v;
+    // @mirrors biome-name-fn
     } else if (typeof v === "function" && v.name === "getBiomeName") {
       // In no drift-ref block of `scripts/hud-deps.ts`: an upstream rename drops the biome labels to `#id` silently.
       found.biomeName ??= v;
     } else if (typeof v === "function" && REWARD_FNS.includes(v.name)) {
       found[v.name] ??= v;
+    // @mirrors events-shape
     } else if (typeof v === "object" && typeof v.getShinyCatchMultiplier === "function") {
       found.events ??= v;
     } else if (Array.isArray(v)) {
@@ -33,7 +38,9 @@ const scan = (ns, found) => {
     } else if (typeof v === "object" && !Array.isArray(v)) {
       let first;
       try { first = v[Object.keys(v)[0]]; } catch { continue; }
+      // @mirrors trainer-config-shape
       if (!found.trainers && first && typeof first === "object" && "trainerType" in first && "partyTemplates" in first) found.trainers = v;
+      // @mirrors egg-moves-shape
       else if (!found.eggMoves && [1, 4, 7].every(id => {
         try { return Array.isArray(v[id]) && v[id].length === 4 && v[id].every(Number.isInteger); } catch { return false; }
       })) found.eggMoves = v;

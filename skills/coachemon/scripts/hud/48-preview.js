@@ -9,6 +9,7 @@ import { spawnTimeOfDay } from "./47-biome.js";
 
 const WILD = BattleType.WILD, TRAINER = BattleType.TRAINER, MYSTERY = BattleType.MYSTERY_ENCOUNTER;
 const CONFIDENCE = { exact: "exact", replay: "replay", estimate: "estimate" };
+// @mirrors NEEDED
 const NEEDED = ["executeWithSeedOffset", "isWaveMysteryEncounter", "generateNewBattleTrainer", "checkIsDouble",
   "getEncounterBossSegments", "addEnemyPokemon", "getMysteryEncounter"];
 // The scene's wrapper first: the arena's method called with the scene's arguments is a different draw
@@ -20,8 +21,10 @@ const hasSpeciesRoll = s => typeof s.randomSpecies === "function" || typeof s.ar
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 // `randSeedInt`, re-implemented (game-code.md §11).
+// @mirrors rnd
 const rnd = range => (range <= 1 ? 0 : Phaser.Math.RND.integerInRange(0, range - 1));
 // `shiftCharCodes`, re-implemented (game-code.md §11). Not `scene.waveSeed`: that is the current wave's.
+// @mirrors waveSeedOf
 const waveSeedOf = (seed, w) => [...String(seed)].map(c => String.fromCharCode(c.charCodeAt(0) + w)).join("");
 
 const fork = (s, offset, seedOverride, fn) => {
@@ -78,6 +81,7 @@ const trainerName = t => tryDo(() => t.getName(TrainerSlot.NONE, true)) ?? tryDo
 const meName = enc => tryDo(() => enc.localizationKey) ?? tryDo(() => enc.constructor?.name) ?? null;
 
 // Runs inside the caller's `sandbox`, and returns plain data holding no game object.
+// @mirrors replay
 const replay = (s, w, playerParty) => {
   const gm = s.gameMode;
   const notes = [];
