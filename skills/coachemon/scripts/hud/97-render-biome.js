@@ -38,8 +38,10 @@ export const drawBiome = m => {
       options.push(line("👑", h("span", dim, `W${o.fight.wave} boss: ${o.fight.foes.map(([n, pct]) => `${n} ${pct}%`).join(" · ")}`)));
     }
     if (o.onward?.length) {
-      options.push(line("·", h("span", dim,
-        `onward: ${o.onward.map(x => `${x.rare ? "rare " : ""}${x.name}${x.chance > 1 ? ` (1/${x.chance})` : ""}`).join(" · ")}`)));
+      const names = o.onward.map(x => `${x.rare ? "rare " : ""}${x.name}${x.chance > 1 ? ` (1/${x.chance})` : ""}`);
+      let text = `onward: ${names.join(" · ")}`;
+      if (o.dailyOnward) text = names.length === 1 ? `${text}, no choice (Daily seed)` : `onward (Daily seed): ${names.join(" · ")}`;
+      options.push(line("·", h("span", dim, text)));
     }
   }
   return [
