@@ -1180,12 +1180,17 @@ all-empty pool falls back to any catchable species. A legend-like pick is reroll
 
 **Evolutions.** `PokemonSpecies.getWildSpeciesForLevel` (`src/data/pokemon-species.ts:1068`) calls
 `determineEnemySpecies` (`src/ai/ai-species-gen.ts:106`) — draws global RND — with kind WILD (2), or NORMAL (1) for a
-boss; a trainer passes its template's kind (default NORMAL). First `getRequiredPrevo` (line 63): below a prevolution's
+boss; a trainer passes its template's kind (default NORMAL). Every `GYM_LEADER_1`–`5` and `ELITE_FOUR` slot is STRONG
+(`src/data/trainers/trainer-party-template.ts:186-210`, `:212-217`), and a signature slot built by `partyMemberFuncs` gets that kind
+too (`src/field/trainer.ts:327`, `:334`), which `getRandomPartyMemberFunc` forwards to `getTrainerSpeciesForLevel`
+(`src/data/trainers/trainer-config.ts:963-972`); at 1.12.0.11 those slots took NORMAL. First `getRequiredPrevo` (line 63): below a prevolution's
 threshold for the kind (else its required level; the `min` of both unless that level is 1) the prevolution is returned
 outright. Then `calcEvoChance` (line 33) keeps each evolution whose `t = max(required level, evoLevelThreshold[kind])`
 the spawn has reached, `randSeedItem` picks one, and it is taken when `randSeedIntRange(t, round(t·m)) ≤ level` (m: 1.2
-wild, 1.1 normal, 1 strong), recursing without the prevolution step. In a battle whose trainer has a specialty type, the
-evolutions are first narrowed to those of that type when some but not all are (lines 134–143). So a level-1 trade or item evolution is sure unless
+wild, 1.1 normal, 1 strong), recursing without the prevolution step. In a battle whose trainer's config has a
+`specialtyType`, the evolutions are first narrowed to those whose evolved form (`getPokemonSpeciesForm`, at `evoFormKey ?? 0`) is of
+that type, when some but not all are (lines 134–143); this replaced the old reroll in
+`genNewPartyMemberSpecies`. So a level-1 trade or item evolution is sure unless
 it carries a threshold. Classic wave 20's trainer never evolves (line 127).
 
 **The heal.** `setNextBiomeAndEnd` (`src/phases/select-biome-phase.ts:105`) — phase queue — unshifts `PartyHealPhase`
