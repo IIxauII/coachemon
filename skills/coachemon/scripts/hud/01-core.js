@@ -30,7 +30,7 @@ export const ABILITY_IMMUNE = {
   "Volt Absorb": "Electric", "Lightning Rod": "Electric", "Motor Drive": "Electric",
   "Sap Sipper": "Grass",
 };
-// Their Ground immunity stops attacks only, and Thousand Arrows gets through it (game-code.md §1, §16).
+// Each needs its `ABILITY_IMMUNE` entry too: this set only carves out what that immunity lets through (game-code.md §1, §16).
 // @mirrors ungrounded
 export const UNGROUNDED = new Set(["Levitate", "Eelevate"]);
 // @mirrors ability-immune-flag

@@ -5,6 +5,7 @@ import { MoveFlags } from "../../../../src/enums/generated.ts";
 import { onGame } from "./game-proto.mjs";
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
+// `moves`: `[name, type, power, category, target = 3, flags = 0, attrs = []]`; an attr is a class name.
 const mon = (name, lv, types, ability, [hp, atk, def, spa, spd, spe], moves, field, curHp, next) => onGame({
   // `id` is what the turn keys its memos on, so every mon needs one that tells it from the others.
   id: name, next, getMoveQueue: () => [], isTrapped: () => false, trainerSlot: 0, species: { legendary: false },
