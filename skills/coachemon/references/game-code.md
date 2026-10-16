@@ -2037,6 +2037,20 @@ member whose relearn list holds the biggest learn-card upgrade.
 the prompt's closures until `forgetMoveProcess` opens the summary screen in `LEARN_MOVE` mode with it (`:116-120`).
 `new PokemonMove(id).getMove()` is `allMoves[id]` (`src/data/moves/pokemon-move.ts:85-87`).
 
+**Forgetting a move on the reward screen.** From 1.12.1.0 (pokerogue #7697), picking a move on the summary screen's
+moves page opens a list instead of starting a swap (`src/ui/handlers/summary-ui-handler.ts:548-636`): Swap always, and
+Delete while the current phase is `SelectModifierPhase` (`:566`, checked again on confirm at `:572`). The reward screen
+reaches that summary through its party check and through the target picker of a TM or another party item
+(`src/ui/handlers/party-ui-handler.ts:1407`, `:1511-1518`), not through the Memory Mushroom's; the phase stays
+`SelectModifierPhase` throughout. A mon with one move gets the error sound and no list (`:551-553`). Delete, once
+confirmed, is `moveset.splice(moveCursor, 1)` on the live array (`:611`): no phase, no cost, no draw, no undo. A TM or
+a Memory Mushroom on a full moveset asks the same question itself: `TmModifier.apply` and `RememberMoveModifier.apply`
+(`src/modifier/modifier.ts:2297`, `:2323`) unshift a `LearnMovePhase`, whose `start` learns into a free slot and
+otherwise asks which move to forget (`src/phases/learn-move-phase.ts:62-66`). There the new move takes the forgotten
+one's slot, and the prompt can be declined, back to the reward screen with the item unspent
+(`src/phases/select-modifier-phase.ts:273-278`). A slot Delete frees is filled, unasked, by the next move learned, a
+level-up move included (`src/phases/level-up-phase.ts:97`).
+
 **No unattached held items.** A held item is a `PokemonHeldItemModifier` with a `pokemonId`
 (`src/modifier/modifier.ts:656`). It is created with its holder — the reward / shop path's
 `newModifier(party[slot])` once a slot is picked (`src/phases/select-modifier-phase.ts:357`) — or cloned onto a new
