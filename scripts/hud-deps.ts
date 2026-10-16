@@ -351,12 +351,14 @@ export const HUD_DEPS = {
     `src/data/pokemon-species.ts#PokemonSpecies.getEvolutionLevels`,
   ],
 
-  /** game-code.md §15, §17, §23. */
+  /** game-code.md §15, §17, §23, §32. */
   "09-projection.js": [
     `${SCENE}#BattleScene.getMaxExpLevel`,
     `${SCENE}#BattleScene.applyPartyExp`,
     `src/data/species-data-registry.ts#SpeciesDataRegistry.getEvolutions`,
     `src/data/species-data-registry.ts#SpeciesDataRegistry.getSpecies`,
+    `${P}#Pokemon.getEvolution`,
+    `src/data/challenge.ts#MovesetRandomizerChallenge.applyModifyEvolutions`,
   ],
 
   /** game-code.md §13. */
@@ -743,7 +745,7 @@ export const HUD_DEPS = {
     `src/enums/challenges.ts#Challenges`,
   ],
 
-  /** game-code.md §23. */
+  /** game-code.md §23, §32. */
   "51-starters.js": [
     `src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.show`,
     `src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.tryUpdateValue`,
@@ -761,6 +763,8 @@ export const HUD_DEPS = {
     `src/data/species-data-registry.ts#SpeciesDataRegistry.getAllStarters`,
     `src/data/challenge.ts#MovesetRandomizerChallenge.applyStarterSelectModify`,
     `src/data/challenge.ts#AbilityRandomizerChallenge.applyStarterCost`,
+    `src/data/challenge.ts#AbilityRandomizerChallenge.applySpeciesAbilityModify`,
+    `src/data/challenge.ts#AbilityRandomizerChallenge.applyPassiveAbilityModify`,
     `src/system/game-data.ts#GameData.getDexAttrLuck`,
     `src/data/pokemon-species.ts#PokemonSpecies.getEvolutionLevels`,
     `src/data/pokemon-species.ts#PokemonSpeciesForm.getPassiveAbility`,

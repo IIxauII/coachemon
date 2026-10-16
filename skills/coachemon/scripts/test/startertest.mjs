@@ -237,8 +237,7 @@ const checkBudget = (m, limit, label) => {
   assert.ok(/evolves at L50/.test(two), two);
 }
 
-// ---- The Ability Randomizer hides itself while a team is chosen (game-code.md §32), so the grid's ability names are
-// not the ones the run hands out: a hidden ability is no reason at all, and from value 2 a passive is one unnamed.
+// ---- Under the Ability Randomizer a hidden ability is no reason, and from value 2 a passive goes unnamed (game-code.md §32).
 {
   const why = (value, looking) => mount({ challenges: [{ id: 12, value }], looking }).model.viewing?.why.join(" ") ?? "";
   const gible = [1, 2].map(v => why(v, 443)), karp = [1, 2].map(v => why(v, 129));

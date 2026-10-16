@@ -3058,10 +3058,10 @@ value 2 also lifts the move requirement off move evolutions.
   (`src/field/learnsets.ts:85-87`). The grid's `getStarterMoves` applies it itself
   (`src/ui/utils/starter-select-ui-utils.ts:519-520`). In `UiMode.STARTER_SELECT` the hook empties the list, so the
   grid offers a starter no moves; in the Pokédex and egg-hatch modes it hands it back unrandomized.
-- `PLAYER_TM_COMPATIBILITY` (`:1468-1481`) and `ENEMY_TM_COMPATIBILITY` (`:1483-1496`, read at
+- `PLAYER_TM_COMPATIBILITY` (`src/data/challenge.ts:1468-1481`) and `ENEMY_TM_COMPATIBILITY` (`:1483-1496`, read at
   `src/ai/ai-moveset-gen.ts:176-177`): as many TMs as the species had, off a shuffle of the TM pool, on the fork
   `500 × speciesId` (§16).
-- `EGG_MOVE_RELEARN_AVAILABILITY` is off (`:1587-1591`, §16), `STARTER_SELECT_MODIFY` clears the grid's egg moves
+- `EGG_MOVE_RELEARN_AVAILABILITY` is off (`src/data/challenge.ts:1587-1591`, §16), `STARTER_SELECT_MODIFY` clears the grid's egg moves
   (`:1349-1358`, §23), and the AI's egg-move pool and superseded-move map are emptied (`:1498-1509`). `STARTER_MODIFY`
   replaces a starter's moveset, the one chosen on the grid included, with its first three level-up moves up to its
   level, adding a STAB move by its species' first type when none of them is an attack (`:1360-1423`).
@@ -3082,17 +3082,17 @@ value 2 also lifts the move requirement off move evolutions.
 **Ability Randomizer** (`Challenges.ABILITY_RANDOMIZER`, `src/data/challenge.ts:1594`): value 1 randomizes abilities,
 2 passives too, 3 both but keeps nine abilities as they are.
 - `SPECIES_ABILITY_MODIFY` (`:1645-1681`): `PokemonSpeciesForm.getAbility(i)` (`src/data/pokemon-species.ts:196-210`)
-  returns a pick off every implemented ability bar None, Commander, fourteen form-change abilities (`:1613-1628`) and
+  returns a pick off every implemented ability bar None, Commander, fourteen form-change abilities (`src/data/challenge.ts:1613-1628`) and
   seven harmful ones (Defeatist, Klutz, Normalize, Slow Start, Stall, Truant, Wimp Out), on the fork `500 × speciesId +
   abilityId`. At value 3 a different list stays as it is (`:1659-1669`): Schooling, Power Construct, Battle Bond,
   Disguise, Ice Face, Zero to Hero, Tera Shift, Tera Shell and Teraform Zero. So Battle Bond, Tera Shell and Teraform
   Zero can be rolled, and Forecast, Stance Change, Zen Mode and the other excluded form-change abilities are rolled
   away even at value 3. A member's `getAbility` goes through it, a fusion's through the other half's form
   (`src/field/pokemon.ts:2215`, `:2226`).
-- `PASSIVE_ABILITY_MODIFY` (`:1683-1705`), value 2 and up: the same pool and fork, with no value-3 keep list, for
+- `PASSIVE_ABILITY_MODIFY` (`src/data/challenge.ts:1683-1705`), value 2 and up: the same pool and fork, with no value-3 keep list, for
   `getPassiveAbility`
   (`src/data/pokemon-species.ts:217-221`), which a member's own `getPassiveAbility` calls (`src/field/pokemon.ts:2261`).
 - Both hand the ability back unrandomized while the current phase is `SelectStarterPhase`, and in the Pokédex and
   egg-hatch modes: the starter grid's ability and passive names are not the ones the run hands out. The raw fields
   (`ability1`, `ability2`, `abilityHidden`) see neither hook.
-- `STARTER_COST` moves seven species' costs (`:1707-1733`, §23).
+- `STARTER_COST` moves seven species' costs (`src/data/challenge.ts:1707-1733`, §23).

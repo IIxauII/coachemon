@@ -27,8 +27,8 @@ const SP = {
   hydrapple: species(1019, "Hydrapple", ["Grass", "Dragon"], 540, { root: 840 }),
 };
 // A move condition, as `SpeciesEvolutionCondition` carries it: Ambipom's Double Hit on a level-32 evolution, and
-// Hydrapple's Dragon Cheer on a level-1 one, whose `evoLevelThreshold` only a wild spawn reads. The game's threshold
-// comes from `evoDelay [56, 68, 80]`; this one is lowered to 35 so that reading it would land inside the L45 below.
+// Hydrapple's Dragon Cheer on a level-1 one, its `evoLevelThreshold` lowered to 35 so that reading it would land
+// inside the L45 below.
 const EVOS = {
   190: [{ speciesId: 424, level: 32, item: 0, condition: { data: [{ key: MOVE, move: 458 }] } }],
   1011: [{ speciesId: 1019, level: 1, item: 0, condition: { data: [{ key: MOVE, move: 945 }] }, evoLevelThreshold: [35, 40, 45] }],
@@ -308,14 +308,12 @@ const name = r => (r.evolved.length ? `${r.evolved.map(sp => sp.name).join("→"
   assert.equal(off.species, SP.aipom, "a challenge at value 0 is off, and its hook is never run");
   assert.deepEqual(EVOS[190][0].condition.data, [{ key: MOVE, move: 458 }], "the hook ran on a copy, never the registry's row");
 
-  // `getEvolution` rebuilds each row with the threshold under a name its constructor never reads, so the copy the hook
-  // sees has none, and a level-1 move evolution lands at 50 rather than at the 35 a wild spawn would read.
-  const apple = with_([movesetRandomizer(2)]).of(dipplin, { participant: true });
-  row("Dipplin, L30 → 45", [name(apple)]);
-  assert.equal(apple.species, SP.dipplin, "Hydrapple moved to 50, out of reach at 45");
+  // The hook's copy carries no threshold, so a level-1 move evolution lands at 50 (game-code.md §32).
+  const atLevel50 = with_([movesetRandomizer(2)]).of(dipplin, { participant: true });
+  row("Dipplin, L30 → 45", [name(atLevel50)]);
+  assert.equal(atLevel50.species, SP.dipplin, "Hydrapple moved to 50, out of reach at 45");
   assert.equal(EVOS[1011][0].level, 1);
 
-  // A hook that throws leaves the registry's own rows, which the projection reads as it always has.
   const broken = { id: 11, value: 2, applyModifyEvolutions() { throw new Error("no moveset"); } };
   assert.equal(with_([broken]).of(aipom, { participant: true }).species, SP.aipom, "the condition stands, and is refused");
   scene.gameMode = {};

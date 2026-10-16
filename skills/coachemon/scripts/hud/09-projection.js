@@ -1,6 +1,7 @@
 // The level a party member, or a newcomer, stands at by the time the run reaches the next big fight, and the species
-// it stands as there. Nothing here draws, and nothing here is certain: the EXP stream a projection runs over is a
-// model, so every answer it gives carries `estimate` (CONTEXT.md, `Level projection`).
+// it stands as there. Nothing here draws, save a challenge's evolution hook, which may fork the seed and restores it
+// (game-code.md §32). Nothing here is certain either: the EXP stream a projection runs over is a model, so every
+// answer it gives carries `estimate` (CONTEXT.md, `Level projection`).
 import { gameTables } from "./04-game-tables.js";
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
@@ -45,6 +46,9 @@ const MAX_STEPS = 4;
  * `applyModifyEvolutions` the way `getEvolution` runs `MODIFY_EVOLUTIONS` (game-code.md §32). The hook rewrites what
  * it is handed, so it gets copies built as `getEvolution` builds them, with no `evoLevelThreshold`. A hook that throws
  * leaves the registry's own rows.
+ *
+ * Gotcha: the default `mon` has no moveset, so the Moveset Randomizer's Tyrogue branch throws on it and a species read
+ * with no member behind it gets the registry's rows for that line.
  */
 export const evolutionsOf = (s, sp, mon = { species: sp }) => {
   const rows = tryDo(() => gameTables().species.getEvolutions(sp.speciesId), []) ?? [];

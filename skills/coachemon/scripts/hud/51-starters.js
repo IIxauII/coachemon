@@ -1,5 +1,6 @@
 // Which starters this account should take within the point budget: whole teams from what it has unlocked, each pick
-// with its reasons. Every game call here is a pure read, so none runs in `sandbox` (game-code.md §23).
+// with its reasons. Every game call here is a pure read, so none runs in `sandbox` (game-code.md §23). A challenge's
+// evolution hook writes only the copies it is handed, and its one seed fork restores the seed (game-code.md §32).
 import { TYPES, vs } from "./01-core.js";
 import { challengeOn } from "./03-calendar.js";
 import { gameTables } from "./04-game-tables.js";
