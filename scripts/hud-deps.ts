@@ -353,12 +353,14 @@ export const HUD_DEPS = {
     `src/data/pokemon-species.ts#PokemonSpecies.getEvolutionLevels`,
   ],
 
-  /** game-code.md §15, §17, §23. */
+  /** game-code.md §15, §17, §23, §33. */
   "09-projection.js": [
     `${SCENE}#BattleScene.getMaxExpLevel`,
     `${SCENE}#BattleScene.applyPartyExp`,
     `src/data/species-data-registry.ts#SpeciesDataRegistry.getEvolutions`,
     `src/data/species-data-registry.ts#SpeciesDataRegistry.getSpecies`,
+    `${P}#Pokemon.getEvolution`,
+    `src/data/challenge.ts#MovesetRandomizerChallenge.applyModifyEvolutions`,
   ],
 
   /** game-code.md §13. */

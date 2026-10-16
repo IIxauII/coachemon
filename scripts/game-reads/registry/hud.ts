@@ -55,6 +55,7 @@ export const HUD: Area = {
       ],
     },
     { name: "applyConditions", kind: "method", at: ["src/data/moves/move.ts#Move.applyConditions"] },
+    { name: "applyModifyEvolutions", kind: "method", at: ["src/data/challenge.ts#Challenge.applyModifyEvolutions"] },
     { name: "applyStarterChoice", kind: "method", at: ["src/data/challenge.ts#Challenge.applyStarterChoice"] },
     {
       name: "applyStarterSelectModify",
