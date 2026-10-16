@@ -1,5 +1,6 @@
 import type { Discriminators } from "./disc.ts";
 import type { PageModes } from "./modes.ts";
+import type { StarterReads } from "./starter.ts";
 
 /** A game object from the page: untyped, every path guarded where it is read. */
 export type Page = any;
@@ -9,7 +10,11 @@ export type LocatorWhy = "no-phaser" | "empty-pool" | "no-game-in-pool" | "not-b
 export type Scene = { ready: true; game: Page; scene: Page; ui: Page };
 export type Unlocated = { ready: false; why: LocatorWhy };
 
-export type Located = Scene & PageModes & { fine: () => string; disc: (h: Page) => Discriminators };
+export type Located = Scene & PageModes & {
+  fine: () => string;
+  disc: (h: Page) => Discriminators;
+  starter: (h: Page) => StarterReads;
+};
 
 /**
  * Never `pool[0]`, never `scenes[0]`, never cached: rediscovered on every command (#9, v1-tool-surface.md §1). The HUD

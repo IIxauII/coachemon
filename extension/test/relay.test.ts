@@ -2,7 +2,9 @@
 // "reply before dispatch returns" itself, not a mock of it (extension-distribution.md §9.2).
 import assert from "node:assert/strict";
 import test, { type TestContext } from "node:test";
-import { onPage } from "../../src/page/fake-page.ts";
+import { UiMode } from "../../src/enums/generated.ts";
+import { onPage, starterGrid } from "../../src/page/fake-page.ts";
+import type { StartersResult } from "../../src/page/starters.ts";
 import type { ToBackground } from "../src/messages.ts";
 import { EVENT, MAX_DETAIL_BYTES, cardBody, encode } from "../src/relay/channel.ts";
 import { startRelay, type Relay } from "../src/relay/relay.ts";
@@ -75,6 +77,20 @@ test("a command is answered inside the dispatch that delivered it (extension-dis
   assert.equal(reply.t, "reply");
   assert.equal(reply.id, 7);
   assert.equal(reply.ok, true);
+});
+
+test("the starters read names the grid and reads the value limit through the page the extension registers (#733)", (c: TestContext) => {
+  const { h } = starterGrid({ 1: "Bulbasaur", 4: "Charmander" }, [1, 4], { party: [4] });
+  onPage(c, { ui: { mode: UiMode.STARTER_SELECT, handlers: { [UiMode.STARTER_SELECT]: h } } });
+  const t = tab();
+  const r = t.relay();
+  t.page();
+  const reply = r.command({ t: "cmd", id: 3, name: "starters", args: {} });
+  assert.equal(reply.ok, true, JSON.stringify(reply));
+  const starters = (reply as { result: StartersResult }).result;
+  assert.deepEqual(starters.grid.map(g => g.name), ["Bulbasaur", "Charmander"]);
+  assert.deepEqual(starters.party, ["Charmander"]);
+  assert.equal(starters.valueLimit, 10);
 });
 
 test("a command runs inside the meter's driver, so a frame it stalls is charged to the driver (#499)", (c: TestContext) => {

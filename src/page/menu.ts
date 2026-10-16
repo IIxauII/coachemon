@@ -160,25 +160,17 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
     } else if (mode === m.STARTER_SELECT) {
       out.family = "starter_select";
       const gd = scene.gameData;
-      // The grid keeps only its 81 on-screen containers, so a species is named through `setSpecies` on a bare
-      // object. It looks the species up before it reads `props`, and with none throws before it adds a sprite.
-      const setSpecies = __try(() => Object.getPrototypeOf(h.starterContainers[0]).setSpecies);
-      const nameOf = (id: number): string | null => __try(() => {
-        const probe: any = {};
-        try { setSpecies.call(probe, id); } catch (e) {}
-        return probe.species.name;
-      });
+      const { nameOf, valueLimit } = L.starter(h);
       const grid: number[] = h.filteredStarterIds || [];
       out.options = grid.map((id, i) => opt(i, nameOf(id), { cost: __try(() => gd.getSpeciesStarterValue(id)) }));
-      // `cursor` is an on-screen container; the label reads `<party value>/<limit>`.
+      // (game-code.md §23)
       // @mirrors starter-grid
       out.cursor = h.scrollCursor * 9 + h.cursor;
       out.extra.scrollCursor = h.scrollCursor;
       const party = (h.partyStarterIds || []).map((id: number) => ({ name: nameOf(id), cost: __try(() => gd.getSpeciesStarterValue(id)) }));
       out.extra.party = party;
       out.extra.partyValue = party.reduce((t: number, s: any) => t + (s.cost || 0), 0);
-      const limit = __try(() => Number(/\/([\d.]+)$/.exec(h.valueLimitLabel.text)![1]));
-      out.extra.valueLimit = Number.isFinite(limit) ? limit : null;
+      out.extra.valueLimit = valueLimit();
       out.extra.partyValid = __try(() => h.isPartyValid());
       out.readable = out.options.length > 0;
     } else if (mode === m.MESSAGE || mode === m.EVOLUTION_SCENE || mode === m.EGG_HATCH_SCENE || mode === m.EGG_HATCH_SUMMARY || mode === m.LOADING || mode === m.UNAVAILABLE || mode === m.ALERT_MODAL) {
