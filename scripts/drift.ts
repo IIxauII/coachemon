@@ -15,7 +15,7 @@ import type { Entry } from "../src/escape-ladder/types.ts";
 import type { ClonePin } from "../src/solver/clone.ts";
 import { checkForks, type Recheck, replay } from "../src/solver/solver.ts";
 import { checkoutOf, findClone, harnessIn, pinOf } from "./clone-test/clone-test.ts";
-import { blockers, type DepSource, drift, type Finding, lean, type Leans } from "./drift/check.ts";
+import { addDep, blockers, type DepIndex, type DepSource, drift, type Finding } from "./drift/check.ts";
 import { GameSource } from "./drift/source.ts";
 import { generatedTables, loadRepo } from "./game-reads/check.ts";
 import { REGISTRY, registryEntries } from "./game-reads/registry/index.ts";
@@ -68,11 +68,11 @@ const version = args.version ?? reviewed.pinned.gameVersion;
 const source = args.source ? path.resolve(args.source) : checkout(version);
 const sha = execFileSync("git", ["-C", source, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
 
-const deps: Leans = new Map();
-for (const [screen, entry] of Object.entries(LADDER as Record<string, Entry>)) for (const ref of entry.deps) lean(deps, ref, screen, "ladder");
-for (const ref of GLOBAL_DEPS) lean(deps, ref, "(every screen)", "ladder");
+const deps: DepIndex = new Map();
+for (const [screen, entry] of Object.entries(LADDER as Record<string, Entry>)) for (const ref of entry.deps) addDep(deps, ref, screen, "ladder");
+for (const ref of GLOBAL_DEPS) addDep(deps, ref, "(every screen)", "ladder");
 for (const [module, list] of Object.entries(HUD_DEPS as Record<string, readonly string[]>)) {
-  for (const ref of list) lean(deps, ref, `hud/${module}`, "hud");
+  for (const ref of list) addDep(deps, ref, `hud/${module}`, "hud");
 }
 
 const game = new GameSource(source);
@@ -91,24 +91,24 @@ const found = drift({
 });
 
 const shown = (list: Finding[]) => (only === undefined ? list : list.filter(i => i.sources.includes(only)));
-const lines = (list: string[], from: DepSource = "reads") => (only === undefined || only === from ? list : []);
+const lines = (list: string[], source: DepSource = "reads") => (only === undefined || only === source ? list : []);
 const findings: [string, Finding[]][] = [
   ["MOVED — the body changed since review", shown(found.moved)],
   ["MISSING — no such unit, member or literal at this ref", shown(found.missing)],
   ["UNREVIEWED — never stamped", shown(found.unreviewed)],
 ];
-const plain: [string, string[]][] = [
+const lineFindings: [string, string[]][] = [
   ["MISPLACED — mode or handler differs at this ref", lines(found.misplaced, "ladder")],
   ["ADDED — a member the game added to a set we mirror or switch on", lines(found.added)],
   ["SHIFTED — src/enums/generated.ts regenerated at this ref changes these", lines(found.shifted)],
   ["UNREGISTERED — read by a scanned file, declared by the game, in no registry entry", lines(found.unregistered)],
 ];
 
-const from = (s: DepSource) => [...deps.values()].filter(d => d.sources.includes(s)).length;
+const depsFrom = (s: DepSource) => [...deps.values()].filter(d => d.sources.includes(s)).length;
 console.log(`drift: ${source} @ ${sha.slice(0, 7)} (game ${version}); pinned ${reviewed.pinned.gameVersion}`);
 console.log(
-  `${deps.size} deps: ${from("ladder")} across ${Object.keys(LADDER).length} ladder entries, ` +
-    `${from("hud")} across ${Object.keys(HUD_DEPS).length} HUD modules; ${registryEntries(REGISTRY)} registry entries; ` +
+  `${deps.size} deps: ${depsFrom("ladder")} across ${Object.keys(LADDER).length} ladder entries, ` +
+    `${depsFrom("hud")} across ${Object.keys(HUD_DEPS).length} HUD modules; ${registryEntries(REGISTRY)} registry entries; ` +
     `${Object.keys(found.hashes).length} hashes in all` + (only === undefined ? "" : ` — reporting ${only} only`),
 );
 for (const [label, list] of findings) {
@@ -116,7 +116,7 @@ for (const [label, list] of findings) {
   console.log(`\n${label} (${list.length}):`);
   for (const i of list) console.log(`  ${i.ref}\n      re-read: ${i.dependents.join(", ")}`);
 }
-for (const [label, list] of plain) {
+for (const [label, list] of lineFindings) {
   if (list.length === 0) continue;
   console.log(`\n${label} (${list.length}):`);
   for (const line of list) console.log(`  ${line}`);
@@ -164,7 +164,7 @@ if (args.stamp) {
   process.exit(0);
 }
 
-if ([...findings, ...plain].some(([, list]) => list.length > 0)) {
+if ([...findings, ...lineFindings].some(([, list]) => list.length > 0)) {
   console.log(
     "\nFAIL: re-read the named entries — screens in src/escape-ladder/table.ts, HUD modules in " +
       "skills/coachemon/scripts/hud/ (their deps are listed in scripts/hud-deps.ts), game reads in " +

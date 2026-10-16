@@ -16,7 +16,6 @@ export type ScannedRead = Found & { area: AreaName; file: string };
 
 export type Problem = { kind: "UNREGISTERED" | "STALE" | "INVALID"; area: AreaName; what: string; where?: string };
 
-/** A mirror id: lower-kebab, so it never reads as the name of the constant it marks. */
 const KEBAB = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 export type Repo = {

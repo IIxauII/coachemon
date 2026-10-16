@@ -112,7 +112,7 @@ Four one-line forms, each meaning what it means here and never re-explained wher
   (`only-violation`, pinned by `src/hud-bundle.test.ts`).
 - **`// @mirrors <id>`** — a contract that the constant below copies game data, resolved to a `Mirror` entry in
   `scripts/game-reads/registry/` by `npm run reads:check`, which names the game units drift hashes for it. The id is
-  lower-kebab and says what is copied (`boss-cuts`, `rand-seed-int`).
+  lower-kebab (`boss-cuts`, `rand-seed-int`), or `reads:check` reports it INVALID.
 
 ## Worked pairs
 

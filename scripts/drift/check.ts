@@ -16,9 +16,9 @@ export type DepSource = "ladder" | "hud" | "reads";
 export type Finding = { ref: string; dependents: string[]; sources: DepSource[] };
 
 /** Each ref with who leans on it and from which lists. */
-export type Leans = Map<string, { dependents: string[]; sources: DepSource[] }>;
+export type DepIndex = Map<string, { dependents: string[]; sources: DepSource[] }>;
 
-export function lean(into: Leans, ref: string, dependent: string, source: DepSource): void {
+export function addDep(into: DepIndex, ref: string, dependent: string, source: DepSource): void {
   const d = into.get(ref) ?? { dependents: [], sources: [] };
   if (!d.dependents.includes(dependent)) d.dependents.push(dependent);
   if (!d.sources.includes(source)) d.sources.push(source);
@@ -161,11 +161,10 @@ export function members(source: GameSource, ref: string): string[] | null {
 
 export function drift(input: DriftInput): Drift {
   const { source } = input;
-  const items: Leans = new Map();
-  const on = (ref: string, dependent: string, from: DepSource) => lean(items, ref, dependent, from);
-  for (const [ref, d] of input.deps) for (const s of d.sources) for (const who of d.dependents) on(ref, who, s);
+  const items: DepIndex = new Map();
+  for (const [ref, d] of input.deps) for (const s of d.sources) for (const who of d.dependents) addDep(items, ref, who, s);
   for (const [ref, d] of input.deps) {
-    for (const c of callees(source, ref)) if (!input.deps.has(c)) for (const s of d.sources) on(c, `callee of ${ref}`, s);
+    for (const c of callees(source, ref)) if (!input.deps.has(c)) for (const s of d.sources) addDep(items, c, `callee of ${ref}`, s);
   }
 
   const missing: Finding[] = [];
@@ -178,7 +177,7 @@ export function drift(input: DriftInput): Drift {
       registered.add(r.name);
       const who = `${area}: ${r.kind} ${r.name}`;
       if (r.from === "phaser" || r.from === "vitest") libs.set(r.from, [...(libs.get(r.from) ?? []), who]);
-      for (const ref of r.at) on(ref, who, "reads");
+      for (const ref of r.at) addDep(items, ref, who, "reads");
       if (r.kind === "phase") {
         for (const ref of r.at) {
           const text = source.text(ref);
@@ -195,7 +194,7 @@ export function drift(input: DriftInput): Drift {
         else for (const ref of r.at) if (refParts(ref).file !== resolved) miss(`${ref} (${r.name} now resolves to ${resolved})`, [who]);
       }
     }
-    for (const m of a.mirrors ?? []) for (const ours of oursOf(m)) for (const ref of m.of) on(ref, `${area}: mirror ${ours}`, "reads");
+    for (const m of a.mirrors ?? []) for (const ours of oursOf(m)) for (const ref of m.of) addDep(items, ref, `${area}: mirror ${ours}`, "reads");
   }
 
   const hashes: Record<string, string> = {};

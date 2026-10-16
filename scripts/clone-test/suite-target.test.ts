@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test, { type TestContext } from "node:test";
 import reviewed from "../../src/escape-ladder/reviewed.json" with { type: "json" };
-import { findSuiteClone, suitePin, suiteVersion } from "./clone-test.ts";
+import { checkoutOf, findSuiteClone, suitePin, suiteVersion } from "./clone-test.ts";
 
 const SHA = (c: string) => c.repeat(40);
 
@@ -13,7 +13,7 @@ const SHA = (c: string) => c.repeat(40);
 const checkout = (t: TestContext, version: string, packageManager: string | undefined) => {
   const cwd = mkdtempSync(path.join(tmpdir(), "suite-target-"));
   t.after(() => rmSync(cwd, { recursive: true, force: true }));
-  const dir = path.join(cwd, ".cache/pokerogue", `v${version}`);
+  const dir = checkoutOf(version, cwd);
   mkdirSync(dir, { recursive: true });
   const git = (...args: string[]) => execFileSync("git", ["-C", dir, ...args], { encoding: "utf8" }).trim();
   git("init", "--quiet");

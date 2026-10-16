@@ -42,7 +42,7 @@ const OURS: Record<AreaName, { file: string; text: string }[]> = {
         "export const isSettingsMode = (mode: number) => mode >= UiMode.SETTINGS && mode <= UiMode.KEYBOARD_BINDING;",
         "// @mirrors title-new-game",
         "export const newGameIndex = (options: unknown[]) => (options.length >= 2 ? 1 : 0);",
-        "// @mirrors SAVE_KEY",
+        "// @mirrors save-key",
         'const SAVE_KEY = "x0i2O7WRiANTqPmZ";',
       ].join("\n"),
     },
@@ -51,7 +51,7 @@ const OURS: Record<AreaName, { file: string; text: string }[]> = {
     {
       file: "skills/coachemon/scripts/hud/52-shop.js",
       text: [
-        "// @mirrors LAB_LINKS",
+        "// @mirrors lab-links",
         'const LAB_LINKS = ["CONSTRUCTION_SITE"];',
         'export const reward = ph => ph.phaseName === "SelectModifierPhase" && ph.rerollCount > 0;',
         'export const trainerTable = t => "level" in t.YOUNGSTER;',
@@ -95,7 +95,7 @@ const REGISTRY: Registry = {
     ],
     mirrors: [
       { ours: "src/screen.ts#title-new-game", of: ["src/phases/title-phase.ts#TitlePhase.showOptions"] },
-      { ours: "src/screen.ts#SAVE_KEY", of: ["src/constants.ts#saveKey"] },
+      { ours: "src/screen.ts#save-key", of: ["src/constants.ts#saveKey"] },
     ],
   },
   hud: {
@@ -104,7 +104,7 @@ const REGISTRY: Registry = {
       { name: "phaseName", kind: "field", at: ["src/phases/select-modifier-phase.ts#SelectModifierPhase.phaseName"] },
       { name: "level", kind: "table", at: ["src/data/trainers/trainer-config.ts#trainerConfigs"] },
     ],
-    mirrors: [{ ours: "skills/coachemon/scripts/hud/52-shop.js#LAB_LINKS", of: ["src/data/balance/biomes.ts#biomeLinks"] }],
+    mirrors: [{ ours: "skills/coachemon/scripts/hud/52-shop.js#lab-links", of: ["src/data/balance/biomes.ts#biomeLinks"] }],
   },
   templates: { reads: [] },
   harness: {
@@ -198,7 +198,7 @@ test("a data table read by shape is hashed whole, and MOVED when its data change
 
 test("a hand constant mirroring game data is MOVED when what it mirrors changes", () => {
   const lab = V2.moved.find(i => i.ref === "src/data/balance/biomes.ts#biomeLinks");
-  assert.deepEqual(lab?.dependents, ["hud: mirror skills/coachemon/scripts/hud/52-shop.js#LAB_LINKS"]);
+  assert.deepEqual(lab?.dependents, ["hud: mirror skills/coachemon/scripts/hud/52-shop.js#lab-links"]);
 });
 
 test("the title indices start_run picks by are MOVED when the title's options change", () => {
