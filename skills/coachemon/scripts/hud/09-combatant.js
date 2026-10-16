@@ -1,7 +1,7 @@
 // Builds the live-shaped object the approx duel matrix scores (`approxOutcomes`) out of plain data — a species at a
 // level, a member at a projected level, a fusion of two halves the player hasn't committed — and refuses the live
 // scene: it constructs no game object and draws no RNG, so a run read that calls it stays a read.
-import { natureOf } from "./01-core.js";
+import { TYPES, natureOf } from "./01-core.js";
 import { gameTables } from "./04-game-tables.js";
 import { baseStatsOf, formOf } from "./08-party.js";
 
@@ -291,6 +291,11 @@ export const combatantOf = (spec = {}) => {
     isOnField: () => false,
   };
 };
+
+// A row of 48-preview's, which names its types and holds its moves as ids.
+export const previewFoeOf = row => combatantOf({ name: row.name, level: row.level, stats: row.stats,
+  types: (row.types ?? []).map(t => TYPES.indexOf(t)).filter(t => t >= 0), ability: row.ability ?? null,
+  passive: row.passive ?? null, moves: row.moveIds ?? [], boss: row.segments ?? 0, player: false });
 
 /**
  * The `env` the approx duel reads for a duel with no field: who the foe is comes off each side's own `isPlayer`, and

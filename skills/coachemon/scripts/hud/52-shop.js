@@ -4,10 +4,12 @@ import { TIER_NAMES, TYPES, iconOf } from "./01-core.js";
 import { stage } from "./01-meter.js";
 import { challengeOn, waveKind } from "./03-calendar.js";
 import { learnAdvice, learnMoveById } from "./40-learn.js";
+import { previewNext } from "./48-preview.js";
 import { aheadModel, doubleOdds, learnRoster } from "./49-ahead.js";
 import { teamAudit } from "./50-audit.js";
 import { rerollPreview, rerollSummary } from "./50-reroll.js";
 import { isA, rewardContext, rewardValue } from "./51-items.js";
+import { leadAdvice, leadSummary } from "./51-lead.js";
 
 const isRevive = t => isA(t, "PokemonReviveModifierType");
 const isHeal = t => isA(t, "PokemonHpRestoreModifierType") && !isRevive(t);
@@ -255,7 +257,8 @@ export const rewardsModel = (run, h) => {
     : null;
   const affordable = shop.filter(i => i.cost <= s.money).length;
   return { kind: "rewards", money: s.money, left: money, buys, free, pick, reroll, rerollAhead, bossNext, gauntlet, luck, wave,
-    affordable, ahead, audit: stage("shop.audit", () => teamAudit(run, ahead)) };
+    affordable, ahead, audit: stage("shop.audit", () => teamAudit(run, ahead)),
+    lead: stage("shop.lead", () => leadAdvice(run, previewNext(run))) };
 };
 
 const REROLL_GAIN = 5;
@@ -278,5 +281,5 @@ export const rewardsSummary = m => {
   const p = m.pick >= 0 ? m.free[m.pick] : null;
   const take = p ? `take ${p.name}${p.best ? ` → ${p.best.name}${p.best.forget ? ` (forget ${p.best.forget})` : ""}` : p.holder ? ` → ${p.holder.name}` : ""}` : null;
   const buys = m.buys.length ? `buy ${m.buys.map(x => x.name).join(", ")}` : null;
-  return [take, buys, rerollSummary(m)].filter(Boolean).join(" · ") || null;
+  return [take, buys, leadSummary(m.lead), rerollSummary(m)].filter(Boolean).join(" · ") || null;
 };

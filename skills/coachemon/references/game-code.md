@@ -31,7 +31,7 @@ what was only observed on a tab) is in §22, not in the sections.
 | Damage and KO math | §1 damage, §2 multi-hit, §3 boss segments, §4 type / power overrides, §8 held items and abilities, §18 drain and on-KO boosts |
 | Accuracy, priority, turn order | §5 |
 | Enemy AI | §6 move choice, §7 switches, §14 status moves and a foe's setup |
-| Switching | §9 free switches, §18 switch-in cost |
+| Switching | §9 free switches, §18 switch-in cost, §32 reordering the party from the reward screen and who leads |
 | End of turn | §21 `TurnEndPhase` and the phases before it |
 | Seeded RNG and the wave preview | §11 |
 | Trainers and fixed battles | §11 trainer parties, §12 fixed-battle calendar, heals, luck |
@@ -3037,3 +3037,32 @@ and in the test framework, whose `GameWrapper` sets `game.config.gameVersion` to
 session from a newer game skips the migration and loads as is. The only "out of date" refusal guards system data, in
 `initSystem`, and not under dev or beta (`:441-449`). A `SessionMigrationError` on Load Game reaches
 `TitlePhase`'s catch, which shows `failedToLoadSession` (`src/phases/title-phase.ts:201-212`).
+
+## 32. The reward screen's party check: reordering, and who leads the next wave
+
+Read at the pinned tag (`v1.12.1.1`), for the rewards card's lead advice (`51-lead.js`) and the play skill's reorder.
+Switch is new in 1.12.1.0: the v1.12.0.11 clone has no `PartyOption.SWITCH`.
+
+**Opening it.** The shop's bottom row, column 2, is Check Team (`checkTeam` in
+`locales/en/modifier-select-ui-handler.json`). It opens the party screen in `PartyUiMode.CHECK` over the shop with
+`setModeWithoutClear` (`src/phases/select-modifier-phase.ts:107-110`), and leaving it runs `resetModifierSelect`
+(`:402-410`), which re-opens the shop on the same `typeOptions`: nothing is re-rolled.
+
+**Switch.** In CHECK mode a picked member's options gain Switch at index 1 when the party has two or more members
+(`src/ui/handlers/party-ui-handler.ts:1536-1540`). Its label is `toTitleCase(PartyOption[option])`, so it is "Switch"
+in every language (`:1665-1671`).
+- Choosing it marks the member (`startPartySwitch`, `:1800-1807`) when `isSwappable` holds (`:979-988`), which asks
+  only `canSwitch()`: a member on the field that is `FRENZY`, trapped or `COMMANDED` refuses with `cannotSwitch` (§9).
+  Fainted members are not refused.
+- ACTION on another slot swaps the two `getPlayerParty()` entries at once, with no confirm (`swapPartyMembers`,
+  `:992-1001`, `:1825-1835`). ACTION on the marked slot clears the mark (`:994-995`).
+- While a member is marked, ACTION on Cancel (slot 6) does nothing (`:1007-1012`), and CANCEL only clears the mark
+  (`processPartyCancelInput`, `:1069-1075`). The next CANCEL leaves.
+
+**Who leads.** The field is the front of the party: `getPlayerField` is slot 0, and slot 1 in a double
+(`src/battle-scene.ts:731-736`). A member sent out that is not allowed in battle, fainted or barred by a challenge, is
+swapped with the first allowed member after it (`SummonPhase.preSummon`, `src/phases/summon-phase.ts:37-64`), so a wave
+opens on the first one or two allowed members in party order. After the shop, `doPostBattleCleanup` queues
+`PartyReorderSwitchPhase` (`src/battle-scene.ts:1535-1553`), which brings the party's new front onto the field
+(`src/phases/party-reorder-switch-phase.ts:38-48`). A trainer battle offers no free switch before its first turn (§9),
+so the reward screen is the only free place to choose a trainer fight's opener.
