@@ -23,7 +23,7 @@ export const DEFAULT_BUDGET: Budget = { expansions: 3000, turns: 40 };
 
 const RECHECK: Recheck | null = "recheck" in reviewed ? (reviewed.recheck as Recheck) : null;
 
-/** The refusal gate `solve` opens with, for a caller to answer from before it starts one. */
+/** The refusal gate `solve` opens with. */
 export const gate = (input: Pick<SolveInput, "save" | "extras" | "cloneVersion">): NoAnswer | null => refuse(input, RECHECK);
 
 export type SolveDeps = {

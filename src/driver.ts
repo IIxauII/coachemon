@@ -100,9 +100,8 @@ const TOOL_COMMANDS = {
 
 const SOLVING_JOBS: ReadonlySet<string> = new Set([CLONE_JOB, SOLVE_JOB]);
 
-const unanswered = ({ reason, message }: NoAnswer) => new Refusal("no_answer", message, { reason });
+const noAnswerRefusal = ({ reason, message }: NoAnswer) => new Refusal("no_answer", message, { reason });
 
-// (extension-distribution.md §12.1)
 export type Transport = "hub" | "cdp";
 
 /** Modes where an acting tool's own press legitimately leads to `LoginPhase` (Save & Quit, Log Out). */
@@ -115,7 +114,7 @@ export class Driver {
   readonly #jobs: Jobs;
   readonly #home: string;
   readonly #transport: Transport;
-  /** The last solve started, by the run's seed and the live battle's wave: one runs per fight. */
+  /** The last solve started, by the run's seed and the live battle's wave. */
   #solve: { fight: string; job: string } | null = null;
 
   constructor(game: GamePort, home: string, clock: Clock = REAL_CLOCK, jobKinds: JobKinds = {}, transport: Transport = "cdp") {
@@ -259,12 +258,12 @@ export class Driver {
   }
 
   async #startSolve(ctx: CallContext): Promise<JobView> {
-    if (this.#transport !== "hub") throw unanswered(noAnswer({ code: "needs_hub" }));
+    if (this.#transport !== "hub") throw noAnswerRefusal(noAnswer({ code: "needs_hub" }));
     const input = await this.#fightToSolve(ctx);
     const refused = gate(input);
-    if (refused) throw unanswered(refused);
+    if (refused) throw noAnswerRefusal(refused);
     // The live battle's wave: a save of another wave still comes back, and its solve answers save_mismatch (#636).
-    const fight = `${input.save.seed}/${input.live?.wave}`;
+    const fight = `${input.save.seed}/${input.live.wave}`;
     const last = this.#solve;
     if (last && this.#jobs.running(last.job)) {
       if (last.fight === fight) return this.#jobs.poll(last.job);
@@ -276,7 +275,7 @@ export class Driver {
   }
 
   /** The fight on the tab, read at its decision, as a solve from its first turn takes it. */
-  async #fightToSolve(ctx: CallContext): Promise<SolveInput> {
+  async #fightToSolve(ctx: CallContext): Promise<SolveInput & Required<Pick<SolveInput, "live">>> {
     const read = await this.readSession(ctx);
     if (read.status !== "ok") {
       throw new Refusal("not_settled", "The game didn't settle, so the fight wasn't read and no solve started: start it again at the decision.", { status: read.status });
@@ -284,7 +283,7 @@ export class Driver {
     if (read.session_error !== undefined) {
       throw new Refusal("no_battle", "No battle could be read on the tab, so there is no fight to solve.", { why: read.session_error });
     }
-    if (read.wave_start === null) throw unanswered(noAnswer({ code: "no_wave_start" }));
+    if (read.wave_start === null) throw noAnswerRefusal(noAnswer({ code: "no_wave_start" }));
     return {
       save: read.wave_start as SessionSave,
       live: { wave: read.battle_wave as number, battleSeed: read.battle_seed as string },

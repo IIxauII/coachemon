@@ -60,7 +60,7 @@ test("a solve job whose clone can't be set up answers with the setup's no answer
   assert.deepEqual(await work({ input: INPUT }, control().ctl), failed);
 });
 
-test("a solve job's progress is how far the search has gone of its budget (#672)", async () => {
+test("a solve job's progress is how far the search has gone of its budget, once its workers are up (#672)", async () => {
   const { ctl, lines } = control();
   const work = solveJob("/home/.coachemon", {
     setUp: async (_home, { progress }) => {
@@ -78,6 +78,7 @@ test("a solve job's progress is how far the search has gone of its budget (#672)
   await work({ input: INPUT }, ctl);
   assert.deepEqual(lines, [
     "setting up the clone for 1.12.0.11, step 1 of 4: fetching the game",
+    "loading the fight in the clone and starting the search's workers",
     "searched 0 of 9,000 turns",
     "searched 1,200 of 9,000 turns",
   ]);

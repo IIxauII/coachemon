@@ -8,22 +8,19 @@ export const SOLVE_JOB = "solve";
 
 export type SolveJobDeps = {
   setUp: (home: string, ctl: JobControl) => Promise<CloneSetup>;
-  /** The harness, run in the clone set up at `dir`. */
   runIn: (dir: string) => Clone;
   solve: (input: SolveInput, deps: SolveDeps) => Promise<SolveResult>;
 };
 
 const PLAYERS: SolveJobDeps = { setUp: setUpClone, runIn: dir => harnessIn(() => ({ clone: dir })), solve };
 
-/**
- * Solves `args.input`, the fight the Driver read at its decision and has already put through the refusal gate, setting
- * the player's clone up first where it isn't yet.
- */
+/** `args.input` is the fight the Driver read at its decision, already through the refusal gate. */
 export const solveJob =
   (home: string, deps: SolveJobDeps = PLAYERS): JobWork =>
   async (args, ctl) => {
     const setUp = await deps.setUp(home, ctl);
     if (setUp.kind !== "clone") return setUp;
+    ctl.progress("loading the fight in the clone and starting the search's workers");
     return deps.solve(args.input as SolveInput, {
       clone: stoppedBy(ctl.signal, deps.runIn(setUp.dir)),
       progress: ({ spent, budget }) => ctl.progress(`searched ${spent.toLocaleString("en")} of ${budget.toLocaleString("en")} turns`),
