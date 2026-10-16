@@ -747,7 +747,7 @@ export const HUD_DEPS = {
     `src/enums/challenges.ts#Challenges`,
   ],
 
-  /** game-code.md §23, §33. */
+  /** game-code.md §23. */
   "51-starters.js": [
     `src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.show`,
     `src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.tryUpdateValue`,
@@ -765,8 +765,6 @@ export const HUD_DEPS = {
     `src/data/species-data-registry.ts#SpeciesDataRegistry.getAllStarters`,
     `src/data/challenge.ts#MovesetRandomizerChallenge.applyStarterSelectModify`,
     `src/data/challenge.ts#AbilityRandomizerChallenge.applyStarterCost`,
-    `src/data/challenge.ts#AbilityRandomizerChallenge.applySpeciesAbilityModify`,
-    `src/data/challenge.ts#AbilityRandomizerChallenge.applyPassiveAbilityModify`,
     `src/system/game-data.ts#GameData.getDexAttrLuck`,
     `src/data/pokemon-species.ts#PokemonSpecies.getEvolutionLevels`,
     `src/data/pokemon-species.ts#PokemonSpeciesForm.getPassiveAbility`,

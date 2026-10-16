@@ -3,7 +3,8 @@
 // Wave 62 is 8 waves short of the boss on 70, where the cap stands at 56.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
-import { MOVE, movesetRandomizer } from "./fixtures/challenges.mjs";
+import { EvoCondKey } from "../../../../src/enums/generated.ts";
+import { movesetRandomizer } from "./fixtures/challenges.mjs";
 import { party, species, SPECIES } from "./fixtures/party.mjs";
 
 // The species registry the chunk scan hands over (game-code.md §23): `getSpecies(id)`, and `getEvolutions(id)` whose
@@ -30,8 +31,8 @@ const SP = {
 // Hydrapple's Dragon Cheer on a level-1 one, its `evoLevelThreshold` lowered to 35 so that reading it would land
 // inside the L45 below.
 const EVOS = {
-  190: [{ speciesId: 424, level: 32, item: 0, condition: { data: [{ key: MOVE, move: 458 }] } }],
-  1011: [{ speciesId: 1019, level: 1, item: 0, condition: { data: [{ key: MOVE, move: 945 }] }, evoLevelThreshold: [35, 40, 45] }],
+  190: [{ speciesId: 424, level: 32, item: 0, condition: { data: [{ key: EvoCondKey.MOVE, move: 458 }] } }],
+  1011: [{ speciesId: 1019, level: 1, item: 0, condition: { data: [{ key: EvoCondKey.MOVE, move: 945 }] }, evoLevelThreshold: [35, 40, 45] }],
   147: [{ speciesId: 148, level: 35 }],
   148: [{ speciesId: 149, level: 45 }],
   // Crobat's own friendship check, which holds for the Golbat below and is never asked all the same.
@@ -306,9 +307,9 @@ const name = r => (r.evolved.length ? `${r.evolved.map(sp => sp.name).join("→"
   assert.equal(one.species, SP.aipom, "value 1 keeps the move condition");
   assert.equal(two.species, SP.ambipom, "value 2 drops it, and Ambipom's level 32 lands by 45");
   assert.equal(off.species, SP.aipom, "a challenge at value 0 is off, and its hook is never run");
-  assert.deepEqual(EVOS[190][0].condition.data, [{ key: MOVE, move: 458 }], "the hook ran on a copy, never the registry's row");
+  assert.deepEqual(EVOS[190][0].condition.data, [{ key: EvoCondKey.MOVE, move: 458 }], "the hook ran on a copy, never the registry's row");
 
-  // The hook's copy carries no threshold, so a level-1 move evolution lands at 50 (game-code.md §33).
+  // Dipplin's level-1 move evolution under value 2 (game-code.md §33).
   const atLevel50 = with_([movesetRandomizer(2)]).of(dipplin, { participant: true });
   row("Dipplin, L30 → 45", [name(atLevel50)]);
   assert.equal(atLevel50.species, SP.dipplin, "Hydrapple moved to 50, out of reach at 45");
