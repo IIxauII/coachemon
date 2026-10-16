@@ -99,7 +99,7 @@ test("the probe names Stellar, which the HUD's type chart leaves out", () => {
     name: "x", level: 1, hp: 1, getMaxHp: () => 1, getTypes: () => types, getAbility: () => null, getStat: () => 1,
     isOnField: () => true, isBoss: () => false, moveset: [{ getMove: () => ({ name: "Tera Blast", type: 18 }), getName: () => "Tera Blast", getMovePp: () => 5, ppUsed: 0 }],
   });
-  const scene = { ui: { getHandler: () => null, getMode: () => 0 }, currentBattle: { waveIndex: 1 }, getPlayerParty: () => [mon([11, 18])],
+  const scene = { ui: { getHandler: () => null, mode: 0 }, currentBattle: { waveIndex: 1 }, getPlayerParty: () => [mon([11, 18])],
     getEnemyParty: () => [], modifiers: [] };
   scope.Phaser = { Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene } } } }] } } } };
   const root = { dataset: {} as Record<string, string> };
@@ -126,8 +126,8 @@ test("stripComments drops comments and keeps everything else", () => {
 
 test("the HUD bundle ships comment-stripped and still parses (extension-distribution.md §5.2)", () => {
   const stripped = stripComments(bundle("hud"));
-  assert.match(bundle("hud"), /Pokemon\.getAttackDamage,/);
-  assert.doesNotMatch(stripped, /Pokemon\.getAttackDamage,/);
+  assert.match(bundle("hud"), /\(game-code\.md §\d+\)/);
+  assert.doesNotMatch(stripped, /\(game-code\.md §\d+\)/);
   assert.doesNotMatch(stripped, /^\/\//m);
   assert.doesNotMatch(stripped, /^\s*\/\*/m);
   assert.doesNotThrow(() => new Function(stripped));

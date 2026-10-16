@@ -577,6 +577,19 @@ const scenarios = {
     free: [mk(TempStatStageBoosterModifierType, { name: "X Defense", iconImage: "x_defense", tier: 0 })],
     rewardPool: () => [held("LEFTOVERS", "Leftovers", 3)],
     expect: m => { assert.equal(m.rerollAhead, null); assert.equal(m.reroll, null); } },
+  // A wild foe that fled with none of its side fainted leaves a shop with no free rewards and no reroll (game-code.md
+  // §12): the card still plans the buys.
+  "no-reward shop after a flee": { wave: 14, money: 3000, reroll: -1, noReroll: true, phase: true,
+    party: [charizard(), pk("Blastoise", 60, 187, 0, [[M.aquaTail, 0, 10]])],
+    free: [],
+    expect: (m, api) => {
+      assert.equal(m.pick, -1);
+      assert.deepEqual(m.free, []);
+      assert.equal(m.reroll, null);
+      assert.equal(m.rerollAhead, null);
+      assert.ok(m.buys.some(b => b.targetName === "Blastoise"), `the hurt Blastoise is healed: ${m.buys.map(b => b.name)}`);
+      assert.match(api.cardSummary(m).rewards, /^buy /);
+    } },
   // Without the reward functions the reroll hint stands in.
   "reroll preview unavailable": { wave: 14, money: 3000, reroll: 250, phase: true, party: [snorlax()],
     free: [mk(TempStatStageBoosterModifierType, { name: "X Defense", iconImage: "x_defense", tier: 0 })],
@@ -594,7 +607,7 @@ for (const [label, sc] of Object.entries(scenarios)) {
   sc.setup?.(sc);
   const handler = { options: sc.free.map(t => opt(t)), shopOptionsRows: shopRows, rerollCost: sc.reroll ?? 2250 };
   // Most scenarios leave `gameMode` off, so the card falls back to the tenth-wave rule.
-  const scene = { money: sc.money, pokeballCounts: { 0: sc.balls ?? 34, 1: sc.balls ?? 34, 2: sc.balls ?? 34 }, modifiers: sc.modifiers ?? [], currentBattle: { waveIndex: sc.wave ?? 0, double: !!sc.double }, ui: { getMode: () => 6, getHandler: () => handler }, getPlayerParty: () => sc.party, getEnemyParty: () => [],
+  const scene = { money: sc.money, pokeballCounts: { 0: sc.balls ?? 34, 1: sc.balls ?? 34, 2: sc.balls ?? 34 }, modifiers: sc.modifiers ?? [], currentBattle: { waveIndex: sc.wave ?? 0, double: !!sc.double }, ui: { mode: 6, getHandler: () => handler }, getPlayerParty: () => sc.party, getEnemyParty: () => [],
     ...(sc.mode ? { gameMode: classicMode() } : sc.daily ? { gameMode: { isDaily: true } } : sc.challenges ? { gameMode: { challenges: sc.challenges } } : {}) };
   if (sc.rewardPool || sc.phase) {
     scene.phase = Object.assign(new SelectModifierPhase(0), { typeOptions: sc.free.map(t => ({ type: t })), noReroll: !!sc.noReroll });

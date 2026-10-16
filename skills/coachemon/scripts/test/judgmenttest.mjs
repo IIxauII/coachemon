@@ -1335,6 +1335,12 @@ const GRASSES = () => [
   }
   assert.ok(alone.reasons.every(r => r.kind !== "roster" && r.confidence === "exact"));
 
+  // A trainer can field one species twice: twin Jolteon are two rows of the roster half but one reason.
+  const twins = judge(WATERS(), nc(), {}, { seed: "judge-roster-twins", roster: preview("replay", [GYM[0], GYM[0], GYM[2], GYM[3]]) });
+  assert.deepEqual(half(twins, "roster").map(r => r.threat), ["Jolteon L40", "Jolteon L40", "Magnezone L41", "Ampharos L42"]);
+  assert.equal(new Set(twins.reasons.map(r => r.text)).size, twins.reasons.length,
+    `no reason said twice: ${JSON.stringify(twins.reasons.map(r => r.text))}`);
+
   // The judgment is as sure as its weakest input: the threat set takes the roster's, and the projection behind the
   // party is an estimate whatever the preview says.
   for (const c of ["exact", "replay", "estimate"]) {

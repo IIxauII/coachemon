@@ -38,8 +38,8 @@ const M = {
   zenHeadbutt: move("Zen Headbutt", "Psychic", 80, 0, 90), psyshieldBash: move("Psyshield Bash", "Psychic", 90, 0, 90),
   meteorMash: move("Meteor Mash", "Steel", 90, 0, 90), hammerArm: move("Hammer Arm", "Fighting", 100, 0, 90),
   surf: move("Surf", "Water", 90, 1), soak: move("Soak", "Water", -1, 2, 100, { attrs: [["ChangeTypeAttr", { type: TY.indexOf("Water") }]] }), aquaTail: move("Aqua Tail", "Water", 90, 0, 90),
-  playRough: move("Play Rough", "Fairy", 90, 0, 90), synthesis: move("Synthesis", "Grass", -1, 2, -1, { attrs: [["PlantHealAttr", {}]], moveTarget: 0 }),
-  gigaDrain: move("Giga Drain", "Grass", 75, 1), petalDance: move("Petal Dance", "Grass", 120, 1, 100, { attrs: [["FrenzyAttr", {}]] }),
+  playRough: move("Play Rough", "Fairy", 90, 0, 90), synthesis: move("Synthesis", "Grass", -1, 2, -1, { attrs: [["VariableHealAttr", {}]], moveTarget: 0 }),
+  gigaDrain: move("Giga Drain", "Grass", 75, 1), petalDance: move("Petal Dance", "Grass", 120, 1, 100, { attrs: [["AddBattlerTagAttr", { tagType: "FRENZY", selfTarget: true }]] }),
   boomburst: move("Boomburst", "Normal", 140, 1, 100, { moveTarget: 4 }), hyperDrill: move("Hyper Drill", "Normal", 120, 0),
   drillRun: move("Drill Run", "Ground", 80, 0, 95), blizzard: move("Blizzard", "Ice", 110, 1, 70, { moveTarget: 6 }),
 };
@@ -226,6 +226,18 @@ const scenarios = {
   },
 };
 
+// A trainer can field one species twice: a twin's lone answer is the same point of failure, so one finding.
+{
+  const guzma = scenarios["wave 164 guzma"];
+  const foes = guzma.ahead.next.foes;
+  scenarios["wave 164 guzma, twin Flygon"] = { ...guzma,
+    ahead: { next: { ...guzma.ahead.next, foes: [...foes.slice(0, 5), foes[4]] } },
+    expect: a => {
+      const t = a.findings.map(f => f.text);
+      assert.equal(t.filter(x => x === "Flygon (W165) has one answer: Dudunsparce Blizzard (70%)").length, 1, t.join("\n"));
+    } };
+}
+
 for (const [label, sc] of Object.entries(scenarios)) {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
@@ -233,7 +245,7 @@ for (const [label, sc] of Object.entries(scenarios)) {
   const opt = t => ({ modifierTypeOption: { type: t, cost: 0 } });
   const handler = { options: sc.free.map(opt), shopOptionsRows: [], rerollCost: 1000 };
   const scene = { money: 500, pokeballCounts: { 0: 20 }, modifiers: sc.modifiers ?? [], currentBattle: { waveIndex: sc.wave, double: false },
-    ui: { getMode: () => 6, getHandler: () => handler }, getPlayerParty: () => party, getEnemyParty: () => [],
+    ui: { mode: 6, getHandler: () => handler }, getPlayerParty: () => party, getEnemyParty: () => [],
     ...(sc.cap ? { getMaxExpLevel: () => sc.cap } : {}),
     // Only where a scenario names challenges: a `gameMode` the others never had would move what they read.
     ...(sc.challenges ? { gameMode: { isClassic: true, challenges: sc.challenges } } : {}) };

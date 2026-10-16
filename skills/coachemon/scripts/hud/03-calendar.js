@@ -7,9 +7,11 @@ export const hasTrainers = s => s?.gameMode?.hasTrainers ?? !s?.gameMode?.isEndl
 
 // `isWaveTrainer` holds the gym rule, so a mode that never asks it has no gym wave: the modulo alone would hand
 // Endless a gym leader on 200 that the game never generates (game-code.md §12).
+// @mirrors gym-rule
 const gymRule = (s, w) => hasTrainers(s) && w % 30 === (s?.offsetGym ? 0 : 20);
 
 // game-less-backed
+// @mirrors is-final-wave
 const isFinalWave = (s, w) => {
   const gm = s?.gameMode;
   return tryDo(() => gm.isWaveFinal(w),
@@ -20,6 +22,7 @@ const runEndsAt = (s, w) => isFinalWave(s, w) && !s?.gameMode?.isEndless;
 
 // game-less-backed
 // Ask this, not `waveKind`, whether a wave is a boss wave: `waveKind` answers "gym" for 20, which is both.
+// @mirrors is-boss-wave
 export const isBossWave = (s, w) => tryDo(() => s?.gameMode.isBoss(w), w % 10 === 0);
 
 export const waveKind = (s, w) => {
@@ -44,15 +47,17 @@ export const bigFightsAhead = (s, from, n = SPAN) => {
   return out;
 };
 
-const challengeValue = (s, id) => (s?.gameMode?.challenges ?? []).find(c => c?.id === id)?.value ?? 0;
+export const challengeValue = (s, id) => (s?.gameMode?.challenges ?? []).find(c => c?.id === id)?.value ?? 0;
 // A challenge is on at any value but zero, never only a positive one: the one predicate `GameMode.hasChallenge`
 // itself uses (game-code.md §16), and the one every reader of a challenge's on/off state reads here.
 export const challengeOn = (s, id) => challengeValue(s, id) !== 0;
 // (game-code.md §12)
+// @mirrors heals-at-all
 const healsAtAll = s => ![1, 3].includes(challengeValue(s, Challenges.LIMITED_SUPPORT));
 
 const HEAL_HORIZON = 60;
 // game-less-backed
+// @mirrors next-heal
 export const nextHeal = (s, from) => {
   if (!healsAtAll(s)) return null;
   for (let w = from; w < from + HEAL_HORIZON; w++) {
@@ -66,9 +71,11 @@ export const nextHeal = (s, from) => {
 export const healRevives = s => healsAtAll(s) && !challengeOn(s, Challenges.HARDCORE);
 
 const SHOP_HORIZON = 12;
-const shopsAtAll = s => ![2, 3].includes(challengeValue(s, Challenges.LIMITED_SUPPORT));
+// @mirrors shops-at-all
+const shopsAtAll = s => !s?.gameMode?.hasNoShop && ![2, 3].includes(challengeValue(s, Challenges.LIMITED_SUPPORT));
 // No rewards screen after an X0 clear, and so no shop row — except under Limited Support 1, whose X1 transition
 // queues one in the removed heal's place (game-code.md §12).
+// @mirrors shop-after
 const shopAfter = (s, w) => w % 10 !== 0 || challengeValue(s, Challenges.LIMITED_SUPPORT) === 1;
 // game-less-backed
 const nextShop = (s, from) => {
@@ -82,8 +89,8 @@ const nextShop = (s, from) => {
 
 // The way a fainted member gets back on its feet before the big fight on wave `fight`. Luck is never one: a drawn
 // Revive, a Reviver Seed and Sacred Ash don't count, and money is not priced (#569). `from` is the wave the run
-// stands on — its own clear still opens a shop, while the heal it entered on is behind it. With no `fight` to reach,
-// any way back ahead counts.
+// stands on: its own shop counts, though running from it opens none (game-code.md §12), while the heal it entered on
+// is behind it. With no `fight` to reach, any way back ahead counts.
 export const reviveBefore = (s, from, fight = null) => {
   if (challengeOn(s, Challenges.HARDCORE)) return null;
   const heal = nextHeal(s, from + 1);
@@ -139,15 +146,18 @@ export const kindIsRolled = (s, w) => {
 };
 
 // The waves whose trainer may arrive as a double off an unseeded roll, which no replay reaches (game-code.md §12).
+// @mirrors grunt-waves
 const GRUNT_WAVES = [ClassicFixedBossWaves.EVIL_GRUNT_1, ClassicFixedBossWaves.EVIL_GRUNT_2,
   ClassicFixedBossWaves.EVIL_GRUNT_3, ClassicFixedBossWaves.EVIL_GRUNT_4];
 export const isGruntWave = w => GRUNT_WAVES.includes(w);
 
+// @mirrors rival-waves
 const RIVAL_WAVES = [ClassicFixedBossWaves.RIVAL_1, ClassicFixedBossWaves.RIVAL_2, ClassicFixedBossWaves.RIVAL_3,
   ClassicFixedBossWaves.RIVAL_4, ClassicFixedBossWaves.RIVAL_5, ClassicFixedBossWaves.RIVAL_6];
 export const isRivalWave = (s, w) => RIVAL_WAVES.includes(w) && waveKind(s, w) === "fixed";
 
 // The wave whose time of day the arena's spawn pool was last built at (game-code.md §10).
+// @mirrors pool-anchor-wave
 export const poolAnchorWave = w => {
   const base = Math.floor((w - 1) / 10) * 10;
   return w - base >= 5 ? base + 5 : base;

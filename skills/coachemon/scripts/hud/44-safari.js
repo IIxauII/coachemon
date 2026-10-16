@@ -4,10 +4,14 @@
 import { gameEvents, gameTables } from "./04-game-tables.js";
 
 // `NUM_SAFARI_ENCOUNTERS`
+// @mirrors safari-mons
 export const SAFARI_MONS = 3;
+// @mirrors base-shiny-chance
+// @mirrors base-hidden-ability-rate
 const BASE_SHINY_CHANCE = 64, BASE_HIDDEN_ABILITY_RATE = 256;
 // `NON_LEGEND_PARADOX_POKEMON`. Keep it even where it excludes nothing: an upstream rebalance can make it bite, and the
 // drift check watches it (`scripts/hud-deps.ts`).
+// @mirrors non-legend-paradox
 const NON_LEGEND_PARADOX = [
   SpeciesId.GREAT_TUSK, SpeciesId.SCREAM_TAIL, SpeciesId.BRUTE_BONNET, SpeciesId.FLUTTER_MANE, SpeciesId.SLITHER_WING,
   SpeciesId.SANDY_SHOCKS, SpeciesId.ROARING_MOON, SpeciesId.WALKING_WAKE, SpeciesId.GOUGING_FIRE,
@@ -18,7 +22,9 @@ const NON_LEGEND_PARADOX = [
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 // `randSeedInt` and `randSeedItem`, draw for draw (game-code.md §11).
+// @mirrors rand-seed-int
 const rnd = range => (range <= 1 ? 0 : Phaser.Math.RND.integerInRange(0, range - 1));
+// @mirrors rand-seed-item
 const pick = items => (items.length === 1 ? items[0] : Phaser.Math.RND.pick(items));
 const drop = o => { try { o?.destroy?.(); } catch {} };
 // The game logs its event chance and every species it builds.
@@ -47,20 +53,29 @@ const partsOf = s => {
 // cache key: a card built before the scan would hold its degraded line for the rest of the wave.
 export const safariReady = s => !partsOf(s).why;
 
-// `getRandomSpeciesByStarterCost([0, 5], NON_LEGEND_PARADOX_POKEMON, undefined, false, false, false)`. The band
-// widening never runs for `[0, 5]`; it is kept so the replay stays the game's own function.
-const safariSpecies = reg => {
-  let min = 0, max = 5;
+// `getRandomSpeciesByStarterCost` up to its draw: the `[species, cost]` pairs it draws from, in its order, or none
+// where it would fall back to Bulbasaur. `keep` stands in for its exclusion, flag and type filters.
+// @mirrors starter-band
+export const starterBand = (reg, tiers, keep) => {
+  let [min, max] = Array.isArray(tiers) ? tiers : [tiers, tiers];
   const filtered = [];
   for (const sp of reg.getAllStarters(true)) {
-    if (!sp || NON_LEGEND_PARADOX.includes(sp.speciesId) || sp.subLegendary || sp.legendary || sp.mythical) continue;
-    filtered.push([sp, reg.getStarterCost(sp.speciesId)]);
+    if (sp && keep(sp)) filtered.push([sp, reg.getStarterCost(sp.speciesId)]);
   }
   let band = filtered.filter(e => e[1] >= min && e[1] <= max);
   while (band.length === 0 && !(min === 0 && max === 10)) {
     if (min > 0) min--; else max++;
     band = filtered.filter(e => e[1] >= min && e[1] <= max);
   }
+  return band;
+};
+
+// `getRandomSpeciesByStarterCost([0, 5], NON_LEGEND_PARADOX_POKEMON, undefined, false, false, false)`. The band
+// widening never runs for `[0, 5]`; it is kept so the replay stays the game's own function.
+// @mirrors safari-species
+const safariSpecies = reg => {
+  const band = starterBand(reg, [0, 5],
+    sp => !NON_LEGEND_PARADOX.includes(sp.speciesId) && !sp.subLegendary && !sp.legendary && !sp.mythical);
   if (band.length === 0) return reg.getSpecies(SpeciesId.BULBASAUR);
   // The index is drawn before the shuffle and read out of it (game-code.md §13): swapping the two picks another species.
   const i = rnd(band.length);
@@ -111,6 +126,7 @@ export const safariPreview = (s, read) => {
     return quiet(() => {
       const mons = [];
       // `eventChance`, carried from mon to mon as the game does (game-code.md §13).
+      // @mirrors safari-event-chance
       let chance = 50, seenEvent = false;
       for (let remaining = SAFARI_MONS; remaining >= 1; remaining--) {
         let drawn = null;

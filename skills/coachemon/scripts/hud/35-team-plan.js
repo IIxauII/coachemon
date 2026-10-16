@@ -51,10 +51,12 @@ const tpTheirMove = (turn, f, me) => {
       const t = threatFrom(turn, f, me, null, { next });
       if (Number.isFinite(t?.expected)) {
         const now = next && f.isOnField?.() ? threatFrom(turn, f, me) : t;
-        const mean = (t.use ?? []).reduce((sum, x) => sum + x.d * x.p, 0);
+        // `dmg` and `use` are a turn after this one (`threatFrom`'s `later`); `entry` is this turn's.
+        const per = t.later ?? t;
+        const mean = (per.use ?? []).reduce((sum, x) => sum + x.d * x.p, 0);
         const moved = t.moves.reduce((sum, m) => sum + m.p, 0);
         return {
-          dmg: mean > 0 ? mean : t.expected, entry: Number.isFinite(now?.expected) ? now.expected : t.expected, use: tpSpread(t.use),
+          dmg: mean > 0 ? mean : per.expected, entry: Number.isFinite(now?.expected) ? now.expected : t.expected, use: tpSpread(per.use),
           name: typeof t.move === "string" ? t.move : t.move?.name ?? null, e: t.move?.e ?? 1, first: t.first, priority: t.move?.priority ?? 0, hits: hitsOn(t),
           drain: t.expected > 0 ? (t.drain ?? 0) / t.expected : 0,
           phys: moved > 0 ? t.moves.reduce((sum, m) => sum + m.p * (m.cat === "special" ? 0 : 1), 0) / moved : 1,
@@ -85,6 +87,7 @@ const tpFoeFirst = (turn, me, f, ours, theirs) => {
 // `getMatchupScore` in two halves (game-code.md §7): our HP moves over the plan, so the game is asked with ours at 0
 // and `tpSendScore` puts the HP and Speed factor back. That factor is not always 1 at 0: a slower foe at 21–40 % HP
 // comes back scaled by (1 + its HP ratio) × 0.5 already, and `tpSendScore` halves it again (#464).
+// @mirrors tp-send-base
 const tpSendBase = (turn, f, me) => {
   const outspeed = (f.isActive?.(true) ? turn.mon(f).speed : f.getStat(Stat.SPD, false)) >= turn.mon(me).speed;
   const v = turn.sendInScore(f, me);
@@ -95,6 +98,7 @@ const tpSendBase = (turn, f, me) => {
   const def = typesOf(me).reduce((x, t) => x / Math.max(effectiveness(t, f), 0.25), 1);
   return { base: atk + def, outspeed };
 };
+// @mirrors tp-send-score
 export const tpSendScore = (T, st, fi, mi) => {
   const x = T.send[fi][mi];
   if (typeof x === "number") return x;

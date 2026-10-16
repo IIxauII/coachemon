@@ -316,7 +316,8 @@ const dot = ink => h("span", { width: rung(1), height: rung(1), flex: "none", bo
 export const strip = (card, captionNode, groups) => {
   const ink = VERDICT[card?.verdict];
   const head = reserveForControl(h("div", { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "4px" },
-    ink ? dot(ink) : null, ink ? h("span", { fontWeight: "bold" }, card.verdict) : null, captionNode));
+    ink ? dot(ink) : null, ink ? h("span", { fontWeight: "bold" }, card.verdict) : null, captionNode,
+    card?.randomized ? h("span", { fontWeight: "bold", color: SKIN.rule }, "🔀 randomized") : null));
   // `overflowWrap` keeps the two-line clamp true of a run with no space in it, which would otherwise push past the
   // panel's edge rather than clip.
   const call = (groups ?? []).find(g => g.id === "act")?.summary;

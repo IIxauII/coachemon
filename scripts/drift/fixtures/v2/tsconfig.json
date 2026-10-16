@@ -1,0 +1,9 @@
+{
+  // Comments, as the game's own tsconfig has them.
+  "compilerOptions": {
+    "paths": {
+      "#system/*": ["./src/system/version-migration/*.ts", "./src/system/*.ts"],
+      "#app/*": ["./src/*.ts"]
+    }
+  }
+}

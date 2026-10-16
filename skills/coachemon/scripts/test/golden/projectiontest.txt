@@ -28,4 +28,7 @@ Golbat, friendship 255    L30→45  Golbat (as it is)
 Magneton, no stone        L30→45  Magneton (as it is)
 Magikarp, L35 past 20     L35→48  Magikarp (as it is)
 paused / a bare branch    Dratini (as it is)  Tyrogue (as it is)
+== a challenge's evolution hook
+Aipom, L30 → 45           Aipom (as it is)  value 1: Aipom (as it is)  value 2: Ambipom (evolved)
+Dipplin, L30 → 45         Dipplin (as it is)
 projection: ok

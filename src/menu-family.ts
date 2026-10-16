@@ -94,9 +94,8 @@ export function planSelect(menu: MenuRead, target: MenuOption): Plan {
     // v1-tool-surface.md §7 PARTY; the slot phase's DOWN-cycle is §10.
     case "party":
       return plan(walk(menu.extra.optionsMode ? "list" : "down_cycle"));
-    // v1-tool-surface.md §7 SAVE_SLOT. MENU has no row.
+    // v1-tool-surface.md §7 SAVE_SLOT.
     case "save_slot":
-    case "menu":
       return plan(walk("list"));
     // Modals have no v1-tool-surface.md §7 row and no cursor: the commit is `page/acts.ts`'s `modal`.
     case "modal":

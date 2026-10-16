@@ -24,8 +24,15 @@ test("an explicit slot index picks the option with that index", () => {
   assert.ok(plan.occupied.includes(slotLabel(plan.chosen!)));
 });
 
-test("unresolved hasData counts as free; no free slot leaves chosen undefined", () => {
-  assert.deepEqual(planSlot([{ i: 0, label: "Slot 1", hasData: null }], undefined).free, ["Slot 1"]);
+test("a slot still loading is neither free nor occupied, and never the default (#711)", () => {
+  const plan = planSlot([{ i: 0, label: "Slot 1", hasData: null }, { i: 1, label: "Slot 2", hasData: false }], undefined);
+  assert.deepEqual(plan.free, ["Slot 2"]);
+  assert.deepEqual(plan.occupied, []);
+  assert.deepEqual(plan.loading, ["Slot 1"]);
+  assert.equal(plan.chosen?.i, 1);
+});
+
+test("no free slot leaves chosen undefined", () => {
   assert.equal(planSlot(screen.map(o => ({ ...o, hasData: true })), undefined).chosen, undefined);
 });
 

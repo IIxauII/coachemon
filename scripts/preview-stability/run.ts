@@ -6,7 +6,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
 import { fileURLToPath } from "node:url";
-import { hudBundle, pinnedClone, testInClone } from "../clone-test/clone-test.ts";
+import { hudBundle, suiteClone, suitePin, testInClone, vitestOn } from "../clone-test/clone-test.ts";
 import { type Graded, report, type Stop } from "./tally.ts";
 
 const TEMPLATE = path.join(path.dirname(fileURLToPath(import.meta.url)), "stability.test.ts.template");
@@ -26,7 +26,7 @@ if (opt.from) {
   process.exit(0);
 }
 
-const clone = pinnedClone();
+const clone = suiteClone();
 const seeds = Array.from({ length: Number(opt.seeds) }, (_, i) => `coachemon-preview-${String(i).padStart(3, "0")}`);
 
 const { out } = await testInClone({
@@ -36,6 +36,7 @@ const { out } = await testInClone({
   bundle: hudBundle(),
   env: { COACH_SEEDS: seeds.join(","), COACH_LAST_WAVE: opt.last },
   echo: opt.verbose,
+  vitest: vitestOn(suitePin().pnpm),
 });
 if (out === undefined) {
   console.error("The walk wrote no records.\n\n  Its errors are above; --verbose adds vitest's output.\n");

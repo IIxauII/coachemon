@@ -36,7 +36,7 @@ const charmeleon = pk("Charmeleon", ["Fire"], 64, 80, [["Tackle","Normal",40,"P"
 const learnScene = move => ({
   phaseManager: { getCurrentPhase: (ph => () => ph)({ phaseName: "LearnMovePhase", partyMemberIndex: 0, moveId: -1 }) },
   currentBattle: { waveIndex: 12, double: false },
-  ui: { getMode: () => 9, getHandler: () => ({ summaryUiMode: 1, pokemon: charmeleon, newMove: mv(move) }) },
+  ui: { mode: 9, getHandler: () => ({ summaryUiMode: 1, pokemon: charmeleon, newMove: mv(move) }) },
   getEnemyParty: () => [], getPlayerParty: () => [charmeleon],
 });
 
@@ -91,7 +91,7 @@ const errors = () => seen(EVENT.coachError);
 
   // `card()` answers the `card` command with the event a late joiner missed (extension-distribution.md §11.4).
   const made0 = made;
-  assert.deepEqual(window.__coachHud.card(), { kind: body.kind, key: body.key, wave: body.wave, verdict: body.verdict, groups: body.groups, text: body.text, oracleLine: null });
+  assert.deepEqual(window.__coachHud.card(), { kind: body.kind, key: body.key, wave: body.wave, verdict: body.verdict, groups: body.groups, text: body.text, oracleLine: null, randomized: false });
   assert.equal(made, made0, `the card read drew ${made - made0} nodes of its own`);
 
   tick();
@@ -102,7 +102,7 @@ const errors = () => seen(EVENT.coachError);
   assert.equal(cards().length, 2, "a new move on offer is a new decision");
   assert.equal(cards()[1].key, "12|Charmeleon|Fire Blast");
 
-  scene = { currentBattle: null, ui: { getMode: () => 0, getHandler: () => ({}) }, getEnemyParty: () => [], getPlayerParty: () => [] };
+  scene = { currentBattle: null, ui: { mode: 0, getHandler: () => ({}) }, getEnemyParty: () => [], getPlayerParty: () => [] };
   tick();
   scene = learnScene(["Fire Blast","Fire",110,"S"]);
   tick();
@@ -125,7 +125,7 @@ const errors = () => seen(EVENT.coachError);
     for (const f of foes) f.getOpponents = () => party;
     return { phaseManager: { getCurrentPhase: () => ({ phaseName: "SelectTargetPhase", fieldIndex: 0 }) }, getField: () => [...party, ...foes],
       currentBattle: { waveIndex: 20, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, turnCommands: {} },
-      ui: { getMode: () => 5, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
+      ui: { mode: 5, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
   };
   const before = cards().length;
   scene = battle(false);
@@ -146,7 +146,7 @@ const errors = () => seen(EVENT.coachError);
     const s = battle(false);
     s.seed = "eventSeed";
     s.currentBattle.turn = turn;
-    if (phase) Object.assign(s, { phaseManager: { getCurrentPhase: () => phase }, ui: { getMode: () => UiMode.PARTY, getHandler: () => ({}) } });
+    if (phase) Object.assign(s, { phaseManager: { getCurrentPhase: () => phase }, ui: { mode: UiMode.PARTY, getHandler: () => ({}) } });
     return s;
   };
   const mon = (species, hp) => ({ slot: 0, species, onField: true, hp, maxHp: 100, status: 0, statStages: [0, 0, 0, 0, 0, 0, 0], tera: false });

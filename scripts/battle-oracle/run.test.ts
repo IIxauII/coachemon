@@ -1,18 +1,22 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { ArenaTagSide, GameModes } from "../../src/enums/generated.ts";
+import { readAtPin } from "../../src/escape-ladder/at-pin.ts";
+import { PINNED_GAME_VERSION } from "../../src/escape-ladder/lookup.ts";
 
 const RUN = fileURLToPath(new URL("./run.ts", import.meta.url));
 const FIXTURES = fileURLToPath(new URL("../../src/solver/fixtures/", import.meta.url));
-const exported = JSON.parse(readFileSync(path.join(FIXTURES, "drayton-w188.json"), "utf8"));
+const atPin = (file: string) => readAtPin(path.join(FIXTURES, file), "gameVersion");
+const exported = atPin("drayton-w188.json");
 const drayton = exported.save;
 const SCRIPT = path.join(FIXTURES, "drayton-w188.win.script.json");
-const gordieT5 = JSON.parse(readFileSync(path.join(FIXTURES, "gordie-w180.t5.json"), "utf8"));
+const gordieT5 = atPin("gordie-w180.t5.json");
+const PIN = PINNED_GAME_VERSION.replaceAll(".", "\\.");
 
 const oracle = (exported: unknown, flags: string[] = []) => {
   // Never the repo's own `.cache`: it may hold a provisioned clone, which these tests mean never to start.
@@ -63,7 +67,7 @@ test("oracle:battle reads the re-check record it ships with, so the gate lets th
   const run = oracle(exported);
 
   assert.doesNotMatch(run.stderr, /--unchecked/);
-  assert.match(run.stdout, /^no answer: the oracle's clone of game version 1\.12\.0\.11 isn't set up/);
+  assert.match(run.stdout, new RegExp(`^no answer: the oracle's clone of game version ${PIN} isn't set up`));
   assert.equal(run.status, 2);
 });
 
@@ -72,7 +76,7 @@ test("oracle:battle --replay answers no answer naming what the clone lacks when 
 
   assert.match(
     run.stdout,
-    /^no answer: the oracle's clone of game version 1\.12\.0\.11 isn't set up: No pinned clone at .*v1\.12\.0\.11\. Set it up with `npm run drift:check/,
+    new RegExp(`^no answer: the oracle's clone of game version ${PIN} isn't set up: No pinned clone at .*v${PIN}\\. Set it up with \`npm run drift:check`),
   );
   assert.equal(run.status, 2);
 });
@@ -95,14 +99,14 @@ test("oracle:battle --unchecked passes the re-check's gate and no other, so it s
   const run = oracle(exported, ["--unchecked"]);
 
   assert.match(run.stderr, /--unchecked solves on a game version the harness re-check hasn't passed/);
-  assert.match(run.stdout, /^no answer: the oracle's clone of game version 1\.12\.0\.11 isn't set up/);
+  assert.match(run.stdout, new RegExp(`^no answer: the oracle's clone of game version ${PIN} isn't set up`));
   assert.equal(run.status, 2);
 });
 
 test("oracle:battle --check answers no answer naming what the clone lacks when it isn't provisioned (#662)", () => {
   const run = oracle(exported, ["--check", SCRIPT]);
 
-  assert.match(run.stdout, /^no answer: the oracle's clone of game version 1\.12\.0\.11 isn't set up: No pinned clone/);
+  assert.match(run.stdout, new RegExp(`^no answer: the oracle's clone of game version ${PIN} isn't set up: No pinned clone`));
   assert.equal(run.status, 2);
 });
 

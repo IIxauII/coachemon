@@ -1,0 +1,3 @@
+import { applySessionVersionMigration } from "#system/version-converter";
+
+export const migrate = (s: any) => applySessionVersionMigration(s.sessionData);

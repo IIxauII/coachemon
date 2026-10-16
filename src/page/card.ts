@@ -2,7 +2,7 @@ import type { CardGroup, CardOracleLine } from "../protocol/wire.ts";
 import type { Located } from "./locate.ts";
 
 export type CardResult =
-  | { ok: true; kind: string | null; key: string | null; wave: number | null; verdict: string | null; groups: CardGroup[] | null; text: string | null; oracleLine: CardOracleLine | null; summary: Record<string, unknown> | null }
+  | { ok: true; kind: string | null; key: string | null; wave: number | null; verdict: string | null; groups: CardGroup[] | null; text: string | null; oracleLine: CardOracleLine | null; randomized: boolean | null; summary: Record<string, unknown> | null }
   | { ok: false; why: "no-hud" };
 
 /**
@@ -27,6 +27,7 @@ export function card(_L: Located, _args: Record<string, never>): CardResult {
     groups: Array.isArray(ev && ev.groups) ? (ev.groups as CardGroup[]) : null,
     text: str(ev && ev.text),
     oracleLine: ev && typeof ev.oracleLine === "object" && ev.oracleLine !== null ? (ev.oracleLine as CardOracleLine) : null,
+    randomized: ev && typeof ev.randomized === "boolean" ? ev.randomized : null,
     summary,
   };
 }

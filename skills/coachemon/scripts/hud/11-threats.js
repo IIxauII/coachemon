@@ -4,7 +4,7 @@ import { TYPES, weakestConfidence } from "./01-core.js";
 import { bigFightsAhead } from "./03-calendar.js";
 import { gameTables } from "./04-game-tables.js";
 import { RANDBATS } from "./05-randbats.js";
-import { combatantOf } from "./09-combatant.js";
+import { combatantOf, previewFoeOf } from "./09-combatant.js";
 import { levelCapAt } from "./09-projection.js";
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
@@ -151,9 +151,7 @@ let rosterRead = () => null;
 export const setRosterRead = fn => { rosterRead = fn; };
 
 const rosterThreatOf = (row, fight) => {
-  const combatant = combatantOf({ name: row.name, level: row.level, stats: row.stats,
-    types: (row.types ?? []).map(t => TYPES.indexOf(t)).filter(t => t >= 0), ability: row.ability ?? null,
-    passive: row.passive ?? null, moves: row.moveIds ?? [], boss: row.segments ?? 0, player: false });
+  const combatant = previewFoeOf(row);
   return combatant && { kind: "roster", half: "roster", label: `${row.name} L${row.level}`, fight: fight.name,
     confidence: fight.confidence, combatant, name: combatant.name, key: combatant.key };
 };

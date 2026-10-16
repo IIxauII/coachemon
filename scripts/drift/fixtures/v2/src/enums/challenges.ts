@@ -1,0 +1,5 @@
+export enum Challenges {
+  SINGLE_GENERATION,
+  HARDCORE,
+  MOVESET_RANDOMIZER,
+}

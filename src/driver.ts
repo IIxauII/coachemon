@@ -23,7 +23,9 @@ import { readSettings, writeSettings } from "./settings.ts";
 import { CLONE_JOB, cloneJob } from "./solver/clone.ts";
 import { isOverwriteConfirm, planSlot, slotLabel } from "./slots.ts";
 import { CALL_BUDGET_MS, settle, type SettleResult } from "./settle.ts";
-import type { OracleLine } from "./solver/solver.ts";
+import { DEFAULT_BUDGET, gate, type NoAnswer, type OracleLine, type SessionSave, type SolveInput } from "./solver/solver.ts";
+import { noAnswer } from "./solver/no-answer.ts";
+import { SOLVE_JOB, solveJob } from "./solver/solve-job.ts";
 import type { Choice } from "./stuck/detector.ts";
 
 export const AUTO_ADVANCE_CAP = 12;
@@ -73,7 +75,7 @@ const ARROWS = new Set(["UP", "DOWN", "LEFT", "RIGHT"]);
 const FILTER_BAR_SCREEN = "STARTER_SELECT/FILTER";
 
 /** A card of nothing, beside a `card_error` (extension-distribution.md §11.4). */
-const NO_CARD = { kind: null, key: null, wave: null, verdict: null, groups: null, text: null, oracleLine: null, summary: null } as const;
+const NO_CARD = { kind: null, key: null, wave: null, verdict: null, groups: null, text: null, oracleLine: null, randomized: null, summary: null } as const;
 
 const NO_CARD_NEXT = "The coach panel is not running on this tab, so there is no card to read. The panel ships with Coachemon and its own header reopens it; get_state and read_menu read the game without it.";
 
@@ -96,7 +98,11 @@ const TOOL_COMMANDS = {
   screenshot: [],
 } as const satisfies Record<string, readonly CommandName[]>;
 
-const SOLVING_JOBS: ReadonlySet<string> = new Set([CLONE_JOB]);
+const SOLVING_JOBS: ReadonlySet<string> = new Set([CLONE_JOB, SOLVE_JOB]);
+
+const noAnswerRefusal = ({ reason, message }: NoAnswer) => new Refusal("no_answer", message, { reason });
+
+export type Transport = "hub" | "cdp";
 
 /** Modes where an acting tool's own press legitimately leads to `LoginPhase` (Save & Quit, Log Out). */
 const MENU_MODES = new Set<number>([UiMode.MENU, UiMode.MENU_OPTION_SELECT]);
@@ -107,9 +113,13 @@ export class Driver {
   readonly #clock: Clock;
   readonly #jobs: Jobs;
   readonly #home: string;
+  readonly #transport: Transport;
+  /** The last solve started, by the run's seed and the live battle's wave. */
+  #solve: { fight: string; job: string } | null = null;
 
-  constructor(game: GamePort, home: string, clock: Clock = REAL_CLOCK, jobKinds: JobKinds = {}) {
+  constructor(game: GamePort, home: string, clock: Clock = REAL_CLOCK, jobKinds: JobKinds = {}, transport: Transport = "cdp") {
     this.#game = game;
+    this.#transport = transport;
     this.#home = home;
     this.#clock = clock;
     this.#jobs = new Jobs(jobKinds);
@@ -118,10 +128,10 @@ export class Driver {
 
   /** CDP unless `COACHEMON_TRANSPORT=hub` opts into the hub (extension-distribution.md §12.1). */
   static create(home: string = coachemonHome()): Driver {
-    const jobKinds = { [CLONE_JOB]: cloneJob(home) };
+    const jobKinds = { [CLONE_JOB]: cloneJob(home), [SOLVE_JOB]: solveJob(home) };
     if (usesHub()) {
       const hub = new HubLink({ port: hubPort(), version: PLUGIN_VERSION });
-      return new Driver(new LinkGame(hub, hub), home, REAL_CLOCK, jobKinds);
+      return new Driver(new LinkGame(hub, hub), home, REAL_CLOCK, jobKinds, "hub");
     }
     const link = new CdpLink(new CdpSession({ home }), driverLock(home));
     return new Driver(new LinkGame(link, link), home, REAL_CLOCK, jobKinds);
@@ -186,7 +196,7 @@ export class Driver {
         menu: await this.#game.menu(),
         fields: {
           kind: shown.kind, key: shown.key, card_wave: shown.wave, verdict: shown.verdict, groups: shown.groups, text: shown.text, summary: shown.summary,
-          oracle_line: shown.oracleLine,
+          oracle_line: shown.oracleLine, randomized: shown.randomized,
           ...(card.ok ? {} : { card_error: card.why }),
         },
         // A failed page read is reported, never explained; `no-hud` is the one the player can act on themselves.
@@ -239,11 +249,48 @@ export class Driver {
     });
   }
 
-  async startJob(kind: string, args: Record<string, unknown>): Promise<JobView> {
+  async startJob(kind: string, args: Record<string, unknown>, ctx: CallContext = {}): Promise<JobView> {
     if (SOLVING_JOBS.has(kind) && this.#jobs.runs(kind) && !readSettings(this.#home).solving) {
       throw new Refusal("solving_off", "Solving is off, so nothing is set up or solved for it: the player turns it on with the solving tool.");
     }
+    if (kind === SOLVE_JOB && this.#jobs.runs(kind)) return this.#startSolve(ctx);
     return this.#jobs.start(kind, args);
+  }
+
+  async #startSolve(ctx: CallContext): Promise<JobView> {
+    if (this.#transport !== "hub") throw noAnswerRefusal(noAnswer({ code: "needs_hub" }));
+    const input = await this.#fightToSolve(ctx);
+    const refused = gate(input);
+    if (refused) throw noAnswerRefusal(refused);
+    // The live battle's wave: a save of another wave still comes back, and its solve answers save_mismatch (#636).
+    const fight = `${input.save.seed}/${input.live.wave}`;
+    const last = this.#solve;
+    if (last && this.#jobs.running(last.job)) {
+      if (last.fight === fight) return this.#jobs.poll(last.job);
+      this.#jobs.cancel(last.job);
+    }
+    const started = this.#jobs.start(SOLVE_JOB, { input });
+    this.#solve = { fight, job: started.job };
+    return started;
+  }
+
+  /** The fight on the tab, read at its decision, as a solve from its first turn takes it. */
+  async #fightToSolve(ctx: CallContext): Promise<SolveInput & Required<Pick<SolveInput, "live">>> {
+    const read = await this.readSession(ctx);
+    if (read.status !== "ok") {
+      throw new Refusal("not_settled", "The game didn't settle, so the fight wasn't read and no solve started: start it again at the decision.", { status: read.status });
+    }
+    if (read.session_error !== undefined) {
+      throw new Refusal("no_battle", "No battle could be read on the tab, so there is no fight to solve.", { why: read.session_error });
+    }
+    if (read.wave_start === null) throw noAnswerRefusal(noAnswer({ code: "no_wave_start" }));
+    return {
+      save: read.wave_start as SessionSave,
+      live: { wave: read.battle_wave as number, battleSeed: read.battle_seed as string },
+      liveExport: read.export as SessionSave,
+      cloneVersion: PINNED_GAME_VERSION,
+      budget: DEFAULT_BUDGET,
+    };
   }
 
   async pollJob(id: string): Promise<JobView> {
@@ -378,8 +425,10 @@ export class Driver {
       if (ready.mode !== UiMode.TITLE) {
         throw new Refusal("not_on_title", `start_run needs the TITLE screen; the game is on ${ready.screen}.`, { screen: ready.screen });
       }
+      // @mirrors starter-party-max
       if (species.length === 0 || species.length > 6) throw new Refusal("bad_party", "species must name 1–6 starters.");
 
+      // @mirrors save-slot-count
       if (slot !== undefined && (slot < 0 || slot > 4)) throw new Refusal("bad_slot", "slot must be 0–4.");
 
       const choice: Choice = { kind: "planned", name: "start_run" };
@@ -449,6 +498,7 @@ export class Driver {
     // New Game is the first title option unless Continue is offered, and Classic the first mode (game-code.md §26).
     let menu = await this.#game.menu();
     refuseMovedScreen(ready, menu);
+    // @mirrors title-new-game
     const newGameIndex = menu.options.length >= 5 ? 1 : 0;
     log.push(`title: ${menu.options.map(o => o.label).join(" | ")} → index ${newGameIndex}`);
     let s = await select(menu, menu.options[newGameIndex], ready.fine, "title");
@@ -456,6 +506,7 @@ export class Driver {
     let cur = await expect(s, "OPTION_SELECT", "title");
     menu = await this.#game.menu();
     log.push(`game mode: ${menu.options.map(o => o.label).join(" | ")} → index 0`);
+    // @mirrors title-classic
     s = await select(menu, menu.options[0], cur.fine, "game mode");
     presses++;
     cur = await expect(s, "STARTER_SELECT", "game mode");
@@ -492,6 +543,7 @@ export class Driver {
       cur = await expect(s, "OPTION_SELECT", `select ${pick.name}`);
       menu = await this.#game.menu();
       log.push(`${pick.name}: ${menu.options.map(o => o.label).join(" | ")} → index 0`);
+      // @mirrors starter-add-option
       s = await select(menu, menu.options[0], cur.fine, `add ${pick.name}`);
       presses++;
       cur = await expect(s, "STARTER_SELECT", `add ${pick.name}`);
@@ -508,13 +560,14 @@ export class Driver {
     cur = await expect(s, "CONFIRM", "submit");
     menu = await this.#game.menu();
     log.push(`confirm: ${menu.options.map(o => o.label).join(" | ")} → index 0`);
+    // @mirrors submit-confirm-yes
     s = await select(menu, menu.options[0], cur.fine, "confirm");
     presses++;
     cur = await expect(s, "SAVE_SLOT/SAVE", "confirm");
 
     // Only the slot screen knows a slot's state, and a refusal here leaves the setup on it (v1-tool-surface.md §10).
     menu = await this.#game.menu();
-    const { free, occupied, chosen: slotOpt } = planSlot(menu.options, slot);
+    const { free, occupied, loading, chosen: slotOpt } = planSlot(menu.options, slot);
     const leftOn = { screen: "SAVE_SLOT/SAVE", free, occupied, slots: menu.options, log, next: 'select_option("Slot N") to continue, or press(CANCEL) to abandon this setup (no save is touched)' };
     if (!slotOpt) {
       if (slot !== undefined) throw new Refusal("bad_slot", `slot ${slot} ("Slot ${slot + 1}") is not on the save-slot screen`, leftOn);
@@ -522,6 +575,9 @@ export class Driver {
     }
     const chosen = Number(slotOpt.i);
     const chosenLabel = slotLabel(slotOpt);
+    if (loading.includes(chosenLabel)) {
+      throw new Refusal("slot_loading", `${chosenLabel} has not finished loading, so whether it holds a run is unknown. The run setup is waiting on the save-slot screen.`, leftOn);
+    }
     if (slotOpt.hasData === true && !overwrite) {
       throw new Refusal("slot_occupied", `${chosenLabel} has a saved run. Free: ${free.join(", ") || "none"}. The run setup is waiting on the save-slot screen.`, leftOn);
     }
@@ -536,6 +592,7 @@ export class Driver {
       }
       menu = await this.#game.menu();
       log.push(`overwrite confirm: ${menu.options.map(o => o.label).join(" | ")} → index 0`);
+      // @mirrors overwrite-confirm-yes
       s = await select(menu, menu.options[0], r.fine, "overwrite confirm");
       presses++;
     }
@@ -669,7 +726,7 @@ export class Driver {
 
   async #guard(ready: Ready): Promise<void> {
     const screen = ready.screen;
-    if (isSettingsMode(ready.mode)) throw new Refusal("settings_mode", `The game is on ${screen}; six settings carry requireReload and the reload fires on leaving, killing a live run. Leave Settings by hand.`, { screen });
+    if (isSettingsMode(ready.mode)) throw new Refusal("settings_mode", `The game is on ${screen}; a press there can change one of the seven settings that reload the page the moment they change, killing a live run. Leave Settings by hand.`, { screen });
     if (screen === FILTER_BAR_SCREEN) throw new Refusal("filter_bar", "The starter filter bar is active; setCursor would write filterBarCursor and CANCEL resets persisted filters. Leave it by hand.", { screen });
     // A transport whose settles pump has no frozen loop to refuse: the driver's own polls keep it turning (extension-distribution.md §10.3).
     if (this.#game.pumps) return;

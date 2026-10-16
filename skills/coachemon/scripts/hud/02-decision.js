@@ -5,7 +5,7 @@ const CARD_OF = {
   learn: "learn", biome: "biome", encounter: "encounter", starter: "starters",
 };
 
-// `k1`…`k4` hold each kind's key from #537's table as #544 widened it, in its order, and are compared by `===`. One
+// `k1`…`k4` hold each kind's key from #537's table as #544 and #714 widened it, in its order, and are compared by `===`. One
 // object, written over on every look: a caller that keeps a look copies it.
 const out = { kind: null, card: null, k1: null, k2: null, k3: null, k4: null, ready: false, input: false };
 const set = (kind, k1, k2, k3, k4, ready, input) => {
@@ -32,6 +32,16 @@ const heldItems = mods => {
   }
   return sig;
 };
+// Each member's id and moves, slot by slot, folded onto `sig`: a move forgotten on the summary screen (game-code.md §17)
+// changes it, and so does a reordered party (#713, #714).
+const partyMoves = (party, sig) => {
+  for (let i = 0; i < party.length; i++) {
+    const p = party[i], ms = p?.moveset;
+    sig = Math.imul(sig ^ (p?.id | 0), 0x01000193);
+    if (ms) for (let j = 0; j < ms.length; j++) sig = Math.imul(sig ^ (ms[j]?.moveId | 0), 0x01000193);
+  }
+  return sig;
+};
 
 // A faint's replacement. `doReturn` is a mid-turn switch-in pick: U-turn's, Baton Pass's or Wimp Out's (game-code.md §9).
 export const isReplacement = ph => ph?.phaseName === "SwitchPhase" && !!ph.isModal && !ph.doReturn;
@@ -39,7 +49,7 @@ export const isReplacement = ph => ph?.phaseName === "SwitchPhase" && !!ph.isMod
 export const detect = s => {
   const ph = s?.ui ? s.phaseManager?.getCurrentPhase?.() : null;
   if (!ph) return none();
-  const ui = s.ui, mode = ui.getMode(), b = s.currentBattle;
+  const ui = s.ui, mode = ui.mode, b = s.currentBattle;
   switch (ph.phaseName) {
     case "CommandPhase":
     case "SelectTargetPhase":
@@ -53,14 +63,15 @@ export const detect = s => {
       if (!isReplacement(ph)) return none();
       return set("replacement", ph, null, null, null, mode === UiMode.PARTY && enemyFree(b), true);
     case "SelectModifierPhase": {
-      const h = ui.getHandler();
-      // Between two visits, money stands in for a purchase (a TM, an item) and the held items for a transfer (#544).
+      const h = ui.getHandler(), party = s.getPlayerParty();
+      // Between two visits, money stands in for a purchase (a TM, an item), the held items for a transfer (#544).
+      const members = partyMoves(party, heldItems(s.modifiers ?? []));
       if (mode === UiMode.PARTY && h?.partyUiMode === PartyUiMode.SPLICE) {
-        return set("fusion", ph, s.getPlayerParty().length, s.money, heldItems(s.modifiers ?? []), true, true);
+        return set("fusion", ph, party.length, s.money, members, true, true);
       }
-      // A buy, a lock toggle or a transfer keeps the phase and asks anew (#524, #537).
-      return set("reward", ph, s.money, s.lockModifierTiers === true, heldItems(s.modifiers ?? []),
-        mode === UiMode.MODIFIER_SELECT && (h?.options?.length ?? 0) > 0, h?.awaitingActionInput === true);
+      // A buy, a lock toggle, a transfer or a party change keeps the phase and asks anew (#524, #537).
+      return set("reward", ph, s.money, s.lockModifierTiers === true, members,
+        mode === UiMode.MODIFIER_SELECT && (h?.options?.length || h?.shopOptionsRows?.length) > 0, h?.awaitingActionInput === true);
     }
     case "LearnMovePhase": {
       const ms = s.getPlayerParty()[ph.partyMemberIndex]?.moveset;

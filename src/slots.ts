@@ -5,19 +5,21 @@ import { UiMode } from "./enums/generated.ts";
 export type SlotOption = { i: number | string; label: string | null; hasData?: unknown };
 
 export type SlotPlan<T extends SlotOption> = {
-  /** Unresolved `hasData` counts as free. */
   free: string[];
   occupied: string[];
+  /** Unresolved `hasData`: ACTION on such a slot starts the run and later overwrites it unasked (#711, game-code.md §26). */
+  loading: string[];
   chosen: T | undefined;
 };
 
 export const slotLabel = (o: SlotOption): string => o.label ?? `Slot ${Number(o.i) + 1}`;
 
 export function planSlot<T extends SlotOption>(options: readonly T[], slot: number | undefined): SlotPlan<T> {
-  const free = options.filter(o => o.hasData !== true);
+  const free = options.filter(o => o.hasData === false);
   return {
     free: free.map(slotLabel),
     occupied: options.filter(o => o.hasData === true).map(slotLabel),
+    loading: options.filter(o => typeof o.hasData !== "boolean").map(slotLabel),
     chosen: slot === undefined ? free[0] : options.find(o => Number(o.i) === slot),
   };
 }

@@ -11,6 +11,7 @@ export type SessionResult =
 export function session(L: Located, _args: Record<string, never>): SessionResult {
   const battle = L.scene.currentBattle;
   if (!battle) return { ok: false, why: "no-battle" };
+  // @mirrors session-key-prefix
   const prefix = "sessionData" + (L.scene.sessionSlotId || "") + "_";
   const ls = (globalThis as any).localStorage;
   const stored: string[] = [];

@@ -31,8 +31,9 @@ export function starters(L: Located, _args: Record<string, never>): StartersResu
   const __try = (f: () => any) => { try { return f(); } catch (e) { return null; } };
   const h = __try(() => L.ui.handlers[L.m.STARTER_SELECT]);
   const gd = __try(() => L.scene.gameData);
-  const grid: StartersResult["grid"] = __try(() => (h.filteredStarterContainers || []).map((c: any, i: number) => ({
-    i, name: __try(() => c.species.name), id: __try(() => c.species.speciesId), cost: __try(() => gd.getSpeciesStarterValue(c.species.speciesId)),
+  const { nameOf, valueLimit } = L.starter(h);
+  const grid: StartersResult["grid"] = __try(() => (h.filteredStarterIds || []).map((id: number, i: number) => ({
+    i, name: nameOf(id), id, cost: __try(() => gd.getSpeciesStarterValue(id)),
   }))) ?? [];
   // The grid's own costs, keyed once, so `owned` never prices a species differently from the row the player sees.
   const costs: Record<number, number | null> = {};
@@ -51,11 +52,13 @@ export function starters(L: Located, _args: Record<string, never>): StartersResu
     }))) ?? [];
   return {
     ok: true,
-    cursor: __try(() => h.cursor),
+    // (game-code.md §23)
+    // @mirrors starter-grid
+    cursor: __try(() => (typeof h.cursor === "number" ? h.scrollCursor * 9 + h.cursor : null)),
     scrollCursor: __try(() => h.scrollCursor),
     grid,
-    party: __try(() => (h.starterSpecies || []).map((s: any) => s.name)) ?? [],
-    valueLimit: __try(() => h.getValueLimit()),
+    party: __try(() => (h.partyStarterIds || []).map(nameOf)) ?? [],
+    valueLimit: valueLimit(),
     partyValid: __try(() => h.isPartyValid()),
     owned,
   };

@@ -15,3 +15,4 @@ The escape ladder (`src/escape-ladder/table.ts`) is written by hand from reading
 - The stamp is solving's sign-off too (ADR 0003): it refuses while the harness re-check fails, and records the version as re-checked when it passes ([pin-bump.md](../runbooks/pin-bump.md), #665).
 - Between bumps, a live build that has moved past the pin gets no ladder at all rather than a stale one. The stuck detector is version-independent and keeps running.
 - #2's enum codegen resolves `gameVersion` to a tag the same way, so the two should share that resolution when codegen is built.
+- What our code *reads* from the game (fields, phase names, storage keys, imports, mirrored constants, the enums it switches on) is no longer left to these deps: it is registered and checked statically (ADR 0004, #711).

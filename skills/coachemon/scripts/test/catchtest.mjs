@@ -39,7 +39,7 @@ const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0,
   const scene = {
     phaseManager: pm, getField: () => [...party, ...foes].filter(p => p.isOnField()),
     currentBattle: { waveIndex: wave, turn: 1, double, battleType: trainer ? 1 : 0, enemySwitchCounter: 0, getBattlerCount: () => (double ? 2 : 1), trainer },
-    ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes,
+    ui: { mode: 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes,
     pokeballCounts: counts, modifiers: [], enemyModifiers, arena: { biomeId: biome },
     gameMode: { isDaily: false, isClassic: true, isEndless: false, challenges: [], ...mode },
     gameData: { dexData: dexData(), starterData: { 3: { abilityAttr: 1 }, 9: { abilityAttr: 1 }, 16: { abilityAttr: 1 }, 58: { abilityAttr: 1 } } },
@@ -505,6 +505,8 @@ const glameow = (extra = {}) => mon("Glameow", 16, ["Normal"], "Limber", [50,35,
   const variant = () => Object.assign(shinyPika(), { variant: 2 });
   const daily = run({ party: [venusaur()], foes: [variant()], counts, dex: known, mode: { isClassic: false, isDaily: true } }).advice.targets[0];
   assert.ok(daily.reasons.some(r => r.text === "new shiny variant · +20 candy"), JSON.stringify(daily.reasons));
+  const event = { getShinyCatchMultiplier: () => 2, getExtraCatchCandy: () => 3 };
+  assert.ok(reasons({ dex: known, events: event }).includes("shiny · +8 candy"), "an event's extra catch candy adds to the shiny's");
 }
 
 // ---- Candy is read from the prevolution-free root, masked by that species' own unlocks (game-code.md §20)

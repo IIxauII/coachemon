@@ -91,7 +91,7 @@ export function toolServer(driver: Driver): McpServer {
     "read_card",
     {
       description:
-        "What the coach panel on the tab is showing right now: the card's kind (battle, learn, reward, biome, encounter), its verdict, its groups, its plain text and the summary behind it. `groups` is the card's named parts in the order the panel shows them — act (what to do now), foes, catch, plan, options, audit, road, notes — each with a label, a summary and its rows as plain lines, so read the group you want by id instead of parsing the text; `text` is those same groups written out. `oracle_line` is { state: \"on\", turn, of } while a held oracle line leads the card, `of` being the line's last turn, and null otherwise. Read-only, and the same payload the panel's card events carry — read it once after subscribing to catch the card already up. Returns card_error: no-hud when the panel is not running.",
+        "What the coach panel on the tab is showing right now: the card's kind (battle, learn, reward, biome, encounter), its verdict, its groups, its plain text and the summary behind it. `groups` is the card's named parts in the order the panel shows them — act (what to do now), foes, catch, plan, options, audit, road, notes — each with a label, a summary and its rows as plain lines, so read the group you want by id instead of parsing the text; `text` is those same groups written out. `oracle_line` is { state: \"on\", turn, of } while a held oracle line leads the card, `of` being the line's last turn, and null otherwise. `randomized` is true while the Moveset or Ability Randomizer challenge is on: a species' moves and abilities are then not what its tables say, so cite only what the live mon shows. Read-only, and the same payload the panel's card events carry — read it once after subscribing to catch the card already up. Returns card_error: no-hud when the panel is not running.",
       inputSchema: {},
     },
     async (_args, extra) => run("read_card", {}, () => driver.readCard(context(extra as Extra))),
@@ -184,12 +184,14 @@ export function toolServer(driver: Driver): McpServer {
         kind: z
           .string()
           .describe(
-            "Which job to run. clone sets up the game clone solving runs in: once per pinned game version, answering at once when it is already set up, else with the clone or a no answer naming the cause.",
+            "Which job to run. clone sets up the game clone solving runs in: once per pinned game version, answering at once when it is already set up, else with the clone or a no answer naming the cause. " +
+              "solve solves the trainer fight on the tab from its wave-start save, setting the clone up first if it needs to: its progress is how far the search has gone of its budget, and its result an oracle line or a no answer with the reason. One runs per fight: a solve for a new fight cancels the last fight's job, and one for the fight already being solved hands back that job. " +
+              "Where the fight can't be solved (a Daily, a game version other than the pinned one, no hub, …) it refuses no_answer at once with the reason, and no job starts; relay the message as given.",
           ),
         args: z.record(z.string(), z.unknown()).optional().describe("The job's own arguments"),
       },
     },
-    async ({ kind, args }) => run("start_job", { kind, args }, () => driver.startJob(kind, args ?? {})),
+    async ({ kind, args }, extra) => run("start_job", { kind, args }, () => driver.startJob(kind, args ?? {}, context(extra as Extra))),
   );
 
   server.registerTool(

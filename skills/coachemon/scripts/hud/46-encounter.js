@@ -2,14 +2,15 @@
 // calls `meetsRequirements()`, which writes and can draw, and replays only the draws a closure makes before its first
 // `await`: past that the card gives odds (game-code.md §13).
 import { TYPES, abilityValue, natureOf, stage, typesOf } from "./01-core.js";
-import { bigFightsAhead } from "./03-calendar.js";
+import { bigFightsAhead, challengeValue } from "./03-calendar.js";
 import { gameTables } from "./04-game-tables.js";
-import { partyAtFight, partyProfile } from "./08-party.js";
+import { formOf, partyAtFight, partyProfile, typesOfSpecies } from "./08-party.js";
 import { weakestMember } from "./12-value.js";
-import { SAFARI_MONS, safariMonData, safariPreview, safariReady } from "./44-safari.js";
+import { SAFARI_MONS, safariMonData, safariPreview, safariReady, starterBand } from "./44-safari.js";
 import { accountWorth, teamVerdict } from "./45-catch.js";
 
 // Indexed by `MysteryEncounterType`: keep it in enum order.
+// @mirrors names
 const NAMES = ["Mysterious Challengers", "Mysterious Chest", "Dark Deal", "Fight or Flight", "Slumbering Snorlax",
   "Training Session", "Department Store Sale", "Shady Vitamin Dealer", "Field Trip", "Safari Zone", "Lost at Sea",
   "Fiery Fallout", "The Strong Stuff", "The Pokémon Salesman", "An Offer You Can't Refuse", "Delibird-y",
@@ -32,24 +33,85 @@ const TRAINING = MysteryEncounterType.TRAINING_SESSION, SALESMAN = MysteryEncoun
   TRAINERS_TEST = MysteryEncounterType.A_TRAINERS_TEST, WEIRD_DREAM = MysteryEncounterType.WEIRD_DREAM,
   WINSTRATE = MysteryEncounterType.THE_WINSTRATE_CHALLENGE;
 const TIERS = { [MysteryEncounterTier.COMMON]: "common", [MysteryEncounterTier.GREAT]: "great", [MysteryEncounterTier.ULTRA]: "ultra", [MysteryEncounterTier.ROGUE]: "rogue" };
+// @mirrors disabled-modes
 const DISABLED_MODES = new Set([MysteryEncounterOptionMode.DISABLED_OR_DEFAULT, MysteryEncounterOptionMode.DISABLED_OR_SPECIAL]);
 // Teleporting Hijinks' `BIOME_CANDIDATES`, in the game's order: the replay indexes it (game-code.md §13).
+// @mirrors teleport-biomes
 const TELEPORT_BIOMES = [[BiomeId.SPACE, "Space"], [BiomeId.FAIRY_CAVE, "Fairy Cave"], [BiomeId.LABORATORY, "Laboratory"],
   [BiomeId.ISLAND, "Island"], [BiomeId.WASTELAND, "Wasteland"], [BiomeId.DOJO, "Dojo"]];
 // 47-biome's `RARE_ONWARD` is the same set: change both.
+// @mirrors rare-biomes
 const RARE_BIOMES = new Set([BiomeId.SPACE, BiomeId.FAIRY_CAVE, BiomeId.LABORATORY]);
 const RESERVE_WAVES = 3;
 const HARD_LEVEL_GAP = 5, BOSS_LEVEL_EDGE = 3;
 const MONS_EACH = 3;
+// `Trainer.getPartyLevels` for one member, on the difficulty wave (game-code.md §13).
+// @mirrors party-levels
+const STRENGTH_MULTIPLIER = {
+  [PartyMemberStrength.WEAKEST]: 0.95, [PartyMemberStrength.WEAKER]: 1, [PartyMemberStrength.WEAK]: 1.05,
+  [PartyMemberStrength.AVERAGE]: 1.12, [PartyMemberStrength.STRONG]: 1.22, [PartyMemberStrength.STRONGER]: 1.24,
+  [PartyMemberStrength.STRONGEST]: 1.25,
+};
+const memberLevel = (d, strength) => {
+  const base = 1 + d / 2 + (d / 25) ** 2;
+  if (strength >= PartyMemberStrength.STRONG) return Math.ceil(base * STRENGTH_MULTIPLIER[strength]);
+  const ramped = Math.min(STRENGTH_MULTIPLIER[strength] + 0.025 * Math.floor(d / 25), 1.225);
+  return Math.ceil(base * ramped) - Math.floor(d / 50 * (PartyMemberStrength.STRONG - strength));
+};
+// @mirrors challenger-rewards
 const CHALLENGER_REWARDS = ["a Common TM, a Great TM, a Memory Mushroom + the usual rolls",
   "2 Ultra + 2 Great + the usual rolls", "2 Rogue + 1 Ultra + 1 Great + the usual rolls, but 0.9× EXP"];
 // Bug-Type Superfan's four tutor pools, in the game's order: the replay indexes them (game-code.md §13).
+// @mirrors bug-tutors
 const BUG_TUTORS = [
   [[MoveId.MEGAHORN, "Megahorn"], [MoveId.ATTACK_ORDER, "Attack Order"], [MoveId.BUG_BITE, "Bug Bite"], [MoveId.FIRST_IMPRESSION, "First Impression"], [MoveId.LUNGE, "Lunge"]],
   [[MoveId.SILVER_WIND, "Silver Wind"], [MoveId.SIGNAL_BEAM, "Signal Beam"], [MoveId.BUG_BUZZ, "Bug Buzz"], [MoveId.POLLEN_PUFF, "Pollen Puff"], [MoveId.STRUGGLE_BUG, "Struggle Bug"]],
   [[MoveId.STRING_SHOT, "String Shot"], [MoveId.DEFEND_ORDER, "Defend Order"], [MoveId.RAGE_POWDER, "Rage Powder"], [MoveId.STICKY_WEB, "Sticky Web"], [MoveId.SILK_TRAP, "Silk Trap"]],
   [[MoveId.LEECH_LIFE, "Leech Life"], [MoveId.U_TURN, "U-turn"], [MoveId.HEAL_ORDER, "Heal Order"], [MoveId.QUIVER_DANCE, "Quiver Dance"], [MoveId.INFESTATION, "Infestation"]],
 ];
+// Dark Deal's `excludedBosses`.
+// @mirrors dark-deal-excluded
+const DARK_DEAL_EXCLUDED = [SpeciesId.ETERNATUS,
+  SpeciesId.NIHILEGO, SpeciesId.BUZZWOLE, SpeciesId.PHEROMOSA, SpeciesId.XURKITREE, SpeciesId.CELESTEELA, SpeciesId.KARTANA,
+  SpeciesId.GUZZLORD, SpeciesId.POIPOLE, SpeciesId.NAGANADEL, SpeciesId.STAKATAKA, SpeciesId.BLACEPHALON, SpeciesId.COSMOG,
+  SpeciesId.COSMOEM, SpeciesId.SOLGALEO, SpeciesId.LUNALA, SpeciesId.NECROZMA,
+  SpeciesId.GREAT_TUSK, SpeciesId.SCREAM_TAIL, SpeciesId.BRUTE_BONNET, SpeciesId.FLUTTER_MANE, SpeciesId.SLITHER_WING,
+  SpeciesId.SANDY_SHOCKS, SpeciesId.ROARING_MOON, SpeciesId.WALKING_WAKE, SpeciesId.GOUGING_FIRE, SpeciesId.RAGING_BOLT,
+  SpeciesId.KORAIDON, SpeciesId.IRON_TREADS, SpeciesId.IRON_BUNDLE, SpeciesId.IRON_HANDS, SpeciesId.IRON_JUGULIS,
+  SpeciesId.IRON_MOTH, SpeciesId.IRON_THORNS, SpeciesId.IRON_VALIANT, SpeciesId.IRON_LEAVES, SpeciesId.IRON_BOULDER,
+  SpeciesId.IRON_CROWN, SpeciesId.MIRAIDON,
+  SpeciesId.MEW, SpeciesId.CELEBI, SpeciesId.JIRACHI, SpeciesId.DEOXYS, SpeciesId.PHIONE, SpeciesId.MANAPHY, SpeciesId.DARKRAI,
+  SpeciesId.SHAYMIN, SpeciesId.ARCEUS, SpeciesId.VICTINI, SpeciesId.KELDEO, SpeciesId.MELOETTA, SpeciesId.GENESECT,
+  SpeciesId.DIANCIE, SpeciesId.HOOPA, SpeciesId.VOLCANION, SpeciesId.MAGEARNA, SpeciesId.MARSHADOW, SpeciesId.ZERAORA,
+  SpeciesId.MELTAN, SpeciesId.MELMETAL, SpeciesId.ZARUDE, SpeciesId.PECHARUNT,
+  SpeciesId.ETERNAL_FLOETTE, SpeciesId.BLOODMOON_URSALUNA, SpeciesId.BATTLE_BOND_GRENINJA];
+// The starter tier Dark Deal's `randSeedInt(100)` lands on.
+// @mirrors dark-deal-tiers
+const dealTier = roll => (roll >= 65 ? 6 : roll >= 15 ? 7 : roll >= 5 ? 8 : [9, 10]);
+const DEAL_TIER_ODDS = Object.values(Array.from({ length: 100 }, (_, roll) => dealTier(roll))
+  .reduce((odds, tier) => ({ ...odds, [tier]: [tier, (odds[tier]?.[1] ?? 0) + 1 / 100] }), {}));
+// `getRandomSpeciesByStarterCost(tier, excludedBosses, bossTypes)`'s band, which it draws from evenly (game-code.md §13).
+const dealBand = (reg, tier, types) => starterBand(reg, tier, sp => !DARK_DEAL_EXCLUDED.includes(sp.speciesId)
+  && (!types.length || types.includes(sp.type1) || (sp.type2 != null && types.includes(sp.type2))));
+const isLegend = sp => !!(sp.legendary || sp.subLegendary || sp.mythical);
+// Each member as likely to go as the next, each tier at its odds: the share of draws that land a legendary, the
+// ordinary species the rest land on, and, for a single band, the costs it actually spans.
+const dealOdds = (reg, members, tiers, mono) => {
+  let share = 0;
+  const plain = new Set(), bands = [];
+  for (const p of members) {
+    const types = mono.length ? mono : tryDo(() => p.getTypes(), []);
+    for (const [tier, odds] of tiers) {
+      const band = dealBand(reg, tier, types);
+      bands.push(band);
+      if (!band.length) { plain.add("Bulbasaur"); continue; }
+      share += odds / members.length * band.filter(([sp]) => isLegend(sp)).length / band.length;
+      for (const [sp] of band) if (!isLegend(sp)) plain.add(tryDo(() => sp.getName(), sp.name));
+    }
+  }
+  const costs = bands.length === 1 ? bands[0].map(e => e[1]) : [];
+  return { share, plain: [...plain], span: costs.length ? [Math.min(...costs), Math.max(...costs)] : null };
+};
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 const strip = t => String(t ?? "").replace(/\[\/?[^\]]*\]/g, "").replace(/\s+/g, " ").trim();
@@ -83,14 +145,17 @@ const readOptions = (s, h, me, party) => {
 // Safari Zone's own throw and flee (game-code.md §13).
 const clampStage = st => Math.min(Math.max(st ?? 0, -6), 6);
 const stageMod = st => stage(clampStage(st));
+// @mirrors safari-catch
 const safariCatch = (rate, st) => {
   const catchRate = Math.round(rate * 1.5 * stageMod(st));
   if (!(catchRate > 0)) return 0;
   return Math.min(1, Math.round(1048560 / Math.sqrt(Math.sqrt(16711680 / catchRate))) / 65536) ** 3;
 };
 // `randSeedInt(256)` is 0–255, so a flee rate of 12.3 bolts on 13 of the 256 rolls.
+// @mirrors safari-flee
 const safariFlee = (rate, st) => Math.min(1, Math.max(0, Math.ceil(((255 * 255 - rate * rate) / 255 / 2) * stageMod(st))) / 256);
 // Bait's flee +1 and mud's catch −1 (game-code.md §13).
+// @mirrors bait-flees
 const BAIT_FLEES = 0.8, MUD_DULLS = 0.8;
 
 /**
@@ -164,6 +229,7 @@ const worthWhy = o => o?.why ?? "nothing new";
 const SAFARI_MENU = "ball, bait, mud or run each time, each turn judged as it comes";
 
 // Each move's chance that this mon is eventually caught under best play, from a stage pair (game-code.md §13).
+// @mirrors safari-play
 const safariPlay = rate => {
   const at = (c, f) => (c + 6) * 13 + (f + 6);
   const p = [], q = [];
@@ -234,7 +300,7 @@ const context = (run, me, options, account) => {
     if (!sp) return null;
     const scale = Math.max(Math.round(wave / 10 * (cfg.levelAdditiveModifier ?? 0)), 0);
     const level = pc.level || (b.enemyLevels?.[0] ?? top?.level ?? 1) + scale;
-    return { name: tryDo(() => sp.getName(), sp.name), types: [sp.type1, sp.type2].filter(t => t != null).map(t => TYPES[t]).filter(Boolean),
+    return { name: tryDo(() => sp.getName(), sp.name), species: sp, types: typesOfSpecies(sp),
       level, boss: !!pc.isBoss, bars: pc.bossSegments ?? 0, estimated: !pc.level };
   };
   const fight = (f, { double = false } = {}) => {
@@ -248,20 +314,33 @@ const context = (run, me, options, account) => {
       weak.length ? `${weak.length} weak to it` : null].filter(Boolean).join(", ");
     return { hard, text };
   };
+  // `levels` and `size` are null where the party template is not one the card can know: a `partyTemplateFunc` it
+  // doesn't call, or one of several templates the `Trainer` constructor draws between (game-code.md §13). `level` is
+  // then an AVERAGE member's.
   const trainer = (k = 0) => {
     const cfg = me.enemyPartyConfigs?.[k];
     if (!cfg || (!cfg.trainerConfig && cfg.trainerType == null)) return null;
-    const size = cfg.pokemonConfigs?.length || tryDo(() => cfg.trainerConfig.partyTemplates?.[0]?.size) || 0;
+    const trainerConfig = cfg.trainerConfig ?? tryDo(() => gameTables().trainers[cfg.trainerType]);
+    const template = trainerConfig && !trainerConfig.partyTemplateFunc && trainerConfig.partyTemplates?.length === 1 ? trainerConfig.partyTemplates[0] : null;
+    const doubled = !!template && template.size < 2 && !!(trainerConfig.doubleOnly || (trainerConfig.hasDouble && cfg.doubleBattle));
+    const strengths = !template ? null : doubled ? [template.strength, template.strength]
+      : Array.from({ length: template.size }, (_, i) => tryDo(() => template.getStrength(i)));
+    const d = tryDo(() => s.gameMode.getWaveForDifficulty(wave), wave);
     const scale = Math.max(Math.round(wave / 10 * (cfg.levelAdditiveModifier ?? 0)), 0);
-    return { name: tryDo(() => cfg.trainerConfig?.name), size, level: (b.enemyLevels?.[0] ?? top?.level ?? 1) + scale };
+    const levels = strengths?.every(st => st in STRENGTH_MULTIPLIER)
+      ? strengths.map((st, i) => cfg.pokemonConfigs?.[i]?.level || memberLevel(d, st) + scale) : null;
+    return { name: tryDo(() => cfg.trainerConfig?.name), levels, size: levels?.length ?? null,
+      level: levels ? Math.max(...levels) : memberLevel(d, PartyMemberStrength.AVERAGE) + scale };
   };
   // `mons: null`: a team size nothing here settles (game-code.md §13), so the level gap alone decides.
-  const gauntlet = (t, { mons = t?.size ?? 0, ours = null } = {}) => {
+  const gauntlet = (t, { mons = t?.size, ours = null } = {}) => {
     if (!t || !standing.length) return { hard: false, text: "" };
     const fit = ours ?? standing.filter(p => tryDo(() => p.getHpRatio(), p.hp / p.getMaxHp()) >= 0.5).length;
     const gap = t.level - top.level;
+    const low = t.levels ? Math.min(...t.levels) : null;
+    const at = low == null ? `~L${t.level}` : low < t.level ? `L${low}–${t.level}` : `L${t.level}`;
     return { hard: gap >= HARD_LEVEL_GAP || (mons != null && mons > fit * MONS_EACH), fit,
-      text: `${mons == null ? "their own team" : plural(mons, "mon")} at ~L${t.level} vs your L${top.level}, ${fit} of yours fit to fight` };
+      text: `${mons == null ? "their own team" : plural(mons, "mon")} at ${at} vs your L${top.level}, ${fit} of yours fit to fight` };
   };
   const roomFor = cls => party.find(p => {
     const cur = (tryDo(() => p.getHeldItems(), []) ?? []).find(m => m?.constructor?.name === cls);
@@ -290,6 +369,7 @@ const LEAVE = { outcome: "shop only, no reward", verdict: "ok" };
 
 // One row per `me.options` index, `{ outcome, battle, verdict: take|ok|avoid|null, why, exact, needs }`, or
 // `{ rows, state, notes }` when a rule has something to say outside an option.
+// @mirrors rules
 const RULES = {
   [TRAINING]: c => {
     const bars = (every, cap) => Math.min(2 + Math.floor(c.wave / every), cap);
@@ -416,21 +496,37 @@ const RULES = {
     // `getRandomPlayerPokemon(true, false, true)` (game-code.md §13).
     const legal = c.party.filter(p => tryDo(() => p.isAllowedInChallenge(), true));
     const standing = legal.filter(p => p.hp > 0);
-    const pool = standing.length === 1 ? legal.filter(p => p.hp <= 0) : standing;
+    const downed = legal.filter(p => p.hp <= 0);
+    const pool = standing.length === 1 && downed.length ? downed : standing.length ? standing : legal;
     const k = pool.length ? c.pre(() => int(pool.length)) : null;
     const taken = k != null ? pool[k] : null;
     const roll = c.during(() => int(100));
-    const tier = roll == null ? null : roll >= 65 ? "6" : roll >= 15 ? "7" : roll >= 5 ? "8" : "9–10";
+    const tier = roll == null ? null : dealTier(roll);
+    // A mono-type challenge's own type stands in for the taken member's.
+    const monoValue = c.s.gameMode?.isChallenge ? challengeValue(c.s, Challenges.SINGLE_TYPE) : 0;
+    const mono = monoValue ? [monoValue - 1] : [];
+    const reg = tryDo(() => gameTables().species);
+    const boss = typeof reg?.getAllStarters === "function" && typeof reg.getStarterCost === "function" && pool.length
+      ? dealOdds(reg, taken ? [taken] : pool, tier != null ? [[tier, 1]] : DEAL_TIER_ODDS, mono) : null;
+    const pct = boss && Math.min(Math.max(Math.round(boss.share * 100), 1), 99);
+    const names = boss && boss.plain.length <= 3 ? boss.plain.join(" or ") : null;
+    const legend = !boss || boss.share >= 0.995, plain = !!boss && boss.share <= 0.005;
+    const span = boss?.span ?? (tier == null ? null : [].concat(tier));
+    const tierText = span ? ` (starter tier ${span[0]}${span[1] > span[0] ? `–${span[1]}` : ""})` : "";
+    const head = boss && legend ? "a catchable legendary boss" : plain ? "a catchable non-legendary boss" : "a catchable boss";
+    const tail = !boss ? ", usually legendary" : legend ? "" : plain ? (names ? ` — ${names}` : "")
+      : `: legendary ${pct}% of the time${names ? `, else ${names}` : ""}`;
+    const prize = `5 Rogue Balls + ${head}${tierText} of ${mono.length ? `the run's ${TYPES[mono[0]]} type` : "its types"}, holding its items${tail}`;
+    const gets = !boss ? "a likely legendary" : legend ? "a legendary" : plain ? names ?? "a non-legendary" : `a ${pct}% shot at a legendary`;
     // The pool above mirrors the game's filter; which member the party would miss, or not, is judged against the
     // team at the next big fight (#571).
     const carry = taken && taken === c.strongest;
     const spare = taken && taken === c.profile.weakest?.mon;
-    const prize = `5 Rogue Balls + a catchable legendary boss${tier ? ` (starter tier ${tier})` : ""} of its types, holding its items`;
     return [
       { outcome: taken ? `${taken.name} is taken for good → ${prize}` : `a random member is taken for good → ${prize}`,
-        battle: "boss", exact: !!taken && !!tier, verdict: carry ? "avoid" : spare ? "take" : taken ? "ok" : null,
+        battle: "boss", exact: !!taken && tier != null, verdict: carry ? "avoid" : spare ? "take" : taken ? "ok" : null,
         why: carry ? `${taken.name} is your strongest` : spare ? `${taken.name} is your weakest link`
-          : taken ? `L${taken.level} ${taken.name} for a legendary` : "you don't choose who goes" },
+          : taken ? `L${taken.level} ${taken.name} for ${gets}` : "you don't choose who goes" },
       { ...LEAVE, verdict: carry ? "take" : "ok" },
     ];
   },
@@ -674,14 +770,15 @@ const RULES = {
     const name = mon ? `${mon.name}${mon.shiny ? " shiny" : ""}` : "it";
     const why = worthWhy(offer);
     const charm = c.opt(2).enabled, berries = c.opt(1).enabled;
+    const boost = c.wave < 150 ? "Def/SpD" : "Def/SpD/Spe";
     return {
       offers: offer ? [offer.card] : [],
       rows: [
-        { outcome: `fight ${name} (boosted); catchable → rewards`, battle: "wild",
+        { outcome: `fight ${name} (+1 ${boost} on entry); catchable → rewards`, battle: "wild",
           verdict: wanted && (charm || berries) ? "ok" : fight.hard ? "avoid" : "take", why: fight.text },
-        { outcome: `give 4 random berries: ${name} joins with a 2nd egg move`, verdict: wanted && !charm ? "take" : wanted ? "ok" : "avoid",
+        { outcome: `give 4 random berries: ${name} joins with a 2nd egg move (may repeat the 1st)`, verdict: wanted && !charm ? "take" : wanted ? "ok" : "avoid",
           why: wanted ? why : `berries for a mon you don't need (${why})`, needs: "4 berries" },
-        { outcome: `charm it: ${name} joins with better IVs and a 2nd egg move, EXP`, verdict: wanted ? "take" : "ok", why, needs: "a mon with Charm / Attract / Captivate …" },
+        { outcome: `charm it: ${name} joins with better IVs and a 2nd egg move (may repeat the 1st), EXP`, verdict: wanted ? "take" : "ok", why, needs: "a mon with Charm / Attract / Captivate …" },
       ],
     };
   },
@@ -725,10 +822,7 @@ const RULES = {
   },
 
   [CHALLENGERS]: c => {
-    // The first fight's team size can't be read before it starts (game-code.md §13).
-    const rows = [c.trainer(0), c.trainer(1), c.trainer(2)].map((t, k) => ({
-      t, g: c.gauntlet(t, k === 0 ? { mons: null } : {}), reward: CHALLENGER_REWARDS[k],
-    }));
+    const rows = [c.trainer(0), c.trainer(1), c.trainer(2)].map((t, k) => ({ t, g: c.gauntlet(t), reward: CHALLENGER_REWARDS[k] }));
     // A row we couldn't read is never promoted: reading nothing is no evidence the fight is safe.
     let best = 0;
     for (let k = 1; k < rows.length; k++) if (rows[k].t && !rows[k].g.hard) best = k;
@@ -825,19 +919,29 @@ const RULES = {
 
   [DANCING]: c => {
     const live = tryDo(() => c.s.getEnemyParty()[0]);
-    const shown = live
-      ? { name: tryDo(() => live.name, "Oricorio"), types: typesOf(live), level: live.level, boss: true, bars: 0, estimated: false }
-      : c.foe(0);
+    let form, shown;
+    if (live) {
+      form = formOf(live.species, live.formIndex);
+      shown = { name: tryDo(() => live.name, "Oricorio"), types: typesOf(live), level: live.level, boss: true, bars: 0, estimated: false };
+    } else {
+      // `foe` gives the species' own Fire/Flying, not the style `onInit` built the mon in (game-code.md §13).
+      const foe = c.foe(0), k = c.me.misc?.oricorioData?.formIndex;
+      form = k == null ? null : formOf(foe?.species, k);
+      shown = foe && form ? { ...foe, types: typesOfSpecies(form) } : foe;
+    }
     const fight = c.fight(shown);
     const offer = c.offer(live);
     const wanted = !!offer?.wanted;
     const why = worthWhy(offer);
-    const name = `${shown?.name ?? "Oricorio"}${live?.shiny ? " shiny" : ""}`;
+    const style = form?.formName;
+    const name = `${style ? `${style} ` : ""}${shown?.name ?? "Oricorio"}${live?.shiny ? " shiny" : ""}`;
+    const dance = form ? shown?.types?.[0] : null;
+    const opens = dance ? `${/^[AEIOU]/.test(dance) ? "an" : "a"} ${dance} Revelation Dance` : "Revelation Dance";
     const recruit = c.opt(2).enabled;
     return {
       offers: offer ? [offer.card] : [],
       rows: [
-        { outcome: `fight ${name} (+1 Atk/Def/SpA/SpD on entry, opens with Revelation Dance) → a Baton + rewards; catchable`,
+        { outcome: `fight ${name} (+1 Atk/Def/SpA/SpD on entry, opens with ${opens}) → a Baton + rewards; catchable`,
           battle: "boss", verdict: recruit || !wanted ? "ok" : fight.hard ? "avoid" : "take", why: fight.text },
         { outcome: "learn the dance: one mon of your choice is taught Revelation Dance (100 power, special, always the user's own first type)",
           verdict: recruit || wanted ? "ok" : "take", why: "free, and it keeps the move for the run" },
@@ -885,6 +989,7 @@ const RULES = {
 
 // The secondary menu an encounter re-opens the screen with, read positionally, as `{ rows, state, notes }`. `null`
 // falls back to the generic reading.
+// @mirrors overrides
 const OVERRIDES = {
   [SAFARI]: c => {
     const misc = c.me.misc ?? {};
@@ -982,6 +1087,8 @@ export const encounterModel = (run, h, account) => {
     // The species table lands partway through a run as well, and the weakest member cannot be priced before it does:
     // a card judged without one must not be served back once it has arrived (#582).
     tryDo(() => typeof gameTables().species.getAllSpecies === "function", false),
+    // So does the trainer table, where a config naming only its `trainerType` finds its party template.
+    tryDo(() => !!gameTables().trainers, false),
     h.optionsMeetsReqs, tryDo(() => h.optionsContainer.list.map(o => o.text), []),
     (s.gameMode?.challenges ?? []).map(c => [c.id, c.value]),
     party.map(p => [p.id, p.hp, p.status?.effect ?? 0, p.nature, p.moveset.filter(Boolean).map(m => m.moveId)])]);

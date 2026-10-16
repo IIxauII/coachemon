@@ -73,12 +73,16 @@ const bossSegmentDamage = (dmg, hp, segSize, minIdx = 0, idx) => {
   const c = Math.min(Math.max(Math.floor(Math.log2(excess / segSize)), 0), a - minIdx);
   return [Math.max(Math.floor(hp - floorHp + segSize * c), 1), a - c];
 };
-// The first game version whose Sturdy stops fixed damage (game-code.md §1), or null while no release has it.
-// `scripts/hud-deps.ts` watches Pokemon.getAttackDamage, so a pin bump that moves it asks again.
-const STURDY_VS_FIXED_FROM = null;
-const fixedIgnoresSturdy = env => !STURDY_VS_FIXED_FROM || !versionAtLeast(gameVersionOf(env.s), STURDY_VS_FIXED_FROM);
+// The first game version whose Sturdy stops fixed damage (game-code.md §1).
+const STURDY_VS_FIXED_FROM = "1.12.1.0";
+// `!versionAtLeast` alone hands an unreadable game version the older rule (#718).
+const fixedIgnoresSturdy = env => {
+  const v = gameVersionOf(env.s);
+  return !!v && !versionAtLeast(v, STURDY_VS_FIXED_FROM);
+};
 
 // @only 25-turn, 12-value, tests: targetFacts
+// @mirrors target-facts
 export const targetFacts = (env, t, ignoreAbility = false) => {
   const maxHp = t.getMaxHp();
   const segs = t.bossSegments > 0 && (t.isBoss?.() ?? true) ? t.bossSegments : 0;
@@ -253,14 +257,16 @@ const KO_LEVELS = 4;
 // `scale(i, broken)`: the damage factor on use i (0-based) with `broken` bars gone; `act(i)`: the chance use i happens
 // at all. `turnEnd`: the signed HP change after each use survived, or a function of the use count. `cat` ("physical"
 // or "special"): a wild boss's defence rises as its bars break. `firstKo`: this turn's exact odds for use 1, when the
-// caller has them. `start`: branches from an earlier turn, p summing to 1. `after1`: the branches standing after use
-// 1, p summing to 1. `perChunk`: the uses each bar takes before it more likely than not breaks.
-export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 1, act = () => 1, turnEnd = 0, firstKo = null, cat = null } = {}) => {
+// caller has them. `useLater`: the `use` of every use after the first, where it differs. `start`: branches from an
+// earlier turn, p summing to 1. `after1`: the branches standing after use 1, p summing to 1. `perChunk`: the uses each
+// bar takes before it more likely than not breaks.
+export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 1, act = () => 1, turnEnd = 0, firstKo = null, cat = null, useLater = null } = {}) => {
   const f = rec.facts;
   const init = stateOf(f, hp ?? f.hp, bar);
   const bars = init.bar + 1;
   const guard = cat && bars > 1 && rec.bars ? rec.bars(cat === "special" ? Stat.SPDEF : Stat.DEF, bars) : null;
-  const points = use.map(x => ({ d: x.d, p: x.p, n: x.d > 0 ? Math.max(1, Math.round(x.n ?? 1)) : 0 }));
+  const pointsOf = u => u.map(x => ({ d: x.d, p: x.p, n: x.d > 0 ? Math.max(1, Math.round(x.n ?? 1)) : 0 }));
+  const first = pointsOf(use), rest = useLater ? pointsOf(useLater) : first;
   let states = start?.length
     ? start.map(x => branch(x.hp, x.bar ?? init.bar, !!x.revived, x.tok ?? 0, x.p))
     : [branch(init.hp, init.bar, false, 0, 1)];
@@ -268,6 +274,7 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
   const brokeAt = Array(bars).fill(KO_USES);
   let down = 0, after1 = [];
   for (let i = 0; i < KO_USES; i++) {
+    const points = i ? rest : first;
     const a = Math.max(0, Math.min(1, act(i)));
     const factors = [];
     const factor = broken => (factors[broken] ??= scale(i, broken) * (guard ? guard[Math.min(broken, bars - 1)] : 1));
@@ -332,9 +339,12 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
 const abAttrs = (p, name) => (ability(p, name)
   ? [p.getAbility?.(), p.hasPassive?.() ? p.getPassiveAbility?.() : null].flatMap(a => a?.getAttrs?.(name) ?? []) : []);
 const frac = (max, n) => Math.max(1, Math.floor(max / n));
+// @mirrors weather-spared
 const WEATHER_SPARED = { [WeatherType.SANDSTORM]: [PokemonType.GROUND, PokemonType.ROCK, PokemonType.STEEL], [WeatherType.HAIL]: [PokemonType.ICE] };
+// @mirrors orb-spared
 const ORB_SPARED = { [StatusEffect.POISON]: [PokemonType.POISON, PokemonType.STEEL], [StatusEffect.TOXIC]: [PokemonType.POISON, PokemonType.STEEL], [StatusEffect.BURN]: [PokemonType.FIRE] };
-const SALT_DOUBLED = [PokemonType.WATER, PokemonType.STEEL];
+// @mirrors salt-doubled
+export const SALT_DOUBLED = [PokemonType.WATER, PokemonType.STEEL];
 const opponentsOf = (env, p) => {
   try { const o = p.getOpponents?.(); if (Array.isArray(o)) return o.filter(Boolean); } catch {}
   try { return (env?.field ?? []).filter(q => q && q !== p && q.isPlayer?.() !== p.isPlayer?.()); } catch { return []; }
@@ -358,8 +368,8 @@ const endOfTurnSteps = (env, p, { tookSuperEffective = false, hp = p.hp, dealt =
     steps.push({ d: -n });
     cur = Math.max(0, cur - n);
   };
-  const queued = (n, cap = max) => {
-    const v = blocked ? 0 : Math.floor(n * charm);
+  const queued = (n, cap = max, most = Infinity) => {
+    const v = blocked ? 0 : Math.min(Math.floor(n * charm), most);
     if (cur <= 0 || !(v > 0) || cur >= cap) return;
     steps.push({ d: v, cap });
     cur = Math.min(cap, cur + v);
@@ -367,7 +377,8 @@ const endOfTurnSteps = (env, p, { tookSuperEffective = false, hp = p.hp, dealt =
   // Heal Block doesn't stop a negative heal (game-code.md §18).
   const reverse = n => chip(Math.floor(n * charm));
 
-  if (dealt > 0) queued(frac(dealt, 8) * stack(p, "HitHealModifier"));
+  const shellBells = stack(p, "HitHealModifier");
+  if (dealt > 0 && shellBells > 0) queued(frac(dealt * shellBells, 8));
 
   if (WEATHER_SPARED[weather] && !guard && !types.some(t => WEATHER_SPARED[weather].includes(t))
     && !abAttrs(p, "BlockWeatherDamageAttr").some(a => !a.weatherTypes?.length || inWeather(a))
@@ -397,7 +408,7 @@ const endOfTurnSteps = (env, p, { tookSuperEffective = false, hp = p.hp, dealt =
     if (guard) continue;
     if (isA(t, "SeedTag") || isA(t, "DamagingTrapTag")) chip(frac(max, 8));
     else if (isA(t, "NightmareTag") || isA(t, "CursedTag")) chip(frac(max, 4));
-    else if (isA(t, "SaltCuredTag")) chip(frac(max, types.some(x => SALT_DOUBLED.includes(x)) ? 8 : 16));
+    else if (isA(t, "SaltCuredTag")) chip(frac(max, types.some(x => SALT_DOUBLED.includes(x)) ? 4 : 8));
   }
   // The seeder's payout reads the seeded mon's HP as it stands, so a seed that this turn's chip would fell first
   // still pays here.
@@ -412,7 +423,8 @@ const endOfTurnSteps = (env, p, { tookSuperEffective = false, hp = p.hp, dealt =
   if (env?.terrain === TerrainType.GRASSY && (p.isGrounded?.() ?? !types.includes(PokemonType.FLYING))) queued(frac(max, 16));
   if (p.isPlayer?.() === false) {
     for (const m of (env?.enemyModifiers ?? []).filter(x => x.constructor.name === "EnemyTurnHealModifier")) {
-      queued(Math.max(Math.floor(max / (100 / (m.healPercent ?? 2))) * (m.getStackCount?.() ?? 1), 1), max - 1);
+      // `preventFullHeal` caps the amount at max − 1, not the HP, so the token can heal to full.
+      queued((max * (m.getStackCount?.() ?? 1) * (m.healPercent ?? 2)) / 100, max, max - 1);
     }
   }
   if (abAttrs(p, "PostTurnStatusHealAbAttr").some(a => (a.effects ?? []).includes(effect))) queued(frac(max, 8));
@@ -441,9 +453,11 @@ export const sceneTurnEndHp = (env, p, opts = {}) => {
   return applyTurnEnd(endOfTurnSteps(env, p, opts), hp, p.getMaxHp()) - hp;
 };
 
+// @mirrors result-mult
 const RESULT_MULT = { [HitResult.EFFECTIVE]: 1, [HitResult.EXTREMELY_EFFECTIVE]: 4, [HitResult.SUPER_EFFECTIVE]: 2, [HitResult.NOT_VERY_EFFECTIVE]: 0.5,
   [HitResult.MOSTLY_INEFFECTIVE]: 0.25, [HitResult.ONE_HIT_KO]: 1, [HitResult.NO_EFFECT]: 0, [HitResult.IMMUNE]: 0 };
 // The damage roll (game-code.md §1).
+// @mirrors add-rolls
 const addRolls = (m, max, p) => {
   for (let r = 85; r <= 100; r++) {
     const d = max > 0 ? Math.max(1, Math.floor(max * r / 100)) : 0;
@@ -458,11 +472,14 @@ const withSeed = (seed, fn) => {
 };
 // Rows are [seed, chance] for `withSeed` (game-code.md §4). The heal is carried as zero damage, and the strikes it
 // would cancel still play out.
+// @mirrors present
 const PRESENT = k => (k === 0
   ? [[0, 41 / 100], [50, 30 / 100], [75, 10 / 100]]
   : [[0, 41 / 80], [50, 30 / 80], [75, 9 / 80]]);
+// @mirrors present-heal
 const PRESENT_HEAL = 19 / 100;
 // Multi-Lens' share of strike `k` (game-code.md §2). `n` is the lens count 07-move-traits already checked.
+// @mirrors lens-share
 const lensShare = (n, k) => (!n ? 1 : k === 0 ? 1 - 0.25 * n : k === n + 1 ? 1 : 0.25);
 
 // The game's own damage at roll `r`, asked by scaling STAB, which shares the roll's product (game-code.md §1).
@@ -498,15 +515,35 @@ const cancelledBy = (env, atk, def, move) => {
   } catch {}
   return null;
 };
+const flagApplies = (move, flag, atk, def, fallback) =>
+  typeof move.doesFlagEffectApply === "function" ? !!move.doesFlagEffectApply({ flag, user: atk, target: def }) : fallback;
 const bypassesProtect = (atk, def, move) => {
-  try { return typeof move.doesFlagEffectApply === "function" ? !!move.doesFlagEffectApply({ flag: MoveFlags.IGNORE_PROTECT, user: atk, target: def }) : hasFlag(move, MoveFlags.IGNORE_PROTECT); } catch { return false; }
+  try { return flagApplies(move, MoveFlags.IGNORE_PROTECT, atk, def, hasFlag(move, MoveFlags.IGNORE_PROTECT)); } catch { return false; }
+};
+const ignoresAbilities = (atk, move) => {
+  try { return flagApplies(move, MoveFlags.IGNORE_ABILITIES, atk, undefined, ability(atk, "MoveAbilityBypassAbAttr") || hasFlag(move, MoveFlags.IGNORE_ABILITIES)); } catch { return false; }
+};
+// `ignoreAbility` alone leaves Levitate up (game-code.md §1, #732).
+// @mirrors move-runs
+const asMoveRuns = (env, atk, def, move, opts, fn) => {
+  const arena = env.s.arena;
+  if (!arena || opts.aiView || !ignoresAbilities(atk, move)) return fn();
+  const { ignoreAbilities, ignoringEffectSource } = arena;
+  const source = atk.getBattlerIndex?.() ?? null;
+  arena.ignoreAbilities = true;
+  // Off the field both answer -1 (game-code.md §1): exempting the user there would exempt the defender too, so neither
+  // is, and the user's own ignorable abilities go quiet as well.
+  arena.ignoringEffectSource = source !== def.getBattlerIndex?.() ? source : null;
+  try { return fn(); } finally { Object.assign(arena, { ignoreAbilities, ignoringEffectSource }); }
 };
 
 const fromGame = (env, atk, def, pm, opts) => {
   const move = pm.getMove();
   if (attrs(move, "CounterDamageAttr").length) return null; // reacts to damage taken this turn: nothing yet
   const aiBlind = !!opts.aiView && !def.waveData?.abilityRevealed;
-  const ignoreAbility = aiBlind || ability(atk, "MoveAbilityBypassAbAttr") || hasFlag(move, MoveFlags.IGNORE_ABILITIES);
+  const ignoreAbility = aiBlind || ignoresAbilities(atk, move);
+  // The live hit leaves the bypass to the arena: `ignoreAbility` would drop Shadow Shield too (game-code.md §1, #732).
+  const gameIgnore = aiBlind || (ignoreAbility && !env.s.arena?.ignoreAbilities);
   const ignoreAllyAbility = !!opts.aiView && !def.getAlly?.()?.waveData?.abilityRevealed;
   // A cached Tera Shell result would leak into this move (game-code.md §1); the sandbox restores it.
   if (def.turnData) def.turnData.moveEffectiveness = null;
@@ -526,10 +563,10 @@ const fromGame = (env, atk, def, pm, opts) => {
   // move reuses the longest count's numbers: nothing that reads `hitCount` applies to it (§2).
   const call = (k, isCritical) => {
     if (atk.turnData) { atk.turnData.hitCount = hitsMax; atk.turnData.hitsLeft = hitsMax - k; }
-    return def.getAttackDamage({ source: atk, move, ignoreAbility, ignoreSourceAbility: false, ignoreAllyAbility, ignoreSourceAllyAbility: false, isCritical, simulated: true });
+    return def.getAttackDamage({ source: atk, move, ignoreAbility: gameIgnore, ignoreSourceAbility: false, ignoreAllyAbility, ignoreSourceAllyAbility: false, isCritical, simulated: true });
   };
   const first = call(0, false);
-  const eGame = def.getMoveEffectiveness?.(atk, move, ignoreAbility, true);
+  const eGame = def.getMoveEffectiveness?.(atk, move, gameIgnore, true);
   const e = first.cancelled ? 0 : typeof eGame === "number" ? eGame : RESULT_MULT[first.result] ?? 1;
   const base = { name: pm.getName(), type, cat, e, priority, spread, spreadApplied, traits: t, self: 0, bypassProtect: bypassesProtect(atk, def, move) };
   const blocked = cancelledBy(env, atk, def, move);
@@ -546,6 +583,7 @@ const fromGame = (env, atk, def, pm, opts) => {
     const side = def.isPlayer?.() ? ArenaTagSide.PLAYER : ArenaTagSide.ENEMY;
     if ((env.arenaTags ?? []).some(t => t.constructor.name === "NoCritTag" && (!t.side || t.side === side))) return 0;
     if (attrs(move, "CritOnlyAttr").length || atk.getTag?.("ALWAYS_CRIT") || (ability(atk, "ConditionalCritAbAttr") && [StatusEffect.POISON, StatusEffect.TOXIC].includes(def.status?.effect))) return 1;
+    // @mirrors crit-odds
     return [1 / 24, 1 / 8, 1 / 2, 1][Math.max(0, Math.min(3, def.getCritStage?.(atk, move) ?? 0))];
   })();
 
@@ -563,6 +601,7 @@ const fromGame = (env, atk, def, pm, opts) => {
     } else if (psywave) {
       // Psywave (game-code.md §0).
       const lens = lensShare(t.hits.lenses, k);
+      // @mirrors psywave-range
       const fix = r => Math.max(1, Math.floor(Math.max(1, Math.floor(atk.level * (r * 0.01))) * lens));
       for (let r = 50; r <= 150; r++) { const d = fix(r); m.set(d, (m.get(d) ?? 0) + 1 / 101); }
       maxes.push(fix(150));
@@ -624,7 +663,7 @@ const fromGame = (env, atk, def, pm, opts) => {
   const landed = checkAll
     ? Array.from({ length: hitsMax }, (_, k) => acc ** (k + 1) * dist.filter(x => x.n > k).reduce((t, x) => t + x.p, 0)).reduce((t, x) => t + x, 0)
     : acc * dist.reduce((t, x) => t + x.n * x.p, 0);
-  const contact = typeof move.doesFlagEffectApply === "function" ? move.doesFlagEffectApply({ flag: MoveFlags.MAKES_CONTACT, user: atk, target: def }) : hasFlag(move, MoveFlags.MAKES_CONTACT);
+  const contact = flagApplies(move, MoveFlags.MAKES_CONTACT, atk, def, hasFlag(move, MoveFlags.MAKES_CONTACT));
   const fromTarget = [];
   if (contact && !t.guarded && maxHp && ability(def, "PostDefendContactDamageAbAttr")) {
     const [abName, ratio] = [def.getAbility?.(), def.hasPassive?.() ? def.getPassiveAbility?.() : null]
@@ -664,6 +703,7 @@ const fromGame = (env, atk, def, pm, opts) => {
   };
 };
 
+// @mirrors ate
 const ATE = { Refrigerate: "Ice", Pixilate: "Fairy", Aerilate: "Flying", Galvanize: "Electric" };
 const approx = (a, d, pm) => {
   const mv = pm.getMove();
@@ -712,6 +752,7 @@ const fromApprox = (env, atk, def, pm) => {
 
 // `dmg` is what moves are compared by. The game applies the ¾ spread factor and the planner applies its own, so the
 // game's comes back out here.
+// @mirrors with-dmg
 const withDmg = (o, mv, foe) => o && {
   ...o,
   dmg: o.live === false
@@ -722,8 +763,9 @@ const withDmg = (o, mv, foe) => o && {
 // @only 25-turn, tests: sceneOutcome, sceneOutcomes, sceneStatusMoves
 export const sceneOutcome = (env, atk, def, pm, opts = {}) => {
   try {
-    const o = keepTurnData([atk, def], () => fromGame(env, atk, def, pm, opts));
-    return o && withDmg({ ...o, live: true }, pm.getMove(), env.isEnemy(atk));
+    const move = pm.getMove();
+    const o = keepTurnData([atk, def], () => asMoveRuns(env, atk, def, move, opts, () => fromGame(env, atk, def, pm, opts)));
+    return o && withDmg({ ...o, live: true }, move, env.isEnemy(atk));
   } catch (e) {
     sceneOutcome.lastError = e;
     return approxOutcome(env, atk, def, pm);
@@ -784,6 +826,7 @@ export const koChanceAt = (o, hp) => {
 
 // The damage factor on each bar from now, 1 for the current one, from the expected rise of `st` as a wild boss's bars
 // break (game-code.md §3). `offence`: what its own hits gain, not what hits into it lose.
+// @mirrors bar-break-factors
 export const barBreakFactors = (foe, st, bars, offence = false, trainer = false) => {
   const out = [1];
   if (bars <= 1 || (foe.hasTrainer?.() ?? !!trainer)) return Array(Math.max(1, bars)).fill(1);

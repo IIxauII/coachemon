@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { Challenges } from "../../../../src/enums/generated.ts";
 import { bundle } from "../hud-bundle.mjs";
 const HUD = fileURLToPath(new URL("../hud", import.meta.url));
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
@@ -35,7 +36,7 @@ const lines = el => (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").tri
 // Learn: Tackle is the clear drop for Flamethrower.
 const charmeleon = pk("Charmeleon", ["Fire"], 64, 80, [["Tackle","Normal",40,"P"],["Ember","Fire",40,"S"],["Dragon Breath","Dragon",60,"S"],["Scratch","Normal",40,"P"]]);
 {
-  const scene = { currentBattle: { waveIndex: 12, double: false }, ui: { getMode: () => 9, getHandler: () => ({ summaryUiMode: 1, pokemon: charmeleon, newMove: mv(["Flamethrower","Fire",90,"S"]) }) }, getEnemyParty: () => [], getPlayerParty: () => [charmeleon] };
+  const scene = { currentBattle: { waveIndex: 12, double: false }, ui: { mode: 9, getHandler: () => ({ summaryUiMode: 1, pokemon: charmeleon, newMove: mv(["Flamethrower","Fire",90,"S"]) }) }, getEnemyParty: () => [], getPlayerParty: () => [charmeleon] };
   const el = mount(scene);
   console.log(`== learn\n${lines(el)}`);
   console.log(`summary ${globalThis.__coachHud.summary().learn}`);
@@ -55,7 +56,7 @@ for (const f of foes) f.getOpponents = () => party;
 const trainer = { getName: () => "Youngster", config: { isBoss: false }, isDouble: () => false, getPartyMemberMatchupScores: () => [[1, 5]], getSortedPartyMemberMatchupScores: x => x, getNextSummonIndex: () => 1 };
 {
   const scene = { phaseManager: { getCurrentPhase: () => null }, getField: () => [...party, foes[0]], currentBattle: { waveIndex: 15, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
-    ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
+    ui: { mode: 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
   const el = mount(scene);
   console.log(`== plan\n${lines(el)}`);
   const control = n => (n == null || typeof n === "string" ? null : n.onclick ? n : (n.children ?? []).map(control).find(Boolean));
@@ -67,7 +68,7 @@ const trainer = { getName: () => "Youngster", config: { isBoss: false }, isDoubl
 const espeon = pk("Espeon", ["Psychic"], 65, 130, [["Bite","Dark",60,"P"],["Psychic","Psychic",90,"S"],["Shadow Ball","Ghost",80,"S"],["Dazzling Gleam","Fairy",80,"S"]]);
 const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["Ice Beam","Ice",90,"S"]]);
 {
-  const scene = { currentBattle: { waveIndex: 27, double: false }, ui: { getMode: () => 9, getHandler: () => ({ summaryUiMode: 1, pokemon: espeon, newMove: mv(["Earth Power","Ground",90,"S"]) }) }, getEnemyParty: () => [], getPlayerParty: () => [espeon, lapras] };
+  const scene = { currentBattle: { waveIndex: 27, double: false }, ui: { mode: 9, getHandler: () => ({ summaryUiMode: 1, pokemon: espeon, newMove: mv(["Earth Power","Ground",90,"S"]) }) }, getEnemyParty: () => [], getPlayerParty: () => [espeon, lapras] };
   const el = mount(scene);
   console.log(`== learn team\n${lines(el)}`);
   console.log(`summary ${globalThis.__coachHud.summary().learn}`);
@@ -98,7 +99,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
     Object.assign(new AddPokeballModifierType(), { name: "5× Great Ball", iconImage: "gb", tier: 1, pokeballType: 1 }),
   ];
   const handler = { options: free.map(t => ({ modifierTypeOption: { type: t, cost: 0 } })), shopOptionsRows: [], rerollCost: 250 };
-  const scene = { money: 500, pokeballCounts: { 1: 20 }, modifiers: [], currentBattle: { waveIndex: 29 }, ui: { getMode: () => 6, getHandler: () => handler }, getPlayerParty: () => team, getEnemyParty: () => [] };
+  const scene = { money: 500, pokeballCounts: { 1: 20 }, modifiers: [], currentBattle: { waveIndex: 29 }, ui: { mode: 6, getHandler: () => handler }, getPlayerParty: () => team, getEnemyParty: () => [] };
   const el = mount(scene);
   console.log(`== rewards boss next\n${lines(el)}`);
   console.log(`summary ${globalThis.__coachHud.summary().rewards}`);
@@ -107,7 +108,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
 // ---- The panel wears the game's window skin, in two faces, with no motion and no mark of its own.
 {
   const scene = { phaseManager: { getCurrentPhase: () => null }, getField: () => [...party, foes[0]], currentBattle: { waveIndex: 15, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
-    ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
+    ui: { mode: 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
   const el = mount(scene);
   console.log("== skin");
   for (const k of ["background", "color", "border", "boxShadow"]) console.log(`panel ${k}: ${el.style[k]}`);
@@ -151,7 +152,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
 // ---- The strip carries the verdict dot, word and caption, then the call, above everything else the panel shows.
 {
   const scene = { phaseManager: { getCurrentPhase: () => null }, getField: () => [...party, foes[0]], currentBattle: { waveIndex: 15, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
-    ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
+    ui: { mode: 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
   const el = mount(scene, { expose: true });
   const { captionBattle, drawBattle } = globalThis.__hud["96-render-battle"];
   const { strip } = globalThis.__hud["90-render"];
@@ -186,10 +187,33 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   assert.ok(!(paneBox.children ?? []).some(n => flat(n) === act.summary), "the act pane does not repeat the call");
 }
 
+// ---- A randomizer challenge tags the strip (#723).
+{
+  const battle = challenges => ({ phaseManager: { getCurrentPhase: () => null }, getField: () => [...party, foes[0]], gameMode: { challenges },
+    currentBattle: { waveIndex: 15, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
+    ui: { mode: 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes });
+  const learn = challenges => ({ gameMode: { challenges }, currentBattle: { waveIndex: 12, double: false }, getEnemyParty: () => [], getPlayerParty: () => [charmeleon],
+    ui: { mode: 9, getHandler: () => ({ summaryUiMode: 1, pokemon: charmeleon, newMove: mv(["Flamethrower","Fire",90,"S"]) }) } });
+  const head = scene => txt(mount(scene).kids[1].children[0]).replace(/\s+/g, " ").trim();
+  for (const [what, challenges] of [["Moveset Randomizer", [{ id: Challenges.MOVESET_RANDOMIZER, value: 1 }]],
+    ["Ability Randomizer", [{ id: Challenges.ABILITY_RANDOMIZER, value: 3 }]]]) {
+    for (const [kind, scene] of [["battle", battle], ["learn", learn]]) {
+      const shown = head(scene(challenges));
+      assert.ok(shown.endsWith("🔀 randomized"), `${kind} under the ${what}: ${shown}`);
+    }
+  }
+  const off = [{ id: Challenges.MOVESET_RANDOMIZER, value: 0 }, { id: Challenges.FRESH_START, value: 1 }];
+  for (const [kind, scene] of [["battle", battle], ["learn", learn]]) {
+    const shown = head(scene(off));
+    assert.ok(!shown.includes("🔀"), `${kind} with no randomizer on: ${shown}`);
+  }
+  console.log(`== randomized strip\nhead ${head(battle([{ id: Challenges.MOVESET_RANDOMIZER, value: 2 }]))}`);
+}
+
 // ---- The drawer shows one group at a time, the one the player picked.
 {
   const scene = { phaseManager: { getCurrentPhase: () => null }, getField: () => [...party, foes[0]], currentBattle: { waveIndex: 15, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
-    ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
+    ui: { mode: 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
   const el = mount(scene, { expose: true });
   const { drawer, openGroup } = globalThis.__hud["90-render"];
   const { drawBattle } = globalThis.__hud["96-render-battle"];
@@ -242,7 +266,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
 
 // A card with no verdict draws no dot and no word; the caption and the call still draw.
 {
-  const scene = { currentBattle: { waveIndex: 12, double: false }, ui: { getMode: () => 9, getHandler: () => ({ summaryUiMode: 1, pokemon: charmeleon, newMove: mv(["Flamethrower","Fire",90,"S"]) }) }, getEnemyParty: () => [], getPlayerParty: () => [charmeleon] };
+  const scene = { currentBattle: { waveIndex: 12, double: false }, ui: { mode: 9, getHandler: () => ({ summaryUiMode: 1, pokemon: charmeleon, newMove: mv(["Flamethrower","Fire",90,"S"]) }) }, getEnemyParty: () => [], getPlayerParty: () => [charmeleon] };
   const el = mount(scene);
   const [head, call] = el.kids[1].children;
   console.log(`== strip · no verdict\nhead ${txt(head).replace(/\s+/g, " ").trim()}\ncall ${txt(call)}`);
@@ -254,7 +278,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
 // ---- The colour law holds, and the palette is closed.
 {
   const scene = { phaseManager: { getCurrentPhase: () => null }, getField: () => [...party, foes[0]], currentBattle: { waveIndex: 15, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
-    ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
+    ui: { mode: 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
   const el = mount(scene, { expose: true });
   const { drawer, GROUP_IDS, GUTTER_INK, IMMUNE, LAW_INK, MARKS, line } = globalThis.__hud["90-render"];
   console.log("== colour law");
@@ -318,7 +342,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
 // ---- Every length is one knob's, the game's drawn width in pure CSS, so the footprint holds at every window shape.
 {
   const scene = { phaseManager: { getCurrentPhase: () => null }, getField: () => [...party, foes[0]], currentBattle: { waveIndex: 15, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
-    ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
+    ui: { mode: 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
   const el = mount(scene);
   console.log("== footprint");
   for (const k of ["position", "top", "left", "width", "boxSizing", "padding", "maxHeight", "overflowY"]) console.log(`panel ${k}: ${el.style[k]}`);
@@ -350,7 +374,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
 // until the sprite lands: the draw signature is never banked while a sprite is still missing. The meter counts every
 // draw that wanted it, and keeps the sprite, marked found, once it lands.
 {
-  const scene = { currentBattle: { waveIndex: 12, double: false }, ui: { getMode: () => 9, getHandler: () => ({ summaryUiMode: 1, pokemon: charmeleon, newMove: mv(["Flamethrower","Fire",90,"S"]) }) }, getEnemyParty: () => [], getPlayerParty: () => [charmeleon] };
+  const scene = { currentBattle: { waveIndex: 12, double: false }, ui: { mode: 9, getHandler: () => ({ summaryUiMode: 1, pokemon: charmeleon, newMove: mv(["Flamethrower","Fire",90,"S"]) }) }, getEnemyParty: () => [], getPlayerParty: () => [charmeleon] };
   const el = mount(scene, { expose: true });
   assert.ok(lines(el).includes("Charmeleon"), "the icon falls back to the name");
   assert.ok(globalThis.__hud["90-render"].missedSprite(), "a wanted sprite that wasn't there is remembered");
@@ -378,9 +402,9 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
 {
   // Every mount below is a reload, so what survives one is exactly what the key carried.
   const battle = () => ({ phaseManager: { getCurrentPhase: () => null }, getField: () => [...party, foes[0]], currentBattle: { waveIndex: 15, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
-    ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes });
+    ui: { mode: 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes });
   // A learn card has no `foes` group.
-  const learn = () => ({ currentBattle: { waveIndex: 12, double: false }, ui: { getMode: () => 9, getHandler: () => ({ summaryUiMode: 1, pokemon: charmeleon, newMove: mv(["Flamethrower","Fire",90,"S"]) }) }, getEnemyParty: () => [], getPlayerParty: () => [charmeleon] });
+  const learn = () => ({ currentBattle: { waveIndex: 12, double: false }, ui: { mode: 9, getHandler: () => ({ summaryUiMode: 1, pokemon: charmeleon, newMove: mv(["Flamethrower","Fire",90,"S"]) }) }, getEnemyParty: () => [], getPlayerParty: () => [charmeleon] });
   const flat = n => txt(n).replace(/\s+/g, " ").trim();
   const remembers = () => JSON.parse(store.get(PANEL_KEY));
   const open = () => globalThis.__hud["90-render"].openGroup();
@@ -491,7 +515,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
 {
   let reads = 0;
   const scene = { phaseManager: { getCurrentPhase: () => null }, getField: () => [...party, foes[0]], currentBattle: { waveIndex: 15, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
-    ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
+    ui: { mode: 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
   const el = mount(new Proxy(scene, { get: (t, k) => { reads++; return t[k]; } }), { expose: true });
   const click = n => n.onclick({ stopPropagation() {} });
   const before = reads, card = globalThis.__coachHud.last();

@@ -166,7 +166,7 @@ src/protocol/                    shared by hub, server and extension
 src/page/                        command handlers as real functions (§10.5)
 ```
 
-- **Not a workspace.** Claude Code installs the plugin with `npm ci --ignore-scripts`; a workspace would pull WXT (about 155 packages, 53 MB) into every player's cache and a nested lockfile does not **[live]**.
+- **Not a workspace.** Claude Code installs the plugin copy's dependencies from its lockfile (§14.7). A workspace would pull WXT (about 155 packages, 53 MB) into every player's cache, and a nested lockfile does not **[live]**.
 - **Shared code lives under the repo's `src/`**, imported by relative path from `extension/`. It is plain TypeScript with no dependencies, so the server and hub use it with Node's type stripping and the extension build bundles it.
 - Glue is TypeScript; the HUD stays plain JS.
 
@@ -599,6 +599,7 @@ Bump when removing a command, renaming one, or changing what an existing argumen
   - `groups`: **the card's own groups** (#349 §5), in the fixed tab order, each `{ id, label, summary, rows: string[] }`. Nodes cannot cross a wire, so a group arrives with its rows already flattened — an agent reading the stream reads a group by name instead of parsing lines. The relay's card detail type, its exact-key gate and its validator carry it; the hub forwards bodies opaquely and needs no change. A card is about 1 KB against the 1 MiB detail cap.
   - `text`: **the card's own plain-text rendering**, **derived from `groups`** by the HUD's render layer — every group in the fixed order, headed by `label` and `summary`, then its rows one per line — so the two cannot disagree by construction. Groups are built once per fire and both projections come off them.
   - `oracleLine`: `{ state: "on", turn, of }` while a held **oracle line**'s step is the card's call — `turn` is this step's battle turn and `of` the oracle line's last, so both count turns, not inputs — and `{ state: "off", turn, of }` on every battle card of its fight once a checkpoint has missed, `turn` then being the miss's (past `of` for a fight lost after the oracle line's last step). `null` on every other card. Each turn on the oracle line is an event of its own, though its key and verdict stay the same (#671), and so is going off it (#675).
+  - `randomized`: `true` while the Moveset or Ability Randomizer challenge is on, under which a species' moves and abilities are not what its tables say, and `false` otherwise (#723).
 - A HUD failure dispatches `coachemon:coach-error` once per distinct message.
 - **Late join:** a subscriber issues a `card` read right after subscribing.
 
@@ -621,6 +622,8 @@ COACH ERROR <message>
 TABS <rung 8 line>
 RESUMED
 ```
+
+A card whose `randomized` is `true` (§11.1) adds ` · randomized` after its verdict: `BATTLE w12 · danger · randomized | …`.
 
 `OFF LINE` follows the line of the first card that carries an oracle line `off` (§11.1), with the turn it missed on and the oracle line's last, and is printed once per oracle line: the later cards of its fight carry `off` too, and print only their own line. An oracle line that leads again is a new one (#675).
 
@@ -649,7 +652,7 @@ The coach reads through the same MCP server, never through `read.sh`. The coach 
 | Tool | Command | Returns |
 |---|---|---|
 | `get_state(detail?)` (existing) | `snapshot` | as today; `detail: "full"` now also carries, per party **and** enemy member: `types`, `ability`, `passive`, `stats` (via `getStat`), `statStages`, `status`, `onField`, `boss`, `bossBars`, `held`, and moves with type, power, category, accuracy and PP; plus `trainer` (name or null) and the party's non-held `items`. These are `probe.js`'s battle fields, moved. |
-| `read_card()` (new) | `card` | the envelope header plus `kind`, `wave`, `verdict`, `groups` (the card's groups, rows flattened — the same list the card event carries, so a late join catches up on a decision already on screen), `text`, `oracle_line` (the card event's `oracleLine`, §11.1), and `summary` (the fields `read.sh battle`'s `hud` had). `summary` is the read's liveness gate and is read on its own, so the structured read keeps working with no panel drawn. |
+| `read_card()` (new) | `card` | the envelope header plus `kind`, `wave`, `verdict`, `groups` (the card's groups, rows flattened — the same list the card event carries, so a late join catches up on a decision already on screen), `text`, `oracle_line` (the card event's `oracleLine`, §11.1), `randomized` (the card event's own, §11.1), and `summary` (the fields `read.sh battle`'s `hud` had). `summary` is the read's liveness gate and is read on its own, so the structured read keeps working with no panel drawn. |
 | `read_starters()` (new) | `starters` | `owned`: unlocked species by dex id with `ivTotal`, `passiveUnlocked`, `hiddenAbility`, `eggMoves`, `costReduction`, `candy`, and `cost` (null off the starter grid); plus the grid fields `start_run` uses |
 
 `read_card` and `read_starters` settle like every reading tool, return the envelope, and need no grant.
@@ -780,7 +783,7 @@ From [Release channel, versioning, and how fixes reach users](https://github.com
 
 ### 14.3 Job order in `release.yml`
 
-1. **`release`** (today's job, unchanged): typecheck, test, the plugin's semantic-release. It may push a `chore(release)` commit and a `v*` tag.
+1. **`release`** (today's job): typecheck, test, the plugin's semantic-release. It may push a `chore(release)` commit and a `v*` tag. Then it publishes the plugin copy to the `plugin` branch (§14.7).
 2. **`release-extension`**, `needs: release`: check out `master` fresh with `fetch-depth: 0`, so it builds on top of the plugin's release commit when there is one and ships that commit's randbats; Node 24; `npm ci --ignore-scripts` at the root; `npm ci` in `extension/`; `npx -p semantic-release@25 -p @semantic-release/exec@7 semantic-release` in `extension/`.
 
 Both jobs sit in the existing `release` concurrency group, so two pushes never interleave.
@@ -819,6 +822,18 @@ Carried out by `npm run release:safari -- <version>` (`scripts/release/safari-re
 - **The asset is `Coachemon-safari-<v>.zip`**, apart from the release's `coachemon-safari-web-extension-<v>.zip`, so the two Safari assets sit on one release without colliding.
 - **Both `gh` calls name `--repo`.** The build runs in a scratch directory, which is no checkout, and the repo is private, so `gh` has nothing to infer from.
 - **Gatekeeper is asked with plain `spctl -a -vvv`.** `-t install` is the installer-package assessment; the default, `execute`, is what a downloaded `.app` meets.
+
+### 14.7 What the plugin ships
+
+From [Ship the plugin as a slim release copy](https://github.com/IIxauII/coachemon/issues/712). Before it, the marketplace entry's `"source": "./"` handed every player the whole repo (58 MB installed, `typescript` and the specs included). Now each release appends a copy that holds only what the plugin runs (28 MB, about 26 MB of it `node_modules`) to the `plugin` branch, and players install from there.
+
+- **The include rule** is `shipped()` in `scripts/release/plugin-copy.ts`: `src/` and `skills/`, less tests, fixtures, the HUD golden suite and the few `src/` modules that only tests or dev scripts load, plus `.claude-plugin/plugin.json`, `package.json`, `package-lock.json`, `LICENSE`, `THIRD_PARTY_NOTICES.md`, `README.md` and `PRIVACY.md`. `marketplace.json` stays out: a marketplace file inside the plugin would be a second, dead marketplace. **(picked here, amending the ticket's "`.claude-plugin/`")**
+- **Slim `package.json`, relocked.** The copy's `package.json` drops `devDependencies` and `scripts`, and its lockfile is the release commit's lockfile pruned to match, offline (`npm install --package-lock-only --offline`), so every version stays where the release pinned it. Claude Code installs a plugin's dependencies only when `package.json` and the lockfile list the same ones, and installs nothing otherwise **[doc]**.
+- **The `plugin` branch** is append-only: one commit per release, an orphan root the first time, never force-pushed, untagged. The commit names the version and the source sha. No workflow runs on the branch, since a push runs only the workflows in its own tree and the copy holds no `.github/`. `scripts/release/publish-plugin.ts --push` cuts the copy from the tag `v<version>` of the version in `package.json`, not from HEAD, and skips a version the branch already holds. So the `release` job (§14.3) runs it on every push, and a push that cut no release still publishes the last one if the branch lacks it. It runs after semantic-release, so a failed publish leaves the tag and the GitHub Release standing and players on the previous copy, with the job red; the next push to `master`, or a re-run of the job, publishes it. `release-extension` never reads the marketplace source.
+- **The smoke** (`scripts/release/plugin-smoke.ts`) runs on the assembled copy before anything is pushed, and a failure stops the push. It checks that none of the repo's own trees made it in and that `npm ci` installs no devDependency. It then checks that `src/server.ts` answers MCP `initialize`, that the HUD bundles, and that `watch.ts` loads its whole graph. The watcher is stopped at its first dial, so no hub is touched. The git tree is written before the smoke, so the smoke's `node_modules` never reaches the branch.
+- **The guard test** (`plugin-copy.test.ts`, in `npm test`) runs `strays()` over the working tree. It fails when a shipped file imports a package that is not a runtime dependency, or reaches a path (relative import, `new URL(…, import.meta.url)`, `${CLAUDE_PLUGIN_ROOT}/…`, a shell script's `$here/…`) that the copy leaves out or that does not exist. A runtime import of a left-out module fails here, at the PR, not at release.
+- **Marketplace source:** `{"source": "url", "url": "https://github.com/IIxauII/coachemon.git", "ref": "plugin"}`. A `github` source tries SSH first, and an in-session install or update does not fall back to HTTPS, so a player without a GitHub SSH key could not install **[doc]**. The repo is public, so HTTPS needs no credentials.
+- **Updates follow `plugin.json`'s `version`.** Claude Code re-fetches a plugin only when the version it computes changes, and that is the version `scripts/set-version.ts` stamps **[doc]**. Auto-update is off by default for a marketplace like this one, so players run `claude plugin update` unless they turned it on under `/plugin` **[doc]**. An install from the old `./` source follows the entry to the `plugin` branch on its first update to a new version: `claude plugin marketplace update` and `claude plugin update` took one from a 58 MB 1.44.0 to a 28 MB 1.44.1 **[live]**.
 
 ---
 

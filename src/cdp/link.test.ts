@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import vm from "node:vm";
-import { Button } from "../enums/generated.ts";
+import { Button, UiMode } from "../enums/generated.ts";
 import { isFault } from "../game/link.ts";
+import { starterGrid } from "../page/fake-page.ts";
 import { COMMAND_NAMES } from "../protocol/commands.ts";
 import { CdpLink, type LinkSession } from "./link.ts";
 import type { Thrown } from "./session.ts";
@@ -42,7 +43,7 @@ function commandScene(inputs: number[]) {
       mode: 2,
       handlers: {
         2: { active: true, cursor: 0, commandsContainer: { list: [{ text: "Fight" }, { text: "Ball" }] } },
-        10: { cursor: 0, scrollCursor: 0, filteredStarterContainers: [], starterSpecies: [] },
+        [UiMode.STARTER_SELECT]: starterGrid({ 1: "Bulbasaur", 4: "Charmander" }, [1, 4], { party: [4] }).h,
       },
       processInput: (b: number) => inputs.push(b),
     },
@@ -74,6 +75,11 @@ test("every command runs self-contained in the tab: nothing it needs is left beh
   assert.deepEqual(replies.menu && "options" in replies.menu && replies.menu.options.map(o => o.label), ["Fight", "Ball"]);
   assert.deepEqual(replies.press, { ok: true, mode: 2 });
   assert.deepEqual(replies.card, { ok: false, why: "no-hud" });
+  const starters = replies.starters;
+  assert.ok(!isFault(starters));
+  assert.deepEqual(starters.grid.map(g => g.name), ["Bulbasaur", "Charmander"]);
+  assert.deepEqual(starters.party, ["Charmander"]);
+  assert.equal(starters.valueLimit, 10);
   assert.equal("why" in replies.modal && replies.modal.why, "moved");
   assert.deepEqual(inputs, [Button.DOWN]);
 });

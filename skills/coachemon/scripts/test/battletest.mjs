@@ -1,16 +1,19 @@
+import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { wholeCard } from "./panel.mjs";
 import { MoveFlags } from "../../../../src/enums/generated.ts";
 import { onGame } from "./game-proto.mjs";
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
+// `moves`: `[name, type, power, category, target = 3, flags = 0, attrs = []]`; an attr is a class name.
 const mon = (name, lv, types, ability, [hp, atk, def, spa, spd, spe], moves, field, curHp, next) => onGame({
   // `id` is what the turn keys its memos on, so every mon needs one that tells it from the others.
   id: name, next, getMoveQueue: () => [], isTrapped: () => false, trainerSlot: 0, species: { legendary: false },
   name, level: lv, hp: curHp ?? hp, getMaxHp: () => hp, getTypes: () => types.map(t => TY.indexOf(t)), getAbility: () => ({ name: ability }), hasPassive: () => false,
   getStat: i => [hp, atk, def, spa, spd, spe][i], summonData: { statStages: [0,0,0,0,0,0,0] }, isOnField: () => field, isBoss: () => false,
   getIconAtlasKey: () => "k", getIconId: () => 1, status: null,
-  moveset: moves.map(([n, t, p, c, target = 3, flags = 0], i) => ({ moveId: i + 1, getName: () => n, getMove: () => ({ type: TY.indexOf(t), power: p, category: cat[c], moveTarget: target, flags }), getMovePp: () => 10, ppUsed: 0 })),
+  moveset: moves.map(([n, t, p, c, target = 3, flags = 0, attrs = []], i) => ({ moveId: i + 1, getName: () => n, getMove: () => ({ type: TY.indexOf(t), power: p, category: cat[c], moveTarget: target, flags,
+    ...(attrs.length ? { attrs: attrs.map(a => new ({ [a]: class {} })[a]()) } : {}) }), getMovePp: () => 10, ppUsed: 0 })),
 });
 const teraMon = (...args) => {
   const teraType = TY.indexOf(args.pop());
@@ -80,6 +83,14 @@ const scenarios = {
     foes: [
       mon("Druddigon", 40, ["Dragon"], "Rough Skin", [140,100,90,60,80,50], [["Tackle","Normal",40,"P"]], true),
       mon("Krookodile", 40, ["Ground","Dark"], "Moxie", [150,110,90,60,80,90], [["Crunch","Dark",80,"P"]], true)] },
+  // A contact move in the pool runs into Aura Guard, so the row marks it.
+  auraGuard: { double: false, party: [
+    mon("Scrafty", 64, ["Dark","Fighting"], "Shed Skin", [163,152,172,63,165,80], [["Brick Break","Fighting",75,"P",3,MoveFlags.MAKES_CONTACT]], true)],
+    foes: [mon("Lucario", 40, ["Fighting","Steel"], "Aura Guard", [120,90,70,100,70,90], [["Tackle","Normal",40,"P"]], true)] },
+  // A physical move that makes no contact misses Aura Guard, so the row stays clear.
+  auraGuardNoContact: { double: false, party: [
+    mon("Garchomp", 64, ["Dragon","Ground"], "Sand Veil", [200,170,120,100,100,150], [["Earthquake","Ground",100,"P"]], true)],
+    foes: [mon("Lucario", 40, ["Fighting","Steel"], "Aura Guard", [120,90,70,100,70,90], [["Tackle","Normal",40,"P"]], true)] },
   // Sturdy is no trap on either line: the KO count already carries it.
   modelled: { double: false, party: [
     mon("Scrafty", 64, ["Dark","Fighting"], "Shed Skin", [163,152,172,63,165,80], [["Brick Break","Fighting",75,"P"]], true)],
@@ -97,6 +108,20 @@ const scenarios = {
     mon("Venusaur", 65, ["Grass","Poison"], "Overgrow", [200,135,122,144,144,118], [["Power Whip","Grass",120,"P"]], true)],
     foes: [
       mon("Whismur", 30, ["Normal"], "Soundproof", [90,60,50,60,50,40], [["Pound","Normal",40,"P"]], true),
+      mon("Rattata", 30, ["Normal"], "Run Away", [80,60,50,40,50,90], [["Tackle","Normal",40,"P"]], true)] },
+  // Eelevate is a Ground immunity, so Land's Wrath spares Eelektross and both its row and the ⚔ line mark it (#729).
+  eelevate: { double: true, party: [
+    mon("Garchomp", 66, ["Dragon","Ground"], "Sand Veil", [210,170,130,110,115,140], [["Land's Wrath","Ground",90,"P",6]], true),
+    mon("Venusaur", 65, ["Grass","Poison"], "Overgrow", [200,135,122,144,144,118], [["Power Whip","Grass",120,"P"]], true)],
+    foes: [
+      mon("Eelektross", 40, ["Electric"], "Eelevate", [150,110,80,100,80,50], [["Spark","Electric",65,"P"]], true),
+      mon("Rattata", 30, ["Normal"], "Run Away", [80,60,50,40,50,90], [["Tackle","Normal",40,"P"]], true)] },
+  // Thousand Arrows gets through Eelevate, so neither line marks it.
+  eelevateArrows: { double: true, party: [
+    mon("Garchomp", 66, ["Dragon","Ground"], "Sand Veil", [210,170,130,110,115,140], [["Thousand Arrows","Ground",90,"P",6,0,["NeutralDamageAgainstFlyingTypeAttr"]]], true),
+    mon("Venusaur", 65, ["Grass","Poison"], "Overgrow", [200,135,122,144,144,118], [["Power Whip","Grass",120,"P"]], true)],
+    foes: [
+      mon("Eelektross", 40, ["Electric"], "Eelevate", [150,110,80,100,80,50], [["Spark","Electric",65,"P"]], true),
       mon("Rattata", 30, ["Normal"], "Run Away", [80,60,50,40,50,90], [["Tackle","Normal",40,"P"]], true)] },
   // With nothing behind the immunity the turn is lost, and the panel and the card both say so: `no damaging move`
   // never told the player whether to switch, wait or give up on the turn (#263).
@@ -121,6 +146,7 @@ const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.ch
 const lines = el => wholeCard(el)
   .map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
 
+const cards = {};
 
 for (const [label, sc] of Object.entries(scenarios)) {
   let el;
@@ -134,7 +160,7 @@ for (const [label, sc] of Object.entries(scenarios)) {
     getPartyMemberMatchupScores: () => { pm.queueMessage("side effect"); return (sc.bench ?? sc.foes.map((_f, i) => i).slice(1)).map(i => [i, 5]); },
     getSortedPartyMemberMatchupScores: sc2 => sc2.slice().sort((a, b) => b[1] - a[1]),
     getNextSummonIndex: () => sc.summonIndex ?? 1, shouldTera: e => !!sc.teras?.includes(e.name) } : null;
-  const scene = { phaseManager: pm, getField: () => [...onField(), ...sc.foes.filter(f => f.isOnField())], currentBattle: { waveIndex: 89, turn: 1, double: sc.double, enemySwitchCounter: 0, getBattlerCount: () => (sc.double ? 2 : 1), trainer }, ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => sc.party, getEnemyParty: () => sc.foes };
+  const scene = { phaseManager: pm, getField: () => [...onField(), ...sc.foes.filter(f => f.isOnField())], currentBattle: { waveIndex: 89, turn: 1, double: sc.double, enemySwitchCounter: 0, getBattlerCount: () => (sc.double ? 2 : 1), trainer }, ui: { mode: 0, getHandler: () => ({}) }, getPlayerParty: () => sc.party, getEnemyParty: () => sc.foes };
   globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
   const node = () => { const n = { style: {}, children: [], addEventListener(ev, fn) { if (ev === "click") n.onclick = fn; }, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
@@ -145,4 +171,13 @@ for (const [label, sc] of Object.entries(scenarios)) {
   console.log(`== ${label}\n${lines(el)}`);
   const x = globalThis.__coachHud.summary();
   console.log(`summary ${x.verdict} | ${x.field}${x.danger.length ? ` | ${x.danger.map(d => `${d.level === "ko" ? "\u{1F480}" : "\u26a0"} ${d.mon}`).join(" ")}` : ""}${x.plan ? ` | plan: ${x.plan}` : ""}`);
+  cards[label] = globalThis.__coachHud.last();
 }
+
+// The \u2694 line's move traps are on the card but not in its text.
+const trapsOf = (label, slot, foe) => {
+  const card = cards[label];
+  return { slot: card.field.slots.find(sl => sl.name === slot).traps, row: card.rows.find(r => r.name === foe).traps };
+};
+assert.deepEqual(trapsOf("eelevate", "Garchomp", "Eelektross"), { slot: ["Eelevate"], row: ["Eelevate"] }, "Land's Wrath into Eelevate");
+assert.deepEqual(trapsOf("eelevateArrows", "Garchomp", "Eelektross"), { slot: [], row: [] }, "Thousand Arrows into Eelevate");

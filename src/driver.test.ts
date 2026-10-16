@@ -5,13 +5,16 @@ import path from "node:path";
 import { test, type TestContext } from "node:test";
 import { Driver } from "./driver.ts";
 import { KEPT_ENDED, type JobKinds, type JobWork } from "./jobs.ts";
-import { ArenaTagSide, Button, MoveCategory, PokemonType, StatusEffect, UiMode } from "./enums/generated.ts";
+import { ArenaTagSide, Button, GameModes, MoveCategory, PokemonType, StatusEffect, UiMode } from "./enums/generated.ts";
 import { Refusal } from "./envelope.ts";
+import { readAtPin } from "./escape-ladder/at-pin.ts";
+import { PINNED_GAME_VERSION } from "./escape-ladder/lookup.ts";
 import { fakeGame, type FakeScreen, type ScreenRead } from "./game/fake-game.ts";
 import { GORDIE_LINE } from "./game/fixtures/oracle-line.ts";
 import type { MenuRead } from "./game/port.ts";
 import { CALL_BUDGET_MS } from "./settle.ts";
 import { CLONE_JOB } from "./solver/clone.ts";
+import { SOLVE_JOB } from "./solver/solve-job.ts";
 
 const money = { money: 1000 };
 
@@ -41,7 +44,7 @@ function fakeTab(opts: { stallAfterPress: boolean }) {
       ready: true, settled, reason: settled ? "menu-open" : "ui-transition", mode: UiMode.TARGET_SELECT,
       phaseName: "SelectTargetPhase", wave: 13, turn: 1, runLive: true, tutorialActive: false, handler: "TargetSelectUiHandler",
       cursor: 2, modeChain: [], messageText: null, onActionInput: false, awaitingActionInput: false, fine: "target|2",
-      domMode: "TARGET_SELECT", gameVersion: "1.12.0.11", screen: "TARGET_SELECT", ...money,
+      domMode: "TARGET_SELECT", gameVersion: PINNED_GAME_VERSION, screen: "TARGET_SELECT", ...money,
     };
   };
   const menu: MenuRead = {
@@ -87,7 +90,7 @@ function targetGridTab(opts: { targets: { i: number; label: string }[]; cursor: 
     ready: true, settled: true, reason: "menu-open", mode: committed === null ? UiMode.TARGET_SELECT : UiMode.COMMAND,
     phaseName: committed === null ? "SelectTargetPhase" : "CommandPhase", wave: 7, turn: 1, runLive: true, tutorialActive: false,
     handler: "TargetSelectUiHandler", cursor, modeChain: [], messageText: null, onActionInput: false, awaitingActionInput: false,
-    fine: `target|${cursor}|${committed}`, domMode: null, gameVersion: "1.12.0.11", screen: committed === null ? "TARGET_SELECT" : "COMMAND", ...money,
+    fine: `target|${cursor}|${committed}`, domMode: null, gameVersion: PINNED_GAME_VERSION, screen: committed === null ? "TARGET_SELECT" : "COMMAND", ...money,
   });
   const menu = (): MenuRead => ({
     readable: true, mode: UiMode.TARGET_SELECT, screen: "TARGET_SELECT", family: "target_select", cursor, text: null, messagePending: false,
@@ -151,7 +154,7 @@ function startRunTab(opts: { costs?: Record<string, number>; cancelIgnored?: boo
     ready: true, ...(opts.gameModeStalls && screen === gameMode ? { settled: false, reason: "ui-transition" } : { settled: true, reason: "menu-open" }), mode: screen.mode, screen: screen.screen, phaseName: screen.phase, wave: screen === switchConfirm ? 1 : null,
     turn: null, runLive: screen === switchConfirm, tutorialActive: false, handler: null, cursor, modeChain: screen.chain,
     messageText: screen.text ?? null, onActionInput: false, awaitingActionInput: false, fine: `${screen.mode}|${screen.phase}|${cursor}|${party.length}`,
-    domMode: null, gameVersion: "1.12.0.11", ...money,
+    domMode: null, gameVersion: PINNED_GAME_VERSION, ...money,
   });
   // Only what start_run reads: each family's other `extra` fields are left out.
   const menu = (): MenuRead => ({
@@ -319,7 +322,7 @@ function learnMoveTab(opts: { setCursorWorks: boolean; fineTracksRow?: boolean; 
     screen: answered === null ? "SUMMARY/LEARN_MOVE" : "MESSAGE", phaseName: "LearnMovePhase",
     wave: 16, turn: 1, runLive: true, tutorialActive: false, handler: "SummaryUiHandler", cursor: 2, modeChain: [], messageText: null,
     onActionInput: false, awaitingActionInput: false, fine: `summary|2|${opts.fineTracksRow === false ? "" : moveCursor}|${answered}`, domMode: null,
-    gameVersion: "1.12.0.11", ...money,
+    gameVersion: PINNED_GAME_VERSION, ...money,
   });
   const menu = (): MenuRead =>
     opts.readerFailsAfterPress && presses.length > 0
@@ -406,7 +409,7 @@ test("a cursor set that restarts the game's typing settles before the commit, so
       ready: true, settled: typed >= 5, reason: typed >= 5 ? "menu-open" : "ui-transition", mode: answered === null ? UiMode.SUMMARY : UiMode.MESSAGE,
       screen: answered === null ? "SUMMARY/LEARN_MOVE" : "MESSAGE", phaseName: "LearnMovePhase", wave: 16, turn: 1, runLive: true, tutorialActive: false,
       handler: "SummaryUiHandler", cursor: 2, modeChain: [], messageText: null, onActionInput: false, awaitingActionInput: false,
-      fine: `summary|${row}|${typed}|${answered}`, domMode: null, gameVersion: "1.12.0.11", ...money,
+      fine: `summary|${row}|${typed}|${answered}`, domMode: null, gameVersion: PINNED_GAME_VERSION, ...money,
     };
   };
   const menu = (): MenuRead => ({
@@ -438,7 +441,7 @@ function partyMessageTab() {
     ready: true, settled: true, reason: "menu-open", mode: UiMode.PARTY, phaseName: "SelectModifierPhase", wave: 21, turn: 1,
     runLive: true, tutorialActive: false, handler: "PartyUiHandler", cursor, modeChain: [UiMode.MODIFIER_SELECT], messageText: null,
     onActionInput: message !== null, awaitingActionInput: message !== null,
-    fine: `party|${optionsMode}|${cursor}|${optionsCursor}|${message}`, domMode: null, gameVersion: "1.12.0.11",
+    fine: `party|${optionsMode}|${cursor}|${optionsCursor}|${message}`, domMode: null, gameVersion: PINNED_GAME_VERSION,
     screen: screen(), ...money,
   });
   const screen = () => (optionsMode ? "PARTY/MODIFIER:options" : "PARTY/MODIFIER");
@@ -520,7 +523,7 @@ test("a set reach whose setCursor misses refuses cursor_unreachable when its fam
   const read = (): ScreenRead => ({
     ready: true, settled: true, reason: "awaiting-action", mode: UiMode.MODIFIER_SELECT, screen: "MODIFIER_SELECT", phaseName: "SelectModifierPhase", wave: 21, turn: 1,
     runLive: true, tutorialActive: false, handler: "ModifierSelectUiHandler", cursor: 0, modeChain: [], messageText: null, onActionInput: true,
-    awaitingActionInput: true, fine: "shop", domMode: null, gameVersion: "1.12.0.11", ...money,
+    awaitingActionInput: true, fine: "shop", domMode: null, gameVersion: PINNED_GAME_VERSION, ...money,
   });
   const menu = (): MenuRead => ({
     readable: true, mode: UiMode.MODIFIER_SELECT, screen: "MODIFIER_SELECT", family: "modifier_select", cursor: "1:0", text: null, messagePending: false, extra: shopExtra,
@@ -539,7 +542,7 @@ test("a none reach commits a modal through its own button action, pressing nothi
   const read = (): ScreenRead => ({
     ready: true, settled: true, reason: "menu-open", mode: UiMode.LOGIN_FORM, screen: buttons.length ? "TITLE" : "LOGIN_FORM", phaseName: "LoginPhase", wave: null, turn: null,
     runLive: false, tutorialActive: false, handler: "LoginFormUiHandler", cursor: null, modeChain: [], messageText: null, onActionInput: false,
-    awaitingActionInput: false, fine: `login|${buttons.length}`, domMode: null, gameVersion: "1.12.0.11", ...money,
+    awaitingActionInput: false, fine: `login|${buttons.length}`, domMode: null, gameVersion: PINNED_GAME_VERSION, ...money,
   });
   const menu = (): MenuRead => ({
     readable: true, mode: UiMode.LOGIN_FORM, screen: buttons.length ? "TITLE" : "LOGIN_FORM", family: "modal", cursor: null, text: "Login", messagePending: false,
@@ -564,7 +567,7 @@ function messageChainTab(count: number, opts: { cycle: boolean } = { cycle: fals
       screen: onMessage() ? "MESSAGE" : "MODIFIER_SELECT",
       phaseName: onMessage() ? "LevelUpPhase" : "SelectModifierPhase", wave: 18, turn: 1, runLive: true, tutorialActive: false, handler: null,
       cursor: 0, modeChain: [], messageText: onMessage() ? text : null, onActionInput: onMessage(), awaitingActionInput: onMessage(),
-      fine: `chain|${shown}`, domMode: null, gameVersion: "1.12.0.11", ...money,
+      fine: `chain|${shown}`, domMode: null, gameVersion: PINNED_GAME_VERSION, ...money,
     };
   };
   const menu = (): MenuRead =>
@@ -631,7 +634,7 @@ function unmovedChainTab() {
   const read = (): ScreenRead => ({
     ready: true, settled: true, reason: "awaiting-action", mode: UiMode.MESSAGE, phaseName: "LevelUpPhase", wave: 30, turn: 2,
     runLive: true, tutorialActive: false, handler: "BattleMessageUiHandler", cursor: null, modeChain: [], messageText: "Bulbasaur grew to Lv. 24!",
-    onActionInput: true, awaitingActionInput: true, fine: "levelup", domMode: null, gameVersion: "1.12.0.11", screen: "MESSAGE", ...money,
+    onActionInput: true, awaitingActionInput: true, fine: "levelup", domMode: null, gameVersion: PINNED_GAME_VERSION, screen: "MESSAGE", ...money,
   });
   const menu: MenuRead = { readable: true, mode: UiMode.MESSAGE, screen: "MESSAGE", family: "acknowledge", cursor: null, text: "Bulbasaur grew to Lv. 24!", messagePending: false, extra: { awaitingActionInput: true }, options: [] };
   const { driver } = drive({
@@ -661,7 +664,7 @@ function guardedTab(over: Pick<FakeScreen, "lockHolder" | "frame" | "menu" | "on
   const read = (): ScreenRead => ({
     ready: true, settled: true, reason: "menu-open", mode, screen: over.screen ?? "COMMAND", phaseName: "CommandPhase", wave: 5, turn: 1, runLive: true, tutorialActive: false,
     handler: null, cursor: 0, modeChain: [], messageText: null, onActionInput: false, awaitingActionInput: false, fine: `guard|${mode}`,
-    domMode: null, gameVersion: "1.12.0.11", ...money,
+    domMode: null, gameVersion: PINNED_GAME_VERSION, ...money,
   });
   const { mode: _mode, screen: _screen, ...screen } = over;
   return drive({ ...screen, read });
@@ -681,7 +684,7 @@ test("an acting call refuses tab_contended while another live driver holds the l
 });
 
 test("an acting call refuses settings_mode on a settings screen, pressing nothing", async () => {
-  const tab = guardedTab({ mode: UiMode.SETTINGS });
+  const tab = guardedTab({ mode: UiMode.SETTINGS_GENERAL });
   const r = await outcome(tab.driver.press("ACTION", {}));
   assert.equal(r.error, "settings_mode", JSON.stringify(r));
 });
@@ -778,7 +781,7 @@ test("status reports reachability, the transport's own facts and the game, and a
   assert.equal(ok.attached, true, "the transport's facts ride along");
   assert.equal(ok.screen, "COMMAND");
   assert.equal(ok.wave, 5);
-  assert.equal(ok.game_version, "1.12.0.11");
+  assert.equal(ok.game_version, PINNED_GAME_VERSION);
 
   const reach = { code: "unreachable" as const, rung: 3, line: "No browser has Coachemon connected." };
   const out = await drive({ unreachable: reach }).driver.status();
@@ -798,7 +801,7 @@ test("a press decided on a screen the game has since left refuses game_moved, pr
     read: () => ({
       ready: true, settled: true, reason: "menu-open", mode: UiMode.COMMAND, screen: "COMMAND", phaseName: "CommandPhase", wave: 5, turn: 1, runLive: true,
       tutorialActive: false, handler: null, cursor: 0, modeChain: [], messageText: null, onActionInput: false, awaitingActionInput: false,
-      fine: frames >= 2 ? "command|turn 2" : "command|turn 1", domMode: null, gameVersion: "1.12.0.11", ...money,
+      fine: frames >= 2 ? "command|turn 2" : "command|turn 1", domMode: null, gameVersion: PINNED_GAME_VERSION, ...money,
     }),
     frame: () => ++frames,
     onPress: b => { presses.push(b); },
@@ -818,7 +821,7 @@ function confirmTab() {
     read: () => ({
       ready: true, settled: true, reason: "menu-open", mode: answered === null ? UiMode.CONFIRM : UiMode.COMMAND, screen: answered === null ? "CONFIRM" : "COMMAND",
       phaseName: "CheckSwitchPhase", wave: 5, turn: 1, runLive: true, tutorialActive: false, handler: null, cursor, modeChain: [], messageText: null,
-      onActionInput: false, awaitingActionInput: false, fine: `confirm|${cursor}|${answered}`, domMode: null, gameVersion: "1.12.0.11", ...money,
+      onActionInput: false, awaitingActionInput: false, fine: `confirm|${cursor}|${answered}`, domMode: null, gameVersion: PINNED_GAME_VERSION, ...money,
     }),
     menu: () => ({
       readable: true, mode: UiMode.CONFIRM, screen: "CONFIRM", family: "option_select", cursor, text: null, messagePending: false,
@@ -856,7 +859,7 @@ test("auto-advance that finds the game moved on settles again and answers the me
       ready: true, settled: true, reason: onMessage() ? "awaiting-action" : "menu-open", mode: onMessage() ? UiMode.MESSAGE : UiMode.COMMAND,
       screen: onMessage() ? "MESSAGE" : "COMMAND", phaseName: "VictoryPhase", wave: 5, turn: 1, runLive: true, tutorialActive: false, handler: null,
       cursor: 0, modeChain: [], messageText: onMessage() ? texts[shown] : null, onActionInput: onMessage(), awaitingActionInput: onMessage(),
-      fine: `msg|${shown}`, domMode: null, gameVersion: "1.12.0.11", ...money,
+      fine: `msg|${shown}`, domMode: null, gameVersion: PINNED_GAME_VERSION, ...money,
     }),
     menu: () => (onMessage()
       ? { readable: true, mode: UiMode.MESSAGE, screen: "MESSAGE", family: "acknowledge", cursor: null, text: texts[shown], messagePending: false, extra: { awaitingActionInput: true }, options: [] }
@@ -894,7 +897,7 @@ test("a cursor walk that finds the game moved on settles again and walks on, not
     read: () => ({
       ready: true, settled: true, reason: "menu-open", mode: committed === null ? UiMode.TARGET_SELECT : UiMode.COMMAND, screen: committed === null ? "TARGET_SELECT" : "COMMAND",
       phaseName: "SelectTargetPhase", wave: 7, turn: 1, runLive: true, tutorialActive: false, handler: null, cursor, modeChain: [], messageText: null,
-      onActionInput: false, awaitingActionInput: false, fine: `target|${cursor}|${committed}|${tick}`, domMode: null, gameVersion: "1.12.0.11", ...money,
+      onActionInput: false, awaitingActionInput: false, fine: `target|${cursor}|${committed}|${tick}`, domMode: null, gameVersion: PINNED_GAME_VERSION, ...money,
     }),
     menu: () => ({ readable: true, mode: UiMode.TARGET_SELECT, screen: "TARGET_SELECT", family: "target_select", cursor, text: null, messagePending: false, options: targets, extra: { isMultipleTargets: false } }),
     onPress: b => {
@@ -924,13 +927,14 @@ test("a frame read that fails is not a frozen loop", async () => {
 });
 
 /** Scripts nothing but the reads a coach tool, or the session or extras read, makes. */
+const coachRead = (): ScreenRead => ({
+  ready: true, settled: true, reason: "menu-open", mode: UiMode.COMMAND, screen: "COMMAND", phaseName: "CommandPhase", wave: 12, turn: 1,
+  runLive: true, tutorialActive: false, handler: null, cursor: 0, modeChain: [], messageText: null, onActionInput: false,
+  awaitingActionInput: false, fine: "coach|0", domMode: null, gameVersion: PINNED_GAME_VERSION, ...money,
+});
+
 function coachTab(over: Pick<FakeScreen, "card" | "starters" | "session" | "extras" | "unreachable" | "lockHolder">) {
-  const read = (): ScreenRead => ({
-    ready: true, settled: true, reason: "menu-open", mode: UiMode.COMMAND, screen: "COMMAND", phaseName: "CommandPhase", wave: 12, turn: 1,
-    runLive: true, tutorialActive: false, handler: null, cursor: 0, modeChain: [], messageText: null, onActionInput: false,
-    awaitingActionInput: false, fine: "coach|0", domMode: null, gameVersion: "1.12.0.11", ...money,
-  });
-  return drive({ ...over, read, menu: () => commandMenu(0) });
+  return drive({ ...over, read: coachRead, menu: () => commandMenu(0) });
 }
 
 test("read_card returns the card the panel is showing, in the settled envelope (extension-distribution.md §11.4)", async () => {
@@ -938,7 +942,7 @@ test("read_card returns the card the panel is showing, in the settled envelope (
   const groups = [{ id: "act", label: "Now", summary: "Charizard Ember → Rattata · 1 hit", rows: [] },
     { id: "foes", label: "Foes", summary: "we're weak to Rock ×2", rows: ["💀 Charizard ← Lycanroc Stone Edge"] }];
   const oracleLine = { state: "on" as const, turn: 7, of: 19 };
-  const tab = coachTab({ card: () => ({ ok: true, kind: "battle", key: "12", wave: 12, verdict: "danger", groups, text: "⚔ Charizard Ember → Rattata", oracleLine, summary }) });
+  const tab = coachTab({ card: () => ({ ok: true, kind: "battle", key: "12", wave: 12, verdict: "danger", groups, text: "⚔ Charizard Ember → Rattata", oracleLine, randomized: true, summary }) });
   const r = await outcome(tab.driver.readCard({}));
   assert.equal(r.status, "ok", JSON.stringify(r));
   assert.equal(r.screen, "COMMAND");
@@ -951,6 +955,7 @@ test("read_card returns the card the panel is showing, in the settled envelope (
   assert.deepEqual(r.groups, groups, "the groups the panel drew, read by name rather than parsed out of the text");
   assert.deepEqual(r.summary, summary);
   assert.deepEqual(r.oracle_line, oracleLine, "the oracle line's state, as the card event carries it (#671)");
+  assert.equal(r.randomized, true, "whether a randomizer challenge is on, as the card event carries it (#723)");
   assert.equal(r.card_error, undefined);
 });
 
@@ -963,17 +968,18 @@ test("read_card on a tab with no panel says so and keeps reading the game (exten
   assert.equal(r.groups, null);
   assert.equal(r.summary, null);
   assert.equal(r.oracle_line, null);
+  assert.equal(r.randomized, null);
   assert.match(String(r.next), /coach panel is not running/);
 });
 
 test("read_card needs no grant: it never claims the tab another driver holds", async () => {
   const fake = fakeGame({
     lockHolder: 4242,
-    card: () => ({ ok: true, kind: "learn", key: "14|Charmeleon|Flamethrower", wave: 14, verdict: "your call", groups: [], text: "🎓 Flamethrower", oracleLine: null, summary: null }),
+    card: () => ({ ok: true, kind: "learn", key: "14|Charmeleon|Flamethrower", wave: 14, verdict: "your call", groups: [], text: "🎓 Flamethrower", oracleLine: null, randomized: false, summary: null }),
     read: (): ScreenRead => ({
       ready: true, settled: true, reason: "menu-open", mode: UiMode.COMMAND, screen: "COMMAND", phaseName: "CommandPhase", wave: 14, turn: 1,
       runLive: true, tutorialActive: false, handler: null, cursor: 0, modeChain: [], messageText: null, onActionInput: false,
-      awaitingActionInput: false, fine: "coach|0", domMode: null, gameVersion: "1.12.0.11", ...money,
+      awaitingActionInput: false, fine: "coach|0", domMode: null, gameVersion: PINNED_GAME_VERSION, ...money,
     }),
     menu: () => commandMenu(0),
   });
@@ -1026,7 +1032,7 @@ test("read_session reports a failed read rather than an empty save (#669)", asyn
 });
 
 test("read_card keeps the panel's own wave when it is a refresh behind the game", async () => {
-  const tab = coachTab({ card: () => ({ ok: true, kind: "battle", key: "11", wave: 11, verdict: "easy", groups: [], text: "⚔", oracleLine: null, summary: null }) });
+  const tab = coachTab({ card: () => ({ ok: true, kind: "battle", key: "11", wave: 11, verdict: "easy", groups: [], text: "⚔", oracleLine: null, randomized: false, summary: null }) });
   const r = await outcome(tab.driver.readCard({}));
   assert.equal(r.wave, 12, "the envelope is the settled game's wave");
   assert.equal(r.card_wave, 11, "the card is still on the wave before it");
@@ -1288,7 +1294,7 @@ test("a server that doesn't set up the clone refuses it as an unknown kind, solv
 test("with solving on, the clone is set up as a background job that reports its progress and answers with the clone (#668)", async t => {
   const fake = fakeGame({});
   let finish = () => {};
-  const clone = { kind: "clone", gameVersion: "1.12.0.11", dir: "/home/.coachemon/clone/v1.12.0.11/game" };
+  const clone = { kind: "clone", gameVersion: PINNED_GAME_VERSION, dir: "/home/.coachemon/clone/v1.12.0.11/game" };
   const driver = new Driver(fake.game, tempHome(t), fake.clock, {
     [CLONE_JOB]: async (_args, { progress }) => {
       progress("setting up the clone for 1.12.0.11, step 1 of 4: fetching the game");
@@ -1308,4 +1314,193 @@ test("with solving on, the clone is set up as a background job that reports its 
 test("solving answers with nothing able to reach the game (extension-distribution.md §12.2)", async t => {
   const unreachable = { rung: 1, code: "unreachable", line: "The Coachemon hub is not running." } as const;
   assert.deepEqual(await drive({ unreachable }, tempHome(t)).driver.solving(true), { status: "ok", solving: true });
+});
+
+const DRAYTON: { save: Record<string, unknown>; live: { wave: number; battleSeed: string }; liveExport: Record<string, unknown> } =
+  readAtPin(new URL("./solver/fixtures/drayton-w188.json", import.meta.url), "gameVersion");
+
+/** The session read at Drayton's first decision, with `save` standing in for its wave-start save. */
+const draytonRead = (save: Record<string, unknown> = DRAYTON.save) => () =>
+  ({ ok: true, wave: DRAYTON.live.wave, battleSeed: DRAYTON.live.battleSeed, waveStart: save, export: DRAYTON.liveExport }) as const;
+
+/** A tab at a fight's decision, on the hub unless said otherwise, with solving on and `solve` as the solve job's work. */
+async function solveTab(t: TestContext, solve: JobWork, over: { session?: FakeScreen["session"]; transport?: "hub" | "cdp"; solving?: boolean } = {}) {
+  const fake = fakeGame({ read: coachRead, menu: () => commandMenu(0), session: over.session ?? draytonRead() });
+  const driver = new Driver(fake.game, tempHome(t), fake.clock, { [SOLVE_JOB]: solve }, over.transport ?? "hub");
+  await driver.solving(over.solving ?? true);
+  return driver;
+}
+
+/** Work that reports `progress`, then answers `result` once `finish` is called; `args` is what it was started with. */
+function heldSolve(result: unknown, progress = "searched 1,200 of 9,000 turns") {
+  const held = { args: null as Record<string, unknown> | null, signal: null as AbortSignal | null, finish: () => {}, started: 0 };
+  const work: JobWork = async (args, ctl) => {
+    held.started++;
+    held.args = args;
+    held.signal = ctl.signal;
+    ctl.progress(progress);
+    await new Promise<void>(r => (held.finish = r));
+    return result;
+  };
+  return { held, work };
+}
+
+const settledJobs = () => new Promise(r => setImmediate(r));
+
+async function refusalOf(p: Promise<unknown>): Promise<Refusal> {
+  try {
+    await p;
+  } catch (e) {
+    if (e instanceof Refusal) return e;
+    throw e;
+  }
+  assert.fail("expected a refusal");
+}
+
+test("a solve job solves the fight on the tab from its wave-start save, relays its progress and answers with the oracle line (#672)", async t => {
+  const answer = { kind: "oracle_line", oracleLine: GORDIE_LINE };
+  const { held, work } = heldSolve(answer);
+  const driver = await solveTab(t, work);
+  const started = await driver.startJob(SOLVE_JOB, {});
+  assert.equal(started.state, "running", JSON.stringify(started));
+  const input = held.args?.input as Record<string, unknown>;
+  assert.deepEqual(input.save, DRAYTON.save, "a solve from the first turn starts from the wave-start save");
+  assert.deepEqual(input.live, DRAYTON.live);
+  assert.deepEqual(input.liveExport, DRAYTON.liveExport);
+  assert.equal(input.cloneVersion, PINNED_GAME_VERSION);
+  assert.deepEqual(await driver.pollJob(started.job), { job: started.job, kind: SOLVE_JOB, state: "running", progress: "searched 1,200 of 9,000 turns" });
+  held.finish();
+  await settledJobs();
+  assert.deepEqual((await driver.readJob(started.job)).result, answer);
+});
+
+for (const [what, save, code, said] of [
+  ["a Daily", { ...DRAYTON.save, gameMode: GameModes.DAILY }, "daily", /Daily's seed is shared/],
+  ["a live game on another version", { ...DRAYTON.save, gameVersion: "1.12.1.0" }, "version_mismatch", /live game is 1\.12\.1\.0/],
+] as const) {
+  test(`a solve in ${what} refuses at once with its reason, before any job starts (#672)`, async t => {
+    const { held, work } = heldSolve(null);
+    const driver = await solveTab(t, work, { session: draytonRead(save) });
+    const r = await refusalOf(driver.startJob(SOLVE_JOB, {}));
+    assert.equal(r.code, "no_answer", r.message);
+    assert.equal((r.detail.reason as { code: string }).code, code);
+    assert.match(r.message, said);
+    assert.equal(held.started, 0, "no job was started");
+  });
+}
+
+test("a solve over CDP answers that it needs the hub, without reading the game or starting a job (#672)", async t => {
+  const { held, work } = heldSolve(null);
+  const unread = () => assert.fail("the session was read");
+  const driver = await solveTab(t, work, { transport: "cdp", session: unread });
+  const r = await refusalOf(driver.startJob(SOLVE_JOB, {}));
+  assert.equal(r.code, "no_answer", r.message);
+  assert.deepEqual(r.detail.reason, { code: "needs_hub" });
+  assert.match(r.message, /needs the hub/);
+  assert.equal(held.started, 0);
+});
+
+test("a solve with solving off refuses, before it reads the game or starts a job (#672)", async t => {
+  const { held, work } = heldSolve(null);
+  const unread = () => assert.fail("the session was read");
+  const driver = await solveTab(t, work, { solving: false, session: unread });
+  const r = await outcome(driver.startJob(SOLVE_JOB, {}));
+  assert.equal(r.error, "solving_off", JSON.stringify(r));
+  assert.equal(held.started, 0);
+});
+
+test("a solve that finds no win answers no answer with its reason, as its result (#672)", async t => {
+  const answer = { kind: "no_answer", reason: { code: "no_win", beams: [], unreplayed: [], dropped: 0 }, message: "no winning path turned up. The card still coaches." };
+  const { held, work } = heldSolve(answer);
+  const driver = await solveTab(t, work);
+  const { job } = await driver.startJob(SOLVE_JOB, {});
+  held.finish();
+  await settledJobs();
+  assert.deepEqual(await driver.readJob(job), { job, kind: SOLVE_JOB, state: "done", progress: "searched 1,200 of 9,000 turns", result: answer });
+});
+
+test("a cancelled solve stops its work and reads as cancelled, with no result (#672)", async t => {
+  const { held, work } = heldSolve({ kind: "oracle_line", oracleLine: GORDIE_LINE });
+  const driver = await solveTab(t, work);
+  const { job } = await driver.startJob(SOLVE_JOB, {});
+  assert.equal((await driver.cancelJob(job)).state, "cancelled");
+  assert.equal(held.signal?.aborted, true, "the solve's work was told to stop");
+  held.finish();
+  await settledJobs();
+  assert.deepEqual(await driver.readJob(job), { job, kind: SOLVE_JOB, state: "cancelled", progress: "searched 1,200 of 9,000 turns" });
+});
+
+/** Drayton's fight, `wave` waves on: the run's seed with another wave's battle. */
+const draytonLater = (waves: number) => () =>
+  ({
+    ok: true,
+    wave: DRAYTON.live.wave + waves,
+    battleSeed: "LaterBattleSeed1",
+    waveStart: { ...DRAYTON.save, waveIndex: DRAYTON.live.wave + waves },
+    export: { ...DRAYTON.liveExport, waveIndex: DRAYTON.live.wave + waves },
+  }) as const;
+
+test("a solve started for a new fight cancels the previous fight's job (#672)", async t => {
+  const first = heldSolve({ kind: "oracle_line", oracleLine: GORDIE_LINE });
+  let session: FakeScreen["session"] = draytonRead();
+  const fake = fakeGame({ read: coachRead, menu: () => commandMenu(0), session: () => session!() });
+  const driver = new Driver(fake.game, tempHome(t), fake.clock, { [SOLVE_JOB]: first.work }, "hub");
+  await driver.solving(true);
+  const old = await driver.startJob(SOLVE_JOB, {});
+  session = draytonLater(1);
+  const next = await driver.startJob(SOLVE_JOB, {});
+  assert.notEqual(next.job, old.job);
+  assert.equal((await driver.pollJob(old.job)).state, "cancelled", "the old fight's job");
+  assert.equal(first.held.signal?.aborted, false, "the new fight's job runs on");
+  assert.equal((await driver.pollJob(next.job)).state, "running");
+});
+
+test("a solve started again for the fight already being solved hands back its job, rather than a second (#672)", async t => {
+  const { held, work } = heldSolve({ kind: "oracle_line", oracleLine: GORDIE_LINE });
+  const driver = await solveTab(t, work);
+  const first = await driver.startJob(SOLVE_JOB, {});
+  const again = await driver.startJob(SOLVE_JOB, {});
+  assert.equal(again.job, first.job);
+  assert.equal(again.state, "running");
+  assert.equal(held.started, 1, "one job runs per fight");
+});
+
+test("a solve with no battle on the tab refuses, starting no job (#672)", async t => {
+  const { held, work } = heldSolve(null);
+  const driver = await solveTab(t, work, { session: () => ({ ok: false, why: "no-battle" }) });
+  const r = await outcome(driver.startJob(SOLVE_JOB, {}));
+  assert.equal(r.error, "no_battle", JSON.stringify(r));
+  assert.equal(r.why, "no-battle");
+  assert.equal(held.started, 0);
+});
+
+test("a solve for a run the game holds no wave-start save of answers no answer, starting no job (#672)", async t => {
+  const { held, work } = heldSolve(null);
+  const driver = await solveTab(t, work, { session: draytonRead(null as never) });
+  const r = await refusalOf(driver.startJob(SOLVE_JOB, {}));
+  assert.equal(r.code, "no_answer", r.message);
+  assert.deepEqual(r.detail.reason, { code: "no_wave_start" });
+  assert.match(r.message, /no wave-start save/);
+  assert.equal(held.started, 0);
+});
+
+test("a solve whose read of the fight never settles refuses, starting no job (#672)", async t => {
+  const { held, work } = heldSolve(null);
+  const fake = fakeGame({ read: () => ({ ...coachRead(), settled: false, reason: "ui-transition" }), menu: () => commandMenu(0), session: draytonRead() });
+  const driver = new Driver(fake.game, tempHome(t), fake.clock, { [SOLVE_JOB]: work }, "hub");
+  await driver.solving(true);
+  const r = await outcome(driver.startJob(SOLVE_JOB, {}));
+  assert.equal(r.error, "not_settled", JSON.stringify(r));
+  assert.equal(held.started, 0);
+});
+
+test("a solve started again once the fight's job has ended starts a fresh one (#672)", async t => {
+  const { held, work } = heldSolve({ kind: "oracle_line", oracleLine: GORDIE_LINE });
+  const driver = await solveTab(t, work);
+  const first = await driver.startJob(SOLVE_JOB, {});
+  held.finish();
+  await settledJobs();
+  const again = await driver.startJob(SOLVE_JOB, {});
+  assert.notEqual(again.job, first.job);
+  assert.equal(again.state, "running");
 });

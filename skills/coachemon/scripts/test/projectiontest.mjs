@@ -3,6 +3,8 @@
 // Wave 62 is 8 waves short of the boss on 70, where the cap stands at 56.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
+import { EvoCondKey } from "../../../../src/enums/generated.ts";
+import { movesetRandomizer } from "./fixtures/challenges.mjs";
 import { party, species, SPECIES } from "./fixtures/party.mjs";
 
 // The species registry the chunk scan hands over (game-code.md §23): `getSpecies(id)`, and `getEvolutions(id)` whose
@@ -20,8 +22,17 @@ const SP = {
   tyrogue: species(236, "Tyrogue", ["Fighting"], 210),
   hitmonlee: species(106, "Hitmonlee", ["Fighting"], 455, { root: 236 }),
   hitmonchan: species(107, "Hitmonchan", ["Fighting"], 455, { root: 236 }),
+  aipom: species(190, "Aipom", ["Normal"], 360),
+  ambipom: species(424, "Ambipom", ["Normal"], 482, { root: 190 }),
+  dipplin: species(1011, "Dipplin", ["Grass", "Dragon"], 485, { root: 840 }),
+  hydrapple: species(1019, "Hydrapple", ["Grass", "Dragon"], 540, { root: 840 }),
 };
+// A move condition, as `SpeciesEvolutionCondition` carries it: Ambipom's Double Hit on a level-32 evolution, and
+// Hydrapple's Dragon Cheer on a level-1 one, its `evoLevelThreshold` lowered to 35 so that reading it would land
+// inside the L45 below.
 const EVOS = {
+  190: [{ speciesId: 424, level: 32, item: 0, condition: { data: [{ key: EvoCondKey.MOVE, move: 458 }] } }],
+  1011: [{ speciesId: 1019, level: 1, item: 0, condition: { data: [{ key: EvoCondKey.MOVE, move: 945 }] }, evoLevelThreshold: [35, 40, 45] }],
   147: [{ speciesId: 148, level: 35 }],
   148: [{ speciesId: 149, level: 45 }],
   // Crobat's own friendship check, which holds for the Golbat below and is never asked all the same.
@@ -278,6 +289,35 @@ const name = r => (r.evolved.length ? `${r.evolved.map(sp => sp.name).join("→"
   assert.equal(held.species, SP.dratini, "no EXP at all, so no level and no evolution");
   assert.equal(held.form, 2, "and the member keeps the form it is standing in");
   scene.modifiers = [];
+}
+
+// ---- A challenge's evolution hook is the game's to run: the Moveset Randomizer turns a move evolution into a level one
+{
+  const with_ = challenges => { scene.gameMode = { challenges }; return levelProjection(scene, { from: 62, fight: 70 }); };
+  const aipom = { name: "Aipom", id: "190:30", level: 30, species: SP.aipom, moveset: [] };
+  const dipplin = { name: "Dipplin", id: "1011:30", level: 30, species: SP.dipplin, moveset: [] };
+
+  console.log("== a challenge's evolution hook");
+  const plain = with_([]).of(aipom, { participant: true });
+  const one = with_([movesetRandomizer(1)]).of(aipom, { participant: true });
+  const two = with_([movesetRandomizer(2)]).of(aipom, { participant: true });
+  const off = with_([{ ...movesetRandomizer(2), value: 0 }]).of(aipom, { participant: true });
+  row("Aipom, L30 → 45", [name(plain), `value 1: ${name(one)}`, `value 2: ${name(two)}`]);
+  assert.equal(plain.species, SP.aipom, "Double Hit is a condition, which the projection refuses");
+  assert.equal(one.species, SP.aipom, "value 1 keeps the move condition");
+  assert.equal(two.species, SP.ambipom, "value 2 drops it, and Ambipom's level 32 lands by 45");
+  assert.equal(off.species, SP.aipom, "a challenge at value 0 is off, and its hook is never run");
+  assert.deepEqual(EVOS[190][0].condition.data, [{ key: EvoCondKey.MOVE, move: 458 }], "the hook ran on a copy, never the registry's row");
+
+  // Dipplin's level-1 move evolution under value 2 (game-code.md §33).
+  const atLevel50 = with_([movesetRandomizer(2)]).of(dipplin, { participant: true });
+  row("Dipplin, L30 → 45", [name(atLevel50)]);
+  assert.equal(atLevel50.species, SP.dipplin, "Hydrapple moved to 50, out of reach at 45");
+  assert.equal(EVOS[1011][0].level, 1);
+
+  const broken = { id: 11, value: 2, applyModifyEvolutions() { throw new Error("no moveset"); } };
+  assert.equal(with_([broken]).of(aipom, { participant: true }).species, SP.aipom, "the condition stands, and is refused");
+  scene.gameMode = {};
 }
 
 // ---- Projecting a level draws nothing and breaches nothing

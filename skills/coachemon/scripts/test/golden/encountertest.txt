@@ -106,15 +106,15 @@ Options
 summary Teleporting Hijinks: take Machine — free: teleport to Fairy Cave, fight an enraged boss there, EXP
 == uncommon breed, new species
 ⌃ {Hide the drawer} × {Close}
-🎭 Uncommon Breed common Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and a 2nd egg move, EXP
+🎭 Uncommon Breed common Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and a 2nd egg move (may repeat the 1st), EXP
 Options
-· Battle — fight Eevee (boosted); catchable → rewards
+· Battle — fight Eevee (+1 Def/SpD on entry); catchable → rewards
 ⚔ wild · L38 vs your L40, nothing hits it SE
-· Berries — give 4 random berries: Eevee joins with a 2nd egg move
+· Berries — give 4 random berries: Eevee joins with a 2nd egg move (may repeat the 1st)
 new species
-★ Charm — charm it: Eevee joins with better IVs and a 2nd egg move, EXP
+★ Charm — charm it: Eevee joins with better IVs and a 2nd egg move (may repeat the 1st), EXP
 by Milotic · new species
-summary Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and a 2nd egg move, EXP
+summary Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and a 2nd egg move (may repeat the 1st), EXP
 == gts, no team read
 ⌃ {Hide the drawer} × {Close}
 🎭 Global Trade System common Global Trade System: your call
@@ -190,7 +190,7 @@ summary Trash to Treasure: take Investigate — fight a Gmax Garbodor boss (6 ba
 🎭 Clowning Around ultra Clowning Around: take Battle — double vs boss Mr. Mime and boss Blacephalon (Fire / Electric, Prankster; Mr. Mime copies that ability, both Taunt your slots) → rewards, then Prankster onto one of your mons for good
 Options
 ★ Battle — double vs boss Mr. Mime and boss Blacephalon (Fire / Electric, Prankster; Mr. Mime copies that ability, both Taunt your slots) → rewards, then Prankster onto one of your mons for good
-⚔ double · Prankster is worth keeping — 2 mons at ~L92 vs your L90, 2 of yours fit to fight
+⚔ double · Prankster is worth keeping — 2 mons at L72–74 vs your L90, 2 of yours fit to fight
 · Item shuffle — Garchomp's berries and Ultra / Rogue items are rerolled inside their own tiers
 same count, different items
 · Type shuffle fixed {fixed by the run seed: this is what happens} — every member's 2nd type is redrawn: Garchomp → Bug, Lapras → Normal
@@ -201,27 +201,27 @@ summary Clowning Around: take Battle — double vs boss Mr. Mime and boss Blacep
 🎭 The Expert Pokémon Breeder ultra The Expert Pokémon Breeder: take Magikarp — Magikarp fights the breeder's 3 alone → 4 Great eggs + 5 Common eggs + a Soothe Bell + rewards
 Options
 ★ Magikarp — Magikarp fights the breeder's 3 alone → 4 Great eggs + 5 Common eggs + a Soothe Bell + rewards
-3 mons at ~L82 vs your L80, 1 of yours fit to fight — lose and the party comes back, Magikarp fainted at 0 friendship with no rewards
+3 mons at ~L61 vs your L80, 1 of yours fit to fight — lose and the party comes back, Magikarp fainted at 0 friendship with no rewards
 · Lapras — Lapras fights the breeder's 3 alone → 2 Great eggs + 5 Common eggs + a Soothe Bell + rewards
-3 mons at ~L82 vs your L80, 1 of yours fit to fight — lose and the party comes back, Lapras fainted at 0 friendship with no rewards
+3 mons at ~L61 vs your L80, 1 of yours fit to fight — lose and the party comes back, Lapras fainted at 0 friendship with no rewards
 · Jolteon — Jolteon fights the breeder's 3 alone → 3 Common eggs + a Soothe Bell + rewards
-3 mons at ~L82 vs your L80, 1 of yours fit to fight — lose and the party comes back, Jolteon fainted at 0 friendship with no rewards
+3 mons at ~L61 vs your L80, 1 of yours fit to fight — lose and the party comes back, Jolteon fainted at 0 friendship with no rewards
 summary The Expert Pokémon Breeder: take Magikarp — Magikarp fights the breeder's 3 alone → 4 Great eggs + 5 Common eggs + a Soothe Bell + rewards
 == dark deal, it takes the weakest
 ⌃ {Hide the drawer} × {Close}
-🎭 Dark Deal rogue Dark Deal: take Deal — Jolteon is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
+🎭 Dark Deal rogue Dark Deal: take Deal — Jolteon is taken for good → 5 Rogue Balls + a catchable boss (starter tier 6) of its types, holding its items, usually legendary
 Options
-★ Deal fixed {fixed by the run seed: this is what happens} — Jolteon is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
+★ Deal fixed {fixed by the run seed: this is what happens} — Jolteon is taken for good → 5 Rogue Balls + a catchable boss (starter tier 6) of its types, holding its items, usually legendary
 ⚔ boss · Jolteon is your weakest link
 · Refuse — shop only, no reward
-summary Dark Deal: take Deal — Jolteon is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
+summary Dark Deal: take Deal — Jolteon is taken for good → 5 Rogue Balls + a catchable boss (starter tier 6) of its types, holding its items, usually legendary
 weakest first  Jolteon -0.1 · Garchomp 0.7 · Lapras 0.7
 == dark deal, the fainted weakest link is healed before the next big fight
 ⌃ {Hide the drawer} × {Close}
 🎭 Dark Deal rogue Dark Deal: your call
 Options
-· Deal fixed {fixed by the run seed: this is what happens} — Lapras is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
-⚔ boss · L38 Lapras for a legendary
+· Deal fixed {fixed by the run seed: this is what happens} — Lapras is taken for good → 5 Rogue Balls + a catchable boss (starter tier 6) of its types, holding its items, usually legendary
+⚔ boss · L38 Lapras for a likely legendary
 · Refuse — shop only, no reward
 summary Dark Deal: your call
 weakest first  Jolteon -0.2 · Lapras 1.0 · Garchomp 1.3
@@ -229,17 +229,49 @@ weakest first  Jolteon -0.2 · Lapras 1.0 · Garchomp 1.3
 ⌃ {Hide the drawer} × {Close}
 🎭 Dark Deal rogue Dark Deal: your call
 Options
-· Deal fixed {fixed by the run seed: this is what happens} — Lapras is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
-⚔ boss · L38 Lapras for a legendary
+· Deal fixed {fixed by the run seed: this is what happens} — Lapras is taken for good → 5 Rogue Balls + a catchable boss (starter tier 6) of its types, holding its items, usually legendary
+⚔ boss · L38 Lapras for a likely legendary
 · Refuse — shop only, no reward
 summary Dark Deal: your call
 weakest first  Jolteon fainted 0.0 · Lapras 1.4 · Garchomp 1.9
+== dark deal, an Electric member buys a legendary
+⌃ {Hide the drawer} × {Close}
+🎭 Dark Deal rogue Dark Deal: take Deal — Jolteon is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
+Options
+★ Deal fixed {fixed by the run seed: this is what happens} — Jolteon is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
+⚔ boss · Jolteon is your weakest link
+· Refuse — shop only, no reward
+summary Dark Deal: take Deal — Jolteon is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
+== dark deal, a Bug member buys no legendary
+⌃ {Hide the drawer} × {Close}
+🎭 Dark Deal rogue Dark Deal: take Deal — Pinsir is taken for good → 5 Rogue Balls + a catchable non-legendary boss (starter tier 5) of its types, holding its items — Scyther or Heracross
+Options
+★ Deal fixed {fixed by the run seed: this is what happens} — Pinsir is taken for good → 5 Rogue Balls + a catchable non-legendary boss (starter tier 5) of its types, holding its items — Scyther or Heracross
+⚔ boss · Pinsir is your weakest link
+· Refuse — shop only, no reward
+summary Dark Deal: take Deal — Pinsir is taken for good → 5 Rogue Balls + a catchable non-legendary boss (starter tier 5) of its types, holding its items — Scyther or Heracross
+== dark deal, a Mono Ghost run's top roll
+⌃ {Hide the drawer} × {Close}
+🎭 Dark Deal rogue Dark Deal: take Deal — Jolteon is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 8) of the run's Ghost type, holding its items
+Options
+★ Deal fixed {fixed by the run seed: this is what happens} — Jolteon is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 8) of the run's Ghost type, holding its items
+⚔ boss · Jolteon is your weakest link
+· Refuse — shop only, no reward
+summary Dark Deal: take Deal — Jolteon is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 8) of the run's Ghost type, holding its items
+== dark deal, neither the member nor the tier read
+⌃ {Hide the drawer} × {Close}
+🎭 Dark Deal rogue Dark Deal: your call
+Options
+· Deal — a random member is taken for good → 5 Rogue Balls + a catchable boss of its types, holding its items: legendary 72% of the time, else Squirtle
+⚔ boss · you don't choose who goes
+· Refuse — shop only, no reward
+summary Dark Deal: your call
 == dark deal, the heal comes before the next big fight
 ⌃ {Hide the drawer} × {Close}
 🎭 Dark Deal rogue Dark Deal: your call
 Options
-· Deal fixed {fixed by the run seed: this is what happens} — Lapras is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
-⚔ boss · L38 Lapras for a legendary
+· Deal fixed {fixed by the run seed: this is what happens} — Lapras is taken for good → 5 Rogue Balls + a catchable boss (starter tier 6) of its types, holding its items, usually legendary
+⚔ boss · L38 Lapras for a likely legendary
 · Refuse — shop only, no reward
 summary Dark Deal: your call
 next big fight  gym 50 · weakest first  Jolteon 0.1 · Lapras 0.9 · Garchomp 2.3
@@ -247,7 +279,7 @@ next big fight  gym 50 · weakest first  Jolteon 0.1 · Lapras 0.9 · Garchomp 2
 ⌃ {Hide the drawer} × {Close}
 🎭 Dark Deal rogue Dark Deal: take Refuse — shop only, no reward · avoid Deal
 Options
-✗ Deal fixed {fixed by the run seed: this is what happens} — Lapras is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
+✗ Deal fixed {fixed by the run seed: this is what happens} — Lapras is taken for good → 5 Rogue Balls + a catchable boss (starter tier 6) of its types, holding its items, usually legendary
 ⚔ boss · Lapras is your strongest
 ★ Refuse — shop only, no reward
 summary Dark Deal: take Refuse — shop only, no reward · avoid Deal
@@ -256,8 +288,8 @@ next big fight  gym 50 · weakest first  Garchomp fainted 0.0 · Jolteon 0.7 · 
 ⌃ {Hide the drawer} × {Close}
 🎭 Dark Deal rogue Dark Deal: your call
 Options
-· Deal fixed {fixed by the run seed: this is what happens} — Lapras is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
-⚔ boss · L38 Lapras for a legendary
+· Deal fixed {fixed by the run seed: this is what happens} — Lapras is taken for good → 5 Rogue Balls + a catchable boss (starter tier 6) of its types, holding its items, usually legendary
+⚔ boss · L38 Lapras for a likely legendary
 · Refuse — shop only, no reward
 summary Dark Deal: your call
 next big fight  none · weakest first  Jolteon 0.0 · Lapras 1.1 · Garchomp 2.6
@@ -266,7 +298,7 @@ next big fight  none · weakest first  Jolteon 0.0 · Lapras 1.1 · Garchomp 2.6
 🎭 A Trainer's Test rogue A Trainer's Test: take Accept — fight Cheryl: 6 mons, Elite Four strength → an Epic egg + Relic Gold + 2 Rogue rewards
 Options
 ★ Accept — fight Cheryl: 6 mons, Elite Four strength → an Epic egg + Relic Gold + 2 Rogue rewards
-⚔ trainer · 6 mons at ~L68 vs your L65, 3 of yours fit to fight
+⚔ trainer · 6 mons at L49–52 vs your L65, 3 of yours fit to fight
 · Decline — a full party heal + a Rare egg, then the shop with no free reward
 summary A Trainer's Test: take Accept — fight Cheryl: 6 mons, Elite Four strength → an Epic egg + Relic Gold + 2 Rogue rewards
 == weird dream
@@ -276,7 +308,7 @@ Options
 ★ Accept — your whole party is swapped: Garchomp → Dragonite (+100), Lapras → Gyarados (+105), Jolteon → Zapdos (+55) — same levels, held items and the better IVs, then a full heal; pick one of a Memory Mushroom, a Rogue Ball or 4 Mints
 +260 base stats across the party; natures come out neutral, which is what the Mints are for
 · Battle — fight that same team at your own levels, holding your items → pick one of 2 Rogue / 2 Ultra / 2 Great, and one member without a passive gets one for the run
-⚔ trainer · 3 mons at ~L92 vs your L90, 3 of yours fit to fight
+⚔ trainer · 3 mons at L88–90 vs your L90, 3 of yours fit to fight
 ✗ Refuse — every member loses 10% of its level (your L90 drops 9)
 the only option that costs you something and gives nothing back
 summary Weird Dream: take Accept — your whole party is swapped: Garchomp → Dragonite (+100), Lapras → Gyarados (+105), Jolteon → Zapdos (+55) — same levels, held items and the better IVs, then a full heal; pick one of a Memory Mushroom, a Rogue Ball or 4 Mints · avoid Refuse
@@ -285,7 +317,7 @@ summary Weird Dream: take Accept — your whole party is swapped: Garchomp → D
 🎭 The Winstrate Challenge rogue The Winstrate Challenge: take Refuse — a full party heal + a Rarer Candy · avoid Accept
 Options
 ✗ Accept — 5 trainer battles back to back, 13 mons in all, no healing between → a Premium Voucher + a Macho Brace
-⚔ trainer · 13 mons at ~L122 vs your L120, 3 of yours fit to fight
+⚔ trainer · 13 mons at L101–103 vs your L120, 3 of yours fit to fight
 ★ Refuse — a full party heal + a Rarer Candy
 you would not finish the run of five
 summary The Winstrate Challenge: take Refuse — a full party heal + a Rarer Candy · avoid Accept
@@ -294,11 +326,11 @@ summary The Winstrate Challenge: take Refuse — a full party heal + a Rarer Can
 🎭 Mysterious Challengers great Mysterious Challengers: take Hard — fight Ace Trainer May → 2 Ultra + 2 Great + the usual rolls · avoid Brutal
 Options
 · Normal — fight Youngster Joey → a Common TM, a Great TM, a Memory Mushroom + the usual rolls
-⚔ trainer · their own team at ~L32 vs your L32, 3 of yours fit to fight
+⚔ trainer · their own team at ~L20 vs your L22, 3 of yours fit to fight
 ★ Hard — fight Ace Trainer May → 2 Ultra + 2 Great + the usual rolls
-⚔ trainer · 3 mons at ~L35 vs your L32, 3 of yours fit to fight
+⚔ trainer · 3 mons at L23–25 vs your L22, 3 of yours fit to fight
 ✗ Brutal — fight Leader Brock with an Elite Four team → 2 Rogue + 1 Ultra + 1 Great + the usual rolls, but 0.9× EXP
-⚔ trainer · 6 mons at ~L37 vs your L32, 3 of yours fit to fight
+⚔ trainer · 6 mons at L25–27 vs your L22, 3 of yours fit to fight
 summary Mysterious Challengers: take Hard — fight Ace Trainer May → 2 Ultra + 2 Great + the usual rolls · avoid Brutal
 == slumbering snorlax, thief
 ⌃ {Hide the drawer} × {Close}
@@ -364,7 +396,7 @@ summary Absolute Avarice: take Battle — fight Greedent (3 bars, +1 SpD, Stuff 
 ⌃ {Hide the drawer} × {Close}
 🎭 Dancing Lessons great Dancing Lessons: take Dance — show it a dance: Oricorio joins, keeping the dance move you used
 Options
-· Battle — fight Oricorio (+1 Atk/Def/SpA/SpD on entry, opens with Revelation Dance) → a Baton + rewards; catchable
+· Battle — fight Oricorio (+1 Atk/Def/SpA/SpD on entry, opens with a Fire Revelation Dance) → a Baton + rewards; catchable
 ⚔ boss · L34 boss vs your L40, 2 mons hit it SE
 · Learn — learn the dance: one mon of your choice is taught Revelation Dance (100 power, special, always the user's own first type)
 free, and it keeps the move for the run
@@ -373,12 +405,25 @@ by Lopunny · new species
 Notes
 · balls work in its battle
 summary Dancing Lessons: take Dance — show it a dance: Oricorio joins, keeping the dance move you used
+== dancing lessons, a Sensu Oricorio
+⌃ {Hide the drawer} × {Close}
+🎭 Dancing Lessons great Dancing Lessons: take Dance — show it a dance: Sensu Style Oricorio joins, keeping the dance move you used
+Options
+· Battle — fight Sensu Style Oricorio (+1 Atk/Def/SpA/SpD on entry, opens with a Ghost Revelation Dance) → a Baton + rewards; catchable
+⚔ boss · L34 boss vs your L40, 2 mons hit it SE
+· Learn — learn the dance: one mon of your choice is taught Revelation Dance (100 power, special, always the user's own first type)
+free, and it keeps the move for the run
+★ Dance — show it a dance: Sensu Style Oricorio joins, keeping the dance move you used
+by Lopunny · new species
+Notes
+· balls work in its battle
+summary Dancing Lessons: take Dance — show it a dance: Sensu Style Oricorio joins, keeping the dance move you used
 == bug-type superfan
 ⌃ {Hide the drawer} × {Close}
 🎭 Bug-Type Superfan great Bug-Type Superfan: take Give — hand over the bug item → a Golden Bug Net (Rogue) + a Reviver Seed, no fight
 Options
 · Battle fixed {fixed by the run seed: this is what happens} — fight Bug-Type Superfan → rewards, then a free tutor move: Megahorn, Bug Buzz, Sticky Web & U-turn
-⚔ trainer · 3 mons at ~L32 vs your L40, 4 of yours fit to fight
+⚔ trainer · 3 mons at L20 vs your L40, 4 of yours fit to fight
 · Show — show off your bug types (1 bug) → a Super Lure + a Great Ball
 by Scyther · 5 more bugs would make it a Master Ball
 ★ Give — hand over the bug item → a Golden Bug Net (Rogue) + a Reviver Seed, no fight
@@ -394,15 +439,15 @@ pick a mon whose damage you can hold back, not your hardest hitter
 summary Fun and Games: your call
 == uncommon breed, judged
 ⌃ {Hide the drawer} × {Close}
-🎭 Uncommon Breed common Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and a 2nd egg move, EXP · Eevee: take, Ground now beats 2 of 5, down from 2 of 4, Rock now beats 2 of 5, down from 2 of 4
+🎭 Uncommon Breed common Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and a 2nd egg move (may repeat the 1st), EXP · Eevee: take, Ground now beats 2 of 5, down from 2 of 4, Rock now beats 2 of 5, down from 2 of 4
 Options
-· Battle — fight Eevee (boosted); catchable → rewards
+· Battle — fight Eevee (+1 Def/SpD on entry); catchable → rewards
 ⚔ wild · L38 vs your L40, nothing hits it SE
-· Berries — give 4 random berries: Eevee joins with a 2nd egg move
+· Berries — give 4 random berries: Eevee joins with a 2nd egg move (may repeat the 1st)
 team: take, Ground now beats 2 of 5, down from 2 of 4, Rock now beats 2 of 5, down from 2 of 4, new species
-★ Charm — charm it: Eevee joins with better IVs and a 2nd egg move, EXP
+★ Charm — charm it: Eevee joins with better IVs and a 2nd egg move (may repeat the 1st), EXP
 by Milotic · team: take, Ground now beats 2 of 5, down from 2 of 4, Rock now beats 2 of 5, down from 2 of 4, new species
-summary Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and a 2nd egg move, EXP · Eevee: take, Ground now beats 2 of 5, down from 2 of 4, Rock now beats 2 of 5, down from 2 of 4
+summary Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and a 2nd egg move (may repeat the 1st), EXP · Eevee: take, Ground now beats 2 of 5, down from 2 of 4, Rock now beats 2 of 5, down from 2 of 4
 offer Eevee: team take (Ground now beats 2 of 5, down from 2 of 4; Rock now beats 2 of 5, down from 2 of 4) · account 3 of 2 · estimate
 == salesman, judged
 ⌃ {Hide the drawer} × {Close}
@@ -426,7 +471,7 @@ offer Larvesta: team skip (Ground now beats 2 of 4, up from 1 of 3; Rock now bea
 ⌃ {Hide the drawer} × {Close}
 🎭 Dancing Lessons great Dancing Lessons: take Dance — show it a dance: Oricorio joins, keeping the dance move you used · Oricorio: take, a backup to Fighting at last, a backup to Flying at last
 Options
-· Battle — fight Oricorio (+1 Atk/Def/SpA/SpD on entry, opens with Revelation Dance) → a Baton + rewards; catchable
+· Battle — fight Oricorio (+1 Atk/Def/SpA/SpD on entry, opens with a Fire Revelation Dance) → a Baton + rewards; catchable
 ⚔ boss · L34 boss vs your L37, nothing hits it SE
 · Learn — learn the dance: one mon of your choice is taught Revelation Dance (100 power, special, always the user's own first type)
 free, and it keeps the move for the run
@@ -443,7 +488,7 @@ offer Oricorio: team take (a backup to Fighting at last; a backup to Flying at l
 ⌃ {Hide the drawer} × {Close}
 🎭 Dancing Lessons great Dancing Lessons: take Dance — show it a dance: Oricorio joins, keeping the dance move you used · Oricorio: swap for Feebas, Ground now beats 2 of 6, down from 3, Rock now beats 2 of 6, down from 3
 Options
-· Battle — fight Oricorio (+1 Atk/Def/SpA/SpD on entry, opens with Revelation Dance) → a Baton + rewards; catchable
+· Battle — fight Oricorio (+1 Atk/Def/SpA/SpD on entry, opens with a Fire Revelation Dance) → a Baton + rewards; catchable
 ⚔ boss · L34 boss vs your L40, 2 mons hit it SE
 · Learn — learn the dance: one mon of your choice is taught Revelation Dance (100 power, special, always the user's own first type)
 free, and it keeps the move for the run

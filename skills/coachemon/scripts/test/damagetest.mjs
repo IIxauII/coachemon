@@ -2,7 +2,7 @@
 // multi-hit attrs do: the numbers below are exact.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
-import { MoveId, MultiHitType } from "../../../../src/enums/generated.ts";
+import { HitResult, MoveId, MultiHitType } from "../../../../src/enums/generated.ts";
 import { GAME_PROTO } from "./game-proto.mjs";
 
 class MultiHitAttr { constructor(t) { this.multiHitType = t; } }
@@ -428,6 +428,8 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(endOfTurnHp(m({ tags: ["UNDERGROUND"] }), { s: at(SAND) }), 0, "mid-Dig");
   const cloudNine = mon("cloud nine", { attrs: [abAttr("SuppressWeatherEffectAbAttr")] });
   assert.equal(endOfTurnHp(m(), { s: at(SAND, 0, { getField: () => [cloudNine] }) }), 0, "Cloud Nine on the field");
+  assert.equal(recOf(m(), at(SUN, 0, { getField: () => [cloudNine] })).weather, 0, "a move sees no weather past Cloud Nine");
+  assert.equal(recOf(m(), at(SUN)).weather, SUN);
   const drySkin = [abAttr("PostWeatherLapseHealAbAttr", { healFactor: 2, weatherTypes: [RAIN, 7] }), abAttr("PostWeatherLapseDamageAbAttr", { damageFactor: 2, weatherTypes: [SUN, 8] })];
   assert.equal(endOfTurnHp(m({ attrs: [abAttr("PostWeatherLapseHealAbAttr", { healFactor: 1, weatherTypes: [RAIN, 7] })] }), { s: at(RAIN) }), 10, "Rain Dish");
   assert.equal(endOfTurnHp(m({ attrs: drySkin }), { s: at(RAIN) }), 20, "Dry Skin in rain");
@@ -461,8 +463,11 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   const waveHeal = at(0, 0, { enemyModifiers: [held("EnemyTurnHealModifier", {}, 3)] });
   assert.equal(endOfTurnHp(m({ player: false }), { s: waveHeal }), 9, "enemy turn heal ×3");
   assert.equal(endOfTurnHp(m(), { s: waveHeal }), 0, "not for the player");
-  assert.equal(endOfTurnHp(m({ hp: 20, maxHp: 40, player: false }), { s: waveHeal }), 1, "the 1 HP floor covers all stacks");
-  assert.equal(endOfTurnHp(m({ items: [held("HitHealModifier", {}, 2)] }), { s: at(), dealt: 100 }), 24, "Shell Bell ×2");
+  assert.equal(endOfTurnHp(m({ hp: 20, maxHp: 40, player: false }), { s: waveHeal }), 2, "the stacks are floored together");
+  const oneToken = at(0, 0, { enemyModifiers: [held("EnemyTurnHealModifier")] });
+  assert.equal(endOfTurnHp(m({ hp: 20, maxHp: 49, player: false }), { s: oneToken }), 0, "one stack under 50 max HP heals nothing");
+  assert.equal(endOfTurnHp(m({ hp: 20, maxHp: 50, player: false }), { s: oneToken }), 1, "and 1 at 50");
+  assert.equal(endOfTurnHp(m({ items: [held("HitHealModifier", {}, 2)] }), { s: at(), dealt: 100 }), 25, "Shell Bell ×2");
   assert.equal(endOfTurnHp(m({ items: [held("HitHealModifier")] }), { s: at() }), 0, "Shell Bell without damage");
   // Shell Bell heals in `MoveEffectPhase`, so Sitrus reads the HP after it (game-code.md §8).
   assert.equal(endOfTurnHp(m({ hp: 70, items: [new BerryModifier(0)] }), { s: at() }), 40, "70/160 eats the berry");
@@ -473,7 +478,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   const charmed = at(0, 0, { modifiers: [held("HealingBoosterModifier", { multiplier: 1.1 }, 2)] });
   assert.equal(endOfTurnHp(m({ items: [new TurnHealModifier()] }), { s: charmed }), 12, "Healing Charm ×2 on Leftovers");
   assert.equal(endOfTurnHp(m({ player: false, items: [new TurnHealModifier()] }), { s: charmed }), 10, "which is the player's, not the foe's");
-  assert.equal(endOfTurnHp(m({ hp: 155, player: false }), { s: at(0, 0, { enemyModifiers: [held("EnemyTurnHealModifier", {}, 3)] }) }), 4, "the token stops at max − 1");
+  assert.equal(endOfTurnHp(m({ hp: 155, player: false }), { s: at(0, 0, { enemyModifiers: [held("EnemyTurnHealModifier", {}, 3)] }) }), 5, "the token's max − 1 caps the amount, not the HP");
 
   // The TURN_END battler tags, read by class (game-code.md §21).
   const tag = name => new ({ [name]: class {} })[name]();
@@ -482,10 +487,11 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(endOfTurnHp(m({ battlerTags: [tag("NightmareTag")] }), { s: at() }), -40, "Nightmare");
   assert.equal(endOfTurnHp(m({ battlerTags: [tag("CursedTag")] }), { s: at() }), -40, "Curse");
   assert.equal(endOfTurnHp(m({ battlerTags: [new BindTag()] }), { s: at() }), -20, "a binding move");
-  assert.equal(endOfTurnHp(m({ battlerTags: [tag("SaltCuredTag")] }), { s: at() }), -10, "Salt Cure");
-  assert.equal(endOfTurnHp(m({ types: [10], battlerTags: [tag("SaltCuredTag")] }), { s: at() }), -20, "Salt Cure on a Water mon");
+  assert.equal(endOfTurnHp(m({ battlerTags: [tag("SaltCuredTag")] }), { s: at() }), -20, "Salt Cure");
+  assert.equal(endOfTurnHp(m({ types: [10], battlerTags: [tag("SaltCuredTag")] }), { s: at() }), -40, "Salt Cure on a Water mon");
   assert.equal(endOfTurnHp(m({ battlerTags: [tag("AquaRingTag")] }), { s: at() }), 10, "Aqua Ring");
   assert.equal(endOfTurnHp(m({ abilities: ["BlockNonDirectDamageAbAttr"], battlerTags: [tag("NightmareTag")] }), { s: at() }), 0, "Magic Guard vs Nightmare");
+  assert.equal(endOfTurnHp(m({ types: [8], abilities: ["BlockNonDirectDamageAbAttr"], battlerTags: [tag("SaltCuredTag")] }), { s: at() }), 0, "Magic Guard vs Salt Cure on a Steel mon");
   const seed = Object.assign(tag("SeedTag"), { sourceIndex: 1 });
   const seeder = mon("seeder", { hp: 50, maxHp: 160, bi: 1 });
   const seeded = mon("seeded", { hp: 160, maxHp: 160, player: false, battlerTags: [seed], bi: 2 });
@@ -578,6 +584,71 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
     assert.ok(moveOutcome(scene, atk, wall, pmOf(bigHit)).max > 0, `${ability} lets unflagged moves through`);
   }
   phaseName = "CommandPhase";
+}
+
+// ---- Thousand Arrows hits a Levitate or Eelevate holder and a Flying type, where every other Ground move estimates 0
+{
+  phaseName = "MovePhase";
+  class NeutralDamageAgainstFlyingTypeAttr {}
+  const arrows = move(614, "Thousand Arrows", 4, 90, { attrs: [new NeutralDamageAgainstFlyingTypeAttr()] });
+  const quake = move(89, "Earthquake", 4, 100);
+  const atk = mon("a", { moves: [arrows, quake] });
+  for (const ability of ["Levitate", "Eelevate"]) {
+    const floater = mon("floater");
+    floater.getAbility = () => ({ name: ability, getAttrs: () => [] });
+    setup(atk, floater);
+    assert.equal(moveOutcome(scene, atk, floater, pmOf(arrows)).e, 1, `Thousand Arrows into ${ability}`);
+    assert.equal(moveOutcome(scene, atk, floater, pmOf(quake)).e, 0, `Earthquake into ${ability}`);
+  }
+  const flyer = mon("flyer", { types: [2] });
+  setup(atk, flyer);
+  assert.equal(moveOutcome(scene, atk, flyer, pmOf(arrows)).e, 1, "Thousand Arrows into a Flying type");
+  assert.equal(moveOutcome(scene, atk, flyer, pmOf(quake)).e, 0, "Earthquake into a Flying type");
+  phaseName = "CommandPhase";
+}
+
+// ---- Mold Breaker's Ground move lands on Levitate (#732)
+{
+  const quake = move(89, "Earthquake", 4, 100);
+  // Never through `ignoreAbility`: the game's Levitate doesn't read it (game-code.md §1).
+  const floating = p => !(scene.arena.ignoreAbilities && scene.arena.ignoringEffectSource !== p.getBattlerIndex());
+  const levitating = (id, opts) => {
+    const p = mon(id, opts);
+    const hit = p.getAttackDamage;
+    p.getMoveEffectiveness = (_, mv) => (mv.type === 4 && floating(p) ? 0 : 1);
+    p.getAttackDamage = function (o) {
+      return o.move.type === 4 && floating(this) ? { cancelled: false, result: HitResult.NO_EFFECT, damage: 0 } : hit.call(this, o);
+    };
+    return p;
+  };
+  const foe = levitating("levitate", { player: false, bi: 2 });
+  const mold = mon("mold", { abilities: ["MoveAbilityBypassAbAttr"] });
+  setup(mold, foe);
+  const o = moveOutcome(scene, mold, foe, pmOf(quake), { crit: false });
+  assert.deepEqual([o.e, o.max], [1, 100], "Mold Breaker Earthquake into Levitate");
+  assert.ok(!scene.arena.ignoreAbilities, "the arena is left as the game had it");
+  // Shadow Shield holds against Mold Breaker (game-code.md §1).
+  const shield = mon("shadow shield", { player: false, bi: 2 });
+  const unshielded = shield.getAttackDamage;
+  shield.getAttackDamage = function (o) {
+    const r = unshielded.call(this, o);
+    return o.ignoreAbility ? r : { ...r, damage: r.damage / 2 };
+  };
+  setup(mold, shield);
+  assert.equal(moveOutcome(scene, mold, shield, pmOf(quake), { crit: false }).max, 50, "Mold Breaker Earthquake into Shadow Shield");
+  // Both off the field (game-code.md §1).
+  const benchFoe = levitating("bench levitate", { player: false, bi: -1 });
+  const benchMold = mon("bench mold", { abilities: ["MoveAbilityBypassAbAttr"], bi: -1 });
+  setup(benchMold, benchFoe);
+  assert.equal(moveOutcome(scene, benchMold, benchFoe, pmOf(quake), { crit: false }).e, 1, "off the field, both of them");
+  // The game asks Mycelium Might through `doesFlagEffectApply` (game-code.md §1).
+  const mycelium = mon("mycelium", { abilities: ["MoveAbilityBypassAbAttr"] });
+  setup(mycelium, foe);
+  const asked = { ...quake, doesFlagEffectApply: () => false };
+  assert.equal(moveOutcome(scene, mycelium, foe, pmOf(asked), { crit: false }).e, 0, "Mycelium Might Earthquake into Levitate");
+  const plain = mon("plain");
+  setup(plain, foe);
+  assert.equal(moveOutcome(scene, plain, foe, pmOf(quake), { crit: false }).e, 0, "Earthquake into Levitate");
 }
 
 // ---- Drain is a share of the damage dealt, which Heal Block, Healing Charm and Liquid Ooze change (game-code.md §18)
@@ -711,9 +782,8 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(versionAtLeast(null, "1.0.0"), false, "an unreadable version is older than everything");
 }
 
-// ---- A fixed-damage hit goes through a full-HP Sturdy and a rolled hit doesn't (game-code.md §1)
+// ---- Sturdy holds fixed damage from 1.12.1.0 and on an unreadable version, but not on older builds (game-code.md §1)
 {
-  // Upstream PR 7620 flips this, and the version constant flips with it.
   class FixedDamageAttr {}
   const atk = mon("tosser");
   const pineco = mon("pineco", { hp: 40, abilities: ["PreDefendFullHpEndureAbAttr"] });
@@ -730,6 +800,13 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   const rolled = moveOutcome(scene, atk, pineco, pmOf(move(65, "Nuke", 0, 300)), { crit: false });
   assert.equal(rolled.pKo, 0, "Sturdy still holds a rolled hit");
   assert.ok(rolled.notes.includes("sturdy"));
+  const later = { ...scene, game: { config: { gameVersion: "1.12.1.0" } } };
+  const held = moveOutcome(later, atk, pineco, pmOf(move(64, "Seismic Toss", 1, 1, { attrs: [new FixedDamageAttr()] })));
+  assert.equal(held.pKo, 0, "from 1.12.1.0 Sturdy holds fixed damage too");
+  assert.ok(held.notes.includes("sturdy"));
+  const unread = { ...scene, game: { config: {} } };
+  const blind = moveOutcome(unread, atk, pineco, pmOf(move(64, "Seismic Toss", 1, 1, { attrs: [new FixedDamageAttr()] })));
+  assert.equal(blind.pKo, 0, "an unreadable version gets the pinned build's Sturdy");
 }
 
 // ---- False Swipe caps each roll, rather than spreading the rolls under the capped max

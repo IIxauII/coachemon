@@ -19,6 +19,7 @@ import { SpeciesId } from "#enums/species-id";
 import { Stat } from "#enums/stat";
 import { StatusEffect } from "#enums/status-effect";
 import { UiMode } from "#enums/ui-mode";
+import { applySessionVersionMigration } from "#system/version-converter";
 import { Pokemon } from "#field/pokemon";
 import { BypassSpeedChanceModifier, FlinchChanceModifier, SurviveDamageModifier } from "#modifiers/modifier";
 import { Move, MoveEffectAttr } from "#moves/move";
@@ -51,8 +52,13 @@ type Input =
   | { kind: "queued"; replacement: PartySlot };
 type Turn = "won" | "lost" | "on" | { illegal: string };
 
-/** `at`: a fork point to start from, for a save that isn't the wave's start (`src/solver/extras.ts`). */
-const job: { save: any; inputs: Input[]; at?: string } = JSON.parse(readFileSync(process.env.COACH_IN as string, "utf8"));
+/**
+ * `at`: a fork point to start from, for a save that isn't the wave's start (`src/solver/extras.ts`). `liveExport`: a
+ * carried save's live export, migrated as a load migrates the save (#703).
+ */
+const job: { save: any; inputs: Input[]; at?: string; liveExport?: any } = JSON.parse(
+  readFileSync(process.env.COACH_IN as string, "utf8"),
+);
 const report: Record<string, unknown> = {};
 
 let phaserGame: Phaser.Game;
@@ -253,8 +259,8 @@ function holders(): Holder[] {
     // Destroyed, not only dropped: a foe's battle info listens on the scene for the berries and moves it shows.
     { items: () => [...s.field.list], drop: o => s.field.remove(o, true) },
     { items: () => [...s.fieldUI.list], drop: o => s.fieldUI.remove(o, true) },
-    { items: () => [...s.spriteSparkleHandler.sprites], drop: o => s.spriteSparkleHandler.remove(o) },
-    ...icons.map(h => ({ items: () => [...h.icons.keys()], drop: (o: unknown) => h.remove(o) })),
+    { items: () => [...s.spriteTeraSparkleHandler.sprites], drop: o => s.spriteTeraSparkleHandler.remove(o) },
+    ...icons.map(h => ({ items: () => [...h.icons.keys()], drop: (o: unknown) => h.icons.delete(o) })),
     { items: () => canvases.pool.flatMap((c: any) => c.parent ?? []), drop: o => canvases.remove(o) },
   ];
 }
@@ -296,7 +302,15 @@ function sweep(replaced: Set<unknown>) {
   game.textInterceptor.clearLogs();
 }
 
+function migrated(session: any) {
+  const copy = structuredClone(session);
+  applySessionVersionMigration(copy);
+  return copy;
+}
+
 async function load() {
+  if (job.liveExport !== undefined) report.migrated = { save: migrated(job.save), liveExport: migrated(job.liveExport) };
+  const saved = (report.migrated as { save: any } | undefined)?.save ?? job.save;
   const realRng = { constructed: await boot(), reloaded: false };
   let enemyItemsBeforeReload = 0;
   await reload(JSON.stringify(job.save), () => (enemyItemsBeforeReload = scene().enemyModifiers.length));
@@ -307,8 +321,8 @@ async function load() {
     realRng,
     overrides: [
       ...OVERRIDES.filter(name => activeOverrides[name] !== defaultOverrides[name]),
-      ...unlikeTheSave("our", scene().getPlayerParty(), job.save.party),
-      ...unlikeTheSave("the foe's", scene().getEnemyParty(), job.save.enemyParty),
+      ...unlikeTheSave("our", scene().getPlayerParty(), saved.party),
+      ...unlikeTheSave("the foe's", scene().getEnemyParty(), saved.enemyParty),
     ],
     enemyItemsBeforeReload,
     items: { ours: stackTotals(scene().modifiers), foes: stackTotals(scene().enemyModifiers) },
@@ -499,7 +513,7 @@ function forkPoint(): string {
     faints: { ours: faints(battle.playerFaintsHistory), foes: faints(battle.enemyFaintsHistory) },
     teamIndex: Object.fromEntries(s.getEnemyParty().map((p: any) => [p.id, p.initialTeamIndex])),
     bossIndex: Object.fromEntries(s.getEnemyParty().map((p: any) => [p.id, p.bossSegmentIndex])),
-    temp: Object.fromEntries(all.map(p => [p.id, { ...p.tempSummonData }])),
+    temp: Object.fromEntries(all.map(p => [p.id, { turnCount: p.summonData.turnCount, waveTurnCount: p.summonData.waveTurnCount }])),
     wave: Object.fromEntries(all.map(p => [p.id, { ...p.waveData, abilitiesApplied: [...p.waveData.abilitiesApplied] }])),
     summon: Object.fromEntries(all.filter(p => p.isOnField()).map(p => [p.id, JSON.parse(JSON.stringify(p.summonData))])),
     status: Object.fromEntries(
@@ -552,7 +566,6 @@ function putBack(fork: any) {
   const teraTypes = new Map([...party, ...enemyParty].map((m: any) => [m.id, m.teraType]));
   for (const p of all) {
     p.teraType = teraTypes.get(p.id) ?? p.teraType;
-    Object.assign(p.tempSummonData, fork.temp[p.id]);
     const wave = fork.wave[p.id];
     p.waveData.endured = wave.endured;
     p.waveData.abilityRevealed = wave.abilityRevealed;
@@ -572,6 +585,8 @@ function putBack(fork: any) {
   for (const p of [...s.getPlayerField(), ...s.getEnemyField()]) {
     if (fork.summon[p.id]) p.summonData = new PokemonSummonData(fork.summon[p.id]);
   }
+  // After the summon data, which a copy constructs with the turn counts at 1: its `toJSON` leaves them out.
+  for (const p of all) Object.assign(p.summonData, fork.temp[p.id]);
 }
 
 const hp = () => {

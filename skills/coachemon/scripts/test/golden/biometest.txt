@@ -45,6 +45,12 @@ catch  {"name":"Excadrill","icon":["k","27"],"tags":["swap for Pidgeotto","+0.9 
 · Swamp
 · Construction Site
 reading the game's biome tables…
+== a Daily seed forcing Fairy Glade at wave 40
+· onward: Fairy Glade, no choice (Daily seed)
+· onward: Fairy Glade, no choice (Daily seed)
+== a Daily seed offering Fairy Glade and Slum at wave 40
+· onward (Daily seed): Fairy Glade · Slum
+· onward (Daily seed): Fairy Glade · Slum
 == gym at wave 50
 ⌃ {Hide the drawer} × {Close}
 🗺 Next biome from Tall Grass Swamp 78 pick — edges Construction Site on defense, Garchomp resists, 2 mons hit SE · Construction Site 77
@@ -68,6 +74,8 @@ Biomes
 == trainer configs landing late
 before  null
 after   {"pct":6,"names":["Parasol Lady","Black Belt"]}
+== Valerie's party at level 40
+common [["Snorlax",89],["Gardevoir",5],["Granbull",5]]
 == hardcore, Snorlax fainted
 ⌃ {Hide the drawer} × {Close}
 🗺 Next biome from Tall Grass Swamp 79 pick — 2 mons hit SE · Construction Site 74

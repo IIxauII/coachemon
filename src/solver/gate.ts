@@ -5,6 +5,9 @@ import type { Recheck, SolveInput } from "./input.ts";
 import { noAnswer } from "./no-answer.ts";
 import type { NoAnswer } from "./oracle-line.ts";
 
+/** `carried` lets a save from an older game through, for the pin bump's re-check alone: never a player's solve (#703). */
+export type Carry = { carried?: boolean };
+
 /**
  * The fights no oracle line can be trusted in, read off the input alone, before any clone runs. A refusal that waits on
  * a release comes after every one that would outlast it, except the version check: the pinned version's tables are
@@ -13,9 +16,11 @@ import type { NoAnswer } from "./oracle-line.ts";
 export function refuse(
   { save, extras, cloneVersion }: Pick<SolveInput, "save" | "extras" | "cloneVersion">,
   recheck: Recheck | null,
+  { carried = false }: Carry = {},
 ): NoAnswer | null {
   if (save.gameMode === GameModes.DAILY) return noAnswer({ code: "daily" });
-  if (save.gameVersion !== cloneVersion) {
+  const older = save.gameVersion.localeCompare(cloneVersion, undefined, { numeric: true }) < 0;
+  if (save.gameVersion !== cloneVersion && !(carried && older)) {
     return noAnswer({ code: "version_mismatch", live: save.gameVersion, clone: cloneVersion });
   }
   if (save.battleType === BattleType.MYSTERY_ENCOUNTER || (save.mysteryEncounterType ?? -1) !== -1) {

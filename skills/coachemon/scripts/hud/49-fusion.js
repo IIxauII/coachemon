@@ -22,6 +22,7 @@ const baseOf = p => [...(tryDo(() => p.getSpeciesForm(true), p.species)?.baseSta
 const bstOf = row => (row.length === 6 ? row.reduce((t, x) => t + x, 0) : null);
 // What the base runs on now and what the fused mon would: the halves' mean, as `calculateStats` takes it
 // (game-code.md §24), and under Spliced Endless an unfused mon runs on half its own row.
+// @mirrors bst-pair
 const bstPair = (a, b, spliced) => {
   const ra = baseOf(a), rb = baseOf(b);
   if (ra.length < 6 || rb.length < 6) return { before: null, after: null };
@@ -149,7 +150,7 @@ export const splicerReward = (run, t) => {
     holder: { icon: row.base.icon, name: row.base.name } };
 };
 
-export const spliceScreen = (s, h) => (s.ui?.getMode?.() === UiMode.PARTY && h?.partyUiMode === PartyUiMode.SPLICE ? h : null);
+export const spliceScreen = (s, h) => (s.ui?.mode === UiMode.PARTY && h?.partyUiMode === PartyUiMode.SPLICE ? h : null);
 
 // The margin a pair has to clear is ΔV less the release, in turns, so two pairs can be within it of each other: the
 // `better` prompt stays on the gap it was on, read in the judgment's unit rather than in percent of a carry's power.

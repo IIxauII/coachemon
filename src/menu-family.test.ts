@@ -156,11 +156,9 @@ test("party walks its slots as a DOWN-cycle and its option phase as a list", () 
   assert.deepEqual(planSelect(verbs, verbs.options[1]).reach, { kind: "walk", to: 1, rule: "list" });
 });
 
-test("save_slot and menu walk a list", () => {
+test("save_slot walks a list", () => {
   const slots = menuOf("save_slot", { uiMode: 1 }, labelled("Slot 1", "Slot 2", "Slot 3"));
   assert.deepEqual(planSelect(slots, slots.options[2]).reach, { kind: "walk", to: 2, rule: "list" });
-  const menu = menuOf("menu", {}, labelled("Game Settings", "Achievements", "Save and Quit"));
-  assert.deepEqual(planSelect(menu, menu.options[1]).reach, { kind: "walk", to: 1, rule: "list" });
 });
 
 test("modal needs no cursor and commits through its own button action", () => {

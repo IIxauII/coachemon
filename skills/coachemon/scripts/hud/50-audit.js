@@ -124,6 +124,7 @@ const levelSpread = (s, party) => {
 };
 
 // A party at the cap gains nothing from any EXP item (game-code.md §17).
+// @mirrors exp-classes
 const EXP_CLASSES = new Set(["ExpBoosterModifier", "ExpShareModifier"]);
 const expAtCap = (s, party) => {
   const stacks = (s.modifiers ?? []).filter(m => EXP_CLASSES.has(m?.constructor?.name))
@@ -134,6 +135,7 @@ const expAtCap = (s, party) => {
     text: `whole party at the Lv ${cap} cap: ${stacks} EXP item stacks do nothing — take battle items` }];
 };
 
+// @mirrors atk-doubled
 const ATK_DOUBLED = ["Huge Power", "Pure Power"];
 const onStat = (p, mv) => {
   const atk = tryDo(() => p.getStat(Stat.ATK), 0) * (tryDo(() => abilitiesOf(p), []).some(a => ATK_DOUBLED.includes(a)) ? 2 : 1);
@@ -145,6 +147,7 @@ const answersTo = (p, foe) => typedAttacks(p).filter(mv => effectiveness(TYPES[m
   .map(mv => ({ name: nameOf(mv), acc: mv.accuracy > 0 ? mv.accuracy : 100 }));
 
 // Gale Wings only: Triage's draining attacks move first too (game-code.md §17) and aren't counted yet (#474).
+// @mirrors priority-abilities
 const PRIORITY_ABILITIES = new Set(["Gale Wings"]);
 const speedCheck = (party, foes, wave) => {
   const fastest = foes.reduce((a, f) => ((f.stats?.[Stat.SPD] ?? 0) > (a?.stats?.[Stat.SPD] ?? -1) ? f : a), null);
@@ -158,15 +161,17 @@ const speedCheck = (party, foes, wave) => {
     text: `${faster.length ? `only ${faster[0].name} outspeeds` : "nobody outspeeds"} ${fastest.name} (Spe ${spe}) at W${wave} · no priority attack` }];
 };
 
+// Twin foes (game-code.md §10) lean on the same answer: one finding, not one each.
 const singleAnswers = (party, foes, wave) => foes.map(f => {
   const who = party.map(p => ({ p, moves: answersTo(p, f) })).filter(x => x.moves.length);
   if (who.length !== 1) return null;
   const m = who[0].moves.sort((a, b) => b.acc - a.acc)[0];
   return { kind: "answers", level: "high",
     text: `${f.name} (W${wave}) has one answer: ${who[0].p.name} ${m.name}${m.acc < 100 ? ` (${m.acc}%)` : ""}` };
-}).filter(Boolean);
+}).filter((x, i, all) => x && all.findIndex(y => y?.text === x.text) === i);
 
 // `canSetStatus`'s type checks alone (game-code.md §17).
+// @mirrors status-immune
 const STATUS_IMMUNE = { [StatusEffect.POISON]: ["Poison", "Steel"], [StatusEffect.TOXIC]: ["Poison", "Steel"], [StatusEffect.PARALYSIS]: ["Electric"],
   [StatusEffect.FREEZE]: ["Ice"], [StatusEffect.BURN]: ["Fire"] };
 const deadStatus = (party, foes, wave) => party.flatMap(p => movesOf(p).filter(mv => mv.category === MoveCategory.STATUS).flatMap(mv => {

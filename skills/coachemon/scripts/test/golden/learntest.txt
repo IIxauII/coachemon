@@ -174,4 +174,13 @@ Moves
 · Ice Ice Beam SE on Flying/Grass/Dragon · set move (Setup Sweeper) power 140
 Team
 team: −SE Fighting/Poison
+== Garganacl ← Salt Cure
+🎓 Garganacl learns Garganacl Atk 100 / SpA 45 Learns it — free slot
+✓ Rock Salt Cure SE on Flying/Bug · curse 1/8 a turn · set move (Bulky Support) power 127
+Moves
+· Fighting Body Press SE on Normal/Dark · set move (Bulky Support) power 121
+· Ground Earthquake SE on Poison/Fire/Electric · set move (Bulky Attacker) power 146
+· Steel Iron Head SE on Fairy power 98
+Team
+team: +SE Flying/Bug
 ok

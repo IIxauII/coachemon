@@ -1,7 +1,7 @@
 import { availableParallelism } from "node:os";
 import reviewed from "../escape-ladder/reviewed.json" with { type: "json" };
 import { augmentedExport } from "./extras.ts";
-import { refuse } from "./gate.ts";
+import { type Carry, refuse } from "./gate.ts";
 import type { Budget, Recheck, SolveInput } from "./input.ts";
 import { noAnswer } from "./no-answer.ts";
 import type { Input, NoAnswer, SolveResult } from "./oracle-line.ts";
@@ -22,6 +22,9 @@ export type { Checks, Miss } from "./worker.ts";
 export const DEFAULT_BUDGET: Budget = { expansions: 3000, turns: 40 };
 
 const RECHECK: Recheck | null = "recheck" in reviewed ? (reviewed.recheck as Recheck) : null;
+
+/** The refusal gate `solve` opens with. */
+export const gate = (input: Pick<SolveInput, "save" | "extras" | "cloneVersion">): NoAnswer | null => refuse(input, RECHECK);
 
 export type SolveDeps = {
   clone: Clone;
@@ -66,9 +69,10 @@ export async function checkForks(
   given: Pick<SolveInput, "save" | "extras" | "cloneVersion">,
   inputs: readonly Input[],
   clone: Clone,
+  carry: Carry = {},
 ): Promise<CheckResult> {
   // The checks are what the harness re-check runs (#665), so they can't wait on one having passed.
-  const refused = refuse(given, passed(given.cloneVersion));
+  const refused = refuse(given, passed(given.cloneVersion), carry);
   if (refused) return refused;
   return withStarted(await startWorker(clone, given.save, augmentedExport(given)?.forkPoint), given.cloneVersion, async worker => {
     try {

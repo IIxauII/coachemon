@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { wholeCard } from "./panel.mjs";
+import { AbilityId, EvoCondKey } from "../../../../src/enums/generated.ts";
 
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
-// Test fixtures, not game data: [id, name, types, base stats, cost, evolutions [[id, level, item?]], passive, hidden].
+// Test fixtures, not game data: [id, name, types, base stats, cost,
+// evolutions [[id, level, item?, condition data?, evoLevelThreshold?]], passive, hidden].
 const SPECIES = [
   [1, "Bulbasaur", ["Grass","Poison"], [45,49,49,65,65,45], 3, [[2, 16], [3, 32]], 11, 12],
   [2, "Ivysaur", ["Grass","Poison"], [60,62,63,80,80,60]],
@@ -22,7 +24,7 @@ const SPECIES = [
   [25, "Pikachu", ["Electric"], [35,55,40,50,50,90], 1, [[26, 1, true]], 21, 22],
   [26, "Raichu", ["Electric"], [60,90,55,90,80,110]],
   [129, "Magikarp", ["Water"], [20,10,55,15,20,80], 1, [[130, 20]], 23, 24],
-  [130, "Gyarados", ["Water","Flying"], [95,125,79,60,100,81]],
+  [130, "Gyarados", ["Water","Flying"], [95,125,79,60,100,81], undefined, [], 33, 23],
   [147, "Dratini", ["Dragon"], [41,64,45,50,50,50], 4, [[148, 30], [149, 55]], 25, 26],
   [148, "Dragonair", ["Dragon"], [61,84,65,70,70,70]],
   [149, "Dragonite", ["Dragon","Flying"], [91,134,95,100,100,80]],
@@ -31,10 +33,18 @@ const SPECIES = [
   [184, "Azumarill", ["Water","Fairy"], [100,50,80,60,80,50]],
   [443, "Gible", ["Dragon","Ground"], [58,70,45,40,45,42], 6, [[444, 24], [445, 48]], 29, 30],
   [444, "Gabite", ["Dragon","Ground"], [68,90,65,50,55,82]],
-  [445, "Garchomp", ["Dragon","Ground"], [108,130,95,80,85,102]],
+  [445, "Garchomp", ["Dragon","Ground"], [108,130,95,80,85,102], undefined, [], 29, 34],
   [151, "Mew", ["Psychic"], [100,100,100,100,100,100], 8, [], 31, 32],
+  [193, "Yanma", ["Bug","Flying"], [65,65,45,75,45,95], 3, [[469, 33, false, [{ key: EvoCondKey.MOVE, move: 246 }]]], 33, 34],
+  [469, "Yanmega", ["Bug","Flying"], [86,76,86,116,56,95]],
+  [1011, "Dipplin", ["Grass","Dragon"], [80,80,110,95,80,40], 3, [[1019, 1, false, [{ key: EvoCondKey.MOVE, move: 913 }], [56, 68, 80]]], 35, 36],
+  [1019, "Hydrapple", ["Grass","Dragon"], [106,80,110,120,80,44]],
+  [656, "Froakie", ["Water"], [41,56,40,62,44,71], 3, [[657, 16], [658, 36]], 37, 38],
+  [657, "Frogadier", ["Water"], [54,63,52,83,56,97]],
+  // Invented: no species in the game holds a form-change ability hidden, and Greninja's is Protean.
+  [658, "Greninja", ["Water","Dark"], [72,95,67,103,71,122], undefined, [], 37, AbilityId.BATTLE_BOND],
 ];
-const ABILITY_NAMES = { 11: "Chlorophyll", 13: "Solar Power", 15: "Rain Dish", 17: "Big Pecks", 19: "Guts", 21: "Lightning Rod", 23: "Moxie", 25: "Multiscale", 27: "Huge Power", 29: "Rough Skin", 31: "Synchronize", 24: "Rattled", 30: "Rough Skin (H)" };
+const ABILITY_NAMES = { 11: "Chlorophyll", 13: "Solar Power", 15: "Rain Dish", 17: "Big Pecks", 19: "Guts", 21: "Lightning Rod", 23: "Moxie", 25: "Multiscale", 27: "Huge Power", 29: "Rough Skin", 31: "Synchronize", 24: "Rattled", 30: "Rough Skin (H)", 33: "Intimidate", 34: "Sand Force", [AbilityId.BATTLE_BOND]: "Battle Bond" };
 
 const byId = new Map();
 for (const [id, name, types, stats, cost, evos = [], passive, hidden] of SPECIES) {
@@ -48,15 +58,16 @@ for (const [id, name, types, stats, cost, evos = [], passive, hidden] of SPECIES
 const evoLevel = {}, direct = {};
 for (const [id, , , , , evos = []] of SPECIES) {
   let from = id;
-  for (const [to, level, item] of evos) { evoLevel[to] = [level, !!item]; (direct[from] ??= []).push(to); from = to; }
+  for (const [to, level, item, cond, delay] of evos) { evoLevel[to] = [level, !!item, cond, delay]; (direct[from] ??= []).push(to); from = to; }
 }
 for (const sp of byId.values()) {
   sp.getEvolutionLevels = () => (direct[sp.speciesId] ?? []).flatMap(to => [[to, evoLevel[to][0]], ...byId.get(to).getEvolutionLevels()]);
 }
 const registry = {
   getSpecies: id => byId.get(id),
-  hasEvolutions: id => !!direct[id],
-  getEvolutions: id => (direct[id] ?? []).map(to => ({ speciesId: to, level: evoLevel[to][0], item: evoLevel[to][1] ? 1 : 0, condition: null })),
+  getAllStarters: () => STARTERS,
+  getEvolutions: id => (direct[id] ?? []).map(to => ({ speciesId: to, level: evoLevel[to][0], item: evoLevel[to][1] ? 1 : 0,
+    condition: evoLevel[to][2] ? { data: evoLevel[to][2] } : null, evoLevelThreshold: evoLevel[to][3] })),
 };
 const tables = {
   species: registry,
@@ -66,11 +77,13 @@ const tables = {
 };
 
 const STARTERS = [1, 4, 7, 16, 19, 25, 129, 147, 298, 443, 151];
+// Off the classic grid, so only a challenge's `valid` list offers them.
+const YANMA = 193, DIPPLIN = 1011, FROAKIE = 656;
 // Every starter caught but Mew; Magikarp has its passive and rare egg move, Rattata perfect IVs, Squirtle a variant-3
-// shiny, Pikachu Pokérus, Gible its passive.
+// shiny, Pikachu Pokérus, Gible its passive, Froakie its hidden ability.
 const account = () => {
   const dexData = {}, starterData = {};
-  for (const id of STARTERS) {
+  for (const id of [...STARTERS, YANMA, DIPPLIN, FROAKIE]) {
     dexData[id] = { caughtAttr: 1n | 4n | 16n | 128n, ivs: [10, 10, 10, 10, 10, 10] };
     starterData[id] = { abilityAttr: 1, passiveAttr: 0, eggMoves: 0, valueReduction: 0 };
   }
@@ -78,43 +91,46 @@ const account = () => {
   dexData[19].ivs = [31, 31, 31, 31, 31, 31];
   dexData[7].caughtAttr |= 2n | 64n;
   starterData[443] = { ...starterData[443], passiveAttr: 1, abilityAttr: 1 | 4 };
+  starterData[FROAKIE] = { ...starterData[FROAKIE], abilityAttr: 1 | 4 };
   delete dexData[151];
   return { dexData, starterData };
 };
 
-// `fresh`: getSpeciesData strips unlocks as Fresh Start's STARTER_SELECT_MODIFY does (game-code.md §23).
-const mount = ({ limit = 10, chosen = [], valid = STARTERS, challenges = [], fresh = false, withTables = true, looking = null, picking = true }) => {
+// Fresh Start's STARTER_SELECT_MODIFY strips unlocks but, from 1.12.1.0, leaves shiny and variants (game-code.md §23).
+const freshStart = {
+  id: 4, value: 1, applyStarterChoice: () => true,
+  applyStarterSelectModify: (id, dexEntry, starterDataEntry) => {
+    Object.assign(starterDataEntry, { eggMoves: 0, passiveAttr: 0, abilityAttr: starterDataEntry.abilityAttr & 3, valueReduction: 0 });
+    for (let i = 0; i < 6; i++) dexEntry.ivs[i] = Math.min(dexEntry.ivs[i], 15);
+    return true;
+  },
+};
+// `valid`: the grid's challenge-filtered ids, which a challenge run's candidates come from; the other modes take the
+// registry's starters.
+const mount = ({ limit = 10, chosen = [], valid = STARTERS, challenges = [], withTables = true, looking = null, onGrid = true, picking = true }) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const { dexData, starterData } = account();
   const species = id => byId.get(id);
-  const containers = STARTERS.map(id => ({ species: species(id), cost: species(id).cost, icon: { texture: { key: "pokemon_icons_1" }, frame: { name: String(id) } } }));
+  const shown = valid.slice(0, 81);
+  const containers = shown.map(id => ({ species: species(id), cost: species(id).cost, icon: { texture: { key: "pokemon_icons_1" }, frame: { name: String(id) } } }));
   const handler = {
     starterSelectCallback: picking ? () => {} : null,
-    getValueLimit: () => limit,
-    starterSpecies: chosen.map(species),
-    starters: chosen.map(id => ({ speciesId: id, passive: (starterData[id].passiveAttr & 3) === 3, abilityIndex: 0, formIndex: 0 })),
+    valueLimitLabel: { text: `${chosen.reduce((t, id) => t + species(id).cost, 0)}/${limit}` },
+    partyStarterIds: chosen,
+    partyStarters: chosen.map(id => ({ speciesId: id, passive: (starterData[id].passiveAttr & 3) === 3, abilityIndex: 0, formIndex: 0 })),
+    filteredStarterIds: valid,
     starterContainers: containers,
-    validStarterContainers: containers.filter(c => valid.includes(c.species.speciesId)),
-    pokerusSpecies: [species(25)],
-    lastSpecies: looking ? species(looking) : null,
-    getSpeciesData: id => {
-      const dexEntry = { ...(dexData[id] ?? { caughtAttr: 0n, ivs: [0, 0, 0, 0, 0, 0] }) };
-      const starterDataEntry = { ...starterData[id] };
-      if (fresh) {
-        Object.assign(starterDataEntry, { eggMoves: 0, passiveAttr: 0, abilityAttr: starterDataEntry.abilityAttr & 3, valueReduction: 0 });
-        dexEntry.ivs = dexEntry.ivs.map(v => Math.min(15, v));
-        dexEntry.caughtAttr &= ~(2n | 32n | 64n);
-      }
-      return { dexEntry, starterDataEntry };
-    },
-    getCurrentDexProps: () => 0n,
+    pokerusSpeciesIds: [25],
+    lastStarterId: looking ?? shown[0],
+    cursorObj: { visible: looking !== null && onGrid },
+    getStarterDexAttrPropsFromPreferences: () => ({ formIndex: 0, shiny: false, variant: 0, female: false }),
   };
   const scene = {
-    ui: { handlers: { 10: handler }, getMode: () => 10, getHandler: () => handler },
+    ui: { handlers: { 10: handler }, mode: 10, getHandler: () => handler },
     phaseManager: { getCurrentPhase: () => ({ phaseName: "SelectStarterPhase" }) },
-    gameData: { dexData, starterData, getSpeciesStarterValue: id => species(id).cost, getSpeciesDexAttrProps: () => ({ formIndex: 0 }) },
-    gameMode: { challenges },
+    gameData: { dexData, starterData, getSpeciesStarterValue: id => species(id).cost },
+    gameMode: { challenges, modeId: challenges.length ? 4 : 0 }, // `GameModes.CHALLENGE`, `GameModes.CLASSIC`
     currentBattle: null, getPlayerParty: () => [], getEnemyParty: () => [], modifiers: [],
   };
   globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
@@ -164,7 +180,16 @@ const checkBudget = (m, limit, label) => {
   assert.deepEqual(m.picks.map(t => t.label).slice(0, 1), ["best"]);
   assert.ok(m.viewing && m.viewing.name === "Rattata", "cursor line");
   const karp = m.picks[0].members.find(x => x.name === "Magikarp") ?? m.picks.flatMap(t => t.members).find(x => x.name === "Magikarp");
-  if (karp) assert.ok(karp.why.some(w => /passive Moxie|rare egg move Dragon Dance/.test(w)), "Magikarp's unlocks are named");
+  if (karp) assert.ok(karp.why.some(w => /passive Intimidate|rare egg move Dragon Dance/.test(w)), "Magikarp's unlocks are named");
+}
+
+// ---- The card names the final form's passive and hidden ability, after that form where the starter's differs.
+{
+  const karp = mount({ looking: 129 }).model.viewing.why;
+  assert.ok(karp.includes("passive Intimidate (Gyarados)"), karp.join(" · "));
+  const gible = mount({ looking: 443 }).model.viewing.why;
+  assert.ok(gible.includes("passive Rough Skin"), gible.join(" · "));
+  assert.ok(gible.includes("hidden Sand Force (Garchomp)"), gible.join(" · "));
 }
 
 // ---- Gible is already on the team: every proposal keeps it and spends the 4 points left.
@@ -193,10 +218,81 @@ const checkBudget = (m, limit, label) => {
 
 // ---- Fresh Start: no passive, egg moves, luck or high IVs reach the reasons.
 {
-  const m = show("Fresh Start", { challenges: [{ id: 4, value: 1, applyStarterChoice: () => true }], fresh: true, looking: 129 });
+  const m = show("Fresh Start", { challenges: [freshStart], looking: 129 });
   checkBudget(m, 10, "fresh");
   const why = m.picks.flatMap(t => t.members.flatMap(x => x.why)).concat(m.viewing?.why ?? []).join(" ");
   assert.ok(!/passive|egg move|luck|IVs 186/.test(why), `Fresh Start strips unlocks: ${why}`);
+}
+
+// ---- The Moveset Randomizer's STARTER_SELECT_MODIFY takes egg moves off the grid, so none is a reason.
+{
+  const randomizer = { id: 11, value: 1, applyStarterSelectModify: (id, dexEntry, starterDataEntry) => { starterDataEntry.eggMoves = 0; return true; } };
+  const { model } = mount({ challenges: [randomizer], looking: 129 });
+  const why = model.picks.flatMap(t => t.members.flatMap(x => x.why)).concat(model.viewing?.why ?? []).join(" ");
+  assert.ok(!/egg move/.test(why), why);
+  assert.ok(/passive Intimidate/.test(why), why);
+}
+
+// ---- The Ability Randomizer at 1 rerolls every ability slot, the hidden one too, but leaves the passive.
+{
+  const m = show("Ability Randomizer 1", { challenges: [{ id: 12, value: 1 }], looking: 443 });
+  const why = m.viewing.why.join(" ");
+  assert.ok(!/hidden/.test(why), why);
+  assert.ok(/passive Rough Skin/.test(why), why);
+}
+
+// ---- From 2 it rerolls the passive as well: still a second ability, but not the species' own.
+{
+  const own = mount({ challenges: [{ id: 12, value: 1 }], looking: 443 }).model.viewing;
+  const m = show("Ability Randomizer 2", { challenges: [{ id: 12, value: 2 }], looking: 443 });
+  const why = m.viewing.why.join(" ");
+  assert.ok(/random passive/.test(why) && !/Rough Skin/.test(why), why);
+  assert.ok(m.viewing.value < own.value, `${m.viewing.value} < ${own.value}`);
+}
+
+// ---- At 3 it spares the form-change abilities from the reroll, so Greninja keeps a hidden Battle Bond.
+{
+  const at = value => mount({ challenges: [{ id: 12, value }], valid: [...STARTERS, FROAKIE], looking: FROAKIE }).model.viewing.why;
+  assert.ok(at(3).includes("hidden Battle Bond (Greninja)"), at(3).join(" · "));
+  assert.ok(!at(2).some(w => /hidden/.test(w)), at(2).join(" · "));
+}
+
+// ---- The Moveset Randomizer at 1 rerolls the level-up moves, so Yanma won't learn the move Yanmega needs.
+const yanmaUnder = value => ({ challenges: [{ id: 11, value }], valid: [...STARTERS, YANMA], looking: YANMA });
+{
+  const yanmaOff = mount(yanmaUnder(0)).model.viewing;
+  const m = show("Moveset Randomizer 1", yanmaUnder(1));
+  assert.ok(/Yanmega needs a move/.test(m.viewing.why.join(" ")), m.viewing.why.join(" "));
+  assert.ok(m.viewing.value < yanmaOff.value, `${m.viewing.value} < ${yanmaOff.value}`);
+}
+
+// ---- From 2 it drops the move from the evolution, which leaves Yanma a plain level-33 evolver.
+{
+  const yanmaOff = mount(yanmaUnder(0)).model.viewing;
+  const m = show("Moveset Randomizer 2", yanmaUnder(2));
+  const why = m.viewing.why.join(" ");
+  assert.ok(/final BST 515 \(Yanmega\)/.test(why) && !/condition|needs a move/.test(why), why);
+  assert.ok(m.viewing.value > yanmaOff.value, `${m.viewing.value} > ${yanmaOff.value}`);
+}
+
+// ---- From 2 a level-1 evolution that needs a move lands on 50, whatever its `evoLevelThreshold` (game-code.md §23).
+{
+  const { model } = mount({ challenges: [{ id: 11, value: 2 }], valid: [...STARTERS, DIPPLIN], looking: DIPPLIN });
+  assert.ok(model.viewing.why.includes("but evolves at L50"), model.viewing.why.join(" · "));
+}
+
+// ---- Under the Moveset Randomizer only the stats name a carry, so bulky Venusaur and Blastoise are none.
+{
+  const off = mount({ challenges: [{ id: 11, value: 0 }], valid: [1, 7] }).model.picks[0];
+  assert.ok(!off.noCarry && off.members.some(x => x.role === "carry"), JSON.stringify(off));
+  const m = show("Moveset Randomizer, bulky starters", { challenges: [{ id: 11, value: 1 }], valid: [1, 7] });
+  assert.ok(m.picks[0].noCarry && !m.picks[0].members.some(x => x.role === "carry"), JSON.stringify(m.picks[0]));
+}
+
+// ---- Off the grid the last species looked at is no cursor line, though the handler still holds its id.
+{
+  const { model } = mount({ looking: 19, onGrid: false });
+  assert.equal(model.viewing, null);
 }
 
 // ---- The Pokédex (no team being chosen) draws no starter card.

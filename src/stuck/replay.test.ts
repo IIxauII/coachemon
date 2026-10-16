@@ -1,12 +1,11 @@
 // The prototype's transcripts (#6) cannot be regenerated: the script that emitted them is gone (#172).
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import { readAtPin } from "../escape-ladder/at-pin.ts";
 import { progressFingerprint } from "./detector.ts";
 import { replay, type ReplayStep } from "./replay.ts";
 
-const load = (run: string): ReplayStep[] =>
-  JSON.parse(readFileSync(new URL(`./fixtures/${run}.calls.json`, import.meta.url), "utf8"));
+const load = (run: string): ReplayStep[] => readAtPin(new URL(`./fixtures/${run}.calls.json`, import.meta.url), "liveVersion");
 
 test("run2: the 147-iteration shop↔party loop trips on its twelfth call, and keeps reporting", () => {
   const result = replay(load("run2"));

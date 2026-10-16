@@ -38,6 +38,19 @@ test("a save from an older game than the clone's waits on the game catching up, 
   assert.match(result.message, /waits on the game serving 1\.12\.0\.11/);
 });
 
+test("a known fight's save from an older game passes the gate when the re-check carries it to the clone's version (#703)", () => {
+  const save = { ...drayton, gameVersion: "1.12.0.9" };
+
+  assert.equal(refuse({ save, cloneVersion: PIN }, { gameVersion: PIN }, { carried: true }), null);
+  assert.equal(refuse({ save: drayton, cloneVersion: "1.12.1.1" }, { gameVersion: "1.12.1.1" }, { carried: true }), null);
+});
+
+test("a carried save from a newer game than the clone's still gets no answer: no game migrates a save backwards (#703)", () => {
+  const result = refuse({ save: drayton, cloneVersion: "1.12.0.9" }, { gameVersion: "1.12.0.9" }, { carried: true });
+
+  assert.deepEqual(result?.reason, { code: "version_mismatch", live: PIN, clone: "1.12.0.9" });
+});
+
 test("a Daily gets no answer, never one that waits on a release: solving is not offered there at all (#659)", () => {
   for (const save of [
     { ...drayton, gameMode: GameModes.DAILY },

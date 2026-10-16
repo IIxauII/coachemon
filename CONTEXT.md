@@ -128,7 +128,7 @@ One named part of a **card**, drawn from one closed set of eight: `act`, what to
 
 ## Strip
 
-The line of a **card** that stays in front of the player whatever else they have open or shut: its **caption** — the kind's emoji and what the card is about — the first line of its act **group**, and, where the card has one, its **verdict**. The thing to do now is never a click away.
+The line of a **card** that stays in front of the player whatever else they have open or shut: its **caption** — the kind's emoji and what the card is about — the first line of its act **group**, and, where the card has one, its **verdict**. While a randomizer challenge is on, the strip also says the run is randomized, since a species' moves and abilities are then not what the coach knows of it. The thing to do now is never a click away.
 
 ## Drawer
 
@@ -196,7 +196,7 @@ What a tool call reports about the game and the run, apart from its own payload:
 
 ## Job
 
-Work the coach plugin runs in the background because it outlasts one tool call, such as an **oracle**'s solve or setting up the clone it solves in. The call that starts a job returns at once and the job runs on after it, with a progress line short enough for the coach to relay as it is. A job ends **done** with its answer, **failed** with what stopped it, or **cancelled**, and whichever comes first is final: an answer that arrives after a cancel is dropped. A job lives in the plugin's own process and goes when it does.
+Work the coach plugin runs in the background because it outlasts one tool call, such as an **oracle**'s solve or setting up the clone it solves in. The call that starts a job returns at once and the job runs on after it, with a progress line short enough for the coach to relay as it is. A job ends **done** with its answer, **failed** with what stopped it, or **cancelled**, and whichever comes first is final: an answer that arrives after a cancel is dropped. A job lives in the plugin's own process and goes when it does. One solve runs per fight: starting one for a new fight cancels the last fight's.
 
 ## Confidence
 
@@ -276,9 +276,22 @@ Distinct from the save the game writes at the start of a wave, which a solve fro
 
 The PokéRogue release the live tab serves, as the game itself reports it. An **oracle** runs exactly one game version,
 and it refuses a save from any other, because the game would load it under the wrong rules without a word. What holds
-an oracle to its version is the test harness having replayed a known fight on it, not the clone.
+an oracle to its version is the test harness having replayed a known fight on it, not the clone. That re-check takes
+the one save from an older game the oracle ever loads: a known fight's, **carried** to the new version through the
+game's own migration, as a player's save is carried when the game updates.
 
 Distinct from a **build id**, which is which build of the extension a tab runs.
+
+## Game read
+
+A name our code takes from the game: a field or method it reads off a game object, a phase's name, a storage key, a
+module the harness imports, a table it reads by shape. Every game read is registered with where the game defines it,
+so a new **game version** that renames or drops one is caught before the pin moves, not by a card that goes quiet.
+
+A **mirror** is a game read written down by hand: a constant of ours that copies game data (a biome's links, a tier's
+cut, a title option's index) and goes stale without a word when the game changes it. A **game set** is one of the
+game's lists that we switch on (its UI modes, phases, challenges), whose members we know; a member the game adds is one
+we have not handled yet.
 
 ## Preview
 

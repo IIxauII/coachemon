@@ -1,24 +1,31 @@
 /**
- * Drift check for everything this repo reads out of PokéRogue's source, the escape ladder and the coach HUD, under one
- * pin and one stamp (0001-escape-ladder-hand-curated-checked-at-pin-bump.md). Run it at a pin bump, since at the
- * pinned ref no hash can move, and `--stamp` only after re-reading every entry it named: stamping is the sign-off,
- * solving's included (pin-bump.md).
+ * Drift check for everything this repo reads out of PokéRogue's source, the escape ladder, the coach HUD and the
+ * registry of game reads, under one pin and one stamp (0001-escape-ladder-hand-curated-checked-at-pin-bump.md,
+ * 0004-every-game-read-is-registered.md). Run it at a pin bump, since at the pinned ref no hash can move, and `--stamp`
+ * only after re-reading every entry it named: stamping is the sign-off, solving's included (pin-bump.md).
  */
 import { execFileSync } from "node:child_process";
-import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import ts from "typescript";
+import * as modifierSets from "../src/enums/modifiers.ts";
 import { GLOBAL_DEPS, LADDER } from "../src/escape-ladder/table.ts";
-import { HUD_DEPS } from "./hud-deps.ts";
 import type { Entry } from "../src/escape-ladder/types.ts";
 import type { ClonePin } from "../src/solver/clone.ts";
 import { checkForks, type Recheck, replay } from "../src/solver/solver.ts";
-import { findClone, harnessIn } from "./clone-test/clone-test.ts";
+import { checkoutOf, findClone, harnessIn, pinOf } from "./clone-test/clone-test.ts";
+import { addDep, blockers, type DepIndex, type DepSource, drift, type Finding } from "./drift/check.ts";
+import { GameSource } from "./drift/source.ts";
+import { generatedTables, loadRepo } from "./game-reads/check.ts";
+import { REGISTRY, registryEntries } from "./game-reads/registry/index.ts";
+import { builtinNames } from "./game-reads/scan.ts";
+import { generate } from "./gen-enums.ts";
+import { HUD_DEPS } from "./hud-deps.ts";
 import { recheck } from "./recheck/recheck.ts";
 
 const REPO = "https://github.com/pagefaultgames/pokerogue.git";
+const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const REVIEWED = new URL("../src/escape-ladder/reviewed.json", import.meta.url);
 
 type Reviewed = {
@@ -36,23 +43,23 @@ const { values: args } = parseArgs({
   },
 });
 
-if (args.only !== undefined && args.only !== "ladder" && args.only !== "hud") {
-  console.error(`--only takes "ladder" or "hud", not ${JSON.stringify(args.only)}.`);
+const SOURCES = ["ladder", "hud", "reads"];
+if (args.only !== undefined && !SOURCES.includes(args.only)) {
+  console.error(`--only takes ${SOURCES.map(g => JSON.stringify(g)).join(", ")}, not ${JSON.stringify(args.only)}.`);
   process.exit(2);
 }
 if (args.only !== undefined && args.stamp) {
-  console.error("--only cannot be combined with --stamp: one pin, one sign-off on both groups.");
+  console.error("--only cannot be combined with --stamp: one pin, one sign-off on every source.");
   process.exit(2);
 }
-const only = args.only as "ladder" | "hud" | undefined;
+const only = args.only as DepSource | undefined;
 
 const reviewed: Reviewed = JSON.parse(readFileSync(REVIEWED, "utf8"));
 
 function checkout(version: string): string {
-  const tag = `v${version}`;
-  const dir = path.resolve(".cache/pokerogue", tag);
+  const dir = checkoutOf(version);
   if (!existsSync(dir)) {
-    execFileSync("git", ["-c", "advice.detachedHead=false", "clone", "--quiet", "--depth", "1", "--branch", tag, REPO, dir], { stdio: "inherit" });
+    execFileSync("git", ["-c", "advice.detachedHead=false", "clone", "--quiet", "--depth", "1", "--branch", `v${version}`, REPO, dir], { stdio: "inherit" });
   }
   return dir;
 }
@@ -61,149 +68,85 @@ const version = args.version ?? reviewed.pinned.gameVersion;
 const source = args.source ? path.resolve(args.source) : checkout(version);
 const sha = execFileSync("git", ["-C", source, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
 
-const dependents = new Map<string, string[]>();
-const groups = new Map<string, Set<"ladder" | "hud">>();
-const lean = (ref: string, dependent: string, group: "ladder" | "hud") => {
-  dependents.set(ref, [...(dependents.get(ref) ?? []), dependent]);
-  groups.set(ref, (groups.get(ref) ?? new Set()).add(group));
-};
-for (const [screen, entry] of Object.entries(LADDER as Record<string, Entry>)) {
-  for (const ref of entry.deps) lean(ref, screen, "ladder");
-}
-for (const ref of GLOBAL_DEPS) lean(ref, "(every screen)", "ladder");
-for (const [module, deps] of Object.entries(HUD_DEPS as Record<string, readonly string[]>)) {
-  for (const ref of deps) lean(ref, `hud/${module}`, "hud");
+const deps: DepIndex = new Map();
+for (const [screen, entry] of Object.entries(LADDER as Record<string, Entry>)) for (const ref of entry.deps) addDep(deps, ref, screen, "ladder");
+for (const ref of GLOBAL_DEPS) addDep(deps, ref, "(every screen)", "ladder");
+for (const [module, list] of Object.entries(HUD_DEPS as Record<string, readonly string[]>)) {
+  for (const ref of list) addDep(deps, ref, `hud/${module}`, "hud");
 }
 
-const printer = ts.createPrinter({ removeComments: true });
-const parsed = new Map<string, ts.SourceFile | null>();
+const game = new GameSource(source);
+const repo = loadRepo(ROOT);
+const found = drift({
+  source: game,
+  hashes: reviewed.hashes,
+  deps,
+  ladder: LADDER as Record<string, Entry>,
+  registry: REGISTRY,
+  reads: repo.reads,
+  tables: generatedTables(),
+  modifiers: modifierSets as unknown as Record<string, ReadonlySet<string>>,
+  regenerated: await generate(file => readFileSync(path.join(source, file), "utf8"), version),
+  language: builtinNames(ROOT, true),
+});
 
-function sourceFile(file: string): ts.SourceFile | null {
-  if (!parsed.has(file)) {
-    const abs = path.join(source, file);
-    parsed.set(
-      file,
-      existsSync(abs) ? ts.createSourceFile(abs, readFileSync(abs, "utf8"), ts.ScriptTarget.Latest, true) : null,
-    );
-  }
-  return parsed.get(file) ?? null;
-}
+const shown = (list: Finding[]) => (only === undefined ? list : list.filter(i => i.sources.includes(only)));
+const lines = (list: string[], source: DepSource = "reads") => (only === undefined || only === source ? list : []);
+const findings: [string, Finding[]][] = [
+  ["MOVED — the body changed since review", shown(found.moved)],
+  ["MISSING — no such unit, member or literal at this ref", shown(found.missing)],
+  ["UNREVIEWED — never stamped", shown(found.unreviewed)],
+];
+const lineFindings: [string, string[]][] = [
+  ["MISPLACED — mode or handler differs at this ref", lines(found.misplaced, "ladder")],
+  ["ADDED — a member the game added to a set we mirror or switch on", lines(found.added)],
+  ["SHIFTED — src/enums/generated.ts regenerated at this ref changes these", lines(found.shifted)],
+  ["UNREGISTERED — read by a scanned file, declared by the game, in no registry entry", lines(found.unregistered)],
+];
 
-function findUnit(sf: ts.SourceFile, symbol: string): ts.Node | undefined {
-  const [className, member] = symbol.includes(".") ? symbol.split(".", 2) : [undefined, symbol];
-  for (const node of sf.statements) {
-    if (className === undefined) {
-      if (ts.isFunctionDeclaration(node) && node.name?.text === member) return node;
-      if (ts.isEnumDeclaration(node) && node.name.text === member) return node;
-      if (ts.isVariableStatement(node)) {
-        const decl = node.declarationList.declarations.find(d => ts.isIdentifier(d.name) && d.name.text === member);
-        if (decl) return decl;
-      }
-    } else if (ts.isClassDeclaration(node) && node.name?.text === className) {
-      return node.members.find(m =>
-        member === "constructor"
-          ? ts.isConstructorDeclaration(m)
-          : (ts.isMethodDeclaration(m) || ts.isGetAccessor(m)) && m.name.getText(sf) === member,
-      );
-    }
-  }
-  return undefined;
-}
-
-function hashOf(ref: string): string | null {
-  const [file, symbol] = ref.split("#", 2);
-  const sf = sourceFile(file);
-  const unit = sf && findUnit(sf, symbol);
-  if (!sf || !unit) return null;
-  const text = printer.printNode(ts.EmitHint.Unspecified, unit, sf);
-  return createHash("sha256").update(text).digest("hex").slice(0, 16);
-}
-
-const refs = [...dependents.keys()].sort();
-const current: Record<string, string> = {};
-const moved: string[] = [];
-const missing: string[] = [];
-const unreviewed: string[] = [];
-
-for (const ref of refs) {
-  const hash = hashOf(ref);
-  if (hash === null) {
-    missing.push(ref);
-    continue;
-  }
-  current[ref] = hash;
-  const was = reviewed.hashes[ref];
-  if (was === undefined) unreviewed.push(ref);
-  else if (was !== hash) moved.push(ref);
-}
-
-const misplaced: string[] = [];
-{
-  const read = (file: string) => (existsSync(path.join(source, file)) ? readFileSync(path.join(source, file), "utf8") : "");
-  const uiModes = (read("src/enums/ui-mode.ts").match(/enum UiMode \{([\s\S]*?)\}/)?.[1] ?? "")
-    .split(",")
-    .map(s => s.replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, "").trim())
-    .filter(Boolean);
-  const handlers = [...(read("src/ui/ui.ts").match(/this\.handlers = \[([\s\S]*?)\];/)?.[1] ?? "").matchAll(/new (\w+)\(/g)]
-    .map(m => m[1]);
-  for (const [screen, entry] of Object.entries(LADDER as Record<string, Entry>)) {
-    const name = screen.split(/[/:]/, 1)[0];
-    if (uiModes[entry.mode] !== name || handlers[entry.mode] !== entry.handler) {
-      misplaced.push(
-        `${screen}: table says ${entry.mode} / ${entry.handler}, ref has ` +
-          `${uiModes.indexOf(name)} / ${handlers[uiModes.indexOf(name)] ?? "nothing"}`,
-      );
-    }
-  }
-}
-
-const shown = (list: string[]) => (only === undefined ? list : list.filter(ref => groups.get(ref)?.has(only)));
-const shownMisplaced = only === "hud" ? [] : misplaced;
-
-const report = (label: string, list: string[]) => {
-  if (list.length === 0) return;
-  console.log(`\n${label} (${list.length}):`);
-  for (const ref of list) console.log(`  ${ref}\n      re-read: ${dependents.get(ref)?.join(", ")}`);
-};
-
-const inGroup = (group: "ladder" | "hud") => refs.filter(ref => groups.get(ref)?.has(group)).length;
+const depsFrom = (s: DepSource) => [...deps.values()].filter(d => d.sources.includes(s)).length;
 console.log(`drift: ${source} @ ${sha.slice(0, 7)} (game ${version}); pinned ${reviewed.pinned.gameVersion}`);
 console.log(
-  `${refs.length} deps: ${inGroup("ladder")} across ${Object.keys(LADDER).length} ladder entries, ` +
-    `${inGroup("hud")} across ${Object.keys(HUD_DEPS).length} HUD modules` +
-    (only === undefined ? "" : ` — reporting ${only} only`),
+  `${deps.size} deps: ${depsFrom("ladder")} across ${Object.keys(LADDER).length} ladder entries, ` +
+    `${depsFrom("hud")} across ${Object.keys(HUD_DEPS).length} HUD modules; ${registryEntries(REGISTRY)} registry entries; ` +
+    `${Object.keys(found.hashes).length} hashes in all` + (only === undefined ? "" : ` — reporting ${only} only`),
 );
-report("MOVED — the body changed since review", shown(moved));
-report("MISSING — no such method or file at this ref", shown(missing));
-report("UNREVIEWED — never stamped", shown(unreviewed));
-if (shownMisplaced.length > 0) {
-  console.log(`\nMISPLACED — mode or handler differs at this ref (${shownMisplaced.length}):`);
-  for (const line of shownMisplaced) console.log(`  ${line}`);
+for (const [label, list] of findings) {
+  if (list.length === 0) continue;
+  console.log(`\n${label} (${list.length}):`);
+  for (const i of list) console.log(`  ${i.ref}\n      re-read: ${i.dependents.join(", ")}`);
+}
+for (const [label, list] of lineFindings) {
+  if (list.length === 0) continue;
+  console.log(`\n${label} (${list.length}):`);
+  for (const line of list) console.log(`  ${line}`);
 }
 
 if (args.stamp) {
-  if (missing.length + misplaced.length > 0) {
+  const blocking = Object.entries(blockers(found)).filter(([, n]) => n > 0);
+  if (blocking.length > 0) {
     console.error(
-      "\nRefusing to stamp: fix the MISSING / MISPLACED entries in src/escape-ladder/table.ts " +
-        "and scripts/hud-deps.ts first.",
+      `\nRefusing to stamp: ${blocking.map(([k, n]) => `${n} ${k}`).join(", ")}. Fix the deps in src/escape-ladder/table.ts ` +
+        "and scripts/hud-deps.ts, the registry in scripts/game-reads/registry/, and the code they name; regenerate the " +
+        "enums with `npm run enums:gen -- --source <clone>` once the SHIFTED values are handled.",
     );
     process.exit(1);
   }
-  const gitlink = (submodule: string) =>
-    execFileSync("git", ["-C", source, "rev-parse", `HEAD:${submodule}`], { encoding: "utf8" }).trim();
-  const packageManager = JSON.parse(readFileSync(path.join(source, "package.json"), "utf8")).packageManager ?? "";
-  const pnpm = /^pnpm@([^+]+)/.exec(packageManager)?.[1];
-  if (pnpm === undefined) {
-    console.error("\nRefusing to stamp: the game's package.json names no pnpm `packageManager` to set the player's clone up with.");
+  let pin: ClonePin;
+  try {
+    pin = pinOf(version, source);
+  } catch (e) {
+    console.error(`\nRefusing to stamp: ${(e as Error).message}`);
     process.exit(1);
   }
+  const { pnpm } = pin;
   const inSource = harnessIn(() => findClone(source), pnpm);
   console.log();
   const { failed } = await recheck(
     version,
     {
-      replay: (given, script) => replay(given, script, inSource),
-      checkForks: (given, inputs) => checkForks(given, inputs, inSource),
+      replay: (given, script, carry) => replay(given, script, inSource, carry),
+      checkForks: (given, inputs, carry) => checkForks(given, inputs, inSource, carry),
     },
     console.log,
   );
@@ -211,21 +154,22 @@ if (args.stamp) {
     console.error(`\nRefusing to stamp: the harness re-check failed. ${failed.join("; ")}.`);
     process.exit(1);
   }
-  const pinned = { gameVersion: version, tag: `v${version}`, sha, locales: gitlink("locales"), assets: gitlink("assets"), pnpm };
-  const next: Reviewed = { pinned, hashes: current, recheck: { gameVersion: version } };
+  const pinned = { gameVersion: version, tag: `v${version}`, sha: pin.sha, locales: pin.locales, assets: pin.assets, pnpm };
+  const next: Reviewed = { pinned, hashes: found.hashes, recheck: { gameVersion: version } };
   writeFileSync(REVIEWED, `${JSON.stringify(next, null, 2)}\n`);
   console.log(
-    `\nStamped ${refs.length} hashes and the harness re-check; pin is now ${version} @ ${sha.slice(0, 7)}, ` +
+    `\nStamped ${Object.keys(found.hashes).length} hashes and the harness re-check; pin is now ${version} @ ${sha.slice(0, 7)}, ` +
       `set up with pnpm ${pnpm}.`,
   );
   process.exit(0);
 }
 
-if (shown(moved).length + shown(missing).length + shown(unreviewed).length + shownMisplaced.length > 0) {
+if ([...findings, ...lineFindings].some(([, list]) => list.length > 0)) {
   console.log(
     "\nFAIL: re-read the named entries — screens in src/escape-ladder/table.ts, HUD modules in " +
-      "skills/coachemon/scripts/hud/ (their deps are listed in scripts/hud-deps.ts) — then re-run with --stamp.",
+      "skills/coachemon/scripts/hud/ (their deps are listed in scripts/hud-deps.ts), game reads in " +
+      "scripts/game-reads/registry/ — then re-run with --stamp.",
   );
   process.exit(1);
 }
-console.log(`\nOK: every ${only ?? "ladder and HUD"} dep matches its reviewed hash.`);
+console.log(`\nOK: every ${only ?? "ladder, HUD and registry"} dep matches its reviewed hash.`);

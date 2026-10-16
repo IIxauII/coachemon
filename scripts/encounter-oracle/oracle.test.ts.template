@@ -19,6 +19,7 @@ import type { ModifierOverride } from "#modifiers/modifier-type";
 import type { PokemonMove } from "#moves/pokemon-move";
 import * as MysteryEncounters from "#mystery-encounters/mystery-encounter-biomes";
 import { GameManager } from "#test/framework/game-manager";
+import { trainerConfigs } from "#trainers/trainer-config";
 import type { MessageUiHandler } from "#ui/message-ui-handler";
 import { ModifierSelectUiHandler } from "#ui/modifier-select-ui-handler";
 import type { MysteryEncounterUiHandler } from "#ui/mystery-encounter-ui-handler";
@@ -38,8 +39,8 @@ function loadHud() {
   // biome-ignore lint/security/noGlobalEval: the HUD ships as one injectable script; this is how a page loads it.
   (0, eval)(readFileSync(BUNDLE, "utf8"));
   // Under vitest there are no `/assets/*.js` chunks for the HUD's shape scan to find, and a degraded card is not the
-  // card under test: hand it the game's own two singletons instead.
-  g.__hud["04-game-tables"].setGameTables({ species: speciesDataRegistry, events: timedEventManager });
+  // card under test: hand it the game's own singletons instead.
+  g.__hud["04-game-tables"].setGameTables({ species: speciesDataRegistry, events: timedEventManager, trainers: trainerConfigs });
   return g.__hud;
 }
 
@@ -92,7 +93,7 @@ function readCard(game: GameManager) {
   const hud = loadHud();
   const scene = game.scene;
   const handler = scene.ui.getHandler();
-  const account = hud["98-tick"].accountRead(scene);
+  const account = hud["98-watch"].accountRead(scene);
   // Through the run read, as the panel reads it.
   return hud["26-run"].readRun(scene, (run: unknown) => hud["46-encounter"].encounterModel(run, handler, account));
 }
@@ -357,7 +358,7 @@ async function walkSafari(game: GameManager, option: number) {
 }
 
 function rewardOptions(game: GameManager) {
-  expect(game.scene.ui.getMode()).toBe(UiMode.MODIFIER_SELECT);
+  expect(game.scene.ui.mode).toBe(UiMode.MODIFIER_SELECT);
   const handler = game.scene.ui.handlers.find(h => h instanceof ModifierSelectUiHandler) as ModifierSelectUiHandler;
   return handler.options.map(o => o.modifierTypeOption.type);
 }
@@ -745,6 +746,10 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     const named = /^fight (.+?): (\d+) mons/.exec(outcome);
     expect(named, `option 1 reads "${outcome}"`).toBeTruthy();
     const [, who, claimed] = named!;
+    const why: string = card.options[0].why;
+    const levels = / at L(\d+)(?:–(\d+))? vs your/.exec(why);
+    expect(levels, `option 1's why reads "${why}"`).toBeTruthy();
+    const [low, high = low] = levels!.slice(1).map(n => (n == null ? undefined : Number(n)));
 
     const cfgs = game.scene.currentBattle.mysteryEncounter!.enemyPartyConfigs;
     expect(cfgs, "the encounter sets up one trainer").toHaveLength(1);
@@ -752,9 +757,11 @@ describe("Coachemon oracle - what the card claims against what the game does", (
 
     await pickOption(game, 1, { isBattle: true });
 
-    const fielded = game.scene.getEnemyParty().length;
-    console.log(`ORACLE-DIFF A_TRAINERS_TEST outcome="${outcome}" claimed=${claimed} fielded=${fielded}`);
-    expect(Number(claimed)).toBe(fielded);
+    const enemy = game.scene.getEnemyParty();
+    const fieldedLevels = enemy.map(p => p.level);
+    console.log(`ORACLE-DIFF A_TRAINERS_TEST outcome="${outcome}" why="${why}" claimed=${claimed} fielded=${enemy.length} levels=${fieldedLevels}`);
+    expect(Number(claimed)).toBe(enemy.length);
+    expect([low, high]).toEqual([Math.min(...fieldedLevels), Math.max(...fieldedLevels)]);
   });
 
   it("The Winstrate Challenge: the battles and total the card names are the ones the encounter set up", async () => {
@@ -830,7 +837,7 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     };
     console.log(`ORACLE-DIFF safari-menu claimed=${JSON.stringify(card.minigame)} actual=${JSON.stringify(held)}`);
 
-    expect(game.scene.ui.getMode()).toBe(UiMode.MYSTERY_ENCOUNTER);
+    expect(game.scene.ui.mode).toBe(UiMode.MYSTERY_ENCOUNTER);
     expect(ui.encounterOptions).toHaveLength(4);
     expect(me.options).toHaveLength(2);
     expect(card.options).toHaveLength(4);

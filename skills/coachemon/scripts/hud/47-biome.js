@@ -8,19 +8,27 @@ import { partyAtFight, partyLuck, partyProfile, typesOfSpecies } from "./08-part
 import { teamVerdict } from "./45-catch.js";
 
 // `generateNonBossBiomeTier` / `generateBossBiomeTier`'s cuts (game-code.md §10).
+// @mirrors tier-cuts
 const TIER_CUTS = [156, 32, 6, 1, 0];
+// @mirrors boss-cuts
 const BOSS_CUTS = [20, 6, 1, 0];
 // In the order `TIER_CUTS` / `BOSS_CUTS` cut them.
+// @mirrors pool-tiers
 const POOL_TIERS = [BiomePoolTier.COMMON, BiomePoolTier.UNCOMMON, BiomePoolTier.RARE, BiomePoolTier.SUPER_RARE, BiomePoolTier.ULTRA_RARE];
+// @mirrors boss-pool-tiers
 const BOSS_POOL_TIERS = [BiomePoolTier.BOSS, BiomePoolTier.BOSS_RARE, BiomePoolTier.BOSS_SUPER_RARE, BiomePoolTier.BOSS_ULTRA_RARE];
+// @mirrors trainer-pool-tiers
 const TRAINER_POOL_TIERS = [TrainerPoolTier.COMMON, TrainerPoolTier.UNCOMMON, TrainerPoolTier.RARE, TrainerPoolTier.SUPER_RARE, TrainerPoolTier.ULTRA_RARE];
 const WINDOW = 10;
+// @mirrors catch-tier
 const CATCH_TIER = [1, 1, 0.6, 0.3, 0.15];
 const TRAINER_TIER = 99; // an encounter from a trainer's party: not a catch
 const BOSS_FIT = 10;
 // `determineEnemySpecies`' random factor, indexed by `EvoLevelThresholdKind` (game-code.md §10).
+// @mirrors evo-spread
 const EVO_SPREAD = [1, 1.1, 1.2];
 // 46-encounter's `RARE_BIOMES` is the same set: change both.
+// @mirrors rare-onward
 const RARE_ONWARD = new Set([BiomeId.SPACE, BiomeId.FAIRY_CAVE, BiomeId.LABORATORY]);
 
 // `formsAt` and `trainerParty` cache the nothing they answer before the chunk scan lands, and the scan fills the tables
@@ -38,12 +46,31 @@ const readTables = () => {
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 const nameOf = id => tryDo(() => readTables().biomeName(id), `#${id}`);
 const linkId = l => (Array.isArray(l) ? l[0] : l);
+// `SelectBiomePhase`'s `allBiomeLinks`: the biome's own, then the timed event's (game-code.md §10).
+const ownLinks = id => tryDo(() => readTables().biomes.get(id).biomeLinks, []);
+const linksOf = id => [...ownLinks(id), ...tryDo(() => gameEvents()?.getEventBiomeLinks?.(id), [])];
+// @mirrors daily-forced-biomes
+const dailyForced = (s, from, wave) => {
+  const gm = s?.gameMode;
+  if (!gm?.isDaily || gm.dailyConfig == null) return null;
+  const entry = tryDo(() => gm.dailyConfig.forcedBiomes.find(b => b.waveIndex === wave));
+  const ids = entry?.allMapOptions ? ownLinks(from).map(linkId) : entry?.biomeId;
+  // The game tests each id against `BiomeId`, and the bundle's `BiomeId` is partial (hud-bundle.mjs, `enumPrelude`):
+  // the biome table holds every one.
+  return Array.isArray(ids) && ids.every(id => readTables()?.biomes?.has(id)) ? ids : null;
+};
+// `links`: what `SelectBiomePhase` chooses among leaving `from` at the end of `wave`, the Daily event seed's forced
+// biomes when `daily` (game-code.md §10).
+const offerAt = (s, from, wave) => {
+  const ids = dailyForced(s, from, wave);
+  return ids?.length ? { links: ids, daily: true } : { links: linksOf(from), daily: false };
+};
 
-// Option labels → biome ids by the game's own localized name; failing that, by position: the options are the links in
-// order, less those that didn't roll (game-code.md §10).
+// Option labels → biome ids by the game's own localized name; failing that, by position: the options are the offer in
+// order, less the links that didn't roll (game-code.md §10).
 const resolveOptions = (s, labels) => {
   const tables = readTables();
-  const links = tryDo(() => [...tables.biomes.get(s.arena.biomeId).biomeLinks], []);
+  const { links } = offerAt(s, s.arena.biomeId, s.currentBattle?.waveIndex);
   const ids = [...new Set([...links.map(linkId), ...(tables?.biomes?.keys() ?? [])])];
   const byName = labels.map(l => ids.find(id => nameOf(id) === l) ?? null);
   if (byName.every(x => x != null)) return byName;
@@ -67,10 +94,10 @@ const odds = (pools, tiers, cuts, max, forced = null) => {
 
 // A spawn's species at `level`, as the game's chance of each form: `Map id → p` (game-code.md §10).
 const formsCache = new Map();
-const formsAt = (id, level, kind) => {
+const formsAt = (id, level, kind, specialty = null) => {
   // Before the cache lookup: the read is what drops an answer cached without the tables.
   const reg = readTables()?.species;
-  const key = `${id}|${level}|${kind}`;
+  const key = `${id}|${level}|${kind}|${specialty}`;
   if (formsCache.has(key)) return formsCache.get(key);
   const out = new Map();
   const add = (sid, p) => out.set(sid, (out.get(sid) ?? 0) + p);
@@ -92,7 +119,11 @@ const formsAt = (id, level, kind) => {
         if (level < (lv === 1 ? t : Math.min(lv, t))) { add(pid, p); return; }
       }
     }
-    const pool = (tryDo(() => reg.getEvolutions(sp.speciesId), []) ?? [])
+    let evos = tryDo(() => reg.getEvolutions(sp.speciesId), []) ?? [];
+    // `determineEnemySpecies`' specialty-type filter (game-code.md §10).
+    const typed = specialty ? evos.filter(e => typesOfSpecies(speciesById(e.speciesId)).includes(specialty)) : [];
+    if (typed.length > 0 && typed.length < evos.length) evos = typed;
+    const pool = evos
       .map(e => ({ id: e.speciesId, lv: e.level ?? 0, t: Math.max(e.level ?? 0, e.evoLevelThreshold?.[kind] ?? 0) }))
       .filter(e => e.t > 0 && level >= e.lv && level >= e.t);
     if (!pool.length || depth > 4) { add(sp.speciesId, p); return; }
@@ -147,6 +178,7 @@ const trainerParty = type => {
   return value;
 };
 
+// @mirrors time-of-day-at
 const timeOfDayAt = (s, w, biomeId) => {
   if (biomeId === BiomeId.ABYSS) return TimeOfDay.NIGHT;
   const c = (w + (s?.waveCycleOffset ?? 0)) % 40;
@@ -157,6 +189,7 @@ const timeOfDayAt = (s, w, biomeId) => {
 export const spawnTimeOfDay = (s, w, biomeId) => (w == null ? null : timeOfDayAt(s, poolAnchorWave(w), biomeId));
 
 // `getEncounterBossSegments`' random bosses off a tenth wave (game-code.md §10).
+// @mirrors random-boss-chance
 const randomBossChance = (s, w) => (s?.gameMode?.hasRandomBosses
   ? Math.min(Math.max(Math.ceil((w - 250) / 50), 0) * 2, 30) / 100
   : 0);
@@ -172,6 +205,7 @@ const wavesIn = (s, biome, wave) => {
     const tod = spawnTimeOfDay(s, w, biome.biomeId);
     const trainer = trainerOdds(s, w, biome);
     // `isTrainerBoss` (game-code.md §10).
+    // @mirrors trainer-boss
     const gym = !!trainer && bossTrainers && (gm?.isDaily
       ? w > 10 && w < 50 && w % 10 === 0
       : kind === "gym" && (biome.biomeId !== BiomeId.END || !!gm?.isClassic));
@@ -181,18 +215,21 @@ const wavesIn = (s, biome, wave) => {
   return out;
 };
 
-// `list`: `[{ id, tier, w, wild, boss, trainer }]`, `w` summing to 1 over the waves the biome decides and split into
-// the other three; `id` is the species as rolled, before it evolves.
+// `list`: `[{ id, specialty, tier, w, wild, boss, trainer, gym }]`, `w` summing to 1 over the waves the biome decides
+// and split into `wild`, `boss` and `trainer`, of which `boss` holds the gym leader's `gym`; `id` is the species as
+// rolled, before it evolves, and `specialty` the type of the trainer that brings it.
 const encounters = (s, biome, wave, luck = 0) => {
   const tables = readTables();
   const gm = s.gameMode;
   const byId = new Map();
-  const add = (id, tier, w, part) => {
-    const e = byId.get(id) ?? { id, tier, w: 0, wild: 0, boss: 0, trainer: 0 };
+  const add = (id, tier, w, part, specialty = null, gym = false) => {
+    const key = `${id}|${specialty}`;
+    const e = byId.get(key) ?? { id, specialty, tier, w: 0, wild: 0, boss: 0, trainer: 0, gym: 0 };
     e.tier = Math.min(e.tier, tier);
     e.w += w;
     e[part] += w;
-    byId.set(id, e);
+    if (gym) e.gym += w;
+    byId.set(key, e);
   };
   const trainersMet = new Map(), gymLeaders = new Map();
   let bigFight = null, total = 0;
@@ -200,6 +237,7 @@ const encounters = (s, biome, wave, luck = 0) => {
     total += 1;
     if (wv.wild > 0) {
       const difficulty = tryDo(() => gm.getWaveForDifficulty(wv.w, true), wv.w);
+      // @mirrors legal-at
       const legalAt = id => {
         const sp = speciesById(id);
         if (!sp) return false;
@@ -214,6 +252,7 @@ const encounters = (s, biome, wave, luck = 0) => {
         if (share <= 0) return;
         const tiers = asBoss ? BOSS_POOL_TIERS : POOL_TIERS;
         const pools = tiers.map(t => [...(biome.pokemonPool?.[t]?.[TimeOfDay.ALL] ?? []), ...(biome.pokemonPool?.[t]?.[wv.tod] ?? [])].filter(legalAt));
+        // @mirrors pool-tier-roll-max
         const max = asBoss ? 64 - luck * 0.5 : 512 - luck * 2;
         for (const { tier, list, p } of odds(pools, tiers, asBoss ? BOSS_CUTS : TIER_CUTS, max, forced)) {
           for (const id of list) add(id, tier, share * p / list.length, asBoss ? "boss" : "wild");
@@ -235,7 +274,7 @@ const encounters = (s, biome, wave, luck = 0) => {
           const q = wv.trainer * p / list.length;
           const met = wv.gym ? gymLeaders : trainersMet;
           met.set(type, (met.get(type) ?? 0) + q);
-          for (const m of party.species) add(m.id, TRAINER_TIER, q * m.p, wv.gym ? "boss" : "trainer");
+          for (const m of party.species) add(m.id, TRAINER_TIER, q * m.p, wv.gym ? "boss" : "trainer", party.specialty, wv.gym);
         }
       }
       if (wv.gym) bigFight = { wave: wv.w, gym: true };
@@ -243,7 +282,7 @@ const encounters = (s, biome, wave, luck = 0) => {
   }
   const sum = [...byId.values()].reduce((t, e) => t + e.w, 0) || 1;
   // Waves nothing could be read for (trainers without their configs) drop out of the weighting.
-  const list = [...byId.values()].map(e => ({ ...e, w: e.w / sum, wild: e.wild / sum, boss: e.boss / sum, trainer: e.trainer / sum }));
+  const list = [...byId.values()].map(e => ({ ...e, w: e.w / sum, wild: e.wild / sum, boss: e.boss / sum, trainer: e.trainer / sum, gym: e.gym / sum }));
   const share = m => [...m].map(([type, q]) => ({ ...trainerParty(type), q })).sort((a, b) => b.q - a.q);
   return { list, trainers: share(trainersMet), leaders: share(gymLeaders), bigFight, waves: total };
 };
@@ -283,10 +322,15 @@ const judge = (run, id, profile, level, wave, luck, fightWave) => {
   const biome = tryDo(() => readTables().biomes.get(id));
   if (!biome) return null;
   const enc = encounters(s, biome, wave, luck);
-  const spawnList = enc.list.flatMap(e => [...formsAt(e.id, level, e.wild > 0 ? EvoLevelThresholdKind.WILD : EvoLevelThresholdKind.NORMAL)].map(([fid, fp]) => {
+  // A gym leader's party template sets its threshold kind (game-code.md §10).
+  const shares = e => [
+    [{ ...e, w: e.w - e.gym, boss: e.boss - e.gym, gym: 0 }, e.wild > 0 ? EvoLevelThresholdKind.WILD : EvoLevelThresholdKind.NORMAL],
+    [{ ...e, w: e.gym, wild: 0, boss: e.gym, trainer: 0 }, EvoLevelThresholdKind.STRONG],
+  ].filter(([part]) => part.w > 1e-12);
+  const spawnList = enc.list.flatMap(e => shares(e).flatMap(([part, kind]) => [...formsAt(e.id, level, kind, e.specialty)].map(([fid, fp]) => {
     const sp = speciesById(fid);
-    return sp && { ...e, sp, types: typesOfSpecies(sp), w: e.w * fp, wild: e.wild * fp, boss: e.boss * fp };
-  })).filter(e => e?.types.length);
+    return sp && { ...part, sp, types: typesOfSpecies(sp), w: part.w * fp, wild: part.wild * fp, boss: part.boss * fp, trainer: part.trainer * fp };
+  }))).filter(e => e?.types.length);
   if (!spawnList.length) return null;
 
   const moves = profile.attacks;
@@ -389,7 +433,8 @@ const judge = (run, id, profile, level, wave, luck, fightWave) => {
   if (catchList[0]) reasons.push({ good: true, catch: true, text: `catch ${catchList[0].name} (${catchList[0].tags.join(", ")})` });
 
   const trainerShare = enc.list.reduce((t, e) => t + e.trainer, 0);
-  const onward = tryDo(() => [...biome.biomeLinks], []).map(l => ({ name: nameOf(linkId(l)), rare: RARE_ONWARD.has(linkId(l)), chance: Array.isArray(l) ? l[1] : 1 }));
+  const next = offerAt(s, id, wave + WINDOW);
+  const onward = next.links.map(l => ({ name: nameOf(linkId(l)), rare: RARE_ONWARD.has(linkId(l)), chance: Array.isArray(l) ? l[1] : 1 }));
   return {
     raw, score: Math.round(raw), offense: Math.round(offense * 100), defense: Math.round(defense * 100),
     opportunity: Math.round(opportunity * 100), bossFit: Math.round(bossFit * 100),
@@ -398,7 +443,7 @@ const judge = (run, id, profile, level, wave, luck, fightWave) => {
     catch: catchList[0] ? { name: catchList[0].name, icon: catchList[0].icon, tags: catchList[0].tags,
       verdict: catchList[0].verdict, net: catchList[0].net, confidence: catchList[0].confidence } : null,
     trainers: enc.trainers.length ? { pct: Math.round(trainerShare * 100), names: enc.trainers.slice(0, 3).map(t => t.name) } : null,
-    fight, trainerChance: biome.trainerChance ?? null, onward,
+    fight, trainerChance: biome.trainerChance ?? null, onward, dailyOnward: next.daily,
   };
 };
 

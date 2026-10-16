@@ -12,7 +12,7 @@ import { dirname } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { serverEnv } from "../src/server-env.ts";
 import { momentsOf } from "./lag-run/moments.ts";
-import { lowPowerMode, orion } from "./lag-run/orion.ts";
+import { audioBlocker, lowPowerMode, orion } from "./lag-run/orion.ts";
 import { decide, freshMemory, heard, readsCard, refused, type Card, type Menu } from "./lag-run/policy.ts";
 
 const arg = (k: string, d: string) => { const i = process.argv.indexOf(k); return i > -1 ? process.argv[i + 1] : d; };
@@ -104,7 +104,7 @@ if (LAG && RESUME) {
   const seen = tab!.visibility();
   if (seen !== "visible") { console.error(`the pokerogue.net tab is not in the foreground (${seen}): bring its Orion window to the front`); process.exit(2); }
   const audio = tab!.audio();
-  if (audio.state !== "running") { console.error(`the tab's audio is not running (${JSON.stringify(audio)}): click in the game once, or allow auto-play for pokerogue.net`); process.exit(2); }
+  if (audioBlocker(audio)) { console.error(`the tab's audio is not running (${JSON.stringify(audio)}): click in the game once, or allow auto-play for pokerogue.net`); process.exit(2); }
   const s = await call("status");
   log({ kind: "resume", at: new Date().toISOString(), priorCalls: prior.calls, priorMs: prior.ms, status: s });
   drain();
@@ -123,11 +123,11 @@ if (LAG && RESUME) {
     if (screen === "TITLE") break;
   }
   const audio = screen === "TITLE" ? tab!.audio() : null;
+  const blocked = audio && audioBlocker(audio);
   if (screen !== "TITLE") stop = `no-title:${screen}`;
-  else if (audio?.error || audio?.state == null) stop = `audio-probe:${audio?.error ?? "no context"}`;
-  else if (audio.state !== "running") {
-    stop = "audio-locked";
-    console.error(`the tab's audio is locked (${JSON.stringify(audio)}): the heal after wave 10 would wait on it forever. Allow auto-play for pokerogue.net in Orion (docs/lag-run.md)`);
+  else if (blocked) {
+    stop = blocked;
+    if (blocked === "audio-locked") console.error(`the tab's audio is locked (${JSON.stringify(audio)}): the heal after wave 10 would wait on it forever. Allow auto-play for pokerogue.net in Orion (docs/lag-run.md)`);
   } else if (COACH && !(await coachTeam())) {
     stop ||= "coach-team";
   } else {

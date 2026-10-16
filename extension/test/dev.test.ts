@@ -8,12 +8,13 @@ import { dispatch } from "../../src/page/dispatch.ts";
 import { fine } from "../../src/page/fine.ts";
 import { locate } from "../../src/page/locate.ts";
 import { PAGE_MODES } from "../../src/page/modes.ts";
+import { starter } from "../../src/page/starter.ts";
 import { offPage, onPage } from "../../src/page/fake-page.ts";
 import type { ExtensionCmd } from "../../src/protocol/wire.ts";
 import type { RelayReply } from "../src/messages.ts";
 
 const run = (source: string): any =>
-  dispatch(locate, fine, disc, DEV_PAGE_HANDLERS.eval!.run, "eval", "read", PAGE_MODES, { source });
+  dispatch(locate, fine, disc, starter, DEV_PAGE_HANDLERS.eval!.run, "eval", "read", PAGE_MODES, { source });
 
 const cmd = (name: string, args: Record<string, unknown> = {}): ExtensionCmd => ({ t: "cmd", id: 7, tab: 3, name, args });
 

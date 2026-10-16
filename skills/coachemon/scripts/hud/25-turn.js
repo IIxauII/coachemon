@@ -77,16 +77,19 @@ const sceneEnv = s => {
   const b = s?.currentBattle ?? {};
   const foes = tryDo(() => s.getEnemyParty(), []) ?? [];
   const party = tryDo(() => s.getPlayerParty(), []) ?? [];
+  const field = tryDo(() => s.getField(true), []) ?? [];
   return {
     s, foes, playerParty: party,
     // The party on `p`'s side, for Beat Up.
     party: p => tryDo(() => (p?.isPlayer?.() ? party : foes), null),
-    field: tryDo(() => s.getField(true), []) ?? [],
+    field,
     slots: tryDo(() => s.getField(), []) ?? [],
     enemyModifiers: s?.enemyModifiers ?? [],
     modifiers: s?.modifiers ?? [],
     arenaTags: tryDo(() => s.arena?.tags, []) ?? [],
     weather: tryDo(() => s.arena?.weather?.weatherType, WeatherType.NONE) ?? WeatherType.NONE,
+    // `isWeatherSuppressed` (game-code.md §14).
+    weatherSuppressed: field.some(q => tryDo(() => !!q?.hasAbilityWithAttr?.("SuppressWeatherEffectAbAttr"), false)),
     terrain: tryDo(() => s.arena?.terrain?.terrainType, TerrainType.NONE) ?? TerrainType.NONE,
     finalBoss: !!b.isClassicFinalBoss,
     trainer: b.trainer ?? null,
@@ -131,7 +134,7 @@ const sceneFacts = (s, env, live) => {
     battleType: b.battleType, mysteryEncounter: env.mysteryEncounter,
     party: env.playerParty, foes: env.foes, field: env.field,
     trickRoom: !!tryDo(() => s.arena?.getTag?.("TRICK_ROOM"), false),
-    weather: env.weather, weatherSuppressed: !!tryDo(() => s.arena?.weather?.isEffectSuppressed?.(), false),
+    weather: env.weather, weatherSuppressed: env.weatherSuppressed,
     biomeId: tryDo(() => s.arena?.biomeId, null),
     hazards: (tagType, side) => tryDo(() => s.arena?.getTagOnSide?.(tagType, side)?.layers, 0) ?? 0,
     modifiers: env.modifiers, enemyModifiers: env.enemyModifiers,
@@ -154,6 +157,7 @@ const sceneSpeedTie = (env, facts, a, b) => {
     const s = env.s;
     if (!(facts.turn > 0) || typeof s.executeWithSeedOffset !== "function") return null;
     let draw = null;
+    // @mirrors speed-tie-seed
     s.executeWithSeedOffset(() => { draw = Phaser.Math.RND.integerInRange(0, 1); }, facts.turn * 1000 + 2, s.waveSeed);
     if (draw !== 0 && draw !== 1) return null;
     const playerFirst = (draw !== 0) !== !!facts.trickRoom;
@@ -161,6 +165,7 @@ const sceneSpeedTie = (env, facts, a, b) => {
   } catch { return null; }
 };
 
+// @mirrors type-status-immune
 const TYPE_STATUS_IMMUNE = {
   [StatusEffect.POISON]: ["Poison", "Steel"], [StatusEffect.TOXIC]: ["Poison", "Steel"],
   [StatusEffect.PARALYSIS]: ["Electric"], [StatusEffect.FREEZE]: ["Ice"], [StatusEffect.BURN]: ["Fire"],
@@ -220,6 +225,7 @@ const monRecord = (env, live, p) => {
     rockChip: (() => {
       if (tryDo(() => !!p.hasAbilityWithAttr?.("BlockNonDirectDamageAbAttr"), false)) return 0;
       const e = live ? tryDo(() => p.getAttackTypeEffectiveness(PokemonType.ROCK, { ignoreStrongWinds: true }), null) : null;
+      // @mirrors stealth-rock-chip
       return 0.125 * (e ?? effectiveness("Rock", p));
     })(),
     bars: (st, n, offence = false) => barBreakFactors(p, st, n, offence, trainer),
@@ -233,7 +239,7 @@ const monRecord = (env, live, p) => {
         return null;
       }, null);
       if (override) return override;
-      return env.weather && !tryDo(() => env.s?.arena?.weather?.isEffectSuppressed?.(), false) ? env.weather : WeatherType.NONE;
+      return env.weather && !env.weatherSuppressed ? env.weather : WeatherType.NONE;
     })(),
     hasAbility: id => tryDo(() => !!p.hasAbility?.(id, false, true), false),
     isOfType: t => tryDo(() => p.isOfType?.(t), null) ?? typesOf(p).includes(TYPES[t]),

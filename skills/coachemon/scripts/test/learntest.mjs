@@ -7,7 +7,7 @@ const cat = { P: 0, S: 1, X: 2 };
 // subclasses carries its parent here, or a WeatherInstantChargeAttr wouldn't read as an instant charge.
 const PARENTS = {
   WeatherInstantChargeAttr: "InstantChargeAttr",
-  BoostHealAttr: "HealAttr", WeatherHealAttr: "HealAttr", PlantHealAttr: "HealAttr", SandHealAttr: "HealAttr",
+  VariableHealAttr: "HealAttr",
   LeechSeedAttr: "AddBattlerTagAttr", ConfuseAttr: "AddBattlerTagAttr", ProtectAttr: "AddBattlerTagAttr",
   AddArenaTrapTagAttr: "AddArenaTagAttr",
 };
@@ -27,7 +27,7 @@ const mv = ([n, t, p, c, a = 100, attrs = [], charge = false, target = 3, extra 
 const AB_ATTRS = { "Skill Link": ["MaxMultiHitAbAttr"], "Magic Guard": ["BlockNonDirectDamageAbAttr"], "Rock Head": ["BlockRecoilDamageAttr"], "Parental Bond": ["AddSecondStrikeAbAttr"] };
 const mon = (name, types, atk, spa, moves, extra = {}) => ({
   name, level: 64, hp: 100, getMaxHp: () => 100, getTypes: () => types.map(t => TY.indexOf(t)), getAbility: () => ({ name: extra.ability ?? "x" }),
-  hasAbilityWithAttr: a => (AB_ATTRS[extra.ability] ?? []).includes(a), getHeldItems: () => [],
+  hasAbilityWithAttr: a => (AB_ATTRS[extra.ability] ?? []).includes(a), getAbilityAttrs: a => extra.abAttrs?.[a] ?? [], getHeldItems: () => [],
   getStat: i => ({ 1: atk, 3: spa }[i] ?? 100), getIconAtlasKey: () => "k", getIconId: () => 1, friendship: 70,
   moveset: moves.map(m => ({ getMove: () => mv(m), getName: () => m[0], getMovePp: () => 10, ppUsed: 0 })),
 });
@@ -35,7 +35,7 @@ const mon = (name, types, atk, spa, moves, extra = {}) => ({
 const run = (pk, newMove, { double = false, party = [pk], roster = null } = {}) => {
   let el; const ds = {};
   globalThis.window = globalThis; delete globalThis.__coachHud;
-  const scene = { currentBattle: { double }, ui: { getMode: () => 9, getHandler: () => ({ summaryUiMode: 1, pokemon: pk, newMove: mv(newMove) }) }, getEnemyParty: () => [], getPlayerParty: () => party };
+  const scene = { currentBattle: { double }, ui: { mode: 9, getHandler: () => ({ summaryUiMode: 1, pokemon: pk, newMove: mv(newMove) }) }, getEnemyParty: () => [], getPlayerParty: () => party };
   globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
   const node = () => { const n = { style: {}, children: [], title: "", addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
   globalThis.document = { documentElement: { dataset: ds }, body: { appendChild: e => (el = e) }, createElement: node };
@@ -125,7 +125,7 @@ for (const [label, pk, newMove, double] of cases) {
   assert.notEqual(r.model.moves[r.model.forget]?.name, "Iron Head", "keeps Iron Head");
 
   const dragonite = mon("Dragonite", ["Dragon","Flying"], 134, 100, [["Dragon Claw","Dragon",80,"P"],["Extreme Speed","Normal",80,"P",100,[],false,3,{ fields: { priority: 2 } }],["Fire Punch","Fire",75,"P"],["Thunder Punch","Electric",75,"P"]]);
-  const o = run(dragonite, ["Outrage","Dragon",120,"P",100,["FrenzyAttr",["MissEffectAttr",{}],["NoEffectAttr",{}]],false,7]);
+  const o = run(dragonite, ["Outrage","Dragon",120,"P",100,[["AddBattlerTagAttr",{ tagType: "FRENZY", selfTarget: true }]],false,7]);
   show("Dragonite ← Outrage", o);
   assert.ok(o.model.move.drawbacks.includes("locks 2–3 turns, then confused"));
   assert.ok(!o.model.move.drawbacks.some(d => /misses/.test(d)), "Outrage's miss effect isn't crash damage");
@@ -205,6 +205,17 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.equal(roost.model.moves[roost.model.forget]?.name, "Growl");
   assert.ok(roost.model.move.notes.includes("heal 50%"));
   assert.ok(byName(roost.model, "Growl").value <= 10, `a foe's −1 Atk is worth little (${byName(roost.model, "Growl").value})`);
+  const MOONLIGHT = ["Moonlight","Fairy",-1,"X",-1,[["VariableHealAttr",{ healRatio: 1, healFunc: () => 0.5 }]],false,0,{ fields: { id: 236 } }];
+  const SWALLOW = ["Swallow","Normal",-1,"X",-1,[["VariableHealAttr",{ healRatio: 1, healFunc: () => 0 }]],false,0,{ fields: { id: 256 } }];
+  const moon = run(fletchinder, MOONLIGHT);
+  assert.ok(moon.model.move.notes.includes("heal (weather)"), `a weather heal is a flat heal: ${moon.model.move.notes}`);
+  assert.ok(!run(fletchinder, SWALLOW).model.move.notes.some(n => /heal/.test(n)), "Swallow heals only off a Stockpile");
+  const HEAL_PULSE = ["Heal Pulse","Psychic",-1,"X",-1,[["HealAttr",{ healRatio: 0.5, selfTarget: false }]],false,3,{ flags: 64 }];
+  const megaLauncher = { getCondition: () => null, canApply: ({ move: m }) => m.hasFlag(64), apply: ({ healRatio }) => { healRatio.value *= 1.5; } };
+  const pulses = [["Water Pulse","Water",60,"S"],["Dark Pulse","Dark",80,"S"],["Aura Sphere","Fighting",80,"S"],["Dragon Pulse","Dragon",85,"S"]];
+  const clawitzer = mon("Clawitzer", ["Water"], 73, 120, pulses, { abAttrs: { MoveHealBoostAbAttr: [megaLauncher] } });
+  assert.ok(run(clawitzer, HEAL_PULSE).model.move.notes.includes("heal 75%"), "Mega Launcher's Heal Pulse is valued at ¾");
+  assert.ok(run(mon("Clawitzer", ["Water"], 73, 120, pulses), HEAL_PULSE).model.move.notes.includes("heal 50%"));
 
   const minccino = mon("Minccino", ["Normal"], 110, 60, [["Pound","Normal",40,"P"],["Baby-Doll Eyes","Fairy",-1,"X",100,[statChange([1], -1)]], HELPING_HAND, SING]);
   const hh = run(minccino, ["Triple Axel","Ice",20,"P",90,[["MultiHitAttr",{ intrinsicMultiHitType: 2 }],"MultiHitPowerIncrementAttr"],false,3,{ flags: 65536 }]);
@@ -228,6 +239,10 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.ok(crowded.notes.includes("3 status moves") && crowded.value < sing.value, "a moveset that is mostly status has no room for another");
   const taunted = run(mon("Sableye", ["Dark","Ghost"], 75, 65, [["Knock Off","Dark",65,"P"],["Shadow Sneak","Ghost",40,"P"],["Fake Out","Normal",40,"P"]]), TAUNT);
   assert.ok(taunted.model.move.value > 0 && taunted.model.move.notes.includes("taunt"), `Taunt is scored: ${taunted.model.move.notes}`);
+  // A MAGNET_RISEN key matched no tag the game adds, so Magnet Rise went unscored (#730).
+  const MAGNET_RISE = ["Magnet Rise","Electric",-1,"X",-1,[["AddBattlerTagAttr",{ tagType: "FLOATING", selfTarget: true }]],false,0];
+  const risen = run(mon("Magnezone", ["Electric","Steel"], 70, 130, [["Thunderbolt","Electric",90,"S"],["Flash Cannon","Steel",80,"S"],["Tri Attack","Normal",80,"S"]]), MAGNET_RISE);
+  assert.ok(risen.model.move.value > 0 && risen.model.move.notes.includes("floating"), `Magnet Rise is scored: ${risen.model.move.notes}`);
 
   const unknown = run(mon("Smeargle", ["Normal"], 60, 60, [["Tackle","Normal",40,"P"],["Swift","Normal",60,"S"],["Quick Attack","Normal",40,"P"],["Sketch","Normal",-1,"X",-1]]), ["Pound","Normal",40,"P"]);
   assert.equal(byName(unknown.model, "Sketch").value, null);
@@ -246,7 +261,7 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.ok(["Howl", "Leer"].includes(r.model.moves[r.model.forget]?.name), `forgets a dead status slot, not an attack (${r.model.moves[r.model.forget]?.name})`);
 
   const moves = [["Dragon Claw","Dragon",80,"P"],["Extreme Speed","Normal",80,"P",100,[],false,3,{ fields: { priority: 2 } }],["Fire Punch","Fire",75,"P"],["Thunder Punch","Electric",75,"P"]];
-  const outrage = ["Outrage","Dragon",120,"P",100,["FrenzyAttr",["MissEffectAttr",{}],["NoEffectAttr",{}]],false,7];
+  const outrage = ["Outrage","Dragon",120,"P",100,[["AddBattlerTagAttr",{ tagType: "FRENZY", selfTarget: true }]],false,7];
   const known = run(mon("Dragonite", ["Dragon","Flying"], 134, 100, moves), outrage);
   const unknown = run(mon("Dracowidget", ["Dragon","Flying"], 134, 100, moves), outrage);
   assert.ok(known.model.move.notes.some(n => n.startsWith("set move")), "randbats runs Outrage on Dragonite");
@@ -309,7 +324,7 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
 // ---- The roster a status move will face (#122)
 // `roster`: the next big fight's foes, as the preview has them.
 {
-  const foe = (name, types, extra = {}) => ({ name, types, ability: extra.ability ?? null, passive: null, segments: extra.segments ?? 0,
+  const foe = (name, types, extra = {}) => ({ name, types, ability: extra.ability ?? null, passive: extra.passive ?? null, segments: extra.segments ?? 0,
     statusMoves: extra.statusMoves ?? [], healMoves: extra.healMoves ?? [] });
   const at30 = (...foes) => ({ wave: 30, exact: true, foes });
   const whitney = at30(foe("Clefairy", ["Fairy"]), foe("Miltank", ["Normal"], { segments: 2, statusMoves: ["Milk Drink"], healMoves: ["Milk Drink"] }));
@@ -329,6 +344,18 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   const oblivious = at30(foe("Miltank", ["Normal"], { ability: "Oblivious", segments: 2, statusMoves: ["Milk Drink"], healMoves: ["Milk Drink"] }));
   assert.ok(judge(TAUNT, oblivious).notes.includes("nothing to stop at W30"));
   assert.ok(judge(HEAL_BLOCK, oblivious).notes.includes("vs Miltank's Milk Drink at W30"));
+
+  // Who stays trapped (game-code.md §7).
+  const MEAN_LOOK = ["Mean Look","Normal",-1,"X",-1,[["AddBattlerTagAttr",{ tagType: "TRAPPED" }]],false,3,{ flags: 262144 }];
+  const lookBlind = judge(MEAN_LOOK, null);
+  const runner = at30(foe("Rattata", ["Normal"], { ability: "Run Away" }), foe("Machoke", ["Fighting"]));
+  const look = judge(MEAN_LOOK, runner);
+  assert.ok(look.notes.includes("lands on 1 of 2 at W30") && look.value < lookBlind.value, `Mean Look into a Run Away foe: ${look.notes} (${look.value} vs ${lookBlind.value})`);
+  assert.ok(judge(MEAN_LOOK, runner, "Mold Breaker").notes.includes("lands on 1 of 2 at W30"), "Mold Breaker doesn't stop Run Away");
+  const passive = judge(MEAN_LOOK, at30(foe("Snorlax", ["Normal"], { passive: "Run Away" }), foe("Machoke", ["Fighting"])));
+  assert.ok(passive.notes.includes("lands on 1 of 2 at W30"), `Run Away as a passive: ${passive.notes}`);
+  const loose = judge(MEAN_LOOK, at30(foe("Rattata", ["Normal"], { ability: "Run Away" }), foe("Gengar", ["Ghost","Poison"])));
+  assert.ok(loose.notes.includes("can't land at W30") && loose.value <= Math.round(lookBlind.value * 0.3) + 1, `nobody to hold: ${loose.notes} (${loose.value})`);
 
   // Who a status move can land on (game-code.md §16). Flags: 262144 reflectable, 2048 powder.
   const WISP = ["Will-O-Wisp","Fire",-1,"X",85,[["StatusEffectAttr",{ effect: 6 }]],false,3,{ flags: 262144 }];
@@ -350,7 +377,8 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   // What the preview lists as a foe's heals: recovery and drain, not a status cure.
   const hb = m => globalThis.__lm.blockedByHealBlock(mv(m));
   assert.deepEqual([hb(["Milk Drink","Normal",-1,"X",-1,[["HealAttr",{ healRatio: 0.5 }]]]), hb(["Giga Drain","Grass",75,"S",100,[["HitHealAttr",{}]]]),
-    hb(["Rest","Psychic",-1,"X",-1,["RestAttr"]]), hb(["Refresh","Normal",-1,"X",-1,["HealStatusEffectAttr"]])], [true, true, true, false]);
+    hb(["Rest","Psychic",-1,"X",-1,["RestAttr"]]), hb(["Refresh","Normal",-1,"X",-1,["HealStatusEffectAttr"]]),
+    hb(["Synthesis","Grass",-1,"X",-1,[["VariableHealAttr",{ healFunc: () => 0.5 }]]])], [true, true, true, false, true]);
 
   const tm = globalThis.__lm.tmAdvice(mv(TAUNT), [sableye()], { roster: whitney });
   assert.equal(tm.best?.gain, globalThis.__lm.learnAdvice(sableye(), mv(TAUNT), { roster: whitney }).gain, "the TM card and the learn card agree");
@@ -448,5 +476,50 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.ok(run(ludicolo, SOAK, { roster: skarm }).model.move.notes.includes("vs Skarmory at W40"), "the learn card model carries the roster");
   // The HUD's own tick has no look-ahead in this fake scene, so the card prints the blind value.
   show("Ludicolo ← Soak (Skarmory ahead)", run(ludicolo, SOAK, { roster: skarm }));
+}
+// ---- Salt Cure's curse (#727): an attack that also chips whatever it hits every turn it stays in.
+{
+  const foe = (name, types, extra = {}) => ({ name, types, ability: extra.ability ?? null, passive: null, segments: 0,
+    attackTypes: types, statusMoves: [], healMoves: [] });
+  const at50 = (...foes) => ({ wave: 50, exact: true, foes });
+  const SALT_CURE = ["Salt Cure","Rock",40,"P",100,[["AddBattlerTagAttr",{ tagType: "SALT_CURED" }]]];
+  const BARE = ["Salt Cure","Rock",40,"P",100];
+  const garganacl = ability => mon("Garganacl", ["Rock"], 100, 45,
+    [["Body Press","Fighting",80,"P"],["Earthquake","Ground",100,"P",100,[],false,4],["Iron Head","Steel",80,"P"]], { ability });
+  const judge = (move, roster = null, ability) => globalThis.__lm.learnAdvice(garganacl(ability), mv(move), { roster }).plan.incoming;
+
+  const bare = judge(BARE), blind = judge(SALT_CURE);
+  assert.ok(blind.value > bare.value, `the curse counts on top of the hit (${blind.value} vs ${bare.value})`);
+  assert.ok(blind.notes.includes("curse 1/8 a turn"), `${blind.notes}`);
+  const curse = x => x.value - bare.value;
+  assert.equal(judge(SALT_CURE, at50(foe("Snorlax", ["Normal"]), foe("Machamp", ["Fighting"]))).value, blind.value, "a roster taking the 1/8 changes nothing");
+  // A Water or Steel type takes 1/4 a turn (game-code.md §21). ±1: the card rounds.
+  const doubled = judge(SALT_CURE, at50(foe("Vaporeon", ["Water"]), foe("Skarmory", ["Steel","Flying"])));
+  assert.ok(Math.abs(curse(doubled) - 2 * curse(blind)) <= 1, `twice the curse (${curse(doubled)} vs ${curse(blind)})`);
+  assert.ok(doubled.notes.includes("curse 1/4 a turn at W50"), `${doubled.notes}`);
+  const half = judge(SALT_CURE, at50(foe("Vaporeon", ["Water"]), foe("Snorlax", ["Normal"])));
+  assert.ok(Math.abs(curse(half) - 1.5 * curse(blind)) <= 1, `half the roster doubled (${curse(half)})`);
+  assert.ok(half.notes.includes("curse 1/4 on 1 of 2 at W50"), `${half.notes}`);
+  const unsure = judge(SALT_CURE, { ...at50(foe("Vaporeon", ["Water"])), exact: false });
+  assert.ok(curse(unsure) > curse(blind) && curse(unsure) < curse(doubled), "a roster the preview isn't sure of moves the score half as far");
+
+  // Magic Guard takes no chip (game-code.md §21), Mold Breaker or not: it ignores abilities only while its move runs (§1).
+  const clefable = foe("Clefable", ["Fairy"], { ability: "Magic Guard" });
+  const guarded = judge(SALT_CURE, at50(clefable));
+  assert.equal(guarded.value, bare.value, "Magic Guard");
+  assert.ok(guarded.notes.includes("curse can't hurt at W50"), `${guarded.notes}`);
+  assert.equal(judge(SALT_CURE, at50(clefable), "Mold Breaker").value, judge(BARE, null, "Mold Breaker").value, "Mold Breaker doesn't reach the turn end");
+  const some = judge(SALT_CURE, at50(clefable, foe("Snorlax", ["Normal"])));
+  assert.ok(Math.abs(curse(some) - 0.5 * curse(blind)) <= 1, `half the roster spared (${curse(some)})`);
+  assert.ok(some.notes.includes("curse hurts 1 of 2 at W50"), `${some.notes}`);
+  // Shield Dust zeroes the chance of the curse landing, unless Mold Breaker gets past it; Sheer Force zeroes it on the
+  // user's side (game-code.md §5, §8).
+  const vivillon = at50(foe("Vivillon", ["Bug","Flying"], { ability: "Shield Dust" }));
+  assert.equal(judge(SALT_CURE, vivillon).value, bare.value, "Shield Dust");
+  assert.equal(judge(SALT_CURE, vivillon, "Mold Breaker").value - judge(BARE, null, "Mold Breaker").value, curse(blind), "Mold Breaker gets past it");
+  const forced = judge(SALT_CURE, null, "Sheer Force");
+  assert.equal(forced.value, judge(BARE, null, "Sheer Force").value, "Sheer Force");
+  assert.ok(forced.notes.includes("no curse with Sheer Force"), `${forced.notes}`);
+  show("Garganacl ← Salt Cure", run(garganacl(), SALT_CURE));
 }
 console.log("ok");

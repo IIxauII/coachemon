@@ -27,7 +27,7 @@ hardcore 0                on false  revives true
 hardcore -1               on true  revives false
 == reviveBefore, the last waves
 classic                   195→shop 195  199→shop 199  200→none
-daily                     48→shop 48  48, ls 2→none
+daily                     48→none  48, ls 2→none
 == reviveBefore, Endless's 250th wave
 endless                   249→heal 251  245 to 260, ls 2→heal 251
 == reviveBefore, from an X0
