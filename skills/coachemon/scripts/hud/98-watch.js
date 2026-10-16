@@ -174,6 +174,8 @@ export const accountRead = s => {
   const gd = s.gameData ?? {};
   let shinyCatchMultiplier = 2;
   try { shinyCatchMultiplier = gameEvents()?.getShinyCatchMultiplier() ?? 2; } catch {}
+  let extraCatchCandy = 0;
+  try { extraCatchCandy = gameEvents()?.getExtraCatchCandy() ?? 0; } catch {}
   let species = null;
   try { species = gameTables()?.species ?? null; } catch {}
   return {
@@ -183,11 +185,12 @@ export const accountRead = s => {
     party: (s.getPlayerParty?.() ?? []).filter(Boolean),
     daily: !!s.gameMode?.isDaily,
     shinyCatchMultiplier,
+    extraCatchCandy,
   };
 };
 
 const screenNote = (s, card) => note({ kind: card?.kind ?? null, wave: card?.wave ?? s.currentBattle?.waveIndex ?? null,
-  mode: s.ui.getMode?.() ?? null, phase: s.phaseManager?.getCurrentPhase?.()?.phaseName ?? null });
+  mode: s.ui.mode ?? null, phase: s.phaseManager?.getCurrentPhase?.()?.phaseName ?? null });
 // Only a card's own build arms, so a look-ahead read can't take the prediction's place.
 const armPreview = card => { if (card?.preview && card.preview.wave === card.wave + 1) previewArm(card.preview); };
 
