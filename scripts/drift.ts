@@ -14,11 +14,11 @@ import { GLOBAL_DEPS, LADDER } from "../src/escape-ladder/table.ts";
 import type { Entry } from "../src/escape-ladder/types.ts";
 import type { ClonePin } from "../src/solver/clone.ts";
 import { checkForks, type Recheck, replay } from "../src/solver/solver.ts";
-import { findClone, harnessIn, pinOf } from "./clone-test/clone-test.ts";
-import { blockers, drift, type Group, type Item } from "./drift/check.ts";
+import { checkoutOf, findClone, harnessIn, pinOf } from "./clone-test/clone-test.ts";
+import { blockers, type DepSource, drift, type Finding, lean, type Leans } from "./drift/check.ts";
 import { GameSource } from "./drift/source.ts";
 import { generatedTables, loadRepo } from "./game-reads/check.ts";
-import { REGISTRY } from "./game-reads/registry/index.ts";
+import { REGISTRY, registryEntries } from "./game-reads/registry/index.ts";
 import { builtinNames } from "./game-reads/scan.ts";
 import { generate } from "./gen-enums.ts";
 import { HUD_DEPS } from "./hud-deps.ts";
@@ -43,24 +43,23 @@ const { values: args } = parseArgs({
   },
 });
 
-const GROUPS = ["ladder", "hud", "reads"];
-if (args.only !== undefined && !GROUPS.includes(args.only)) {
-  console.error(`--only takes ${GROUPS.map(g => JSON.stringify(g)).join(", ")}, not ${JSON.stringify(args.only)}.`);
+const SOURCES = ["ladder", "hud", "reads"];
+if (args.only !== undefined && !SOURCES.includes(args.only)) {
+  console.error(`--only takes ${SOURCES.map(g => JSON.stringify(g)).join(", ")}, not ${JSON.stringify(args.only)}.`);
   process.exit(2);
 }
 if (args.only !== undefined && args.stamp) {
-  console.error("--only cannot be combined with --stamp: one pin, one sign-off on every group.");
+  console.error("--only cannot be combined with --stamp: one pin, one sign-off on every source.");
   process.exit(2);
 }
-const only = args.only as Group | undefined;
+const only = args.only as DepSource | undefined;
 
 const reviewed: Reviewed = JSON.parse(readFileSync(REVIEWED, "utf8"));
 
 function checkout(version: string): string {
-  const tag = `v${version}`;
-  const dir = path.resolve(".cache/pokerogue", tag);
+  const dir = checkoutOf(version);
   if (!existsSync(dir)) {
-    execFileSync("git", ["-c", "advice.detachedHead=false", "clone", "--quiet", "--depth", "1", "--branch", tag, REPO, dir], { stdio: "inherit" });
+    execFileSync("git", ["-c", "advice.detachedHead=false", "clone", "--quiet", "--depth", "1", "--branch", `v${version}`, REPO, dir], { stdio: "inherit" });
   }
   return dir;
 }
@@ -69,17 +68,11 @@ const version = args.version ?? reviewed.pinned.gameVersion;
 const source = args.source ? path.resolve(args.source) : checkout(version);
 const sha = execFileSync("git", ["-C", source, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
 
-const deps = new Map<string, { dependents: string[]; groups: Group[] }>();
-const lean = (ref: string, dependent: string, group: Group) => {
-  const d = deps.get(ref) ?? { dependents: [], groups: [] };
-  d.dependents.push(dependent);
-  if (!d.groups.includes(group)) d.groups.push(group);
-  deps.set(ref, d);
-};
-for (const [screen, entry] of Object.entries(LADDER as Record<string, Entry>)) for (const ref of entry.deps) lean(ref, screen, "ladder");
-for (const ref of GLOBAL_DEPS) lean(ref, "(every screen)", "ladder");
+const deps: Leans = new Map();
+for (const [screen, entry] of Object.entries(LADDER as Record<string, Entry>)) for (const ref of entry.deps) lean(deps, ref, screen, "ladder");
+for (const ref of GLOBAL_DEPS) lean(deps, ref, "(every screen)", "ladder");
 for (const [module, list] of Object.entries(HUD_DEPS as Record<string, readonly string[]>)) {
-  for (const ref of list) lean(ref, `hud/${module}`, "hud");
+  for (const ref of list) lean(deps, ref, `hud/${module}`, "hud");
 }
 
 const game = new GameSource(source);
@@ -97,34 +90,37 @@ const found = drift({
   language: builtinNames(ROOT, true),
 });
 
-const shown = (list: Item[]) => (only === undefined ? list : list.filter(i => i.groups.includes(only)));
-const lines = (list: string[]) => (only === undefined || only === "reads" ? list : []);
-const report = (label: string, list: Item[]) => {
-  if (list.length === 0) return;
-  console.log(`\n${label} (${list.length}):`);
-  for (const i of list) console.log(`  ${i.ref}\n      re-read: ${i.dependents.join(", ")}`);
-};
-const reportLines = (label: string, list: string[]) => {
-  if (list.length === 0) return;
-  console.log(`\n${label} (${list.length}):`);
-  for (const line of list) console.log(`  ${line}`);
-};
+const shown = (list: Finding[]) => (only === undefined ? list : list.filter(i => i.sources.includes(only)));
+const lines = (list: string[], from: DepSource = "reads") => (only === undefined || only === from ? list : []);
+const findings: [string, Finding[]][] = [
+  ["MOVED — the body changed since review", shown(found.moved)],
+  ["MISSING — no such unit, member or literal at this ref", shown(found.missing)],
+  ["UNREVIEWED — never stamped", shown(found.unreviewed)],
+];
+const plain: [string, string[]][] = [
+  ["MISPLACED — mode or handler differs at this ref", lines(found.misplaced, "ladder")],
+  ["ADDED — a member the game added to a set we mirror or switch on", lines(found.added)],
+  ["SHIFTED — src/enums/generated.ts regenerated at this ref changes these", lines(found.shifted)],
+  ["UNREGISTERED — read by a scanned file, declared by the game, in no registry entry", lines(found.unregistered)],
+];
 
-const inGroup = (group: Group) => [...deps.values()].filter(d => d.groups.includes(group)).length;
-const registered = Object.values(REGISTRY).reduce((n, a) => n + a.reads.length + (a.mirrors?.length ?? 0) + (a.sets?.length ?? 0), 0);
+const from = (s: DepSource) => [...deps.values()].filter(d => d.sources.includes(s)).length;
 console.log(`drift: ${source} @ ${sha.slice(0, 7)} (game ${version}); pinned ${reviewed.pinned.gameVersion}`);
 console.log(
-  `${deps.size} deps: ${inGroup("ladder")} across ${Object.keys(LADDER).length} ladder entries, ` +
-    `${inGroup("hud")} across ${Object.keys(HUD_DEPS).length} HUD modules; ${registered} registry entries; ` +
+  `${deps.size} deps: ${from("ladder")} across ${Object.keys(LADDER).length} ladder entries, ` +
+    `${from("hud")} across ${Object.keys(HUD_DEPS).length} HUD modules; ${registryEntries(REGISTRY)} registry entries; ` +
     `${Object.keys(found.hashes).length} hashes in all` + (only === undefined ? "" : ` — reporting ${only} only`),
 );
-report("MOVED — the body changed since review", shown(found.moved));
-report("MISSING — no such unit, member or literal at this ref", shown(found.missing));
-report("UNREVIEWED — never stamped", shown(found.unreviewed));
-reportLines("MISPLACED — mode or handler differs at this ref", only === "hud" || only === "reads" ? [] : found.misplaced);
-reportLines("ADDED — a member the game added to a set we mirror or switch on", lines(found.added));
-reportLines("SHIFTED — src/enums/generated.ts regenerated at this ref changes these", lines(found.shifted));
-reportLines("UNREGISTERED — read by a scanned file, declared by the game, in no registry entry", lines(found.unregistered));
+for (const [label, list] of findings) {
+  if (list.length === 0) continue;
+  console.log(`\n${label} (${list.length}):`);
+  for (const i of list) console.log(`  ${i.ref}\n      re-read: ${i.dependents.join(", ")}`);
+}
+for (const [label, list] of plain) {
+  if (list.length === 0) continue;
+  console.log(`\n${label} (${list.length}):`);
+  for (const line of list) console.log(`  ${line}`);
+}
 
 if (args.stamp) {
   const blocking = Object.entries(blockers(found)).filter(([, n]) => n > 0);
@@ -168,11 +164,7 @@ if (args.stamp) {
   process.exit(0);
 }
 
-const failing =
-  shown(found.moved).length + shown(found.missing).length + shown(found.unreviewed).length +
-  (only === "hud" || only === "reads" ? 0 : found.misplaced.length) +
-  lines(found.added).length + lines(found.shifted).length + lines(found.unregistered).length;
-if (failing > 0) {
+if ([...findings, ...plain].some(([, list]) => list.length > 0)) {
   console.log(
     "\nFAIL: re-read the named entries — screens in src/escape-ladder/table.ts, HUD modules in " +
       "skills/coachemon/scripts/hud/ (their deps are listed in scripts/hud-deps.ts), game reads in " +

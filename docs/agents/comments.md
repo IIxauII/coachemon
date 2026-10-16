@@ -70,8 +70,8 @@ section pointer without absorbing it:
 ### Where a fact lives
 
 - **The game's actual behaviour** → `game-code.md`. Cite it freely. **Correct** it where you find it wrong about the
-  game, or find behaviour that went untracked: a subagent verifies the claim against the pinned source
-  (`v1.12.0.11`), and only then does the fact land in `game-code.md`, in the same change as the comment that cites it.
+  game, or find behaviour that went untracked: a subagent verifies the claim against the pinned source (`pinned` in
+  `reviewed.json`), and only then does the fact land in `game-code.md`, in the same change as the comment that cites it.
   **Never extend it** with logic derived from this repo.
 - **A decision this repo made** → `docs/spec/*.md` where one covers the area; else the code that enforces it
   (`hud-bundle.mjs`'s header holds the module rules, and a test fails if the bundler drifts from them); else the ticket,

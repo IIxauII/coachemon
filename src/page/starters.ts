@@ -31,7 +31,7 @@ export function starters(L: Located, _args: Record<string, never>): StartersResu
   const __try = (f: () => any) => { try { return f(); } catch (e) { return null; } };
   const h = __try(() => L.ui.handlers[L.m.STARTER_SELECT]);
   const gd = __try(() => L.scene.gameData);
-  // Gotcha: the grid keeps only its 81 on-screen containers, so a species is named through `setSpecies` on a bare
+  // The grid keeps only its 81 on-screen containers, so a species is named through `setSpecies` on a bare
   // object. It looks the species up before it reads `props`, and with none throws before it adds a sprite.
   const setSpecies = __try(() => Object.getPrototypeOf(h.starterContainers[0]).setSpecies);
   const nameOf = (id: number): string | null => __try(() => {

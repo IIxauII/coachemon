@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import ts from "typescript";
+import { refParts } from "../game-reads/types.ts";
 
 const printer = ts.createPrinter({ removeComments: true });
 
@@ -31,15 +32,16 @@ function containers(sf: ts.SourceFile, name: string): ts.Node[] {
   return [...top, ...deep];
 }
 
-/** `this.<name> = …` statements anywhere in a class body. */
-function thisAssignments(cls: ts.ClassDeclaration, name: string): ts.Node[] {
-  const out: ts.Node[] = [];
+type ThisAssignment = ts.BinaryExpression & { left: ts.PropertyAccessExpression };
+
+/** `this.<name> = …` assignments anywhere in a class body, a nested class's own left out. */
+function thisAssignments(cls: ts.ClassDeclaration): ThisAssignment[] {
+  const out: ThisAssignment[] = [];
   const visit = (n: ts.Node): void => {
     if (
       ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
-      ts.isPropertyAccessExpression(n.left) && n.left.expression.kind === ts.SyntaxKind.ThisKeyword &&
-      n.left.name.text === name
-    ) out.push(n);
+      ts.isPropertyAccessExpression(n.left) && n.left.expression.kind === ts.SyntaxKind.ThisKeyword
+    ) out.push(n as ThisAssignment);
     if (!ts.isClassDeclaration(n) || n === cls) ts.forEachChild(n, visit);
   };
   visit(cls);
@@ -74,16 +76,15 @@ export class GameSource {
   }
 
   /**
-   * The node a ref names. Methods, getters, constructors, functions, enums and top-level variables print exactly as
-   * the stamped hashes were taken; classes, fields, interface members and enum members came later and never shadow them.
+   * The node a ref names. A function, enum or top-level variable wins over a class or type of the same name, and a
+   * method, getter or constructor over a field. Reordering them moves stamped hashes.
    */
   unit(ref: string): ts.Node | undefined {
-    const [file, symbol] = ref.split("#", 2);
+    const { file, symbol, outer, member } = refParts(ref);
     const sf = this.file(file);
-    if (!sf || symbol === undefined) return undefined;
+    if (!sf || symbol === "") return undefined;
     // `file#*` is the whole module: what the game does at its top level has no unit of its own.
     if (symbol === "*") return sf;
-    const [outer, member] = symbol.includes(".") ? symbol.split(".", 2) : [symbol, undefined];
     if (member === undefined) {
       for (const node of sf.statements) {
         if (ts.isFunctionDeclaration(node) && node.name?.text === outer) return node;
@@ -108,7 +109,7 @@ export class GameSource {
         const ctor = node.members.find(ts.isConstructorDeclaration);
         const param = ctor?.parameters.find(p => ts.getModifiers(p)?.length && ts.isIdentifier(p.name) && p.name.text === member);
         if (param) return param;
-        return thisAssignments(node, member)[0];
+        return thisAssignments(node).find(a => a.left.name.text === member);
       }
       const members = ts.isInterfaceDeclaration(node) || ts.isEnumDeclaration(node)
         ? node.members
@@ -174,14 +175,7 @@ export class GameSource {
               for (const p of m.parameters) if (ts.getModifiers(p)?.length && ts.isIdentifier(p.name)) add(p.name.text, `${file}#${cls}.${p.name.text}`);
             } else add(memberName(sf, m), `${file}#${cls}.${memberName(sf, m)}`);
           }
-          const scan = (k: ts.Node): void => {
-            if (
-              ts.isBinaryExpression(k) && k.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
-              ts.isPropertyAccessExpression(k.left) && k.left.expression.kind === ts.SyntaxKind.ThisKeyword
-            ) add(k.left.name.text, `${file}#${cls}.${k.left.name.text}`);
-            if (!ts.isClassDeclaration(k)) ts.forEachChild(k, scan);
-          };
-          n.members.forEach(scan);
+          for (const a of thisAssignments(n)) add(a.left.name.text, `${file}#${cls}.${a.left.name.text}`);
         } else if (ts.isInterfaceDeclaration(n)) {
           for (const m of n.members) add(memberName(sf, m), `${file}#${n.name.text}.${memberName(sf, m)}`);
         } else if (ts.isEnumDeclaration(n)) {

@@ -90,7 +90,7 @@ export const moveTraits = (mv, user = null, { party = null, target = null } = {}
   const inflicts = attrsNamed(mv, "StatusEffectAttr").map(a => ({ effect: a.effect, chance: mv?.chance ?? -1, ...sideFlags(mv, a), cls: a.constructor?.name ?? "" }));
   const tags = attrsNamed(mv, "AddBattlerTagAttr").map(a => ({ tag: a.tagType, ...sideFlags(mv, a), cls: a.constructor?.name ?? "" }));
   const healAttr = firstAttr(mv, "HealAttr");
-  // Gotcha: a `VariableHealAttr` is built with `healRatio` 1 and its `apply` overwrites it with the last use's ratio,
+  // A `VariableHealAttr` is built with `healRatio` 1 and its `apply` overwrites it with the last use's ratio,
   // so only `healFunc` answers for this user.
   const ratioIn = (u = user) => {
     if (typeof healAttr.healFunc !== "function") return healAttr.healRatio ?? 0.5;

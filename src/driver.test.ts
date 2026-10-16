@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test, type TestContext } from "node:test";
@@ -7,6 +7,7 @@ import { Driver } from "./driver.ts";
 import { KEPT_ENDED, type JobKinds, type JobWork } from "./jobs.ts";
 import { ArenaTagSide, Button, GameModes, MoveCategory, PokemonType, StatusEffect, UiMode } from "./enums/generated.ts";
 import { Refusal } from "./envelope.ts";
+import { readAtPin } from "./escape-ladder/at-pin.ts";
 import { PINNED_GAME_VERSION } from "./escape-ladder/lookup.ts";
 import { fakeGame, type FakeScreen, type ScreenRead } from "./game/fake-game.ts";
 import { GORDIE_LINE } from "./game/fixtures/oracle-line.ts";
@@ -1313,12 +1314,8 @@ test("solving answers with nothing able to reach the game (extension-distributio
   assert.deepEqual(await drive({ unreachable }, tempHome(t)).driver.solving(true), { status: "ok", solving: true });
 });
 
-// Gotcha: a known fight carries the game version it was recorded on, and solving refuses any version but the pin, so it
-// is read as recorded at the pin.
-const DRAYTON: { save: Record<string, unknown>; live: { wave: number; battleSeed: string }; liveExport: Record<string, unknown> } = JSON.parse(
-  readFileSync(new URL("./solver/fixtures/drayton-w188.json", import.meta.url), "utf8"),
-  (key, value) => (key === "gameVersion" ? PINNED_GAME_VERSION : value),
-);
+const DRAYTON: { save: Record<string, unknown>; live: { wave: number; battleSeed: string }; liveExport: Record<string, unknown> } =
+  readAtPin(new URL("./solver/fixtures/drayton-w188.json", import.meta.url), "gameVersion");
 
 /** The session read at Drayton's first decision, with `save` standing in for its wave-start save. */
 const draytonRead = (save: Record<string, unknown> = DRAYTON.save) => () =>

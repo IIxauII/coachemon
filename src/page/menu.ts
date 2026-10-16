@@ -160,7 +160,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
     } else if (mode === m.STARTER_SELECT) {
       out.family = "starter_select";
       const gd = scene.gameData;
-      // Gotcha: the grid keeps only its 81 on-screen containers, so a species is named through `setSpecies` on a bare
+      // The grid keeps only its 81 on-screen containers, so a species is named through `setSpecies` on a bare
       // object. It looks the species up before it reads `props`, and with none throws before it adds a sprite.
       const setSpecies = __try(() => Object.getPrototypeOf(h.starterContainers[0]).setSpecies);
       const nameOf = (id: number): string | null => __try(() => {

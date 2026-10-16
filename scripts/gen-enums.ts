@@ -69,7 +69,7 @@ export type Generated = {
   /** Each enum's members in source order, as `src/enums/generated.ts` holds them. */
   enums: Record<string, [string, number][]>;
   modifiers: Record<string, string[]>;
-  generated: string;
+  enumsText: string;
   modifiersText: string;
 };
 
@@ -118,7 +118,7 @@ export async function generate(read: (file: string) => string | Promise<string>,
   for (const [name, members] of Object.entries(modifiers)) {
     modifierLines.push(`export const ${name}: ReadonlySet<string> = new Set([`, ...members.map(m => `  "${m}",`), "]);", "");
   }
-  return { enums: parsed, modifiers, generated: lines.join("\n"), modifiersText: modifierLines.join("\n") };
+  return { enums: parsed, modifiers, enumsText: lines.join("\n"), modifiersText: modifierLines.join("\n") };
 }
 
 async function main(): Promise<void> {
@@ -145,7 +145,7 @@ async function main(): Promise<void> {
   const counts = (tables: Record<string, unknown[]>) =>
     Object.entries(tables).map(([name, members]) => `${name}=${members.length}`).join(", ");
   const outputs: [URL, string, string][] = [
-    [OUT, out.generated, counts(out.enums)],
+    [OUT, out.enumsText, counts(out.enums)],
     [MODIFIERS_OUT, out.modifiersText, counts(out.modifiers)],
   ];
   for (const [file, text, tally] of outputs) {

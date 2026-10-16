@@ -289,9 +289,9 @@ module the harness imports, a table it reads by shape. Every game read is regist
 so a new **game version** that renames or drops one is caught before the pin moves, not by a card that goes quiet.
 
 A **mirror** is a game read written down by hand: a constant of ours that copies game data (a biome's links, a tier's
-cut, a title option's index) and goes stale without a word when the game changes it. A **game set** is a list of the
-game's we switch on (its UI modes, phases, challenges), whose members we know; a member the game adds is one we have
-not handled yet.
+cut, a title option's index) and goes stale without a word when the game changes it. A **game set** is one of the
+game's lists that we switch on (its UI modes, phases, challenges), whose members we know; a member the game adds is one
+we have not handled yet.
 
 ## Preview
 
