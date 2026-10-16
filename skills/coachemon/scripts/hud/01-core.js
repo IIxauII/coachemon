@@ -104,7 +104,7 @@ export const CONTACT_PUNISH = ["Iron Barbs", "Rough Skin", "Static", "Flame Body
 
 // (CONTEXT.md, `Trap`)
 export const MOVE_TRAPS = new Set([...Object.keys(ABILITY_IMMUNE), ...Object.keys(ABILITY_IMMUNE_FLAG), "Wonder Guard",
-  "Thick Fat", "Heatproof", "Fluffy", "Solid Rock", "Filter", "Prism Armor", "Intimidate",
+  "Thick Fat", "Heatproof", "Fluffy", "Aura Guard", "Solid Rock", "Filter", "Prism Armor", "Intimidate",
   ...CONTACT_PUNISH]);
 export const FIELD_TRAPS = new Set(["Guts", "Simple", "Weak Armor", "Stamina",
   "Justified", "Defiant", "Competitive", "Moxie", "Beast Boost", "Speed Boost", "Shed Skin", "Natural Cure", "Regenerator", "Unaware", "Magic Guard", "Marvel Scale", "Fur Coat"]);

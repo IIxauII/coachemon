@@ -83,6 +83,14 @@ const scenarios = {
     foes: [
       mon("Druddigon", 40, ["Dragon"], "Rough Skin", [140,100,90,60,80,50], [["Tackle","Normal",40,"P"]], true),
       mon("Krookodile", 40, ["Ground","Dark"], "Moxie", [150,110,90,60,80,90], [["Crunch","Dark",80,"P"]], true)] },
+  // A contact move in the pool runs into Aura Guard, so the row marks it.
+  auraGuard: { double: false, party: [
+    mon("Scrafty", 64, ["Dark","Fighting"], "Shed Skin", [163,152,172,63,165,80], [["Brick Break","Fighting",75,"P",3,MoveFlags.MAKES_CONTACT]], true)],
+    foes: [mon("Lucario", 40, ["Fighting","Steel"], "Aura Guard", [120,90,70,100,70,90], [["Tackle","Normal",40,"P"]], true)] },
+  // A physical move that makes no contact misses Aura Guard, so the row stays clear.
+  auraGuardNoContact: { double: false, party: [
+    mon("Garchomp", 64, ["Dragon","Ground"], "Sand Veil", [200,170,120,100,100,150], [["Earthquake","Ground",100,"P"]], true)],
+    foes: [mon("Lucario", 40, ["Fighting","Steel"], "Aura Guard", [120,90,70,100,70,90], [["Tackle","Normal",40,"P"]], true)] },
   // Sturdy is no trap on either line: the KO count already carries it.
   modelled: { double: false, party: [
     mon("Scrafty", 64, ["Dark","Fighting"], "Shed Skin", [163,152,172,63,165,80], [["Brick Break","Fighting",75,"P"]], true)],

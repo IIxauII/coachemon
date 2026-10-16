@@ -120,6 +120,20 @@ we're weak to Electric ×2
 Druddigon Druddigon L40 Dragon 100% ✦ Rough Skin ▲ — ↯ Normal Tackle → Blastoise moves after
 Krookodile Krookodile L40 Ground Dark 100% ✦ Moxie ▲ Water ↯ Dark Crunch → Charizard moves after
 summary easy | Charizard Flare Blitz → Krookodile · 2 hits ; Blastoise Hydro Pump → Krookodile · 1 hit
+== auraGuard
+⌃ {Hide the drawer} × {Close}
+easy 🎯 W89 Scrafty Brick Break → Lucario · 1 hit
+⚔ Scrafty Fighting Brick Break → Lucario 1 hit
+Foes
+Lucario Lucario L40 Fighting Steel 100% ✦ Aura Guard ▲ Fighting ↯ Normal Tackle → Scrafty moves first
+summary easy | Scrafty Brick Break → Lucario · 1 hit
+== auraGuardNoContact
+⌃ {Hide the drawer} × {Close}
+easy 🎯 W89 Garchomp Earthquake → Lucario · 1 hit
+⚔ Garchomp Ground Earthquake → Lucario 1 hit
+Foes
+Lucario Lucario L40 Fighting Steel 100% ▲ Ground ↯ Normal Tackle → Garchomp moves after
+summary easy | Garchomp Earthquake → Lucario · 1 hit
 == modelled
 ⌃ {Hide the drawer} × {Close}
 easy 🎯 W89 Scrafty Brick Break → Pineco · 1 hit
