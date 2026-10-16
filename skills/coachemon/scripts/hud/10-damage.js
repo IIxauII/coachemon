@@ -417,7 +417,7 @@ const endOfTurnSteps = (env, p, { tookSuperEffective = false, hp = p.hp, dealt =
   if (env?.terrain === TerrainType.GRASSY && (p.isGrounded?.() ?? !types.includes(PokemonType.FLYING))) queued(frac(max, 16));
   if (p.isPlayer?.() === false) {
     for (const m of (env?.enemyModifiers ?? []).filter(x => x.constructor.name === "EnemyTurnHealModifier")) {
-      // Gotcha: `preventFullHeal` caps the amount at max − 1, not the HP, so the token can heal to full.
+      // `preventFullHeal` caps the amount at max − 1, not the HP, so the token can heal to full.
       queued((max * (m.getStackCount?.() ?? 1) * (m.healPercent ?? 2)) / 100, max, max - 1);
     }
   }

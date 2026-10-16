@@ -21,14 +21,14 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const HUD = path.resolve(HERE, "../../skills/coachemon/scripts/hud");
 
 /** The clone pinned to the reviewed game version, or what it lacks and the command that provides it. */
-export const findPinnedClone = (): FoundClone => findClone(path.resolve(".cache/pokerogue", `v${reviewed.pinned.gameVersion}`));
+export const findPinnedClone = (): FoundClone => findClone(checkoutOf(reviewed.pinned.gameVersion));
 
 type Env = Record<string, string | undefined>;
 
 /** The game version the suite's clone steps run at: the pin, or `COACHEMON_GAME_VERSION` during a bump, before its stamp. */
 export const suiteVersion = (env: Env = process.env): string => env.COACHEMON_GAME_VERSION || reviewed.pinned.gameVersion;
 
-const checkoutOf = (version: string, cwd: string) => path.resolve(cwd, ".cache/pokerogue", `v${version}`);
+export const checkoutOf = (version: string, cwd = process.cwd()): string => path.resolve(cwd, ".cache/pokerogue", `v${version}`);
 
 /** The drift checkout at the suite's version, or what it lacks and the command that provides it. */
 export const findSuiteClone = (env: Env = process.env, cwd = process.cwd()): FoundClone => {
@@ -40,7 +40,6 @@ export const findSuiteClone = (env: Env = process.env, cwd = process.cwd()): Fou
   };
 };
 
-/** The pin a player's clone at the suite's version is set up from: read off its drift checkout until a stamp writes it. */
 /** The pin a stamp records for the game checkout at `source`: its commit, its submodules and the pnpm it names. */
 export const pinOf = (gameVersion: string, source: string): ClonePin => {
   const rev = (what: string) => execFileSync("git", ["-C", source, "rev-parse", what], { encoding: "utf8" }).trim();
@@ -50,6 +49,7 @@ export const pinOf = (gameVersion: string, source: string): ClonePin => {
   return { gameVersion, sha: rev("HEAD"), locales: rev("HEAD:locales"), assets: rev("HEAD:assets"), pnpm };
 };
 
+/** The pin a player's clone at the suite's version is set up from: read off its drift checkout until a stamp writes it. */
 export const suitePin = (env: Env = process.env, cwd = process.cwd()): ClonePin => {
   const gameVersion = env.COACHEMON_GAME_VERSION;
   if (!gameVersion) return reviewed.pinned;

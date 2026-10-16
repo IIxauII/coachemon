@@ -1,6 +1,8 @@
 import { spawn } from "node:child_process";
 import { createWriteStream, mkdirSync, readFileSync } from "node:fs";
 import path from "node:path";
+import pkg from "../../package.json" with { type: "json" };
+import { checkoutOf } from "../clone-test/clone-test.ts";
 
 /** `command` runs through the shell, from the repo root. */
 export type Step = { name: string; command: string; env?: Record<string, string> };
@@ -14,13 +16,14 @@ export const logsAt = (version: string): string => path.join(".cache/bump-suite"
  */
 export const steps = (version: string): Step[] => {
   const at = { COACHEMON_GAME_VERSION: version };
+  const [unit, goldens] = pkg.scripts.test.split(" && ");
   return [
     { name: "typecheck", command: "npm run typecheck" },
-    { name: "unit tests", command: `node --test "src/**/*.test.ts" "scripts/**/*.test.ts"` },
-    { name: "HUD goldens", command: "node skills/coachemon/scripts/test/run.mjs" },
+    { name: "unit tests", command: unit },
+    { name: "HUD goldens", command: goldens },
     {
       name: "enums:gen --check",
-      command: `npm run enums:gen -- --check --version ${version} --source .cache/pokerogue/v${version}`,
+      command: `npm run enums:gen -- --check --version ${version} --source ${checkoutOf(version)}`,
     },
     { name: "clone:smoke", command: "npm run clone:smoke", env: at },
     { name: "oracle:encounter", command: "npm run oracle:encounter", env: at },

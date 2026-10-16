@@ -62,7 +62,7 @@ export function cursorOption(L: Located, args: { index: number; fine: string }):
   const scroll = Math.max(0, Math.min(to - h.maxOptions + 1, options.length - h.maxOptions));
   if (h.scrollCursor !== scroll) h.setScrollCursor(scroll);
   h.setCursor(to - scroll);
-  // Gotcha: passing over an unselectable option arms `repeatInput`, and the next press would run twice.
+  // Passing over an unselectable option arms `repeatInput`, and the next press would run twice.
   h.repeatInput = false;
   return { ok: true, fullCursor: selectable.indexOf(h.cursor + h.scrollCursor), cursor: h.cursor, fine: L.fine() };
 }

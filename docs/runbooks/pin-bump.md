@@ -27,7 +27,8 @@ npm run drift:check -- --version <new>
 
 `reads:check` holds at any version: every game name our code reads (in the page readers, the server files that read
 the page, the HUD scripts and the harness template) is registered in `scripts/game-reads/registry/`. A read with no
-entry is **UNREGISTERED**, and an entry nothing reads is **STALE**. It runs inside `npm test` too.
+entry is **UNREGISTERED**, an entry nothing reads is **STALE**, and an entry that names no game ref (an empty `at`
+with no `from`, or a mirror with an empty `of`) is **INVALID**. It runs inside `npm test` too.
 
 `drift:check` clones `.cache/pokerogue/v<new>` and names every dep whose body **MOVED**, is **MISSING** or was never
 stamped (**UNREVIEWED**), each with the ladder entry, HUD module or registry entry that leans on it, and every ladder

@@ -120,8 +120,8 @@ const REGISTRY: Registry = {
 };
 
 const DEPS: DriftInput["deps"] = new Map([
-  ["src/field/pokemon.ts#EnemyPokemon.generateAndPopulateMoveset", { dependents: ["hud/49-ahead.js"], groups: ["hud"] }],
-  [`${SSU}#StarterSelectUiHandler.processInput`, { dependents: ["STARTER_SELECT"], groups: ["ladder"] }],
+  ["src/field/pokemon.ts#EnemyPokemon.generateAndPopulateMoveset", { dependents: ["hud/49-ahead.js"], sources: ["hud"] }],
+  [`${SSU}#StarterSelectUiHandler.processInput`, { dependents: ["STARTER_SELECT"], sources: ["ladder"] }],
 ]);
 
 const at = (version: string, hashes: Record<string, string>): Drift =>
@@ -134,7 +134,7 @@ const at = (version: string, hashes: Record<string, string>): Drift =>
     reads: scan(OURS, tables),
     tables,
     modifiers: {},
-    regenerated: { enums: enumsAt(version), modifiers: {}, generated: "", modifiersText: "" },
+    regenerated: { enums: enumsAt(version), modifiers: {}, enumsText: "", modifiersText: "" },
     language: new Set(["length", "getItem"]),
   });
 

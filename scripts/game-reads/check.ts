@@ -45,8 +45,8 @@ export function scan(
 export function program(root: string, files: string[]): (file: string) => Typed | undefined {
   const config = ts.readConfigFile(path.join(root, "tsconfig.json"), ts.sys.readFile).config;
   const { options } = ts.parseJsonConfigFileContent(config, ts.sys, root);
-  const ts_ = files.filter(f => f.endsWith(".ts")).map(f => path.join(root, f));
-  const p = ts.createProgram(ts_, { ...options, noEmit: true });
+  const tsFiles = files.filter(f => f.endsWith(".ts")).map(f => path.join(root, f));
+  const p = ts.createProgram(tsFiles, { ...options, noEmit: true });
   const checker = p.getTypeChecker();
   return file => {
     const sf = file.endsWith(".ts") ? p.getSourceFile(path.join(root, file)) : undefined;

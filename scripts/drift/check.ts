@@ -11,15 +11,26 @@ import type { Tables } from "../game-reads/scan.ts";
 import { type GameSet, oursOf, refParts } from "../game-reads/types.ts";
 import { GameSource, hash } from "./source.ts";
 
-export type Group = "ladder" | "hud" | "reads";
-export type Item = { ref: string; dependents: string[]; groups: Group[] };
+/** Which hand-kept list leans on a ref: the escape ladder, the HUD's deps, or the registry of game reads. */
+export type DepSource = "ladder" | "hud" | "reads";
+export type Finding = { ref: string; dependents: string[]; sources: DepSource[] };
+
+/** Each ref with who leans on it and from which lists. */
+export type Leans = Map<string, { dependents: string[]; sources: DepSource[] }>;
+
+export function lean(into: Leans, ref: string, dependent: string, source: DepSource): void {
+  const d = into.get(ref) ?? { dependents: [], sources: [] };
+  if (!d.dependents.includes(dependent)) d.dependents.push(dependent);
+  if (!d.sources.includes(source)) d.sources.push(source);
+  into.set(ref, d);
+}
 
 export type Drift = {
   /** What `--stamp` records: every hash drift could take. */
   hashes: Record<string, string>;
-  moved: Item[];
-  missing: Item[];
-  unreviewed: Item[];
+  moved: Finding[];
+  missing: Finding[];
+  unreviewed: Finding[];
   misplaced: string[];
   added: string[];
   shifted: string[];
@@ -30,7 +41,7 @@ export type DriftInput = {
   source: GameSource;
   hashes: Readonly<Record<string, string>>;
   /** The hand-registered deps (ladder entries, HUD modules), each with who leans on it. */
-  deps: ReadonlyMap<string, { dependents: readonly string[]; groups: readonly Group[] }>;
+  deps: ReadonlyMap<string, { readonly dependents: readonly string[]; readonly sources: readonly DepSource[] }>;
   ladder: Readonly<Record<string, Entry>>;
   registry: Registry;
   reads: readonly ScannedRead[];
@@ -150,21 +161,15 @@ export function members(source: GameSource, ref: string): string[] | null {
 
 export function drift(input: DriftInput): Drift {
   const { source } = input;
-  const items = new Map<string, { dependents: Set<string>; groups: Set<Group> }>();
-  const lean = (ref: string, dependent: string, group: Group) => {
-    const it = items.get(ref) ?? { dependents: new Set(), groups: new Set() };
-    it.dependents.add(dependent);
-    it.groups.add(group);
-    items.set(ref, it);
-  };
-  for (const [ref, d] of input.deps) for (const g of d.groups) for (const who of d.dependents) lean(ref, who, g);
-  for (const ref of [...input.deps.keys()]) {
-    const d = input.deps.get(ref)!;
-    for (const c of callees(source, ref)) if (!input.deps.has(c)) for (const g of d.groups) lean(c, `callee of ${ref}`, g);
+  const items: Leans = new Map();
+  const on = (ref: string, dependent: string, from: DepSource) => lean(items, ref, dependent, from);
+  for (const [ref, d] of input.deps) for (const s of d.sources) for (const who of d.dependents) on(ref, who, s);
+  for (const [ref, d] of input.deps) {
+    for (const c of callees(source, ref)) if (!input.deps.has(c)) for (const s of d.sources) on(c, `callee of ${ref}`, s);
   }
 
-  const missing: Item[] = [];
-  const miss = (ref: string, dependents: string[], groups: Group[] = ["reads"]) => missing.push({ ref, dependents, groups });
+  const missing: Finding[] = [];
+  const miss = (ref: string, dependents: string[]) => missing.push({ ref, dependents, sources: ["reads"] });
 
   const registered = new Set<string>();
   const libs = new Map<keyof typeof LIBS, string[]>();
@@ -173,7 +178,7 @@ export function drift(input: DriftInput): Drift {
       registered.add(r.name);
       const who = `${area}: ${r.kind} ${r.name}`;
       if (r.from === "phaser" || r.from === "vitest") libs.set(r.from, [...(libs.get(r.from) ?? []), who]);
-      for (const ref of r.at) lean(ref, who, "reads");
+      for (const ref of r.at) on(ref, who, "reads");
       if (r.kind === "phase") {
         for (const ref of r.at) {
           const text = source.text(ref);
@@ -187,36 +192,31 @@ export function drift(input: DriftInput): Drift {
       } else if (r.kind === "import") {
         const resolved = source.resolve(r.name);
         if (resolved === null) miss(`${r.name} (resolves to no file)`, [who]);
-        else for (const ref of r.at) if (ref.split("#", 1)[0] !== resolved) miss(`${ref} (${r.name} now resolves to ${resolved})`, [who]);
+        else for (const ref of r.at) if (refParts(ref).file !== resolved) miss(`${ref} (${r.name} now resolves to ${resolved})`, [who]);
       }
     }
-    for (const m of a.mirrors ?? []) for (const ours of oursOf(m)) for (const ref of m.of) lean(ref, `${area}: mirror ${ours}`, "reads");
+    for (const m of a.mirrors ?? []) for (const ours of oursOf(m)) for (const ref of m.of) on(ref, `${area}: mirror ${ours}`, "reads");
   }
 
   const hashes: Record<string, string> = {};
-  const moved: Item[] = [];
-  const unreviewed: Item[] = [];
-  const pkg = source.packageJson();
+  const moved: Finding[] = [];
+  const unreviewed: Finding[] = [];
+  const compare = (found: Finding, h: string) => {
+    hashes[found.ref] = h;
+    const was = input.hashes[found.ref];
+    if (was === undefined) unreviewed.push(found);
+    else if (was !== h) moved.push(found);
+  };
   for (const [ref, it] of [...items].sort(([a], [b]) => a.localeCompare(b))) {
-    const item = { ref, dependents: [...it.dependents], groups: [...it.groups] };
+    const found = { ref, ...it };
     const h = source.hashOf(ref);
-    if (h === null) {
-      missing.push(item);
-      continue;
-    }
-    hashes[ref] = h;
-    const was = input.hashes[ref];
-    if (was === undefined) unreviewed.push(item);
-    else if (was !== h) moved.push(item);
+    if (h === null) missing.push(found);
+    else compare(found, h);
   }
+  const pkg = source.packageJson();
   for (const [lib, who] of libs) {
     const [section, name] = LIBS[lib];
-    const key = `package.json#${section}.${name}`;
-    const h = hash(String(pkg[section]?.[name] ?? ""));
-    hashes[key] = h;
-    const item = { ref: key, dependents: who, groups: ["reads" as Group] };
-    if (input.hashes[key] === undefined) unreviewed.push(item);
-    else if (input.hashes[key] !== h) moved.push(item);
+    compare({ ref: `package.json#${section}.${name}`, dependents: who, sources: ["reads"] }, hash(String(pkg[section]?.[name] ?? "")));
   }
 
   const added: string[] = [];
@@ -228,7 +228,7 @@ export function drift(input: DriftInput): Drift {
         continue;
       }
       const handle = set.handledIn.length ? ` — handle in ${set.handledIn.join(", ")}` : "";
-      for (const m of now) if (!set.known.includes(m)) added.push(`${set.at.split("#", 2)[1]}.${m} (${set.at})${handle}`);
+      for (const m of now) if (!set.known.includes(m)) added.push(`${refParts(set.at).symbol}.${m} (${set.at})${handle}`);
       for (const m of set.known) if (!now.includes(m)) miss(`${set.at} member ${m}`, [`${area}: game set`]);
     }
   }

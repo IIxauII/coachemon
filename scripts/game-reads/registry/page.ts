@@ -57,7 +57,7 @@ export const PAGE: Area = {
       kind: "field",
       at: [],
       from: "ours",
-      note: "ABSENT: fallback after scene.arena.biomeId for an older build; v1.12.0.11 has only src/field/arena.ts#Arena.biomeId",
+      note: "ABSENT: fallback after scene.arena.biomeId for an older build; the pinned game has only src/field/arena.ts#Arena.biomeId",
     },
     {
       name: "blockExit",
@@ -517,7 +517,7 @@ export const PAGE: Area = {
       kind: "field",
       at: [],
       from: "ours",
-      note: "ABSENT: fallback after partyDiscardModeButton for an older build; v1.12.0.11 has only src/ui/handlers/party-ui-handler.ts#PartyUiHandler.partyDiscardModeButton",
+      note: "ABSENT: fallback after partyDiscardModeButton for an older build; the pinned game has only src/ui/handlers/party-ui-handler.ts#PartyUiHandler.partyDiscardModeButton",
     },
     { name: "partyUiMode", kind: "field", at: ["src/ui/handlers/party-ui-handler.ts#PartyUiHandler.partyUiMode"] },
     { name: "passiveAttr", kind: "field", at: ["src/@types/save-data.ts#StarterDataEntry.passiveAttr"] },

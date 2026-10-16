@@ -20,7 +20,7 @@ test("every step that reads the game runs at the version named, and nothing else
   const atVersion = all.filter(s => s.env?.COACHEMON_GAME_VERSION === "9.1.0").map(s => s.name);
   assert.deepEqual(atVersion, ["clone:smoke", "oracle:encounter", "oracle:preview"]);
   const enums = all.find(s => s.name === "enums:gen --check")!;
-  assert.match(enums.command, /--check --version 9\.1\.0 --source \.cache\/pokerogue\/v9\.1\.0/);
+  assert.match(enums.command, /--check --version 9\.1\.0 --source \S*\.cache\/pokerogue\/v9\.1\.0$/);
 });
 
 test("a run passes only when every step does, and keeps each step's output in its own log", async t => {

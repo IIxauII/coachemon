@@ -64,6 +64,5 @@ export const SERVER: Area = {
     { ours: "src/game/save.ts#SALTED", of: ["src/utils/data.ts#encrypt"] },
     { ours: "src/game/save.ts#SAVE_KEY", of: ["src/constants.ts#saveKey"] },
     { ours: "src/screen.ts#settings-mode-range", of: ["src/enums/ui-mode.ts#UiMode"] },
-    { ours: "src/stuck/hang.ts#MESSAGE", of: ["src/enums/ui-mode.ts#UiMode"] },
   ],
 };

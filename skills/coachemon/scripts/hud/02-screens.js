@@ -14,7 +14,7 @@ export const learnState = s => {
   return pk && pm ? { pk, mv: new pm.constructor(phase.moveId).getMove(), double, party } : null;
 };
 
-// Gotcha: a shop after a wild foe flees has no `options` but is a choice; only the shop closing empties its rows too.
+// A shop after a wild foe flees has no `options` but is a choice; only the shop closing empties its rows too.
 export const rewardsScreen = s => {
   const h = s.ui.getHandler();
   return s.ui.mode === UiMode.MODIFIER_SELECT && (h?.options?.length || h?.shopOptionsRows?.length) ? h : null;

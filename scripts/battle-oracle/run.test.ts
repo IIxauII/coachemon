@@ -1,19 +1,17 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { ArenaTagSide, GameModes } from "../../src/enums/generated.ts";
+import { readAtPin } from "../../src/escape-ladder/at-pin.ts";
 import { PINNED_GAME_VERSION } from "../../src/escape-ladder/lookup.ts";
 
 const RUN = fileURLToPath(new URL("./run.ts", import.meta.url));
 const FIXTURES = fileURLToPath(new URL("../../src/solver/fixtures/", import.meta.url));
-// Gotcha: the known fights carry the game version they were recorded on, and the gate refuses any version but the
-// pin, so they are read as recorded at the pin.
-const atPin = (file: string) =>
-  JSON.parse(readFileSync(path.join(FIXTURES, file), "utf8"), (key, value) => (key === "gameVersion" ? PINNED_GAME_VERSION : value));
+const atPin = (file: string) => readAtPin(path.join(FIXTURES, file), "gameVersion");
 const exported = atPin("drayton-w188.json");
 const drayton = exported.save;
 const SCRIPT = path.join(FIXTURES, "drayton-w188.win.script.json");
