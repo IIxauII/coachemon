@@ -4,7 +4,6 @@ import { parseArgs } from "node:util";
 import { PINNED_GAME_VERSION } from "../../src/escape-ladder/lookup.ts";
 import {
   checkForks,
-  type Clone,
   DEFAULT_BUDGET,
   type ReplayResult,
   readScript,
@@ -14,7 +13,7 @@ import {
   type SolveResult,
   solve,
 } from "../../src/solver/solver.ts";
-import { findPinnedClone, testInClone } from "../clone-test/clone-test.ts";
+import { findPinnedClone, harnessIn } from "../clone-test/clone-test.ts";
 import { printChecks, printOracleLine, printReplay } from "./print.ts";
 
 const ORACLE_LINE = 0;
@@ -49,11 +48,7 @@ try {
   exitNoAnswer(`could not read ${file}: ${messageOf(err)}`);
 }
 
-const inClone: Clone = async ({ name, source, input, env }) => {
-  const found = findPinnedClone();
-  if ("missing" in found) return { missing: `${found.missing} Set it up with \`${found.how}\`` };
-  return testInClone({ clone: found.clone, name, source, input, env, echo: false });
-};
+const inClone = harnessIn(findPinnedClone);
 
 const scripted = (path: string): Script => {
   try {

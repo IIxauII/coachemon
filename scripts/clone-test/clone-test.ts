@@ -7,14 +7,19 @@ import { fileURLToPath } from "node:url";
 // @ts-expect-error: plain .mjs without type declarations
 import { bundle } from "../../skills/coachemon/scripts/hud-bundle.mjs";
 import reviewed from "../../src/escape-ladder/reviewed.json" with { type: "json" };
+import type { Clone } from "../../src/solver/replay.ts";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const HUD = path.resolve(HERE, "../../skills/coachemon/scripts/hud");
-const VITEST = ["npx", "--yes", `pnpm@${reviewed.pinned.pnpm}`, "exec", "vitest"];
+const vitestOn = (pnpm: string) => ["npx", "--yes", `pnpm@${pnpm}`, "exec", "vitest"];
+const VITEST = vitestOn(reviewed.pinned.pnpm);
+
+type FoundClone = { clone: string } | { missing: string; how: string };
 
 /** The clone pinned to the reviewed game version, or what it lacks and the command that provides it. */
-export const findPinnedClone = (): { clone: string } | { missing: string; how: string } => {
-  const clone = path.resolve(".cache/pokerogue", `v${reviewed.pinned.gameVersion}`);
+export const findPinnedClone = (): FoundClone => findClone(path.resolve(".cache/pokerogue", `v${reviewed.pinned.gameVersion}`));
+
+export const findClone = (clone: string): FoundClone => {
   if (!existsSync(clone)) {
     // A worktree's `drift:check` leaves a bare clone, and provisioning it re-fetches the 815 MB `assets` submodule
     // (#296).
@@ -46,6 +51,15 @@ export const pinnedClone = (): string => {
   console.error(`${found.missing}\n\n  ${found.how}\n`);
   process.exit(2);
 };
+
+/** `find` is asked again at each run. */
+export const harnessIn =
+  (find: () => FoundClone, pnpm = reviewed.pinned.pnpm): Clone =>
+  async ({ name, source, input, env }) => {
+    const found = find();
+    if ("missing" in found) return { missing: `${found.missing} Set it up with \`${found.how}\`` };
+    return testInClone({ clone: found.clone, name, source, input, env, echo: false, vitest: vitestOn(pnpm) });
+  };
 
 export const hudBundle = (): string => {
   // Never `99-start.js`: its refresh loop would tick game code against the harness's own game.

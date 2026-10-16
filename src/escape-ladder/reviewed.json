@@ -584,5 +584,8 @@
     "src/utils/damage.ts#calculateBossSegmentDamage": "eab5c3e09433794b",
     "src/utils/pokemon-utils.ts#getRandomRegularPokemonType": "af8ca1b91dc2be21",
     "src/utils/speed-order.ts#sortInSpeedOrder": "6e257a71c4337f89"
+  },
+  "recheck": {
+    "gameVersion": "1.12.0.11"
   }
 }
