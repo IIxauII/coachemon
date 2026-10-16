@@ -48,7 +48,7 @@ export const SERVER: Area = {
     {
       ours: "src/driver.ts#starter-add-option",
       of: [
-        "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.processInput",
+        "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.openPokemonMenu",
       ],
     },
     { ours: "src/driver.ts#starter-party-max", of: ["src/constants.ts#PLAYER_PARTY_MAX_SIZE"] },

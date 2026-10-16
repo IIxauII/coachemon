@@ -479,7 +479,11 @@ export const PAGE: Area = {
     {
       name: "options",
       kind: "field",
-      at: ["src/ui/handlers/modifier-select-ui-handler.ts#ModifierSelectUiHandler.options"],
+      at: [
+        "src/@types/ui-types.ts#OptionSelectModeConfig.options",
+        "src/ui/handlers/base-option-select-ui-handler.ts#BaseOptionSelectUiHandler.options",
+        "src/ui/handlers/modifier-select-ui-handler.ts#ModifierSelectUiHandler.options",
+      ],
     },
     {
       name: "optionsContainer",
@@ -676,6 +680,11 @@ export const PAGE: Area = {
       at: ["src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.startCursorObj"],
     },
     {
+      name: "starterContainers",
+      kind: "field",
+      at: ["src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.starterContainers"],
+    },
+    {
       name: "starterData",
       kind: "field",
       at: ["src/@types/save-data.ts#SystemSaveData.starterData", "src/system/game-data.ts#GameData.starterData"],
@@ -788,6 +797,7 @@ export const PAGE: Area = {
         "src/system/version-migration/versions/v1_10_0.ts#OldTurnMove.turn",
       ],
     },
+    { name: "turnCount", kind: "field", at: ["src/data/pokemon-data.ts#PokemonSummonData.turnCount"] },
     {
       name: "tutorialActive",
       kind: "field",

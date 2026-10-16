@@ -292,7 +292,11 @@ export const HARNESS: Area = {
     {
       name: "turnCount",
       kind: "field",
-      at: ["src/data/battler-tags.ts#BattlerTag.turnCount", "src/data/arena-tag.ts#ArenaTag.turnCount"],
+      at: [
+        "src/data/battler-tags.ts#BattlerTag.turnCount",
+        "src/data/arena-tag.ts#ArenaTag.turnCount",
+        "src/data/pokemon-data.ts#PokemonSummonData.turnCount",
+      ],
     },
     { name: "updateList", kind: "field", at: [], from: "phaser", note: "Phaser Systems.updateList" },
     {
