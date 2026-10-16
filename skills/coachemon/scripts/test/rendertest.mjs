@@ -187,7 +187,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   assert.ok(!(paneBox.children ?? []).some(n => flat(n) === act.summary), "the act pane does not repeat the call");
 }
 
-// ---- A randomizer challenge tags the strip on every kind, since species knowledge does not hold under it (#723).
+// ---- A randomizer challenge tags the strip (#723).
 {
   const battle = challenges => ({ phaseManager: { getCurrentPhase: () => null }, getField: () => [...party, foes[0]], gameMode: { challenges },
     currentBattle: { waveIndex: 15, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
@@ -198,14 +198,14 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   for (const [what, challenges] of [["Moveset Randomizer", [{ id: Challenges.MOVESET_RANDOMIZER, value: 1 }]],
     ["Ability Randomizer", [{ id: Challenges.ABILITY_RANDOMIZER, value: 3 }]]]) {
     for (const [kind, scene] of [["battle", battle], ["learn", learn]]) {
-      const h = head(scene(challenges));
-      assert.ok(h.endsWith("🔀 randomized"), `${kind} under the ${what}: ${h}`);
+      const shown = head(scene(challenges));
+      assert.ok(shown.endsWith("🔀 randomized"), `${kind} under the ${what}: ${shown}`);
     }
   }
   const off = [{ id: Challenges.MOVESET_RANDOMIZER, value: 0 }, { id: Challenges.FRESH_START, value: 1 }];
   for (const [kind, scene] of [["battle", battle], ["learn", learn]]) {
-    const h = head(scene(off));
-    assert.ok(!h.includes("🔀"), `${kind} with no randomizer on: ${h}`);
+    const shown = head(scene(off));
+    assert.ok(!shown.includes("🔀"), `${kind} with no randomizer on: ${shown}`);
   }
   console.log(`== randomized strip\nhead ${head(battle([{ id: Challenges.MOVESET_RANDOMIZER, value: 2 }]))}`);
 }
