@@ -53,21 +53,29 @@ const partsOf = s => {
 // cache key: a card built before the scan would hold its degraded line for the rest of the wave.
 export const safariReady = s => !partsOf(s).why;
 
-// `getRandomSpeciesByStarterCost([0, 5], NON_LEGEND_PARADOX_POKEMON, undefined, false, false, false)`. The band
-// widening never runs for `[0, 5]`; it is kept so the replay stays the game's own function.
-// @mirrors safari-species
-const safariSpecies = reg => {
-  let min = 0, max = 5;
+// `getRandomSpeciesByStarterCost` up to its draw: the `[species, cost]` pairs it draws from, in its order, or none
+// where it would fall back to Bulbasaur. `keep` stands in for its exclusion, flag and type filters.
+// @mirrors starter-band
+export const starterBand = (reg, tiers, keep) => {
+  let [min, max] = Array.isArray(tiers) ? tiers : [tiers, tiers];
   const filtered = [];
   for (const sp of reg.getAllStarters(true)) {
-    if (!sp || NON_LEGEND_PARADOX.includes(sp.speciesId) || sp.subLegendary || sp.legendary || sp.mythical) continue;
-    filtered.push([sp, reg.getStarterCost(sp.speciesId)]);
+    if (sp && keep(sp)) filtered.push([sp, reg.getStarterCost(sp.speciesId)]);
   }
   let band = filtered.filter(e => e[1] >= min && e[1] <= max);
   while (band.length === 0 && !(min === 0 && max === 10)) {
     if (min > 0) min--; else max++;
     band = filtered.filter(e => e[1] >= min && e[1] <= max);
   }
+  return band;
+};
+
+// `getRandomSpeciesByStarterCost([0, 5], NON_LEGEND_PARADOX_POKEMON, undefined, false, false, false)`. The band
+// widening never runs for `[0, 5]`; it is kept so the replay stays the game's own function.
+// @mirrors safari-species
+const safariSpecies = reg => {
+  const band = starterBand(reg, [0, 5],
+    sp => !NON_LEGEND_PARADOX.includes(sp.speciesId) && !sp.subLegendary && !sp.legendary && !sp.mythical);
   if (band.length === 0) return reg.getSpecies(SpeciesId.BULBASAUR);
   // The index is drawn before the shuffle and read out of it (game-code.md §13): swapping the two picks another species.
   const i = rnd(band.length);

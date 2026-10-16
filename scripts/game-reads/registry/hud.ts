@@ -842,6 +842,7 @@ export const HUD: Area = {
       kind: "method",
       at: ["src/data/moves/move.ts#Move.isChargingMove", "src/data/moves/move.ts#Charging.isChargingMove"],
     },
+    { name: "isChallenge", kind: "field", at: ["src/game-mode.ts#GameMode.isChallenge"] },
     {
       name: "isClassic",
       kind: "field",
@@ -2180,6 +2181,10 @@ export const HUD: Area = {
         "src/data/mystery-encounters/encounters/safari-zone-encounter.ts#getSafariSpeciesSpawn",
       ],
     },
+    {
+      ours: "skills/coachemon/scripts/hud/44-safari.js#starter-band",
+      of: ["src/data/mystery-encounters/utils/encounter-pokemon-utils.ts#getRandomSpeciesByStarterCost"],
+    },
     { ours: "skills/coachemon/scripts/hud/45-catch.js#balls", of: ["src/data/pokeball.ts#getPokeballCatchMultiplier"] },
     {
       ours: "skills/coachemon/scripts/hud/45-catch.js#status-mult",
@@ -2249,6 +2254,14 @@ export const HUD: Area = {
       of: [
         "src/data/mystery-encounters/encounters/mysterious-challengers-encounter.ts#MysteriousChallengersEncounter",
       ],
+    },
+    {
+      ours: "skills/coachemon/scripts/hud/46-encounter.js#dark-deal-excluded",
+      of: ["src/data/mystery-encounters/encounters/dark-deal-encounter.ts#excludedBosses"],
+    },
+    {
+      ours: "skills/coachemon/scripts/hud/46-encounter.js#dark-deal-tiers",
+      of: ["src/data/mystery-encounters/encounters/dark-deal-encounter.ts#DarkDealEncounter"],
     },
     {
       ours: "skills/coachemon/scripts/hud/46-encounter.js#disabled-modes",

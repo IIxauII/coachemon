@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { wholeCard } from "./panel.mjs";
 import { GAME_PROTO } from "./game-proto.mjs";
-import { PartyMemberStrength } from "../../../../src/enums/generated.ts";
+import { Challenges, PartyMemberStrength, PokemonType, SpeciesId } from "../../../../src/enums/generated.ts";
 
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
@@ -348,8 +348,8 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
     configs: [{ pokemonConfigs: [{ species: eevee(), level: 38 }] }] });
   const mid = mount(breed(149)).model();
   assert.equal(mid.options[0].outcome, "fight Eevee (+1 Def/SpD on entry); catchable → rewards");
-  assert.equal(mid.options[0].verdict, "take", "nothing offensive in the boost, so the level gap and coverage still decide");
-  const late = mount(breed(152)).model();
+  assert.equal(mid.options[0].verdict, "take");
+  const late = mount(breed(150)).model();
   assert.equal(late.options[0].outcome, "fight Eevee (+1 Def/SpD/Spe on entry); catchable → rewards");
 }
 
@@ -573,6 +573,53 @@ const threatTables = () => {
     "Jolteon is dead weight and so the weakest member: Lapras is not the weakest link and the deal is not a bargain");
   assert.match(ladder(hard.scene), /^Jolteon fainted 0\.0 ·/,
     "dead weight is weakest, at zero, and said to be dead weight rather than priced");
+}
+
+// ---- Dark Deal's boss is legendary only where the taken member's types have one at or near the rolled tier.
+{
+  const starter = (id, name, types, cost, flags = {}) => ({ ...species(id, name, types, 500, flags), starterCost: cost });
+  const STARTERS = [
+    starter(SpeciesId.RAIKOU, "Raikou", ["Electric"], 6, { subLegendary: true }),
+    starter(SpeciesId.XURKITREE, "Xurkitree", ["Electric"], 6, { subLegendary: true }),
+    starter(SpeciesId.BUZZWOLE, "Buzzwole", ["Bug", "Fighting"], 6, { subLegendary: true }),
+    starter(SpeciesId.SLITHER_WING, "Slither Wing", ["Bug", "Fighting"], 6),
+    starter(SpeciesId.SCYTHER, "Scyther", ["Bug", "Flying"], 5),
+    starter(SpeciesId.HERACROSS, "Heracross", ["Bug", "Fighting"], 5),
+    starter(SpeciesId.GASTLY, "Gastly", ["Ghost", "Poison"], 4),
+    starter(SpeciesId.GIRATINA, "Giratina", ["Ghost", "Dragon"], 8, { legendary: true }),
+    starter(SpeciesId.SQUIRTLE, "Squirtle", ["Water"], 1),
+    starter(SpeciesId.KYOGRE, "Kyogre", ["Water"], 8, { legendary: true }),
+  ];
+  const tables = () => {
+    const t = threatTables();
+    return { ...t, species: { ...t.species, getAllStarters: () => STARTERS,
+      getStarterCost: id => STARTERS.find(s => s.speciesId === id)?.starterCost ?? 0 } };
+  };
+  const deal = (draws, extra = {}) => ({ type: 2, tier: 3, labels: ["Deal", "Refuse"], options: [option(), option()],
+    draws, tables: tables(), ...extra });
+
+  const raikou = show("dark deal, an Electric member buys a legendary", deal({ 30512: [2], [30512 * 500]: [70] })).model();
+  assert.match(raikou.options[0].outcome, /Jolteon is taken for good → 5 Rogue Balls \+ a catchable legendary boss \(starter tier 6\) of its types, holding its items$/);
+
+  const bugs = team();
+  bugs[2] = pk("Pinsir", ["Bug"], 36, { bst: 500, moves: [["X-Scissor", "Bug", 80, "P"]] });
+  const bug = show("dark deal, a Bug member buys no legendary", deal({ 30512: [2], [30512 * 500]: [70] }, { party: bugs })).model();
+  assert.match(bug.options[0].outcome,
+    /Pinsir is taken for good → 5 Rogue Balls \+ a catchable non-legendary boss \(starter tier 5\) of its types, holding its items — Scyther or Heracross$/,
+    "Buzzwole and Slither Wing are excluded, so the band widens down to tier 5");
+  assert.doesNotMatch(bug.options[0].why ?? "", /legendary/);
+
+  const ghost = { isChallenge: true, isFixedBattle: () => false, challenges: [{ id: Challenges.SINGLE_TYPE, value: PokemonType.GHOST + 1 }] };
+  const monoLow = mount(deal({ 30512: [2], [30512 * 500]: [70] }, { gameMode: ghost })).model();
+  assert.match(monoLow.options[0].outcome, /a catchable non-legendary boss \(starter tier 4\) of the run's Ghost type, holding its items — Gastly$/);
+  const monoHigh = show("dark deal, a Mono Ghost run's top roll", deal({ 30512: [2], [30512 * 500]: [2] }, { gameMode: ghost })).model();
+  assert.match(monoHigh.options[0].outcome, /a catchable legendary boss \(starter tier 8\) of the run's Ghost type/);
+
+  // Garchomp's Dragon reaches Giratina from every tier and Jolteon's Electric Raikou; Lapras's Water lands on Squirtle
+  // at tiers 6 and 7 (85% of rolls). (1 + 0.15 + 1) / 3 = 72%.
+  const blind = show("dark deal, neither the member nor the tier read", deal({}, { seedOffset: null })).model();
+  assert.match(blind.options[0].outcome,
+    /a random member is taken for good → 5 Rogue Balls \+ a catchable boss of its types, holding its items: legendary 72% of the time, else Squirtle$/);
 }
 
 // ---- Dark Deal: Lapras is "your strongest" only when the calendar leaves fainted Garchomp dead weight (#571).
@@ -962,12 +1009,12 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   assert.equal(sensu.options[2].outcome, "show it a dance: Sensu Style Oricorio joins, keeping the dance move you used");
   const pomPom = mount(dancing({ enemy: [styled(1)] })).model();
   assert.match(pomPom.options[0].outcome, /^fight Pom-Pom Style Oricorio \(.*opens with an Electric Revelation Dance\)/);
-  assert.equal(pomPom.options[0].why, "L34 boss vs your L40, 1 mon hits it SE, 1 weak to it",
-    "Electric/Flying: only Lapras's Ice Beam is super effective, and Lapras is the one weak to it");
-  // Nothing on the field: the style is the one the game built the Oricorio from, not the species' own Fire/Flying.
+  assert.equal(pomPom.options[0].why, "L34 boss vs your L40, 1 mon hits it SE, 1 weak to it");
   const unseen = mount(dancing({ misc: { oricorioData: { formIndex: 1 } } })).model();
   assert.match(unseen.options[0].outcome, /^fight Pom-Pom Style Oricorio \(.*opens with an Electric Revelation Dance\)/);
   assert.equal(unseen.options[0].why, "~L32 boss vs your L40, 1 mon hits it SE, 1 weak to it");
+  const unread = mount(dancing()).model();
+  assert.match(unread.options[0].outcome, /^fight Oricorio \(.*opens with Revelation Dance\)/);
 }
 
 // ---- Bug-Type Superfan: the four tutor moves are the option fork's first four draws, one per pool.
