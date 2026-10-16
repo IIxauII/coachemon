@@ -104,11 +104,11 @@ export const moveTraits = (mv, user = null, { party = null, target = null } = {}
   const healAttr = firstAttr(mv, "HealAttr");
   // A `VariableHealAttr` is built with `healRatio` 1 and its `apply` overwrites it with the last use's ratio,
   // so only `healFunc` answers for this user.
-  const baseIn = u => {
+  const baseRatioIn = u => {
     if (typeof healAttr.healFunc !== "function") return healAttr.healRatio ?? 0.5;
     try { return healAttr.healFunc(u); } catch { return 0.5; }
   };
-  const ratioIn = (u = user) => healBoosted(u, mv, target, baseIn(u));
+  const ratioIn = (u = user) => healBoosted(u, mv, target, baseRatioIn(u));
   const heal = healAttr
     ? { ratio: ratioIn(), self: healAttr.selfTarget !== false, cls: healAttr.constructor?.name ?? "", ratioIn }
     : null;

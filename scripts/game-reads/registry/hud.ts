@@ -761,6 +761,7 @@ export const HUD: Area = {
       name: "healRatio",
       kind: "field",
       at: [
+        "src/data/abilities/ab-attrs.ts#MoveHealBoostAbAttrParams.healRatio",
         "src/data/abilities/ab-attrs.ts#PostSummonAllyHealAbAttr.healRatio",
         "src/data/moves/move.ts#HealAttr.healRatio",
         "src/data/moves/move.ts#HitHealAttr.healRatio",
