@@ -78,10 +78,10 @@ const odds = (pools, tiers, cuts, max, forced = null) => {
 
 // A spawn's species at `level`, as the game's chance of each form: `Map id → p` (game-code.md §10).
 const formsCache = new Map();
-const formsAt = (id, level, kind) => {
+const formsAt = (id, level, kind, specialty = null) => {
   // Before the cache lookup: the read is what drops an answer cached without the tables.
   const reg = readTables()?.species;
-  const key = `${id}|${level}|${kind}`;
+  const key = `${id}|${level}|${kind}|${specialty}`;
   if (formsCache.has(key)) return formsCache.get(key);
   const out = new Map();
   const add = (sid, p) => out.set(sid, (out.get(sid) ?? 0) + p);
@@ -103,7 +103,11 @@ const formsAt = (id, level, kind) => {
         if (level < (lv === 1 ? t : Math.min(lv, t))) { add(pid, p); return; }
       }
     }
-    const pool = (tryDo(() => reg.getEvolutions(sp.speciesId), []) ?? [])
+    let evos = tryDo(() => reg.getEvolutions(sp.speciesId), []) ?? [];
+    // `determineEnemySpecies`' specialty-type filter (game-code.md §10).
+    const typed = specialty ? evos.filter(e => typesOfSpecies(speciesById(e.speciesId)).includes(specialty)) : [];
+    if (typed.length > 0 && typed.length < evos.length) evos = typed;
+    const pool = evos
       .map(e => ({ id: e.speciesId, lv: e.level ?? 0, t: Math.max(e.level ?? 0, e.evoLevelThreshold?.[kind] ?? 0) }))
       .filter(e => e.t > 0 && level >= e.lv && level >= e.t);
     if (!pool.length || depth > 4) { add(sp.speciesId, p); return; }
@@ -195,18 +199,21 @@ const wavesIn = (s, biome, wave) => {
   return out;
 };
 
-// `list`: `[{ id, tier, w, wild, boss, trainer }]`, `w` summing to 1 over the waves the biome decides and split into
-// the other three; `id` is the species as rolled, before it evolves.
+// `list`: `[{ id, specialty, tier, w, wild, boss, trainer, gym }]`, `w` summing to 1 over the waves the biome decides
+// and split into `wild`, `boss` and `trainer`, of which `boss` holds the gym leader's `gym`; `id` is the species as
+// rolled, before it evolves, and `specialty` the type of the trainer that brings it.
 const encounters = (s, biome, wave, luck = 0) => {
   const tables = readTables();
   const gm = s.gameMode;
   const byId = new Map();
-  const add = (id, tier, w, part) => {
-    const e = byId.get(id) ?? { id, tier, w: 0, wild: 0, boss: 0, trainer: 0 };
+  const add = (id, tier, w, part, specialty = null, gym = false) => {
+    const key = `${id}|${specialty}`;
+    const e = byId.get(key) ?? { id, specialty, tier, w: 0, wild: 0, boss: 0, trainer: 0, gym: 0 };
     e.tier = Math.min(e.tier, tier);
     e.w += w;
     e[part] += w;
-    byId.set(id, e);
+    if (gym) e.gym += w;
+    byId.set(key, e);
   };
   const trainersMet = new Map(), gymLeaders = new Map();
   let bigFight = null, total = 0;
@@ -251,7 +258,7 @@ const encounters = (s, biome, wave, luck = 0) => {
           const q = wv.trainer * p / list.length;
           const met = wv.gym ? gymLeaders : trainersMet;
           met.set(type, (met.get(type) ?? 0) + q);
-          for (const m of party.species) add(m.id, TRAINER_TIER, q * m.p, wv.gym ? "boss" : "trainer");
+          for (const m of party.species) add(m.id, TRAINER_TIER, q * m.p, wv.gym ? "boss" : "trainer", party.specialty, wv.gym);
         }
       }
       if (wv.gym) bigFight = { wave: wv.w, gym: true };
@@ -259,7 +266,7 @@ const encounters = (s, biome, wave, luck = 0) => {
   }
   const sum = [...byId.values()].reduce((t, e) => t + e.w, 0) || 1;
   // Waves nothing could be read for (trainers without their configs) drop out of the weighting.
-  const list = [...byId.values()].map(e => ({ ...e, w: e.w / sum, wild: e.wild / sum, boss: e.boss / sum, trainer: e.trainer / sum }));
+  const list = [...byId.values()].map(e => ({ ...e, w: e.w / sum, wild: e.wild / sum, boss: e.boss / sum, trainer: e.trainer / sum, gym: e.gym / sum }));
   const share = m => [...m].map(([type, q]) => ({ ...trainerParty(type), q })).sort((a, b) => b.q - a.q);
   return { list, trainers: share(trainersMet), leaders: share(gymLeaders), bigFight, waves: total };
 };
@@ -299,10 +306,15 @@ const judge = (run, id, profile, level, wave, luck, fightWave) => {
   const biome = tryDo(() => readTables().biomes.get(id));
   if (!biome) return null;
   const enc = encounters(s, biome, wave, luck);
-  const spawnList = enc.list.flatMap(e => [...formsAt(e.id, level, e.wild > 0 ? EvoLevelThresholdKind.WILD : EvoLevelThresholdKind.NORMAL)].map(([fid, fp]) => {
+  // A gym leader's party template sets its threshold kind (game-code.md §10).
+  const shares = e => [
+    [{ ...e, w: e.w - e.gym, boss: e.boss - e.gym, gym: 0 }, e.wild > 0 ? EvoLevelThresholdKind.WILD : EvoLevelThresholdKind.NORMAL],
+    [{ ...e, w: e.gym, wild: 0, boss: e.gym, trainer: 0 }, EvoLevelThresholdKind.STRONG],
+  ].filter(([part]) => part.w > 1e-12);
+  const spawnList = enc.list.flatMap(e => shares(e).flatMap(([part, kind]) => [...formsAt(e.id, level, kind, e.specialty)].map(([fid, fp]) => {
     const sp = speciesById(fid);
-    return sp && { ...e, sp, types: typesOfSpecies(sp), w: e.w * fp, wild: e.wild * fp, boss: e.boss * fp };
-  })).filter(e => e?.types.length);
+    return sp && { ...part, sp, types: typesOfSpecies(sp), w: part.w * fp, wild: part.wild * fp, boss: part.boss * fp, trainer: part.trainer * fp };
+  }))).filter(e => e?.types.length);
   if (!spawnList.length) return null;
 
   const moves = profile.attacks;

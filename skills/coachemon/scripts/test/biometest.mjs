@@ -24,7 +24,12 @@ const SPECIES = {
   40: ["Azelf", ["Psychic"], 580, [], true],
   50: ["Garchomp", ["Dragon","Ground"], 600], 51: ["Snorlax", ["Normal"], 540], 52: ["Lapras", ["Water","Ice"], 535], 53: ["Pidgeotto", ["Normal","Flying"], 349, [[54, 36]]], 54: ["Pidgeot", ["Normal","Flying"], 479], 55: ["Alakazam", ["Psychic"], 500],
   60: ["Geodude", ["Rock","Ground"], 300, [[61, 25]]], 61: ["Graveler", ["Rock","Ground"], 390],
+  // Valerie's alone, kept out of `getAllSpecies` unless a block asks for them: every other judgment duels the lot.
+  80: ["Ralts", ["Psychic","Fairy"], 198, [[81, 20]]], 81: ["Kirlia", ["Psychic","Fairy"], 278, [[82, 38], [83, 38]]],
+  82: ["Gardevoir", ["Psychic","Fairy"], 518], 83: ["Gallade", ["Psychic","Fighting"], 518],
+  84: ["Snubbull", ["Fairy"], 300, [[85, 38]]], 85: ["Granbull", ["Fairy"], 450],
 };
+const FAIRY_ONLY = new Set([80, 81, 82, 83, 84, 85]);
 // Each species' real base-stat row, `[hp, atk, def, spa, spd, spe]`, every one summing to the BST declared beside it
 // above. The team judgment the catch line is now read off duels every one of them: without a row the combatant adapter
 // hands back nothing, the species is no threat of the set and no stand-in either (#587).
@@ -45,6 +50,8 @@ const BASE = {
   50: [108, 130, 95, 80, 85, 102], 51: [160, 110, 65, 65, 110, 30], 52: [130, 85, 80, 85, 95, 60],
   53: [63, 60, 55, 50, 50, 71], 54: [83, 80, 75, 70, 70, 101], 55: [55, 50, 45, 135, 95, 120],
   60: [40, 80, 100, 30, 30, 20], 61: [55, 95, 115, 45, 45, 35],
+  80: [28, 25, 25, 45, 35, 40], 81: [38, 35, 35, 65, 55, 50], 82: [68, 65, 65, 125, 115, 80], 83: [68, 125, 65, 65, 115, 80],
+  84: [60, 80, 50, 40, 40, 30], 85: [90, 120, 75, 60, 60, 45],
 };
 // `[level, moveId]` as the game's `getLevelMoves` hands it over, and the same one for every species: the move table
 // below is the randbats snapshot's names as one untyped attack of 80 each, so *which* move a stand-in is caught
@@ -73,7 +80,7 @@ const species = id => {
 };
 const registry = {
   getSpecies: id => { if (!SPECIES[id]) throw new Error(`no species ${id}`); return species(id); },
-  getAllSpecies: () => Object.keys(SPECIES).map(Number).map(species),
+  getAllSpecies: () => Object.keys(SPECIES).map(Number).filter(id => !FAIRY_ONLY.has(id)).map(species),
   getEvolutions: id => evosOf(id).map(([speciesId, level, evoLevelThreshold]) => ({ speciesId, level, evoLevelThreshold })),
   hasPrevolution: id => parentOf(id) != null, getPrevolution: id => parentOf(id),
 };
@@ -85,6 +92,7 @@ const TRAINERS = {
   101: { trainerType: 101, name: "Black Belt", partyTemplates: [], speciesPools: { 0: [20, 24], 1: [[5, 6], 5] } },
   200: { trainerType: 200, name: "Janine", partyTemplates: [], isBoss: true, specialtyType: TY.indexOf("Poison"), speciesFilter: ofType("Poison") },
   201: { trainerType: 201, name: "Brock", partyTemplates: [], isBoss: true, specialtyType: TY.indexOf("Rock"), speciesFilter: ofType("Rock") },
+  202: { trainerType: 202, name: "Valerie", partyTemplates: [], isBoss: true, specialtyType: TY.indexOf("Fairy"), speciesFilter: ofType("Fairy") },
 };
 
 // pool[tier][timeOfDay], −1 all day; trainerPool[tier].
@@ -98,8 +106,9 @@ const BIOMES = new Map([
   [30, { biomeId: 30, pokemonPool: tiers({ 0: [30, 31] }), trainerPool: trainers({}), trainerChance: 4, biomeLinks: [3] }],
   // The Swamp with one more rare species: a near tie with it.
   [33, { biomeId: 33, pokemonPool: { ...swampPool, 2: { ...swampPool[2], [-1]: [8, 60] } }, trainerPool: trainers({ 0: [100], 1: [101], 5: [200] }), trainerChance: 8, biomeLinks: [3] }],
+  [34, { biomeId: 34, pokemonPool: tiers({ 0: [51] }), trainerPool: trainers({ 5: [202] }), trainerChance: 8, biomeLinks: [3] }],
 ]);
-const NAMES = { 3: "Tall Grass", 7: "Swamp", 19: "Graveyard", 21: "Factory", 26: "Construction Site", 30: "Slum", 33: "Marsh", 41: "Laboratory" };
+const NAMES = { 3: "Tall Grass", 7: "Swamp", 19: "Graveyard", 21: "Factory", 26: "Construction Site", 30: "Slum", 33: "Marsh", 34: "Fairy Glade", 41: "Laboratory" };
 // The move table the duels read: the randbats snapshot's own names, every one an untyped attack of 80, which is
 // encountertest's table too. What a threat or a stand-in brings is not this file's subject — threatstest and
 // judgmenttest pin that side — and the snapshot comes out of the bundle, so it is built on first read and not before.
@@ -374,6 +383,14 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   near(f(24, 55)[28], 6 / 11, "Timburr at 55: six of 50–60");
   assert.deepEqual(f(28, 40, 1), { 25: 1 }, "a boss Conkeldurr at 40 is a Gurdurr (normal delay 45)");
   assert.deepEqual(f(28, 46, 1), { 28: 1 }, "…and itself at 46");
+}
+
+// ---- A gym leader's party evolves at the strong threshold, and only into its specialty type where an evolution has it
+{
+  const withFairies = { ...registry, getAllSpecies: () => Object.keys(SPECIES).map(Number).map(species) };
+  const glade = mount({ labels: ["Fairy Glade", "Swamp"], wave: 40, t: tables({ species: withFairies }) }).model().options[0];
+  console.log(`== Valerie's party at level 40\ncommon ${JSON.stringify(glade.common)}`);
+  assert.deepEqual(glade.common, [["Snorlax", 89], ["Gardevoir", 5], ["Granbull", 5]]);
 }
 
 // ---- A Daily event seed's forced tier replaces the roll for its wave
