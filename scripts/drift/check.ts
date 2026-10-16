@@ -8,7 +8,7 @@ import type { Entry } from "../../src/escape-ladder/types.ts";
 import type { Generated } from "../gen-enums.ts";
 import type { Registry, ScannedRead } from "../game-reads/check.ts";
 import type { Tables } from "../game-reads/scan.ts";
-import type { GameSet } from "../game-reads/types.ts";
+import { type GameSet, refParts } from "../game-reads/types.ts";
 import { GameSource, hash } from "./source.ts";
 
 export type Group = "ladder" | "hud" | "reads";
@@ -52,14 +52,8 @@ export const blockers = (d: Drift) => ({
 /** A read from one of the game's libraries hashes the version the game's `package.json` asks for. */
 const LIBS = { phaser: ["dependencies", "phaser"], vitest: ["devDependencies", "vitest"] } as const;
 
-/** Calls one level down from a unit: same-file functions, imported functions, and `this.m()` in the same class. */
-export function callees(source: GameSource, ref: string): string[] {
-  const unit = source.unit(ref);
-  if (!unit || !(ts.isFunctionDeclaration(unit) || ts.isMethodDeclaration(unit) || ts.isGetAccessor(unit) ||
-    ts.isConstructorDeclaration(unit) || ts.isVariableDeclaration(unit))) return [];
-  const sf = unit.getSourceFile();
-  const file = ref.split("#", 1)[0];
-  const cls = ref.split("#", 2)[1].includes(".") ? ref.split("#", 2)[1].split(".", 1)[0] : null;
+/** A game file's named imports, each as the ref it resolves to; a bare package's are left out. */
+function importsOf(source: GameSource, sf: ts.SourceFile, file: string): Map<string, string> {
   const imported = new Map<string, string>();
   for (const st of sf.statements) {
     if (!ts.isImportDeclaration(st) || !st.importClause?.namedBindings || !ts.isNamedImports(st.importClause.namedBindings)) continue;
@@ -72,21 +66,66 @@ export function callees(source: GameSource, ref: string): string[] {
     if (target === null) continue;
     for (const el of st.importClause.namedBindings.elements) imported.set(el.name.text, `${target}#${(el.propertyName ?? el.name).text}`);
   }
+  return imported;
+}
+
+/** The method `super.<name>()` in class `cls` of `file` runs: the nearest class up its `extends` chain that declares it. */
+function superMethod(source: GameSource, file: string, cls: string, name: string): string | null {
+  const seen = new Set<string>();
+  for (let at = `${file}#${cls}`; !seen.has(at); ) {
+    seen.add(at);
+    const node = source.unit(at);
+    if (!node || !ts.isClassDeclaration(node)) return null;
+    const base = node.heritageClauses?.find(h => h.token === ts.SyntaxKind.ExtendsKeyword)?.types[0]?.expression;
+    if (!base || !ts.isIdentifier(base)) return null;
+    const here = refParts(at).file;
+    at = importsOf(source, node.getSourceFile(), here).get(base.text) ?? `${here}#${base.text}`;
+    const method = source.unit(`${at}.${name}`);
+    if (method && ts.isMethodDeclaration(method)) return `${at}.${name}`;
+  }
+  return null;
+}
+
+/**
+ * Calls one level down from a unit: same-file functions, imported functions, and `this.m()` in the same class. A
+ * `super.m()` costs no level: the base method is a callee, and so is everything one level down from it.
+ */
+export function callees(source: GameSource, ref: string): string[] {
   const out = new Set<string>();
-  const visit = (n: ts.Node): void => {
-    if (ts.isCallExpression(n)) {
-      const e = n.expression;
-      let callee: string | null = null;
-      if (ts.isIdentifier(e)) callee = imported.get(e.text) ?? `${file}#${e.text}`;
-      else if (cls && ts.isPropertyAccessExpression(e) && e.expression.kind === ts.SyntaxKind.ThisKeyword) callee = `${file}#${cls}.${e.name.text}`;
-      if (callee !== null && callee !== ref) {
-        const u = source.unit(callee);
-        if (u && (ts.isFunctionDeclaration(u) || ts.isMethodDeclaration(u) || ts.isVariableDeclaration(u))) out.add(callee);
+  const seen = new Set([ref]);
+  const walk = (at: string): void => {
+    const unit = source.unit(at);
+    if (!unit || !(ts.isFunctionDeclaration(unit) || ts.isMethodDeclaration(unit) || ts.isGetAccessor(unit) ||
+      ts.isConstructorDeclaration(unit) || ts.isVariableDeclaration(unit))) return;
+    const { file, outer, member } = refParts(at);
+    const cls = member === undefined ? null : outer;
+    const imported = importsOf(source, unit.getSourceFile(), file);
+    const visit = (n: ts.Node): void => {
+      if (ts.isCallExpression(n) && ts.isIdentifier(n.expression)) {
+        add(imported.get(n.expression.text) ?? `${file}#${n.expression.text}`, at);
+      } else if (cls && ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression)) {
+        const { expression: on, name } = n.expression;
+        if (on.kind === ts.SyntaxKind.ThisKeyword) add(`${file}#${cls}.${name.text}`, at);
+        else if (on.kind === ts.SyntaxKind.SuperKeyword) {
+          const base = superMethod(source, file, cls, name.text);
+          if (base !== null && !seen.has(base)) {
+            seen.add(base);
+            out.add(base);
+            walk(base);
+          }
+        }
       }
-    }
-    ts.forEachChild(n, visit);
+      ts.forEachChild(n, visit);
+    };
+    visit(unit);
   };
-  visit(unit);
+  const add = (callee: string, from: string) => {
+    if (callee === from) return;
+    const u = source.unit(callee);
+    if (u && (ts.isFunctionDeclaration(u) || ts.isMethodDeclaration(u) || ts.isVariableDeclaration(u))) out.add(callee);
+  };
+  walk(ref);
+  out.delete(ref);
   return [...out].sort();
 }
 

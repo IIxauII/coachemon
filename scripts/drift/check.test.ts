@@ -26,7 +26,7 @@ const OURS: Record<AreaName, { file: string; text: string }[]> = {
       text: [
         "export function read(L: any, game: any) {",
         "  const h = L.ui.handlers[L.m.STARTER_SELECT];",
-        "  return [h.filteredStarterContainers, h.lastSpecies, h.cursor, L.scene.phaseManager, game.config.gameVersion, L.ui.mode];",
+        "  return [h.filteredStarterContainers, h.lastSpecies, h.cursor, L.scene.phaseManager, game.config.gameVersion, L.ui.mode, L.ui.modeChain];",
         "}",
         "export function stored(L: any) {",
         "  return globalThis.localStorage.getItem(\"sessionData\" + L.slot);",
@@ -79,6 +79,7 @@ const REGISTRY: Registry = {
       { name: "cursor", kind: "field", at: [`${SSU}#StarterSelectUiHandler.cursor`] },
       { name: "ui", kind: "locator", at: ["src/battle-scene.ts#BattleScene.ui"] },
       { name: "mode", kind: "field", at: ["src/ui/ui.ts#UI.mode"] },
+      { name: "modeChain", kind: "locator", at: ["src/ui/ui.ts#UI.modeChain"] },
       { name: "phaseManager", kind: "locator", at: ["src/battle-scene.ts#BattleScene.phaseManager"] },
       { name: "gameVersion", kind: "locator", at: ["src/main.ts#startGame"], from: "phaser" },
       { name: "sessionData", kind: "storage-key", at: ["src/system/game-data.ts#GameData.getSessionKey"] },
@@ -119,7 +120,7 @@ const REGISTRY: Registry = {
 };
 
 const DEPS: DriftInput["deps"] = new Map([
-  ["src/field/pokemon.ts#Pokemon.generateAndPopulateMoveset", { dependents: ["hud/49-ahead.js"], groups: ["hud"] }],
+  ["src/field/pokemon.ts#EnemyPokemon.generateAndPopulateMoveset", { dependents: ["hud/49-ahead.js"], groups: ["hud"] }],
   [`${SSU}#StarterSelectUiHandler.processInput`, { dependents: ["STARTER_SELECT"], groups: ["ladder"] }],
 ]);
 
@@ -167,11 +168,14 @@ test("a field the harness template reads, renamed, is MISSING", () => {
   assert.ok(refs(V2.missing).includes("src/battle-scene.ts#BattleScene.spriteSparkleHandler"));
 });
 
-test("a callee one level down of a hashed dep is hashed, and MOVED when its body changes", () => {
-  assert.ok("src/ai/ai-moveset-gen.ts#generateMoveset" in STAMP);
+test("a callee one level down of a hashed dep is hashed", () => {
   assert.ok(`${SSU}#StarterSelectUiHandler.popStarter` in STAMP);
+});
+
+test("a super call costs no level: the base method and its callees are hashed, and MOVED when a body changes", () => {
+  assert.ok("src/field/pokemon.ts#Pokemon.generateAndPopulateMoveset" in STAMP);
   const moved = V2.moved.find(i => i.ref === "src/ai/ai-moveset-gen.ts#generateMoveset");
-  assert.deepEqual(moved?.dependents, ["callee of src/field/pokemon.ts#Pokemon.generateAndPopulateMoveset"]);
+  assert.deepEqual(moved?.dependents, ["callee of src/field/pokemon.ts#EnemyPokemon.generateAndPopulateMoveset"]);
 });
 
 test("a phase whose phaseName no longer matches the string we compare is MISSING", () => {
@@ -212,6 +216,11 @@ test("a page locator path renamed is MISSING, and a Phaser upgrade under gameVer
   assert.ok(refs(V2.missing).includes("src/battle-scene.ts#BattleScene.phaseManager"));
   const phaser = V2.moved.find(i => i.ref === "package.json#dependencies.phaser");
   assert.deepEqual(phaser?.dependents, ["page: locator gameVersion"]);
+});
+
+test("a page locator whose declaration changes is MOVED, naming the read that leans on it", () => {
+  const chain = V2.moved.find(i => i.ref === "src/ui/ui.ts#UI.modeChain");
+  assert.deepEqual(chain?.dependents, ["page: locator modeChain"]);
 });
 
 test("a save key change is MOVED, and a storage key the game no longer writes is MISSING", () => {

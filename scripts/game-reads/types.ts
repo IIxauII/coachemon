@@ -3,6 +3,13 @@ import type { SourceRef } from "../../src/escape-ladder/types.ts";
 /** A unit of the game's repo: its `src/`, or the `test/` framework the harness template runs on. */
 export type GameRef = SourceRef | `test/${string}.ts#${string}`;
 
+/** `file#outer.member` taken apart; `symbol` is all after the `#`, and `member` is undefined on a bare `file#outer`. */
+export function refParts(ref: string): { file: string; symbol: string; outer: string; member: string | undefined } {
+  const [file, symbol = ""] = ref.split("#", 2);
+  const dot = symbol.indexOf(".");
+  return { file, symbol, outer: dot < 0 ? symbol : symbol.slice(0, dot), member: dot < 0 ? undefined : symbol.slice(dot + 1) };
+}
+
 export type ReadKind =
   | "field" | "method" | "enum-member" | "phase" | "table" | "constant"
   | "index" | "locator" | "storage-key" | "import";

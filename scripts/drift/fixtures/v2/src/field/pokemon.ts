@@ -6,3 +6,10 @@ export class Pokemon {
     generateMoveset(this);
   }
 }
+
+export class EnemyPokemon extends Pokemon {
+  override generateAndPopulateMoveset(): void {
+    if (this.level > 100) return;
+    super.generateAndPopulateMoveset();
+  }
+}
