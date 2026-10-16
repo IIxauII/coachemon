@@ -2879,3 +2879,33 @@ the tags a load drops.
 **Identity.** `Pokemon.id` (`src/field/pokemon.ts:198-200`) is saved (`src/system/pokemon-data.ts:20`) and restored as
 it was (`pokemon.ts:356-357`), so it names the same mon on both sides of a reload. The saved party order is the order
 after any switches.
+
+## 31. Loading a save from an older game: the session migration
+
+Read at the pinned tag (`v1.12.0.11`), for the pin bump's harness re-check (`scripts/recheck/recheck.ts`), which
+replays a known fight's save on a newer game.
+
+**When it runs.** `parseSessionData` runs `applySessionVersionMigration` on the raw `JSON.parse` result before it
+builds any `PokemonData`, `TrainerData` or modifier data (`src/system/game-data.ts:1231-1300`); every session read
+goes through it, `getSession` included (`:926`, `:940`). The migration acts only when the save's `gameVersion` is
+lower than `package.json`'s `version` (`src/system/version-migration/version-converter.ts:3`, `:60`, `:146-149`). A
+missing or non-string `gameVersion` skips it with a `console.warn` (`:142-145`), and `compareVersions` throws on a
+string that is not `N.N.N` or `N.N.N.N` (`src/utils/migrator-utils.ts:60-65`).
+
+**What it does.** It floors `money` (`version-converter.ts:151`), throws `SessionMigrationError` unless `party` is an
+array of non-null objects (`:153-155`, `migrator-utils.ts:6-8`), turns a null `enemyParty` into `[]` and throws on any
+other non-array (`:158-163`). It then runs, oldest first (`:106`, `:194-196`), each session migrator whose version is
+strictly above the save's (`:204-209`): `migrateModifiers` and `migrateCustomPokemonData` (1.0.4), `migrateTera`
+(1.7.0), `migratePartyData` (1.9.0), `fixMoveHistory` (1.10.0), and `migrateRageFistHitCount`,
+`convertCustomPokemonDataTypes`, `shiftFormChangeItems` and `migrateSpeciesSplitSession` (1.12.0.0) (`:93-99`,
+`versions/v1_12_0_0.ts:322-327`). Nothing on that path writes `gameVersion`: a migrated save keeps its old one until
+`getSessionSaveData()` writes `globalScene.game.config.gameVersion` (`game-data.ts:902`).
+
+**Which version a save reports.** That config value is `package.json`'s `version` in the game (`src/main.ts:8`, `:73`)
+and in the test framework, whose `GameWrapper` sets `game.config.gameVersion` to it (`test/framework/game-wrapper.ts:7`,
+`:77-80`). So a save exported from either reports the version of the clone it came from.
+
+**No version gate.** Neither `loadSession` nor `initSessionFromData` checks the version (`game-data.ts:989-1024`). A
+session from a newer game skips the migration and loads as is. The only "out of date" refusal guards system data, in
+`initSystem`, and not under dev or beta (`:484-492`). A `SessionMigrationError` on Load Game reaches
+`TitlePhase`'s catch, which shows `failedToLoadSession` (`src/phases/title-phase.ts:206-217`).

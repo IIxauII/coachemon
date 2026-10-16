@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import type { Carry } from "../../src/solver/gate.ts";
 import type { Input, ReplayResult } from "../../src/solver/oracle-line.ts";
 import { type CheckResult, readScript, type Script, type SolveInput } from "../../src/solver/solver.ts";
 import { printChecks } from "../battle-oracle/print.ts";
@@ -6,8 +7,8 @@ import { printChecks } from "../battle-oracle/print.ts";
 export type Given = Pick<SolveInput, "save" | "live" | "liveExport" | "cloneVersion">;
 
 export type RecheckDeps = {
-  replay(given: Given, script: Script): Promise<ReplayResult>;
-  checkForks(given: Given, inputs: readonly Input[]): Promise<CheckResult>;
+  replay(given: Given, script: Script, carry: Carry): Promise<ReplayResult>;
+  checkForks(given: Given, inputs: readonly Input[], carry: Carry): Promise<CheckResult>;
 };
 
 /** The real lines that matched live at every checkpoint (#660). */
@@ -19,17 +20,32 @@ const KNOWN_FIGHTS = [
 
 const FIXTURES = new URL("../../src/solver/fixtures/", import.meta.url);
 
+const andJoined = (all: readonly string[]) => (all.length > 1 ? `${all.slice(0, -1).join(", ")} and ${all.at(-1)}` : all.join(""));
+
+/** The names of the carried fights, by the game version each was recorded on. */
+function carriedFrom(fights: readonly { name: string; given: Given; carry: Carry }[]): Map<string, string[]> {
+  const out = new Map<string, string[]>();
+  for (const { name, given, carry } of fights) {
+    if (carry.carried) out.set(given.save.gameVersion, [...(out.get(given.save.gameVersion) ?? []), name]);
+  }
+  return out;
+}
+
 /** `failed` names each fight that failed and how, empty when the re-check passed. Each line of `text` goes to `print` as it comes. */
 export async function recheck(
   version: string,
   deps: RecheckDeps,
   print: (line: string) => void = () => {},
 ): Promise<{ failed: string[]; text: string }> {
-  const fights = KNOWN_FIGHTS.map(({ stem, name }) => ({
-    name,
-    given: { ...JSON.parse(readFileSync(new URL(`${stem}.json`, FIXTURES), "utf8")), cloneVersion: version } as Given,
-    script: readScript(readFileSync(new URL(`${stem}.win.script.json`, FIXTURES), "utf8")),
-  }));
+  const fights = KNOWN_FIGHTS.map(({ stem, name }) => {
+    const given = { ...JSON.parse(readFileSync(new URL(`${stem}.json`, FIXTURES), "utf8")), cloneVersion: version } as Given;
+    return {
+      name,
+      given,
+      script: readScript(readFileSync(new URL(`${stem}.win.script.json`, FIXTURES), "utf8")),
+      carry: { carried: given.save.gameVersion !== version },
+    };
+  });
   const failed: string[] = [];
   const text: string[] = [];
   const say = (...lines: string[]) => {
@@ -37,12 +53,18 @@ export async function recheck(
     lines.forEach(line => print(line));
   };
   say(`re-check: replaying the known fights on game version ${version}`);
+  for (const [from, names] of carriedFrom(fights)) {
+    say(`re-check: carrying the ${from} saves of ${andJoined(names)} to ${version}`);
+  }
 
-  for (const { name, given, script } of fights) {
-    const result = await deps.replay(given, script);
+  const unreplayed: typeof fights = [];
+  for (const fight of fights) {
+    const { name, given, script, carry } = fight;
+    const result = await deps.replay(given, script, carry);
     if (result.kind === "no_answer") {
       failed.push(`${name} didn't replay`);
       say(`  ${name}: no answer: ${result.message}`);
+      unreplayed.push(fight);
       continue;
     }
     const { outcome, steps } = result.replay;
@@ -50,12 +72,20 @@ export async function recheck(
   }
   if (failed.length > 0) {
     say("re-check: the fork and chained-restore checks didn't run, since a known fight didn't replay");
+    for (const [from, names] of carriedFrom(unreplayed)) {
+      const one = names.length === 1;
+      say(
+        `re-check: ${andJoined(names)} ${one ? "was" : "were"} recorded on ${from}. Where ${version} changed ` +
+          `${one ? "its line" : "their lines"}, record ${one ? "a fight" : "fights"} in ${one ? "its" : "their"} ` +
+          `place on ${version}: "Record a known fight again" in docs/runbooks/pin-bump.md.`,
+      );
+    }
     return { failed, text: text.join("\n") };
   }
 
   say("re-check: the fork and chained-restore checks");
-  for (const { name, given, script } of fights) {
-    const result = await deps.checkForks(given, script.inputs);
+  for (const { name, given, script, carry } of fights) {
+    const result = await deps.checkForks(given, script.inputs, carry);
     if (result.kind === "no_answer") {
       failed.push(`${name}'s checks got no answer`);
       say(`  ${name}: no answer: ${result.message}`);

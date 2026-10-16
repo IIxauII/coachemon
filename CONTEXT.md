@@ -276,7 +276,9 @@ Distinct from the save the game writes at the start of a wave, which a solve fro
 
 The PokéRogue release the live tab serves, as the game itself reports it. An **oracle** runs exactly one game version,
 and it refuses a save from any other, because the game would load it under the wrong rules without a word. What holds
-an oracle to its version is the test harness having replayed a known fight on it, not the clone.
+an oracle to its version is the test harness having replayed a known fight on it, not the clone. That re-check takes
+the one save from an older game the oracle ever loads: a known fight's, **carried** to the new version through the
+game's own migration, as a player's save is carried when the game updates.
 
 Distinct from a **build id**, which is which build of the extension a tab runs.
 

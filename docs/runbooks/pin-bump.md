@@ -44,6 +44,12 @@ it runs the **harness re-check** in that clone:
    down to the win.
 2. Then it runs the fork check and the chained-restore check on each line (#662).
 
+A known fight recorded on an older version than `<new>` is **carried** to it (#703). The clone loads the old save
+through the game's own migration, as it loads a player's (`game-code.md` §31), and the harness migrates the fight's live
+export the same way. The loaded scene must then match that migrated export, which carries `<new>` as its version. The
+known facts and the win are held to the line as live recorded it. The re-check names each carried fight and the version
+it came from. A fight recorded on `<new>` itself replays as it always did.
+
 Each check's straight run must also end as live did. Any failure stops the stamp, which names the fight and the check
 that failed. When all of them pass, the stamp writes
 the pin, the hashes and `recheck: { "gameVersion": "<new>" }`. The solver's refusal gate reads that record, and solves
@@ -54,16 +60,36 @@ the new pin to players.
 
 ## When the re-check fails
 
-- **"the live game is 1.12.0.11, but solving runs on <new> only"**: the known fights are 1.12.0.11 saves, and a replay
-  refuses a save of another version. So for now the re-check passes only on the version its fights were played on. How
-  a known fight reaches a new version is open (#703).
-- **A fact live recorded that the replay shows otherwise** (`known_turn_missed`): the harness drifted since the last
-  stamp, through this repo's own harness or the clone's test framework. No line the oracle finds can be trusted until
-  it is fixed.
+- **A carried fight that doesn't replay**: the re-check ends by naming each one to record again on `<new>`. First rule
+  out the harness, as for any fight. Then, if `<new>` changed the fight itself, record another in its place (below). That covers a
+  move, an ability, an item, the AI, or what the migration rewrites. A `scene_mismatch` names the field the migration
+  and the load disagree on. A `known_turn_missed` or an `illegal_step` is the line playing out otherwise.
+- **A fact live recorded that the replay shows otherwise** (`known_turn_missed`) on a fight recorded on `<new>`: the
+  harness drifted since the last stamp, through this repo's own harness or the clone's test framework. No line the
+  oracle finds can be trusted until it is fixed.
 - **A restore that played a turn otherwise**: the fork point's restore lost state the straight run kept. #662 found one
   this way (Intimidate firing again on every reload).
 - **The clone isn't set up**: the message names the command that sets it up.
 
 `npm run oracle:battle -- --replay <script> <export>` and `-- --check <script> <export>` run one fight's replay or checks
-alone. `-- --unchecked` solves on a version the re-check hasn't passed. It exists for the dev only, and the plugin never
-passes it.
+alone, in the pinned clone, so a carried fight replays only through the stamp. `-- --unchecked` solves on a version the
+re-check hasn't passed. It exists for the dev only, and the plugin never passes it.
+
+## Record a known fight again
+
+A known fight is two files in `src/solver/fixtures/`, named in `KNOWN_FIGHTS` in `scripts/recheck/recheck.ts`:
+
+- **`<stem>.json`**: `{ live: { wave, battleSeed }, save, liveExport }`. The driver's `read_session` gives all three at
+  the fight's first decision: `battle_wave` and `battle_seed`, `wave_start` and `export`.
+- **`<stem>.win.script.json`**: the inputs played, and `known`: the outcome, and after each turn the HP, status and
+  stat stages live showed, for the mons the line turns on.
+
+The old fight can't be played again on `<new>`: pokerogue.net offers no session import (only a dev, beta or app build
+does, `src/ui/handlers/menu-ui-handler.ts` in the clone), and the extension reads pokerogue.net alone. So a fight that
+no longer carries is replaced by a new one, played live on pokerogue.net once it serves `<new>`:
+
+1. Reach a single trainer fight: not a Daily, a double or a Mystery Encounter, which the solver refuses.
+2. At the first decision, before any input, call `read_session`, and write `<stem>.json` from it.
+3. Play it to a win. After each turn, write down what live shows for the mons the line turns on.
+4. Write `<stem>.win.script.json`, and name the fight in `KNOWN_FIGHTS` in place of the one it replaces.
+5. Stamp again. The new fight replays on `<new>` without a carry.

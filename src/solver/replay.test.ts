@@ -395,3 +395,55 @@ test("a harness that failed is no answer, never a win or a loss (#660)", async (
     assert.match(message, /[^.!?][.!?] The card still coaches\.$/);
   }
 });
+
+const NEXT = "1.12.1.1";
+
+/** Drayton as a clone at NEXT reports it, carried from PIN by a migration that renamed an item and floored the money. */
+const carriedReport = () => {
+  const report = clean();
+  const renamed = (save: SessionSave) => ({
+    ...structuredClone(save),
+    money: 48000,
+    modifiers: save.modifiers.map(item => (item.typeId === "EXP_SHARE" ? { ...item, typeId: "EXP_ALL" } : item)),
+  });
+  const migrated = { save: renamed(drayton.save), liveExport: renamed(drayton.liveExport) };
+  return {
+    ...report,
+    version: NEXT,
+    hygiene: { ...report.hygiene, items: { ...report.hygiene.items, ours: totals(migrated.save.modifiers) } },
+    scene: { ...structuredClone(migrated.liveExport), gameVersion: NEXT } as Record<string, any>,
+    migrated,
+  };
+};
+
+const carry = async (report: unknown) => {
+  const { clone, handed } = fakeClone({ out: JSON.stringify(report) });
+  const result = await replay({ ...drayton, cloneVersion: NEXT }, { inputs: [bounce] }, clone, { carried: true });
+  return { result, handed };
+};
+
+test("a known fight carried to a newer game is held to its save and live export as that game migrates them (#703)", async () => {
+  const { result, handed } = await carry(carriedReport());
+  const receipt = result.kind === "replayed" ? result.replay.receipt : assert.fail(JSON.stringify(result).slice(0, 300));
+
+  assert.deepEqual(JSON.parse(handed[0].input), { save: drayton.save, inputs: [bounce], liveExport: drayton.liveExport });
+  assert.match(receipt[0].checked, /game version 1\.12\.0\.11, carried to 1\.12\.1\.1 by the game's own migration/);
+  assert.match(receipt[3].checked, /as game version 1\.12\.1\.1 migrates it/);
+});
+
+test("a carried scene that differs from the migrated live export gives no answer naming the difference (#703)", async () => {
+  const report = carriedReport();
+  report.scene.party[0].hp -= 40;
+  const { reason: why, message } = reason((await carry(report)).result);
+
+  assert.equal(why.code, "scene_mismatch");
+  assert.match(message, /our Gyarados \(slot 0\) hp: loaded 561, live 601/);
+});
+
+test("a carried replay whose harness reports no migration fails, never matching the unmigrated export (#703)", async () => {
+  const { migrated: _migrated, ...report } = carriedReport();
+  const { reason: said } = reason((await carry(report)).result);
+
+  assert.equal(said.code, "harness_failed");
+  assert.match(said.code === "harness_failed" ? said.why : "", /didn't say how it migrated/);
+});

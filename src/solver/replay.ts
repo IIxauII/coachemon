@@ -3,7 +3,7 @@ import { z } from "zod";
 import { NAMES } from "../enums/generated.ts";
 import { title } from "./describe.ts";
 import { augmentedExport } from "./extras.ts";
-import { refuse } from "./gate.ts";
+import { type Carry, refuse } from "./gate.ts";
 import type { SavedItem, SessionSave, SolveInput } from "./input.ts";
 import { luckOf } from "./luck.ts";
 import { noAnswer } from "./no-answer.ts";
@@ -46,6 +46,8 @@ const report = z.object({
   steps: z
     .array(z.object({ turn: z.int(), input: input.nullable(), checkpoint, strayPrompts: z.int(), draws: z.array(draw) }))
     .optional(),
+  /** The save and the live export as the clone migrates them, for a carried replay. */
+  migrated: z.object({ save: z.looseObject({}), liveExport: z.looseObject({}) }).optional(),
   end: z
     .union([
       outcome,
@@ -66,9 +68,10 @@ export async function replay(
   given: Pick<SolveInput, "save" | "extras" | "live" | "liveExport" | "cloneVersion">,
   { inputs, known }: Pick<Script, "inputs" | "known">,
   clone: Clone,
+  { carried = false }: Carry = {},
 ): Promise<ReplayResult> {
   // A replay is what the harness re-check runs (#665), so it can't wait on one having passed.
-  const refused = refuse(given, { gameVersion: given.cloneVersion });
+  const refused = refuse(given, { gameVersion: given.cloneVersion }, { carried });
   if (refused) return refused;
   const { save } = given;
   const augmented = augmentedExport(given);
@@ -79,7 +82,8 @@ export async function replay(
   if (!liveExport) return noAnswer({ code: "no_live_export" });
 
   const source = readFileSync(new URL("./harness.test.ts.template", import.meta.url), "utf8");
-  const run = await clone({ name: "replay", source, input: JSON.stringify(harnessJob(save, inputs, augmented?.forkPoint)) });
+  const job = { ...harnessJob(save, inputs, augmented?.forkPoint), ...(carried && { liveExport }) };
+  const run = await clone({ name: "replay", source, input: JSON.stringify(job) });
   if ("missing" in run) return noAnswer({ code: "no_clone", version: given.cloneVersion, cause: run.missing });
   if (run.out === undefined) return failed("the harness wrote no report");
   let parsed;
@@ -89,12 +93,17 @@ export async function replay(
     return failed("its report is not JSON");
   }
   if (!parsed.success) return failed(`its report doesn't read: ${z.prettifyError(parsed.error)}`);
-  const { version, error, hygiene, battle, scene, steps, end } = parsed.data;
+  const { version, error, hygiene, battle, scene, steps, migrated, end } = parsed.data;
 
   if (version !== undefined && version !== given.cloneVersion) {
     return noAnswer({ code: "clone_version", clone: version, pinned: given.cloneVersion });
   }
-  const unclean = hygiene && loadHygiene(hygiene, save);
+  if (carried && error === undefined && !migrated) return failed("it didn't say how it migrated the carried save");
+  // A migration leaves the save's `gameVersion` as it was, and the loaded scene's export writes its own (game-code.md §31).
+  const held = migrated
+    ? { save: migrated.save as SessionSave, liveExport: { ...migrated.liveExport, gameVersion: version } as SessionSave }
+    : { save, liveExport };
+  const unclean = hygiene && loadHygiene(hygiene, held.save);
   if (unclean) return unclean;
   if (error !== undefined) return failed(error.split("\n")[0]);
   if (version === undefined || !hygiene || !battle || !scene || !steps || end === undefined) {
@@ -110,7 +119,7 @@ export async function replay(
   }
   const stray = steps.find(step => step.strayPrompts > 0);
   if (stray) return broke("stray_prompt", `${stray.strayPrompts} after turn ${stray.turn}`);
-  const differences = sceneDiffers(scene, liveExport);
+  const differences = sceneDiffers(scene, held.liveExport);
   if (differences.length > 0) return noAnswer({ code: "scene_mismatch", differences });
   if (typeof end === "object") {
     const { index } = end.illegal;
@@ -131,7 +140,14 @@ export async function replay(
       ...played,
       luck: luckOf(steps),
       receipt: [
-        { step: "versions", checked: `the save, the clone and the pin are all game version ${version}` },
+        {
+          step: "versions",
+          checked:
+            save.gameVersion === version
+              ? `the save, the clone and the pin are all game version ${version}`
+              : `the clone and the pin are game version ${version}, and the save is game version ${save.gameVersion}, ` +
+                `carried to ${version} by the game's own migration`,
+        },
         {
           step: "load_hygiene",
           checked:
@@ -153,8 +169,9 @@ export async function replay(
         {
           step: "scene_matches",
           checked:
-            "the loaded scene's export at the first decision is the live tab's export at the decision, all but its " +
-            "play time, timestamp and the abilities applied on entry",
+            "the loaded scene's export at the first decision is the live tab's export at the decision" +
+            `${migrated ? `, as game version ${version} migrates it,` : ""} all but its play time, timestamp and the ` +
+            "abilities applied on entry",
         },
         known
           ? {

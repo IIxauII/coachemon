@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import type { Carry } from "../../src/solver/gate.ts";
 import { noAnswer } from "../../src/solver/no-answer.ts";
 import type { Input, ReplayResult } from "../../src/solver/oracle-line.ts";
 import type { CheckResult, Checks, Script } from "../../src/solver/solver.ts";
@@ -35,16 +36,23 @@ const fakes = ({
   replays = {},
   checks = {},
 }: { replays?: Record<number, ReplayResult>; checks?: Record<number, CheckResult> } = {}) => {
-  const calls: { kind: "replay" | "check"; wave: number; given: Given; inputs: readonly Input[]; script?: Script }[] = [];
+  const calls: {
+    kind: "replay" | "check";
+    wave: number;
+    given: Given;
+    inputs: readonly Input[];
+    script?: Script;
+    carry: Carry;
+  }[] = [];
   return {
     calls,
     deps: {
-      replay: async (given: Given, script: Script) => {
-        calls.push({ kind: "replay", wave: given.save.waveIndex, given, inputs: script.inputs, script });
+      replay: async (given: Given, script: Script, carry: Carry) => {
+        calls.push({ kind: "replay", wave: given.save.waveIndex, given, inputs: script.inputs, script, carry });
         return replays[given.save.waveIndex] ?? replayed(script.inputs.length);
       },
-      checkForks: async (given: Given, inputs: readonly Input[]) => {
-        calls.push({ kind: "check", wave: given.save.waveIndex, given, inputs });
+      checkForks: async (given: Given, inputs: readonly Input[], carry: Carry) => {
+        calls.push({ kind: "check", wave: given.save.waveIndex, given, inputs, carry });
         return checks[given.save.waveIndex] ?? { kind: "checked" as const, checks: passing(inputs.length) };
       },
     },
@@ -62,6 +70,7 @@ test("the re-check replays the three known fights at the stamped version, then c
     ["replay 180", "replay 188", "replay 190", "check 180", "check 188", "check 190"],
   );
   for (const call of calls) assert.equal(call.given.cloneVersion, VERSION);
+  for (const call of calls) assert.deepEqual(call.carry, { carried: false }, "the fights were recorded on this version");
   for (const call of calls.filter(c => c.kind === "replay")) {
     assert.ok(call.given.live && call.given.liveExport, "a replay needs the live battle and its export");
     assert.equal(call.script?.known?.outcome, "won", "a known line is held to every fact live recorded");
@@ -111,4 +120,37 @@ test("checks whose straight run doesn't win as live did fail the re-check, thoug
   const run = await recheck(VERSION, deps);
 
   assert.deepEqual(run.failed, ['Gordie W180\'s straight run ended "lost", not as live did']);
+});
+
+test("at a newer game version the re-check carries each known fight's save to it, and passes (#703)", async () => {
+  const { calls, deps } = fakes();
+
+  const run = await recheck("1.12.1.1", deps);
+
+  assert.deepEqual(run.failed, []);
+  assert.equal(calls.length, 6);
+  for (const call of calls) assert.deepEqual(call.carry, { carried: true });
+  for (const call of calls) assert.equal(call.given.cloneVersion, "1.12.1.1");
+  assert.match(run.text, /carrying the 1\.12\.0\.11 saves of Gordie W180, Drayton W188 and Kieran W190 to 1\.12\.1\.1/);
+});
+
+test("a carried fight that doesn't replay ends the re-check naming it to record again on the new version, and where how is (#703)", async () => {
+  const missedTurn = noAnswer({ code: "known_turn_missed", misses: ["turn 3: our Reshiram hp 120, live 118"] });
+  const { deps } = fakes({ replays: { 180: missedTurn, 190: missedTurn } });
+
+  const run = await recheck("1.12.1.1", deps);
+
+  assert.deepEqual(run.failed, ["Gordie W180 didn't replay", "Kieran W190 didn't replay"]);
+  assert.match(
+    run.text,
+    /Gordie W180 and Kieran W190 were recorded on 1\.12\.0\.11\. Where 1\.12\.1\.1 changed their lines, record fights in their place on 1\.12\.1\.1: "Record a known fight again" in docs\/runbooks\/pin-bump\.md\.$/,
+  );
+});
+
+test("a known fight that doesn't replay on its own version asks for no new recording: the harness drifted, not the game (#703)", async () => {
+  const { deps } = fakes({ replays: { 188: noAnswer({ code: "known_turn_missed", misses: ["turn 1"] }) } });
+
+  const run = await recheck(VERSION, deps);
+
+  assert.doesNotMatch(run.text, /in (its|their) place/);
 });
