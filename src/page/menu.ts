@@ -52,11 +52,11 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
   try {
     if (h.config && Array.isArray(h.config.options)) {
       out.family = "option_select";
-      out.options = h.config.options.map((o: any, i: number) => opt(i, __strip(o.label), { skip: o.skip === true }));
-      out.cursor = typeof h.fullCursor === "number" ? h.fullCursor : h.cursor;
-      out.extra.unskippedIndices = Array.isArray(h.unskippedIndices) ? h.unskippedIndices.slice() : null;
-      const unskipped = out.extra.unskippedIndices as number[] | null;
-      out.extra.selectedIndex = unskipped && typeof unskipped[out.cursor as number] === "number" ? unskipped[out.cursor as number] : out.cursor;
+      out.options = h.config.options.map((o: any, i: number) => opt(i, __strip(o.label), { skip: o.selectable === false }));
+      const unskipped = out.options.filter(o => o.skip !== true).map(o => o.i as number);
+      out.extra.unskippedIndices = unskipped;
+      out.extra.selectedIndex = h.cursor + h.scrollCursor;
+      out.cursor = unskipped.indexOf(out.extra.selectedIndex as number);
       out.readable = out.options.length > 0;
     } else if (mode === m.COMMAND) {
       out.family = "command";
@@ -160,14 +160,24 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
     } else if (mode === m.STARTER_SELECT) {
       out.family = "starter_select";
       const gd = scene.gameData;
-      const grid = h.filteredStarterContainers || [];
-      out.options = grid.map((c: any, i: number) => opt(i, __try(() => c.species.name), { cost: __try(() => gd.getSpeciesStarterValue(c.species.speciesId)) }));
-      out.cursor = h.cursor;
+      // Gotcha: the grid keeps only its 81 on-screen containers, so a species is named through `setSpecies` on a bare
+      // object. It looks the species up before it reads `props`, and with none throws before it adds a sprite.
+      const setSpecies = __try(() => Object.getPrototypeOf(h.starterContainers[0]).setSpecies);
+      const nameOf = (id: number): string | null => __try(() => {
+        const probe: any = {};
+        try { setSpecies.call(probe, id); } catch (e) {}
+        return probe.species.name;
+      });
+      const grid: number[] = h.filteredStarterIds || [];
+      out.options = grid.map((id, i) => opt(i, nameOf(id), { cost: __try(() => gd.getSpeciesStarterValue(id)) }));
+      // `cursor` is an on-screen container; the label reads `<party value>/<limit>`.
+      out.cursor = h.scrollCursor * 9 + h.cursor;
       out.extra.scrollCursor = h.scrollCursor;
-      const party = (h.starterSpecies || []).map((s: any) => ({ name: s.name, cost: __try(() => gd.getSpeciesStarterValue(s.speciesId)) }));
+      const party = (h.partyStarterIds || []).map((id: number) => ({ name: nameOf(id), cost: __try(() => gd.getSpeciesStarterValue(id)) }));
       out.extra.party = party;
       out.extra.partyValue = party.reduce((t: number, s: any) => t + (s.cost || 0), 0);
-      out.extra.valueLimit = __try(() => h.getValueLimit());
+      const limit = __try(() => Number(/\/([\d.]+)$/.exec(h.valueLimitLabel.text)![1]));
+      out.extra.valueLimit = Number.isFinite(limit) ? limit : null;
       out.extra.partyValid = __try(() => h.isPartyValid());
       out.readable = out.options.length > 0;
     } else if (mode === m.MESSAGE || mode === m.EVOLUTION_SCENE || mode === m.EGG_HATCH_SCENE || mode === m.EGG_HATCH_SUMMARY || mode === m.LOADING || mode === m.UNAVAILABLE || mode === m.ALERT_MODAL) {
@@ -204,11 +214,6 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       out.text = __try(() => __txt(h.titleText)) || out.text;
       out.extra.formLabels = (h.formLabels || []).map(__txt);
       out.cursor = null;
-      out.readable = out.options.length > 0;
-    } else if (mode === m.MENU) {
-      out.family = "menu";
-      out.options = (__txt(h.optionSelectText) || "").split("\n").map((t: string, i: number) => opt(i, t));
-      out.cursor = h.cursor;
       out.readable = out.options.length > 0;
     } else if (mode === m.MYSTERY_ENCOUNTER) {
       out.family = "mystery_encounter";

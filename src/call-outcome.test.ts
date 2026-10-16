@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { CallOutcomes, worst } from "./call-outcome.ts";
 import { UiMode } from "./enums/generated.ts";
+import { PINNED_GAME_VERSION } from "./escape-ladder/lookup.ts";
 import type { PredicateRead, Ready } from "./game/port.ts";
 import { CALL_BUDGET_MS, POLL_MS, type SettleResult } from "./settle.ts";
 import { THRESHOLD, type Choice } from "./stuck/detector.ts";
@@ -11,7 +12,7 @@ function read(over: Partial<Ready> = {}): Ready {
   return {
     ready: true, settled: true, reason: "menu-open", mode: UiMode.COMMAND, phaseName: "CommandPhase", wave: 5, turn: 1, money: 1000,
     runLive: true, tutorialActive: false, handler: null, cursor: 0, modeChain: [], messageText: null, onActionInput: false,
-    awaitingActionInput: false, fine: "command|0", frame: 1, domMode: null, gameVersion: "1.12.0.11", screen: "COMMAND", ...over,
+    awaitingActionInput: false, fine: "command|0", frame: 1, domMode: null, gameVersion: PINNED_GAME_VERSION, screen: "COMMAND", ...over,
   };
 }
 

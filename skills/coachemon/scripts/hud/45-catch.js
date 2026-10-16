@@ -110,7 +110,7 @@ const accountReasons = (account, foe) => {
     | (foe.shiny ? 2n : 1n) | (variant >= 2 ? 64n : variant === 1 ? 32n : 16n) | (1n << BigInt(7 + (foe.formIndex ?? 0)));
   // The base `variant`, not `getVariant()` (game-code.md §20).
   // @mirrors candy
-  const candy = 5 * 2 ** variant * (foe.isBoss?.() ? 2 : 1);
+  const candy = 5 * 2 ** variant * (foe.isBoss?.() ? 2 : 1) + (account.extraCatchCandy ?? 0);
   // A Daily run pays candy only for a new dex attribute, asked of the **masked** bits of the entry the candy goes to
   // (game-code.md §20): read raw, `attr` promises candy the game won't pay. Only this line is masked. The reasons
   // below test bits the foe in front of us has, bar an `isUnobtainable` form, and masking that would turn "new form"

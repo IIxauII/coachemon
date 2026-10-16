@@ -31,8 +31,16 @@ export function starters(L: Located, _args: Record<string, never>): StartersResu
   const __try = (f: () => any) => { try { return f(); } catch (e) { return null; } };
   const h = __try(() => L.ui.handlers[L.m.STARTER_SELECT]);
   const gd = __try(() => L.scene.gameData);
-  const grid: StartersResult["grid"] = __try(() => (h.filteredStarterContainers || []).map((c: any, i: number) => ({
-    i, name: __try(() => c.species.name), id: __try(() => c.species.speciesId), cost: __try(() => gd.getSpeciesStarterValue(c.species.speciesId)),
+  // Gotcha: the grid keeps only its 81 on-screen containers, so a species is named through `setSpecies` on a bare
+  // object. It looks the species up before it reads `props`, and with none throws before it adds a sprite.
+  const setSpecies = __try(() => Object.getPrototypeOf(h.starterContainers[0]).setSpecies);
+  const nameOf = (id: number): string | null => __try(() => {
+    const probe: any = {};
+    try { setSpecies.call(probe, id); } catch (e) {}
+    return probe.species.name;
+  });
+  const grid: StartersResult["grid"] = __try(() => (h.filteredStarterIds || []).map((id: number, i: number) => ({
+    i, name: nameOf(id), id, cost: __try(() => gd.getSpeciesStarterValue(id)),
   }))) ?? [];
   // The grid's own costs, keyed once, so `owned` never prices a species differently from the row the player sees.
   const costs: Record<number, number | null> = {};
@@ -49,13 +57,15 @@ export function starters(L: Located, _args: Record<string, never>): StartersResu
       costReduction: __try(() => st.valueReduction),
       candy: __try(() => st.candyCount),
     }))) ?? [];
+  // `cursor` is an on-screen container; the label reads `<party value>/<limit>`.
+  const limit = __try(() => Number(/\/([\d.]+)$/.exec(h.valueLimitLabel.text)![1]));
   return {
     ok: true,
-    cursor: __try(() => h.cursor),
+    cursor: __try(() => (typeof h.cursor === "number" ? h.scrollCursor * 9 + h.cursor : null)),
     scrollCursor: __try(() => h.scrollCursor),
     grid,
-    party: __try(() => (h.starterSpecies || []).map((s: any) => s.name)) ?? [],
-    valueLimit: __try(() => h.getValueLimit()),
+    party: __try(() => (h.partyStarterIds || []).map(nameOf)) ?? [],
+    valueLimit: Number.isFinite(limit) ? limit : null,
     partyValid: __try(() => h.isPartyValid()),
     owned,
   };

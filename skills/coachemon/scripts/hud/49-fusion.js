@@ -150,7 +150,7 @@ export const splicerReward = (run, t) => {
     holder: { icon: row.base.icon, name: row.base.name } };
 };
 
-export const spliceScreen = (s, h) => (s.ui?.getMode?.() === UiMode.PARTY && h?.partyUiMode === PartyUiMode.SPLICE ? h : null);
+export const spliceScreen = (s, h) => (s.ui?.mode === UiMode.PARTY && h?.partyUiMode === PartyUiMode.SPLICE ? h : null);
 
 // The margin a pair has to clear is ΔV less the release, in turns, so two pairs can be within it of each other: the
 // `better` prompt stays on the gap it was on, read in the judgment's unit rather than in percent of a carry's power.

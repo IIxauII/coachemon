@@ -162,8 +162,9 @@ const STATUS_ATTR = {
   ForceSwitchOutAttr: [12, "forces a switch"], SacrificialFullRestoreAttr: [30, "full restore, user faints"],
 };
 // A flat value: these heal by the weather (game-code.md §14).
-const HEAL_FLAT = { WeatherHealAttr: 45, PlantHealAttr: 45, SandHealAttr: 45 };
-const isRecovery = mv => ["HealAttr", "BoostHealAttr", ...Object.keys(HEAL_FLAT)].some(n => moveTraits(mv).attrNames.has(n));
+const WEATHER_HEALS = new Set([MoveId.MORNING_SUN, MoveId.SYNTHESIS, MoveId.MOONLIGHT, MoveId.SHORE_UP]);
+const WEATHER_HEAL_VALUE = 45;
+const isRecovery = mv => moveTraits(mv).attrNames.has("HealAttr") || (moveTraits(mv).attrNames.has("VariableHealAttr") && mv.id !== MoveId.SWALLOW);
 const inflictsStatus = mv => moveTraits(mv).inflicts.some(x => x.cls === "StatusEffectAttr" && !(x.self || x.side));
 
 const doublesNote = share => `${Math.round(share * 100)}% doubles ahead`;
@@ -193,8 +194,7 @@ const DISRUPT_TAGS = new Set(["TAUNT", "ENCORE", "HEAL_BLOCK", "DISABLED", "TORM
 const STATUS_FLOOR = 0.3, DISRUPT_HIT = 1.4, DISRUPT_SPREAD = 0.4, DISRUPT_NONE = 0.3, UNSURE = 0.5;
 // `healBlockedMoves`, by attribute (game-code.md §16).
 // @mirrors HEAL_BLOCKED
-const HEAL_BLOCKED = ["HealAttr", "RestAttr", "WeatherHealAttr", "PlantHealAttr", "SandHealAttr", "BoostHealAttr",
-  "HealOnAllyAttr", "SwallowHealAttr", "WishAttr", "HitHealAttr"];
+const HEAL_BLOCKED = ["HealAttr", "RestAttr", "VariableHealAttr", "HealOnAllyAttr", "WishAttr", "HitHealAttr"];
 export const blockedByHealBlock = mv => HEAL_BLOCKED.some(n => moveTraits(mv).attrNames.has(n));
 
 const foeAbilities = (pk, foe) => {
@@ -304,8 +304,10 @@ const statusScore = (pk, mv, others, double, ctx) => {
   const tr = moveTraits(mv, pk, { party: ctx.party ?? [pk] });
   const aimedAtFoe = x => !(x.self || x.side);
   for (const [name, [n, text]] of Object.entries(STATUS_ATTR)) if (tr.attrNames.has(name)) add(n, text);
-  for (const [name, n] of Object.entries(HEAL_FLAT)) if (tr.attrNames.has(name)) add(n, "heal (weather)");
-  if (tr.heal && (tr.heal.cls === "HealAttr" || tr.heal.cls === "BoostHealAttr")) {
+  const weatherHeal = WEATHER_HEALS.has(mv.id) && tr.attrNames.has("VariableHealAttr");
+  if (weatherHeal) add(WEATHER_HEAL_VALUE, "heal (weather)");
+  // Swallow's ratio is 0 without a Stockpile.
+  if (tr.heal && !weatherHeal && (tr.heal.cls === "HealAttr" || tr.heal.cls === "VariableHealAttr") && tr.heal.ratio > 0) {
     add(Math.round(120 * tr.heal.ratio), `heal ${Math.round(tr.heal.ratio * 100)}%`);
   }
   const roster = ctx.roster?.foes?.length ? ctx.roster : null;

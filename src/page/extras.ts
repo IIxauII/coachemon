@@ -52,7 +52,7 @@ export function extras(L: Located, _args: Record<string, never>): ExtrasResult {
   const mon = (path: string, p: any): MonExtras => ({
     id: read(`${path}.id`, () => p.id),
     toxicTurnCount: read(`${path}.toxicTurnCount`, () => (p.status ? p.status.toxicTurnCount : null)),
-    tempSummonData: read(`${path}.tempSummonData`, () => ({ ...p.tempSummonData })),
+    tempSummonData: read(`${path}.tempSummonData`, () => ({ turnCount: p.summonData.turnCount, waveTurnCount: p.summonData.waveTurnCount })),
     // `abilitiesApplied` is a Set, which JSON writes as `{}` (game-code.md §30).
     waveData: read(`${path}.waveData`, () => ({ endured: p.waveData.endured, abilityRevealed: p.waveData.abilityRevealed, abilitiesApplied: [...p.waveData.abilitiesApplied] })),
   });

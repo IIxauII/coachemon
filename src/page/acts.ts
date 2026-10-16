@@ -49,11 +49,22 @@ export function key(_L: Located, args: { button: string; fine: string }): KeyRes
   return { ok: true };
 }
 
-/** `index` counts unskipped options only (extension-distribution.md §10.1). */
+/**
+ * `index` counts selectable options only, and so does the `fullCursor` it reads back (extension-distribution.md
+ * §10.1). The game's own cursor is the row in view, over `scrollCursor`, which is set first.
+ */
 export function cursorOption(L: Located, args: { index: number; fine: string }): CursorOptionResult {
   const h = L.ui.handlers[L.ui.mode];
-  h.setCursor(args.index);
-  return { ok: true, fullCursor: h.fullCursor, cursor: h.cursor, fine: L.fine() };
+  const options: any[] = Array.isArray(h.options) ? h.options : [];
+  const selectable = options.map((o, i) => (o.selectable === false ? -1 : i)).filter(i => i >= 0);
+  const to = selectable[args.index];
+  if (to === undefined) return { ok: false, why: "no-such-option" };
+  const scroll = Math.max(0, Math.min(to - h.maxOptions + 1, options.length - h.maxOptions));
+  if (h.scrollCursor !== scroll) h.setScrollCursor(scroll);
+  h.setCursor(to - scroll);
+  // Gotcha: passing over an unselectable option arms `repeatInput`, and the next press would run twice.
+  h.repeatInput = false;
+  return { ok: true, fullCursor: selectable.indexOf(h.cursor + h.scrollCursor), cursor: h.cursor, fine: L.fine() };
 }
 
 /** `setRowCursor` before `setCursor`: the order is load-bearing (v1-tool-surface.md §7). */
@@ -65,14 +76,15 @@ export function cursorShop(L: Located, args: { row: number; col: number; fine: s
 }
 
 /**
- * `setCursor` places the cursor against `scrollCursor`, so that is set first, and in filter mode writes
- * `filterBarCursor` instead (#8, game-code.md §23).
+ * `index` and the `cursor` returned are grid indices, while `setCursor` takes an on-screen container, so the row is
+ * scrolled on screen first; in filter mode it writes `filterBarCursor` instead (#8, game-code.md §23). The party, start
+ * and random cursors are dropped as the game's own moves onto the grid drop them, or ACTION would answer there.
  */
 export function cursorStarter(L: Located, args: { index: number; fine: string }): CursorStarterResult {
   const __try = (f: () => any) => { try { return f(); } catch (e) { return null; } };
   const h = L.ui.handlers[L.m.STARTER_SELECT];
   if (h.filterMode === true) return { ok: false, why: "filter-mode" };
-  const n = (h.filteredStarterContainers || []).length;
+  const n = (h.filteredStarterIds || []).length;
   // @mirrors starter-grid
   const rows = Math.ceil(n / 9);
   const row = Math.floor(args.index / 9);
@@ -80,8 +92,10 @@ export function cursorStarter(L: Located, args: { index: number; fine: string })
     h.scrollCursor = Math.max(0, Math.min(row - 4, rows - 9));
     h.updateScroll();
   }
-  h.setCursor(args.index);
-  return { ok: true, cursor: h.cursor, scrollCursor: h.scrollCursor, species: __try(() => h.filteredStarterContainers[h.cursor].species.name), fine: L.fine() };
+  for (const c of [h.partyCursorObj, h.startCursorObj, h.randomCursorObj]) __try(() => c.setVisible(false));
+  __try(() => h.cursorObj.setVisible(true));
+  h.setCursor(args.index - h.scrollCursor * 9);
+  return { ok: true, cursor: h.scrollCursor * 9 + h.cursor, scrollCursor: h.scrollCursor, species: __try(() => h.starterContainers[h.cursor].species.name), fine: L.fine() };
 }
 
 /** Off `moveSelect`, `setCursor` turns the page instead of moving the row (v1-tool-surface.md §7). */

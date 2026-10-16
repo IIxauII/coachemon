@@ -1454,8 +1454,8 @@ const statusPlay = (turn, me, f, info) => {
   if (t.heal?.self) {
     const max = me.getMaxHp?.() ?? me.hp;
     if (me.hp >= max) return null;
-    const ratio = t.heal.ratioIn(turn.mon(me).weather, me, f);
-    return { kind: "heal", self: true, amount: Math.max(1, Math.floor(max * ratio)), note: `heal ${Math.round(ratio * 100)}%` };
+    const ratio = t.heal.ratioIn(me);
+    return { kind: "heal", self: true, amount: Math.round(max * ratio), note: `heal ${Math.round(ratio * 100)}%` };
   }
   if (t.hazard) {
     const v = hazardValue(turn, me, t.hazard.tag);
@@ -1485,8 +1485,8 @@ const hazardValue = (turn, me, tagType) => {
   const total = shares.reduce((t, x) => t + x, 0);
   return total > 0 ? { turns: total * HAZARD_TURNS, n: shares.filter(x => x > 0).length } : null;
 };
-const lastMoveOf = me => ((me.tempSummonData?.turnCount ?? 0) >= 2 ? me.getLastXMoves?.(1)?.[0]?.move ?? null : null);
-const cameInLastTurn = (turn, p) => (p.tempSummonData?.turnCount ?? 2) <= 1 && (turn.facts.turn ?? 1) > 1;
+const lastMoveOf = me => ((me.summonData?.turnCount ?? 0) >= 2 ? me.getLastXMoves?.(1)?.[0]?.move ?? null : null);
+const cameInLastTurn = (turn, p) => (p.summonData?.turnCount ?? 2) <= 1 && (turn.facts.turn ?? 1) > 1;
 
 // Slot 0's command, read at slot 1's prompt: a move → `{ me, pm, target }`, `target` an index into `active` ("both" for
 // a spread move, null for our side); a switch → `{ me, switchIn }`.

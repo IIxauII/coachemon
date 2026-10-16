@@ -77,16 +77,19 @@ const sceneEnv = s => {
   const b = s?.currentBattle ?? {};
   const foes = tryDo(() => s.getEnemyParty(), []) ?? [];
   const party = tryDo(() => s.getPlayerParty(), []) ?? [];
+  const field = tryDo(() => s.getField(true), []) ?? [];
   return {
     s, foes, playerParty: party,
     // The party on `p`'s side, for Beat Up.
     party: p => tryDo(() => (p?.isPlayer?.() ? party : foes), null),
-    field: tryDo(() => s.getField(true), []) ?? [],
+    field,
     slots: tryDo(() => s.getField(), []) ?? [],
     enemyModifiers: s?.enemyModifiers ?? [],
     modifiers: s?.modifiers ?? [],
     arenaTags: tryDo(() => s.arena?.tags, []) ?? [],
     weather: tryDo(() => s.arena?.weather?.weatherType, WeatherType.NONE) ?? WeatherType.NONE,
+    // `isWeatherSuppressed` (game-code.md §14).
+    weatherSuppressed: field.some(q => tryDo(() => !!q?.hasAbilityWithAttr?.("SuppressWeatherEffectAbAttr"), false)),
     terrain: tryDo(() => s.arena?.terrain?.terrainType, TerrainType.NONE) ?? TerrainType.NONE,
     finalBoss: !!b.isClassicFinalBoss,
     trainer: b.trainer ?? null,
@@ -131,7 +134,7 @@ const sceneFacts = (s, env, live) => {
     battleType: b.battleType, mysteryEncounter: env.mysteryEncounter,
     party: env.playerParty, foes: env.foes, field: env.field,
     trickRoom: !!tryDo(() => s.arena?.getTag?.("TRICK_ROOM"), false),
-    weather: env.weather, weatherSuppressed: !!tryDo(() => s.arena?.weather?.isEffectSuppressed?.(), false),
+    weather: env.weather, weatherSuppressed: env.weatherSuppressed,
     biomeId: tryDo(() => s.arena?.biomeId, null),
     hazards: (tagType, side) => tryDo(() => s.arena?.getTagOnSide?.(tagType, side)?.layers, 0) ?? 0,
     modifiers: env.modifiers, enemyModifiers: env.enemyModifiers,
@@ -236,7 +239,7 @@ const monRecord = (env, live, p) => {
         return null;
       }, null);
       if (override) return override;
-      return env.weather && !tryDo(() => env.s?.arena?.weather?.isEffectSuppressed?.(), false) ? env.weather : WeatherType.NONE;
+      return env.weather && !env.weatherSuppressed ? env.weather : WeatherType.NONE;
     })(),
     hasAbility: id => tryDo(() => !!p.hasAbility?.(id, false, true), false),
     isOfType: t => tryDo(() => p.isOfType?.(t), null) ?? typesOf(p).includes(TYPES[t]),

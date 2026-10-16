@@ -44,7 +44,7 @@ export const drawRewards = m => {
     tmTo(f) ?? heldTo(f) ?? h("span", dim, `${f.why}${usersText(f)}`)));
   return [
     some("act", "Now", rewardsSummary(m), [
-      m.buys.length ? h("div", dim, "buy first — taking the free reward closes the shop") : null,
+      m.buys.length && m.free.length ? h("div", dim, "buy first — taking the free reward closes the shop") : null,
       ...buyRows, m.buys.length ? h("div", sep) : null, take,
       ...drawReroll(m)]),
     some("options", "Others", null, others),

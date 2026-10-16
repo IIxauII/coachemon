@@ -259,8 +259,8 @@ function holders(): Holder[] {
     // Destroyed, not only dropped: a foe's battle info listens on the scene for the berries and moves it shows.
     { items: () => [...s.field.list], drop: o => s.field.remove(o, true) },
     { items: () => [...s.fieldUI.list], drop: o => s.fieldUI.remove(o, true) },
-    { items: () => [...s.spriteSparkleHandler.sprites], drop: o => s.spriteSparkleHandler.remove(o) },
-    ...icons.map(h => ({ items: () => [...h.icons.keys()], drop: (o: unknown) => h.remove(o) })),
+    { items: () => [...s.spriteTeraSparkleHandler.sprites], drop: o => s.spriteTeraSparkleHandler.remove(o) },
+    ...icons.map(h => ({ items: () => [...h.icons.keys()], drop: (o: unknown) => h.icons.delete(o) })),
     { items: () => canvases.pool.flatMap((c: any) => c.parent ?? []), drop: o => canvases.remove(o) },
   ];
 }
@@ -513,7 +513,7 @@ function forkPoint(): string {
     faints: { ours: faints(battle.playerFaintsHistory), foes: faints(battle.enemyFaintsHistory) },
     teamIndex: Object.fromEntries(s.getEnemyParty().map((p: any) => [p.id, p.initialTeamIndex])),
     bossIndex: Object.fromEntries(s.getEnemyParty().map((p: any) => [p.id, p.bossSegmentIndex])),
-    temp: Object.fromEntries(all.map(p => [p.id, { ...p.tempSummonData }])),
+    temp: Object.fromEntries(all.map(p => [p.id, { turnCount: p.summonData.turnCount, waveTurnCount: p.summonData.waveTurnCount }])),
     wave: Object.fromEntries(all.map(p => [p.id, { ...p.waveData, abilitiesApplied: [...p.waveData.abilitiesApplied] }])),
     summon: Object.fromEntries(all.filter(p => p.isOnField()).map(p => [p.id, JSON.parse(JSON.stringify(p.summonData))])),
     status: Object.fromEntries(
@@ -566,7 +566,6 @@ function putBack(fork: any) {
   const teraTypes = new Map([...party, ...enemyParty].map((m: any) => [m.id, m.teraType]));
   for (const p of all) {
     p.teraType = teraTypes.get(p.id) ?? p.teraType;
-    Object.assign(p.tempSummonData, fork.temp[p.id]);
     const wave = fork.wave[p.id];
     p.waveData.endured = wave.endured;
     p.waveData.abilityRevealed = wave.abilityRevealed;
@@ -586,6 +585,8 @@ function putBack(fork: any) {
   for (const p of [...s.getPlayerField(), ...s.getEnemyField()]) {
     if (fork.summon[p.id]) p.summonData = new PokemonSummonData(fork.summon[p.id]);
   }
+  // After the summon data, which a copy constructs with the turn counts at 1: its `toJSON` leaves them out.
+  for (const p of all) Object.assign(p.summonData, fork.temp[p.id]);
 }
 
 const hp = () => {

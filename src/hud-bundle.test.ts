@@ -99,7 +99,7 @@ test("the probe names Stellar, which the HUD's type chart leaves out", () => {
     name: "x", level: 1, hp: 1, getMaxHp: () => 1, getTypes: () => types, getAbility: () => null, getStat: () => 1,
     isOnField: () => true, isBoss: () => false, moveset: [{ getMove: () => ({ name: "Tera Blast", type: 18 }), getName: () => "Tera Blast", getMovePp: () => 5, ppUsed: 0 }],
   });
-  const scene = { ui: { getHandler: () => null, getMode: () => 0 }, currentBattle: { waveIndex: 1 }, getPlayerParty: () => [mon([11, 18])],
+  const scene = { ui: { getHandler: () => null, mode: 0 }, currentBattle: { waveIndex: 1 }, getPlayerParty: () => [mon([11, 18])],
     getEnemyParty: () => [], modifiers: [] };
   scope.Phaser = { Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene } } } }] } } } };
   const root = { dataset: {} as Record<string, string> };

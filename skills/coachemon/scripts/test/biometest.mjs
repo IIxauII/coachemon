@@ -158,7 +158,7 @@ const mount = ({ labels = ["Swamp", "Construction Site"], party = team(), wave =
   const scene = {
     phaseManager: { getCurrentPhase: () => ({ phaseName: "SelectBiomePhase" }) },
     currentBattle: { waveIndex: wave }, arena: { biomeId: from }, waveCycleOffset: offset, gameMode,
-    ui: { getMode: () => 15, getHandler: () => handler }, getPlayerParty: () => party, getEnemyParty: () => [],
+    ui: { mode: 15, getHandler: () => handler }, getPlayerParty: () => party, getEnemyParty: () => [],
     gameData: { dexData: dex },
   };
   globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
@@ -277,6 +277,15 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   assert.deepEqual(m.options.map(o => o.id), [7, 26, 30], "three labels, three links: matched in order");
   const two = mount({ labels: ["Sumpf", "Baustelle"], t: tables({ biomeName: undefined }) }).model();
   assert.ok(two.options.every(o => o.id == null && o.score == null), "a rolled-out link makes order ambiguous: no guess");
+}
+
+// ---- A timed event's links follow the biome's own, in the options and onward (game-code.md §10)
+{
+  const events = { getShinyCatchMultiplier: () => 2, getEventBiomeLinks: id => (id === 3 ? [33] : id === 26 ? [30] : []) };
+  const m = mount({ labels: ["Sumpf", "Baustelle", "Slum", "Moor"], t: tables({ biomeName: undefined, events }) }).model();
+  assert.deepEqual(m.options.map(o => o.id), [7, 26, 30, 33], "four labels, three links and the event's: matched in order");
+  const site = mount({ t: tables({ events }) }).model().options[1];
+  assert.deepEqual(site.onward.map(x => x.name), ["Laboratory", "Factory", "Slum"], "the event's link is onward too");
 }
 
 // ---- Spawn weights follow tier odds, time of day, the legend gate and luck (game-code.md §10)

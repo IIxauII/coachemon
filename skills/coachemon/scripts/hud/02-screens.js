@@ -6,7 +6,7 @@ export const learnState = s => {
   const h = s.ui.getHandler();
   const double = !!s.currentBattle?.double;
   const party = s.getPlayerParty?.() ?? [];
-  if (s.ui.getMode() === UiMode.SUMMARY && h?.summaryUiMode === SummaryUiMode.LEARN_MOVE && h.newMove) return { pk: h.pokemon, mv: h.newMove, double, party };
+  if (s.ui.mode === UiMode.SUMMARY && h?.summaryUiMode === SummaryUiMode.LEARN_MOVE && h.newMove) return { pk: h.pokemon, mv: h.newMove, double, party };
   const phase = s.phaseManager?.getCurrentPhase?.();
   if (phase?.phaseName !== "LearnMovePhase") return null;
   const pk = party[phase.partyMemberIndex];
@@ -14,14 +14,14 @@ export const learnState = s => {
   return pk && pm ? { pk, mv: new pm.constructor(phase.moveId).getMove(), double, party } : null;
 };
 
-// A reward screen with no `options` is the shop closing, not a choice.
+// Gotcha: a shop after a wild foe flees has no `options` but is a choice; only the shop closing empties its rows too.
 export const rewardsScreen = s => {
   const h = s.ui.getHandler();
-  return s.ui.getMode() === UiMode.MODIFIER_SELECT && h?.options?.length ? h : null;
+  return s.ui.mode === UiMode.MODIFIER_SELECT && (h?.options?.length || h?.shopOptionsRows?.length) ? h : null;
 };
 
-export const biomeScreen = (s, h) => s.ui.getMode() === UiMode.OPTION_SELECT && s.phaseManager?.getCurrentPhase?.()?.phaseName === "SelectBiomePhase"
+export const biomeScreen = (s, h) => s.ui.mode === UiMode.OPTION_SELECT && s.phaseManager?.getCurrentPhase?.()?.phaseName === "SelectBiomePhase"
   && !!h?.config?.options?.length;
 
-export const encounterScreen = (s, h) => s.ui.getMode() === UiMode.MYSTERY_ENCOUNTER && !!s.currentBattle?.mysteryEncounter
+export const encounterScreen = (s, h) => s.ui.mode === UiMode.MYSTERY_ENCOUNTER && !!s.currentBattle?.mysteryEncounter
   && Array.isArray(h?.encounterOptions) && h.encounterOptions.length > 0;

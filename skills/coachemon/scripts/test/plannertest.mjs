@@ -438,7 +438,7 @@ Object.assign(TABLE, { "Garchomp>Dragon Claw>Snorlax": [[70], 1, 1], "Garchomp>S
   const dist = () => [{ name: "Body Slam", type: "Normal", p: 1, score: 10, targets: [0] }];
   const pick = extra => render({ party: chomp(extra), foes, live: true, dist, switches: () => new Map() }).field.find(l => /^⚔ Garchomp/.test(l)) ?? "";
   assert.match(pick({}), /Stone Edge → Snorlax/, "the first listed, all else equal");
-  const kept = pick({ tempSummonData: { turnCount: 3 }, getLastXMoves: () => [{ move: 337, targets: [2], result: 1 }] });
+  const kept = pick({ summonData: { statStages: [0, 0, 0, 0, 0, 0, 0], types: [], turnCount: 3 }, getLastXMoves: () => [{ move: 337, targets: [2], result: 1 }] });
   console.log(`== consistency: last turn's move (live)\n${kept}`);
   assert.match(kept, /Dragon Claw → Snorlax/, `keeps last turn's near-equal move:\n${kept}`);
 }
