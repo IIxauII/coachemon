@@ -1,6 +1,7 @@
 import reviewed from "../escape-ladder/reviewed.json" with { type: "json" };
+import { augmentedExport } from "./extras.ts";
 import { refuse } from "./gate.ts";
-import type { Budget, Recheck, SessionSave, SolveInput } from "./input.ts";
+import type { Budget, Recheck, SolveInput } from "./input.ts";
 import { noAnswer } from "./no-answer.ts";
 import type { Input, NoAnswer, SolveResult } from "./oracle-line.ts";
 import { type Clone, replay } from "./replay.ts";
@@ -58,7 +59,6 @@ export async function checkForks(
   // The checks are what the harness re-check runs (#665), so they can't wait on one having passed.
   const refused = refuse(given, passed(given.cloneVersion));
   if (refused) return refused;
-  if (given.extras) return noAnswer({ code: "not_wave_start" });
   return withWorker(clone, given, async worker => {
     try {
       return { kind: "checked", checks: await worker.check(inputs) };
@@ -72,10 +72,11 @@ const passed = (gameVersion: string): Recheck => ({ gameVersion });
 
 async function withWorker<T>(
   clone: Clone,
-  { save, cloneVersion }: { save: SessionSave; cloneVersion: string },
+  given: Pick<SolveInput, "save" | "extras" | "cloneVersion">,
   use: (worker: Worker) => Promise<T>,
 ): Promise<T | NoAnswer> {
-  const worker = await startWorker(clone, save);
+  const { save, cloneVersion } = given;
+  const worker = await startWorker(clone, save, augmentedExport(given)?.forkPoint);
   if ("missing" in worker) return noAnswer({ code: "no_clone", version: cloneVersion, cause: worker.missing });
   if ("failed" in worker) return noAnswer({ code: "harness_failed", why: worker.failed });
   try {

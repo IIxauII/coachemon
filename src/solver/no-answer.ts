@@ -12,6 +12,8 @@ const BROKE: Record<HygieneRule, string> = {
 const firstFew = (all: readonly string[]) =>
   all.length > 3 ? `${all.slice(0, 3).join("; ")}; and ${all.length - 3} more` : all.join("; ");
 
+const andJoined = (all: readonly string[]) => (all.length > 1 ? `${all.slice(0, -1).join(", ")} and ${all.at(-1)}` : all.join(""));
+
 export const noAnswer = (reason: Reason): NoAnswer => ({
   kind: "no_answer",
   reason,
@@ -50,10 +52,10 @@ export function cause(reason: Reason): string {
       return "no live battle came with the save, so nothing shows the save is this fight's.";
     case "no_live_export":
       return "no live export came with the save, so nothing shows the scene it loads is the one at the decision.";
-    case "not_wave_start":
+    case "missing_extras":
       return (
-        "only the wave-start save replays a fight from its first turn, and this is the session export, whose reload " +
-        "applies the entry effects twice."
+        `the live read of the fight lacks ${andJoined(reason.extras)}, without which the oracle can't rebuild the turn ` +
+        "the export was taken at."
       );
     case "save_mismatch": {
       const seed = reason.save.battleSeed === undefined ? "" : ` with battle seed ${reason.save.battleSeed}`;

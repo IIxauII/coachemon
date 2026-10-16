@@ -74,7 +74,13 @@ export type Receipt = readonly {
   pending?: true;
 }[];
 
-export type ValidationStep = "versions" | "load_hygiene" | "wave_start_save" | "scene_matches" | "known_turn";
+export type ValidationStep =
+  | "versions"
+  | "load_hygiene"
+  | "wave_start_save"
+  | "augmented_export"
+  | "scene_matches"
+  | "known_turn";
 
 /** A draw that went the oracle line's way with less than a sure chance (#701). `what` names that chance. */
 export type Luck = { turn: number; what: string };
@@ -91,7 +97,8 @@ export type Reason =
   | { code: "dropped_item"; items: readonly string[] }
   | { code: "no_live_battle" }
   | { code: "no_live_export" }
-  | { code: "not_wave_start" }
+  /** By each one's path in the extension's read. */
+  | { code: "missing_extras"; extras: readonly string[] }
   | { code: "save_mismatch"; save: { wave: number; battleSeed?: string }; live: Battle }
   | { code: "no_clone"; version: string; cause: string }
   | { code: "clone_version"; clone: string; pinned: string }

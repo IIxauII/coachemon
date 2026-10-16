@@ -12,6 +12,7 @@ const FIXTURES = fileURLToPath(new URL("../../src/solver/fixtures/", import.meta
 const exported = JSON.parse(readFileSync(path.join(FIXTURES, "drayton-w188.json"), "utf8"));
 const drayton = exported.save;
 const SCRIPT = path.join(FIXTURES, "drayton-w188.win.script.json");
+const gordieT5 = JSON.parse(readFileSync(path.join(FIXTURES, "gordie-w180.t5.json"), "utf8"));
 
 const oracle = (exported: unknown, flags: string[] = []) => {
   // Never the repo's own `.cache`: it may hold a provisioned clone, which these tests mean never to start.
@@ -28,10 +29,19 @@ test("oracle:battle prints the gate's answer for a wave-start save and exits as 
   assert.equal(run.status, 2);
 });
 
-test("oracle:battle reads a mid-fight export's live extras (#659)", () => {
-  const run = oracle({ save: drayton, extras: { arenaTags: [{ tagType: "SAFEGUARD", side: ArenaTagSide.ENEMY }] } });
+test("oracle:battle reads an augmented export's live extras (#659, #664)", () => {
+  const arenaTags = [{ tagType: "SAFEGUARD", side: ArenaTagSide.ENEMY }];
+  const run = oracle({ ...gordieT5, extras: { ...gordieT5.extras, arenaTags } });
 
   assert.match(run.stdout, /^no answer: Safeguard is up/);
+  assert.equal(run.status, 2);
+});
+
+test("oracle:battle on an augmented export missing an extra prints no answer naming it (#664)", () => {
+  const { rndState: _gone, ...extras } = gordieT5.extras;
+  const run = oracle({ ...gordieT5, extras });
+
+  assert.match(run.stdout, /^no answer: the live read of the fight lacks rndState,/);
   assert.equal(run.status, 2);
 });
 
@@ -43,7 +53,7 @@ test("oracle:battle answers no answer, never a crash's exit code, when the expor
 });
 
 test("oracle:battle says the solver failed, not that the export was unreadable, when the solver throws (#659)", () => {
-  const run = oracle({ save: drayton, extras: {} });
+  const run = oracle({ save: { ...drayton, enemyModifiers: null } });
 
   assert.match(run.stdout, /^no answer: the solver failed: /);
   assert.equal(run.status, 2);
