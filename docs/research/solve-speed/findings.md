@@ -84,8 +84,10 @@ or **[unverified]**.
     and 6 of 9 on Kieran.
   - Merging identical positions is already done after a turn is played (`src/solver/search.ts:217-218`). It cannot
     be done before playing, and it is not exact either, because the signature leaves the draws out.
-- **The laptop numbers on 1.12.1.1 are not in yet.** <!-- LAPTOP-TBD --> On 1.12.0.11, the 4-vCPU VM with 2 workers
-  took 951–1,948 s to the first win: 16–32 minutes (§1).
+- **On the 4-vCPU laptop, poll1 brings a full solve from 16–31 minutes to under 5.** **[verified]**
+  - Unpatched, the VM with 2 workers took 945–1,847 s to the first win. With poll1 it took 153–277 s, 6.2–6.7×
+    faster, and found the same line, input for input, which replayed and won (§1).
+  - A stand-in for the game tab's main thread kept 58–60 fps beside 1 to 6 workers, patched or not (§6).
 - **Recommendation.** **[inference]** Ship the poll1 patch in the worker harness only. Order the portfolio by
   preference with 8@1 first, and put LDS in front of it once the order is in. Ship no pruning filter. Draft tickets
   are in §8.
@@ -96,23 +98,43 @@ The VM runs the shipped `solve()` exactly as the plugin does: the bounded pool, 
 per beam (`DEFAULT_BUDGET`, `src/solver/solver.ts:22`) and the validation replay. `harness/vm-batch.sh` runs each
 fight shipped, then the same with poll1, then the worker-count sweep in §6.
 
-**Status: the 1.12.1.1 batch was running while this was written.** <!-- LAPTOP-TBD --> Each row comes from
+The batch ran for 94 minutes on 2026-10-16 and 17. Each row comes from
 `runs/laptop/<fight>/summary.json` and `runs/laptop/<fight>-poll1/summary.json`: `totalS` and `bootS` (the pool's
 start-up), `expansions`, and `pool.peakHeapMb`. "Time to first win" is `totalS`, because the solve stops at its first
 replayed win.
 
-<!-- LAPTOP-TBD -->
-
 | Fight | Solve | Time to first win | Tries | Peak heap per worker | Line |
 |---|---|---|---|---|---|
-| Gordie W180 | shipped | TBD | TBD | TBD | TBD |
-| Drayton W188 | shipped | TBD | TBD | TBD | TBD |
-| Kieran W190 | shipped | TBD | TBD | TBD | TBD |
-| Gordie W180 | poll1 | TBD | TBD | TBD | TBD |
-| Drayton W188 | poll1 | TBD | TBD | TBD | TBD |
-| Kieran W190 | poll1 | TBD | TBD | TBD | TBD |
+| Gordie W180 | shipped | 1,304 s (21.7 min) | 4,953 | 337 MB | 14 turns, 6 alive |
+| Drayton W188 | shipped | 945 s (15.7 min) | 3,914 | 349 MB | 10 turns, 6 alive |
+| Kieran W190 | shipped | 1,847 s (30.8 min) | 7,590 | 336 MB | 25 turns, 5 alive |
+| Gordie W180 | poll1 | 198 s (3.3 min) | 5,262 | 343 MB | 14 turns, 6 alive |
+| Drayton W188 | poll1 | 153 s (2.6 min) | 4,203 | 344 MB | 10 turns, 6 alive |
+| Kieran W190 | poll1 | 277 s (4.6 min) | 8,041 | 351 MB | 25 turns, 5 alive |
 
-Host load during the batch: TBD (`runs/laptop/hostload.txt`). <!-- LAPTOP-TBD -->
+- **poll1 cut the time to the first win 6.2–6.7×.** The search played 28.9–30.8 tries/s against 3.9–4.2 unpatched,
+  counted as `expansions ÷ (totalS − bootS)`. **[verified]**
+- **Each pair found the same line, input for input.** It is also the line 1.12.0.11 found: the `line` record in
+  `progress.jsonl` is byte-identical across the three runs of each fight. Every line replayed and won. **[verified]**
+- **poll1 counts 289–451 more tries because the replay is not patched.** The winning beam waits for its replay
+  (`src/solver/search.ts:174,222`), but the other beams keep dispatching until `finish` sets `over` (`:96-98`).
+  `expansions` is the last progress count (`harness/solve-shipped.ts:62`). In every run, 5 more processes ran for the
+  last 8–12 s; these are the replay's. Each pair reached the replay at nearly the same count: 4,919 and 4,927 on
+  Gordie, 3,876 and 3,905 on Drayton, 7,582 and 7,582 on Kieran, sampled every 2 s. During the replay, the unpatched
+  workers added 8–38 tries and the poll1 workers 298–459. **[verified]** The even split (`fairer`, `:236`) makes the
+  count at the win depend on job timing, which accounts for the few tries' difference at the replay's start.
+  **[inference]**
+- **With poll1, boot and replay are 10–17% of the solve.** The pool booted in 15.8–15.9 s (18.5–23.3 s unpatched),
+  and the replay took about 10–12 s. **[verified]** to the 2 s sampling.
+- **Unpatched, 1.12.1.1 matches 1.12.0.11.** Drayton played the same 3,914 tries. Gordie differed by 30 tries and
+  Kieran by 76, all within 57 of the simulation (§2). Gordie and Drayton were 0.6% faster, and Kieran 5.2%, on a host
+  that was far less loaded (below). **[verified]**
+- **Memory stayed flat.** Peak heap per worker was 336–351 MB against the 864 MB limit. The VM had at most 4.3–4.5 GB
+  in use, the tab included. **[verified]**
+
+Host load during the batch (`runs/laptop/hostload.txt`, the M4's 1-minute load average every 10 s): 1.4–5.3, median
+2.7. During the three shipped solves it was 1.4–4.5, median 2.7 (Gordie's median 3.0, Drayton's 3.1, Kieran's 2.1).
+The 10-core host had cores to spare, unlike during the 1.12.0.11 runs. **[verified]**
 
 **The 1.12.0.11 baselines** are the same VM, the same 2 workers and the game tab open (8674bed,
 `runs/laptop/<fight>/summary.json`). **[verified]**
@@ -398,25 +420,50 @@ such a move (`runs/lab/prune/<fight>.json`).
 
 ## 6. Workers and CPU
 
-**Status: the worker-count sweep was running in the VM while this was written.** <!-- LAPTOP-TBD -->
+The sweep ran at the end of the §1 batch, with the frame stand-in beside it.
 
 `harness/vm-batch.sh` runs Gordie at 1, 2, 3, 4 and 6 workers on the 4-vCPU VM: unpatched with `BUDGET=100` tries per
 beam, then poll1 with `BUDGET=300`. Each row comes from `runs/laptop/scale-unpatched-w<N>/summary.json` and
 `runs/laptop/scale-poll1-w<N>/summary.json`. Throughput is `expansions ÷ (totalS − bootS)`.
 
-<!-- LAPTOP-TBD -->
+| Workers | Unpatched, BUDGET=100: tries/s | Unpatched: boot | poll1, BUDGET=300: tries/s | poll1: boot | Peak heap per worker, unpatched / poll1 | VM memory in use, peak |
+|---|---|---|---|---|---|---|
+| 1 | 1.58 | 18.9 s | 14.6 | 15.4 s | 268 / 341 MB | 2.9 / 2.9 GB |
+| 2 (`poolSize(4)`) | 2.87 (1.8×) | 19.1 s | 29.7 (2.0×) | 16.7 s | 269 / 344 MB | 3.8 / 4.0 GB |
+| 3 | 4.07 (2.6×) | 20.1 s | 38.7 (2.7×) | 19.7 s | 266 / 354 MB | 4.8 / 5.1 GB |
+| 4 | 5.00 (3.2×) | 23.0 s | 53.9 (3.7×) | 23.8 s | 317 / 357 MB | 5.7 / 5.8 GB |
+| 6 | 6.91 (4.4×) | 31.3 s | 60.0 (4.1×) | 30.5 s | 295 / 340 MB | 7.2 / 7.7 GB |
 
-| Workers | Unpatched, BUDGET=100: tries/s | Unpatched: boot | poll1, BUDGET=300: tries/s | poll1: boot | Peak heap per worker |
-|---|---|---|---|---|---|
-| 1 | TBD | TBD | TBD | TBD | TBD |
-| 2 (`poolSize(4)`) | TBD | TBD | TBD | TBD | TBD |
-| 3 | TBD | TBD | TBD | TBD | TBD |
-| 4 | TBD | TBD | TBD | TBD | TBD |
-| 6 | TBD | TBD | TBD | TBD | TBD |
+- **Unpatched, throughput grows past the core count.** 6 workers on 4 vCPUs played 4.4× the tries of 1, because an
+  unpatched worker is mostly idle (§3). The VM's load1 had a median of 1.0 at 2 workers and 5.6 at 6. **[verified]**
+- **With poll1 the gain flattens past 4 workers:** 3.7× at 4 and 4.1× at 6, with the VM's load1 median at 4.3 and
+  5.0. **[verified]**
+- **Boot grows with the pool**, from 15–19 s at 1–2 workers to 31 s at 6, because every worker starts at once. On this
+  short search that ate the gain: poll1 took 45.5 s in all at 6 workers against 40.5 s at 4. **[verified]**
+- **6 workers filled most of the 8 GiB VM**, with 7.2–7.7 GB in use, the tab included. **[verified]** On an 8 GB machine
+  with 8 or more cores, `poolSize` gives 6 workers, which leaves little for the browser. **[inference]**
+- **The sweep's searches are short.** They end by turn 2 unpatched and by turn 5 with poll1, so their tries/s are not
+  the full solves' (§1: 3.9–4.2 unpatched and 28.9–30.8 with poll1, at 2 workers). **[verified]**
 
-**Frames.** <!-- LAPTOP-TBD --> The game tab's frames per second and longest stall at each worker count: TBD
-(`runs/laptop/frames.jsonl`). The figure comes from `harness/frames.ts`, a stand-in thread that does 8 ms of work per
-1/60 s frame.
+**Frames.** `harness/frames.ts` is a stand-in thread that does 8 ms of work per 1/60 s frame. Every 5 s it reports the
+frames it finished per second and how late the latest one started (`runs/laptop/frames.jsonl`). Each run's figure
+covers its `mem.jsonl` from the first sample to the last, boot included. **[verified]**
+
+| Workers | Unpatched: lowest fps | Unpatched: longest stall | poll1: lowest fps | poll1: longest stall |
+|---|---|---|---|---|
+| none (the 60 s before the sweep) | 60.0 | 5 ms | — | — |
+| 1 | 60.0 | 5 ms | 59.9 | 8 ms |
+| 2 (`poolSize(4)`) | 60.0 | 6 ms | 59.8 | 27 ms |
+| 3 | 59.7 | 14 ms | 57.9 | 89 ms |
+| 4 | 59.5 | 19 ms | 59.1 | 13 ms |
+| 6 | 58.5 | 19 ms | 58.8 | 13 ms |
+
+- **The stand-in kept its frames at every count.** The median 5 s window was 60 fps everywhere except poll1 at 6
+  workers, where it was 59.6. **[verified]**
+- **Stalls over 10 ms fell during boot, apart from poll1 at 2 and 3 workers.** The 89 ms stall came 9 s into
+  poll1's 3-worker search. **[verified]**
+- **The poll1 runs are short.** At 4 and 6 workers the search after boot lasted 15–17 s, which is 2–3 windows.
+  **[verified]**
 
 **Why a stand-in.** The VM's own Chromium tab renders in software, so it cannot show what a solve takes from the game.
 On 1.12.0.11, `harness/tab.ts` logged it at a median of 1.8 fps, within 0–3.1, during the solves (8674bed
@@ -430,7 +477,8 @@ use leaves for one busy thread. It does not show the real tab. **[verified]** fo
   idle (§3). **[verified]**
 - **With poll1 a worker is busy about a quarter of the time** (76% idle) and does 6–9× the tries. **[verified]**
 - **The `min(cores − 2, 6)` cap matters more once poll1 ships.** Its two spare cores are what keep the game's tab
-  playable, and it has not yet been tested against a patched pool. **[inference]**
+  playable. The sweep tested it against a patched pool for the stand-in only (above); a real tab is untested.
+  **[inference]**
 - **LDS and best-first can leave workers idle.** They expand one node at a time and spread its actions over the
   workers. A node with fewer legal actions than there are workers leaves the rest idle, so their wall time on 6
   workers is untested. **[inference]**
@@ -477,9 +525,10 @@ Each lab run on 1.12.1.1 was compared with the same file at 8674bed. **[verified
 - **LDS** cuts the first win to a few hundred tries on all three fights. It needs its own budget and the portfolio
   behind it.
 
-On the 1.12.0.11 laptop baselines, the poll patch alone would bring the 16–32-minute first wins to roughly 3–6
-minutes, and the preference order would about halve Kieran's again. **[inference]**, to be checked against the poll1
-rows in §1. <!-- LAPTOP-TBD -->
+On the laptop, the poll patch alone brought the 16–31-minute first wins to 2.6–4.6 minutes, with the same lines (§1).
+The estimate from the 1.12.0.11 baselines was 3–6 minutes. **[verified]** The preference order would about halve
+Kieran's again: it needs 3,741 tries instead of 7,647 in simulation. At the measured 31 tries/s, plus 16 s of boot and
+about 12 s of replay, that is roughly 2.5 minutes. **[inference]**
 
 The draft tickets below are to be filed as native sub-issues of #657.
 
@@ -525,16 +574,15 @@ exact, because the state signature leaves the draws out (#681 findings §2, §5)
 
 ## Not yet measured
 
-- **Everything in §1 and §6 on 1.12.1.1**: the laptop's full solves, shipped and with poll1, the worker sweep and the
-  frame stand-in. <!-- LAPTOP-TBD -->
+- **Worker scaling over a whole solve.** The sweep's searches end by turn 5 (§6), and only Gordie was swept.
 - **A real game tab beside a solve on a machine that renders it in hardware.** The VM's tab cannot show playability.
 - **The coordinator's heap during best-first.** It was estimated from frontier size × fork-point size.
 - **A failed LDS stage**: its cost in tries when the fight has no win within k ≤ 2, and so what LDS adds before an
   honest "no answer".
 - **LDS and best-first on 6 workers**, where one-node-at-a-time expansion may leave workers idle.
 - **The game change behind the Drayton shift** (§7).
-- **The poll1 patch on the shipped solve end to end**, beyond the lab and the bench. The laptop batch's poll1 rows will
-  cover it. <!-- LAPTOP-TBD -->
+- **poll1 together with the preference order or LDS in a shipped solve.** poll1 is measured end to end (§1). The
+  order and LDS are measured only in the lab.
 - **A fourth fight.** Three fights are the benchmark. No method's "no answer" has been tested on a fight that has no
   win.
 
@@ -559,7 +607,7 @@ All paths are under `docs/research/solve-speed/`.
 | `runs/lab/sims/<fight>-w3/` | The portfolio scheduling simulations (§2) |
 | `runs/lab/prune/` | Pruning and merge counts per fight (§2, §5) |
 | `runs/profile/` | Benches and CPU profiles (§3). `cpu-boot-only.txt` is from 1.12.0.11 |
-| `runs/laptop/` | The VM's solves, sweep and frames (§1, §6), pending on 1.12.1.1 <!-- LAPTOP-TBD --> |
+| `runs/laptop/` | The VM's 1.12.1.1 batch: `<fight>/` and `<fight>-poll1/` solves, `scale-*-w<N>/` sweep, `frames.jsonl`, `hostload.txt` (§1, §6) |
 
 To re-run the whole lab stage on whichever game version is pinned (about an hour on the M4, 3 workers):
 
