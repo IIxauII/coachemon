@@ -690,9 +690,9 @@ const RULES = {
       rows: [
         { outcome: `fight ${name} (boosted); catchable → rewards`, battle: "wild",
           verdict: wanted && (charm || berries) ? "ok" : fight.hard ? "avoid" : "take", why: fight.text },
-        { outcome: `give 4 random berries: ${name} joins with a 2nd egg move`, verdict: wanted && !charm ? "take" : wanted ? "ok" : "avoid",
+        { outcome: `give 4 random berries: ${name} joins with a 2nd egg move (may repeat the 1st)`, verdict: wanted && !charm ? "take" : wanted ? "ok" : "avoid",
           why: wanted ? why : `berries for a mon you don't need (${why})`, needs: "4 berries" },
-        { outcome: `charm it: ${name} joins with better IVs and a 2nd egg move, EXP`, verdict: wanted ? "take" : "ok", why, needs: "a mon with Charm / Attract / Captivate …" },
+        { outcome: `charm it: ${name} joins with better IVs and a 2nd egg move (may repeat the 1st), EXP`, verdict: wanted ? "take" : "ok", why, needs: "a mon with Charm / Attract / Captivate …" },
       ],
     };
   },
