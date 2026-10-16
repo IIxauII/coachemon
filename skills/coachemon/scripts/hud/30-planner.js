@@ -645,13 +645,13 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
 const bites = (a, foe, move) => {
   const mv = move?.pm?.getMove?.();
   if (!mv) return false;
-  const type = move.type, phys = move.cat === "physical";
+  const type = move.type, phys = move.cat === "physical", contact = moveHasFlag(mv, MoveFlags.MAKES_CONTACT);
   return (ABILITY_IMMUNE[a] === type && !(UNGROUNDED.has(a) && hitsUngrounded(mv)))
     || (ABILITY_IMMUNE_FLAG[a] && moveHasFlag(mv, ABILITY_IMMUNE_FLAG[a]))
     || (a === "Thick Fat" && (type === "Fire" || type === "Ice")) || (a === "Heatproof" && type === "Fire")
     || (a === "Fluffy" && (phys || type === "Fire")) || (a === "Intimidate" && phys && !foe.isOnField?.())
-    || a === "Wonder Guard"
-    || (CONTACT_PUNISH.includes(a) && moveHasFlag(mv, MoveFlags.MAKES_CONTACT))
+    || (a === "Aura Guard" && contact) || a === "Wonder Guard"
+    || (CONTACT_PUNISH.includes(a) && contact)
     || (["Filter", "Solid Rock", "Prism Armor"].includes(a) && typesOf(foe).reduce((x, d) => x * vs(type, d), 1) >= 2);
 };
 // The move traps the slot's own move runs into, on the foes it actually hits.
