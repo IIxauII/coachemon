@@ -599,6 +599,7 @@ Bump when removing a command, renaming one, or changing what an existing argumen
   - `groups`: **the card's own groups** (#349 §5), in the fixed tab order, each `{ id, label, summary, rows: string[] }`. Nodes cannot cross a wire, so a group arrives with its rows already flattened — an agent reading the stream reads a group by name instead of parsing lines. The relay's card detail type, its exact-key gate and its validator carry it; the hub forwards bodies opaquely and needs no change. A card is about 1 KB against the 1 MiB detail cap.
   - `text`: **the card's own plain-text rendering**, **derived from `groups`** by the HUD's render layer — every group in the fixed order, headed by `label` and `summary`, then its rows one per line — so the two cannot disagree by construction. Groups are built once per fire and both projections come off them.
   - `oracleLine`: `{ state: "on", turn, of }` while a held **oracle line**'s step is the card's call — `turn` is this step's battle turn and `of` the oracle line's last, so both count turns, not inputs — and `{ state: "off", turn, of }` on every battle card of its fight once a checkpoint has missed, `turn` then being the miss's (past `of` for a fight lost after the oracle line's last step). `null` on every other card. Each turn on the oracle line is an event of its own, though its key and verdict stay the same (#671), and so is going off it (#675).
+  - `randomized`: `true` while the Moveset or Ability Randomizer challenge is on, when a species' moves and abilities are not what its tables say, and `false` otherwise (#723).
 - A HUD failure dispatches `coachemon:coach-error` once per distinct message.
 - **Late join:** a subscriber issues a `card` read right after subscribing.
 
@@ -621,6 +622,8 @@ COACH ERROR <message>
 TABS <rung 8 line>
 RESUMED
 ```
+
+A card whose `randomized` is `true` (§11.1) adds ` · randomized` after its verdict: `BATTLE w12 · danger · randomized | …`.
 
 `OFF LINE` follows the line of the first card that carries an oracle line `off` (§11.1), with the turn it missed on and the oracle line's last, and is printed once per oracle line: the later cards of its fight carry `off` too, and print only their own line. An oracle line that leads again is a new one (#675).
 
@@ -649,7 +652,7 @@ The coach reads through the same MCP server, never through `read.sh`. The coach 
 | Tool | Command | Returns |
 |---|---|---|
 | `get_state(detail?)` (existing) | `snapshot` | as today; `detail: "full"` now also carries, per party **and** enemy member: `types`, `ability`, `passive`, `stats` (via `getStat`), `statStages`, `status`, `onField`, `boss`, `bossBars`, `held`, and moves with type, power, category, accuracy and PP; plus `trainer` (name or null) and the party's non-held `items`. These are `probe.js`'s battle fields, moved. |
-| `read_card()` (new) | `card` | the envelope header plus `kind`, `wave`, `verdict`, `groups` (the card's groups, rows flattened — the same list the card event carries, so a late join catches up on a decision already on screen), `text`, `oracle_line` (the card event's `oracleLine`, §11.1), and `summary` (the fields `read.sh battle`'s `hud` had). `summary` is the read's liveness gate and is read on its own, so the structured read keeps working with no panel drawn. |
+| `read_card()` (new) | `card` | the envelope header plus `kind`, `wave`, `verdict`, `groups` (the card's groups, rows flattened — the same list the card event carries, so a late join catches up on a decision already on screen), `text`, `oracle_line` (the card event's `oracleLine`, §11.1), `randomized` (the card event's own, §11.1), and `summary` (the fields `read.sh battle`'s `hud` had). `summary` is the read's liveness gate and is read on its own, so the structured read keeps working with no panel drawn. |
 | `read_starters()` (new) | `starters` | `owned`: unlocked species by dex id with `ivTotal`, `passiveUnlocked`, `hiddenAbility`, `eggMoves`, `costReduction`, `candy`, and `cost` (null off the starter grid); plus the grid fields `start_run` uses |
 
 `read_card` and `read_starters` settle like every reading tool, return the envelope, and need no grant.

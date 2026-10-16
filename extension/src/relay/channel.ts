@@ -25,6 +25,7 @@ export type CardDetail = {
   groups: CardGroup[];
   text: string;
   oracleLine: CardOracleLine | null;
+  randomized: boolean;
 };
 export type CoachErrorDetail = { build: string; message: string };
 
@@ -75,14 +76,15 @@ const str = (v: unknown): v is string => typeof v === "string";
  */
 export function cardBody(d: Record<string, unknown>): Omit<CardDetail, "build"> | null {
   const keys = Object.keys(d).sort().join(",");
-  if (keys !== "build,groups,key,kind,oracleLine,text,verdict,wave") return null;
+  if (keys !== "build,groups,key,kind,oracleLine,randomized,text,verdict,wave") return null;
   if (!str(d.kind) || !(EVENT_KINDS as readonly string[]).includes(d.kind)) return null;
   if (!str(d.key) || !str(d.verdict) || !str(d.text) || typeof d.wave !== "number" || !Number.isFinite(d.wave)) return null;
+  if (typeof d.randomized !== "boolean") return null;
   const groups = cardGroups(d.groups);
   if (groups === null) return null;
   const oracleLine = cardOracleLine(d.oracleLine);
   if (oracleLine === undefined) return null;
-  return { kind: d.kind, key: d.key, wave: d.wave, verdict: d.verdict, groups, text: d.text, oracleLine };
+  return { kind: d.kind, key: d.key, wave: d.wave, verdict: d.verdict, groups, text: d.text, oracleLine, randomized: d.randomized };
 }
 
 /** `undefined` refuses the card: `null` is a card no oracle line leads. */

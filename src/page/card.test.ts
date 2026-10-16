@@ -28,8 +28,8 @@ test("the card read is the card event's own fields plus the summary (extension-d
   const summary = { kind: "battle", wave: 12, verdict: "danger", field: "Charizard Ember → Rattata · 1 hit" };
   const groups = [{ id: "act", label: "Act", summary: "Charizard Ember → Rattata · 1 hit", rows: [] }];
   const oracleLine = { state: "on", turn: 7, of: 19 };
-  hud(t, { summary: () => summary, card: () => ({ kind: "battle", key: "12", wave: 12, verdict: "danger", groups, text: "⚔ Charizard Ember", oracleLine }) });
-  assert.deepEqual(send("card", {}), { ok: true, kind: "battle", key: "12", wave: 12, verdict: "danger", groups, text: "⚔ Charizard Ember", oracleLine, summary });
+  hud(t, { summary: () => summary, card: () => ({ kind: "battle", key: "12", wave: 12, verdict: "danger", groups, text: "⚔ Charizard Ember", oracleLine, randomized: true }) });
+  assert.deepEqual(send("card", {}), { ok: true, kind: "battle", key: "12", wave: 12, verdict: "danger", groups, text: "⚔ Charizard Ember", oracleLine, randomized: true, summary });
 });
 
 test("a late join reads the decision on screen by group and not by line (extension-distribution.md §11.1, #361)", t => {
@@ -53,7 +53,7 @@ test("a panel that is not carrying groups reads null rather than an empty card (
 test("a panel with nothing to coach reads as a card of nulls, not as a missing panel", t => {
   onPage(t, scene);
   hud(t, { summary: () => null, card: () => null });
-  assert.deepEqual(send("card", {}), { ok: true, kind: null, key: null, wave: null, verdict: null, groups: null, text: null, oracleLine: null, summary: null });
+  assert.deepEqual(send("card", {}), { ok: true, kind: null, key: null, wave: null, verdict: null, groups: null, text: null, oracleLine: null, randomized: null, summary: null });
 });
 
 test("the structured summary is read with no panel drawn at all: a read never needs a document (extension-distribution.md §11.4)", t => {
@@ -77,5 +77,5 @@ test("a panel that throws reads as a card of nulls: a broken HUD never fails the
       throw new Error("planner blew up");
     },
   });
-  assert.deepEqual(send("card", {}), { ok: true, kind: null, key: null, wave: null, verdict: null, groups: null, text: null, oracleLine: null, summary: null });
+  assert.deepEqual(send("card", {}), { ok: true, kind: null, key: null, wave: null, verdict: null, groups: null, text: null, oracleLine: null, randomized: null, summary: null });
 });

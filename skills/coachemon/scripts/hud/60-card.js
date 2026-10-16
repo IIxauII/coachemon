@@ -230,7 +230,7 @@ export const cardEvent = card => {
   if (!k) return null;
   const s = cardSummary(card);
   return { kind: k.event ?? card.kind, key: k.key(card), wave: card.wave ?? null, verdict: s ? k.call(s) : null,
-    oracleLine: oracleLineState(card.oracleLine, card.offTheLine) };
+    oracleLine: oracleLineState(card.oracleLine, card.offTheLine), randomized: !!card.randomized };
 };
 // What the stream pushes and the relay's gate admits (extension-distribution.md §11.1).
 export const streamable = card => {

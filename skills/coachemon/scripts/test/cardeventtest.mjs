@@ -91,7 +91,7 @@ const errors = () => seen(EVENT.coachError);
 
   // `card()` answers the `card` command with the event a late joiner missed (extension-distribution.md §11.4).
   const made0 = made;
-  assert.deepEqual(window.__coachHud.card(), { kind: body.kind, key: body.key, wave: body.wave, verdict: body.verdict, groups: body.groups, text: body.text, oracleLine: null });
+  assert.deepEqual(window.__coachHud.card(), { kind: body.kind, key: body.key, wave: body.wave, verdict: body.verdict, groups: body.groups, text: body.text, oracleLine: null, randomized: false });
   assert.equal(made, made0, `the card read drew ${made - made0} nodes of its own`);
 
   tick();

@@ -75,6 +75,13 @@ test("the panel's own `rewards` kind reads as REWARDS, and a kind that never str
   assert.equal(cardLine({}), null);
 });
 
+test("a randomized run's card line says so after the verdict (extension-distribution.md §11.2, #723)", () => {
+  assert.equal(cardLine({ kind: "battle", wave: 12, verdict: "danger", text: "Gyarados will KO Pikachu", randomized: true }),
+    "BATTLE w12 · danger · randomized | Gyarados will KO Pikachu");
+  assert.equal(cardLine({ kind: "battle", wave: 12, verdict: "danger", text: "Gyarados will KO Pikachu", randomized: false }),
+    "BATTLE w12 · danger | Gyarados will KO Pikachu");
+});
+
 test("the first line of the text is cut at 300 characters (extension-distribution.md §11.2)", () => {
   assert.equal(cardLine({ kind: "battle", wave: 1, verdict: "fight", text: `${"x".repeat(400)}\nsecond` }), `BATTLE w1 · fight | ${"x".repeat(300)}`);
 });
