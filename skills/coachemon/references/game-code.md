@@ -48,6 +48,7 @@ what was only observed on a tab) is in §22, not in the sections.
 | Loading a session save: doubles, Mystery Encounters, arena tags and items a reload keeps or loses | §28 |
 | The wave-start save and the session export | §29 |
 | The session save, and what a reload resets mid-fight | §30 |
+| The randomizer challenges: what they rewrite, and which calls see it | §32 |
 | HUD API built on the above | Recommended API for the HUD |
 
 ---
@@ -3037,3 +3038,61 @@ and in the test framework, whose `GameWrapper` sets `game.config.gameVersion` to
 session from a newer game skips the migration and loads as is. The only "out of date" refusal guards system data, in
 `initSystem`, and not under dev or beta (`:441-449`). A `SessionMigrationError` on Load Game reaches
 `TitlePhase`'s catch, which shows `failedToLoadSession` (`src/phases/title-phase.ts:201-212`).
+
+## 32. The randomizer challenges: what they rewrite, and which calls see it
+
+Read at the pinned tag (`v1.12.1.1`). Both randomizers (`ChallengeCategory.RANDOMIZER`) rewrite species data in
+challenge hooks, never in the data itself, so a read sees the randomized value only through a call that applies the
+hook. Each is on at any value but zero (§16). Every pick is an `executeWithSeedOffset` fork (§11) sown from the **run
+seed**, `this.seed` rather than the wave seed (`src/battle-scene.ts:2017-2031`), so a species' randomized learnset,
+TMs and abilities hold for the whole run. The fork puts `RND.state()`, `rngOffset` and `rngSeedOverride` back itself.
+
+**Moveset Randomizer** (`Challenges.MOVESET_RANDOMIZER`, `src/data/challenge.ts:1319`): value 1 randomizes movesets,
+value 2 also lifts the move requirement off move evolutions.
+- `LEVEL_UP_MOVESET` (`applyLevelUpMoveset`, `:1425-1454`): each learnset entry keeps its level and takes a move off
+  every implemented move bar None, Splash, Hold Hands and Struggle, on the fork `2000 × getRootSpeciesId(true) +
+  moveId` (plus the level for Smeargle). `PokemonSpeciesForm.getLevelMoves` applies it
+  (`src/data/pokemon-species.ts:228-232`), and every learnset read goes through it: a member's own `getLevelMoves`
+  (`src/field/learnsets.ts:29-30`), and its relearn list and a wild or trainer mon's level pool
+  (`src/field/pokemon.ts:1929-1934`, `src/ai/ai-moveset-gen.ts:92-97`) through `getPrevolutionMoves`
+  (`src/field/learnsets.ts:85-87`). The grid's `getStarterMoves` applies it itself
+  (`src/ui/utils/starter-select-ui-utils.ts:519-520`). In `UiMode.STARTER_SELECT` the hook empties the list, so the
+  grid offers a starter no moves; in the Pokédex and egg-hatch modes it hands it back unrandomized.
+- `PLAYER_TM_COMPATIBILITY` (`:1468-1481`) and `ENEMY_TM_COMPATIBILITY` (`:1483-1496`, read at
+  `src/ai/ai-moveset-gen.ts:176-177`): as many TMs as the species had, off a shuffle of the TM pool, on the fork
+  `500 × speciesId` (§16).
+- `EGG_MOVE_RELEARN_AVAILABILITY` is off (`:1587-1591`, §16), `STARTER_SELECT_MODIFY` clears the grid's egg moves
+  (`:1349-1358`, §23), and the AI's egg-move pool and superseded-move map are emptied (`:1498-1509`). `STARTER_MODIFY`
+  replaces a starter's moveset, the one chosen on the grid included, with its first three level-up moves up to its
+  level, adding a STAB move by its species' first type when none of them is an attack (`:1360-1423`).
+- `MOVESET_MODIFY` gives an enemy Eternatus on wave 200 four Metronomes (`:1456-1466`), and `ME_MOVESET_MODIFY` gives
+  the enemy in seven Mystery Encounters four random moves on the fork `pokemon.id` (`:1559-1585`).
+- `MODIFY_EVOLUTIONS` (`applyModifyEvolutions`, `:1511-1557`), value 2 only. A Tyrogue knowing none of Low Sweep, Mach
+  Punch and Rapid Spin has the condition cleared on one of its three evolutions, picked on the fork `pokemon.id`.
+  Otherwise every evolution with an `EvoCondKey.MOVE` condition loses it, and the condition goes when nothing else is
+  left on it; one at level 1 moves to `evoLevelThreshold?.[0] ?? 50`. Only `Pokemon.getEvolution` applies it
+  (`src/field/pokemon.ts:3011-3038`), to copies built as `new SpeciesFormEvolution({ ...evo, item, condition:
+  evo.condition?.data })` (`FusionSpeciesFormEvolution` the same, `src/data/balance/pokemon-evolutions.ts:371-375`).
+  The spread carries `evoLevelThreshold`, which the constructor never reads, taking `evoDelay` instead (`:261-273`):
+  the copy has none, so **a level-1 move evolution lands at 50**. The hook never adds or removes an evolution. The
+  registry's rows (`speciesDataRegistry.getEvolutions`, `src/data/species-data-registry.ts:331`), `getEvolutionLevels`
+  (`src/data/pokemon-species.ts:1106-1123`), the Eviolite's `hasEvolutions` (`src/modifier/modifier.ts:1219-1220`) and
+  a wild spawn's evolution (`determineEnemySpecies`, `src/ai/ai-species-gen.ts:122`) never see it.
+
+**Ability Randomizer** (`Challenges.ABILITY_RANDOMIZER`, `src/data/challenge.ts:1594`): value 1 randomizes abilities,
+2 passives too, 3 both but keeps nine abilities as they are.
+- `SPECIES_ABILITY_MODIFY` (`:1645-1681`): `PokemonSpeciesForm.getAbility(i)` (`src/data/pokemon-species.ts:196-210`)
+  returns a pick off every implemented ability bar None, Commander, fourteen form-change abilities (`:1613-1628`) and
+  seven harmful ones (Defeatist, Klutz, Normalize, Slow Start, Stall, Truant, Wimp Out), on the fork `500 × speciesId +
+  abilityId`. At value 3 a different list stays as it is (`:1659-1669`): Schooling, Power Construct, Battle Bond,
+  Disguise, Ice Face, Zero to Hero, Tera Shift, Tera Shell and Teraform Zero. So Battle Bond, Tera Shell and Teraform
+  Zero can be rolled, and Forecast, Stance Change, Zen Mode and the other excluded form-change abilities are rolled
+  away even at value 3. A member's `getAbility` goes through it, a fusion's through the other half's form
+  (`src/field/pokemon.ts:2215`, `:2226`).
+- `PASSIVE_ABILITY_MODIFY` (`:1683-1705`), value 2 and up: the same pool and fork, with no value-3 keep list, for
+  `getPassiveAbility`
+  (`src/data/pokemon-species.ts:217-221`), which a member's own `getPassiveAbility` calls (`src/field/pokemon.ts:2261`).
+- Both hand the ability back unrandomized while the current phase is `SelectStarterPhase`, and in the Pokédex and
+  egg-hatch modes: the starter grid's ability and passive names are not the ones the run hands out. The raw fields
+  (`ability1`, `ability2`, `abilityHidden`) see neither hook.
+- `STARTER_COST` moves seven species' costs (`:1707-1733`, §23).

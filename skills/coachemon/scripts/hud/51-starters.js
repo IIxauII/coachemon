@@ -5,6 +5,7 @@ import { challengeOn } from "./03-calendar.js";
 import { gameTables } from "./04-game-tables.js";
 import { RANDBATS } from "./05-randbats.js";
 import { finalBstOf } from "./08-party.js";
+import { evolutionsOf } from "./09-projection.js";
 
 const MAX_PARTY = 6;
 const WEIGHTS = [1, 0.8, 0.55, 0.35, 0.2, 0.1];
@@ -39,7 +40,7 @@ const rolesOf = names => {
 const typeNames = sp => [sp?.type1, sp?.type2].map(t => TYPES[t]).filter((t, i, a) => t && a.indexOf(t) === i);
 
 // The line's strongest final form, and how it first evolves.
-const lineOf = (sp, reg) => {
+const lineOf = (s, sp, reg) => {
   const evos = tryDo(() => sp.getEvolutionLevels(), []);
   const own = { final: sp.baseTotal ?? 0, finalSp: sp, estimated: false };
   let best = own;
@@ -55,7 +56,7 @@ const lineOf = (sp, reg) => {
   }
   let evo = null;
   if (evos.length) {
-    const direct = reg ? tryDo(() => reg.getEvolutions(sp.speciesId), []) : [];
+    const direct = reg ? evolutionsOf(s, sp) : [];
     const byLevel = direct.filter(e => !e.item && !e.condition && e.level > 1).map(e => e.level);
     evo = direct.length ? (byLevel.length ? { level: Math.min(...byLevel) } : { item: true })
       : evos[0][1] > 1 ? { level: evos[0][1] } : { item: true };
@@ -80,7 +81,7 @@ const starterData = (s, id) => {
 const speciesValue = (s, h, sp, ctx, starter = null) => {
   const id = sp.speciesId;
   const { dexEntry: dex, starterDataEntry: st } = starterData(s, id);
-  const line = lineOf(sp, ctx.tables?.species);
+  const line = lineOf(s, sp, ctx.tables?.species);
   const why = [];
   const finalForm = line.finalSp && line.finalSp.speciesId !== id ? line.finalSp : null;
   const finalName = finalForm ? ` (${finalForm.name})` : "";
@@ -99,11 +100,14 @@ const speciesValue = (s, h, sp, ctx, starter = null) => {
     return name && aid !== starterAid ? `${name}${finalName}` : name;
   };
   const passiveOn = starter ? !!starter.passive : ((st.passiveAttr ?? 0) & Passive.UNLOCKED) !== 0;
-  const passive = fought(tryDo(() => sp.getPassiveAbility(starter?.formIndex ?? 0)), tryDo(() => finalForm.getPassiveAbility(0)));
+  // The Ability Randomizer skips its hooks during `SelectStarterPhase`, so a name read here is not the one the run
+  // hands out (game-code.md §32).
+  const passive = ctx.rolledPassive ? null
+    : fought(tryDo(() => sp.getPassiveAbility(starter?.formIndex ?? 0)), tryDo(() => finalForm.getPassiveAbility(0)));
   if (passiveOn) why.push({ w: 8, text: passive ? `passive ${passive}` : "passive" });
   else if (starter && ((st.passiveAttr ?? 0) & Passive.UNLOCKED)) why.push({ w: -3, text: `${passive ?? "passive"} is off` });
   const hiddenOn = starter ? starter.abilityIndex === 2 : ((st.abilityAttr ?? 0) & AbilityAttr.ABILITY_HIDDEN) !== 0;
-  if (hiddenOn && (finalForm ?? sp).abilityHidden) {
+  if (hiddenOn && (finalForm ?? sp).abilityHidden && !ctx.rolledAbility) {
     const name = fought(sp.abilityHidden, finalForm?.abilityHidden);
     why.push({ w: 3, text: name ? `hidden ${name}` : "hidden ability" });
   }
@@ -225,6 +229,8 @@ const build = (s, h, { tables, challenges, has, limit, chosen, candidates, onScr
   const ctx = {
     tables,
     fresh: has(Challenges.FRESH_START), mono: has(Challenges.SINGLE_TYPE), inverse: has(Challenges.INVERSE_BATTLE),
+    rolledAbility: has(Challenges.ABILITY_RANDOMIZER),
+    rolledPassive: challenges.some(c => c.id === Challenges.ABILITY_RANDOMIZER && c.value >= 2),
     pokerus: new Set(h.pokerusSpeciesIds ?? []),
   };
   const iconById = new Map([...onScreen].map(([id, c]) => [id, iconOfContainer(c)]));

@@ -41,6 +41,22 @@ const classStacks = (s, name) => (s?.modifiers ?? []).filter(m => m?.constructor
 const MAX_STEPS = 4;
 
 /**
+ * `sp`'s evolutions as the game checks them for `mon`: the registry's, run through each active challenge's own
+ * `applyModifyEvolutions` the way `getEvolution` runs `MODIFY_EVOLUTIONS` (game-code.md §32). The hook rewrites what
+ * it is handed, so it gets copies built as `getEvolution` builds them, with no `evoLevelThreshold`. A hook that throws
+ * leaves the registry's own rows.
+ */
+export const evolutionsOf = (s, sp, mon = { species: sp }) => {
+  const rows = tryDo(() => gameTables().species.getEvolutions(sp.speciesId), []) ?? [];
+  const hooks = (s?.gameMode?.challenges ?? []).filter(c => c?.value !== 0 && typeof c?.applyModifyEvolutions === "function");
+  if (!rows.length || !hooks.length) return rows;
+  const copies = rows.map(e => ({ speciesId: e.speciesId, level: e.level, item: e.item,
+    condition: e.condition ? { data: [...(e.condition.data ?? [])] } : null }));
+  try { for (const c of hooks) c.applyModifyEvolutions(mon, copies); } catch { return rows; }
+  return copies;
+};
+
+/**
  * The species a mon stands as at the level a projection reaches, and the evolutions it passes through on the way.
  * An evolution counts only where the coach can read that it *lands* by then (#567, story 8); otherwise the mon is
  * scored as it is, which is what the walk falls back to.
@@ -51,15 +67,15 @@ const MAX_STEPS = 4;
  *   §10), never for a member levelling up.
  * - It needs no item. An evolution item applies the moment it is picked up (game-code.md §15), so none is ever held
  *   or in the bag: an item evolution waits on a draw, and luck is not counted.
- * - It carries no `condition`. **This refusal is on purpose**: a condition is read against the mon as it stands now,
- *   while what the projection needs is whether it holds at the fight, which is a different question. So a
- *   conditional line — Golbat's friendship, an Eevee — is scored as it stands even where the condition does hold
- *   today. The evolution's own `validate` is deliberately never called.
+ * - It carries no `condition` once each challenge has had it (`evolutionsOf`). **This refusal is on purpose**: a
+ *   condition is read against the mon as it stands now, while what the projection needs is whether it holds at the
+ *   fight, which is a different question. So a conditional line — Golbat's friendship, an Eevee — is scored as it
+ *   stands even where the condition does hold today. The evolution's own `validate` is deliberately never called.
  * - The member's evolutions are not paused, which the player may switch off per member.
  *
  * Without the species registry (game-code.md §23) there is no evolved species to score at all, so nothing evolves.
  */
-const evolveTo = (x, level) => {
+const evolveTo = (s, x, level) => {
   const own = { species: x?.species ?? null, form: x?.formIndex ?? 0, evolved: [] };
   const reg = tryDo(() => gameTables().species);
   const was = Math.max(1, Math.floor(x?.level ?? 1));
@@ -67,7 +83,7 @@ const evolveTo = (x, level) => {
   let sp = own.species;
   const evolved = [];
   for (let i = 0; i < MAX_STEPS; i++) {
-    const lands = (tryDo(() => reg.getEvolutions(sp.speciesId), []) ?? [])
+    const lands = evolutionsOf(s, sp, x)
       .filter(e => !e?.item && !e?.condition && typeof e?.level === "number" && e.level > was && e.level <= level);
     // A branching line with no condition on either side is not one the game has today. Were one to appear, the
     // projection refuses it rather than guess which branch the game would take.
@@ -127,7 +143,7 @@ export const levelProjection = (s, { from = 0, fight = null } = {}) => {
       exp = Math.min(expAt(lid), exp + waveExp(s, w) * rate);
       level = levelAt(exp);
     }
-    return { level, was, gained: level - was, cap, capped: level >= cap, waves, share, ...evolveTo(x, level),
+    return { level, was, gained: level - was, cap, capped: level >= cap, waves, share, ...evolveTo(s, x, level),
       confidence: "estimate" };
   };
   return { from: start, fight: fight == null ? null : Math.floor(fight), waves, cap, expAll, of,

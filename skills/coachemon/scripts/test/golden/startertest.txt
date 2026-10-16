@@ -95,5 +95,11 @@ Magikarp Magikarp 1 final BST 540 (Gyarados)
 Notes
 Fresh Start: no passives, egg moves or luck
 summary best: Dratini (carry) + Charmander + Magikarp + Pikachu + Azurill · 10/10 pts · weak Rock; without Dratini: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts; trio: Gible (carry) + Charmander + Magikarp · 10/10 pts
+== Dipplin under the Moveset Randomizer
+value 1 final BST 540 (Hydrapple) BST 485 from L5 but evolves by item or condition
+value 2 final BST 540 (Hydrapple) BST 485 from L5 but evolves at L50
+== the Ability Randomizer
+Gible final BST 600 (Garchomp) passive Rough Skin IVs 60/186 | final BST 600 (Garchomp) passive IVs 60/186
+Magikarp final BST 540 (Gyarados) passive Intimidate (Gyarados) rare egg move Dragon Dance | final BST 540 (Gyarados) passive rare egg move Dragon Dance
 == not choosing a team
 kind null

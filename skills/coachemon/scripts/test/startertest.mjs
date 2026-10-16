@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
+import { MOVE, movesetRandomizer } from "./fixtures/challenges.mjs";
 import { wholeCard } from "./panel.mjs";
 
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
-// Test fixtures, not game data: [id, name, types, base stats, cost, evolutions [[id, level, item?]], passive, hidden].
+// Test fixtures, not game data: [id, name, types, base stats, cost, evolutions [[id, level, item?, condition?]], passive,
+// hidden].
 const SPECIES = [
   [1, "Bulbasaur", ["Grass","Poison"], [45,49,49,65,65,45], 3, [[2, 16], [3, 32]], 11, 12],
   [2, "Ivysaur", ["Grass","Poison"], [60,62,63,80,80,60]],
@@ -33,6 +35,8 @@ const SPECIES = [
   [444, "Gabite", ["Dragon","Ground"], [68,90,65,50,55,82]],
   [445, "Garchomp", ["Dragon","Ground"], [108,130,95,80,85,102], undefined, [], 29, 34],
   [151, "Mew", ["Psychic"], [100,100,100,100,100,100], 8, [], 31, 32],
+  [1011, "Dipplin", ["Grass","Dragon"], [80,80,110,95,80,40], 1, [[1019, 1, false, MOVE]], 33, 34],
+  [1019, "Hydrapple", ["Grass","Dragon"], [106,80,110,120,80,44]],
 ];
 const ABILITY_NAMES = { 11: "Chlorophyll", 13: "Solar Power", 15: "Rain Dish", 17: "Big Pecks", 19: "Guts", 21: "Lightning Rod", 23: "Moxie", 25: "Multiscale", 27: "Huge Power", 29: "Rough Skin", 31: "Synchronize", 24: "Rattled", 30: "Rough Skin (H)", 33: "Intimidate", 34: "Sand Force" };
 
@@ -48,7 +52,7 @@ for (const [id, name, types, stats, cost, evos = [], passive, hidden] of SPECIES
 const evoLevel = {}, direct = {};
 for (const [id, , , , , evos = []] of SPECIES) {
   let from = id;
-  for (const [to, level, item] of evos) { evoLevel[to] = [level, !!item]; (direct[from] ??= []).push(to); from = to; }
+  for (const [to, level, item, cond] of evos) { evoLevel[to] = [level, !!item, cond]; (direct[from] ??= []).push(to); from = to; }
 }
 for (const sp of byId.values()) {
   sp.getEvolutionLevels = () => (direct[sp.speciesId] ?? []).flatMap(to => [[to, evoLevel[to][0]], ...byId.get(to).getEvolutionLevels()]);
@@ -57,7 +61,8 @@ const registry = {
   getSpecies: id => byId.get(id),
   getAllStarters: () => STARTERS,
   hasEvolutions: id => !!direct[id],
-  getEvolutions: id => (direct[id] ?? []).map(to => ({ speciesId: to, level: evoLevel[to][0], item: evoLevel[to][1] ? 1 : 0, condition: null })),
+  getEvolutions: id => (direct[id] ?? []).map(to => ({ speciesId: to, level: evoLevel[to][0], item: evoLevel[to][1] ? 1 : 0,
+    condition: evoLevel[to][2] ? { data: [{ key: evoLevel[to][2] }] } : null })),
 };
 const tables = {
   species: registry,
@@ -67,11 +72,13 @@ const tables = {
 };
 
 const STARTERS = [1, 4, 7, 16, 19, 25, 129, 147, 298, 443, 151];
+// On no classic grid, so only a challenge run's own list offers it.
+const OFF_GRID = [1011];
 // Every starter caught but Mew; Magikarp has its passive and rare egg move, Rattata perfect IVs, Squirtle a variant-3
 // shiny, Pikachu Pokérus, Gible its passive.
 const account = () => {
   const dexData = {}, starterData = {};
-  for (const id of STARTERS) {
+  for (const id of [...STARTERS, ...OFF_GRID]) {
     dexData[id] = { caughtAttr: 1n | 4n | 16n | 128n, ivs: [10, 10, 10, 10, 10, 10] };
     starterData[id] = { abilityAttr: 1, passiveAttr: 0, eggMoves: 0, valueReduction: 0 };
   }
@@ -218,6 +225,27 @@ const checkBudget = (m, limit, label) => {
   const why = model.picks.flatMap(t => t.members.flatMap(x => x.why)).concat(model.viewing?.why ?? []).join(" ");
   assert.ok(!/egg move/.test(why), why);
   assert.ok(/passive Intimidate/.test(why), why);
+}
+
+// ---- The Moveset Randomizer's MODIFY_EVOLUTIONS at value 2 makes Dipplin's Dragon Cheer evolution a level one, at 50.
+{
+  const why = value => mount({ challenges: [movesetRandomizer(value)], valid: [...STARTERS, ...OFF_GRID], looking: 1011 })
+    .model.viewing?.why.join(" ") ?? "";
+  const one = why(1), two = why(2);
+  console.log(`== Dipplin under the Moveset Randomizer\nvalue 1 ${one}\nvalue 2 ${two}`);
+  assert.ok(/evolves by item or condition/.test(one), one);
+  assert.ok(/evolves at L50/.test(two), two);
+}
+
+// ---- The Ability Randomizer hides itself while a team is chosen (game-code.md §32), so the grid's ability names are
+// not the ones the run hands out: a hidden ability is no reason at all, and from value 2 a passive is one unnamed.
+{
+  const why = (value, looking) => mount({ challenges: [{ id: 12, value }], looking }).model.viewing?.why.join(" ") ?? "";
+  const gible = [1, 2].map(v => why(v, 443)), karp = [1, 2].map(v => why(v, 129));
+  console.log(`== the Ability Randomizer\nGible ${gible.join(" | ")}\nMagikarp ${karp.join(" | ")}`);
+  assert.ok(/IVs/.test(gible[0]) && !/hidden/.test(gible[0]), `Gible's hidden Rough Skin is no reason: ${gible[0]}`);
+  assert.ok(/passive Intimidate \(Gyarados\)/.test(karp[0]), `value 1 leaves passives alone: ${karp[0]}`);
+  assert.ok(/passive/.test(karp[1]) && !/Intimidate/.test(karp[1]), `value 2 rolls Gyarados's passive: ${karp[1]}`);
 }
 
 // ---- Off the grid the last species looked at is no cursor line, though the handler still holds its id.
