@@ -126,8 +126,8 @@ test("stripComments drops comments and keeps everything else", () => {
 
 test("the HUD bundle ships comment-stripped and still parses (extension-distribution.md §5.2)", () => {
   const stripped = stripComments(bundle("hud"));
-  assert.match(bundle("hud"), /Pokemon\.getAttackDamage,/);
-  assert.doesNotMatch(stripped, /Pokemon\.getAttackDamage,/);
+  assert.match(bundle("hud"), /\(game-code\.md §\d+\)/);
+  assert.doesNotMatch(stripped, /\(game-code\.md §\d+\)/);
   assert.doesNotMatch(stripped, /^\/\//m);
   assert.doesNotMatch(stripped, /^\s*\/\*/m);
   assert.doesNotThrow(() => new Function(stripped));

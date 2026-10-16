@@ -73,10 +73,13 @@ const bossSegmentDamage = (dmg, hp, segSize, minIdx = 0, idx) => {
   const c = Math.min(Math.max(Math.floor(Math.log2(excess / segSize)), 0), a - minIdx);
   return [Math.max(Math.floor(hp - floorHp + segSize * c), 1), a - c];
 };
-// The first game version whose Sturdy stops fixed damage (game-code.md §1), or null while no release has it.
-// `scripts/hud-deps.ts` watches Pokemon.getAttackDamage, so a pin bump that moves it asks again.
+// The first game version whose Sturdy stops fixed damage (game-code.md §1).
 const STURDY_VS_FIXED_FROM = "1.12.1.0";
-const fixedIgnoresSturdy = env => !STURDY_VS_FIXED_FROM || !versionAtLeast(gameVersionOf(env.s), STURDY_VS_FIXED_FROM);
+// `!versionAtLeast` alone hands an unreadable game version the older rule (#718).
+const fixedIgnoresSturdy = env => {
+  const v = gameVersionOf(env.s);
+  return !!v && !versionAtLeast(v, STURDY_VS_FIXED_FROM);
+};
 
 // @only 25-turn, 12-value, tests: targetFacts
 // @mirrors target-facts

@@ -194,8 +194,8 @@ Call it only inside `sandbox`.
      `PreDefendFullHpEndureAbAttr` unless `ignoreAbility` (`:3814-3824`). At this pin a fixed-damage hit — Seismic
      Toss, Night Shade, Super Fang, Dragon Rage, Final Gambit, and Psywave through `RandomLevelDamageAttr extends
      FixedDamageAttr` (`src/data/moves/move.ts:2148`) — leaves a full-HP Sturdy mon at 1 HP, as any other hit does.
-     That step is upstream [#7620](https://github.com/pagefaultgames/pokerogue/pull/7620); a tab on a build from
-     before it lets the hit through, which is why `hud/10-damage.js` keys the rule on a version constant.
+     That step is upstream [#7620](https://github.com/pagefaultgames/pokerogue/pull/7620), first released in
+     v1.12.1.0 (v1.12.0.11 returns before it); a tab on a game version from before it lets the hit through.
    - `OneHitKOAttr.apply` (`src/field/pokemon.ts:3835`; `src/data/moves/move.ts:3630-3639`) returns `{ ONE_HIT_KO, damage: this.hp }`.
      A boss is `isBossImmune`, so it falls through to the normal formula. The level check and Sturdy's block live in
      the attr's condition, not here.
@@ -951,7 +951,7 @@ The **party** judged as a whole: type tallies, luck, and the set of the party th
 - This turn's resolution of a move on its target (private `resolve` / `landHit`), pure math on read fields. Per hit:
   - Disguise / Ice Face (`FormBlockDamageAbAttr`, `src/data/abilities/ab-attrs.ts:5449`) takes the first hit.
   - Boss clamp by `calculateBossSegmentDamage` (exported; §3) with `getMaxHp() / bossSegments`, `bossSegmentIndex`, the classic final-boss minimum index and its HP − 1 cap (`EnemyPokemon.damage`, `pokemon.ts:7156-7177`; the cap checks the bar index before the hit).
-  - Sturdy at full HP → 1 HP, except against `FixedDamageAttr` moves (§3).
+  - Sturdy at full HP → 1 HP, `FixedDamageAttr` moves included (§1, §3).
   - Focus Band 0.1·stack, and the enemy Endure token 0.02·stack, rolled when the hit would faint it.
 - `moveOutcome(s, atk, def, pm)` → `{ type, cat, e: result→multiplier, perHit: [{max,min}], dist: [{n,p}], acc, expected, uncapped, max, pKo, revive, use, targetHp, name, priority, spread, traits, costs, notes }`. `traits` is 07-move-traits' record with the charging turn judged against this moment; `costs` is `costNotes` with this matchup's amounts, plus the target's contact chip; `notes` keeps the rest (hit counts, boss bars, Sturdy, Focus Band, a crit, an estimate). It combines the above; `targetHp` is the HP the odds were worked out for. It also sets `bypassProtect` from `move.doesFlagEffectApply({ flag: MoveFlags.IGNORE_PROTECT, user, target })` (`move.ts:897`; flag `1 << 1`, `src/enums/move-flags.ts:12`). A move cancelled by primordial weather or Psychic Terrain comes back as "no effect" (`stopped by weather` / `terrain`), from `arena.isMoveWeatherCancelled(user, move)` / `isMoveTerrainCancelled(user, targets, move)` (`src/field/arena.ts:330`, `:484`; §14).
 - `endOfTurnHp(p, { s, hp, tookSuperEffective, dealt })` → the signed turn-end HP change, following the game's phase order (`src/phase-manager.ts:231-237`):

@@ -131,7 +131,8 @@ export const STAT_NAMES = ["HP", "Atk", "Def", "SpA", "SpD", "Spe", "Acc", "Eva"
 export const iconOf = p => { try { return [p.getIconAtlasKey(), String(p.getIconId())]; } catch { return null; } };
 
 export const gameVersionOf = s => { try { return s?.game?.config?.gameVersion ?? null; } catch { return null; } };
-// An unreadable version is older than everything, so a caller's `false` branch must be the pinned build's rule.
+// An unreadable version is older than everything, so a caller's `false` branch must be the pinned game version's rule,
+// unless the caller tests for an unreadable version first (#718).
 export const versionAtLeast = (version, least) => {
   if (!version) return false;
   const a = String(version).split("."), b = String(least).split(".");

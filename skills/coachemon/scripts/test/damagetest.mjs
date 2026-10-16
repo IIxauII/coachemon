@@ -738,9 +738,8 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(versionAtLeast(null, "1.0.0"), false, "an unreadable version is older than everything");
 }
 
-// ---- A fixed-damage hit goes through a full-HP Sturdy and a rolled hit doesn't (game-code.md §1)
+// ---- Sturdy holds fixed damage from 1.12.1.0 and on an unreadable version, but not on older builds (game-code.md §1)
 {
-  // Upstream PR 7620 flips this, and the version constant flips with it.
   class FixedDamageAttr {}
   const atk = mon("tosser");
   const pineco = mon("pineco", { hp: 40, abilities: ["PreDefendFullHpEndureAbAttr"] });
@@ -761,6 +760,9 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   const held = moveOutcome(later, atk, pineco, pmOf(move(64, "Seismic Toss", 1, 1, { attrs: [new FixedDamageAttr()] })));
   assert.equal(held.pKo, 0, "from 1.12.1.0 Sturdy holds fixed damage too");
   assert.ok(held.notes.includes("sturdy"));
+  const unread = { ...scene, game: { config: {} } };
+  const blind = moveOutcome(unread, atk, pineco, pmOf(move(64, "Seismic Toss", 1, 1, { attrs: [new FixedDamageAttr()] })));
+  assert.equal(blind.pKo, 0, "an unreadable version gets the pinned build's Sturdy");
 }
 
 // ---- False Swipe caps each roll, rather than spreading the rolls under the capped max
