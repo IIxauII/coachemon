@@ -44,7 +44,7 @@ Each of these was considered and rejected in #7; the reason matters as much as t
 - **Battle verbs** — `use_move`, `switch_to`, `buy`, `take_reward`, `run_away`. A turn is COMMAND → FIGHT → move: two `select_option` calls. A verb would make it one, saving ~3 calls per wave, but no measured cost problem justifies it yet. The map's **Unattended soak and cost** fog measures whether a full run is affordable; semantic tools get added on that evidence, not on guesswork.
 - **`continue_run(slot)`** — resuming an existing save is an entry path #8 never exercised, with unknown settle behaviour. After a wipe the server reports `run_over` and Claude calls `start_run` again.
 - **`back()`** — there is no back button in this game. See §5.
-- **Any settings tool** — six settings carry `requireReload`, and the reload fires on *leaving* Settings, which kills a live run (#11). The server refuses to act on settings modes at all (§6.5). Game speed and tutorials are the human's to set once, out of band.
+- **Any settings tool** — seven settings carry `requiresReload`, and the page reloads the moment one changes, which kills a live run (#11). The server refuses to act on settings modes at all (§6.5). Game speed and tutorials are the human's to set once, out of band.
 - **`connect()` / `disconnect()`** — attachment is the server's job, lazily on first use. Exposing detach hands the agent a new way to break a run for no gain. The map's **Server scaffold and CDP session** fog owns attachment itself.
 - **Driving the modal/form family** — ten modes that ignore `processInput` and need DOM text entry (#4). None were hit live in either prototype. `press` falls back to raw keyboard (§6.4), which is the most v1 attempts.
 - **Vision as an input to play** — out of scope on the map. `screenshot` exists for the human only (§6.7).
@@ -232,7 +232,7 @@ Delivery: try `ui.processInput(button)`. If the settle fingerprint has not left 
 
 The server refuses, rather than pressing, in three cases. A refusal is an error carrying the live screen; nothing is sent to the game.
 
-1. **Settings modes.** Six settings carry `requireReload` and the reload fires on *leaving* Settings, killing a live run (#11). If the game is ever on a settings screen, every acting tool refuses and reports it.
+1. **Settings modes.** Seven settings carry `requiresReload` and the page reloads the moment one changes, killing a live run (#11). If the game is ever on a settings screen, every acting tool refuses and reports it.
 2. **The `STARTER_SELECT` filter bar, the `STARTER_SELECT/FILTER` screen.** Entered only by `STATS` from the grid or UP from row 0, and fully avoidable since `setCursor` is safe in grid mode. The server never navigates into it, and refuses `filter_bar` on `STARTER_SELECT/FILTER` — where `setCursor(n)` silently writes `filterBarCursor` instead of the grid cursor (**[live]** #8). The refusal is decided from the screen id alone: every acting tool's guard, and `start_run` when a setup step arrives on it. The in-page `starterSetCursor` keeps its own `filterMode` check as a last-moment safety.
 3. **`start_run` onto an occupied slot** — see below.
 
@@ -248,7 +248,7 @@ Proved end to end by #8: **13 presses from a cold TITLE to a live wave 1**, all 
 
 This tool earns its place not on press count but on two hazards:
 
-- **Species → index is unstable.** The grid is `filteredStarterContainers`, whose length depends on the profile's caught set *and* its persisted filter preferences (27 of 572 entries on the dev's profile, with a non-default Caught column). An index hardcoded anywhere is wrong on the next profile or after any filter change. `species` is therefore a list of **names**, resolved at call time against `filteredStarterContainers[i].species.name`. A name not present → error listing what is available. The server never widens the filters to find it (§6.5).
+- **Species → index is unstable.** The grid is `filteredStarterIds`, whose length depends on the profile's caught set *and* its persisted filter preferences (27 of 572 entries on the dev's profile, with a non-default Caught column). An index hardcoded anywhere is wrong on the next profile or after any filter change. `species` is therefore a list of **names**, resolved at call time against each id's species name. A name not present → error listing what is available. The server never widens the filters to find it (§6.5).
 - **Slot choice is destructive.** `sessionSlots[i].hasData` is readable *before* committing (**[live]**, all five read `false` in #8). If the target slot has data, `start_run` **refuses**, naming the occupied and free slots. `overwrite: true` is the only way past. #5 put this on the dev's real account, so overwriting a real save is never the default.
 
 The server should also read `scene.gameData.getSpeciesStarterValue(id)` for each requested species and refuse before pressing if the party exceeds the cost budget, rather than discovering it at a rejected START.
@@ -293,7 +293,7 @@ The rules below live in `src/menu-family.ts`: one plan per menu family (reach, s
 |---|---|---|
 | `MODIFIER_SELECT` | **`setCursor`** — `setRowCursor(row)` **then** `setCursor(col)`. Order is load-bearing: `setRowCursor` sets `this.cursor = -1` before re-entering `setCursor` | **[live]**, every wave, worked every time (#6) |
 | `STARTER_SELECT` grid | **`setCursor`** — clamps, keeps the sprite synced, fires `setSpecies`/`updateInstructions` | **[live]** #8, measured reversibly |
-| `TITLE` / `CONFIRM` / `OPTION_SELECT` | **`setCursor`** — handles scroll maths internally. Select via `config.options[unskippedIndices[fullCursor]]`; **`h.cursor` is a screen row, not the option index** — use `h.fullCursor` | **[source]** #4, not exercised live |
+| `TITLE` / `CONFIRM` / `OPTION_SELECT` / `MENU` | **`setScrollCursor` then `setCursor`**. The option is `options[cursor + scrollCursor]`: **`h.cursor` is a screen row, not the option index**. An option with `selectable: false` arms `repeatInput`, which replays the next button, so `cursor.option` clears it | **[source]** #4 at 1.12.1.1, not exercised live |
 | `COMMAND` | presses. Read the cursor with **`h.getCursor()`** (`fieldIndex ? cursor2 : cursor`) — plain `h.cursor` is wrong on field slot 2 in doubles | `setCursor` is **[source]**-safe but leaves the tera glow stale |
 | `FIGHT` | presses (UP/DOWN are ±2, LEFT/RIGHT ±1 over a 2×2). Read with `h.getCursor()` | `setCursor` is **[source]**-safe; the one live move change used `DOWN` |
 | `PARTY` slot phase | presses | `setCursor` is **[source]**-safe but skips the `lastLeftPokemonCursor` bookkeeping; live runs used `DOWN` |
@@ -318,7 +318,7 @@ The rules below live in `src/menu-family.ts`: one plan per menu family (reach, s
 | `PARTY` option phase | text children of `h.optionsContainer`, **sorted by `y` ASCENDING** | descending silently selects the wrong option — it yields `[Cancel, …, Apply]` and acting on index 1 opened **Summary** while the reader called it "Pause Evolution", twice. Ascending gives verb-first, `Cancel` last. **BBCode must be stripped.** `h.options[]` holds `PartyOption` ints, not strings |
 | `TARGET_SELECT` | **no label objects exist** — synthesize from `scene.getField()[battlerIndex]` → name, hp, maxHp, for each `i` in `h.targets` | frozen when `h.isMultipleTargets` |
 | `SAVE_SLOT` | no label array — synthesize from `h.sessionSlots[abs]` | `hasData` readable before committing |
-| `STARTER_SELECT` | no label text — derive from `filteredStarterContainers[i].species.name` | index unstable across profiles |
+| `STARTER_SELECT` | no label text — derive from the species of `filteredStarterIds[i]` | index unstable across profiles |
 | `SUMMARY` | none — informational | `unmapped` family; CANCEL out |
 | `SUMMARY/LEARN_MOVE` | `learn_move` family: `h.pokemon.getMoveset()[i].getName()` for rows 0–3, `h.newMove.name` for row 4; cursor `h.moveCursor` | ACTION on a moveset row forgets it; on row 4 it goes through CANCEL and declines. `h.cursor` is the page. Empty while `moveSelect` is off |
 

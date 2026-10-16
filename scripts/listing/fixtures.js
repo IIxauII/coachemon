@@ -42,7 +42,7 @@
     return {
       phaseManager: { getCurrentPhase: () => null }, getField: () => [...party, foes[0]],
       currentBattle: { waveIndex: 15, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
-      ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes,
+      ui: { mode: 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes,
     };
   };
 
@@ -52,7 +52,7 @@
     const lapras = pk("Lapras", ["Water", "Ice"], 85, 85, [["Surf", "Water", 90, "S"], ["Ice Beam", "Ice", 90, "S"]]);
     return {
       currentBattle: { waveIndex: 27, double: false },
-      ui: { getMode: () => 9, getHandler: () => ({ summaryUiMode: 1, pokemon: espeon, newMove: mv(["Earth Power", "Ground", 90, "S"]) }) },
+      ui: { mode: 9, getHandler: () => ({ summaryUiMode: 1, pokemon: espeon, newMove: mv(["Earth Power", "Ground", 90, "S"]) }) },
       getEnemyParty: () => [], getPlayerParty: () => [espeon, lapras],
     };
   };
@@ -85,7 +85,7 @@
     const handler = { options: free.map(t => ({ modifierTypeOption: { type: t, cost: 0 } })), shopOptionsRows: [], rerollCost: 250 };
     return {
       money: 500, pokeballCounts: { 1: 20 }, modifiers: [], currentBattle: { waveIndex: 29 },
-      ui: { getMode: () => 6, getHandler: () => handler }, getPlayerParty: () => [charizard, morpeko], getEnemyParty: () => [],
+      ui: { mode: 6, getHandler: () => handler }, getPlayerParty: () => [charizard, morpeko], getEnemyParty: () => [],
     };
   };
 

@@ -39,7 +39,7 @@ export const isReplacement = ph => ph?.phaseName === "SwitchPhase" && !!ph.isMod
 export const detect = s => {
   const ph = s?.ui ? s.phaseManager?.getCurrentPhase?.() : null;
   if (!ph) return none();
-  const ui = s.ui, mode = ui.getMode(), b = s.currentBattle;
+  const ui = s.ui, mode = ui.mode, b = s.currentBattle;
   switch (ph.phaseName) {
     case "CommandPhase":
     case "SelectTargetPhase":
@@ -60,7 +60,7 @@ export const detect = s => {
       }
       // A buy, a lock toggle or a transfer keeps the phase and asks anew (#524, #537).
       return set("reward", ph, s.money, s.lockModifierTiers === true, heldItems(s.modifiers ?? []),
-        mode === UiMode.MODIFIER_SELECT && (h?.options?.length ?? 0) > 0, h?.awaitingActionInput === true);
+        mode === UiMode.MODIFIER_SELECT && (h?.options?.length || h?.shopOptionsRows?.length) > 0, h?.awaitingActionInput === true);
     }
     case "LearnMovePhase": {
       const ms = s.getPlayerParty()[ph.partyMemberIndex]?.moveset;

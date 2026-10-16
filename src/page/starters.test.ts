@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { UiMode } from "../enums/generated.ts";
-import { onPage, send } from "./fake-page.ts";
+import { onPage, send, starterGrid } from "./fake-page.ts";
 
 function gameData(over: Record<string, unknown> = {}) {
   return {
@@ -18,28 +18,28 @@ function gameData(over: Record<string, unknown> = {}) {
   };
 }
 
+const NAMES: Record<number, string> = { 1: "Bulbasaur", 4: "Charmander", 7: "Squirtle", 10: "Caterpie", 13: "Weedle", 16: "Pidgey", 19: "Rattata", 21: "Spearow", 23: "Ekans", 25: "Pikachu", 27: "Sandshrew" };
+const IDS = [1, 4, 10, 13, 16, 19, 21, 23, 25, 7, 27];
+
+/** Squirtle sits on row 1, the first one on screen: Charmander is scrolled off. */
 function gridScene() {
-  const h = {
-    cursor: 2,
-    scrollCursor: 1,
-    filteredStarterContainers: [{ species: { name: "Charmander", speciesId: 4 } }, { species: { name: "Squirtle", speciesId: 7 } }],
-    starterSpecies: [{ name: "Charmander" }],
-    getValueLimit: () => 10,
-    isPartyValid: () => true,
-  };
-  return { ui: { mode: UiMode.STARTER_SELECT, handlers: { [UiMode.STARTER_SELECT]: h } }, gameData: gameData() };
+  const grid = starterGrid(NAMES, IDS, { cursor: 0, scrollCursor: 1, party: [4] });
+  return { grid, scene: { ui: { mode: UiMode.STARTER_SELECT, handlers: { [UiMode.STARTER_SELECT]: grid.h } }, gameData: gameData() } };
 }
 
 test("the grid fields start_run uses are unchanged, and every unlocked species comes with them (extension-distribution.md §11.4)", t => {
-  onPage(t, gridScene());
+  const { grid, scene } = gridScene();
+  onPage(t, scene);
   const r = send("starters", {});
   assert.equal(r.ok, true);
-  assert.equal(r.cursor, 2);
+  assert.equal(r.cursor, 9, "the grid index, not the on-screen container");
   assert.equal(r.scrollCursor, 1);
-  assert.deepEqual(r.grid, [{ i: 0, name: "Charmander", id: 4, cost: 3 }, { i: 1, name: "Squirtle", id: 7, cost: 4 }]);
+  assert.deepEqual(r.grid.slice(0, 2), [{ i: 0, name: "Bulbasaur", id: 1, cost: 4 }, { i: 1, name: "Charmander", id: 4, cost: 3 }]);
+  assert.deepEqual(r.grid.map((g: { name: string }) => g.name), IDS.map(id => NAMES[id]));
   assert.deepEqual(r.party, ["Charmander"]);
   assert.equal(r.valueLimit, 10);
   assert.equal(r.partyValid, true);
+  assert.equal(grid.sprites.added, 0, "naming a species off screen adds nothing to the scene");
   // Only what the dex says was caught is owned: Squirtle's `caughtAttr` is 0.
   assert.deepEqual(r.owned, [{ id: 4, cost: 3, ivTotal: 81, passiveUnlocked: true, hiddenAbility: true, eggMoves: 3, costReduction: 1, candy: 40 }]);
 });

@@ -4,7 +4,7 @@ import { MoveTarget, MultiHitType, MoveFlags, StatusEffect, Stat, SpeciesId, Mov
 
 // The HUD matches an attribute through its prototype chain, so a stand-in carries its parent where the game
 // subclasses.
-const PARENTS = { WeatherInstantChargeAttr: "InstantChargeAttr", BoostHealAttr: "HealAttr", PlantHealAttr: "HealAttr", LeechSeedAttr: "AddBattlerTagAttr", ProtectAttr: "AddBattlerTagAttr" };
+const PARENTS = { WeatherInstantChargeAttr: "InstantChargeAttr", VariableHealAttr: "HealAttr", LeechSeedAttr: "AddBattlerTagAttr", ProtectAttr: "AddBattlerTagAttr" };
 const classFor = name => {
   const parent = PARENTS[name] ? classFor(PARENTS[name]) : null;
   const C = parent ? class extends parent {} : class {};
@@ -67,7 +67,7 @@ const counts = t => t.hits.dist.map(x => `${x.n}@${x.p}`).join(" ");
   seq3.conditionsSeq3 = [attr("FirstMoveCondition")];
   assert.equal(moveTraits(fakeOut).once, true);
   assert.equal(moveTraits(seq3).once, true, "conditionsSeq3 counts too");
-  assert.equal(moveTraits(move({ attrs: ["FrenzyAttr"] })).lock, true);
+  assert.equal(moveTraits(move({ attrs: [["AddBattlerTagAttr", { tagType: "FRENZY", selfTarget: true }]] })).lock, true);
   assert.equal(moveTraits(move({ restrictions: [{ i18nkey: "battle:moveDisabledConsecutive" }] })).noRepeat, true);
   assert.equal(moveTraits(move({ restrictions: [{ i18nkey: "battle:moveDisabledSomethingElse" }] })).noRepeat, false, "the exact i18n key, not a pattern");
   log("turns", `recharge ${moveTraits(move({ attrs: ["RechargeAttr"] })).recharge} · once ${moveTraits(fakeOut).once} · noRepeat ${moveTraits(move({ restrictions: [{ i18nkey: "battle:moveDisabledConsecutive" }] })).noRepeat}`);
@@ -89,7 +89,7 @@ const counts = t => t.hits.dist.map(x => `${x.n}@${x.p}`).join(" ");
 
   const steelBeam = move({ name: "Steel Beam", attrs: ["HalfSacrificialAttr"] });
   const hjk = move({ name: "High Jump Kick", attrs: ["MissEffectAttr"] });
-  const outrage = move({ name: "Outrage", attrs: ["FrenzyAttr", "MissEffectAttr"] });
+  const outrage = move({ name: "Outrage", attrs: [["AddBattlerTagAttr", { tagType: "FRENZY", selfTarget: true }]] });
   assert.equal(moveTraits(steelBeam).halfSac, true);
   assert.equal(moveTraits(steelBeam, mon({ abilities: ["BlockNonDirectDamageAbAttr"] })).halfSac, false, "Magic Guard pays nothing");
   assert.equal(moveTraits(hjk).crash, true);
@@ -161,10 +161,12 @@ const counts = t => t.hits.dist.map(x => `${x.n}@${x.p}`).join(" ");
   assert.deepEqual(moveTraits(bellyDrum, mon()).cutHp, { ratio: 2 });
 
   const recover = move({ name: "Recover", target: MoveTarget.USER, attrs: [["HealAttr", { healRatio: 0.5, selfTarget: true }]] });
-  const synthesis = move({ name: "Synthesis", target: MoveTarget.USER, attrs: [["PlantHealAttr", { healRatio: 0.5, selfTarget: true, getWeatherHealRatio: w => (w === 3 ? 0.667 : 0.25) }]] });
+  const synthesis = move({ name: "Synthesis", target: MoveTarget.USER, attrs: [["VariableHealAttr", { healRatio: 1, selfTarget: true, healFunc: u => (u?.sunny ? 2 / 3 : 0.5) }]] });
   assert.deepEqual([moveTraits(recover).heal.ratio, moveTraits(recover).heal.cls], [0.5, "HealAttr"]);
-  assert.equal(moveTraits(synthesis).heal.ratioIn(3), 0.667, "the weather ratio is the attribute's own answer");
-  assert.equal(moveTraits(synthesis).heal.cls, "PlantHealAttr", "…and the concrete class says which heal it is");
+  assert.equal(moveTraits(synthesis, mon()).heal.ratio, 0.5, "a variable heal's ratio is its function's, not the constructor's 1");
+  assert.equal(moveTraits(synthesis).heal.ratioIn({ sunny: true }), 2 / 3, "the ratio is the attribute's own answer for the user");
+  assert.equal(moveTraits(synthesis).heal.cls, "VariableHealAttr", "…and the concrete class says which heal it is");
+  assert.equal(moveTraits(move({ attrs: [["AddBattlerTagAttr", { tagType: "FRENZY", selfTarget: false }]] })).lock, false, "a frenzy aimed at the foe locks nobody");
 
   const spikes = move({ name: "Spikes", target: MoveTarget.ENEMY_SIDE, attrs: [["AddArenaTrapTagAttr", { tagType: "SPIKES" }]] });
   assert.deepEqual(moveTraits(spikes).hazard, { tag: "SPIKES" });
@@ -203,7 +205,7 @@ const counts = t => t.hits.dist.map(x => `${x.n}@${x.p}`).join(" ");
   assert.deepEqual(say(move({ attrs: ["PreUseInterruptAttr"] })), ["fails if hit first"]);
   assert.deepEqual(say(move({ id: MoveId.SUCKER_PUNCH })), ["fails unless the foe attacks"]);
   assert.deepEqual(say(move({ conditions: ["FirstMoveCondition"] })), ["first turn only"]);
-  assert.deepEqual(say(move({ attrs: ["FrenzyAttr"] })), ["locks 2–3 turns, then confused"]);
+  assert.deepEqual(say(move({ attrs: [["AddBattlerTagAttr", { tagType: "FRENZY", selfTarget: true }]] })), ["locks 2–3 turns, then confused"]);
   assert.deepEqual(say(move({ restrictions: [{ i18nkey: "battle:moveDisabledConsecutive" }] })), ["not twice in a row"]);
   assert.deepEqual(say(move({ attrs: [["RecoilAttr", { damageRatio: 0.33 }]] })), ["recoil 33% of damage"]);
   assert.deepEqual(say(move({ attrs: [["RecoilAttr", { useHp: true, damageRatio: 0.5 }]] })), ["−50% HP each use"]);

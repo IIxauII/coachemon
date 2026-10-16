@@ -86,7 +86,7 @@ const partyFromShop = (mode: number, provenance: "source" | "live"): Entry => ({
  *   - no rung presses `MENU` — it never reaches a handler, and on STARTER_SELECT / POKEDEX_PAGE it presses SUBMIT
  *     (game-code.md §26);
  *   - no rung calls `ui.revertMode()` — it drops the pending continuation unrun and hangs the phase waiting on it (§26);
- *   - no rung enters Settings — six settings reset the run on leaving (§26).
+ *   - no rung enters Settings — a press there can change a setting that reloads the page at once (§26).
  */
 export const LADDER = {
   MESSAGE: {
@@ -124,9 +124,9 @@ export const LADDER = {
     cancel: {
       effect: "rejected",
       provenance: "source",
-      note: "TitlePhase passes noCancel: true, so CANCEL returns false. Corrects spec §5, which had selects_last_option.",
+      note: "TitlePhase passes blockCancelButton: true, so CANCEL returns false. Corrects spec §5, which had selects_last_option.",
     },
-    rungs: [pickUntried("depends on the option: New Game / Load Game / Run History / Settings (never Settings)")],
+    rungs: [pickUntried("depends on the option: New Game / Load Game / Run History / Menu (never Menu: it holds Settings)")],
     deps: [
       `${H}/base-option-select-ui-handler.ts#BaseOptionSelectUiHandler.processInput`,
       "src/phases/title-phase.ts#TitlePhase.showOptions",
@@ -407,11 +407,14 @@ export const LADDER = {
     cancel: {
       effect: "exits",
       provenance: "source",
-      note: "view-only; the callback returns to MODIFIER_SELECT or MYSTERY_ENCOUNTER",
+      note:
+        "first CANCEL clears a half-chosen reorder (partySwitchCursor); the next runs the callback back to " +
+        "MODIFIER_SELECT or MYSTERY_ENCOUNTER. Not view-only: from the shop its verbs include Switch, Release and Unsplice",
     },
-    rungs: [cancelExits("back to the screen that opened the party view")],
+    rungs: [cancelExits("clear the pending reorder, then back to the screen that opened the party view")],
     deps: [
       ...PARTY_DEPS,
+      `${H}/party-ui-handler.ts#PartyUiHandler.updateOptions`,
       "src/phases/select-modifier-phase.ts#SelectModifierPhase.start",
       `${H}/mystery-encounter-ui-handler.ts#MysteryEncounterUiHandler.processInput`,
     ],
@@ -460,7 +463,8 @@ export const LADDER = {
       provenance: "live",
       note:
         "CANCEL is the only exit: back to PARTY if it opened from there, else MESSAGE. Inside the move list the first " +
-        "CANCEL only closes the list. ACTION has nothing to commit (#8: rejected 26×, prose only).",
+        "CANCEL only closes the list. ACTION on a move opens Swap / Cancel, plus Delete under SelectModifierPhase, " +
+        "whose Yes forgets the move for good.",
     },
     rungs: [cancelExits("back to PARTY (or MESSAGE)", "live")],
     deps: [
@@ -479,14 +483,14 @@ export const LADDER = {
       provenance: "source",
       note:
         "hideMoveSelect() → moveSelectFunction(4) → rejectMoveAndEnd: 'stop trying to teach?' CONFIRM, or straight to " +
-        "'did not learn' when hideMoveSkipConfirm is set.",
+        "'did not learn' when the levelMoveConfirmation setting is off.",
     },
     rungs: [
       {
         do: "press",
         button: "CANCEL",
         risk: "lossy",
-        discards: "the new move is not learned (a CONFIRM asks first unless hideMoveSkipConfirm)",
+        discards: "the new move is not learned (a CONFIRM asks first unless levelMoveConfirmation is off)",
         effect: "decline the move",
         provenance: "source",
       },
@@ -509,7 +513,7 @@ export const LADDER = {
       provenance: "source",
       note:
         "A cascade, first match wins: open filter dropdown → close it; filter column non-default → RESET the dev's " +
-        "persisted filter; statsMode → leave it; team non-empty → popStarter() removes the last member, no confirm; " +
+        "persisted filter; showIvsMode → leave it; team non-empty → popPartyStarter() removes the last member, no confirm; " +
         "team empty → tryExit() asks a CONFIRM. `rejected` is a placeholder: the effect is never uniform, which is why " +
         "start_run owns this screen and never presses CANCEL on it.",
     },
@@ -520,14 +524,14 @@ export const LADDER = {
         risk: "lossy",
         discards: "the run setup — after the CONFIRM, back to title (or challenge select)",
         effect: "tryExit() CONFIRM",
-        when: "team empty, not filterMode, not statsMode",
+        when: "team empty, not filterMode, not showIvsMode",
         provenance: "source",
       },
       {
         do: "press",
         button: "CANCEL",
         risk: "destructive",
-        discards: "the last team member (popStarter), or the dev's persisted filter column in filter mode",
+        discards: "the last team member (popPartyStarter), or the dev's persisted filter column in filter mode",
         effect: "one press, one loss, no confirmation",
         when: "team non-empty, or filterMode with a non-default column",
         provenance: "source",
@@ -535,7 +539,7 @@ export const LADDER = {
     ],
     deps: [
       `${H}/starter-select-ui-handler.ts#StarterSelectUiHandler.processInput`,
-      `${H}/starter-select-ui-handler.ts#StarterSelectUiHandler.popStarter`,
+      `${H}/starter-select-ui-handler.ts#StarterSelectUiHandler.popPartyStarter`,
       `${H}/starter-select-ui-handler.ts#StarterSelectUiHandler.tryExit`,
     ],
   },
@@ -611,12 +615,12 @@ export const LADDER = {
       effect: "selects_last_option",
       provenance: "source",
       note:
-        "CANCEL unblocks the anti-misclick delay AND selects 'No' in one press, where ACTION would be refused; " +
-        "rejected when the config sets noCancel",
+        "selects 'No', the last option; rejected when the config sets blockCancelButton. During an inputDelay CANCEL is " +
+        "refused like ACTION, unless canBypassInputDelay, where it ends the delay and selects 'No' in one press",
     },
     rungs: [pickUntried("whatever this Yes/No commits — read the preceding message before choosing")],
     deps: [
-      `${H}/confirm-ui-handler.ts#ConfirmUiHandler.processInput`,
+      `${H}/confirm-ui-handler.ts#ConfirmUiHandler.show`,
       `${H}/base-option-select-ui-handler.ts#BaseOptionSelectUiHandler.processInput`,
     ],
   },
@@ -630,8 +634,8 @@ export const LADDER = {
       effect: "selects_last_option",
       provenance: "source",
       note:
-        "moves to the last option and runs its handler; rejected when noCancel (unless options overflow maxOptions, " +
-        "which selects the last option anyway)",
+        "scrolls to the last option and runs its handler; rejected when blockCancelButton, and refused during an " +
+        "inputDelay unless canBypassInputDelay",
     },
     rungs: [pickUntried("whatever the chosen option's handler commits")],
     deps: [`${H}/base-option-select-ui-handler.ts#BaseOptionSelectUiHandler.processInput`],
@@ -645,7 +649,7 @@ export const LADDER = {
     cancel: { effect: "exits", provenance: "source", note: "closes the pause menu (revertMode, else MESSAGE)" },
     rungs: [cancelExits("close the pause menu")],
     deps: [`${H}/menu-ui-handler.ts#MenuUiHandler.processInput`],
-    note: "Contains Save & Quit and Settings; no rung selects an option here.",
+    note: "Contains Save & Quit, Settings and Manage Data, whose Clear Local Data wipes the save; no rung selects an option here.",
   },
 
   MENU_OPTION_SELECT: {
@@ -665,7 +669,7 @@ export const LADDER = {
   ...Object.fromEntries(
     (
       [
-        ["SETTINGS", 18, "SettingsUiHandler"],
+        ["SETTINGS_GENERAL", 18, "GeneralSettingsUiHandler"],
         ["SETTINGS_DISPLAY", 19, "SettingsDisplayUiHandler"],
         ["SETTINGS_AUDIO", 20, "SettingsAudioUiHandler"],
         ["SETTINGS_GAMEPAD", 21, "SettingsGamepadUiHandler"],
@@ -681,24 +685,18 @@ export const LADDER = {
         cancel: {
           effect: "exits",
           provenance: "source",
-          note: "revertMode back to the opener. Leaving after changing a requireReload setting resets the game (#11).",
+          note:
+            "revertMode back to the opener. A requiresReload setting reloads the page the moment it changes, not on " +
+            "leaving (#11), so leaving loses nothing.",
         },
-        rungs: [
-          {
-            do: "press",
-            button: "CANCEL",
-            risk: "destructive",
-            discards:
-              "the live run, if Language, UI Theme, Candy Upgrade Display, Time Of Day Widget, Sprite Set or " +
-              "Battle Music was changed while inside",
-            effect: "leave settings",
-            provenance: "source",
-          },
-        ],
+        rungs: [cancelExits("leave settings")],
         deps:
           mode === 21 || mode === 23
             ? ["src/ui/settings/base-control-settings-ui-handler.ts#BaseControlSettingsUiHandler.processInput"]
-            : ["src/ui/settings/base-settings-ui-handler.ts#BaseSettingsUiHandler.processInput"],
+            : [
+                "src/ui/settings/base-settings-ui-handler.ts#BaseSettingsUiHandler.processInput",
+                "src/ui/settings/base-settings-ui-handler.ts#BaseSettingsUiHandler.handleSaveSetting",
+              ],
       },
     ]),
   ),

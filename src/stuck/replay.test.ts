@@ -2,11 +2,15 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import { PINNED_GAME_VERSION } from "../escape-ladder/lookup.ts";
 import { progressFingerprint } from "./detector.ts";
 import { replay, type ReplayStep } from "./replay.ts";
 
+// Gotcha: the transcripts carry the game version they were read on, and the ladder suppresses every rung on any version
+// but the pin, so they are replayed as read at the pin.
 const load = (run: string): ReplayStep[] =>
-  JSON.parse(readFileSync(new URL(`./fixtures/${run}.calls.json`, import.meta.url), "utf8"));
+  JSON.parse(readFileSync(new URL(`./fixtures/${run}.calls.json`, import.meta.url), "utf8"), (key, value) =>
+    key === "liveVersion" ? PINNED_GAME_VERSION : value);
 
 test("run2: the 147-iteration shop↔party loop trips on its twelfth call, and keeps reporting", () => {
   const result = replay(load("run2"));

@@ -723,7 +723,7 @@ export class Driver {
 
   async #guard(ready: Ready): Promise<void> {
     const screen = ready.screen;
-    if (isSettingsMode(ready.mode)) throw new Refusal("settings_mode", `The game is on ${screen}; six settings carry requireReload and the reload fires on leaving, killing a live run. Leave Settings by hand.`, { screen });
+    if (isSettingsMode(ready.mode)) throw new Refusal("settings_mode", `The game is on ${screen}; a press there can change one of the seven settings that reload the page the moment they change, killing a live run. Leave Settings by hand.`, { screen });
     if (screen === FILTER_BAR_SCREEN) throw new Refusal("filter_bar", "The starter filter bar is active; setCursor would write filterBarCursor and CANCEL resets persisted filters. Leave it by hand.", { screen });
     // A transport whose settles pump has no frozen loop to refuse: the driver's own polls keep it turning (extension-distribution.md §10.3).
     if (this.#game.pumps) return;

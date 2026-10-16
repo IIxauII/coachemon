@@ -136,7 +136,7 @@ const mount = ({ screen = "party", spliced = false, members = party(spliced), pi
     // than standing twelve levels over it, which is what leaves the duels behind the judgment close enough that
     // *which* pair the Splicer makes moves the team value at all (`CLAMP` is ±3 a threat).
     money: 500, pokeballCounts: {}, modifiers: [], currentBattle: { waveIndex: 52, double: false },
-    ui: { getMode: () => (screen === "party" ? 8 : 6), getHandler: () => handler },
+    ui: { mode: (screen === "party" ? 8 : 6), getHandler: () => handler },
     phaseManager: { getCurrentPhase: () => ({ phaseName: "SelectModifierPhase" }) },
     getPlayerParty: () => members, getEnemyParty: () => [],
     // The challenge list is what the judgment reads Hardcore off, through the shared predicate (03-calendar), so the
