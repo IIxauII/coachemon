@@ -2,7 +2,7 @@
 // multi-hit attrs do: the numbers below are exact.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
-import { MoveId, MultiHitType } from "../../../../src/enums/generated.ts";
+import { HitResult, MoveId, MultiHitType } from "../../../../src/enums/generated.ts";
 import { GAME_PROTO } from "./game-proto.mjs";
 
 class MultiHitAttr { constructor(t) { this.multiHitType = t; } }
@@ -605,6 +605,50 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(moveOutcome(scene, atk, flyer, pmOf(arrows)).e, 1, "Thousand Arrows into a Flying type");
   assert.equal(moveOutcome(scene, atk, flyer, pmOf(quake)).e, 0, "Earthquake into a Flying type");
   phaseName = "CommandPhase";
+}
+
+// ---- Mold Breaker's Ground move lands on Levitate (#732)
+{
+  const quake = move(89, "Earthquake", 4, 100);
+  // Never through `ignoreAbility`: the game's Levitate doesn't read it (game-code.md §1).
+  const floating = p => !(scene.arena.ignoreAbilities && scene.arena.ignoringEffectSource !== p.getBattlerIndex());
+  const levitating = (id, opts) => {
+    const p = mon(id, opts);
+    const hit = p.getAttackDamage;
+    p.getMoveEffectiveness = (_, mv) => (mv.type === 4 && floating(p) ? 0 : 1);
+    p.getAttackDamage = function (o) {
+      return o.move.type === 4 && floating(this) ? { cancelled: false, result: HitResult.NO_EFFECT, damage: 0 } : hit.call(this, o);
+    };
+    return p;
+  };
+  const foe = levitating("levitate", { player: false, bi: 2 });
+  const mold = mon("mold", { abilities: ["MoveAbilityBypassAbAttr"] });
+  setup(mold, foe);
+  const o = moveOutcome(scene, mold, foe, pmOf(quake), { crit: false });
+  assert.deepEqual([o.e, o.max], [1, 100], "Mold Breaker Earthquake into Levitate");
+  assert.ok(!scene.arena.ignoreAbilities, "the arena is left as the game had it");
+  // Shadow Shield holds against Mold Breaker (game-code.md §1).
+  const shield = mon("shadow shield", { player: false, bi: 2 });
+  const unshielded = shield.getAttackDamage;
+  shield.getAttackDamage = function (o) {
+    const r = unshielded.call(this, o);
+    return o.ignoreAbility ? r : { ...r, damage: r.damage / 2 };
+  };
+  setup(mold, shield);
+  assert.equal(moveOutcome(scene, mold, shield, pmOf(quake), { crit: false }).max, 50, "Mold Breaker Earthquake into Shadow Shield");
+  // Both off the field (game-code.md §1).
+  const benchFoe = levitating("bench levitate", { player: false, bi: -1 });
+  const benchMold = mon("bench mold", { abilities: ["MoveAbilityBypassAbAttr"], bi: -1 });
+  setup(benchMold, benchFoe);
+  assert.equal(moveOutcome(scene, benchMold, benchFoe, pmOf(quake), { crit: false }).e, 1, "off the field, both of them");
+  // The game asks Mycelium Might through `doesFlagEffectApply` (game-code.md §1).
+  const mycelium = mon("mycelium", { abilities: ["MoveAbilityBypassAbAttr"] });
+  setup(mycelium, foe);
+  const asked = { ...quake, doesFlagEffectApply: () => false };
+  assert.equal(moveOutcome(scene, mycelium, foe, pmOf(asked), { crit: false }).e, 0, "Mycelium Might Earthquake into Levitate");
+  const plain = mon("plain");
+  setup(plain, foe);
+  assert.equal(moveOutcome(scene, plain, foe, pmOf(quake), { crit: false }).e, 0, "Earthquake into Levitate");
 }
 
 // ---- Drain is a share of the damage dealt, which Heal Block, Healing Charm and Liquid Ooze change (game-code.md §18)

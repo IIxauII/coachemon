@@ -189,6 +189,20 @@ Call it only inside `sandbox`.
    `ignoreAbility` skips the defender's ability steps, but not Levitate: `isForciblyUngrounded` applies
    `UngroundedAbAttr` with no such flag (`src/field/pokemon.ts:2572-2574`), and only the arena's `ignoreAbilities`,
    set while a Mold Breaker move runs, suppresses it (`:2392`).
+   - The window: `MovePhase.start` calls `arena.setIgnoreAbilities(true, user.getBattlerIndex())` when
+     `move.doesFlagEffectApply({ flag: IGNORE_ABILITIES, user, isFollowUp })` (`src/phases/move-phase.ts:181-189`), and
+     `MoveEndPhase.start` clears it (`src/phases/move-end-phase.ts:42`). `doesFlagEffectApply` asks the user's
+     `MoveAbilityBypassAbAttr` first (`src/data/moves/move.ts:915-925`); Mycelium Might's passes status moves only
+     (`init-abilities.ts:2104`), so its attacks fall through to the move's own flag.
+   - `canApplyAbility` drops an `.ignorable()` ability while the flag is on, unless the holder's `getBattlerIndex()`
+     equals `arena.ignoringEffectSource` (`src/field/pokemon.ts:2392-2393`). Off the field every mon of either side
+     answers -1: a player's `getFieldIndex()` (`:6068-6074`), an enemy's `BattlerIndex.ATTACKER` (`:7254-7264`).
+   - The AI's own simulated call (`:6881-6890`) runs in `EnemyCommandPhase`, before any `MovePhase`, so the flag is off
+     there and Levitate holds.
+   - The live hit passes `ignoreAbility: false` (`src/phases/move-effect-phase.ts:648`) and leaves the bypass to the
+     flag. `ignoreAbility` would skip the whole `ReceivedMoveDamageMultiplierAbAttr` step, ignorable or not
+     (`src/field/pokemon.ts:3982`): Shadow Shield and Prism Armor are not `.ignorable()`, so they hold against Mold
+     Breaker, while Multiscale is (`src/data/abilities/init-abilities.ts:944-947`, `:1617-1626`).
 3. **Fixed damage and OHKO.**
    - `FixedDamageAttr` (`src/field/pokemon.ts:3801`) returns `{ EFFECTIVE, toDmgValue(fixed × Multi-Lens factor) }`
      (`:3802-3831`). That return skips step 7, so it runs the Sturdy step itself first: a full-HP defender gets
