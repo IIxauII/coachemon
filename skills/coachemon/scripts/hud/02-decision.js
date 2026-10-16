@@ -32,6 +32,16 @@ const heldItems = mods => {
   }
   return sig;
 };
+// Slot by slot, onto `sig`: a move the summary screen forgets is a change (game-code.md §17), and so is a reordered
+// party (#713, #714).
+const movesets = (party, sig) => {
+  for (let i = 0; i < party.length; i++) {
+    const p = party[i], ms = p?.moveset;
+    sig = Math.imul(sig ^ (p?.id | 0), 0x01000193);
+    if (ms) for (let j = 0; j < ms.length; j++) sig = Math.imul(sig ^ (ms[j]?.moveId | 0), 0x01000193);
+  }
+  return sig;
+};
 
 // A faint's replacement. `doReturn` is a mid-turn switch-in pick: U-turn's, Baton Pass's or Wimp Out's (game-code.md §9).
 export const isReplacement = ph => ph?.phaseName === "SwitchPhase" && !!ph.isModal && !ph.doReturn;
@@ -54,12 +64,13 @@ export const detect = s => {
       return set("replacement", ph, null, null, null, mode === UiMode.PARTY && enemyFree(b), true);
     case "SelectModifierPhase": {
       const h = ui.getHandler();
-      // Between two visits, money stands in for a purchase (a TM, an item) and the held items for a transfer (#544).
+      // Between two visits, money stands in for a purchase (a TM, an item), the held items for a transfer (#544), and
+      // the movesets for a move forgotten on the summary screen (#714).
       if (mode === UiMode.PARTY && h?.partyUiMode === PartyUiMode.SPLICE) {
-        return set("fusion", ph, s.getPlayerParty().length, s.money, heldItems(s.modifiers ?? []), true, true);
+        return set("fusion", ph, s.getPlayerParty().length, s.money, movesets(s.getPlayerParty(), heldItems(s.modifiers ?? [])), true, true);
       }
-      // A buy, a lock toggle or a transfer keeps the phase and asks anew (#524, #537).
-      return set("reward", ph, s.money, s.lockModifierTiers === true, heldItems(s.modifiers ?? []),
+      // A buy, a lock toggle, a transfer, a forgotten move or a reorder keeps the phase and asks anew (#524, #537, #714).
+      return set("reward", ph, s.money, s.lockModifierTiers === true, movesets(s.getPlayerParty(), heldItems(s.modifiers ?? [])),
         mode === UiMode.MODIFIER_SELECT && (h?.options?.length || h?.shopOptionsRows?.length) > 0, h?.awaitingActionInput === true);
     }
     case "LearnMovePhase": {

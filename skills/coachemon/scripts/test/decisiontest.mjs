@@ -201,7 +201,7 @@ scene = game;
   assert.equal(count("replacement"), 1);
 }
 
-// ---- a shop builds once its offers are out, and a buy, a lock toggle, an item transfer and a reroll each build again
+// ---- a shop builds once its offers are out, and a buy, a lock toggle, an item transfer, a forgotten move, a reorder and a reroll each build again
 {
   const offers = { options: [], awaitingActionInput: false };
   let shop = { phaseName: "SelectModifierPhase" };
@@ -218,22 +218,33 @@ scene = game;
   step("transfer screen", () => { g.mode = UiMode.PARTY; g.handler = { partyUiMode: PartyUiMode.MODIFIER_TRANSFER }; });
   step("Leftovers handed over", () => { g.modifiers[0].pokemonId = 12; });
   step("back from the transfer", () => { g.mode = UiMode.MODIFIER_SELECT; g.handler = offers; });
+  step("summary screen", () => { g.mode = UiMode.SUMMARY; g.handler = {}; });
+  step("Growl forgotten", () => { three.moveset.splice(2, 1); });
+  assert.deepEqual(step("back from the summary", () => { g.mode = UiMode.MODIFIER_SELECT; g.handler = offers; }),
+    ["watch:rewards", "road:rewards"], "the card built before the move went is not shown again");
+  step("party check", () => { g.mode = UiMode.PARTY; g.handler = { partyUiMode: PartyUiMode.CHECK }; });
+  step("Bulbasaur switched to the lead", () => { g.party.reverse(); });
+  assert.deepEqual(step("back from the party check", () => { g.mode = UiMode.MODIFIER_SELECT; g.handler = offers; }),
+    ["watch:rewards", "road:rewards"], "the card built for the old lead is not shown again");
   step("reroll", () => { shop = g.phase = { phaseName: "SelectModifierPhase" }; g.money = 450; });
-  assert.equal(count("reward"), 5);
-  assert.equal(watched() - before, 5, "each of the shop's decisions built once");
+  assert.equal(count("reward"), 7);
+  assert.equal(watched() - before, 7, "each of the shop's decisions built once");
   const shopCard = __coachHud.last();
   assert.deepEqual(step("splice screen", () => { g.mode = UiMode.PARTY; g.handler = { partyUiMode: PartyUiMode.SPLICE }; }), ["watch:fusion"]);
   assert.deepEqual(step("back to the shop, no splice", () => { g.mode = UiMode.MODIFIER_SELECT; g.handler = offers; }), ["cache:rewards"]);
   assert.equal(__coachHud.last(), shopCard, "the shop card as it was built");
   assert.deepEqual(step("splice screen again", () => { g.mode = UiMode.PARTY; g.handler = { partyUiMode: PartyUiMode.SPLICE }; }), ["cache:fusion"]);
+  step("back, and Tackle forgotten", () => { three.moveset.splice(0, 1); g.mode = UiMode.MODIFIER_SELECT; g.handler = offers; });
+  assert.deepEqual(step("splice screen after the forget", () => { g.mode = UiMode.PARTY; g.handler = { partyUiMode: PartyUiMode.SPLICE }; }), ["watch:fusion"]);
   step("back, and a TM bought", () => { g.money = 300; g.mode = UiMode.MODIFIER_SELECT; g.handler = offers; });
   assert.deepEqual(step("splice screen after the buy", () => { g.mode = UiMode.PARTY; g.handler = { partyUiMode: PartyUiMode.SPLICE }; }), ["watch:fusion"]);
   step("back, and Leftovers handed back", () => { g.modifiers[0].pokemonId = 11; g.mode = UiMode.MODIFIER_SELECT; g.handler = offers; });
   assert.deepEqual(step("splice screen after the transfer", () => { g.mode = UiMode.PARTY; g.handler = { partyUiMode: PartyUiMode.SPLICE }; }), ["watch:fusion"]);
   assert.deepEqual(step("spliced, and paid for", () => { g.party = [full]; g.money = 200; g.mode = UiMode.MODIFIER_SELECT; g.handler = offers; }),
     ["watch:rewards", "road:rewards"]);
-  assert.deepEqual([count("fusion"), count("reward"), watched() - before], [4, 9, 11]);
+  assert.deepEqual([count("fusion"), count("reward"), watched() - before], [5, 12, 15]);
   g.party = [full, three];
+  three.moveset = [33, 22, 45].map(m => new Move(m));
 }
 
 // ---- a learn into a full moveset builds, and an automatic or already-known one does not
