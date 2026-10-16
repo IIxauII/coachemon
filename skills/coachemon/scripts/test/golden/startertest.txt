@@ -95,11 +95,97 @@ Magikarp Magikarp 1 final BST 540 (Gyarados)
 Notes
 Fresh Start: no passives, egg moves or luck
 summary best: Dratini (carry) + Charmander + Magikarp + Pikachu + Azurill · 10/10 pts · weak Rock; without Dratini: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts; trio: Gible (carry) + Charmander + Magikarp · 10/10 pts
-== Dipplin under the Moveset Randomizer
-value 1 final BST 540 (Hydrapple) BST 485 from L5 but evolves by item or condition
-value 2 final BST 540 (Hydrapple) BST 485 from L5 but evolves at L50
-== the Ability Randomizer
-Gible final BST 600 (Garchomp) passive Rough Skin IVs 60/186 | final BST 600 (Garchomp) passive IVs 60/186
-Magikarp final BST 540 (Gyarados) passive Intimidate (Gyarados) rare egg move Dragon Dance | final BST 540 (Gyarados) passive rare egg move Dragon Dance
+== Ability Randomizer 1
+⌃ ×
+🌱 Starters 0/10 pts best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
+Proposals
+★ best 10 pts · SE vs 10 types
+Gible Gible 6 carry final BST 600 (Garchomp) · passive Rough Skin
+Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Intimidate (Gyarados)
+Squirtle Squirtle 3 final BST 530 (Blastoise) · luck +3
+· without Gible 10 pts · SE vs 9 types · weak Rock
+Dratini Dratini 4 carry final BST 600 (Dragonite)
+Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Intimidate (Gyarados)
+Squirtle Squirtle 3 final BST 530 (Blastoise) · luck +3
+Pikachu Pikachu 1 final BST 485 (Raichu) · Pokérus 1.5× EXP · but evolves by item or condition
+Pidgey Pidgey 1 final BST 479 (Pidgeot)
+· fuller 10 pts · SE vs 13 types
+Gible Gible 6 carry final BST 600 (Garchomp) · passive Rough Skin
+Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Intimidate (Gyarados)
+Pikachu Pikachu 1 final BST 485 (Raichu) · Pokérus 1.5× EXP · but evolves by item or condition
+Pidgey Pidgey 1 final BST 479 (Pidgeot)
+Azurill Azurill 1 final BST 420 (Azumarill) · but evolves by item or condition
+· cursor: Gible Gible 6 pts · #1 of 10 · in best final BST 600 (Garchomp) · passive Rough Skin · IVs 60/186
+summary best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
+== Ability Randomizer 2
+⌃ ×
+🌱 Starters 0/10 pts best: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; without Dratini: Gible (carry) + Magikarp + Squirtle · 10/10 pts
+Proposals
+★ best 10 pts · SE vs 9 types · weak Rock
+Dratini Dratini 4 carry final BST 600 (Dragonite)
+Magikarp Magikarp 1 final BST 540 (Gyarados) · rare egg move Dragon Dance
+Squirtle Squirtle 3 final BST 530 (Blastoise) · luck +3
+Pikachu Pikachu 1 final BST 485 (Raichu) · Pokérus 1.5× EXP · but evolves by item or condition
+Pidgey Pidgey 1 final BST 479 (Pidgeot)
+· without Dratini 10 pts · SE vs 10 types
+Gible Gible 6 carry final BST 600 (Garchomp) · random passive
+Magikarp Magikarp 1 final BST 540 (Gyarados) · rare egg move Dragon Dance
+Squirtle Squirtle 3 final BST 530 (Blastoise) · luck +3
+· cursor: Gible Gible 6 pts · #1 of 10 · in without Dratini final BST 600 (Garchomp) · random passive · IVs 60/186
+summary best: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; without Dratini: Gible (carry) + Magikarp + Squirtle · 10/10 pts
+== Moveset Randomizer 1
+⌃ ×
+🌱 Starters 0/10 pts best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
+Proposals
+★ best 10 pts · SE vs 10 types
+Gible Gible 6 carry final BST 600 (Garchomp) · passive Rough Skin
+Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Intimidate (Gyarados)
+Squirtle Squirtle 3 final BST 530 (Blastoise) · luck +3
+· without Gible 10 pts · SE vs 9 types · weak Rock
+Dratini Dratini 4 carry final BST 600 (Dragonite)
+Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Intimidate (Gyarados)
+Squirtle Squirtle 3 final BST 530 (Blastoise) · luck +3
+Pikachu Pikachu 1 final BST 485 (Raichu) · Pokérus 1.5× EXP · but evolves by item or condition
+Pidgey Pidgey 1 final BST 479 (Pidgeot)
+· fuller 10 pts · SE vs 13 types
+Gible Gible 6 carry final BST 600 (Garchomp) · passive Rough Skin
+Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Intimidate (Gyarados)
+Pikachu Pikachu 1 final BST 485 (Raichu) · Pokérus 1.5× EXP · but evolves by item or condition
+Pidgey Pidgey 1 final BST 479 (Pidgeot)
+Azurill Azurill 1 final BST 420 (Azumarill) · but evolves by item or condition
+· cursor: Yanma Yanma 3 pts · #10 of 11 BST 390 from L5 · IVs 60/186 · but Yanmega needs a move it likely won't learn
+summary best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
+== Moveset Randomizer 2
+⌃ ×
+🌱 Starters 0/10 pts best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
+Proposals
+★ best 10 pts · SE vs 10 types
+Gible Gible 6 carry final BST 600 (Garchomp) · passive Rough Skin
+Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Intimidate (Gyarados)
+Squirtle Squirtle 3 final BST 530 (Blastoise) · luck +3
+· without Gible 10 pts · SE vs 9 types · weak Rock
+Dratini Dratini 4 carry final BST 600 (Dragonite)
+Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Intimidate (Gyarados)
+Squirtle Squirtle 3 final BST 530 (Blastoise) · luck +3
+Pikachu Pikachu 1 final BST 485 (Raichu) · Pokérus 1.5× EXP · but evolves by item or condition
+Pidgey Pidgey 1 final BST 479 (Pidgeot)
+· fuller 10 pts · SE vs 13 types
+Gible Gible 6 carry final BST 600 (Garchomp) · passive Rough Skin
+Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Intimidate (Gyarados)
+Pikachu Pikachu 1 final BST 485 (Raichu) · Pokérus 1.5× EXP · but evolves by item or condition
+Pidgey Pidgey 1 final BST 479 (Pidgeot)
+Azurill Azurill 1 final BST 420 (Azumarill) · but evolves by item or condition
+· cursor: Yanma Yanma 3 pts · #7 of 11 final BST 515 (Yanmega) · BST 390 from L5 · IVs 60/186
+summary best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
+== Moveset Randomizer, bulky starters
+⌃ ×
+🌱 Starters 0/10 pts best: Squirtle + Bulbasaur · 6/10 pts; without Squirtle: Bulbasaur · 3/10 pts
+Proposals
+★ best 6 pts · SE vs 6 types · no carry
+Squirtle Squirtle 3 final BST 530 (Blastoise) · luck +3
+Bulbasaur Bulbasaur 3 final BST 525 (Venusaur)
+· without Squirtle 3 pts · SE vs 5 types · no carry
+Bulbasaur Bulbasaur 3 final BST 525 (Venusaur)
+summary best: Squirtle + Bulbasaur · 6/10 pts; without Squirtle: Bulbasaur · 3/10 pts
 == not choosing a team
 kind null

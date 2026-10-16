@@ -1,6 +1,6 @@
 // The level a party member, or a newcomer, stands at by the time the run reaches the next big fight, and the species
 // it stands as there. Nothing here draws, save a challenge's evolution hook, which may fork the seed and restores it
-// (game-code.md §32). Nothing here is certain either: the EXP stream a projection runs over is a model, so every
+// (game-code.md §33). Nothing here is certain either: the EXP stream a projection runs over is a model, so every
 // answer it gives carries `estimate` (CONTEXT.md, `Level projection`).
 import { gameTables } from "./04-game-tables.js";
 
@@ -43,7 +43,7 @@ const MAX_STEPS = 4;
 
 /**
  * `sp`'s evolutions as the game checks them for `mon`: the registry's, run through each active challenge's own
- * `applyModifyEvolutions` the way `getEvolution` runs `MODIFY_EVOLUTIONS` (game-code.md §32). The hook rewrites what
+ * `applyModifyEvolutions` the way `getEvolution` runs `MODIFY_EVOLUTIONS` (game-code.md §33). The hook rewrites what
  * it is handed, so it gets copies built as `getEvolution` builds them, with no `evoLevelThreshold`. A hook that throws
  * leaves the registry's own rows.
  *

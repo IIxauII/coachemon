@@ -305,6 +305,8 @@ export const HUD_DEPS = {
     `${P}#Pokemon.doSetStatus`,
     `src/phases/move-phase.ts#MovePhase.checkSleep`,
     `src/data/abilities/ab-attrs.ts#ReduceStatusEffectDurationAbAttr.apply`,
+    `src/data/battler-tags.ts#MoveLockTag.getNextTargets`,
+    `src/data/moves/move-utils.ts#getMoveTargets`,
   ],
 
   "35-team-plan.js": [
@@ -351,7 +353,7 @@ export const HUD_DEPS = {
     `src/data/pokemon-species.ts#PokemonSpecies.getEvolutionLevels`,
   ],
 
-  /** game-code.md §15, §17, §23, §32. */
+  /** game-code.md §15, §17, §23, §33. */
   "09-projection.js": [
     `${SCENE}#BattleScene.getMaxExpLevel`,
     `${SCENE}#BattleScene.applyPartyExp`,
@@ -745,7 +747,7 @@ export const HUD_DEPS = {
     `src/enums/challenges.ts#Challenges`,
   ],
 
-  /** game-code.md §23, §32. */
+  /** game-code.md §23, §33. */
   "51-starters.js": [
     `src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.show`,
     `src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.tryUpdateValue`,

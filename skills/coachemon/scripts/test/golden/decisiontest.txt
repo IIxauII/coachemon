@@ -33,68 +33,76 @@ lock capsule toggled                 #13 reward/rewards w8 ready 0 input 0 drawn
 transfer screen                      · 
 Leftovers handed over                #14 reward/rewards w8 ready null input null drawn null end null 
 back from the transfer               #14 reward/rewards w8 ready 16 input 16 drawn 16 end null | watch:rewards road:rewards ‖ built, road landed
-reroll                               #15 reward/rewards w8 ready 0 input 0 drawn 0 end null | watch:rewards road:rewards ‖ built, road landed
-splice screen                        #16 fusion/fusion w8 ready 0 input 0 drawn 0 end null | watch:fusion ‖ built
-back to the shop, no splice          #17 reward/rewards w8 ready 0 input 0 drawn 0 end null | cache:rewards ‖ cached
-splice screen again                  #18 fusion/fusion w8 ready 0 input 0 drawn 0 end null | cache:fusion ‖ cached
-back, and a TM bought                #19 reward/rewards w8 ready 0 input 0 drawn 0 end null | watch:rewards road:rewards ‖ built, road landed
-splice screen after the buy          #20 fusion/fusion w8 ready 0 input 0 drawn 0 end null | watch:fusion ‖ built
-back, and Leftovers handed back      #21 reward/rewards w8 ready 0 input 0 drawn 0 end null | watch:rewards road:rewards ‖ built, road landed
-splice screen after the transfer     #22 fusion/fusion w8 ready 0 input 0 drawn 0 end null | watch:fusion ‖ built
-spliced, and paid for                #23 reward/rewards w8 ready 0 input 0 drawn 0 end null | watch:rewards road:rewards ‖ built, road landed
-auto-learn, three moves              #23 reward/rewards w8 ready 0 input 0 drawn 0 end 16 
+summary screen                       · 
+Growl forgotten                      #15 reward/rewards w8 ready null input null drawn null end null 
+back from the summary                #15 reward/rewards w8 ready 16 input 16 drawn 16 end null | watch:rewards road:rewards ‖ built, road landed
+party check                          · 
+Bulbasaur switched to the lead       #16 reward/rewards w8 ready null input null drawn null end null 
+back from the party check            #16 reward/rewards w8 ready 16 input 16 drawn 16 end null | watch:rewards road:rewards ‖ built, road landed
+reroll                               #17 reward/rewards w8 ready 0 input 0 drawn 0 end null | watch:rewards road:rewards ‖ built, road landed
+splice screen                        #18 fusion/fusion w8 ready 0 input 0 drawn 0 end null | watch:fusion ‖ built
+back to the shop, no splice          #19 reward/rewards w8 ready 0 input 0 drawn 0 end null | cache:rewards ‖ cached
+splice screen again                  #20 fusion/fusion w8 ready 0 input 0 drawn 0 end null | cache:fusion ‖ cached
+back, and Tackle forgotten           #21 reward/rewards w8 ready 0 input 0 drawn 0 end null | watch:rewards road:rewards ‖ built, road landed
+splice screen after the forget       #22 fusion/fusion w8 ready 0 input 0 drawn 0 end null | watch:fusion ‖ built
+back, and a TM bought                #23 reward/rewards w8 ready 0 input 0 drawn 0 end null | watch:rewards road:rewards ‖ built, road landed
+splice screen after the buy          #24 fusion/fusion w8 ready 0 input 0 drawn 0 end null | watch:fusion ‖ built
+back, and Leftovers handed back      #25 reward/rewards w8 ready 0 input 0 drawn 0 end null | watch:rewards road:rewards ‖ built, road landed
+splice screen after the transfer     #26 fusion/fusion w8 ready 0 input 0 drawn 0 end null | watch:fusion ‖ built
+spliced, and paid for                #27 reward/rewards w8 ready 0 input 0 drawn 0 end null | watch:rewards road:rewards ‖ built, road landed
+auto-learn, three moves              #27 reward/rewards w8 ready 0 input 0 drawn 0 end 16 
 already known                        · 
-learn, the prompt's message          #24 learn/learn w8 ready 0 input null drawn 0 end null | watch:learn ‖ built
-learn, forget a move?                #24 learn/learn w8 ready 0 input 16 drawn 0 end null 
+learn, the prompt's message          #28 learn/learn w8 ready 0 input null drawn 0 end null | watch:learn ‖ built
+learn, forget a move?                #28 learn/learn w8 ready 0 input 16 drawn 0 end null 
 learn, the summary                   · 
 learn card Learn → forget Ember
-biome, blocked                       #25 biome/biome w8 ready 0 input null drawn 0 end null | watch:biome ‖ built
-biome, open                          #25 biome/biome w8 ready 0 input 16 drawn 0 end null 
-encounter, before its options        #26 encounter/encounter w8 ready null input null drawn null end null 
-encounter, options out               #26 encounter/encounter w8 ready 16 input null drawn 16 end null | watch:encounter ‖ built
-encounter, open                      #26 encounter/encounter w8 ready 16 input 32 drawn 16 end null 
-starter, loading                     #27 starter/starters w8 ready null input null drawn null end null 
-starter, ready                       #27 starter/starters w8 ready 16 input 16 drawn 16 end null | watch:starters ‖ built
-wave 12's free switch                #28 free-switch/battle w12 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
-the turn plays                       #28 free-switch/battle w12 ready 0 input 0 drawn 0 end 16 
+biome, blocked                       #29 biome/biome w8 ready 0 input null drawn 0 end null | watch:biome ‖ built
+biome, open                          #29 biome/biome w8 ready 0 input 16 drawn 0 end null 
+encounter, before its options        #30 encounter/encounter w8 ready null input null drawn null end null 
+encounter, options out               #30 encounter/encounter w8 ready 16 input null drawn 16 end null | watch:encounter ‖ built
+encounter, open                      #30 encounter/encounter w8 ready 16 input 32 drawn 16 end null 
+starter, loading                     #31 starter/starters w8 ready null input null drawn null end null 
+starter, ready                       #31 starter/starters w8 ready 16 input 16 drawn 16 end null | watch:starters ‖ built
+wave 12's free switch                #32 free-switch/battle w12 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
+the turn plays                       #32 free-switch/battle w12 ready 0 input 0 drawn 0 end 16 
 their mon faints                     · 
-a mid-turn learn                     #29 learn/learn w12 ready 0 input null drawn 0 end null | watch:learn ‖ built
-the learn is dismissed               #29 learn/learn w12 ready 0 input null drawn 0 end 16 
+a mid-turn learn                     #33 learn/learn w12 ready 0 input null drawn 0 end null | watch:learn ‖ built
+the learn is dismissed               #33 learn/learn w12 ready 0 input null drawn 0 end 16 
 their next mon comes in              · | send-in:battle ‖ redrawn
 it lands                             · 
-turn 2's command                     #30 command/battle w12 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
-we switch                            #30 command/battle w12 ready 0 input 0 drawn 0 end 16 
+turn 2's command                     #34 command/battle w12 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
+we switch                            #34 command/battle w12 ready 0 input 0 drawn 0 end 16 
 ours comes in                        · | send-in:battle ‖ redrawn
 it lands                             · 
 send-in redraws read the turn as estimate, estimate, the watch's build as live
-a free switch, the card alone        #31 free-switch/battle w9 ready 0 input 0 drawn 0 end null | watch:battle ‖ built
+a free switch, the card alone        #35 free-switch/battle w9 ready 0 input 0 drawn 0 end null | watch:battle ‖ built
 streamed battle 9 fight | road null
 streamed battle 9 fight | road boss next wave (W10)
-its party screen                     #31 free-switch/battle w9 ready 0 input 0 drawn 0 end null ‖ road landed
+its party screen                     #35 free-switch/battle w9 ready 0 input 0 drawn 0 end null ‖ road landed
 frames stop: fallback, then a new decision: fallback:battle, then fallback
-the frame after                      #35 command/battle w9 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
+the frame after                      #39 command/battle w9 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
 the phase throws                     · 
 fallback reports: phase unreadable
-the game reads again                 #35 command/battle w9 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
-back to the title                    #35 command/battle w9 ready 0 input 0 drawn 0 end 48 
-a command before the drain           #36 command/battle w8 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
-its menu after the drain             #36 command/battle w8 ready 0 input 0 drawn 0 end null 
-the turn plays                       #36 command/battle w8 ready 0 input 0 drawn 0 end 32 
-drained 36 then #36 command/battle w8 ready 0 input 0 drawn 0 end 32
+the game reads again                 #39 command/battle w9 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
+back to the title                    #39 command/battle w9 ready 0 input 0 drawn 0 end 48 
+a command before the drain           #40 command/battle w8 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
+its menu after the drain             #40 command/battle w8 ready 0 input 0 drawn 0 end null 
+the turn plays                       #40 command/battle w8 ready 0 input 0 drawn 0 end 32 
+drained 40 then #40 command/battle w8 ready 0 input 0 drawn 0 end 32
 shop: watch frames 200000 refreshes 0
 turn: watch frames 200000 refreshes 0
-W12, a free switch                   #39 free-switch/battle w12 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
+W12, a free switch                   #43 free-switch/battle w12 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
 an oracle line for W11: other-fight
 the oracle line for W12 | ~ oracle line wins in 2 turns · 1 of 1 left | now later
-W12, turn 2                          #40 free-switch/battle w12 ready 0 input 0 drawn 0 end null | oracle-line:battle watch:battle road:battle ‖ oracle line landed, built, road landed
+W12, turn 2                          #44 free-switch/battle w12 ready 0 input 0 drawn 0 end null | oracle-line:battle watch:battle road:battle ‖ oracle line landed, built, road landed
 turn 2 | ~ oracle line wins in 2 turns · 1 of 1 left | done now
-W13 T1                               #41 command/battle w13 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
-W13 T1, Ember                        #41 command/battle w13 ready 0 input 0 drawn 0 end 16 | oracle-line:battle ‖ oracle line landed
-W13 T2, as the oracle line said      #42 command/battle w13 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
+W13 T1                               #45 command/battle w13 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
+W13 T1, Ember                        #45 command/battle w13 ready 0 input 0 drawn 0 end 16 | oracle-line:battle ‖ oracle line landed
+W13 T2, as the oracle line said      #46 command/battle w13 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
 T2 | done now later
-W13 T2, Ember                        #42 command/battle w13 ready 0 input 0 drawn 0 end 16 
+W13 T2, Ember                        #46 command/battle w13 ready 0 input 0 drawn 0 end 16 
 W13 T2, a boss comes in              · | send-in:battle ‖ redrawn
-W13 T3, the foe at 45                #43 command/battle w13 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
+W13 T3, the foe at 45                #47 command/battle w13 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
 T3 | ! Paras 40/100, came 45/100
 journalled [[1,true,"unavailable",{"state":"on","turn":1,"of":3}],[2,false,"unavailable",{"state":"on","turn":2,"of":3}]]
 after stop: watch frames 0, refreshes 0

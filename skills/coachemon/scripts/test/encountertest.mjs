@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { wholeCard } from "./panel.mjs";
 import { GAME_PROTO } from "./game-proto.mjs";
+import { PartyMemberStrength } from "../../../../src/enums/generated.ts";
 
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
@@ -39,6 +40,14 @@ const team = () => [
 ];
 
 const teamAt = level => team().map(p => Object.assign(p, { level }));
+
+// A party template built the way `trainer-party-template.ts` builds one: runs of `[count, strength]`, compounded when
+// there is more than one.
+const template = (...runs) => {
+  const strengths = runs.flatMap(([n, s]) => Array(n).fill(s));
+  return { size: strengths.length, strength: strengths[0], getStrength: i => strengths[i] };
+};
+const ELITE_FOUR = template([1, PartyMemberStrength.AVERAGE], [3, PartyMemberStrength.STRONG], [1, PartyMemberStrength.STRONGER], [1, PartyMemberStrength.AVERAGE]);
 
 // A requirement is recognised by its class name, so a mock one is an instance of a class with that name.
 const named = name => { const C = function () {}; Object.defineProperty(C, "name", { value: name }); return C; };
@@ -430,16 +439,20 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
 {
   const party = [pk("Garchomp", ["Dragon", "Ground"], 90, { stats: [150, 130, 95, 80, 85, 102], bst: 600, moves: [["Earthquake", "Ground", 100, "P"]] }),
     pk("Lapras", ["Water", "Ice"], 88, { stats: [170, 85, 80, 85, 95, 60], bst: 535, moves: [["Body Slam", "Normal", 85, "P"], ["Surf", "Water", 90, "S"]] })];
-  const { model } = show("clowning around", { type: 20, tier: 19, wave: 90, labels: ["Battle", "Item shuffle", "Type shuffle"],
-    options: [option(), option(), option()], party, tokens: { ability: "[color=#fff]Prankster[/color]" },
-    draws: { 30512: [6] },
-    configs: [{ trainerConfig: { name: "Harlequin", partyTemplates: [{ size: 2 }] }, doubleBattle: true,
+  const clown = (harlequin = template([1, PartyMemberStrength.STRONG], [1, PartyMemberStrength.STRONGER])) => ({ type: 20, tier: 19, wave: 90,
+    labels: ["Battle", "Item shuffle", "Type shuffle"], options: [option(), option(), option()], party,
+    tokens: { ability: "[color=#fff]Prankster[/color]" }, draws: { 30512: [6] },
+    configs: [{ trainerConfig: { name: "Harlequin", partyTemplates: [harlequin], doubleOnly: true }, doubleBattle: true,
       pokemonConfigs: [{ species: species(122, "Mr. Mime", ["Psychic", "Fairy"], 460), isBoss: true },
         { species: species(806, "Blacephalon", ["Fire", "Ghost"], 570), isBoss: true, customPokemonData: { types: [9, 12] } }] }] });
+  const { model } = show("clowning around", clown());
   const m = model();
   assert.deepEqual(verdicts(m), ["take", null, null]);
   assert.match(m.options[0].outcome, /Fire \/ Electric, Prankster/);
-  assert.match(m.options[0].why, /Prankster is worth keeping/);
+  // Base 58.96: STRONG ceil(×1.22) = 72, STRONGER ceil(×1.24) = 74.
+  assert.equal(m.options[0].why, "Prankster is worth keeping — 2 mons at L72–74 vs your L90, 2 of yours fit to fight");
+  const doubled = mount(clown(template([1, PartyMemberStrength.STRONGER]))).model();
+  assert.match(doubled.options[0].why, /2 mons at L74 vs your L90/);
   // Garchomp attacks only on its own types, so its new one is the fork's `randSeedInt(18)`; Lapras has an off-type
   // Normal move, which the game prefers (game-code.md §13), and which hands it STAB it didn't have.
   assert.equal(m.options[2].outcome, "every member's 2nd type is redrawn: Garchomp → Bug, Lapras → Normal");
@@ -584,12 +597,19 @@ const threatTables = () => {
 
 // ---- A Trainer's Test: an Elite Four party for an Epic egg, or a full heal for declining.
 {
-  const test = (party, level = 1) => ({ type: 17, tier: 3, wave: 60, labels: ["Accept", "Decline"], options: [option(), option()], party,
-    configs: [{ levelAdditiveModifier: level, trainerConfig: { name: "Cheryl", partyTemplates: [{ size: 6 }] } }] });
+  const test = (party, level = 1, extra = {}) => ({ type: 17, tier: 3, wave: 60, labels: ["Accept", "Decline"], options: [option(), option()], party,
+    configs: [{ levelAdditiveModifier: level, trainerConfig: { name: "Cheryl", partyTemplates: [ELITE_FOUR] } }], ...extra });
   const m = show("a trainer's test", test(teamAt(65))).model();
   assert.deepEqual(verdicts(m), ["take", "ok"]);
   assert.match(m.options[0].outcome, /fight Cheryl: 6 mons, Elite Four strength → an Epic egg/);
-  assert.match(m.options[0].why, /6 mons at ~L68 vs your L65, 3 of yours fit to fight/);
+  // Base 36.76: AVERAGE ceil(×1.17) − 1 = 43, STRONG ceil(×1.22) = 45, STRONGER ceil(×1.24) = 46, each +6.
+  assert.match(m.options[0].why, /6 mons at L49–52 vs your L65, 3 of yours fit to fight/);
+  // The gap that makes a fight hard is to their ace.
+  assert.deepEqual(verdicts(mount(test(teamAt(48))).model()), ["take", "ok"]);
+  assert.deepEqual(verdicts(mount(test(teamAt(47))).model()), ["avoid", "take"]);
+  // A Daily levels on its difficulty wave, 60 + 30 + 12 = 102 (base 68.65); the additive stays on the wave itself.
+  const daily = mount(test(teamAt(90), 1, { gameMode: { isFixedBattle: () => false, getWaveForDifficulty: w => w + 30 + Math.floor(w / 5) } })).model();
+  assert.match(daily.options[0].why, /6 mons at L88–92 vs your L90/);
   // A party that is mostly down: six mons against one that can stand is a fight to decline.
   const hurt = [pk("Garchomp", ["Dragon", "Ground"], 65, { stats: [150, 130, 95, 80, 85, 102], bst: 600 }),
     pk("Lapras", ["Water", "Ice"], 64, { stats: [170, 85, 80, 85, 95, 60], bst: 535, hp: 10 })];
@@ -608,8 +628,11 @@ const threatTables = () => {
       { previousPokemon: party[0], newSpecies: to(149, "Dragonite", ["Dragon", "Flying"], 700) },
       { previousPokemon: party[1], newSpecies: to(131, "Gyarados", ["Water", "Flying"], 640) },
       { previousPokemon: party[2], newSpecies: to(145, "Zapdos", ["Electric", "Flying"], 580) }] },
-    configs: [{ trainerConfig: { name: "Your alternate self", partyTemplates: [{ size: 3 }] } }] }).model();
+    configs: [{ trainerConfig: { name: "Your alternate self", partyTemplates: [template([3, PartyMemberStrength.STRONG])] },
+      pokemonConfigs: [90, 89, 88].map(level => ({ species: species(149, "Dragonite", ["Dragon", "Flying"], 700), level })) }] }).model();
   assert.deepEqual(verdicts(m), ["take", "ok", "avoid"]);
+  // Each mon's own level, which the config sets, beats the template's.
+  assert.equal(m.options[1].why, "3 mons at L88–90 vs your L90, 3 of yours fit to fight");
   assert.match(m.options[0].outcome, /Garchomp → Dragonite \(\+100\), Lapras → Gyarados \(\+105\), Jolteon → Zapdos \(\+55\)/);
   assert.match(m.options[0].why, /\+260 base stats across the party/);
   assert.match(m.options[2].outcome, /^every member loses 10% of its level \(your L90 drops 9\)/);
@@ -617,14 +640,19 @@ const threatTables = () => {
 
 // ---- The Winstrate Challenge: five battles with no healing between, or a heal and a Rarer Candy.
 {
-  const mons = n => ({ trainerType: 1, pokemonConfigs: Array.from({ length: n }, (_, i) => ({ species: species(300 + i, `W${i}`, ["Normal"], 400) })) });
+  const mons = (type, n) => ({ trainerType: type, pokemonConfigs: Array.from({ length: n }, (_, i) => ({ species: species(300 + i, `W${i}`, ["Normal"], 400) })) });
   // Pushed back to front: Vito's five are config 0, Victor's two are popped first (game-code.md §13).
-  const configs = [mons(5), mons(1), mons(3), mons(2), mons(2)];
+  const configs = [mons(1, 5), mons(2, 1), mons(3, 3), mons(4, 2), mons(5, 2)];
+  // A config naming only its `trainerType` fights on the game's own table's template for it.
+  const { AVERAGE, STRONG } = PartyMemberStrength;
+  const trainers = Object.fromEntries([[[3, AVERAGE], [2, STRONG]], [[1, AVERAGE]], [[2, AVERAGE], [1, STRONG]],
+    [[1, AVERAGE], [1, STRONG]], [[1, AVERAGE], [1, STRONG]]].map((runs, k) => [k + 1, { partyTemplates: [template(...runs)] }]));
   const m = show("winstrate, three left standing", { type: 24, tier: 3, wave: 120, labels: ["Accept", "Refuse"],
-    options: [option(), option()], configs, party: teamAt(120) }).model();
+    options: [option(), option()], configs, party: teamAt(120), tables: { trainers } }).model();
   assert.deepEqual(verdicts(m), ["avoid", "take"]);
   assert.match(m.options[0].outcome, /5 trainer battles back to back, 13 mons in all, no healing between/);
-  assert.match(m.options[0].why, /13 mons at ~L122 vs your L120, 3 of yours fit to fight/);
+  // Base 84.04: AVERAGE ceil(×1.22) − 2 = 101, STRONG ceil(×1.22) = 103.
+  assert.match(m.options[0].why, /13 mons at L101–103 vs your L120, 3 of yours fit to fight/);
   // A full, healthy party can get through thirteen.
   const six = [...teamAt(120), pk("Tyranitar", ["Rock", "Dark"], 120, { bst: 600 }), pk("Metagross", ["Steel", "Psychic"], 120, { bst: 600 }), pk("Dragonite", ["Dragon", "Flying"], 120, { bst: 600 })];
   const deep = mount({ type: 24, tier: 3, wave: 120, labels: ["Accept", "Refuse"], options: [option(), option()], configs, party: six }).model();
@@ -634,33 +662,42 @@ const threatTables = () => {
 // MysteryEncounterTier.GREAT
 const GREAT = 40;
 
-const trainerCfg = (name, levelAdditiveModifier, size = null) =>
-  ({ trainerConfig: { name, ...(size == null ? {} : { partyTemplates: [{ size }] }) }, levelAdditiveModifier });
+const trainerCfg = (name, levelAdditiveModifier, templates = [], extra = {}) =>
+  ({ trainerConfig: { name, partyTemplates: templates, ...extra }, levelAdditiveModifier });
 const stacked = (name, stackCount, max) => make(name, { getStackCount: () => stackCount, getMaxStackCount: () => max });
 
 // ---- Mysterious Challengers: the richest of three trainer fights that isn't hard.
 {
-  // The last two carry the templates the encounter sets: 1 STRONGER + min(ceil(wave / 20), 5) AVERAGE, then
-  // ELITE_FOUR (6). A hard trainer with a `partyTemplateFunc` fights on that instead (game-code.md §13). The first
-  // keeps the biome trainer's own, so its size here is one the card must not read as the fight's.
-  const challengers = ({ wave = 30, ...extra } = {}) => ({ type: 0, tier: GREAT, wave, party: teamAt(wave + 2),
-    labels: ["Normal", "Hard", "Brutal"], options: [option(), option(), option()],
-    configs: [trainerCfg("Youngster Joey", 0, 2), trainerCfg("Ace Trainer May", 1, 1 + Math.min(Math.ceil(wave / 20), 5)),
-      trainerCfg("Leader Brock", 1.5, 6)], ...extra });
-  // Wave 30, a party at the wave's own level: the fights land at L32, L35 and L37 with teams of ?, 3 and 6.
+  // Each option's template (game-code.md §13).
+  const hard = wave => template([1, PartyMemberStrength.STRONGER], [Math.min(Math.ceil(wave / 20), 5), PartyMemberStrength.AVERAGE]);
+  const challengers = ({ wave = 30, level = 22, may = {}, ...extra } = {}) => ({ type: 0, tier: GREAT, wave,
+    party: teamAt(level), labels: ["Normal", "Hard", "Brutal"], options: [option(), option(), option()],
+    configs: [trainerCfg("Youngster Joey", 0, [template([2, PartyMemberStrength.WEAKER]), template([3, PartyMemberStrength.WEAK])]),
+      trainerCfg("Ace Trainer May", 1, [hard(wave)], may), trainerCfg("Leader Brock", 1.5, [ELITE_FOUR])], ...extra });
   const m = show("mysterious challengers", challengers()).model();
   assert.match(m.options[0].outcome, /^fight Youngster Joey → a Common TM/);
   assert.match(m.options[1].outcome, /^fight Ace Trainer May → 2 Ultra/);
   assert.match(m.options[2].outcome, /^fight Leader Brock with an Elite Four team → 2 Rogue/);
   assert.equal(m.tier, "great");
-  assert.equal(m.options[1].why, "3 mons at ~L35 vs your L32, 3 of yours fit to fight");
-  // The biome trainer's own template is a func or a drawn index, so its size is not claimed (game-code.md §13).
-  assert.equal(m.options[0].why, "their own team at ~L32 vs your L32, 3 of yours fit to fight");
-  assert.doesNotMatch(m.options[0].why, /\d mons?/, "the config's partyTemplates[0] is not the fight's team size");
-  assert.deepEqual(verdicts(m), ["ok", "take", "avoid"], "the gym leader's +5 levels is hard, the tougher trainer isn't");
-  // Late enough and the built teams outgrow you, so the mildest fight is the call.
-  const late = mount(challengers({ wave: 100, seedOffset: 100512 })).model();
+  // Base 17.44: STRONGER ceil(×1.24) = 22, AVERAGE ceil(×1.145) = 20, STRONG ceil(×1.22) = 22; +3, then +5.
+  assert.equal(m.options[1].why, "3 mons at L23–25 vs your L22, 3 of yours fit to fight");
+  assert.equal(m.options[2].why, "6 mons at L25–27 vs your L22, 3 of yours fit to fight");
+  // A drawn template settles neither the size nor the levels: an AVERAGE member's level stands in.
+  assert.equal(m.options[0].why, "their own team at ~L20 vs your L22, 3 of yours fit to fight");
+  assert.deepEqual(verdicts(m), ["ok", "take", "avoid"], "the gym leader's ace 5 levels up is hard, the tougher trainer isn't");
+  // A biome trainer with a single template has nothing to draw: WEAKER is ceil(17.44 × 1.025) − 1 = 17.
+  const single = mount(challengers({ configs: [trainerCfg("Youngster Joey", 0, [template([2, PartyMemberStrength.WEAKER])])] })).model();
+  assert.equal(single.options[0].why, "2 mons at L17 vs your L22, 3 of yours fit to fight");
+  // A hard trainer with a `partyTemplateFunc` fights on that instead, which the card doesn't call.
+  const own = mount(challengers({ may: { partyTemplateFunc: () => template([6, PartyMemberStrength.STRONG]) } })).model();
+  assert.equal(own.options[1].why, "their own team at ~L23 vs your L22, 3 of yours fit to fight");
+  // Late enough and the built teams outgrow a party at the level cap, so the mildest fight is the call.
+  const late = mount(challengers({ wave: 100, level: 84, seedOffset: 100512 })).model();
+  assert.equal(late.options[1].why, "6 mons at L90–94 vs your L84, 3 of yours fit to fight");
   assert.deepEqual(verdicts(late), ["take", "avoid", "avoid"]);
+  // By wave 150 an AVERAGE member's ramp has reached its cap: ceil(112 × 1.225) − 3 + 15 = 150, not 1.27's 155.
+  const capped = mount(challengers({ wave: 150, level: 150, seedOffset: 150512 })).model();
+  assert.equal(capped.options[1].why, "6 mons at L150–154 vs your L150, 3 of yours fit to fight");
   // A config with no trainerConfig at all still reads, just without a name.
   const bare = mount(challengers({ configs: [] })).model();
   assert.match(bare.options[0].outcome, /^fight a trainer →/);
@@ -898,7 +935,7 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
 {
   const superfan = (party, extra = {}) => ({ type: 26, tier: GREAT, labels: ["Battle", "Show", "Give"],
     options: [option(), option({ mode: 1, primary: [typeReq(["Bug"])] }), option({ mode: 1, primary: [moveReq(["CLAW"])] })],
-    configs: [trainerCfg("Bug-Type Superfan", 0, 3)], party, ...extra });
+    configs: [trainerCfg("Bug-Type Superfan", 0, [template([3, PartyMemberStrength.AVERAGE])])], party, ...extra });
   const bug = (name, level = 35) => pk(name, ["Bug", "Flying"], level, { moves: [["claw", "Normal", 0, "X", "CLAW"]] });
   const { forks, model } = show("bug-type superfan", superfan([...team(), bug("Scyther")], { draws: { [30512 * 500]: [0, 2, 3, 1] } }));
   assert.ok(forks.includes(30512 * 500), `option fork at ×500: ${forks}`);
@@ -920,6 +957,11 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   const blind = mount(superfan([...team(), bug("Scyther")], { seedOffset: null })).model();
   assert.match(blind.options[0].outcome, /a free tutor move from four bug pools$/);
   assert.equal(blind.options[0].exact, false);
+  // An unread template claims no size, whatever `pokemonConfigs` holds (game-code.md §13).
+  const own = mount(superfan([...team(), bug("Scyther")], { configs: [{ ...trainerCfg("Bug-Type Superfan", 0, [],
+    { partyTemplateFunc: () => template([4, PartyMemberStrength.AVERAGE]) }), pokemonConfigs: [{ species: species(15, "Beedrill", ["Bug", "Poison"], 395) },
+    { species: species(12, "Butterfree", ["Bug", "Flying"], 395) }] }] })).model();
+  assert.equal(own.options[0].why, "their own team at ~L20 vs your L40, 4 of yours fit to fight");
 }
 
 // ---- Fun and Games: the prize ladder, and that a KO loses and charges the fee twice.

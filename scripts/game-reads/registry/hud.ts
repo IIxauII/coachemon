@@ -303,6 +303,12 @@ export const HUD: Area = {
     { name: "display", kind: "field", at: [], from: "ours", note: "DOM style.display on our panel" },
     { name: "doesFlagEffectApply", kind: "method", at: ["src/data/moves/move.ts#Move.doesFlagEffectApply"] },
     {
+      name: "doubleBattle",
+      kind: "field",
+      at: ["src/data/mystery-encounters/utils/encounter-phase-utils.ts#EnemyPartyConfig.doubleBattle"],
+    },
+    { name: "doubleOnly", kind: "field", at: ["src/data/trainers/trainer-config.ts#TrainerConfig.doubleOnly"] },
+    {
       name: "doReturn",
       kind: "field",
       at: [
@@ -699,6 +705,14 @@ export const HUD: Area = {
       kind: "method",
       at: ["src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.getStarterDexAttrPropsFromPreferences"],
     },
+    {
+      name: "getStrength",
+      kind: "method",
+      at: [
+        "src/data/trainers/trainer-party-template.ts#TrainerPartyTemplate.getStrength",
+        "src/data/trainers/trainer-party-template.ts#TrainerPartyCompoundTemplate.getStrength",
+      ],
+    },
     { name: "getTag", kind: "method", at: ["src/field/arena.ts#Arena.getTag", "src/field/pokemon.ts#Pokemon.getTag"] },
     { name: "getTagOnSide", kind: "method", at: ["src/field/arena.ts#Arena.getTagOnSide"] },
     { name: "getTargetBenefitScore", kind: "method", at: ["src/data/moves/move.ts#Move.getTargetBenefitScore"] },
@@ -726,11 +740,6 @@ export const HUD: Area = {
       at: ["src/data/abilities/ability.ts#Ability.hasAttr", "src/data/moves/move.ts#Move.hasAttr"],
     },
     { name: "hasChallenge", kind: "method", at: ["src/game-mode.ts#GameMode.hasChallenge"] },
-    {
-      name: "hasEvolutions",
-      kind: "method",
-      at: ["src/data/species-data-registry.ts#SpeciesDataRegistry.hasEvolutions"],
-    },
     { name: "hasFlag", kind: "method", at: ["src/data/moves/move.ts#Move.hasFlag"] },
     {
       name: "hasNoShop",
@@ -761,6 +770,7 @@ export const HUD: Area = {
       kind: "field",
       at: ["src/game-mode.ts#GameModeConfig.hasTrainers", "src/game-mode.ts#GameMode.hasTrainers"],
     },
+    { name: "hasDouble", kind: "field", at: ["src/data/trainers/trainer-config.ts#TrainerConfig.hasDouble"] },
     { name: "hasVoucher", kind: "field", at: ["src/data/trainers/trainer-config.ts#TrainerConfig.hasVoucher"] },
     {
       name: "heal",
@@ -1045,6 +1055,11 @@ export const HUD: Area = {
       name: "partyStarters",
       kind: "field",
       at: ["src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.partyStarters"],
+    },
+    {
+      name: "partyTemplateFunc",
+      kind: "field",
+      at: ["src/data/trainers/trainer-config.ts#TrainerConfig.partyTemplateFunc"],
     },
     {
       name: "partyTemplates",
@@ -1371,6 +1386,11 @@ export const HUD: Area = {
         "test/mocks/mock-video-game-object.ts#MockVideoGameObject.stop",
         "test/mocks/mocks-container/mock-sprite.ts#MockSprite.stop",
       ],
+    },
+    {
+      name: "strength",
+      kind: "field",
+      at: ["src/data/trainers/trainer-party-template.ts#TrainerPartyTemplate.strength"],
     },
     {
       name: "subLegendary",
@@ -1949,6 +1969,13 @@ export const HUD: Area = {
         "src/modifier/modifier.ts#FlinchChanceModifier.apply",
       ],
     },
+    {
+      ours: "skills/coachemon/scripts/hud/30-planner.js#lock-confusion",
+      of: [
+        "src/data/battler-tags.ts#FrenzyTag.onRemove",
+        "src/data/battler-tags.ts#ConfusedTag.lapse",
+      ],
+    },
     { ours: "skills/coachemon/scripts/hud/30-planner.js#stat-names", of: ["src/enums/stat.ts#Stat"] },
     {
       ours: "skills/coachemon/scripts/hud/30-planner.js#para-skip",
@@ -2236,6 +2263,13 @@ export const HUD: Area = {
         "src/data/mystery-encounters/encounters/safari-zone-encounter.ts#SafariZoneEncounter",
         "src/data/mystery-encounters/encounters/safari-zone-encounter.ts#tryChangeFleeStage",
         "src/data/mystery-encounters/encounters/safari-zone-encounter.ts#tryChangeCatchStage",
+      ],
+    },
+    {
+      ours: "skills/coachemon/scripts/hud/46-encounter.js#party-levels",
+      of: [
+        "src/field/trainer.ts#Trainer.getPartyLevels",
+        "src/enums/party-member-strength.ts#PartyMemberStrength",
       ],
     },
     {
@@ -2532,6 +2566,21 @@ export const HUD: Area = {
       ],
     },
     { ours: "skills/coachemon/scripts/hud/51-items.js#cap-of", of: ["src/battle-scene.ts#BattleScene.getMaxExpLevel"] },
+    {
+      ours: "skills/coachemon/scripts/hud/51-starters.js#ability-randomizer",
+      of: [
+        "src/data/challenge.ts#AbilityRandomizerChallenge.applySpeciesAbilityModify",
+        "src/data/challenge.ts#AbilityRandomizerChallenge.applyPassiveAbilityModify",
+      ],
+    },
+    {
+      ours: "skills/coachemon/scripts/hud/51-starters.js#moveset-randomizer-evolutions",
+      of: [
+        "src/data/challenge.ts#MovesetRandomizerChallenge.applyModifyEvolutions",
+        "src/data/challenge.ts#MovesetRandomizerChallenge.applyLevelUpMoveset",
+        "src/field/pokemon.ts#Pokemon.getEvolution",
+      ],
+    },
     {
       ours: "skills/coachemon/scripts/hud/51-starters.js#dex-attr-luck",
       of: [

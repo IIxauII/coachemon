@@ -161,13 +161,14 @@ const speedCheck = (party, foes, wave) => {
     text: `${faster.length ? `only ${faster[0].name} outspeeds` : "nobody outspeeds"} ${fastest.name} (Spe ${spe}) at W${wave} · no priority attack` }];
 };
 
+// Twin foes (game-code.md §10) lean on the same answer: one finding, not one each.
 const singleAnswers = (party, foes, wave) => foes.map(f => {
   const who = party.map(p => ({ p, moves: answersTo(p, f) })).filter(x => x.moves.length);
   if (who.length !== 1) return null;
   const m = who[0].moves.sort((a, b) => b.acc - a.acc)[0];
   return { kind: "answers", level: "high",
     text: `${f.name} (W${wave}) has one answer: ${who[0].p.name} ${m.name}${m.acc < 100 ? ` (${m.acc}%)` : ""}` };
-}).filter(Boolean);
+}).filter((x, i, all) => x && all.findIndex(y => y?.text === x.text) === i);
 
 // `canSetStatus`'s type checks alone (game-code.md §17).
 // @mirrors status-immune

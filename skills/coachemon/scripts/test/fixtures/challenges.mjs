@@ -1,7 +1,7 @@
 // `MOVE` stands in for `EvoCondKey.MOVE`, which no HUD module names: only the hook below and the rows it rewrites read it.
 export const MOVE = "move";
 
-/** `MovesetRandomizerChallenge.applyModifyEvolutions` past its Tyrogue branch, from the pinned source (game-code.md §32). */
+/** `MovesetRandomizerChallenge.applyModifyEvolutions` past its Tyrogue branch, from the pinned source (game-code.md §33). */
 export const movesetRandomizer = value => ({
   id: 11, value,
   applyModifyEvolutions(_mon, evos) {

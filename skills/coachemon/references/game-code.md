@@ -31,7 +31,7 @@ what was only observed on a tab) is in §22, not in the sections.
 | Damage and KO math | §1 damage, §2 multi-hit, §3 boss segments, §4 type / power overrides, §8 held items and abilities, §18 drain and on-KO boosts |
 | Accuracy, priority, turn order | §5 |
 | Enemy AI | §6 move choice, §7 switches, §14 status moves and a foe's setup |
-| Switching | §9 free switches, §18 switch-in cost |
+| Switching | §9 free switches, §18 switch-in cost, §32 reordering the party from the reward screen and who leads |
 | End of turn | §21 `TurnEndPhase` and the phases before it |
 | Seeded RNG and the wave preview | §11 |
 | Trainers and fixed battles | §11 trainer parties, §12 fixed-battle calendar, heals, luck |
@@ -48,7 +48,7 @@ what was only observed on a tab) is in §22, not in the sections.
 | Loading a session save: doubles, Mystery Encounters, arena tags and items a reload keeps or loses | §28 |
 | The wave-start save and the session export | §29 |
 | The session save, and what a reload resets mid-fight | §30 |
-| The randomizer challenges: what they rewrite, and which calls see it | §32 |
+| The randomizer challenges: what they rewrite, and which calls see it | §33 |
 | HUD API built on the above | Recommended API for the HUD |
 
 ---
@@ -1555,17 +1555,23 @@ left unjudged for the same reason Field Trip is. Gates are waves 10–180 unless
 | Fun and Games | money ≥ ×1.5 (`:47`) | pay ×1.5, pick a mon → a Wobbuffet at **that mon's level** with 0 IVs and a Mild nature that never attacks (`skipEnemyBattleTurns`, `skipToFightInput`), and three turns on it. The prize is its HP ratio at the end: < 3 % MULTI_LENS, < 15 % SCOPE_LENS, < 33 % WIDE_LENS, else nothing and a heal (`:266`–`:293`). **KO it and the player loses**: `handleLoseMinigame` ends the encounter and charges `getWaveMoneyAmount(1.5)` again (`:251`) · leave | no draws |
 
 **Two readings the great tier adds.** A config carrying `trainerConfig` instead of `pokemonConfigs` has **no species to
-read**: `initBattleWithEnemyConfig` takes its levels from `trainer.getPartyLevels(waveIndex)` (`src/field/trainer.ts:262`,
-a base of `1 + w/2 + (w/25)²` times a per-slot strength multiplier) and only then adds the shared
-`max(round(wave / 10 × levelAdditiveModifier), 0)`. What is knowable before the fight is the trainer's name, that
-additive, and the team size **where the encounter sets the templates itself** — which is what the card reports, by the
-rule the ultra and rogue table below states in full. Where it does not, the size is not knowable here at all:
-`Trainer.getPartyTemplate` prefers the config's `partyTemplateFunc`, and without one indexes `partyTemplates` at
-`partyTemplateIndex`, which is `randSeedItem` over the indices (`field/trainer.ts:61`, `:255`) — so `partyTemplates[0]`
-is not what the battle will use, and Mysterious Challengers' first option claims no count. Its second option has the
-same hole: `clone()` keeps a `partyTemplateFunc` (`src/data/trainers/trainer-config.ts:921`) and `setPartyTemplates`
-doesn't clear it (`:472`–`475`), so an Ace Trainer, Breeder, Hooligans, Interviewers or Mysterious Sisters drawn there
-fights on its own func, not `1 STRONGER + min(ceil(w / 20), 5) AVERAGE`; only the third option nulls the func
+read**: `initBattleWithEnemyConfig` takes its levels from `trainer.getPartyLevels(waveIndex)` (`src/field/trainer.ts:262`)
+and only then adds the shared `max(round(wave / 10 × levelAdditiveModifier), 0)`, a `pokemonConfigs[i].level` replacing
+both. `getPartyLevels` works on `d = getWaveForDifficulty(w)`: each slot is `ceil((1 + d/2 + (d/25)²) × m)` for its
+template strength's `m` — WEAKEST 0.95, WEAKER 1, WEAK 1.05, AVERAGE 1.12, STRONG 1.22, STRONGER 1.24, STRONGEST 1.25 —
+and a slot below STRONG has `m` raised by `0.025 × floor(d/25)`, capped at 1.225, then gives back
+`floor(d/50 × (STRONG − strength))` levels (`:279`–`:309`). It reads no draw. A config naming only a `trainerType` takes
+`trainerConfigs[trainerType]` (`encounter-phase-utils.ts:158`), and the trainer is a double when that config is
+`doubleOnly`, or `hasDouble` with the party config's `doubleBattle` (`:160`); a double on a one-member template is
+levelled as two of its strength (§11). The battle fields one member per level (`battle.enemyLevels.forEach`, `:205`),
+however many `pokemonConfigs` there are. The template is whatever `Trainer.getPartyTemplate` answers: the config's
+`partyTemplateFunc` when it has one, else `partyTemplates` at `partyTemplateIndex`, which is `randSeedItem` over the
+indices (`field/trainer.ts:61`, `:255`) — so only a config with no func and a single template settles the party's size
+and levels before the fight. Mysterious Challengers' first option keeps the biome trainer's own config, so it is settled
+only when that config is. Its second option looks settled but isn't: `clone()` keeps a `partyTemplateFunc`
+(`src/data/trainers/trainer-config.ts:921`) and `setPartyTemplates` doesn't clear it (`:472`–`475`), so an Ace Trainer,
+Breeder, Hooligans, Interviewers or Mysterious Sisters drawn there fights on its own func, not
+`1 STRONGER + min(ceil(w / 20), 5) AVERAGE`; only the third option nulls the func
 (`mysterious-challengers-encounter.ts:95`).
 
 Delibird-y's degradation is a **live modifier read**, not a draw: `getStackCount()` against `getMaxStackCount()` on the
@@ -1620,12 +1626,6 @@ on three of them, so at most one a run). Same file convention as the table above
 | A Trainer's Test | rogue, no wave gate of its own | `onInit` draws one of five stat trainers with `randSeedInt(5)` — Cheryl, Marley, Mira, Riley, else Buck — and leaves it on `misc` and in the `statTrainerName` token (`:53`–`107`); the config is `levelAdditiveModifier: 1` over an **`ELITE_FOUR` party template, 6 mons** (`initForStatTrainer`, `trainer-config.ts:605`). Accept: fight it → an **Epic egg** plus a Relic Gold, 2 Rogue tiers and `fillRemaining` (`:158`–`172`) · decline: a **full party heal** (`PartyHealPhase`) plus a **Rare egg**, and the shop with no free reward (`:184`–`193`) | `onInit` fork at `w`: which trainer |
 | Weird Dream | waves 30–140 (`:142`), party ≥ 3, once a run | `onInit` transforms the **whole team** and leaves it on `misc.teamTransformations` (`:168`): two members (shuffled, so not the first two) to a species +90–110 BST, the rest +40–50, at most one over 600 and one in 570–600 (`getTeamTransformations`, `:394`). Accept: the party is swapped, each new mon keeping the old one's **level, held items, moveset, passive, luck, Pokérus and the better of the two IV sets**, with a **neutral nature**, a redrawn ability, an extra egg move and a random second type (`postProcessTransformedPokemon`, `:535`) — then a **full party heal** and a screen of exactly a Memory Mushroom, a Rogue Ball and 4 Mints (`:236`–`246`) · battle that same team at your own levels, holding your items, bosses over 570 BST → exactly 2 Rogue / 2 Ultra / 2 Great, and `onBeforeRewards` **unlocks the passive on one random member without one, for the run** (`:312`–`354`) · refuse: **every member drops to `ceil(0.9 × level)`** (`:372`) | `onInit` fork at `w`: the species each member becomes. The ability, IVs, nature and second type are redrawn later, on the live stream |
 | The Winstrate Challenge | waves 100–180 (`:48`), party ≥ 3, once a run | accept: **five trainer battles back to back** — configs pushed Vito, Vicky, Vivi, Victoria, Victor and `pop`ped, so Victor is first and Vito's five last, 13 mons in all — with **no healing between them**: `endTrainerBattleAndShowDialogue` only resets per-battle state (`:184`–`256`). Clearing all five gives a **Premium Voucher** and a screen of exactly a **Macho Brace**, its tier forced to Master (`:165`–`178`) · refuse: a **full party heal** plus a Rarer Candy (`:146`–`150`) | no draws |
-
-The card judges a fight it can't see the party of — every trainer battle above — on the level gap alone, or on whether
-the trainer brings more mons than its `MONS_EACH` allowance for each member of ours still above half HP. The level is
-`enemyLevels[0]` plus the same `levelAdditiveModifier` scaling as a wild config, and the size is the config's own
-`pokemonConfigs` where it has them, else `trainerConfig.partyTemplates[0].size` — which only settles the fight where the
-encounter set that template itself, per the great-tier note above.
 
 `onInit` leaves what it rolled on the encounter: `misc` (Fight or Flight's item, Berries Abound's `numBerries` /
 `fastestPokemon` / `enemySpeed`, Uncommon Breed's `pokemon`, the GTS offers, Teleporting Hijinks' `price`) and
@@ -2037,6 +2037,20 @@ member whose relearn list holds the biggest learn-card upgrade.
 `partyMemberIndex` (`src/phases/party-member-pokemon-phase.ts:6`). The Move itself (`allMoves[moveId]`, `src/phases/learn-move-phase.ts:45`) lives in
 the prompt's closures until `forgetMoveProcess` opens the summary screen in `LEARN_MOVE` mode with it (`:116-120`).
 `new PokemonMove(id).getMove()` is `allMoves[id]` (`src/data/moves/pokemon-move.ts:85-87`).
+
+**Forgetting a move on the reward screen.** From 1.12.1.0 (pokerogue #7697), picking a move on the summary screen's
+moves page opens a list instead of starting a swap (`src/ui/handlers/summary-ui-handler.ts:548-636`): Swap always, and
+Delete while the current phase is `SelectModifierPhase` (`:566`, checked again on confirm at `:572`). The reward screen
+reaches that summary through its party check and through the target picker of a TM or another party item
+(`src/ui/handlers/party-ui-handler.ts:1407`, `:1511-1518`), not through the Memory Mushroom's; the phase stays
+`SelectModifierPhase` throughout. A mon with one move gets the error sound and no list (`:551-553`). Delete, once
+confirmed, is `moveset.splice(moveCursor, 1)` on the live array (`:611`): no phase, no cost, no draw, no undo. A TM or
+a Memory Mushroom on a full moveset asks the same question itself: `TmModifier.apply` and `RememberMoveModifier.apply`
+(`src/modifier/modifier.ts:2297`, `:2323`) unshift a `LearnMovePhase`, whose `start` learns into a free slot and
+otherwise asks which move to forget (`src/phases/learn-move-phase.ts:62-66`). There the new move takes the forgotten
+one's slot, and the prompt can be declined, back to the reward screen with the item unspent
+(`src/phases/select-modifier-phase.ts:273-278`). A slot Delete frees is filled, unasked, by the next move learned, a
+level-up move included (`src/phases/level-up-phase.ts:97`).
 
 **No unattached held items.** A held item is a `PokemonHeldItemModifier` with a `pokemonId`
 (`src/modifier/modifier.ts:656`). It is created with its holder — the reward / shop path's
@@ -2647,6 +2661,20 @@ Lower Starter Points. Inverse Battle flips each defending type's multiplier (bel
 Hardcore, Limited Support and Passives don't change the grid; the Moveset and Ability Randomizers change it only
 through their hooks above.
 
+**What the randomizers hide from the grid.** The Ability Randomizer (`src/data/challenge.ts:1594-1734`, values 1–3)
+rerolls each species ability from 1 (`SPECIES_ABILITY_MODIFY`, `:1645-1681`) and the passive too from 2
+(`PASSIVE_ABILITY_MODIFY`, `:1683-1705`), each a seeded pick (offset `500 · speciesId + abilityId`); 3 spares nine
+form-change abilities from the ability reroll (`:1657-1672`), never from the passive's. Both skip the Pokédex and
+egg-hatch modes and `SelectStarterPhase`, so the grid shows the species' own. The Moveset Randomizer (`:1319-1592`,
+values 1–2) empties the level-up list in `STARTER_SELECT` and outside it swaps each level-up move for a seeded pick
+(`applyLevelUpMoveset`, `:1425-1454`). An evolution that needs a move (`EvoCondKey.MOVE`, or Tyrogue's own key, both
+checked against the moveset, `src/data/balance/pokemon-evolutions.ts:171-206`) keeps that need at 1
+(`applyModifyEvolutions`, `:1511-1557`, returns at once). From 2 the move datum goes, a condition left empty is null
+and a level-1 evolution takes `evoLevelThreshold?.[0] ?? 50`; Tyrogue knowing none of its three moves has one branch,
+picked by seed (offset `pokemon.id`), freed instead. The hook runs on copies `getEvolution` builds
+(`src/field/pokemon.ts:3011-3038`) through a constructor that sets `evoLevelThreshold` only from `evoDelay`
+(`pokemon-evolutions.ts:261-274`), so a level-1 one always lands on 50: Dipplin → Hydrapple.
+
 **Species reads** (on a `PokemonSpecies`, all pure): `baseStats`, `baseTotal`, `type1` / `type2`, `abilityHidden`,
 `generation`; `getEvolutionLevels()` (`src/data/pokemon-species.ts:1106-1123`: every descendant flattened as
 `[speciesId, level]`, item evolutions at level 1); `getPassiveAbility(formIndex)` (`:217`, after
@@ -3039,7 +3067,36 @@ session from a newer game skips the migration and loads as is. The only "out of 
 `initSystem`, and not under dev or beta (`:441-449`). A `SessionMigrationError` on Load Game reaches
 `TitlePhase`'s catch, which shows `failedToLoadSession` (`src/phases/title-phase.ts:201-212`).
 
-## 32. The randomizer challenges: what they rewrite, and which calls see it
+## 32. The reward screen's party check: reordering, and who leads the next wave
+
+Read at the pinned tag (`v1.12.1.1`), for the rewards card's lead advice (`51-lead.js`) and the play skill's reorder.
+Switch is new in 1.12.1.0: the v1.12.0.11 clone has no `PartyOption.SWITCH`.
+
+**Opening it.** The shop's bottom row (row 0 in Coachemon's `read_menu`), column 2, is Check Team (`checkTeam` in
+`locales/en/modifier-select-ui-handler.json`). It opens the party screen in `PartyUiMode.CHECK` over the shop with
+`setModeWithoutClear` (`src/phases/select-modifier-phase.ts:107-110`), and leaving it runs `resetModifierSelect`
+(`:402-410`), which re-opens the shop on the same `typeOptions`: nothing is re-rolled.
+
+**Switch.** In CHECK mode a picked member's options gain Switch at index 1 when the party has two or more members
+(`src/ui/handlers/party-ui-handler.ts:1536-1540`). Its label is `toTitleCase(PartyOption[option])`, so it is "Switch"
+in every language (`:1665-1671`).
+- Choosing it marks the member (`startPartySwitch`, `:1800-1807`) when `isSwappable` holds (`:979-988`), which asks
+  only `canSwitch()`: a member on the field that is `FRENZY`, trapped or `COMMANDED` refuses with `cannotSwitch` (§9).
+  Fainted members are not refused.
+- ACTION on another slot swaps the two `getPlayerParty()` entries at once, with no confirm (`swapPartyMembers`,
+  `:992-1001`, `:1825-1835`). ACTION on the marked slot clears the mark (`:994-995`).
+- While a member is marked, ACTION on Cancel (slot 6) does nothing (`:1007-1012`), and CANCEL only clears the mark
+  (`processPartyCancelInput`, `:1069-1075`). The next CANCEL leaves.
+
+**Who leads.** The field is the front of the party: `getPlayerField` is slot 0, and slot 1 in a double
+(`src/battle-scene.ts:731-736`). A member sent out that is not allowed in battle, fainted or barred by a challenge, is
+swapped with the first allowed member after it (`SummonPhase.preSummon`, `src/phases/summon-phase.ts:37-64`), so a wave
+opens on the first one or two allowed members in party order. After the shop, `doPostBattleCleanup` queues
+`PartyReorderSwitchPhase` (`src/battle-scene.ts:1535-1553`), which brings the party's new front onto the field
+(`src/phases/party-reorder-switch-phase.ts:38-48`). A trainer battle offers no free switch before its first turn (§9),
+so the reward screen is the only free place to choose a trainer fight's opener.
+
+## 33. The randomizer challenges: what they rewrite, and which calls see it
 
 Read at the pinned tag (`v1.12.1.1`). Both randomizers (`ChallengeCategory.RANDOMIZER`) rewrite species data in
 challenge hooks, never in the data itself, so a read sees the randomized value only through a call that applies the

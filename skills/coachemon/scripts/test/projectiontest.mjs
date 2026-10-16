@@ -308,7 +308,7 @@ const name = r => (r.evolved.length ? `${r.evolved.map(sp => sp.name).join("→"
   assert.equal(off.species, SP.aipom, "a challenge at value 0 is off, and its hook is never run");
   assert.deepEqual(EVOS[190][0].condition.data, [{ key: MOVE, move: 458 }], "the hook ran on a copy, never the registry's row");
 
-  // The hook's copy carries no threshold, so a level-1 move evolution lands at 50 (game-code.md §32).
+  // The hook's copy carries no threshold, so a level-1 move evolution lands at 50 (game-code.md §33).
   const atLevel50 = with_([movesetRandomizer(2)]).of(dipplin, { participant: true });
   row("Dipplin, L30 → 45", [name(atLevel50)]);
   assert.equal(atLevel50.species, SP.dipplin, "Hydrapple moved to 50, out of reach at 45");
