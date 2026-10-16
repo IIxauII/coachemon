@@ -191,8 +191,12 @@ const STATUS_TYPES = { [StatusEffect.POISON]: ["Poison", "Steel"], [StatusEffect
   [StatusEffect.PARALYSIS]: ["Electric"], [StatusEffect.FREEZE]: ["Ice"], [StatusEffect.BURN]: ["Fire"] };
 // @mirrors tag-abilities
 const TAG_ABILITIES = { Oblivious: ["TAUNT"], "Aroma Veil": ["TAUNT", "ENCORE", "HEAL_BLOCK", "DISABLED", "TORMENT"] };
+// Never through `foeAbilities`: `isTrapped` asks at the switch, outside the move Mold Breaker ignores abilities for
+// (game-code.md §16).
+// @mirrors never-trapped
+const neverTrapped = foe => (foe.types ?? []).includes("Ghost") || [foe.ability, foe.passive].includes("Run Away");
 const DISRUPT_NEEDS = { TAUNT: "statusMoves", ENCORE: "statusMoves", HEAL_BLOCK: "healMoves" };
-const DISRUPT_TAGS = new Set(["TAUNT", "ENCORE", "HEAL_BLOCK", "DISABLED", "TORMENT"]);
+const DISRUPT_TAGS = new Set(["TAUNT", "ENCORE", "HEAL_BLOCK", "DISABLED", "TORMENT", "TRAPPED"]);
 const STATUS_FLOOR = 0.3, DISRUPT_HIT = 1.4, DISRUPT_SPREAD = 0.4, DISRUPT_NONE = 0.3, UNSURE = 0.5;
 // `healBlockedMoves`, by attribute (game-code.md §16).
 // @mirrors heal-blocked
@@ -228,7 +232,8 @@ const statusLands = (pk, mv, effect, foe) => {
   });
 };
 const tagLands = (pk, mv, tag, foe) => !statusMoveBlocked(pk, mv, foe)
-  && !foeAbilities(pk, foe).some(a => (TAG_ABILITIES[a] ?? []).includes(tag));
+  && !foeAbilities(pk, foe).some(a => (TAG_ABILITIES[a] ?? []).includes(tag))
+  && !(tag === "TRAPPED" && neverTrapped(foe));
 
 const weightOf = foe => Math.max(1, foe.segments ?? 0);
 const shareOf = (foes, ok) => foes.reduce((t, f) => t + (ok(f) ? weightOf(f) : 0), 0) / foes.reduce((t, f) => t + weightOf(f), 0);
