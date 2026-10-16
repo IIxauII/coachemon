@@ -1,0 +1,418 @@
+{
+ "fight": "drayton-w188.json",
+ "method": "iw:1",
+ "patch": "poll1.ts",
+ "workers": 3,
+ "sim": null,
+ "share": false,
+ "budget": 3000,
+ "seconds": 51.67,
+ "tally": {
+  "requested": 1574,
+  "unique": 1227,
+  "played": 1140,
+  "realJobs": 179
+ },
+ "replays": 1,
+ "tree": {
+  "forks": 943,
+  "turns": 827
+ },
+ "pool": {
+  "size": 3,
+  "died": 0,
+  "lastDeath": null,
+  "peakHeapMb": 355,
+  "heapLimitMb": 864
+ },
+ "result": {
+  "kind": "found",
+  "steps": [
+   {
+    "width": 2,
+    "kind": "no_answer",
+    "triesAfter": 615,
+    "beam": {
+     "width": 2,
+     "ours": 1,
+     "spent": 615,
+     "layers": [
+      {
+       "turn": 1,
+       "spentAfter": 17,
+       "kept": 17,
+       "children": 17,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 2,
+       "spentAfter": 75,
+       "kept": 28,
+       "children": 58,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 3,
+       "spentAfter": 129,
+       "kept": 19,
+       "children": 54,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 4,
+       "spentAfter": 187,
+       "kept": 28,
+       "children": 58,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 5,
+       "spentAfter": 205,
+       "kept": 18,
+       "children": 18,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 6,
+       "spentAfter": 263,
+       "kept": 28,
+       "children": 58,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 7,
+       "spentAfter": 281,
+       "kept": 18,
+       "children": 18,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 8,
+       "spentAfter": 331,
+       "kept": 20,
+       "children": 50,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 9,
+       "spentAfter": 347,
+       "kept": 14,
+       "children": 16,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 10,
+       "spentAfter": 363,
+       "kept": 16,
+       "children": 16,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 11,
+       "spentAfter": 379,
+       "kept": 16,
+       "children": 16,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 12,
+       "spentAfter": 401,
+       "kept": 22,
+       "children": 22,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 13,
+       "spentAfter": 441,
+       "kept": 16,
+       "children": 40,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 14,
+       "spentAfter": 463,
+       "kept": 18,
+       "children": 22,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 15,
+       "spentAfter": 485,
+       "kept": 17,
+       "children": 22,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 16,
+       "spentAfter": 531,
+       "kept": 22,
+       "children": 46,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 17,
+       "spentAfter": 583,
+       "kept": 28,
+       "children": 52,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 18,
+       "spentAfter": 615,
+       "kept": 0,
+       "children": 32,
+       "wins": 0,
+       "stalled": 32
+      }
+     ],
+     "end": "stalled",
+     "endTurn": 18
+    }
+   },
+   {
+    "width": 4,
+    "kind": "found",
+    "triesAfter": 1574,
+    "beam": {
+     "width": 4,
+     "ours": 1,
+     "spent": 959,
+     "layers": [
+      {
+       "turn": 1,
+       "spentAfter": 17,
+       "kept": 17,
+       "children": 17,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 2,
+       "spentAfter": 125,
+       "kept": 43,
+       "children": 108,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 3,
+       "spentAfter": 233,
+       "kept": 43,
+       "children": 108,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 4,
+       "spentAfter": 317,
+       "kept": 54,
+       "children": 84,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 5,
+       "spentAfter": 357,
+       "kept": 39,
+       "children": 40,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 6,
+       "spentAfter": 473,
+       "kept": 56,
+       "children": 116,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 7,
+       "spentAfter": 509,
+       "kept": 36,
+       "children": 36,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 8,
+       "spentAfter": 609,
+       "kept": 40,
+       "children": 100,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 9,
+       "spentAfter": 641,
+       "kept": 30,
+       "children": 32,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 10,
+       "spentAfter": 697,
+       "kept": 31,
+       "children": 56,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 11,
+       "spentAfter": 777,
+       "kept": 32,
+       "children": 80,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 12,
+       "spentAfter": 824,
+       "kept": 37,
+       "children": 47,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 13,
+       "spentAfter": 874,
+       "kept": 36,
+       "children": 50,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 14,
+       "spentAfter": 927,
+       "kept": 41,
+       "children": 53,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 15,
+       "spentAfter": 959,
+       "kept": 28,
+       "children": 32,
+       "wins": 4,
+       "stalled": 0
+      }
+     ]
+    },
+    "turn": 15
+   }
+  ],
+  "path": [
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 3,
+     "species": "PROBOPASS"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "EARTH_POWER",
+    "tera": true
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 2,
+     "species": "RESHIRAM"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "BLUE_FLARE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 3,
+     "species": "GYARADOS"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "HURRICANE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "HURRICANE",
+    "tera": false,
+    "replacement": {
+     "slot": 3,
+     "species": "RESHIRAM"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "HYPER_VOICE",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 2,
+     "species": "PROBOPASS"
+    }
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 5,
+     "species": "LEAVANNY"
+    }
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 2,
+     "species": "RESHIRAM"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   }
+  ],
+  "turn": 15
+ }
+}

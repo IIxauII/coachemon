@@ -1,0 +1,183 @@
+{
+ "fight": "drayton-w188.json",
+ "method": "iw:0.5",
+ "patch": "poll1.ts",
+ "workers": 3,
+ "sim": null,
+ "share": false,
+ "budget": 3000,
+ "seconds": 48.127,
+ "tally": {
+  "requested": 375,
+  "unique": 375,
+  "played": 375,
+  "realJobs": 64
+ },
+ "replays": 1,
+ "tree": {
+  "forks": 238,
+  "turns": 203
+ },
+ "pool": {
+  "size": 3,
+  "died": 0,
+  "lastDeath": null,
+  "peakHeapMb": 356,
+  "heapLimitMb": 864
+ },
+ "result": {
+  "kind": "found",
+  "steps": [
+   {
+    "width": 2,
+    "kind": "found",
+    "triesAfter": 375,
+    "beam": {
+     "width": 2,
+     "ours": 0.5,
+     "spent": 375,
+     "layers": [
+      {
+       "turn": 1,
+       "spentAfter": 17,
+       "kept": 17,
+       "children": 17,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 2,
+       "spentAfter": 87,
+       "kept": 20,
+       "children": 70,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 3,
+       "spentAfter": 109,
+       "kept": 22,
+       "children": 22,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 4,
+       "spentAfter": 163,
+       "kept": 19,
+       "children": 54,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 5,
+       "spentAfter": 237,
+       "kept": 44,
+       "children": 74,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 6,
+       "spentAfter": 267,
+       "kept": 30,
+       "children": 30,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 7,
+       "spentAfter": 313,
+       "kept": 31,
+       "children": 46,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 8,
+       "spentAfter": 331,
+       "kept": 17,
+       "children": 18,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 9,
+       "spentAfter": 357,
+       "kept": 25,
+       "children": 26,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 10,
+       "spentAfter": 375,
+       "kept": 10,
+       "children": 18,
+       "wins": 8,
+       "stalled": 0
+      }
+     ]
+    },
+    "turn": 10
+   }
+  ],
+  "path": [
+   {
+    "kind": "move",
+    "move": "HURRICANE",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 3,
+     "species": "PROBOPASS"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "EARTH_POWER",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 2,
+     "species": "RESHIRAM"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "BLUE_FLARE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": true
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "HYPER_VOICE",
+    "tera": false
+   }
+  ],
+  "turn": 10
+ }
+}
