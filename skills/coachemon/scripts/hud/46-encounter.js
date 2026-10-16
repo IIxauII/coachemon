@@ -2,11 +2,11 @@
 // calls `meetsRequirements()`, which writes and can draw, and replays only the draws a closure makes before its first
 // `await`: past that the card gives odds (game-code.md §13).
 import { TYPES, abilityValue, natureOf, stage, typesOf } from "./01-core.js";
-import { bigFightsAhead } from "./03-calendar.js";
+import { bigFightsAhead, challengeValue } from "./03-calendar.js";
 import { gameTables } from "./04-game-tables.js";
-import { partyAtFight, partyProfile } from "./08-party.js";
+import { formOf, partyAtFight, partyProfile, typesOfSpecies } from "./08-party.js";
 import { weakestMember } from "./12-value.js";
-import { SAFARI_MONS, safariMonData, safariPreview, safariReady } from "./44-safari.js";
+import { SAFARI_MONS, safariMonData, safariPreview, safariReady, starterBand } from "./44-safari.js";
 import { accountWorth, teamVerdict } from "./45-catch.js";
 
 // Indexed by `MysteryEncounterType`: keep it in enum order.
@@ -69,6 +69,49 @@ const BUG_TUTORS = [
   [[MoveId.STRING_SHOT, "String Shot"], [MoveId.DEFEND_ORDER, "Defend Order"], [MoveId.RAGE_POWDER, "Rage Powder"], [MoveId.STICKY_WEB, "Sticky Web"], [MoveId.SILK_TRAP, "Silk Trap"]],
   [[MoveId.LEECH_LIFE, "Leech Life"], [MoveId.U_TURN, "U-turn"], [MoveId.HEAL_ORDER, "Heal Order"], [MoveId.QUIVER_DANCE, "Quiver Dance"], [MoveId.INFESTATION, "Infestation"]],
 ];
+// Dark Deal's `excludedBosses`.
+// @mirrors dark-deal-excluded
+const DARK_DEAL_EXCLUDED = [SpeciesId.ETERNATUS,
+  SpeciesId.NIHILEGO, SpeciesId.BUZZWOLE, SpeciesId.PHEROMOSA, SpeciesId.XURKITREE, SpeciesId.CELESTEELA, SpeciesId.KARTANA,
+  SpeciesId.GUZZLORD, SpeciesId.POIPOLE, SpeciesId.NAGANADEL, SpeciesId.STAKATAKA, SpeciesId.BLACEPHALON, SpeciesId.COSMOG,
+  SpeciesId.COSMOEM, SpeciesId.SOLGALEO, SpeciesId.LUNALA, SpeciesId.NECROZMA,
+  SpeciesId.GREAT_TUSK, SpeciesId.SCREAM_TAIL, SpeciesId.BRUTE_BONNET, SpeciesId.FLUTTER_MANE, SpeciesId.SLITHER_WING,
+  SpeciesId.SANDY_SHOCKS, SpeciesId.ROARING_MOON, SpeciesId.WALKING_WAKE, SpeciesId.GOUGING_FIRE, SpeciesId.RAGING_BOLT,
+  SpeciesId.KORAIDON, SpeciesId.IRON_TREADS, SpeciesId.IRON_BUNDLE, SpeciesId.IRON_HANDS, SpeciesId.IRON_JUGULIS,
+  SpeciesId.IRON_MOTH, SpeciesId.IRON_THORNS, SpeciesId.IRON_VALIANT, SpeciesId.IRON_LEAVES, SpeciesId.IRON_BOULDER,
+  SpeciesId.IRON_CROWN, SpeciesId.MIRAIDON,
+  SpeciesId.MEW, SpeciesId.CELEBI, SpeciesId.JIRACHI, SpeciesId.DEOXYS, SpeciesId.PHIONE, SpeciesId.MANAPHY, SpeciesId.DARKRAI,
+  SpeciesId.SHAYMIN, SpeciesId.ARCEUS, SpeciesId.VICTINI, SpeciesId.KELDEO, SpeciesId.MELOETTA, SpeciesId.GENESECT,
+  SpeciesId.DIANCIE, SpeciesId.HOOPA, SpeciesId.VOLCANION, SpeciesId.MAGEARNA, SpeciesId.MARSHADOW, SpeciesId.ZERAORA,
+  SpeciesId.MELTAN, SpeciesId.MELMETAL, SpeciesId.ZARUDE, SpeciesId.PECHARUNT,
+  SpeciesId.ETERNAL_FLOETTE, SpeciesId.BLOODMOON_URSALUNA, SpeciesId.BATTLE_BOND_GRENINJA];
+// The starter tier Dark Deal's `randSeedInt(100)` lands on.
+// @mirrors dark-deal-tiers
+const dealTier = roll => (roll >= 65 ? 6 : roll >= 15 ? 7 : roll >= 5 ? 8 : [9, 10]);
+const DEAL_TIER_ODDS = Object.values(Array.from({ length: 100 }, (_, roll) => dealTier(roll))
+  .reduce((odds, tier) => ({ ...odds, [tier]: [tier, (odds[tier]?.[1] ?? 0) + 1 / 100] }), {}));
+// `getRandomSpeciesByStarterCost(tier, excludedBosses, bossTypes)`'s band, which it draws from evenly (game-code.md §13).
+const dealBand = (reg, tier, types) => starterBand(reg, tier, sp => !DARK_DEAL_EXCLUDED.includes(sp.speciesId)
+  && (!types.length || types.includes(sp.type1) || (sp.type2 != null && types.includes(sp.type2))));
+const isLegend = sp => !!(sp.legendary || sp.subLegendary || sp.mythical);
+// Each member as likely to go as the next, each tier at its odds: the share of draws that land a legendary, the
+// ordinary species the rest land on, and, for a single band, the costs it actually spans.
+const dealOdds = (reg, members, tiers, mono) => {
+  let share = 0;
+  const plain = new Set(), bands = [];
+  for (const p of members) {
+    const types = mono.length ? mono : tryDo(() => p.getTypes(), []);
+    for (const [tier, odds] of tiers) {
+      const band = dealBand(reg, tier, types);
+      bands.push(band);
+      if (!band.length) { plain.add("Bulbasaur"); continue; }
+      share += odds / members.length * band.filter(([sp]) => isLegend(sp)).length / band.length;
+      for (const [sp] of band) if (!isLegend(sp)) plain.add(tryDo(() => sp.getName(), sp.name));
+    }
+  }
+  const costs = bands.length === 1 ? bands[0].map(e => e[1]) : [];
+  return { share, plain: [...plain], span: costs.length ? [Math.min(...costs), Math.max(...costs)] : null };
+};
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 const strip = t => String(t ?? "").replace(/\[\/?[^\]]*\]/g, "").replace(/\s+/g, " ").trim();
@@ -257,7 +300,7 @@ const context = (run, me, options, account) => {
     if (!sp) return null;
     const scale = Math.max(Math.round(wave / 10 * (cfg.levelAdditiveModifier ?? 0)), 0);
     const level = pc.level || (b.enemyLevels?.[0] ?? top?.level ?? 1) + scale;
-    return { name: tryDo(() => sp.getName(), sp.name), types: [sp.type1, sp.type2].filter(t => t != null).map(t => TYPES[t]).filter(Boolean),
+    return { name: tryDo(() => sp.getName(), sp.name), species: sp, types: typesOfSpecies(sp),
       level, boss: !!pc.isBoss, bars: pc.bossSegments ?? 0, estimated: !pc.level };
   };
   const fight = (f, { double = false } = {}) => {
@@ -453,21 +496,37 @@ const RULES = {
     // `getRandomPlayerPokemon(true, false, true)` (game-code.md §13).
     const legal = c.party.filter(p => tryDo(() => p.isAllowedInChallenge(), true));
     const standing = legal.filter(p => p.hp > 0);
-    const pool = standing.length === 1 ? legal.filter(p => p.hp <= 0) : standing;
+    const downed = legal.filter(p => p.hp <= 0);
+    const pool = standing.length === 1 && downed.length ? downed : standing.length ? standing : legal;
     const k = pool.length ? c.pre(() => int(pool.length)) : null;
     const taken = k != null ? pool[k] : null;
     const roll = c.during(() => int(100));
-    const tier = roll == null ? null : roll >= 65 ? "6" : roll >= 15 ? "7" : roll >= 5 ? "8" : "9–10";
+    const tier = roll == null ? null : dealTier(roll);
+    // A mono-type challenge's own type stands in for the taken member's.
+    const monoValue = c.s.gameMode?.isChallenge ? challengeValue(c.s, Challenges.SINGLE_TYPE) : 0;
+    const mono = monoValue ? [monoValue - 1] : [];
+    const reg = tryDo(() => gameTables().species);
+    const boss = typeof reg?.getAllStarters === "function" && typeof reg.getStarterCost === "function" && pool.length
+      ? dealOdds(reg, taken ? [taken] : pool, tier != null ? [[tier, 1]] : DEAL_TIER_ODDS, mono) : null;
+    const pct = boss && Math.min(Math.max(Math.round(boss.share * 100), 1), 99);
+    const names = boss && boss.plain.length <= 3 ? boss.plain.join(" or ") : null;
+    const legend = !boss || boss.share >= 0.995, plain = !!boss && boss.share <= 0.005;
+    const span = boss?.span ?? (tier == null ? null : [].concat(tier));
+    const tierText = span ? ` (starter tier ${span[0]}${span[1] > span[0] ? `–${span[1]}` : ""})` : "";
+    const head = boss && legend ? "a catchable legendary boss" : plain ? "a catchable non-legendary boss" : "a catchable boss";
+    const tail = !boss ? ", usually legendary" : legend ? "" : plain ? (names ? ` — ${names}` : "")
+      : `: legendary ${pct}% of the time${names ? `, else ${names}` : ""}`;
+    const prize = `5 Rogue Balls + ${head}${tierText} of ${mono.length ? `the run's ${TYPES[mono[0]]} type` : "its types"}, holding its items${tail}`;
+    const gets = !boss ? "a likely legendary" : legend ? "a legendary" : plain ? names ?? "a non-legendary" : `a ${pct}% shot at a legendary`;
     // The pool above mirrors the game's filter; which member the party would miss, or not, is judged against the
     // team at the next big fight (#571).
     const carry = taken && taken === c.strongest;
     const spare = taken && taken === c.profile.weakest?.mon;
-    const prize = `5 Rogue Balls + a catchable legendary boss${tier ? ` (starter tier ${tier})` : ""} of its types, holding its items`;
     return [
       { outcome: taken ? `${taken.name} is taken for good → ${prize}` : `a random member is taken for good → ${prize}`,
-        battle: "boss", exact: !!taken && !!tier, verdict: carry ? "avoid" : spare ? "take" : taken ? "ok" : null,
+        battle: "boss", exact: !!taken && tier != null, verdict: carry ? "avoid" : spare ? "take" : taken ? "ok" : null,
         why: carry ? `${taken.name} is your strongest` : spare ? `${taken.name} is your weakest link`
-          : taken ? `L${taken.level} ${taken.name} for a legendary` : "you don't choose who goes" },
+          : taken ? `L${taken.level} ${taken.name} for ${gets}` : "you don't choose who goes" },
       { ...LEAVE, verdict: carry ? "take" : "ok" },
     ];
   },
@@ -711,10 +770,11 @@ const RULES = {
     const name = mon ? `${mon.name}${mon.shiny ? " shiny" : ""}` : "it";
     const why = worthWhy(offer);
     const charm = c.opt(2).enabled, berries = c.opt(1).enabled;
+    const boost = c.wave < 150 ? "Def/SpD" : "Def/SpD/Spe";
     return {
       offers: offer ? [offer.card] : [],
       rows: [
-        { outcome: `fight ${name} (boosted); catchable → rewards`, battle: "wild",
+        { outcome: `fight ${name} (+1 ${boost} on entry); catchable → rewards`, battle: "wild",
           verdict: wanted && (charm || berries) ? "ok" : fight.hard ? "avoid" : "take", why: fight.text },
         { outcome: `give 4 random berries: ${name} joins with a 2nd egg move (may repeat the 1st)`, verdict: wanted && !charm ? "take" : wanted ? "ok" : "avoid",
           why: wanted ? why : `berries for a mon you don't need (${why})`, needs: "4 berries" },
@@ -859,19 +919,29 @@ const RULES = {
 
   [DANCING]: c => {
     const live = tryDo(() => c.s.getEnemyParty()[0]);
-    const shown = live
-      ? { name: tryDo(() => live.name, "Oricorio"), types: typesOf(live), level: live.level, boss: true, bars: 0, estimated: false }
-      : c.foe(0);
+    let form, shown;
+    if (live) {
+      form = formOf(live.species, live.formIndex);
+      shown = { name: tryDo(() => live.name, "Oricorio"), types: typesOf(live), level: live.level, boss: true, bars: 0, estimated: false };
+    } else {
+      // `foe` gives the species' own Fire/Flying, not the style `onInit` built the mon in (game-code.md §13).
+      const foe = c.foe(0), k = c.me.misc?.oricorioData?.formIndex;
+      form = k == null ? null : formOf(foe?.species, k);
+      shown = foe && form ? { ...foe, types: typesOfSpecies(form) } : foe;
+    }
     const fight = c.fight(shown);
     const offer = c.offer(live);
     const wanted = !!offer?.wanted;
     const why = worthWhy(offer);
-    const name = `${shown?.name ?? "Oricorio"}${live?.shiny ? " shiny" : ""}`;
+    const style = form?.formName;
+    const name = `${style ? `${style} ` : ""}${shown?.name ?? "Oricorio"}${live?.shiny ? " shiny" : ""}`;
+    const dance = form ? shown?.types?.[0] : null;
+    const opens = dance ? `${/^[AEIOU]/.test(dance) ? "an" : "a"} ${dance} Revelation Dance` : "Revelation Dance";
     const recruit = c.opt(2).enabled;
     return {
       offers: offer ? [offer.card] : [],
       rows: [
-        { outcome: `fight ${name} (+1 Atk/Def/SpA/SpD on entry, opens with Revelation Dance) → a Baton + rewards; catchable`,
+        { outcome: `fight ${name} (+1 Atk/Def/SpA/SpD on entry, opens with ${opens}) → a Baton + rewards; catchable`,
           battle: "boss", verdict: recruit || !wanted ? "ok" : fight.hard ? "avoid" : "take", why: fight.text },
         { outcome: "learn the dance: one mon of your choice is taught Revelation Dance (100 power, special, always the user's own first type)",
           verdict: recruit || wanted ? "ok" : "take", why: "free, and it keeps the move for the run" },
