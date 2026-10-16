@@ -578,7 +578,7 @@ const scenarios = {
     rewardPool: () => [held("LEFTOVERS", "Leftovers", 3)],
     expect: m => { assert.equal(m.rerollAhead, null); assert.equal(m.reroll, null); } },
   // A wild foe that fled with none of its side fainted leaves a shop with no free rewards and no reroll (game-code.md
-  // §19): the card still plans the buys.
+  // §12): the card still plans the buys.
   "no-reward shop after a flee": { wave: 14, money: 3000, reroll: -1, noReroll: true, phase: true,
     party: [charizard(), pk("Blastoise", 60, 187, 0, [[M.aquaTail, 0, 10]])],
     free: [],

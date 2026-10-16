@@ -904,7 +904,7 @@ Game calls are cited where they're named; unmarked names are HUD functions.
 - `bigFightsAhead(s, from, n)` → `[{ wave, kind }]` in wave order, stopping at the run's last wave. Empty without a `gameMode`. What a fight is *called* stays with the card.
 - `nextHeal(s, from)` → the next X1 the run heals on, or `null` past the last wave or under a Limited Support with no heal (§10).
 - `healRevives(s)` → whether that heal brings the fainted back (false under Hardcore, or with no heal at all).
-- `reviveBefore(s, from, fight?)` → `{ kind: "heal" | "shop", wave }`, how a fainted member gets back on its feet before the big fight on wave `fight`, or `null` for no way back: `null` under Hardcore, else the next party heal at or before the fight, else a shop row on a wave before it (a cleared wave opens the rewards screen on every wave but an X0, and Limited Support 1's X1 transition queues one in the removed heal's place — §12; Limited Support 2 and 3 remove the row). `from` is the wave the run stands on: its own clear still opens a shop, while the heal it entered on is behind it. Without a `fight`, any way back ahead counts. **Luck is never one** — a drawn Revive, a Reviver Seed and Sacred Ash do not count — and money is not priced. The shop walk is private: a caller that wants to know whether a fainted member is dead weight asks `partyAtFight`.
+- `reviveBefore(s, from, fight?)` → `{ kind: "heal" | "shop", wave }`, how a fainted member gets back on its feet before the big fight on wave `fight`, or `null` for no way back: `null` under Hardcore, else the next party heal at or before the fight, else a shop row on a wave before it (which waves end in one is §12's). `from` is the wave the run stands on: its own shop counts, while the heal it entered on is behind it. Without a `fight`, any way back ahead counts. **Luck is never one** — a drawn Revive, a Reviver Seed and Sacred Ash do not count — and money is not priced. The shop walk is private: a caller that wants to know whether a fainted member is dead weight asks `partyAtFight`.
 - `trainerOdds(s, w, biome)` → 0..1, `isWaveTrainer` (§10) as odds rather than as the roll `48-preview.js` replays.
 - **The only game-less fallbacks in the HUD live here**, each marked where it sits: the last wave per mode (classic 200, Daily 50, Endless every 250) and the tenth-wave boss rule. No caller writes `% 10` or `% 30` for itself.
 
@@ -1385,6 +1385,21 @@ writes `hp = getMaxHp()`, `resetStatus`, every `ppUsed = 0`, `arena.playerTerasU
 Elite Four fights and the champion with no heal between them**. `VictoryPhase` pushes `SelectModifierPhase` only when
 `currentWaveIndex % 10` (line 85): **no rewards screen after a tenth wave** (X0 grants fixed items through
 `ModifierRewardPhase` instead), except under Limited Support 1 and 3, whose X1 transition queues one in the heal's place.
+
+**A battle that ends without a win.** `BattleEndPhase.start` (`src/phases/battle-end-phase.ts:80-89`) queues a rewards
+screen of its own when the battle was not won and none is queued yet: the ordinary one if any foe fainted
+(`currentBattle.enemyFaints > 0` — a double where one foe was KO'd and the other then fled, or the player then ran),
+else — unless the player ran (`currentBattle.successfulRun`, set by `AttemptRunPhase`,
+`src/phases/attempt-run-phase.ts:36`) — `SelectModifierPhase(0, undefined, { fillRemaining: false, rerollMultiplier: -1 })`:
+**no free reward (an empty row with Continue) and a greyed-out, dead reroll; the shop rows still show** wherever the
+mode has a shop (`GameMode.getShopStatus`: none in Daily, `hasNoShop`, nor under Limited Support 2 and 3). A wild battle
+ends this way when its last active foe leaves the field with HP left: forced out by our Roar, Whirlwind, Dragon Tail or
+Circle Throw, or switching itself out with Teleport, Parting Shot or Chilly Reception — a wild foe may self-switch only
+with a status move and never with Baton Pass, and Shed Tail always fails for it (`ForceSwitchOutAttr`,
+`src/data/moves/move.ts:7302-7345`, guard at 7451-7457) — or through Wimp Out / Emergency Exit
+(`src/data/abilities/ab-attrs.ts:5790-5826`). Neither happens on an X0 wave (`move.ts:7455`, `ab-attrs.ts:5793`). So,
+where the mode has a shop, every wave but an X0 and the final wave ends in a shop, won (a catch counts) or fled,
+**except one the player runs from with no foe fainted**.
 
 **Reward tiers and luck.** `getNewModifierTypeOption` (`src/modifier/modifier-type.ts:2769`) — draws global RND — rolls
 `randSeedInt(1024)`: > 255 COMMON, > 60 GREAT, > 12 ULTRA, 1–12 ROGUE, 0 MASTER. For the player pool, when the roll isn't

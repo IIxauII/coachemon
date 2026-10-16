@@ -5,7 +5,7 @@ import { bundle } from "../hud-bundle.mjs";
 const CLASSIC_FIXED = new Set([5, 8, 25, 35, 55, 62, 64, 66, 95, 112, 114, 115, 145, 164, 165, 182, 184, 186, 188, 190, 195]);
 const MODES = {
   classic: { isClassic: true, isWaveFinal: w => w === 200, isBoss: w => w % 10 === 0, isFixedBattle: w => CLASSIC_FIXED.has(w) },
-  daily: { isDaily: true, isWaveFinal: w => w === 50, isBoss: w => w % 10 === 0, isFixedBattle: () => false },
+  daily: { isDaily: true, hasNoShop: true, isWaveFinal: w => w === 50, isBoss: w => w % 10 === 0, isFixedBattle: () => false },
   endless: { isEndless: true, isWaveFinal: w => w % 250 === 0, isBoss: w => w % 10 === 0, isFixedBattle: () => false },
 };
 const LIMITED_SUPPORT = 8, HARDCORE = 9;
@@ -173,7 +173,7 @@ const kinds = (s, waves) => waves.map(w => `${w}:${waveKind(s, w) ?? "—"}`);
   assert.equal(reviveBefore(ls2, 192, 200), null, "past the last heal, with no shop, nothing comes before the final");
   const d = scene("daily"), dls2 = scene("daily", { challenges: ls(2) });
   row("daily", [`48→${way(reviveBefore(d, 48))}`, `48, ls 2→${way(reviveBefore(dls2, 48))}`]);
-  assert.deepEqual(reviveBefore(d, 48), { kind: "shop", wave: 48 }, "Daily ends on 50, so its X1 heal never comes");
+  assert.equal(reviveBefore(d, 48), null, "Daily ends on 50, so its X1 heal never comes, and it has no shop");
   assert.equal(reviveBefore(dls2, 48), null);
 
   const e = scene("endless"), els2 = scene("endless", { challenges: ls(2) });

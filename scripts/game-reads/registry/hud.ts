@@ -729,6 +729,11 @@ export const HUD: Area = {
     },
     { name: "hasFlag", kind: "method", at: ["src/data/moves/move.ts#Move.hasFlag"] },
     {
+      name: "hasNoShop",
+      kind: "field",
+      at: ["src/game-mode.ts#GameModeConfig.hasNoShop", "src/game-mode.ts#GameMode.hasNoShop"],
+    },
+    {
       name: "hasPrevolution",
       kind: "method",
       at: ["src/data/species-data-registry.ts#SpeciesDataRegistry.hasPrevolution"],
@@ -1662,6 +1667,7 @@ export const HUD: Area = {
     {
       ours: "skills/coachemon/scripts/hud/03-calendar.js#shops-at-all",
       of: [
+        "src/game-mode.ts#GameMode.getShopStatus",
         "src/data/challenge.ts#LimitedSupportChallenge.applyShop",
       ],
     },

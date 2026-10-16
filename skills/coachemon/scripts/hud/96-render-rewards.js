@@ -7,8 +7,11 @@ import { drawAudit } from "./95-render-audit.js";
 import { drawPreview } from "./95-render-preview.js";
 import { drawReroll } from "./95-render-reroll.js";
 
+const note = text => h("span", { ...dim, fontWeight: "normal" }, text);
+
 export const captionRewards = m => caption("🛒", `$${m.money}`, m.buys.length ? h("span", dim, `→ $${m.left}`) : null,
-  !m.buys.length && m.affordable === 0 ? h("span", { ...dim, fontWeight: "normal" }, "nothing affordable") : null,
+  !m.buys.length && m.affordable === 0 ? note("nothing affordable") : null,
+  !m.free.length ? note("no free reward") : null,
   m.bossNext ? h("span", {}, "👑 boss next") : null);
 
 export const drawRewards = m => {
