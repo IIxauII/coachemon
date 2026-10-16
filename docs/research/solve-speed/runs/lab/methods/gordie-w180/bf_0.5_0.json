@@ -1,0 +1,245 @@
+{
+ "fight": "gordie-w180.json",
+ "method": "bf:0.5:0",
+ "patch": "poll1.ts",
+ "workers": 3,
+ "sim": null,
+ "share": false,
+ "budget": 9000,
+ "seconds": 146.196,
+ "tally": {
+  "requested": 4653,
+  "unique": 4653,
+  "played": 4358,
+  "realJobs": 1934
+ },
+ "replays": 1,
+ "tree": {
+  "forks": 9746,
+  "turns": 7520
+ },
+ "pool": {
+  "size": 3,
+  "died": 0,
+  "lastDeath": null,
+  "peakHeapMb": 367,
+  "heapLimitMb": 864
+ },
+ "result": {
+  "kind": "found",
+  "path": [
+   {
+    "kind": "move",
+    "move": "DRAGON_PULSE",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 5,
+     "species": "PROBOPASS"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "POWER_GEM",
+    "tera": true
+   },
+   {
+    "kind": "move",
+    "move": "POWER_GEM",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 5,
+     "species": "RESHIRAM"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "DRAGON_PULSE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "BLUE_FLARE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "DRAGON_PULSE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "HYPER_VOICE",
+    "tera": false,
+    "replacement": {
+     "slot": 1,
+     "species": "LEAVANNY"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "LEAF_STORM",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 3,
+     "species": "GYARADOS"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "HYDRO_PUMP",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 2,
+     "species": "SNORLAX"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "REST",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 2,
+     "species": "GYARADOS"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "BOUNCE",
+    "tera": false
+   },
+   {
+    "kind": "queued",
+    "replacement": {
+     "slot": 4,
+     "species": "GOLBAT"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "TOXIC",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "POISON_FANG",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "TOXIC",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "VENOSHOCK",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 5,
+     "species": "PROBOPASS"
+    }
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 3,
+     "species": "LEAVANNY"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "LEAF_STORM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "LEAF_STORM",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 3,
+     "species": "PROBOPASS"
+    },
+    "replacement": {
+     "slot": 3,
+     "species": "LEAVANNY"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "LEAF_STORM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "BUG_BITE",
+    "tera": false,
+    "replacement": {
+     "slot": 5,
+     "species": "GOLBAT"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "POISON_FANG",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "POISON_FANG",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "VENOSHOCK",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "POISON_FANG",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "VENOSHOCK",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "POISON_FANG",
+    "tera": false
+   }
+  ],
+  "turn": 35,
+  "tries": 4653,
+  "extra": {
+   "peakFrontier": 2615,
+   "expanded": 690,
+   "closed": 690
+  }
+ }
+}

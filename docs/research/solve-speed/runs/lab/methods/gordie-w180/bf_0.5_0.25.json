@@ -1,0 +1,109 @@
+{
+ "fight": "gordie-w180.json",
+ "method": "bf:0.5:0.25",
+ "patch": "poll1.ts",
+ "workers": 3,
+ "sim": null,
+ "share": false,
+ "budget": 9000,
+ "seconds": 28.405,
+ "tally": {
+  "requested": 351,
+  "unique": 351,
+  "played": 261,
+  "realJobs": 42
+ },
+ "replays": 1,
+ "tree": {
+  "forks": 10080,
+  "turns": 7692
+ },
+ "pool": {
+  "size": 3,
+  "died": 0,
+  "lastDeath": null,
+  "peakHeapMb": 333,
+  "heapLimitMb": 864
+ },
+ "result": {
+  "kind": "found",
+  "path": [
+   {
+    "kind": "move",
+    "move": "DRAGON_PULSE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "HYPER_VOICE",
+    "tera": true
+   },
+   {
+    "kind": "move",
+    "move": "DRAGON_PULSE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "DRAGON_PULSE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "DRAGON_PULSE",
+    "tera": false,
+    "replacement": {
+     "slot": 1,
+     "species": "LEAVANNY"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "LEAF_STORM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "BUG_BITE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "BUG_BITE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "BUG_BITE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "LEAF_STORM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "LEAF_STORM",
+    "tera": false
+   }
+  ],
+  "turn": 13,
+  "tries": 351,
+  "extra": {
+   "peakFrontier": 289,
+   "expanded": 20,
+   "closed": 20
+  }
+ }
+}

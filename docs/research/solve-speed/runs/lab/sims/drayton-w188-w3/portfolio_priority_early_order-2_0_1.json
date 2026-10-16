@@ -1,0 +1,189 @@
+{
+ "fight": "drayton-w188.json",
+ "method": "portfolio:priority:early:order=2,0,1",
+ "patch": null,
+ "workers": 3,
+ "sim": "2",
+ "share": false,
+ "budget": 3000,
+ "seconds": 1.766,
+ "tally": {
+  "requested": 2615,
+  "unique": 2038,
+  "played": 0,
+  "realJobs": 0
+ },
+ "replays": 0,
+ "tree": {
+  "forks": 1905,
+  "turns": 1590
+ },
+ "pool": null,
+ "result": {
+  "kind": "found",
+  "beam": 0,
+  "turn": 9,
+  "path": [
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 3,
+     "species": "PROBOPASS"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "EARTH_POWER",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 2,
+     "species": "RESHIRAM"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "BLUE_FLARE",
+    "tera": true
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   }
+  ],
+  "spent": 2588,
+  "beams": [
+   {
+    "width": 16,
+    "ours": 0.5,
+    "spent": 2011,
+    "layers": [
+     {
+      "turn": 1,
+      "spentAfter": 17,
+      "kept": 17,
+      "children": 17,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 2,
+      "spentAfter": 345,
+      "kept": 175,
+      "children": 328,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 3,
+      "spentAfter": 679,
+      "kept": 204,
+      "children": 334,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 4,
+      "spentAfter": 1054,
+      "kept": 208,
+      "children": 375,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 5,
+      "spentAfter": 1254,
+      "kept": 172,
+      "children": 200,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 6,
+      "spentAfter": 1634,
+      "kept": 227,
+      "children": 380,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 7,
+      "spentAfter": 1826,
+      "kept": 187,
+      "children": 192,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 8,
+      "spentAfter": 2002,
+      "kept": 159,
+      "children": 176,
+      "wins": 0,
+      "stalled": 0
+     }
+    ]
+   },
+   {
+    "width": 8,
+    "ours": 0.5,
+    "spent": 568,
+    "layers": [
+     {
+      "turn": 1,
+      "spentAfter": 17,
+      "kept": 17,
+      "children": 17,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 2,
+      "spentAfter": 253,
+      "kept": 87,
+      "children": 236,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 3,
+      "spentAfter": 437,
+      "kept": 89,
+      "children": 184,
+      "wins": 0,
+      "stalled": 0
+     }
+    ]
+   },
+   {
+    "width": 8,
+    "ours": 1,
+    "spent": 9,
+    "layers": []
+   }
+  ]
+ }
+}

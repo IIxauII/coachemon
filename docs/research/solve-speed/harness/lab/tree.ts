@@ -44,9 +44,19 @@ export class Tree {
     }
   }
 
+  /** A line still being written by another run is left out. */
   private lines(file: string): string[] {
     const p = path.join(this.dir, file);
-    return existsSync(p) ? readFileSync(p, "utf8").split("\n").filter(Boolean) : [];
+    if (!existsSync(p)) return [];
+    return readFileSync(p, "utf8")
+      .split("\n")
+      .filter(line => {
+        try {
+          return line !== "" && JSON.parse(line) !== null;
+        } catch {
+          return false;
+        }
+      });
   }
 
   get size() {

@@ -1,0 +1,165 @@
+{
+ "fight": "drayton-w188.json",
+ "method": "beam:16:0.5",
+ "workers": 3,
+ "sim": null,
+ "share": false,
+ "budget": 3000,
+ "seconds": 271.497,
+ "tally": {
+  "requested": 2338,
+  "unique": 2338,
+  "played": 1304,
+  "realJobs": 79
+ },
+ "replays": 1,
+ "tree": {
+  "forks": 1905,
+  "turns": 1590
+ },
+ "pool": {
+  "size": 3,
+  "died": 0,
+  "lastDeath": null,
+  "peakHeapMb": 273,
+  "heapLimitMb": 864
+ },
+ "result": {
+  "kind": "found",
+  "beam": 0,
+  "turn": 9,
+  "path": [
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 3,
+     "species": "PROBOPASS"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "EARTH_POWER",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 2,
+     "species": "RESHIRAM"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "BLUE_FLARE",
+    "tera": true
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   }
+  ],
+  "spent": 2338,
+  "beams": [
+   {
+    "width": 16,
+    "ours": 0.5,
+    "spent": 2338,
+    "layers": [
+     {
+      "turn": 1,
+      "spentAfter": 17,
+      "kept": 17,
+      "children": 17,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 2,
+      "spentAfter": 345,
+      "kept": 175,
+      "children": 328,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 3,
+      "spentAfter": 679,
+      "kept": 204,
+      "children": 334,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 4,
+      "spentAfter": 1054,
+      "kept": 208,
+      "children": 375,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 5,
+      "spentAfter": 1254,
+      "kept": 172,
+      "children": 200,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 6,
+      "spentAfter": 1634,
+      "kept": 227,
+      "children": 380,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 7,
+      "spentAfter": 1826,
+      "kept": 187,
+      "children": 192,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 8,
+      "spentAfter": 2002,
+      "kept": 159,
+      "children": 176,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 9,
+      "spentAfter": 2338,
+      "kept": 200,
+      "children": 336,
+      "wins": 16,
+      "stalled": 0
+     }
+    ]
+   }
+  ]
+ }
+}

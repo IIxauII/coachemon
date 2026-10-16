@@ -1,0 +1,28 @@
+{
+ "tree": "/Users/xau/.claude/jobs/bac603b9/tmp/trees/gordie-w180",
+ "tries": 11654,
+ "moveTries": 7559,
+ "noFoeEffect": 2338,
+ "dupExact": 1774,
+ "dupNoPp": 2651,
+ "lines": [
+  {
+   "from": "beam_8_0.5.json",
+   "turns": 14,
+   "movesThatLeftTheFoeUntouched": []
+  },
+  {
+   "from": "beam_8_1.json",
+   "turns": 22,
+   "movesThatLeftTheFoeUntouched": [
+    "17:{\"kind\":\"move\",\"move\":\"BOUNCE\",\"tera\":false}",
+    "21:{\"kind\":\"move\",\"move\":\"TRI_ATTACK\",\"tera\":false}"
+   ]
+  },
+  {
+   "from": "beam_16_0.5.json",
+   "turns": 9,
+   "movesThatLeftTheFoeUntouched": []
+  }
+ ]
+}

@@ -39,7 +39,11 @@ const budget = Number(values.budget);
 const json = JSON.parse(readFileSync(fight, "utf8"));
 const exported = "save" in json ? json : { save: json };
 const input = { ...exported, cloneVersion: PINNED_GAME_VERSION };
-const clone = harnessIn(findPinnedClone);
+const inClone = harnessIn(findPinnedClone);
+// PATCH=<file>: the search's workers run the harness with the patch spliced in; replays run it untouched.
+const patch = process.env.PATCH ? readFileSync(process.env.PATCH, "utf8") : "";
+const ANCHOR = 'import { beforeAll, describe, it, vi } from "vitest";\n';
+const clone: typeof inClone = r => (patch && r.name === "worker" ? inClone({ ...r, source: r.source.replace(ANCHOR, ANCHOR + patch) }) : inClone(r));
 const tree = new Tree(treeDir);
 const t0 = Date.now();
 const log = (s: string) => console.error(`[${((Date.now() - t0) / 1000).toFixed(0)} s] ${s}`);
@@ -134,6 +138,7 @@ clearInterval(tick);
 const summary = {
   fight: path.basename(fight),
   method,
+  patch: process.env.PATCH ? path.basename(process.env.PATCH) : null,
   workers,
   sim: values.sim ?? null,
   share: values.share,

@@ -50,7 +50,9 @@ for (const [, children] of tree.entries()) {
   for (const c of children) {
     if (c.end !== "on" || seen.has(c.at.forkPoint)) continue;
     seen.add(c.at.forkPoint);
-    if (seen.size % 37 === 1 && forks.length < Number(count)) forks.push({ handle: c.at.forkPoint, legal: c.at.legal });
+    const only = process.env.ONLY;
+    const pick = only ? c.at.forkPoint === `${HANDLE}${only}` : seen.size % 37 === 1;
+    if (pick && forks.length < Number(count)) forks.push({ handle: c.at.forkPoint, legal: c.at.legal });
   }
 }
 /** A child as recorded: fork points by their hash. */

@@ -1,0 +1,275 @@
+{
+ "fight": "kieran-w190.json",
+ "method": "beam:8:0.5",
+ "patch": "poll1.ts",
+ "workers": 3,
+ "sim": null,
+ "share": false,
+ "budget": 3000,
+ "seconds": 91.29,
+ "tally": {
+  "requested": 3006,
+  "unique": 3006,
+  "played": 3006,
+  "realJobs": 227
+ },
+ "replays": 0,
+ "tree": {
+  "forks": 2328,
+  "turns": 1877
+ },
+ "pool": {
+  "size": 3,
+  "died": 0,
+  "lastDeath": null,
+  "peakHeapMb": 359,
+  "heapLimitMb": 864
+ },
+ "result": {
+  "kind": "no_answer",
+  "spent": 3006,
+  "beams": [
+   {
+    "width": 8,
+    "ours": 0.5,
+    "spent": 3006,
+    "layers": [
+     {
+      "turn": 1,
+      "spentAfter": 9,
+      "kept": 9,
+      "children": 9,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 2,
+      "spentAfter": 89,
+      "kept": 78,
+      "children": 80,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 3,
+      "spentAfter": 161,
+      "kept": 70,
+      "children": 72,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 4,
+      "spentAfter": 233,
+      "kept": 68,
+      "children": 72,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 5,
+      "spentAfter": 305,
+      "kept": 72,
+      "children": 72,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 6,
+      "spentAfter": 377,
+      "kept": 72,
+      "children": 72,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 7,
+      "spentAfter": 481,
+      "kept": 104,
+      "children": 104,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 8,
+      "spentAfter": 693,
+      "kept": 92,
+      "children": 212,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 9,
+      "spentAfter": 777,
+      "kept": 84,
+      "children": 84,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 10,
+      "spentAfter": 869,
+      "kept": 92,
+      "children": 92,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 11,
+      "spentAfter": 973,
+      "kept": 94,
+      "children": 104,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 12,
+      "spentAfter": 1105,
+      "kept": 81,
+      "children": 132,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 13,
+      "spentAfter": 1177,
+      "kept": 30,
+      "children": 72,
+      "wins": 0,
+      "stalled": 42
+     },
+     {
+      "turn": 14,
+      "spentAfter": 1249,
+      "kept": 68,
+      "children": 72,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 15,
+      "spentAfter": 1481,
+      "kept": 56,
+      "children": 232,
+      "wins": 0,
+      "stalled": 116
+     },
+     {
+      "turn": 16,
+      "spentAfter": 1553,
+      "kept": 32,
+      "children": 72,
+      "wins": 0,
+      "stalled": 40
+     },
+     {
+      "turn": 17,
+      "spentAfter": 1625,
+      "kept": 72,
+      "children": 72,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 18,
+      "spentAfter": 1729,
+      "kept": 70,
+      "children": 104,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 19,
+      "spentAfter": 1961,
+      "kept": 112,
+      "children": 232,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 20,
+      "spentAfter": 2049,
+      "kept": 20,
+      "children": 88,
+      "wins": 0,
+      "stalled": 68
+     },
+     {
+      "turn": 21,
+      "spentAfter": 2121,
+      "kept": 70,
+      "children": 72,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 22,
+      "spentAfter": 2193,
+      "kept": 64,
+      "children": 72,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 23,
+      "spentAfter": 2329,
+      "kept": 68,
+      "children": 136,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 24,
+      "spentAfter": 2581,
+      "kept": 222,
+      "children": 252,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 25,
+      "spentAfter": 2690,
+      "kept": 71,
+      "children": 109,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 26,
+      "spentAfter": 2758,
+      "kept": 64,
+      "children": 68,
+      "wins": 0,
+      "stalled": 4
+     },
+     {
+      "turn": 27,
+      "spentAfter": 2862,
+      "kept": 80,
+      "children": 104,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 28,
+      "spentAfter": 2998,
+      "kept": 60,
+      "children": 136,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 29,
+      "spentAfter": 3006,
+      "kept": 6,
+      "children": 8,
+      "wins": 0,
+      "stalled": 0
+     }
+    ],
+    "end": "budget",
+    "endTurn": 29
+   }
+  ]
+ }
+}

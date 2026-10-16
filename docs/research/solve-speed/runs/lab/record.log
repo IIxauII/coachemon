@@ -1,0 +1,26 @@
+07:01:06 gordie-w180 beam:8:0.5 load { 2.53 3.71 4.17 }
+{"fight":"gordie-w180.json","method":"beam:8:0.5","workers":3,"sim":null,"share":false,"budget":3000,"seconds":342.312,"tally":{"requested":1657,"unique":1657,"played":1657,"realJobs":109},"replays":1,"tree":{"forks":1481,"turns":984},"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":268,"heapLimitMb":864},"result":{"kind":"found","turn":14,"inputs":14}}
+07:06:49 done, load { 3.41 3.04 3.67 }
+07:06:49 gordie-w180 beam:8:1 load { 3.41 3.04 3.67 }
+{"fight":"gordie-w180.json","method":"beam:8:1","workers":3,"sim":null,"share":false,"budget":3000,"seconds":331.57,"tally":{"requested":2145,"unique":2145,"played":1636,"realJobs":136},"replays":1,"tree":{"forks":2968,"turns":1934},"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":267,"heapLimitMb":864},"result":{"kind":"found","turn":22,"inputs":21}}
+07:12:21 done, load { 2.43 2.56 3.22 }
+07:12:21 gordie-w180 beam:16:0.5 load { 2.43 2.56 3.22 }
+{"fight":"gordie-w180.json","method":"beam:16:0.5","workers":3,"sim":null,"share":false,"budget":3000,"seconds":361.486,"tally":{"requested":2026,"unique":2026,"played":1805,"realJobs":109},"replays":1,"tree":{"forks":4675,"turns":2915},"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":294,"heapLimitMb":864},"result":{"kind":"found","turn":9,"inputs":9}}
+07:18:23 done, load { 4.12 4.56 3.98 }
+07:18:23 drayton-w188 beam:8:0.5 load { 4.12 4.56 3.98 }
+{"fight":"drayton-w188.json","method":"beam:8:0.5","workers":3,"sim":null,"share":false,"budget":3000,"seconds":262.152,"tally":{"requested":1309,"unique":1309,"played":1309,"realJobs":77},"replays":1,"tree":{"forks":820,"turns":733},"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":294,"heapLimitMb":864},"result":{"kind":"found","turn":10,"inputs":10}}
+07:22:46 done, load { 2.97 3.87 3.82 }
+07:22:46 drayton-w188 beam:8:1 load { 2.97 3.87 3.82 }
+{"fight":"drayton-w188.json","method":"beam:8:1","workers":3,"sim":null,"share":false,"budget":3000,"seconds":46.016,"tally":{"requested":1293,"unique":1293,"played":117,"realJobs":9},"replays":0,"tree":{"forks":922,"turns":814},"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":276,"heapLimitMb":864},"result":{"kind":"found","turn":10,"inputs":10}}
+07:23:32 done, load { 7.51 4.95 4.22 }
+07:23:32 drayton-w188 beam:16:0.5 load { 7.51 4.95 4.22 }
+{"fight":"drayton-w188.json","method":"beam:16:0.5","workers":3,"sim":null,"share":false,"budget":3000,"seconds":271.497,"tally":{"requested":2338,"unique":2338,"played":1304,"realJobs":79},"replays":1,"tree":{"forks":1905,"turns":1590},"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":273,"heapLimitMb":864},"result":{"kind":"found","turn":9,"inputs":9}}
+07:28:07 kieran-w190 beam:8:0.5 load { 4.14 4.42 4.21 }
+{"fight":"kieran-w190.json","method":"beam:8:0.5","patch":"poll1.ts","workers":3,"sim":null,"share":false,"budget":3000,"seconds":91.29,"tally":{"requested":3006,"unique":3006,"played":3006,"realJobs":227},"replays":0,"tree":{"forks":2328,"turns":1877},"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":359,"heapLimitMb":864},"result":{"kind":"no_answer"}}
+07:29:39 done, load { 9.09 6.35 4.99 }
+07:29:39 kieran-w190 beam:8:1 load { 9.09 6.35 4.99 }
+{"fight":"kieran-w190.json","method":"beam:8:1","patch":"poll1.ts","workers":3,"sim":null,"share":false,"budget":3000,"seconds":84.026,"tally":{"requested":2696,"unique":2696,"played":1844,"realJobs":130},"replays":1,"tree":{"forks":3726,"turns":2890},"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":348,"heapLimitMb":864},"result":{"kind":"found","turn":25,"inputs":24}}
+07:31:04 done, load { 10.06 7.34 5.50 }
+07:31:04 kieran-w190 beam:16:0.5 load { 10.06 7.34 5.50 }
+{"fight":"kieran-w190.json","method":"beam:16:0.5","patch":"poll1.ts","workers":3,"sim":null,"share":false,"budget":3000,"seconds":67.951,"tally":{"requested":3008,"unique":3008,"played":2667,"realJobs":212},"replays":0,"tree":{"forks":5891,"turns":4671},"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":357,"heapLimitMb":864},"result":{"kind":"no_answer"}}
+07:32:12 done, load { 7.85 7.19 5.57 }

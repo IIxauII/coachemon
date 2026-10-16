@@ -1,5 +1,5 @@
-// Samples the machine every `every` seconds as JSON lines: load average, memory in use, and the resident memory of the
-// process tree under <pid> (the solve) and of every Chrome process (the game tab). Linux and macOS.
+// Samples the machine every `every` seconds as JSON lines: load average, memory in use, the resident memory and CPU
+// time of the process tree under <pid> (the solve), and the resident memory of every Chrome process. Linux and macOS.
 // usage: node sample.ts <pid> <out.jsonl> [every=2]
 import { execFileSync } from "node:child_process";
 import { appendFileSync, existsSync, readFileSync } from "node:fs";
@@ -7,6 +7,12 @@ import os from "node:os";
 
 const [root, out, every = "2"] = process.argv.slice(2);
 const rootPid = Number(root);
+
+const seconds = (t: string) =>
+  t
+    .split(/[-:]/)
+    .reverse()
+    .reduce((a, x, i) => a + Number(x) * [1, 60, 3600, 86400][i], 0);
 
 function used(): number {
   if (existsSync("/proc/meminfo")) {
@@ -25,14 +31,14 @@ function used(): number {
 }
 
 for (;;) {
-  let rows: { pid: number; ppid: number; rss: number; args: string }[] = [];
+  let rows: { pid: number; ppid: number; rss: number; cpu: number; args: string }[] = [];
   try {
-    rows = execFileSync("ps", ["-eo", "pid=,ppid=,rss=,args="], { encoding: "utf8" })
+    rows = execFileSync("ps", ["-eo", "pid=,ppid=,rss=,time=,args="], { encoding: "utf8" })
       .split("\n")
       .filter(Boolean)
       .map(l => {
-        const m = /^\s*(\d+)\s+(\d+)\s+(\d+)\s+(.*)$/.exec(l);
-        return m ? { pid: +m[1], ppid: +m[2], rss: +m[3] * 1024, args: m[4] } : null;
+        const m = /^\s*(\d+)\s+(\d+)\s+(\d+)\s+(\S+)\s+(.*)$/.exec(l);
+        return m ? { pid: +m[1], ppid: +m[2], rss: +m[3] * 1024, cpu: seconds(m[4]), args: m[5] } : null;
       })
       .filter(r => r !== null);
   } catch {}
@@ -54,6 +60,8 @@ for (;;) {
       usedMb: Math.round(used() / 2 ** 20),
       solveMb: Math.round(sum(r => tree.has(r.pid)) / 2 ** 20),
       solveProcs: procs.length,
+      // Cumulative CPU seconds of the processes in the tree now: a process that has ended drops out.
+      solveCpuS: Math.round(procs.reduce((a, r) => a + r.cpu, 0)),
       biggestMb: Math.round(Math.max(0, ...procs.map(r => r.rss)) / 2 ** 20),
       chromeMb: Math.round(sum(r => /chrom/i.test(r.args) && !tree.has(r.pid)) / 2 ** 20),
     })}\n`,

@@ -1,0 +1,165 @@
+{
+ "fight": "gordie-w180.json",
+ "method": "beam:16:0.5",
+ "workers": 3,
+ "sim": null,
+ "share": false,
+ "budget": 3000,
+ "seconds": 361.486,
+ "tally": {
+  "requested": 2026,
+  "unique": 2026,
+  "played": 1805,
+  "realJobs": 109
+ },
+ "replays": 1,
+ "tree": {
+  "forks": 4675,
+  "turns": 2915
+ },
+ "pool": {
+  "size": 3,
+  "died": 0,
+  "lastDeath": null,
+  "peakHeapMb": 294,
+  "heapLimitMb": 864
+ },
+ "result": {
+  "kind": "found",
+  "beam": 0,
+  "turn": 9,
+  "path": [
+   {
+    "kind": "move",
+    "move": "BLUE_FLARE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "HYPER_VOICE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "DRAGON_PULSE",
+    "tera": true
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "DRAGON_PULSE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "BLUE_FLARE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "DRAGON_PULSE",
+    "tera": false,
+    "replacement": {
+     "slot": 1,
+     "species": "LEAVANNY"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "LEAF_STORM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "LEAF_STORM",
+    "tera": false
+   }
+  ],
+  "spent": 2026,
+  "beams": [
+   {
+    "width": 16,
+    "ours": 0.5,
+    "spent": 2026,
+    "layers": [
+     {
+      "turn": 1,
+      "spentAfter": 13,
+      "kept": 13,
+      "children": 13,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 2,
+      "spentAfter": 238,
+      "kept": 203,
+      "children": 225,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 3,
+      "spentAfter": 394,
+      "kept": 156,
+      "children": 156,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 4,
+      "spentAfter": 666,
+      "kept": 240,
+      "children": 272,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 5,
+      "spentAfter": 1034,
+      "kept": 367,
+      "children": 368,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 6,
+      "spentAfter": 1165,
+      "kept": 130,
+      "children": 131,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 7,
+      "spentAfter": 1575,
+      "kept": 377,
+      "children": 410,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 8,
+      "spentAfter": 1838,
+      "kept": 227,
+      "children": 263,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 9,
+      "spentAfter": 2026,
+      "kept": 168,
+      "children": 188,
+      "wins": 20,
+      "stalled": 0
+     }
+    ]
+   }
+  ]
+ }
+}

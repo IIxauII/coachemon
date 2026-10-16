@@ -1,0 +1,215 @@
+{
+ "fight": "kieran-w190.json",
+ "method": "lds:0.5:2:2",
+ "patch": "poll1.ts",
+ "workers": 3,
+ "sim": null,
+ "share": false,
+ "budget": 9000,
+ "seconds": 34.659,
+ "tally": {
+  "requested": 888,
+  "unique": 680,
+  "played": 393,
+  "realJobs": 82
+ },
+ "replays": 1,
+ "tree": {
+  "forks": 7120,
+  "turns": 5621
+ },
+ "pool": {
+  "size": 3,
+  "died": 0,
+  "lastDeath": null,
+  "peakHeapMb": 343,
+  "heapLimitMb": 864
+ },
+ "result": {
+  "kind": "found",
+  "path": [
+   {
+    "kind": "move",
+    "move": "DRAGON_PULSE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "BLUE_FLARE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "HYPER_VOICE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "DRAGON_PULSE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "DRAGON_PULSE",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 2,
+     "species": "PROBOPASS"
+    }
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 3,
+     "species": "GYARADOS"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "HURRICANE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "BOUNCE",
+    "tera": false
+   },
+   null,
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 3,
+     "species": "PROBOPASS"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "POWER_GEM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "POWER_GEM",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 3,
+     "species": "GYARADOS"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "HYDRO_PUMP",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 3,
+     "species": "PROBOPASS"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "POWER_GEM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "TRI_ATTACK",
+    "tera": false,
+    "replacement": {
+     "slot": 1,
+     "species": "SNORLAX"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "SLEEP_TALK",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 2,
+     "species": "RESHIRAM"
+    },
+    "replacement": {
+     "slot": 2,
+     "species": "SNORLAX"
+    }
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 4,
+     "species": "GOLBAT"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "POISON_FANG",
+    "tera": false,
+    "replacement": {
+     "slot": 3,
+     "species": "GYARADOS"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "BOUNCE",
+    "tera": false
+   },
+   null,
+   {
+    "kind": "move",
+    "move": "HURRICANE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "HURRICANE",
+    "tera": false,
+    "replacement": {
+     "slot": 4,
+     "species": "SNORLAX"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "BODY_SLAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "BODY_SLAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "BODY_SLAM",
+    "tera": false
+   }
+  ],
+  "turn": 31,
+  "tries": 888,
+  "extra": {
+   "k": 1
+  }
+ }
+}

@@ -1,0 +1,214 @@
+{
+ "fight": "gordie-w180.json",
+ "method": "portfolio:priority:early:order=2,0,1",
+ "patch": null,
+ "workers": 3,
+ "sim": "2",
+ "share": true,
+ "budget": 3000,
+ "seconds": 1.503,
+ "tally": {
+  "requested": 2491,
+  "unique": 2197,
+  "played": 0,
+  "realJobs": 0
+ },
+ "replays": 0,
+ "tree": {
+  "forks": 4675,
+  "turns": 2915
+ },
+ "pool": null,
+ "result": {
+  "kind": "found",
+  "beam": 0,
+  "turn": 9,
+  "path": [
+   {
+    "kind": "move",
+    "move": "BLUE_FLARE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "HYPER_VOICE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "DRAGON_PULSE",
+    "tera": true
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "DRAGON_PULSE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "BLUE_FLARE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "DRAGON_PULSE",
+    "tera": false,
+    "replacement": {
+     "slot": 1,
+     "species": "LEAVANNY"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "LEAF_STORM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "LEAF_STORM",
+    "tera": false
+   }
+  ],
+  "spent": 2467,
+  "beams": [
+   {
+    "width": 16,
+    "ours": 0.5,
+    "spent": 1846,
+    "layers": [
+     {
+      "turn": 1,
+      "spentAfter": 13,
+      "kept": 13,
+      "children": 13,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 2,
+      "spentAfter": 238,
+      "kept": 203,
+      "children": 225,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 3,
+      "spentAfter": 394,
+      "kept": 156,
+      "children": 156,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 4,
+      "spentAfter": 666,
+      "kept": 240,
+      "children": 272,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 5,
+      "spentAfter": 1034,
+      "kept": 367,
+      "children": 368,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 6,
+      "spentAfter": 1165,
+      "kept": 130,
+      "children": 131,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 7,
+      "spentAfter": 1575,
+      "kept": 377,
+      "children": 410,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 8,
+      "spentAfter": 1838,
+      "kept": 227,
+      "children": 263,
+      "wins": 0,
+      "stalled": 0
+     }
+    ]
+   },
+   {
+    "width": 8,
+    "ours": 0.5,
+    "spent": 548,
+    "layers": [
+     {
+      "turn": 1,
+      "spentAfter": 13,
+      "kept": 13,
+      "children": 13,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 2,
+      "spentAfter": 133,
+      "kept": 98,
+      "children": 120,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 3,
+      "spentAfter": 221,
+      "kept": 88,
+      "children": 88,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 4,
+      "spentAfter": 301,
+      "kept": 80,
+      "children": 80,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 5,
+      "spentAfter": 521,
+      "kept": 85,
+      "children": 220,
+      "wins": 0,
+      "stalled": 0
+     }
+    ]
+   },
+   {
+    "width": 8,
+    "ours": 1,
+    "spent": 73,
+    "layers": [
+     {
+      "turn": 1,
+      "spentAfter": 13,
+      "kept": 13,
+      "children": 13,
+      "wins": 0,
+      "stalled": 0
+     }
+    ]
+   }
+  ]
+ }
+}

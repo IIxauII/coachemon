@@ -1,0 +1,251 @@
+{
+ "fight": "drayton-w188.json",
+ "method": "portfolio:priority:early",
+ "patch": null,
+ "workers": 3,
+ "sim": "2",
+ "share": true,
+ "budget": 3000,
+ "seconds": 0.938,
+ "tally": {
+  "requested": 2704,
+  "unique": 1392,
+  "played": 0,
+  "realJobs": 0
+ },
+ "replays": 0,
+ "tree": {
+  "forks": 1905,
+  "turns": 1590
+ },
+ "pool": null,
+ "result": {
+  "kind": "found",
+  "beam": 0,
+  "turn": 10,
+  "path": [
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 3,
+     "species": "PROBOPASS"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "EARTH_POWER",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 2,
+     "species": "RESHIRAM"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "BLUE_FLARE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": true
+   },
+   {
+    "kind": "move",
+    "move": "DRAGON_PULSE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "HYPER_VOICE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "HYPER_VOICE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "HYPER_VOICE",
+    "tera": false
+   }
+  ],
+  "spent": 2677,
+  "beams": [
+   {
+    "width": 8,
+    "ours": 0.5,
+    "spent": 1246,
+    "layers": [
+     {
+      "turn": 1,
+      "spentAfter": 17,
+      "kept": 17,
+      "children": 17,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 2,
+      "spentAfter": 253,
+      "kept": 87,
+      "children": 236,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 3,
+      "spentAfter": 437,
+      "kept": 89,
+      "children": 184,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 4,
+      "spentAfter": 581,
+      "kept": 97,
+      "children": 144,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 5,
+      "spentAfter": 685,
+      "kept": 84,
+      "children": 104,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 6,
+      "spentAfter": 909,
+      "kept": 118,
+      "children": 224,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 7,
+      "spentAfter": 1061,
+      "kept": 106,
+      "children": 152,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 8,
+      "spentAfter": 1165,
+      "kept": 89,
+      "children": 104,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 9,
+      "spentAfter": 1237,
+      "kept": 64,
+      "children": 72,
+      "wins": 0,
+      "stalled": 0
+     }
+    ]
+   },
+   {
+    "width": 8,
+    "ours": 1,
+    "spent": 1176,
+    "layers": [
+     {
+      "turn": 1,
+      "spentAfter": 17,
+      "kept": 17,
+      "children": 17,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 2,
+      "spentAfter": 253,
+      "kept": 87,
+      "children": 236,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 3,
+      "spentAfter": 437,
+      "kept": 89,
+      "children": 184,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 4,
+      "spentAfter": 593,
+      "kept": 94,
+      "children": 156,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 5,
+      "spentAfter": 697,
+      "kept": 84,
+      "children": 104,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 6,
+      "spentAfter": 921,
+      "kept": 118,
+      "children": 224,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 7,
+      "spentAfter": 1041,
+      "kept": 104,
+      "children": 120,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 8,
+      "spentAfter": 1137,
+      "kept": 84,
+      "children": 96,
+      "wins": 0,
+      "stalled": 0
+     }
+    ]
+   },
+   {
+    "width": 16,
+    "ours": 0.5,
+    "spent": 255,
+    "layers": [
+     {
+      "turn": 1,
+      "spentAfter": 17,
+      "kept": 17,
+      "children": 17,
+      "wins": 0,
+      "stalled": 0
+     }
+    ]
+   }
+  ]
+ }
+}

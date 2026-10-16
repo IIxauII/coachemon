@@ -1,0 +1,375 @@
+{
+ "fight": "gordie-w180.json",
+ "method": "iw:1",
+ "patch": "poll1.ts",
+ "workers": 3,
+ "sim": null,
+ "share": false,
+ "budget": 3000,
+ "seconds": 45.443,
+ "tally": {
+  "requested": 699,
+  "unique": 699,
+  "played": 509,
+  "realJobs": 95
+ },
+ "replays": 1,
+ "tree": {
+  "forks": 6156,
+  "turns": 3905
+ },
+ "pool": {
+  "size": 3,
+  "died": 0,
+  "lastDeath": null,
+  "peakHeapMb": 352,
+  "heapLimitMb": 864
+ },
+ "result": {
+  "kind": "found",
+  "steps": [
+   {
+    "width": 2,
+    "kind": "found",
+    "triesAfter": 699,
+    "beam": {
+     "width": 2,
+     "ours": 1,
+     "spent": 699,
+     "layers": [
+      {
+       "turn": 1,
+       "spentAfter": 13,
+       "kept": 13,
+       "children": 13,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 2,
+       "spentAfter": 43,
+       "kept": 26,
+       "children": 30,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 3,
+       "spentAfter": 65,
+       "kept": 22,
+       "children": 22,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 4,
+       "spentAfter": 87,
+       "kept": 22,
+       "children": 22,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 5,
+       "spentAfter": 137,
+       "kept": 20,
+       "children": 50,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 6,
+       "spentAfter": 155,
+       "kept": 18,
+       "children": 18,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 7,
+       "spentAfter": 173,
+       "kept": 18,
+       "children": 18,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 8,
+       "spentAfter": 199,
+       "kept": 26,
+       "children": 26,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 9,
+       "spentAfter": 225,
+       "kept": 26,
+       "children": 26,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 10,
+       "spentAfter": 267,
+       "kept": 42,
+       "children": 42,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 11,
+       "spentAfter": 285,
+       "kept": 18,
+       "children": 18,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 12,
+       "spentAfter": 303,
+       "kept": 18,
+       "children": 18,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 13,
+       "spentAfter": 353,
+       "kept": 20,
+       "children": 50,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 14,
+       "spentAfter": 371,
+       "kept": 18,
+       "children": 18,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 15,
+       "spentAfter": 389,
+       "kept": 18,
+       "children": 18,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 16,
+       "spentAfter": 447,
+       "kept": 58,
+       "children": 58,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 17,
+       "spentAfter": 521,
+       "kept": 74,
+       "children": 74,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 18,
+       "spentAfter": 531,
+       "kept": 10,
+       "children": 10,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 19,
+       "spentAfter": 547,
+       "kept": 16,
+       "children": 16,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 20,
+       "spentAfter": 575,
+       "kept": 28,
+       "children": 28,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 21,
+       "spentAfter": 609,
+       "kept": 34,
+       "children": 34,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 22,
+       "spentAfter": 643,
+       "kept": 22,
+       "children": 34,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 23,
+       "spentAfter": 659,
+       "kept": 16,
+       "children": 16,
+       "wins": 0,
+       "stalled": 0
+      },
+      {
+       "turn": 24,
+       "spentAfter": 699,
+       "kept": 38,
+       "children": 40,
+       "wins": 2,
+       "stalled": 0
+      }
+     ]
+    },
+    "turn": 24
+   }
+  ],
+  "path": [
+   {
+    "kind": "move",
+    "move": "DRAGON_PULSE",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 5,
+     "species": "PROBOPASS"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "POWER_GEM",
+    "tera": true
+   },
+   {
+    "kind": "move",
+    "move": "POWER_GEM",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 5,
+     "species": "RESHIRAM"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "BLUE_FLARE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "BLUE_FLARE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "BLUE_FLARE",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 3,
+     "species": "GYARADOS"
+    }
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 3,
+     "species": "RESHIRAM"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "DRAGON_PULSE",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 3,
+     "species": "GYARADOS"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "HYDRO_PUMP",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "HYDRO_PUMP",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "HURRICANE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "BOUNCE",
+    "tera": false
+   },
+   {
+    "kind": "queued",
+    "replacement": {
+     "slot": 1,
+     "species": "LEAVANNY"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "LEAF_STORM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "LEAF_STORM",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 3,
+     "species": "RESHIRAM"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   }
+  ],
+  "turn": 24
+ }
+}
