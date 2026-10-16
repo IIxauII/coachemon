@@ -97,7 +97,7 @@ Fresh Start: no passives, egg moves or luck
 summary best: Dratini (carry) + Charmander + Magikarp + Pikachu + Azurill · 10/10 pts · weak Rock; without Dratini: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts; trio: Gible (carry) + Charmander + Magikarp · 10/10 pts
 == Ability Randomizer 1
 ⌃ ×
-🌱 Starters 0/10 pts best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
+🌱 Starters 0/10 pts 🔀 randomized best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
 Proposals
 ★ best 10 pts · SE vs 10 types
 Gible Gible 6 carry final BST 600 (Garchomp) · passive Rough Skin
@@ -119,7 +119,7 @@ Azurill Azurill 1 final BST 420 (Azumarill) · but evolves by item or condition
 summary best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
 == Ability Randomizer 2
 ⌃ ×
-🌱 Starters 0/10 pts best: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; without Dratini: Gible (carry) + Magikarp + Squirtle · 10/10 pts
+🌱 Starters 0/10 pts 🔀 randomized best: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; without Dratini: Gible (carry) + Magikarp + Squirtle · 10/10 pts
 Proposals
 ★ best 10 pts · SE vs 9 types · weak Rock
 Dratini Dratini 4 carry final BST 600 (Dragonite)
@@ -135,7 +135,7 @@ Squirtle Squirtle 3 final BST 530 (Blastoise) · luck +3
 summary best: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; without Dratini: Gible (carry) + Magikarp + Squirtle · 10/10 pts
 == Moveset Randomizer 1
 ⌃ ×
-🌱 Starters 0/10 pts best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
+🌱 Starters 0/10 pts 🔀 randomized best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
 Proposals
 ★ best 10 pts · SE vs 10 types
 Gible Gible 6 carry final BST 600 (Garchomp) · passive Rough Skin
@@ -157,7 +157,7 @@ Azurill Azurill 1 final BST 420 (Azumarill) · but evolves by item or condition
 summary best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
 == Moveset Randomizer 2
 ⌃ ×
-🌱 Starters 0/10 pts best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
+🌱 Starters 0/10 pts 🔀 randomized best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
 Proposals
 ★ best 10 pts · SE vs 10 types
 Gible Gible 6 carry final BST 600 (Garchomp) · passive Rough Skin
@@ -179,7 +179,7 @@ Azurill Azurill 1 final BST 420 (Azumarill) · but evolves by item or condition
 summary best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
 == Moveset Randomizer, bulky starters
 ⌃ ×
-🌱 Starters 0/10 pts best: Squirtle + Bulbasaur · 6/10 pts; without Squirtle: Bulbasaur · 3/10 pts
+🌱 Starters 0/10 pts 🔀 randomized best: Squirtle + Bulbasaur · 6/10 pts; without Squirtle: Bulbasaur · 3/10 pts
 Proposals
 ★ best 6 pts · SE vs 6 types · no carry
 Squirtle Squirtle 3 final BST 530 (Blastoise) · luck +3

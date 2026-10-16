@@ -229,7 +229,7 @@ test("a card event crosses only with exactly the declared keys and types (extens
   t.relay();
   t.page();
   const groups = [{ id: "act", label: "Act", summary: "switch", rows: [] }];
-  const card = { build: BUILD, kind: "battle", key: "w12", wave: 12, verdict: "danger", groups, text: "switch", oracleLine: null };
+  const card = { build: BUILD, kind: "battle", key: "w12", wave: 12, verdict: "danger", groups, text: "switch", oracleLine: null, randomized: false };
   t.emit(EVENT.card, card);
   t.emit(EVENT.card, { ...card, extra: 1 });
   t.emit(EVENT.card, { ...card, wave: "12" });
@@ -239,7 +239,7 @@ test("a card event crosses only with exactly the declared keys and types (extens
   t.emit(EVENT.coachError, { build: BUILD, message: "the HUD fell over" });
   t.emit(EVENT.coachError, { build: BUILD, message: 7 });
   assert.deepEqual(t.sent.filter(m => m.t === "event"), [
-    { t: "event", kind: "card", body: { kind: "battle", key: "w12", wave: 12, verdict: "danger", groups, text: "switch", oracleLine: null } },
+    { t: "event", kind: "card", body: { kind: "battle", key: "w12", wave: 12, verdict: "danger", groups, text: "switch", oracleLine: null, randomized: false } },
     { t: "event", kind: "coach-error", body: { message: "the HUD fell over" } },
   ]);
 });
@@ -284,8 +284,8 @@ test("`pagehide` takes the tab out of the count (extension-distribution.md §9.3
 
 test("`cardBody` rejects every shape but the one the HUD sends (extension-distribution.md §9.5)", () => {
   const groups = [{ id: "act", label: "Act", summary: "keep Ember", rows: [] }, { id: "options", label: "Moves", summary: null, rows: ["✓ Ember"] }];
-  const good = { build: BUILD, kind: "learn", key: "w14-x", wave: 14, verdict: "your call", groups, text: "keep", oracleLine: null };
-  assert.deepEqual(cardBody(good), { kind: "learn", key: "w14-x", wave: 14, verdict: "your call", groups, text: "keep", oracleLine: null });
+  const good = { build: BUILD, kind: "learn", key: "w14-x", wave: 14, verdict: "your call", groups, text: "keep", oracleLine: null, randomized: false };
+  assert.deepEqual(cardBody(good), { kind: "learn", key: "w14-x", wave: 14, verdict: "your call", groups, text: "keep", oracleLine: null, randomized: false });
   for (const bad of [
     { ...good, wave: Number.NaN },
     { ...good, key: undefined },
@@ -294,13 +294,23 @@ test("`cardBody` rejects every shape but the one the HUD sends (extension-distri
     { build: BUILD, kind: "learn", key: "k", wave: 1, verdict: "v", text: "t" },
     // No `oracleLine`: the shape a build before #671 sent.
     { build: BUILD, kind: "learn", key: "k", wave: 1, verdict: "v", groups, text: "t" },
+    // No `randomized`: the shape a build before #723 sent.
+    { build: BUILD, kind: "learn", key: "k", wave: 1, verdict: "v", groups, text: "t", oracleLine: null },
+    { ...good, randomized: "yes" },
+    { ...good, randomized: null },
   ]) {
     assert.equal(cardBody(bad as Record<string, unknown>), null, JSON.stringify(bad));
   }
 });
 
+test("`cardBody` carries whether a randomizer challenge is on (extension-distribution.md §11.1, #723)", () => {
+  const card = { build: BUILD, kind: "battle", key: "180", wave: 180, verdict: "trainer", groups: [], text: "t", oracleLine: null, randomized: true };
+  assert.equal(cardBody(card)?.randomized, true);
+  assert.equal(cardBody({ ...card, randomized: false })?.randomized, false);
+});
+
 test("`cardBody` carries the oracle line's state, its turn of its last, and nothing else (extension-distribution.md §11.1, #671, #675)", () => {
-  const card = (oracleLine: unknown) => ({ build: BUILD, kind: "battle", key: "180", wave: 180, verdict: "trainer", groups: [], text: "t", oracleLine });
+  const card = (oracleLine: unknown) => ({ build: BUILD, kind: "battle", key: "180", wave: 180, verdict: "trainer", groups: [], text: "t", oracleLine, randomized: false });
   assert.deepEqual(cardBody(card({ state: "on", turn: 7, of: 19 }))?.oracleLine, { state: "on", turn: 7, of: 19 });
   assert.deepEqual(cardBody(card({ state: "off", turn: 13, of: 19 }))?.oracleLine, { state: "off", turn: 13, of: 19 });
   assert.deepEqual(cardBody(card({ state: "off", turn: 21, of: 19 }))?.oracleLine, { state: "off", turn: 21, of: 19 });
@@ -325,7 +335,7 @@ test("`cardBody` carries the oracle line's state, its turn of its last, and noth
 });
 
 test("`cardBody` checks the shape of every group, not just that `groups` is there (extension-distribution.md §9.5, #361)", () => {
-  const card = (groups: unknown) => ({ build: BUILD, kind: "battle" as const, key: "20", wave: 20, verdict: "easy", groups, text: "t", oracleLine: null });
+  const card = (groups: unknown) => ({ build: BUILD, kind: "battle" as const, key: "20", wave: 20, verdict: "easy", groups, text: "t", oracleLine: null, randomized: false });
   // Nothing drawn is an empty list, which crosses: `text` is what says the card is empty.
   assert.deepEqual(cardBody(card([]))?.groups, []);
   for (const bad of [

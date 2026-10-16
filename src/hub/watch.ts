@@ -10,7 +10,7 @@ const RETRY_MS = 5_000;
  * Untyped on purpose: the event body and a read's result both arrive as `unknown`, a HUD mid-refresh sends nulls and an
  * older build may send nothing at all.
  */
-export type CardFacts = { kind?: unknown; wave?: unknown; verdict?: unknown; text?: unknown; oracleLine?: unknown };
+export type CardFacts = { kind?: unknown; wave?: unknown; verdict?: unknown; text?: unknown; oracleLine?: unknown; randomized?: unknown };
 
 /** The panel's own `rewards` streams as `reward` (extension-distribution.md §11.1). */
 const LABEL: Record<string, string> = {
@@ -28,8 +28,9 @@ export function cardLine(c: CardFacts): string | null {
   if (label === undefined) return null;
   const wave = typeof c.wave === "number" ? ` w${c.wave}` : "";
   const verdict = typeof c.verdict === "string" && c.verdict !== "" ? ` · ${c.verdict}` : "";
+  const randomized = c.randomized === true ? " · randomized" : "";
   const text = summaryText(c.text);
-  return `${label}${wave}${verdict}${text === "" ? "" : ` | ${text}`}`;
+  return `${label}${wave}${verdict}${randomized}${text === "" ? "" : ` | ${text}`}`;
 }
 
 const lineOf = (c: CardFacts): Record<string, unknown> | null =>

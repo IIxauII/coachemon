@@ -105,17 +105,18 @@ const verdictOf = m => cardSummary(m).verdict;
 // ---- A card event carries the stream's kind, the key it deduplicates on and the leading call (extension-distribution.md §11.1)
 {
   const { cardEvent } = globalThis.__hud["60-card"];
-  assert.deepEqual(cardEvent(battle()), { kind: "battle", key: "12", wave: 12, verdict: "easy", oracleLine: null });
+  assert.deepEqual(cardEvent(battle()), { kind: "battle", key: "12", wave: 12, verdict: "easy", oracleLine: null, randomized: false });
   const rewards = { kind: "rewards", wave: 15, pick: 0, free: [{ name: "Leftovers", holder: { name: "Charizard" } }, { name: "Ether" }], buys: [], rerollAhead: null, audit: null, preview: null, ahead: null };
-  assert.deepEqual(cardEvent(rewards), { kind: "reward", key: "15|Leftovers,Ether", wave: 15, verdict: "take Leftovers → Charizard", oracleLine: null });
+  assert.deepEqual(cardEvent(rewards), { kind: "reward", key: "15|Leftovers,Ether", wave: 15, verdict: "take Leftovers → Charizard", oracleLine: null, randomized: false });
   assert.equal(cardEvent({ ...rewards, free: [{ name: "Ether" }] }).key, "15|Ether");
+  assert.equal(cardEvent({ ...rewards, randomized: true }).randomized, true, "a randomizer challenge rides on the event (#723)");
   const learn = { kind: "learn", wave: 14, name: "Charmeleon", move: { name: "Flamethrower" }, verdict: "Learn → forget Ember", forget: 1, team: { onlyType: "Dark" } };
-  assert.deepEqual(cardEvent(learn), { kind: "learn", key: "14|Charmeleon|Flamethrower", wave: 14, verdict: "Learn → forget Ember", oracleLine: null });
+  assert.deepEqual(cardEvent(learn), { kind: "learn", key: "14|Charmeleon|Flamethrower", wave: 14, verdict: "Learn → forget Ember", oracleLine: null, randomized: false });
   // The option the card picks, not the first one it lists.
   const biome = { kind: "biome", wave: 30, options: [{ label: "Construction Site", score: 55, verdict: "keep", reasons: [] }, { label: "Swamp", score: 85, verdict: "pick", reasons: [{ text: "2 mons hit SE" }] }] };
-  assert.deepEqual(cardEvent(biome), { kind: "biome", key: "30", wave: 30, verdict: "Swamp", oracleLine: null });
+  assert.deepEqual(cardEvent(biome), { kind: "biome", key: "30", wave: 30, verdict: "Swamp", oracleLine: null, randomized: false });
   const encounter = { kind: "encounter", wave: 31, name: "Mysterious Chest", known: true, pick: 0, options: [{ label: "Open it", verdict: "take", outcome: "pick of 3 Ultra items" }, { label: "Leave", verdict: "avoid" }] };
-  assert.deepEqual(cardEvent(encounter), { kind: "encounter", key: "31|Mysterious Chest", wave: 31, verdict: "take Open it", oracleLine: null });
+  assert.deepEqual(cardEvent(encounter), { kind: "encounter", key: "31|Mysterious Chest", wave: 31, verdict: "take Open it", oracleLine: null, randomized: false });
   assert.equal(cardEvent({ ...encounter, pick: -1, known: false }).verdict, "not judged");
   assert.equal(cardEvent({ ...encounter, pick: -1 }).verdict, "your call");
   // A continuous encounter asks again on the same wave under the same name: without the minigame in its key, all
