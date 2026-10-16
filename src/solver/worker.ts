@@ -10,7 +10,7 @@ import { checkpoint, input } from "./schema.ts";
 import type { Child, Hp, Pool, Position } from "./search.ts";
 
 // (#655)
-const RECYCLE_AFTER = 250;
+const HEAP_MB = 768;
 const BOOT_MS = 600_000;
 const EXPAND_MS = 300_000;
 const CHECKS_MS = 3_600_000;
@@ -35,6 +35,9 @@ const child = z.discriminatedUnion("end", [
   z.object({ input: input.nullable(), end: z.enum(["won", "lost"]), hp }),
   z.object({ input: input.nullable(), end: z.literal("dropped"), why: z.string() }),
 ]) satisfies z.ZodType<Child>;
+/** `limitMb` is V8's for the process: the cap, and room for the young generation. */
+export type HeapUse = { usedMb: number; limitMb: number };
+const heapUse = z.object({ usedMb: z.number(), limitMb: z.number() }) satisfies z.ZodType<HeapUse>;
 const turnEnd = z.union([z.enum(["won", "lost", "on"]), z.object({ illegal: z.string() })]) satisfies z.ZodType<TurnEnd>;
 const played = z.object({ input: input.nullable(), turn: z.int(), checkpoint, end: turnEnd }) satisfies z.ZodType<Played>;
 const miss = z.object({ from: z.int(), turn: z.int(), want: played, got: played }) satisfies z.ZodType<Miss>;
@@ -44,8 +47,10 @@ const checks = z.object({
   chain: z.array(miss),
 }) satisfies z.ZodType<Checks>;
 
-export type Worker = Pool & {
+export type Worker = Pick<Pool, "expand"> & {
   root: Position;
+  /** The last job's report; `null` before one has finished. */
+  heap(): HeapUse | null;
   check(inputs: readonly Input[]): Promise<Checks>;
   close(): Promise<void>;
 };
@@ -54,41 +59,32 @@ export type Worker = Pool & {
 export type NotStarted = { missing: string } | { failed: string };
 
 /**
+ * The worker's process is gone or stopped answering, and the job it had never finished: another worker can play it.
+ * Not an error the harness answered with, which a fresh process would only answer again.
+ */
+export class WorkerDied extends Error {}
+
+/**
  * One long-lived harness in the clone, serving the search: it restores a fork point and plays one turn, as many times
- * as it is asked. Started again in a fresh process after every `RECYCLE_AFTER` turns it has played.
+ * as it is asked.
  */
 export async function startWorker(clone: Clone, save: SessionSave, at?: string): Promise<Worker | NotStarted> {
-  const first = await spawn(clone, save, at);
-  if (!("root" in first)) return first;
-  // A promise, so `close` reaches a process still starting: closed before it connects, it would outlive the solve and
-  // leave its files in the clone (#662).
-  let current: Promise<Running> = Promise.resolve(first);
-  let turnsPlayed = 0;
-  const fresh = () => {
-    if (turnsPlayed < RECYCLE_AFTER) return current;
-    turnsPlayed = 0;
-    const old = current;
-    current = (async () => {
-      await (await old).close();
-      const next = await spawn(clone, save, at);
-      if (!("root" in next)) throw new Error(`a fresh worker didn't start: ${"missing" in next ? next.missing : next.failed}`);
-      return next;
-    })();
-    return current;
-  };
+  const running = await spawn(clone, save, at);
+  if (!("root" in running)) return running;
+  let heap: HeapUse | null = null;
   return {
-    size: 1,
-    root: first.root,
+    root: running.root,
     async expand(forkPoint, inputs): Promise<Child[]> {
-      const answer = await (await fresh()).ask({ kind: "expand", forkPoint, inputs }, EXPAND_MS);
-      const { children } = z.object({ children: z.array(child) }).parse(answer);
-      turnsPlayed += children.length;
-      return children;
+      const answer = await running.ask({ kind: "expand", forkPoint, inputs }, EXPAND_MS);
+      const parsed = z.object({ children: z.array(child), heap: heapUse }).parse(answer);
+      heap = parsed.heap;
+      return parsed.children;
     },
+    heap: () => heap,
     async check(inputs) {
-      return checks.parse(await (await fresh()).ask({ kind: "checks", inputs }, CHECKS_MS));
+      return checks.parse(await running.ask({ kind: "checks", inputs }, CHECKS_MS));
     },
-    close: () => current.then(running => running.close(), () => {}),
+    close: running.close,
   };
 }
 
@@ -100,22 +96,37 @@ async function spawn(clone: Clone, save: SessionSave, at?: string): Promise<Runn
   const { port } = server.address() as { port: number };
   const connected = new Promise<Socket>(resolve => server.once("connection", resolve));
   const source = readFileSync(new URL("./harness.test.ts.template", import.meta.url), "utf8");
-  const run = clone({ name: "worker", source, input: JSON.stringify(harnessJob(save, [], at)), env: { COACH_PORT: String(port) } });
+  const kill = new AbortController();
+  const run = clone({
+    name: "worker",
+    source,
+    input: JSON.stringify(harnessJob(save, [], at)),
+    env: { COACH_PORT: String(port) },
+    heapMb: HEAP_MB,
+    signal: kill.signal,
+  });
   const ended = run.then(result => {
     if ("missing" in result) return { missing: result.missing };
     return { failed: `the worker stopped${whyStopped(result.out)}` };
   });
+  // A hung harness never reads the socket's end, so it would outlive the solve (#663).
+  const stop = async () => {
+    await within(CLOSE_MS, run, () => kill.abort());
+    await run;
+  };
 
   const socket = await within(BOOT_MS, Promise.race([connected, ended]), () => ({ failed: "the worker took too long to start" }));
   if (!("write" in socket)) {
+    if ("failed" in socket) kill.abort();
+    await run;
     server.close();
     return socket;
   }
-  const stopped = (why: NotStarted) => new Error("missing" in why ? why.missing : why.failed);
+  const stopped = (why: NotStarted) => new WorkerDied("missing" in why ? why.missing : why.failed);
   const lines = createInterface({ input: socket })[Symbol.asyncIterator]();
   const next = async (ms: number, what: string): Promise<Record<string, unknown>> => {
     const line = await within(ms, Promise.race([lines.next(), ended.then(why => Promise.reject(stopped(why)))]), () => {
-      throw new Error(`the worker took longer than ${ms / 1000} s to ${what}`);
+      throw new WorkerDied(`the worker took longer than ${ms / 1000} s to ${what}`);
     });
     if (line.done) {
       throw stopped(await within(CLOSE_MS, ended, () => ({ failed: "the worker closed its socket" })));
@@ -127,6 +138,8 @@ async function spawn(clone: Clone, save: SessionSave, at?: string): Promise<Runn
   try {
     hello = z.object({ kind: z.literal("root"), root: position }).parse(await next(BOOT_MS, "start"));
   } catch (e) {
+    socket.end();
+    await stop();
     socket.destroy();
     server.close();
     return { failed: e instanceof Error ? e.message : String(e) };
@@ -143,7 +156,7 @@ async function spawn(clone: Clone, save: SessionSave, at?: string): Promise<Runn
     },
     async close() {
       socket.end();
-      await within(CLOSE_MS, run, () => undefined);
+      await stop();
       socket.destroy();
       server.close();
     },

@@ -17,13 +17,18 @@ const testFile = args[1];
 const report = args.find(a => a.startsWith("--outputFile.json="))?.slice("--outputFile.json=".length);
 const mode = process.env.FAKE;
 const mark = name => writeFileSync(new URL(name + "-" + process.pid, import.meta.url), "");
-process.on("SIGTERM", () => setTimeout(() => {
+process.on("SIGTERM", () => mode !== "deaf" && setTimeout(() => {
   writeFileSync(process.env.COACH_OUT, "late");
   mark("exited");
   process.exit(1);
 }, 100));
-if (mode === "hang") mark("listening");
-await new Promise(r => setTimeout(r, { slow: 300, hang: 60_000 }[mode] ?? 0));
+if (mode === "hang" || mode === "deaf") mark("listening");
+if (mode === "fork") {
+  const { spawn } = await import("node:child_process");
+  const fork = spawn(process.execPath, ["-e", "setTimeout(() => {}, 60_000)"], { stdio: "inherit" });
+  writeFileSync(new URL("forked-" + fork.pid, import.meta.url), "");
+}
+await new Promise(r => setTimeout(r, { slow: 300, hang: 60_000, fork: 60_000, deaf: 60_000 }[mode] ?? 0));
 process.stdout.write("vitest says hello\\n");
 process.stderr.write("vitest grumbles\\n");
 if (mode === "no-report") process.exit(1);
@@ -117,6 +122,44 @@ test("a test that throws while copying in removes what it already copied (#658)"
   await assert.rejects(s.run("pass"));
   assert.deepEqual(readdirSync(path.join(s.clone, "test/tests")), ["upstream.test.ts"]);
 });
+
+test("a test ended by its signal settles once every process it started has ended, the test's own fork included (#663)", async t => {
+  const s = scratch(t);
+  const stop = new AbortController();
+  const run = testInClone({ ...s.options("fork"), signal: stop.signal });
+  while (s.marks("forked") < 1) await sleep(20);
+  stop.abort();
+  const { out } = await run;
+
+  const fork = Number(readdirSync(s.root).find(f => f.startsWith("forked-"))?.slice("forked-".length));
+  // Once reaped: a fork that died before vitest is a zombie until vitest goes too.
+  for (let i = 0; i < 100 && alive(fork); i++) await sleep(20);
+  assert.equal(alive(fork), false);
+  assert.equal(out, "late");
+  assert.deepEqual(s.leftovers(), UPSTREAM);
+});
+
+test("a test that never acts on its SIGTERM is killed, so ending it is bounded (#663)", async t => {
+  const s = scratch(t);
+  const stop = new AbortController();
+  const run = testInClone({ ...s.options("deaf"), signal: stop.signal });
+  while (s.marks("listening") < 1) await sleep(20);
+  const asked = Date.now();
+  stop.abort();
+  await run;
+
+  assert.ok(Date.now() - asked < 15_000);
+  assert.deepEqual(s.leftovers(), UPSTREAM);
+});
+
+const alive = (pid: number) => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 test("two tests interrupted with SIGINT outlast vitest, leave no files behind, and never settle before the signal ends the process (#658)", async t => {
   const s = scratch(t);

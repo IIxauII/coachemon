@@ -11,8 +11,18 @@ import type { HygieneRule, Input, NoAnswer, ReplayResult } from "./oracle-line.t
 import { checkpoint, draw, input, outcome } from "./schema.ts";
 import { misses, type Script } from "./script.ts";
 
-/** Runs the oracle's harness in the clone of the pinned game version. `out` is what it wrote, absent if nothing. */
-export type Clone = (run: { name: string; source: string; input: string; env?: Record<string, string> }) => Promise<CloneRun>;
+/**
+ * Runs the oracle's harness in the clone of the pinned game version. `out` is what it wrote, absent if nothing. `heapMb`
+ * caps the heap of the process the harness runs in; `signal` ends the run, every process it started with it.
+ */
+export type Clone = (run: {
+  name: string;
+  source: string;
+  input: string;
+  env?: Record<string, string>;
+  heapMb?: number;
+  signal?: AbortSignal;
+}) => Promise<CloneRun>;
 
 export type CloneRun = { out: string | undefined } | { missing: string };
 

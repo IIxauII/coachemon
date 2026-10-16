@@ -11,6 +11,7 @@ import type { Clone } from "../../src/solver/replay.ts";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const HUD = path.resolve(HERE, "../../skills/coachemon/scripts/hud");
+const KILL_MS = 5_000;
 const vitestOn = (pnpm: string) => ["npx", "--yes", `pnpm@${pnpm}`, "exec", "vitest"];
 const VITEST = vitestOn(reviewed.pinned.pnpm);
 
@@ -55,10 +56,12 @@ export const pinnedClone = (): string => {
 /** `find` is asked again at each run. */
 export const harnessIn =
   (find: () => FoundClone, pnpm = reviewed.pinned.pnpm): Clone =>
-  async ({ name, source, input, env }) => {
+  async ({ name, source, input, env, heapMb, signal }) => {
     const found = find();
     if ("missing" in found) return { missing: `${found.missing} Set it up with \`${found.how}\`` };
-    return testInClone({ clone: found.clone, name, source, input, env, echo: false, vitest: vitestOn(pnpm) });
+    // vitest hands `execArgv` to the fork the test runs in, and not to itself.
+    const args = heapMb === undefined ? [] : [`--execArgv=--max-old-space-size=${heapMb}`];
+    return testInClone({ clone: found.clone, name, source, input, env, args, signal, echo: false, vitest: vitestOn(pnpm) });
   };
 
 export const hudBundle = (): string => {
@@ -93,6 +96,8 @@ export type CloneTest = {
   /** Forward vitest's stdout as it comes; its stderr always is. */
   echo: boolean;
   vitest?: string[];
+  /** Ends the run early, as an interrupt does, but settles with what the test wrote by then. */
+  signal?: AbortSignal;
 };
 
 /**
@@ -150,7 +155,7 @@ export const testInClone = async (t: CloneTest): Promise<CloneTestResult> => {
       {
         cwd: t.clone,
         echo: t.echo,
-        signal: interrupt.signal,
+        signal: t.signal === undefined ? interrupt.signal : AbortSignal.any([interrupt.signal, t.signal]),
         env: {
           ...process.env,
           ...t.env,
@@ -182,7 +187,22 @@ const tee = (
   { cwd, echo, signal, env }: { cwd: string; echo: boolean; signal: AbortSignal; env: NodeJS.ProcessEnv },
 ): Promise<string> =>
   new Promise(resolve => {
-    const child = spawn(file, args, { cwd, env, signal, stdio: ["inherit", "pipe", "pipe"] });
+    // Its own process group, so an abort reaches the fork the test runs in: killing npx alone left that running (#663).
+    // In the background, so it must never read the terminal, or SIGTTIN stops it.
+    const child = spawn(file, args, { cwd, env, detached: true, stdio: ["ignore", "pipe", "pipe"] });
+    const signalGroup = (sig: NodeJS.Signals) => {
+      try {
+        if (child.pid !== undefined) process.kill(-child.pid, sig);
+      } catch {}
+    };
+    let hard: NodeJS.Timeout | undefined;
+    // A test hung in a job may never act on the SIGTERM, and `close` waits on every process in the group.
+    const kill = () => {
+      signalGroup("SIGTERM");
+      hard = setTimeout(() => signalGroup("SIGKILL"), KILL_MS).unref();
+    };
+    if (signal.aborted) kill();
+    else signal.addEventListener("abort", kill, { once: true });
     let output = "";
     const forward = (from: Readable, to: NodeJS.WriteStream | undefined) =>
       from.on("data", (chunk: Buffer) => {
@@ -192,12 +212,14 @@ const tee = (
     forward(child.stdout, echo ? process.stdout : undefined);
     forward(child.stderr, process.stderr);
     child.on("error", (err: Error) => {
-      if (err.name === "AbortError") return;
       const said = `\noracle: could not run vitest — ${err.message}\n`;
       output += said;
       process.stderr.write(said);
     });
-    // Never on `error`: an abort fires it while vitest still runs and can write, and `close` waits for every process
-    // holding the pipes, a failed start included.
-    child.on("close", () => resolve(output));
+    // Never on `error`: `close` waits for every process holding the pipes, a failed start included.
+    child.on("close", () => {
+      signal.removeEventListener("abort", kill);
+      clearTimeout(hard);
+      resolve(output);
+    });
   });

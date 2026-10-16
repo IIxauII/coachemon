@@ -1,5 +1,5 @@
 import type { Budget } from "./input.ts";
-import { cause, noAnswer } from "./no-answer.ts";
+import { cause, noAnswer, Unanswered } from "./no-answer.ts";
 import type { Beam, BeamEnd, Input, NoAnswer, Reason, Replay, ReplayResult } from "./oracle-line.ts";
 
 /** `null` is a turn the game plays for us, such as a two-turn move's second: it takes no input. */
@@ -100,7 +100,11 @@ export function search({ root, pool, validate, budget, portfolio = PORTFOLIO, pr
       resolve(result);
     };
     const failed = (e: unknown) =>
-      finish(noAnswer({ code: "harness_failed", why: `the search's worker failed: ${e instanceof Error ? e.message : String(e)}` }));
+      finish(
+        e instanceof Unanswered
+          ? e.answer
+          : noAnswer({ code: "harness_failed", why: `the search's worker failed: ${e instanceof Error ? e.message : String(e)}` }),
+      );
 
     const pump = () => {
       while (!over && busy < pool.size && queue.length > 0) {

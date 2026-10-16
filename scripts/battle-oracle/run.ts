@@ -5,6 +5,7 @@ import { PINNED_GAME_VERSION } from "../../src/escape-ladder/lookup.ts";
 import {
   checkForks,
   DEFAULT_BUDGET,
+  type PoolStats,
   type ReplayResult,
   readScript,
   replay,
@@ -31,12 +32,17 @@ function exitNoAnswer(why: string): never {
 }
 
 const { values, positionals } = parseArgs({
-  options: { replay: { type: "string" }, check: { type: "string" }, unchecked: { type: "boolean", default: false } },
+  options: {
+    replay: { type: "string" },
+    check: { type: "string" },
+    unchecked: { type: "boolean", default: false },
+    workers: { type: "string" },
+  },
   allowPositionals: true,
 });
 const [file] = positionals;
 if (file === undefined) {
-  console.error("usage: npm run oracle:battle -- [--replay <script.json> | --check <script.json> | --unchecked] <export.json>");
+  console.error("usage: npm run oracle:battle -- [--replay <script.json> | --check <script.json> | --unchecked] [--workers <n>] <export.json>");
   process.exit(NO_ANSWER);
 }
 
@@ -81,8 +87,14 @@ if (values.check !== undefined) {
 }
 
 if (values.unchecked) console.error("oracle: --unchecked solves on a game version the harness re-check hasn't passed");
+const workers = values.workers === undefined ? undefined : Number(values.workers);
+if (workers !== undefined && !(Number.isInteger(workers) && workers > 0)) exitNoAnswer(`--workers ${values.workers} is not a count`);
 let shown = -PROGRESS_EVERY;
+let last: PoolStats | undefined;
 const started = Date.now();
+const poolLine = ({ size, died, lastDeath, peakHeapMb, heapLimitMb }: PoolStats) =>
+  `${size} workers, ${died} died${lastDeath === null ? "" : ` (the last: ${lastDeath})`}, ` +
+  `heap peak ${peakHeapMb ?? "?"} of ${heapLimitMb ?? "?"} MB`;
 let result: SolveResult;
 try {
   result = await solve(
@@ -90,17 +102,21 @@ try {
     {
       clone: inClone,
       unchecked: values.unchecked,
-      progress: ({ spent, budget }) => {
+      workers,
+      progress: ({ spent, budget, pool }) => {
+        last = pool;
         if (spent - shown < PROGRESS_EVERY) return;
         shown = spent;
         const secs = Math.round((Date.now() - started) / 1000);
-        console.error(`oracle: searched ${spent.toLocaleString("en")} of ${budget.toLocaleString("en")} turns, ${secs} s`);
+        const searched = `${spent.toLocaleString("en")} of ${budget.toLocaleString("en")} turns`;
+        console.error(`oracle: searched ${searched}, ${secs} s; ${poolLine(pool)}`);
       },
     },
   );
 } catch (err) {
   exitNoAnswer(`the solver failed: ${messageOf(err)}`);
 }
+if (last) console.error(`oracle: done in ${Math.round((Date.now() - started) / 1000)} s; ${poolLine(last)}`);
 if (result.kind === "oracle_line") {
   console.log(printOracleLine(result.oracleLine));
   process.exit(ORACLE_LINE);

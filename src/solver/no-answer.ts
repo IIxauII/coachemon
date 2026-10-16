@@ -20,6 +20,15 @@ export const noAnswer = (reason: Reason): NoAnswer => ({
   message: `${cause(reason)} The card still coaches.`,
 });
 
+/** Thrown from deep in a solve, such as by the pool, to end it with this answer rather than as a failure. */
+export class Unanswered extends Error {
+  readonly answer: NoAnswer;
+  constructor(answer: NoAnswer) {
+    super(answer.message);
+    this.answer = answer;
+  }
+}
+
 /** Ends in a full stop. */
 export function cause(reason: Reason): string {
   switch (reason.code) {
@@ -83,6 +92,11 @@ export function cause(reason: Reason): string {
       return `a turn whose outcome is known didn't reproduce: ${firstFew(reason.misses)}.`;
     case "harness_failed":
       return `the oracle's harness failed: ${reason.why}${/[.!?]$/.test(reason.why) ? "" : "."}`;
+    case "workers_died":
+      return (
+        `the oracle's workers kept dying, each one the same turns were tried on (${reason.died} in all; the last: ` +
+        `${reason.why.replace(/\.$/, "")}).`
+      );
     case "no_win": {
       const n = reason.unreplayed.length;
       const unreplayed =
