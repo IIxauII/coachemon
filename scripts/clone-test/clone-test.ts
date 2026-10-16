@@ -190,16 +190,16 @@ const tee = (
     // Its own process group, so an abort reaches the fork the test runs in: killing npx alone left that running (#663).
     // In the background, so it must never read the terminal, or SIGTTIN stops it.
     const child = spawn(file, args, { cwd, env, detached: true, stdio: ["ignore", "pipe", "pipe"] });
-    const group = (signal: NodeJS.Signals) => {
+    const signalGroup = (sig: NodeJS.Signals) => {
       try {
-        if (child.pid !== undefined) process.kill(-child.pid, signal);
+        if (child.pid !== undefined) process.kill(-child.pid, sig);
       } catch {}
     };
     let hard: NodeJS.Timeout | undefined;
     // A test hung in a job may never act on the SIGTERM, and `close` waits on every process in the group.
     const kill = () => {
-      group("SIGTERM");
-      hard = setTimeout(() => group("SIGKILL"), KILL_MS).unref();
+      signalGroup("SIGTERM");
+      hard = setTimeout(() => signalGroup("SIGKILL"), KILL_MS).unref();
     };
     if (signal.aborted) kill();
     else signal.addEventListener("abort", kill, { once: true });
