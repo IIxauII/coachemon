@@ -43,6 +43,20 @@ test("the plugin runs the clone's setup as a job, and refuses it while solving i
   assert.equal(JSON.parse((res.content as { text: string }[])[0].text).error, "solving_off");
 });
 
+test("the plugin runs a solve as a job, which over CDP answers that it needs the hub (#672)", async t => {
+  const client = await plugin(t, tempHome(t));
+  const start = async () => {
+    const res = await client.callTool({ name: "start_job", arguments: { kind: "solve" } });
+    assert.equal(res.isError, true);
+    return JSON.parse((res.content as { text: string }[])[0].text);
+  };
+  assert.equal((await start()).error, "solving_off");
+  await solving(client, { on: true });
+  const r = await start();
+  assert.equal(r.error, "no_answer", JSON.stringify(r));
+  assert.deepEqual(r.reason, { code: "needs_hub" });
+});
+
 test("the solving tool and the coach skill both state what turning solving on costs (#666)", async t => {
   const { tools } = await (await plugin(t, tempHome(t))).listTools();
   const description = tools.find(tool => tool.name === "solving")?.description ?? "";

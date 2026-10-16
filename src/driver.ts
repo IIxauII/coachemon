@@ -23,7 +23,9 @@ import { readSettings, writeSettings } from "./settings.ts";
 import { CLONE_JOB, cloneJob } from "./solver/clone.ts";
 import { isOverwriteConfirm, planSlot, slotLabel } from "./slots.ts";
 import { CALL_BUDGET_MS, settle, type SettleResult } from "./settle.ts";
-import type { OracleLine } from "./solver/solver.ts";
+import { DEFAULT_BUDGET, gate, type NoAnswer, type OracleLine, type SessionSave, type SolveInput } from "./solver/solver.ts";
+import { noAnswer } from "./solver/no-answer.ts";
+import { SOLVE_JOB, solveJob } from "./solver/solve-job.ts";
 import type { Choice } from "./stuck/detector.ts";
 
 export const AUTO_ADVANCE_CAP = 12;
@@ -96,7 +98,12 @@ const TOOL_COMMANDS = {
   screenshot: [],
 } as const satisfies Record<string, readonly CommandName[]>;
 
-const SOLVING_JOBS: ReadonlySet<string> = new Set([CLONE_JOB]);
+const SOLVING_JOBS: ReadonlySet<string> = new Set([CLONE_JOB, SOLVE_JOB]);
+
+const unanswered = ({ reason, message }: NoAnswer) => new Refusal("no_answer", message, { reason });
+
+// (extension-distribution.md §12.1)
+export type Transport = "hub" | "cdp";
 
 /** Modes where an acting tool's own press legitimately leads to `LoginPhase` (Save & Quit, Log Out). */
 const MENU_MODES = new Set<number>([UiMode.MENU, UiMode.MENU_OPTION_SELECT]);
@@ -107,9 +114,13 @@ export class Driver {
   readonly #clock: Clock;
   readonly #jobs: Jobs;
   readonly #home: string;
+  readonly #transport: Transport;
+  /** The last solve started, by the run's seed and the live battle's wave: one runs per fight. */
+  #solve: { fight: string; job: string } | null = null;
 
-  constructor(game: GamePort, home: string, clock: Clock = REAL_CLOCK, jobKinds: JobKinds = {}) {
+  constructor(game: GamePort, home: string, clock: Clock = REAL_CLOCK, jobKinds: JobKinds = {}, transport: Transport = "cdp") {
     this.#game = game;
+    this.#transport = transport;
     this.#home = home;
     this.#clock = clock;
     this.#jobs = new Jobs(jobKinds);
@@ -118,10 +129,10 @@ export class Driver {
 
   /** CDP unless `COACHEMON_TRANSPORT=hub` opts into the hub (extension-distribution.md §12.1). */
   static create(home: string = coachemonHome()): Driver {
-    const jobKinds = { [CLONE_JOB]: cloneJob(home) };
+    const jobKinds = { [CLONE_JOB]: cloneJob(home), [SOLVE_JOB]: solveJob(home) };
     if (usesHub()) {
       const hub = new HubLink({ port: hubPort(), version: PLUGIN_VERSION });
-      return new Driver(new LinkGame(hub, hub), home, REAL_CLOCK, jobKinds);
+      return new Driver(new LinkGame(hub, hub), home, REAL_CLOCK, jobKinds, "hub");
     }
     const link = new CdpLink(new CdpSession({ home }), driverLock(home));
     return new Driver(new LinkGame(link, link), home, REAL_CLOCK, jobKinds);
@@ -239,11 +250,48 @@ export class Driver {
     });
   }
 
-  async startJob(kind: string, args: Record<string, unknown>): Promise<JobView> {
+  async startJob(kind: string, args: Record<string, unknown>, ctx: CallContext = {}): Promise<JobView> {
     if (SOLVING_JOBS.has(kind) && this.#jobs.runs(kind) && !readSettings(this.#home).solving) {
       throw new Refusal("solving_off", "Solving is off, so nothing is set up or solved for it: the player turns it on with the solving tool.");
     }
+    if (kind === SOLVE_JOB && this.#jobs.runs(kind)) return this.#startSolve(ctx);
     return this.#jobs.start(kind, args);
+  }
+
+  async #startSolve(ctx: CallContext): Promise<JobView> {
+    if (this.#transport !== "hub") throw unanswered(noAnswer({ code: "needs_hub" }));
+    const input = await this.#fightToSolve(ctx);
+    const refused = gate(input);
+    if (refused) throw unanswered(refused);
+    // The live battle's wave: a save of another wave still comes back, and its solve answers save_mismatch (#636).
+    const fight = `${input.save.seed}/${input.live?.wave}`;
+    const last = this.#solve;
+    if (last && this.#jobs.running(last.job)) {
+      if (last.fight === fight) return this.#jobs.poll(last.job);
+      this.#jobs.cancel(last.job);
+    }
+    const started = this.#jobs.start(SOLVE_JOB, { input });
+    this.#solve = { fight, job: started.job };
+    return started;
+  }
+
+  /** The fight on the tab, read at its decision, as a solve from its first turn takes it. */
+  async #fightToSolve(ctx: CallContext): Promise<SolveInput> {
+    const read = await this.readSession(ctx);
+    if (read.status !== "ok") {
+      throw new Refusal("not_settled", "The game didn't settle, so the fight wasn't read and no solve started: start it again at the decision.", { status: read.status });
+    }
+    if (read.session_error !== undefined) {
+      throw new Refusal("no_battle", "No battle could be read on the tab, so there is no fight to solve.", { why: read.session_error });
+    }
+    if (read.wave_start === null) throw unanswered(noAnswer({ code: "no_wave_start" }));
+    return {
+      save: read.wave_start as SessionSave,
+      live: { wave: read.battle_wave as number, battleSeed: read.battle_seed as string },
+      liveExport: read.export as SessionSave,
+      cloneVersion: PINNED_GAME_VERSION,
+      budget: DEFAULT_BUDGET,
+    };
   }
 
   async pollJob(id: string): Promise<JobView> {

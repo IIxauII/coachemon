@@ -32,6 +32,11 @@ export class Jobs {
     return Object.hasOwn(this.#kinds, kind);
   }
 
+  /** False too for an id this server never held or has dropped: a job is dropped only once it has ended. */
+  running(id: string): boolean {
+    return this.#jobs.get(id)?.state === "running";
+  }
+
   start(kind: string, args: Record<string, unknown>): JobView {
     if (!this.runs(kind)) throw new Refusal("unknown_job_kind", `This server runs no job of kind ${JSON.stringify(kind)}.`, { kinds: Object.keys(this.#kinds) });
     const work = this.#kinds[kind];

@@ -88,6 +88,10 @@ export type Luck = { turn: number; what: string };
 export type NoAnswer = { kind: "no_answer"; reason: Reason; message: string };
 
 export type Reason =
+  /** CDP carries neither the save nor the line handed back (extension-distribution.md §10.1). */
+  | { code: "needs_hub" }
+  /** No stored save carries the run's seed (game-code.md §29). */
+  | { code: "no_wave_start" }
   | { code: "daily" }
   | { code: "version_mismatch"; live: string; clone: string }
   | { code: "not_rechecked"; version: string }

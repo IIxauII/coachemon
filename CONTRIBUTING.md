@@ -58,7 +58,7 @@ src/driver.ts        settle → press → auto-advance → detect → envelope
 src/jobs.ts          background jobs: work that outlasts one tool call (#667)
 src/home.ts          the coachemon home directory (`COACHEMON_HOME`, else `~/.coachemon`)
 src/settings.ts      the plugin's settings, persisted in the home directory: solving, off by default
-src/solver/          the solver behind an oracle line, and the player's clone it runs in
+src/solver/          the solver behind an oracle line, the player's clone it runs in, and the solve job (#672)
 src/settle.ts        the settle loop and its budgets (#14)
 src/game/port.ts     the typed game operations the driver reaches the game through (#127)
 src/game/link-game.ts that port over a GameLink; a page throw never leaves it as a throw
