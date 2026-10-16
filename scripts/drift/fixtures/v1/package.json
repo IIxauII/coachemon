@@ -1,0 +1,7 @@
+{
+  "name": "fake-game",
+  "version": "1.0.0",
+  "dependencies": {
+    "phaser": "^3.90.0"
+  }
+}

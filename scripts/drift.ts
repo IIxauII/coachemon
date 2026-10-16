@@ -1,24 +1,31 @@
 /**
- * Drift check for everything this repo reads out of PokéRogue's source, the escape ladder and the coach HUD, under one
- * pin and one stamp (0001-escape-ladder-hand-curated-checked-at-pin-bump.md). Run it at a pin bump, since at the
- * pinned ref no hash can move, and `--stamp` only after re-reading every entry it named: stamping is the sign-off,
- * solving's included (pin-bump.md).
+ * Drift check for everything this repo reads out of PokéRogue's source, the escape ladder, the coach HUD and the
+ * registry of game reads, under one pin and one stamp (0001-escape-ladder-hand-curated-checked-at-pin-bump.md,
+ * 0004-every-game-read-is-registered.md). Run it at a pin bump, since at the pinned ref no hash can move, and `--stamp`
+ * only after re-reading every entry it named: stamping is the sign-off, solving's included (pin-bump.md).
  */
 import { execFileSync } from "node:child_process";
-import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import ts from "typescript";
+import * as modifierSets from "../src/enums/modifiers.ts";
 import { GLOBAL_DEPS, LADDER } from "../src/escape-ladder/table.ts";
-import { HUD_DEPS } from "./hud-deps.ts";
 import type { Entry } from "../src/escape-ladder/types.ts";
 import type { ClonePin } from "../src/solver/clone.ts";
 import { checkForks, type Recheck, replay } from "../src/solver/solver.ts";
 import { findClone, harnessIn } from "./clone-test/clone-test.ts";
+import { blockers, drift, type Group, type Item } from "./drift/check.ts";
+import { GameSource } from "./drift/source.ts";
+import { generatedTables, loadRepo } from "./game-reads/check.ts";
+import { REGISTRY } from "./game-reads/registry/index.ts";
+import { builtinNames } from "./game-reads/scan.ts";
+import { generate } from "./gen-enums.ts";
+import { HUD_DEPS } from "./hud-deps.ts";
 import { recheck } from "./recheck/recheck.ts";
 
 const REPO = "https://github.com/pagefaultgames/pokerogue.git";
+const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const REVIEWED = new URL("../src/escape-ladder/reviewed.json", import.meta.url);
 
 type Reviewed = {
@@ -36,15 +43,16 @@ const { values: args } = parseArgs({
   },
 });
 
-if (args.only !== undefined && args.only !== "ladder" && args.only !== "hud") {
-  console.error(`--only takes "ladder" or "hud", not ${JSON.stringify(args.only)}.`);
+const GROUPS = ["ladder", "hud", "reads"];
+if (args.only !== undefined && !GROUPS.includes(args.only)) {
+  console.error(`--only takes ${GROUPS.map(g => JSON.stringify(g)).join(", ")}, not ${JSON.stringify(args.only)}.`);
   process.exit(2);
 }
 if (args.only !== undefined && args.stamp) {
-  console.error("--only cannot be combined with --stamp: one pin, one sign-off on both groups.");
+  console.error("--only cannot be combined with --stamp: one pin, one sign-off on every group.");
   process.exit(2);
 }
-const only = args.only as "ladder" | "hud" | undefined;
+const only = args.only as Group | undefined;
 
 const reviewed: Reviewed = JSON.parse(readFileSync(REVIEWED, "utf8"));
 
@@ -61,131 +69,70 @@ const version = args.version ?? reviewed.pinned.gameVersion;
 const source = args.source ? path.resolve(args.source) : checkout(version);
 const sha = execFileSync("git", ["-C", source, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
 
-const dependents = new Map<string, string[]>();
-const groups = new Map<string, Set<"ladder" | "hud">>();
-const lean = (ref: string, dependent: string, group: "ladder" | "hud") => {
-  dependents.set(ref, [...(dependents.get(ref) ?? []), dependent]);
-  groups.set(ref, (groups.get(ref) ?? new Set()).add(group));
+const deps = new Map<string, { dependents: string[]; groups: Group[] }>();
+const lean = (ref: string, dependent: string, group: Group) => {
+  const d = deps.get(ref) ?? { dependents: [], groups: [] };
+  d.dependents.push(dependent);
+  if (!d.groups.includes(group)) d.groups.push(group);
+  deps.set(ref, d);
 };
-for (const [screen, entry] of Object.entries(LADDER as Record<string, Entry>)) {
-  for (const ref of entry.deps) lean(ref, screen, "ladder");
-}
+for (const [screen, entry] of Object.entries(LADDER as Record<string, Entry>)) for (const ref of entry.deps) lean(ref, screen, "ladder");
 for (const ref of GLOBAL_DEPS) lean(ref, "(every screen)", "ladder");
-for (const [module, deps] of Object.entries(HUD_DEPS as Record<string, readonly string[]>)) {
-  for (const ref of deps) lean(ref, `hud/${module}`, "hud");
+for (const [module, list] of Object.entries(HUD_DEPS as Record<string, readonly string[]>)) {
+  for (const ref of list) lean(ref, `hud/${module}`, "hud");
 }
 
-const printer = ts.createPrinter({ removeComments: true });
-const parsed = new Map<string, ts.SourceFile | null>();
+const game = new GameSource(source);
+const repo = loadRepo(ROOT);
+const found = drift({
+  source: game,
+  hashes: reviewed.hashes,
+  deps,
+  ladder: LADDER as Record<string, Entry>,
+  registry: REGISTRY,
+  reads: repo.reads,
+  tables: generatedTables(),
+  modifiers: modifierSets as unknown as Record<string, ReadonlySet<string>>,
+  regenerated: await generate(file => readFileSync(path.join(source, file), "utf8"), version),
+  language: builtinNames(ROOT, true),
+});
 
-function sourceFile(file: string): ts.SourceFile | null {
-  if (!parsed.has(file)) {
-    const abs = path.join(source, file);
-    parsed.set(
-      file,
-      existsSync(abs) ? ts.createSourceFile(abs, readFileSync(abs, "utf8"), ts.ScriptTarget.Latest, true) : null,
-    );
-  }
-  return parsed.get(file) ?? null;
-}
-
-function findUnit(sf: ts.SourceFile, symbol: string): ts.Node | undefined {
-  const [className, member] = symbol.includes(".") ? symbol.split(".", 2) : [undefined, symbol];
-  for (const node of sf.statements) {
-    if (className === undefined) {
-      if (ts.isFunctionDeclaration(node) && node.name?.text === member) return node;
-      if (ts.isEnumDeclaration(node) && node.name.text === member) return node;
-      if (ts.isVariableStatement(node)) {
-        const decl = node.declarationList.declarations.find(d => ts.isIdentifier(d.name) && d.name.text === member);
-        if (decl) return decl;
-      }
-    } else if (ts.isClassDeclaration(node) && node.name?.text === className) {
-      return node.members.find(m =>
-        member === "constructor"
-          ? ts.isConstructorDeclaration(m)
-          : (ts.isMethodDeclaration(m) || ts.isGetAccessor(m)) && m.name.getText(sf) === member,
-      );
-    }
-  }
-  return undefined;
-}
-
-function hashOf(ref: string): string | null {
-  const [file, symbol] = ref.split("#", 2);
-  const sf = sourceFile(file);
-  const unit = sf && findUnit(sf, symbol);
-  if (!sf || !unit) return null;
-  const text = printer.printNode(ts.EmitHint.Unspecified, unit, sf);
-  return createHash("sha256").update(text).digest("hex").slice(0, 16);
-}
-
-const refs = [...dependents.keys()].sort();
-const current: Record<string, string> = {};
-const moved: string[] = [];
-const missing: string[] = [];
-const unreviewed: string[] = [];
-
-for (const ref of refs) {
-  const hash = hashOf(ref);
-  if (hash === null) {
-    missing.push(ref);
-    continue;
-  }
-  current[ref] = hash;
-  const was = reviewed.hashes[ref];
-  if (was === undefined) unreviewed.push(ref);
-  else if (was !== hash) moved.push(ref);
-}
-
-const misplaced: string[] = [];
-{
-  const read = (file: string) => (existsSync(path.join(source, file)) ? readFileSync(path.join(source, file), "utf8") : "");
-  const uiModes = (read("src/enums/ui-mode.ts").match(/enum UiMode \{([\s\S]*?)\}/)?.[1] ?? "")
-    .split(",")
-    .map(s => s.replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, "").trim())
-    .filter(Boolean);
-  const handlers = [...(read("src/ui/ui.ts").match(/this\.handlers = \[([\s\S]*?)\];/)?.[1] ?? "").matchAll(/new (\w+)\(/g)]
-    .map(m => m[1]);
-  for (const [screen, entry] of Object.entries(LADDER as Record<string, Entry>)) {
-    const name = screen.split(/[/:]/, 1)[0];
-    if (uiModes[entry.mode] !== name || handlers[entry.mode] !== entry.handler) {
-      misplaced.push(
-        `${screen}: table says ${entry.mode} / ${entry.handler}, ref has ` +
-          `${uiModes.indexOf(name)} / ${handlers[uiModes.indexOf(name)] ?? "nothing"}`,
-      );
-    }
-  }
-}
-
-const shown = (list: string[]) => (only === undefined ? list : list.filter(ref => groups.get(ref)?.has(only)));
-const shownMisplaced = only === "hud" ? [] : misplaced;
-
-const report = (label: string, list: string[]) => {
+const shown = (list: Item[]) => (only === undefined ? list : list.filter(i => i.groups.includes(only)));
+const lines = (list: string[]) => (only === undefined || only === "reads" ? list : []);
+const report = (label: string, list: Item[]) => {
   if (list.length === 0) return;
   console.log(`\n${label} (${list.length}):`);
-  for (const ref of list) console.log(`  ${ref}\n      re-read: ${dependents.get(ref)?.join(", ")}`);
+  for (const i of list) console.log(`  ${i.ref}\n      re-read: ${i.dependents.join(", ")}`);
+};
+const reportLines = (label: string, list: string[]) => {
+  if (list.length === 0) return;
+  console.log(`\n${label} (${list.length}):`);
+  for (const line of list) console.log(`  ${line}`);
 };
 
-const inGroup = (group: "ladder" | "hud") => refs.filter(ref => groups.get(ref)?.has(group)).length;
+const inGroup = (group: Group) => [...deps.values()].filter(d => d.groups.includes(group)).length;
+const registered = Object.values(REGISTRY).reduce((n, a) => n + a.reads.length + (a.mirrors?.length ?? 0) + (a.sets?.length ?? 0), 0);
 console.log(`drift: ${source} @ ${sha.slice(0, 7)} (game ${version}); pinned ${reviewed.pinned.gameVersion}`);
 console.log(
-  `${refs.length} deps: ${inGroup("ladder")} across ${Object.keys(LADDER).length} ladder entries, ` +
-    `${inGroup("hud")} across ${Object.keys(HUD_DEPS).length} HUD modules` +
-    (only === undefined ? "" : ` — reporting ${only} only`),
+  `${deps.size} deps: ${inGroup("ladder")} across ${Object.keys(LADDER).length} ladder entries, ` +
+    `${inGroup("hud")} across ${Object.keys(HUD_DEPS).length} HUD modules; ${registered} registry entries; ` +
+    `${Object.keys(found.hashes).length} hashes in all` + (only === undefined ? "" : ` — reporting ${only} only`),
 );
-report("MOVED — the body changed since review", shown(moved));
-report("MISSING — no such method or file at this ref", shown(missing));
-report("UNREVIEWED — never stamped", shown(unreviewed));
-if (shownMisplaced.length > 0) {
-  console.log(`\nMISPLACED — mode or handler differs at this ref (${shownMisplaced.length}):`);
-  for (const line of shownMisplaced) console.log(`  ${line}`);
-}
+report("MOVED — the body changed since review", shown(found.moved));
+report("MISSING — no such unit, member or literal at this ref", shown(found.missing));
+report("UNREVIEWED — never stamped", shown(found.unreviewed));
+reportLines("MISPLACED — mode or handler differs at this ref", only === "hud" || only === "reads" ? [] : found.misplaced);
+reportLines("ADDED — a member the game added to a set we mirror or switch on", lines(found.added));
+reportLines("SHIFTED — src/enums/generated.ts regenerated at this ref changes these", lines(found.shifted));
+reportLines("UNREGISTERED — read by a scanned file, declared by the game, in no registry entry", lines(found.unregistered));
 
 if (args.stamp) {
-  if (missing.length + misplaced.length > 0) {
+  const blocking = Object.entries(blockers(found)).filter(([, n]) => n > 0);
+  if (blocking.length > 0) {
     console.error(
-      "\nRefusing to stamp: fix the MISSING / MISPLACED entries in src/escape-ladder/table.ts " +
-        "and scripts/hud-deps.ts first.",
+      `\nRefusing to stamp: ${blocking.map(([k, n]) => `${n} ${k}`).join(", ")}. Fix the deps in src/escape-ladder/table.ts ` +
+        "and scripts/hud-deps.ts, the registry in scripts/game-reads/registry/, and the code they name; regenerate the " +
+        "enums with `npm run enums:gen -- --source <clone>` once the SHIFTED values are handled.",
     );
     process.exit(1);
   }
@@ -212,20 +159,25 @@ if (args.stamp) {
     process.exit(1);
   }
   const pinned = { gameVersion: version, tag: `v${version}`, sha, locales: gitlink("locales"), assets: gitlink("assets"), pnpm };
-  const next: Reviewed = { pinned, hashes: current, recheck: { gameVersion: version } };
+  const next: Reviewed = { pinned, hashes: found.hashes, recheck: { gameVersion: version } };
   writeFileSync(REVIEWED, `${JSON.stringify(next, null, 2)}\n`);
   console.log(
-    `\nStamped ${refs.length} hashes and the harness re-check; pin is now ${version} @ ${sha.slice(0, 7)}, ` +
+    `\nStamped ${Object.keys(found.hashes).length} hashes and the harness re-check; pin is now ${version} @ ${sha.slice(0, 7)}, ` +
       `set up with pnpm ${pnpm}.`,
   );
   process.exit(0);
 }
 
-if (shown(moved).length + shown(missing).length + shown(unreviewed).length + shownMisplaced.length > 0) {
+const failing =
+  shown(found.moved).length + shown(found.missing).length + shown(found.unreviewed).length +
+  (only === "hud" || only === "reads" ? 0 : found.misplaced.length) +
+  lines(found.added).length + lines(found.shifted).length + lines(found.unregistered).length;
+if (failing > 0) {
   console.log(
     "\nFAIL: re-read the named entries — screens in src/escape-ladder/table.ts, HUD modules in " +
-      "skills/coachemon/scripts/hud/ (their deps are listed in scripts/hud-deps.ts) — then re-run with --stamp.",
+      "skills/coachemon/scripts/hud/ (their deps are listed in scripts/hud-deps.ts), game reads in " +
+      "scripts/game-reads/registry/ — then re-run with --stamp.",
   );
   process.exit(1);
 }
-console.log(`\nOK: every ${only ?? "ladder and HUD"} dep matches its reviewed hash.`);
+console.log(`\nOK: every ${only ?? "ladder, HUD and registry"} dep matches its reviewed hash.`);
