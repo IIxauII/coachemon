@@ -18,6 +18,7 @@ export const input = z.discriminatedUnion("kind", [
     replacement: partySlot.optional(),
   }),
   z.strictObject({ kind: z.literal("switch"), to: partySlot, replacement: partySlot.optional() }),
+  z.strictObject({ kind: z.literal("queued"), replacement: partySlot }),
 ]) satisfies z.ZodType<Input>;
 
 export const monFacts = z.strictObject({

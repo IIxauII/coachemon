@@ -1,0 +1,9 @@
+{
+  "inputs": [
+    { "kind": "switch", "to": { "slot": 3, "species": "GYARADOS" } },
+    { "kind": "move", "move": "BOUNCE", "tera": false },
+    { "kind": "move", "move": "BOUNCE", "tera": false },
+    { "kind": "queued", "replacement": { "slot": 2, "species": "SNORLAX" } },
+    { "kind": "move", "move": "BODY_SLAM", "tera": false }
+  ]
+}

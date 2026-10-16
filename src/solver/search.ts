@@ -11,7 +11,10 @@ export type Hp = { ours: readonly number[]; foes: readonly number[] };
 /** A decision the search can fork from. Two positions with one `sig` are one to the search. */
 export type Position = { sig: string; hp: Hp; legal: readonly Action[]; forkPoint: string };
 
-/** One action played from a fork point; `input` names the faint replacement the turn took, if it asked for one. */
+/**
+ * One action played from a fork point; `input` names the faint replacement the turn took, if it asked for one, so a
+ * `null` that asked for one comes back as a `queued` input (#702).
+ */
 export type Child =
   | { input: Action; end: "on"; at: Position }
   | { input: Action; end: "won" | "lost"; hp: Hp }
@@ -19,7 +22,7 @@ export type Child =
 
 export type Pool = {
   size: number;
-  /** A child per input, and one more per other faint replacement an input's turn could have taken. */
+  /** A child per action, and one more per other faint replacement an action's turn could have taken. */
   expand(forkPoint: string, inputs: readonly Action[]): Promise<Child[]>;
 };
 

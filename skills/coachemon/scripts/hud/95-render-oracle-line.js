@@ -35,7 +35,7 @@ export const drawOracleStep = m => {
       : line(st.act ? "⚔" : "·", turnOf(st), ...act(st.act), ...after(st, m.mark)),
     !picking && st.send ? line("⤵", ...sendTo("then send", st), h("span", { ...dim, marginLeft: "3px" }, "at the faint prompt")) : null,
     !picking && st.act?.tera ? line("·", h("span", dim, "Tera: ← from Fight to the Tera button")) : null,
-    ...oracleLineUnasked(m).map(x => line("·", turnOf(x), ...act(null), ...after(x, m.mark))),
+    ...oracleLineUnasked(m).map(x => line("·", turnOf(x), ...act(null), ...(x.send ? sendTo("then send", x) : []), ...after(x, m.mark))),
   ].filter(Boolean);
 };
 

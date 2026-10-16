@@ -261,6 +261,30 @@ test("a turn the game plays for us is a step with no input, and stays out of the
   assert.deepEqual(asked, [["BOUNCE"]]);
 });
 
+test("each faint replacement a turn the game plays for us could take is a path of its own, replayed as an input (#702)", async () => {
+  const toGolbat: Input = { kind: "queued", replacement: { slot: 4, species: "GOLBAT" } };
+  const toSnorlax: Input = { kind: "queued", replacement: { slot: 2, species: "SNORLAX" } };
+  const wait: Position = { sig: "charging", hp: { foes: [0.5], ours: [1, 1, 1] }, legal: [null], forkPoint: "charging" };
+  const pool: Pool = {
+    size: 1,
+    async expand(forkPoint, inputs) {
+      if (forkPoint === "root") return inputs.map(input => ({ input, end: "on", at: wait }));
+      return [
+        { input: toGolbat, end: "lost", hp: { foes: [0.5], ours: [0, 0, 0] } },
+        { input: toSnorlax, end: "won", hp: { foes: [0], ours: [0, 1, 1] } },
+      ];
+    },
+  };
+  const root: Position = { sig: "root", hp: { foes: [1], ours: [1, 1, 1] }, legal: [move("BOUNCE")], forkPoint: "root" };
+  const asked: (readonly Input[])[] = [];
+  const validate = async (inputs: readonly Input[]) => (asked.push(inputs), replayed("won"));
+
+  const result = await search({ root, pool, validate, budget: BUDGET });
+
+  assert.deepEqual(result.kind === "found" && result.inputs, [move("BOUNCE"), toSnorlax]);
+  assert.deepEqual(asked, [[move("BOUNCE"), toSnorlax]]);
+});
+
 test("a worker that fails ends the solve in no answer naming it (#662)", async () => {
   const root: Position = { sig: "root", hp: { foes: [1], ours: [1] }, legal: [move("TACKLE")], forkPoint: "root" };
   const pool: Pool = {

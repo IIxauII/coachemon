@@ -29,19 +29,22 @@ export type OracleLine = {
 };
 
 export type Step = {
-  /** The battle's own turn: a two-turn move's second turn is a step with no input, so turns can outrun inputs (#660). */
+  /** The battle's own turn: a two-turn move's second turn takes no input unless it asks for a faint replacement, so turns can outrun inputs (#660, #702). */
   turn: number;
   input: Input | null;
   checkpoint: Checkpoint;
 };
 
-export type Input = (
-  | { kind: "move"; move: keyof typeof MoveId; tera: boolean }
-  | { kind: "switch"; to: PartySlot }
-) & {
-  /** The faint replacement this step's turn asks for, picked inside the step (#660). */
-  replacement?: PartySlot;
-};
+export type Input =
+  | ((
+      | { kind: "move"; move: keyof typeof MoveId; tera: boolean }
+      | { kind: "switch"; to: PartySlot }
+    ) & {
+      /** The faint replacement this step's turn asks for, picked inside the step (#660). */
+      replacement?: PartySlot;
+    })
+  /** A turn the game plays for us that asks for a faint replacement: one that asks for none is a step with no input (#702). */
+  | { kind: "queued"; replacement: PartySlot };
 
 export type PartySlot = { slot: number; species: keyof typeof SpeciesId };
 

@@ -45,9 +45,9 @@ const OVERRIDES = [
 ] as const;
 
 type PartySlot = { slot: number; species: string };
-type Input = ({ kind: "move"; move: string; tera: boolean } | { kind: "switch"; to: PartySlot }) & {
-  replacement?: PartySlot;
-};
+type Input =
+  | (({ kind: "move"; move: string; tera: boolean } | { kind: "switch"; to: PartySlot }) & { replacement?: PartySlot })
+  | { kind: "queued"; replacement: PartySlot };
 type Turn = "won" | "lost" | "on" | { illegal: string };
 
 const job: { save: any; inputs: Input[] } = JSON.parse(readFileSync(process.env.COACH_IN as string, "utf8"));
@@ -129,7 +129,7 @@ function legal(): Input[] {
 const same = (a: Input, b: Input) =>
   a.kind === "move"
     ? b.kind === "move" && a.move === b.move && a.tera === b.tera
-    : b.kind === "switch" && a.to.slot === b.to.slot && a.to.species === b.to.species;
+    : a.kind === "switch" && b.kind === "switch" && a.to.slot === b.to.slot && a.to.species === b.to.species;
 
 // A prompt left queued for a decision the game never asks for is taken by the next one, and every later input lands a
 // turn late (#632).
@@ -141,7 +141,7 @@ function strayPrompts(): number {
 }
 
 function command(input: Input | null) {
-  if (input === null) return;
+  if (input === null || input.kind === "queued") return;
   if (input.kind === "switch") return game.doSwitchPokemon(input.to.slot);
   const move = MoveId[input.move as keyof typeof MoveId];
   if (move !== MoveId.STRUGGLE) return input.tera ? game.move.selectWithTera(move) : game.move.select(move);
@@ -186,7 +186,6 @@ async function turn(input: Input | null, choose = (_offered: PartySlot[]) => inp
     return { illegal: "names a faint replacement, but nothing of ours fainted" };
   }
   if (fainted) {
-    if (input === null) return { illegal: "leaves a faint replacement to pick, and a turn with no input can't name one" };
     const offered = party.flatMap((p, slot) => (!p.isFainted() && !p.isOnField() ? [{ slot, species: species(p) }] : []));
     const replacement = choose(offered);
     if (replacement === undefined) return { illegal: "leaves a faint replacement to pick, and names none" };
@@ -203,6 +202,20 @@ async function turn(input: Input | null, choose = (_offered: PartySlot[]) => inp
   }
   await game.phaseInterceptor.to("CommandPhase");
   return "on";
+}
+
+/**
+ * A turn the game plays for us takes the next input only when that is a `queued` one and our lead faints: a rampage
+ * can play more than one such turn, and the faint can fall on any of them (#702).
+ */
+async function queuedTurn(inputs: Input[], next: number): Promise<{ input: Input | null; ended: Turn }> {
+  const queued = inputs[next]?.kind === "queued" ? inputs[next] : null;
+  let taken = false;
+  const ended = await turn(null, () => {
+    taken = queued !== null;
+    return queued?.replacement;
+  });
+  return { input: taken ? queued : null, ended };
 }
 
 async function boot() {
@@ -391,8 +404,13 @@ async function play() {
   let next = 0;
   for (;;) {
     const at = scene().currentBattle.turn;
-    let input: Input | null = null;
-    if (!queuedRuns(scene().getPlayerField()[0])) {
+    let input: Input | null;
+    let ended: Turn;
+    if (queuedRuns(scene().getPlayerField()[0])) {
+      draws = [];
+      ({ input, ended } = await queuedTurn(job.inputs, next));
+      if (input) next++;
+    } else {
       if (next === job.inputs.length) return "open";
       input = job.inputs[next];
       const offered = legal();
@@ -400,9 +418,9 @@ async function play() {
         return { illegal: { index: next, turn: at, why: "isn't offered", legal: offered } };
       }
       next++;
+      draws = [];
+      ended = await turn(input);
     }
-    draws = [];
-    const ended = await turn(input);
     if (typeof ended === "object") {
       return { illegal: { index: input === null ? null : next - 1, turn: at, why: ended.illegal, legal: [] } };
     }
@@ -550,10 +568,9 @@ async function expand(at: string, inputs: (Input | null)[]) {
       dirty = true;
       ended = { illegal: `threw ${err instanceof Error ? err.message : String(err)}`.split("\n")[0] };
     }
-    const played = input && offered.length > 0 ? { ...input, replacement: input.replacement ?? offered[0] } : input;
-    if (input && input.replacement === undefined) {
-      queue.push(...offered.slice(1).map(replacement => ({ ...input, replacement })));
-    }
+    const naming = (replacement: PartySlot): Input => (input === null ? { kind: "queued", replacement } : { ...input, replacement });
+    const played = offered.length > 0 ? naming(input?.replacement ?? offered[0]) : input;
+    if (input?.replacement === undefined) queue.push(...offered.slice(1).map(naming));
     const stray = strayPrompts();
     if (ended === "lost") dirty = true;
     if (typeof ended === "object") children.push({ input: played, end: "dropped", why: ended.illegal });
@@ -572,11 +589,21 @@ async function checks(inputs: Input[]) {
   const forks: string[] = [];
   let next = 0;
   for (;;) {
-    const input = queuedRuns(scene().getPlayerField()[0]) ? null : (inputs[next++] ?? undefined);
-    if (input === undefined) break;
-    forks.push(forkPoint());
     const at = scene().currentBattle.turn;
-    const end = await turn(input);
+    let input: Input | null;
+    let end: Turn;
+    if (queuedRuns(scene().getPlayerField()[0])) {
+      forks.push(forkPoint());
+      ({ input, ended: end } = await queuedTurn(inputs, next));
+      if (input) next++;
+    } else {
+      input = inputs[next] ?? null;
+      if (input === null) break;
+      if (input.kind === "queued") throw new Error(`input ${next + 1} is for a turn the game plays for us, but turn ${at} asks for one`);
+      next++;
+      forks.push(forkPoint());
+      end = await turn(input);
+    }
     straight.push({ input, turn: at, checkpoint: checkpoint(), end });
     if (end !== "on") break;
   }

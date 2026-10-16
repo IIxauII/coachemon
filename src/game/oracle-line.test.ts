@@ -23,3 +23,8 @@ test("a turn with no input of its own stays one with no input (#670)", () => {
   const line = { ...GORDIE_LINE, steps: [{ ...GORDIE_LINE.steps[0], input: null }] };
   assert.equal(pageOracleLine(line).steps[0].input, null);
 });
+
+test("a turn the game plays for us reaches the page with its faint replacement as the game's own id (#702)", () => {
+  const line = { ...GORDIE_LINE, steps: [{ ...GORDIE_LINE.steps[0], input: { kind: "queued", replacement: { slot: 5, species: "GOLBAT" } } as const }] };
+  assert.deepEqual(pageOracleLine(line).steps[0].input, { kind: "queued", replacement: { slot: 5, species: SpeciesId.GOLBAT } });
+});

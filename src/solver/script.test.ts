@@ -54,12 +54,19 @@ test("a script reads its inputs and what live showed after each turn (#660)", ()
   assert.deepEqual(script.known?.after, [{ turn: 1, ours: { PROBOPASS: { hp: 346 } } }]);
 });
 
+test("a turn the game plays for us names the faint replacement it asks for as an input of its own (#702)", () => {
+  const script = readScript(JSON.stringify({ inputs: [{ kind: "queued", replacement: { slot: 4, species: "GOLBAT" } }] }));
+
+  assert.deepEqual(script.inputs, [{ kind: "queued", replacement: { slot: 4, species: "GOLBAT" } }]);
+});
+
 test("a script with a move, a species or a field the game doesn't have doesn't read, and says where (#660)", () => {
   for (const [bad, where] of [
     [{ inputs: [{ kind: "move", move: "DRAGON_PULS", tera: false }] }, /inputs\[0\]\.move/],
     [{ inputs: [{ kind: "switch", to: { slot: 3, species: "PROBOPAS" } }] }, /inputs\[0\]\.to\.species/],
     [{ inputs: [{ kind: "move", move: "BOUNCE", tera: false, replacment: { slot: 1, species: "SNORLAX" } }] }, /replacment/],
     [{ inputs: [], known: { outcome: "won", after: [{ turn: 1, ours: { RESHIRAMM: { hp: 1 } } }] } }, /RESHIRAMM/],
+    [{ inputs: [{ kind: "queued" }] }, /inputs\[0\]\.replacement/],
   ] as const) {
     assert.throws(() => readScript(JSON.stringify(bad)), where);
   }
@@ -98,16 +105,18 @@ test("a turn the replay never reached, a mon its checkpoint lacks and another ou
   ]);
 });
 
-test("every fight script in the fixtures reads, records the outcome and its turns in order (#660)", () => {
+test("every fight script in the fixtures reads, and one played live records the outcome and its turns in order (#660, #702)", () => {
   const dir = new URL("./fixtures/", import.meta.url);
   const scripts = readdirSync(dir).filter(name => name.endsWith(".script.json"));
+  const live = scripts.filter(name => name !== "gordie-w180.queued-faint.script.json");
 
-  assert.ok(scripts.length >= 4, `only ${scripts.join(", ")}`);
+  assert.ok(live.length >= 4, `only ${live.join(", ")}`);
   for (const name of scripts) {
     const { inputs, known } = readScript(readFileSync(new URL(name, dir), "utf8"));
     const turns = known?.after.map(after => after.turn) ?? [];
 
-    assert.ok(inputs.length > 0 && known !== undefined, name);
+    assert.ok(inputs.length > 0, name);
+    assert.equal(known !== undefined, live.includes(name), name);
     assert.deepEqual(turns, [...turns].sort((a, b) => a - b), name);
   }
 });
