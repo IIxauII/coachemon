@@ -3120,9 +3120,8 @@ value 2 also lifts the move requirement off move evolutions.
   `500 × speciesId` (§16).
 - `EGG_MOVE_RELEARN_AVAILABILITY` is off (`src/data/challenge.ts:1587-1591`, §16), `STARTER_SELECT_MODIFY` clears the
   grid's egg moves (`:1349-1358`, §23), and the AI's egg-move pool and superseded-move map are emptied (`:1498-1509`).
-  `STARTER_MODIFY`
-  replaces a starter's moveset, the one chosen on the grid included, with its first three level-up moves up to its
-  level, adding a STAB move by its species' first type when none of them is an attack (`:1360-1423`).
+  `STARTER_MODIFY` replaces a starter's moveset, the one chosen on the grid included, with its first three level-up
+  moves up to its level, adding a STAB move by its species' first type when none of them is an attack (`:1360-1423`).
 - `MOVESET_MODIFY` gives an enemy Eternatus on wave 200 four Metronomes (`:1456-1466`), and `ME_MOVESET_MODIFY` gives
   the enemy in seven Mystery Encounters four random moves on the fork `pokemon.id` (`:1559-1585`).
 - `MODIFY_EVOLUTIONS` (`applyModifyEvolutions`, `:1511-1557`), value 2 only. A Tyrogue knowing none of Low Sweep, Mach
@@ -3142,11 +3141,11 @@ value 2 also lifts the move requirement off move evolutions.
 - `SPECIES_ABILITY_MODIFY` (`:1645-1681`): `PokemonSpeciesForm.getAbility(i)` (`src/data/pokemon-species.ts:196-210`)
   returns a pick off every implemented ability bar None, Commander, fourteen form-change abilities
   (`src/data/challenge.ts:1613-1628`) and seven harmful ones (Defeatist, Klutz, Normalize, Slow Start, Stall, Truant,
-  Wimp Out), on the fork `500 × speciesId + abilityId`. At value 3 a different list stays as it is (`:1659-1669`): Schooling, Power Construct, Battle Bond,
-  Disguise, Ice Face, Zero to Hero, Tera Shift, Tera Shell and Teraform Zero. So Battle Bond, Tera Shell and Teraform
-  Zero can be rolled, and Forecast, Stance Change, Zen Mode and the other excluded form-change abilities are rolled
-  away even at value 3. A member's `getAbility` goes through it, a fusion's through the other half's form
-  (`src/field/pokemon.ts:2215`, `:2226`).
+  Wimp Out), on the fork `500 × speciesId + abilityId`. At value 3 a different list stays as it is (`:1659-1669`):
+  Schooling, Power Construct, Battle Bond, Disguise, Ice Face, Zero to Hero, Tera Shift, Tera Shell and Teraform Zero.
+  So Battle Bond, Tera Shell and Teraform Zero can be rolled, and Forecast, Stance Change, Zen Mode and the other
+  excluded form-change abilities are rolled away even at value 3. A member's `getAbility` goes through it, a fusion's
+  through the other half's form (`src/field/pokemon.ts:2215`, `:2226`).
 - `PASSIVE_ABILITY_MODIFY` (`src/data/challenge.ts:1683-1705`), value 2 and up: the same pool and fork, with no
   value-3 keep list, for `getPassiveAbility` (`src/data/pokemon-species.ts:217-221`), which a member's own
   `getPassiveAbility` calls (`src/field/pokemon.ts:2261`).
