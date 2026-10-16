@@ -1,14 +1,18 @@
 import { auditSummary } from "./50-audit.js";
+import { leadMark } from "./51-lead.js";
 import { rewardsSummary } from "./52-shop.js";
 import { roadSummary } from "./60-card.js";
-import { caption, dim, h, ICON, itemImg, line, mon, sep, some } from "./90-render.js";
+import { caption, dim, h, ICON, ink, itemImg, line, mon, sep, some } from "./90-render.js";
 import { drawAhead } from "./95-render-ahead.js";
 import { drawAudit } from "./95-render-audit.js";
 import { drawPreview } from "./95-render-preview.js";
 import { drawReroll } from "./95-render-reroll.js";
 
+const note = text => h("span", { ...dim, fontWeight: "normal" }, text);
+
 export const captionRewards = m => caption("🛒", `$${m.money}`, m.buys.length ? h("span", dim, `→ $${m.left}`) : null,
-  !m.buys.length && m.affordable === 0 ? h("span", { ...dim, fontWeight: "normal" }, "nothing affordable") : null,
+  !m.buys.length && m.affordable === 0 ? note("nothing affordable") : null,
+  !m.free.length ? note("no free reward") : null,
   m.bossNext ? h("span", {}, "👑 boss next") : null);
 
 export const drawRewards = m => {
@@ -32,6 +36,10 @@ export const drawRewards = m => {
     const lead = `${f.holder.name} · `;
     return [mon(f.holder.icon, f.holder.name, ICON.mon), h("span", style, f.why.startsWith(lead) ? f.why.slice(lead.length) : f.why)];
   };
+  const leadRows = (m.lead?.swaps ?? []).map(sw => line("⇄", h("span", { ...ink.ours, marginRight: "3px" }, "lead"),
+    mon(sw.in.icon, sw.in.name, ICON.mon), h("span", { flex: "1" }),
+    h("span", dim, `switch with ${sw.out.name} · beats ${sw.foe}${leadMark(m.lead)}`)));
+  const first = [m.buys.length ? "buy" : null, leadRows.length ? "reorder" : null].filter(Boolean).join(" and ");
   const take = p ? line("★", itemImg(p.icon, p.name),
     h("span", { fontWeight: "bold" }, p.name), h("span", { flex: "1" }), tmTo(p) ?? heldTo(p) ?? h("span", dim, p.why)) : null;
   const usersText = f => {
@@ -44,8 +52,8 @@ export const drawRewards = m => {
     tmTo(f) ?? heldTo(f) ?? h("span", dim, `${f.why}${usersText(f)}`)));
   return [
     some("act", "Now", rewardsSummary(m), [
-      m.buys.length && m.free.length ? h("div", dim, "buy first — taking the free reward closes the shop") : null,
-      ...buyRows, m.buys.length ? h("div", sep) : null, take,
+      first && m.free.length ? h("div", dim, `${first} first — taking the free reward closes the shop`) : null,
+      ...buyRows, ...leadRows, first ? h("div", sep) : null, take,
       ...drawReroll(m)]),
     some("options", "Others", null, others),
     some("audit", "Team", auditSummary(m.audit), drawAudit(m.audit)),

@@ -45,7 +45,7 @@ export const HUD_DEPS = {
     `src/data/challenge.ts#HardcoreChallenge.applyPreventRevive`,
   ],
 
-  /** game-code.md §2. */
+  /** game-code.md §0, §2, §14. */
   "07-move-traits.js": [
     `${M}#MoveAttr.constructor`,
     `src/data/moves/move-condition.ts#FirstMoveCondition.constructor`,
@@ -80,8 +80,13 @@ export const HUD_DEPS = {
     `${M}#AddBattlerTagAttr.constructor`,
     `${M}#AddArenaTrapTagAttr.getCondition`,
     `${M}#HealAttr.constructor`,
+    `${M}#HealAttr.apply`,
     `${M}#VariableHealAttr.constructor`,
     `${M}#VariableHealAttr.apply`,
+    `src/data/abilities/apply-ab-attrs.ts#applyAbAttrsInternal`,
+    `src/data/abilities/apply-ab-attrs.ts#applySingleAbAttrs`,
+    `src/data/abilities/ability.ts#Ability.getAttrs`,
+    `src/data/abilities/ab-attrs.ts#MoveHealBoostAbAttr.apply`,
     `${M}#HitHealAttr.constructor`,
     `${M}#FlinchAttr.constructor`,
     `${M}#ProtectAttr.constructor`,
@@ -300,6 +305,8 @@ export const HUD_DEPS = {
     `${P}#Pokemon.doSetStatus`,
     `src/phases/move-phase.ts#MovePhase.checkSleep`,
     `src/data/abilities/ab-attrs.ts#ReduceStatusEffectDurationAbAttr.apply`,
+    `src/data/battler-tags.ts#MoveLockTag.getNextTargets`,
+    `src/data/moves/move-utils.ts#getMoveTargets`,
   ],
 
   "35-team-plan.js": [

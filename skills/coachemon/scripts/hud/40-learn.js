@@ -1,8 +1,9 @@
 // The learn decision, for the level-up prompt and a TM alike, judged without battle state.
-import { ABILITY_IMMUNE, CHART, SPREAD_TARGETS, STAT_NAMES, STATUS_FRAMES, TYPES, abilitiesOf, effectiveness, iconOf, moveHasFlag, typesOf, vs } from "./01-core.js";
+import { ABILITY_IMMUNE, CHART, SPREAD_TARGETS, STAT_NAMES, STATUS_FRAMES, TYPES, UNGROUNDED, abilitiesOf, effectiveness, iconOf, moveHasFlag, typesOf, vs } from "./01-core.js";
 import { RANDBATS } from "./05-randbats.js";
 import { costNotes, moveTraits } from "./07-move-traits.js";
 import { partyProfile } from "./08-party.js";
+import { SALT_DOUBLED } from "./10-damage.js";
 
 // `new PokemonMove(id).getMove()`, off any move the party holds (game-code.md §17).
 export const learnMoveById = (party, id) => {
@@ -148,8 +149,8 @@ const priorOf = (pk, mv, ctx) => {
 const STATUS_VALUE = [0, 30, 45, 45, 70, 55, 45]; // StatusEffect NONE, POISON, TOXIC, PARALYSIS, SLEEP, FREEZE, BURN
 const TAG_VALUE = {
   TAUNT: 30, ENCORE: 30, DISABLED: 25, HEAL_BLOCK: 25, TORMENT: 20, IMPRISON: 15,
-  SEEDED: 35, SALT_CURED: 30, PERISH_SONG: 25, TRAPPED: 15, DROWSY: 45,
-  SUBSTITUTE: 25, ALWAYS_CRIT: 25, CRIT_BOOST: 20, AQUA_RING: 20, INGRAIN: 20, MAGNET_RISEN: 10, HELPING_HAND: 25,
+  SEEDED: 35, PERISH_SONG: 25, TRAPPED: 15, DROWSY: 45,
+  SUBSTITUTE: 25, ALWAYS_CRIT: 25, CRIT_BOOST: 20, AQUA_RING: 20, INGRAIN: 20, FLOATING: 10, HELPING_HAND: 25,
   CENTER_OF_ATTENTION: 10, MINIMIZED: 5,
 };
 // `[value, label]`, keyed by the concrete class.
@@ -190,8 +191,12 @@ const STATUS_TYPES = { [StatusEffect.POISON]: ["Poison", "Steel"], [StatusEffect
   [StatusEffect.PARALYSIS]: ["Electric"], [StatusEffect.FREEZE]: ["Ice"], [StatusEffect.BURN]: ["Fire"] };
 // @mirrors tag-abilities
 const TAG_ABILITIES = { Oblivious: ["TAUNT"], "Aroma Veil": ["TAUNT", "ENCORE", "HEAL_BLOCK", "DISABLED", "TORMENT"] };
+// Never through `foeAbilities`: `isTrapped` asks at the switch, outside the move Mold Breaker ignores abilities for
+// (game-code.md §16).
+// @mirrors never-trapped
+const neverTrapped = foe => (foe.types ?? []).includes("Ghost") || [foe.ability, foe.passive].includes("Run Away");
 const DISRUPT_NEEDS = { TAUNT: "statusMoves", ENCORE: "statusMoves", HEAL_BLOCK: "healMoves" };
-const DISRUPT_TAGS = new Set(["TAUNT", "ENCORE", "HEAL_BLOCK", "DISABLED", "TORMENT"]);
+const DISRUPT_TAGS = new Set(["TAUNT", "ENCORE", "HEAL_BLOCK", "DISABLED", "TORMENT", "TRAPPED"]);
 const STATUS_FLOOR = 0.3, DISRUPT_HIT = 1.4, DISRUPT_SPREAD = 0.4, DISRUPT_NONE = 0.3, UNSURE = 0.5;
 // `healBlockedMoves`, by attribute (game-code.md §16).
 // @mirrors heal-blocked
@@ -209,8 +214,8 @@ const statusMoveBlocked = (pk, mv, foe) => {
   if (ab.includes("Good as Gold") && !SIDE_TARGETS.has(mv.moveTarget)) return true;
   if (ab.includes("Magic Bounce") && moveHasFlag(mv, MoveFlags.REFLECTABLE)) return true;
   if (abilitiesOf(pk).includes("Prankster") && types.includes("Dark")) return true;
-  // Levitate alone stops only attacks: the absorbing abilities take status moves too (game-code.md §16).
-  if (ab.some(a => a !== "Levitate" && ABILITY_IMMUNE[a] === type)) return true;
+  // (game-code.md §16)
+  if (ab.some(a => !UNGROUNDED.has(a) && ABILITY_IMMUNE[a] === type)) return true;
   if (moveHasFlag(mv, MoveFlags.POWDER_MOVE) && (types.includes("Grass") || ab.includes("Overcoat"))) return true;
   if (moveTraits(mv).attrNames.has("RespectAttackTypeImmunityAttr") && types.some(d => vs(type, d) === 0)) return true;
   return false;
@@ -227,7 +232,8 @@ const statusLands = (pk, mv, effect, foe) => {
   });
 };
 const tagLands = (pk, mv, tag, foe) => !statusMoveBlocked(pk, mv, foe)
-  && !foeAbilities(pk, foe).some(a => (TAG_ABILITIES[a] ?? []).includes(tag));
+  && !foeAbilities(pk, foe).some(a => (TAG_ABILITIES[a] ?? []).includes(tag))
+  && !(tag === "TRAPPED" && neverTrapped(foe));
 
 const weightOf = foe => Math.max(1, foe.segments ?? 0);
 const shareOf = (foes, ok) => foes.reduce((t, f) => t + (ok(f) ? weightOf(f) : 0), 0) / foes.reduce((t, f) => t + weightOf(f), 0);
@@ -291,6 +297,26 @@ const typeFit = (pk, mv, change, name, roster, ours) => {
   let at = 0;
   gains.forEach((g, i) => { if (g > gains[at] || (g === gains[at] && weightOf(foes[i]) > weightOf(foes[at]))) at = i; });
   return { mult, note: `vs ${foes[at].name} at W${roster.wave}` };
+};
+
+// Salt Cure's curse (game-code.md §5, §8, §21). Magic Guard is read past `foeAbilities`: Mold Breaker ignores abilities
+// only while its move runs (§1), and the chip lands at the turn end.
+const CURSE_TWICE = SALT_DOUBLED.map(t => TYPES[t]);
+// @mirrors curse-blocked
+const curseOf = (pk, tr, roster) => {
+  if (!tr.tags.some(x => x.tag === "SALT_CURED" && !(x.self || x.side))) return null;
+  if (abilitiesOf(pk).includes("Sheer Force")) return { value: 0, notes: ["no curse with Sheer Force"] };
+  const value = STATUS_VALUE[StatusEffect.POISON];
+  if (!roster) return { value, notes: ["curse 1/8 a turn"] };
+  const { foes, wave } = roster;
+  const hurts = f => ![f.ability, f.passive].includes("Magic Guard") && !foeAbilities(pk, f).includes("Shield Dust");
+  const twice = f => hurts(f) && (f.types ?? []).some(t => CURSE_TWICE.includes(t));
+  const hurtCount = foes.filter(hurts).length, twiceCount = foes.filter(twice).length, all = foes.length;
+  const rate = !twiceCount ? "curse 1/8 a turn"
+    : twiceCount === all ? `curse 1/4 a turn at W${wave}` : `curse 1/4 on ${twiceCount} of ${all} at W${wave}`;
+  const notes = !hurtCount ? [`curse can't hurt at W${wave}`]
+    : [rate, ...(hurtCount < all ? [`curse hurts ${hurtCount} of ${all} at W${wave}`] : [])];
+  return { value: value * unsure(roster, shareOf(foes, hurts) + shareOf(foes, twice)), notes };
 };
 
 // `value` null when nothing here recognises the move: the card says "your call", and the slot stays off the forget list.
@@ -479,6 +505,8 @@ const moveScore = (pk, mv, others, double, ctx = {}) => {
   }
   if (loss) times(Math.max(0.7, 1 - loss));
   value *= drag;
+  const curse = curseOf(pk, tr, ctx.roster?.foes?.length ? ctx.roster : null);
+  if (curse) { value += curse.value * acc; notes.push(...curse.notes); }
   const drawbacks = [...costNotes(tr, { sun, type }), ...(movesLast ? [movesLast] : [])];
   notes.push(...drawbacks);
   if (double && SPREAD_TARGETS.includes(mv.moveTarget)) {

@@ -501,7 +501,7 @@ Team audit
 · nothing hits Fighting/Flying/Poison/Ground +11 super-effectively
 == no-reward shop after a flee
 ⌃ ×
-🛒 $3000 → $1936 buy Hyper Potion
+🛒 $3000 → $1936 no free reward buy Hyper Potion
 ✓ Hyper Potion $1064 Blastoise 32% HP
 2 issues: Blastoise: no Normal attack (no STAB); nothing hits Flying/Poison/Ghost/Water +5 super-effectively
 Team audit

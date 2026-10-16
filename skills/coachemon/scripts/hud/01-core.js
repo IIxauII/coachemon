@@ -24,12 +24,15 @@ export const CHART = {
 };
 // @mirrors ability-immune
 export const ABILITY_IMMUNE = {
-  "Levitate": "Ground", "Earth Eater": "Ground",
+  "Levitate": "Ground", "Eelevate": "Ground", "Earth Eater": "Ground",
   "Flash Fire": "Fire", "Well-Baked Body": "Fire",
   "Water Absorb": "Water", "Storm Drain": "Water", "Dry Skin": "Water",
   "Volt Absorb": "Electric", "Lightning Rod": "Electric", "Motor Drive": "Electric",
   "Sap Sipper": "Grass",
 };
+// Each needs its `ABILITY_IMMUNE` entry too: this set only carves out what that immunity lets through (game-code.md §1, §16).
+// @mirrors ungrounded
+export const UNGROUNDED = new Set(["Levitate", "Eelevate"]);
 // @mirrors ability-immune-flag
 export const ABILITY_IMMUNE_FLAG = { "Soundproof": MoveFlags.SOUND_BASED, "Bulletproof": MoveFlags.BALLBOMB_MOVE, "Overcoat": MoveFlags.POWDER_MOVE, "Wind Rider": MoveFlags.WIND_MOVE };
 export const moveHasFlag = (mv, f) => (typeof mv?.hasFlag === "function" ? mv.hasFlag(f) : !!((mv?.flags ?? 0) & f));
@@ -48,7 +51,7 @@ export const defenderOf = x => (typeof x?.getTypes === "function"
 export const effectiveness = (type, defender, mv) => {
   const { types, abilities: ab } = defenderOf(defender);
   const arrows = !!mv && hitsUngrounded(mv);
-  if (ab.some(a => (ABILITY_IMMUNE[a] === type && !(arrows && a === "Levitate"))
+  if (ab.some(a => (ABILITY_IMMUNE[a] === type && !(arrows && UNGROUNDED.has(a)))
     || (mv && ABILITY_IMMUNE_FLAG[a] && moveHasFlag(mv, ABILITY_IMMUNE_FLAG[a])))) return 0;
   let m = types.reduce((x, d) => x * vs(type, d), 1);
   if (arrows && m === 0 && types.includes("Flying")) m = 1;
@@ -94,7 +97,7 @@ export const TIER_NAMES = ["Common", "Great", "Ultra", "Rogue", "Master", "Luxur
 
 export const SPREAD_TARGETS = [MoveTarget.ALL_OTHERS, MoveTarget.ALL_NEAR_OTHERS, MoveTarget.ALL_NEAR_ENEMIES, MoveTarget.ALL_ENEMIES];
 export const hasAttr = (mv, name) => (mv.attrs || []).some(a => a.constructor.name === name);
-// Thousand Arrows: a Ground move that Levitate and a Flying type don't stop (game-code.md §1).
+// Thousand Arrows: a Ground move that `UNGROUNDED` and a Flying type don't stop (game-code.md §1).
 export const hitsUngrounded = mv => hasAttr(mv, "NeutralDamageAgainstFlyingTypeAttr");
 
 export const CONTACT_PUNISH = ["Iron Barbs", "Rough Skin", "Static", "Flame Body", "Poison Point", "Effect Spore", "Cursed Body", "Gooey", "Tangling Hair", "Mummy"];

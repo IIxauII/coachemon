@@ -7,9 +7,10 @@ import { fine } from "./fine.ts";
 import { COMMAND_HANDLERS } from "./handlers.ts";
 import { locate } from "./locate.ts";
 import { PAGE_MODES } from "./modes.ts";
+import { starter } from "./starter.ts";
 
 /** Every function a transport puts in the page, by the name it is stringified under (extension-distribution.md §10.5). */
-const PAGE_FUNCTIONS: Record<string, Function> = { dispatch, locate, fine, disc, ...COMMAND_HANDLERS };
+const PAGE_FUNCTIONS: Record<string, Function> = { dispatch, locate, fine, disc, starter, ...COMMAND_HANDLERS };
 
 /**
  * A bare mode or handler index is moved by no codegen or drift check, so a pin bump breaks it silently: every one

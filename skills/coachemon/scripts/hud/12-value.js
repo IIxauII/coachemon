@@ -82,6 +82,8 @@ const pairScore = (env, m, t) => {
 
 const pairOf = (run, env, m, t) => run.memo("pair", `${m.key}|${t.key}`, () => pairScore(env, m, t));
 
+export const duel = (run, m, t) => pairOf(run, duelEnv(run?.scene ?? null), m, t);
+
 /**
  * One threat's row: the answer's margin, a discounted backup, the two credits once each however many members earn
  * them, less the exposure of the share of the party the threat beats in the speed-aware race.
@@ -423,6 +425,8 @@ const reasonsOf = (before, after, gain) => {
     .filter(x => x && (gain ? x.d >= MARGIN : x.d <= -MARGIN))
     // Stable, so a tie between two threats falls to the one the threat set lists first.
     .sort((x, y) => Math.abs(y.d) * y.a.weight - Math.abs(x.d) * x.a.weight)
+    // Twin foes of a roster are two rows under one name (game-code.md §10), and would be one reason said twice.
+    .filter((x, i, all) => all.findIndex(y => y.a.threat === x.a.threat) === i)
     .slice(0, MAX_REASONS)
     .map(x => {
       const words = wordsOf(x.part, gain, x.b, x.a);

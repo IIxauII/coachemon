@@ -297,6 +297,50 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   assert.deepEqual(site.onward.map(x => x.name), ["Laboratory", "Factory", "Slum"], "the event's link is onward too");
 }
 
+const daily = forcedBiomes => ({ isDaily: true, dailyConfig: { forcedBiomes }, getWaveForDifficulty: w => w + 30, challenges: [] });
+
+// ---- A Daily seed's forced biomes are the options in its order, `allMapOptions` the own links (game-code.md §10)
+{
+  const unnamed = tables({ biomeName: undefined });
+  const options = (labels, gameMode, t = unnamed) => mount({ labels, t, gameMode }).model().options.map(o => o.id);
+  assert.deepEqual(options(["Feenlichtung", "Slum", "Sumpf"], daily([{ waveIndex: 30, biomeId: [34, 30, 7] }])), [34, 30, 7],
+    "three forced biomes, matched in the seed's order and not the links'");
+  const events = { getShinyCatchMultiplier: () => 2, getEventBiomeLinks: id => (id === 3 ? [33] : []) };
+  assert.deepEqual(options(["Sumpf", "Baustelle", "Slum"], daily([{ waveIndex: 30, allMapOptions: true }]), tables({ biomeName: undefined, events })),
+    [7, 26, 30], "every own link, the 1/4 one included and the event's left out");
+  assert.deepEqual(options(["Sumpf", "Baustelle", "Slum"], daily([{ waveIndex: 20, biomeId: [34, 30, 7] }])), [7, 26, 30],
+    "an entry for another wave forces nothing here");
+}
+
+// ---- Onward is the Daily seed's choice at the next switch: one forced biome is no choice, several come whole
+{
+  const onward = (gameMode, t = tables()) => {
+    const { el } = mount({ gameMode, t });
+    return { m: globalThis.__coachHud.last(), text: lines(el).split("\n").filter(l => l.includes("onward")) };
+  };
+  const one = onward(daily([{ waveIndex: 40, biomeId: [34] }]));
+  console.log(`== a Daily seed forcing Fairy Glade at wave 40\n${one.text.join("\n")}`);
+  assert.deepEqual(one.m.options.map(o => o.onward.map(x => x.name)), [["Fairy Glade"], ["Fairy Glade"]], "the seed's biome whatever the links");
+  assert.ok(one.m.options.every(o => o.dailyOnward), "and marked as the seed's");
+  assert.ok(one.text.every(l => /onward: Fairy Glade, no choice \(Daily seed\)/.test(l)), one.text.join(" | "));
+  const several = onward(daily([{ waveIndex: 40, biomeId: [34, 30] }]));
+  console.log(`== a Daily seed offering Fairy Glade and Slum at wave 40\n${several.text.join("\n")}`);
+  assert.deepEqual(several.m.options[0].onward, [{ name: "Fairy Glade", rare: false, chance: 1 }, { name: "Slum", rare: false, chance: 1 }]);
+  assert.ok(several.text.every(l => /onward \(Daily seed\): Fairy Glade · Slum$/.test(l)), several.text.join(" | "));
+  // Laboratory is missing from the fixture's tables, which stand in for the game's test of a biome id (game-code.md §10).
+  const unknown = onward(daily([{ waveIndex: 40, biomeId: [41, 30] }]));
+  assert.deepEqual(unknown.m.options[0].onward.map(x => x.name), ["Graveyard", "Tall Grass"], "an id the game lacks voids the entry");
+  const events = { getShinyCatchMultiplier: () => 2, getEventBiomeLinks: id => (id === 26 ? [30] : []) };
+  const stub = biomeId => [biomeId, { biomeId, pokemonPool: tiers({}), trainerPool: trainers({}), trainerChance: 0, biomeLinks: [3] }];
+  const withSiteLinks = new Map([...BIOMES, stub(41), stub(21)]);
+  const all = onward(daily([{ waveIndex: 40, allMapOptions: true }]), tables({ events, biomes: withSiteLinks }));
+  assert.deepEqual(all.m.options[1].onward, [{ name: "Laboratory", rare: true, chance: 1 }, { name: "Factory", rare: false, chance: 1 }],
+    "every own link offered whole, the event's left out");
+  const plain = onward(daily([{ waveIndex: 30, biomeId: [34] }]));
+  assert.deepEqual(plain.m.options[1].onward.map(x => x.chance), [3, 1], "an entry for this wave is not the next switch's");
+  assert.ok(!plain.m.options[1].dailyOnward);
+}
+
 // ---- Spawn weights follow tier odds, time of day, the legend gate and luck (game-code.md §10)
 {
   const { scene } = mount({ wave: 30 });

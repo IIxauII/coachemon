@@ -31,14 +31,7 @@ export function starters(L: Located, _args: Record<string, never>): StartersResu
   const __try = (f: () => any) => { try { return f(); } catch (e) { return null; } };
   const h = __try(() => L.ui.handlers[L.m.STARTER_SELECT]);
   const gd = __try(() => L.scene.gameData);
-  // The grid keeps only its 81 on-screen containers, so a species is named through `setSpecies` on a bare
-  // object. It looks the species up before it reads `props`, and with none throws before it adds a sprite.
-  const setSpecies = __try(() => Object.getPrototypeOf(h.starterContainers[0]).setSpecies);
-  const nameOf = (id: number): string | null => __try(() => {
-    const probe: any = {};
-    try { setSpecies.call(probe, id); } catch (e) {}
-    return probe.species.name;
-  });
+  const { nameOf, valueLimit } = L.starter(h);
   const grid: StartersResult["grid"] = __try(() => (h.filteredStarterIds || []).map((id: number, i: number) => ({
     i, name: nameOf(id), id, cost: __try(() => gd.getSpeciesStarterValue(id)),
   }))) ?? [];
@@ -57,16 +50,15 @@ export function starters(L: Located, _args: Record<string, never>): StartersResu
       costReduction: __try(() => st.valueReduction),
       candy: __try(() => st.candyCount),
     }))) ?? [];
-  // `cursor` is an on-screen container; the label reads `<party value>/<limit>`.
-  const limit = __try(() => Number(/\/([\d.]+)$/.exec(h.valueLimitLabel.text)![1]));
   return {
     ok: true,
+    // (game-code.md §23)
     // @mirrors starter-grid
     cursor: __try(() => (typeof h.cursor === "number" ? h.scrollCursor * 9 + h.cursor : null)),
     scrollCursor: __try(() => h.scrollCursor),
     grid,
     party: __try(() => (h.partyStarterIds || []).map(nameOf)) ?? [],
-    valueLimit: Number.isFinite(limit) ? limit : null,
+    valueLimit: valueLimit(),
     partyValid: __try(() => h.isPartyValid()),
     owned,
   };

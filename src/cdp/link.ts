@@ -12,6 +12,7 @@ import { fine } from "../page/fine.ts";
 import { COMMAND_HANDLERS, type Result } from "../page/handlers.ts";
 import { PAGE_MODES } from "../page/modes.ts";
 import { locate } from "../page/locate.ts";
+import { starter } from "../page/starter.ts";
 import { COMMAND_NAMES, STORE_COMMANDS, type Args, type CommandName } from "../protocol/commands.ts";
 import { isThrown, type CdpSession } from "./session.ts";
 
@@ -31,7 +32,7 @@ const RAW_KEYS: Partial<Record<Button, [key: string, code: string, keyCode: numb
 
 /** Each command's expression up to its arguments, the mode enums serialized into it (#164). */
 const PREFIX = Object.fromEntries(
-  COMMAND_NAMES.map(name => [name, `(${dispatch})(${locate}, ${fine}, ${disc}, ${COMMAND_HANDLERS[name]}, ${JSON.stringify(name)}, ${JSON.stringify(STORE_COMMANDS[name].kind)}, ${JSON.stringify(PAGE_MODES)}, `]),
+  COMMAND_NAMES.map(name => [name, `(${dispatch})(${locate}, ${fine}, ${disc}, ${starter}, ${COMMAND_HANDLERS[name]}, ${JSON.stringify(name)}, ${JSON.stringify(STORE_COMMANDS[name].kind)}, ${JSON.stringify(PAGE_MODES)}, `]),
 ) as Record<CommandName, string>;
 
 const UNCONTENDED: Contention = { contended: false, holder: null };

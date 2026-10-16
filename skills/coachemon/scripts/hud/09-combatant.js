@@ -1,7 +1,7 @@
 // Builds the live-shaped object the approx duel matrix scores (`approxOutcomes`) out of plain data — a species at a
 // level, a member at a projected level, a fusion of two halves the player hasn't committed — and refuses the live
 // scene: it constructs no game object and draws no RNG, so a run read that calls it stays a read.
-import { natureOf } from "./01-core.js";
+import { TYPES, natureOf } from "./01-core.js";
 import { gameTables } from "./04-game-tables.js";
 import { baseStatsOf, formOf } from "./08-party.js";
 
@@ -225,9 +225,11 @@ export const combatantOf = (spec = {}) => {
           : abilityNameOf(firstAbility(form));
   // The passive stays the base half's, fused or not (game-code.md §24), but it is the *species*' own, so an evolved
   // member brings the evolved species' passive rather than the one it has now (game-code.md §23).
+  // `getPassiveAbility` answers what a passive Trace copied on the field (§24).
+  const ownPassive = () => (mon.summonData?.passiveAbility ? AbilityId.TRACE : mon.getPassiveAbility());
   const passive = spec.passive !== undefined ? abilityNameOf(spec.passive)
     : mon && tryDo(() => mon.hasPassive(), false)
-      ? abilityNameOf(evolved ? tryDo(() => species.getPassiveAbility(formIndex)) : tryDo(() => mon.getPassiveAbility()))
+      ? abilityNameOf(evolved ? tryDo(() => species.getPassiveAbility(formIndex)) : tryDo(ownPassive))
       : null;
   const given = statRowOf(spec.stats);
   // A live member's own call folds in its vitamins, its fusion and the Flip Stat challenge (game-code.md §20) — all
@@ -289,6 +291,11 @@ export const combatantOf = (spec = {}) => {
     isOnField: () => false,
   };
 };
+
+// A `foeData` row (48-preview.js).
+export const previewFoeOf = row => combatantOf({ name: row.name, level: row.level, stats: row.stats,
+  types: (row.types ?? []).map(t => TYPES.indexOf(t)).filter(t => t >= 0), ability: row.ability ?? null,
+  passive: row.passive ?? null, moves: row.moveIds ?? [], boss: row.segments ?? 0, player: false });
 
 /**
  * The `env` the approx duel reads for a duel with no field: who the foe is comes off each side's own `isPlayer`, and

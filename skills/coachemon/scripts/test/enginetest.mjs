@@ -353,6 +353,12 @@ const log = (...a) => console.log(...a);
   assert.equal(lock.turnsWe, 5);
   assert.ok(drop.turnsWe === 9, "Overheat at −2, −4, −6 never gets there");
   assert.ok(lock.cost > 0.1);
+  // Six hits outlast the lock-in's confusion: 2.5 confused uses, half a turn each (game-code.md §5, §8).
+  const tall = mon("Blissey", { player: false, hp: 540, spe: 10, moves: [move(2, "Pound", 5)] });
+  setup([user], [tall]);
+  const [longLock, , longPlain] = user.moveset.map(pm => E.exchange(user, pm, tall));
+  log(`$ 6 hits needed: Pound ${r2(longPlain.eTurnsWe)} turns expected · Outrage ${r2(longLock.eTurnsWe)}`);
+  assert.ok(Math.abs(longLock.eTurnsWe - longPlain.eTurnsWe - 1.25) < 1e-9, `the lock's confusion (${longLock.eTurnsWe - longPlain.eTurnsWe})`);
 }
 
 assert.ok(["Iron Barbs", "Rough Skin", "Moxie", "Magic Guard", "Unaware"].every(a => E.TRAPS.has(a)), "new trap abilities listed");

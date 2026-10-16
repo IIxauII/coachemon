@@ -52,6 +52,7 @@ export const ENUMS: Record<string, string> = {
   MysteryEncounterTier: "src/enums/mystery-encounter-tier.ts",
   MysteryEncounterType: "src/enums/mystery-encounter-type.ts",
   Nature: "src/enums/nature.ts",
+  PartyMemberStrength: "src/enums/party-member-strength.ts",
   Passive: "src/enums/passive.ts",
   PokeballType: "src/enums/pokeball.ts",
   PokemonType: "src/enums/pokemon-type.ts",

@@ -1,0 +1,42 @@
+== single: Charizard loses to Golem
+{"wave":45,"swaps":[{"out":{"name":"Charizard","slot":0,"icon":null,"s":-2},"in":{"name":"Swampert","slot":2,"icon":null,"s":2.9765625},"foe":"Golem"}],"confidence":"exact","missed":false}
+== wild single: Charizard loses to Golem
+{"wave":45,"swaps":[{"out":{"name":"Charizard","slot":0,"icon":null,"s":-2},"in":{"name":"Swampert","slot":2,"icon":null,"s":2.9765625},"foe":"Golem"}],"confidence":"exact","missed":false}
+== fainted slot 0: Typhlosion leads and loses
+{"wave":45,"swaps":[{"out":{"name":"Typhlosion","slot":1,"icon":null,"s":-2},"in":{"name":"Swampert","slot":2,"icon":null,"s":2.9765625},"foe":"Golem"}],"confidence":"exact","missed":false}
+== double: Charizard loses to both, Swampert holds
+{"wave":45,"swaps":[{"out":{"name":"Charizard","slot":1,"icon":null,"s":-2},"in":{"name":"Meganium","slot":3,"icon":null,"s":3},"foe":"Golem"}],"confidence":"exact","missed":false}
+== double: both leads lose to both
+{"wave":45,"swaps":[{"out":{"name":"Charizard","slot":0,"icon":null,"s":-2},"in":{"name":"Meganium","slot":3,"icon":null,"s":3},"foe":"Golem"},{"out":{"name":"Typhlosion","slot":1,"icon":null,"s":-2},"in":{"name":"Swampert","slot":2,"icon":null,"s":2.9765625},"foe":"Golem"}],"confidence":"exact","missed":false}
+== double: Charizard beats one opener of the two
+quiet
+== double: one opener unreadable
+quiet
+== tie: two Swamperts on the bench
+{"wave":45,"swaps":[{"out":{"name":"Charizard","slot":0,"icon":null,"s":-2},"in":{"name":"Swampert","slot":2,"icon":null,"s":2.9765625},"foe":"Golem"}],"confidence":"exact","missed":false}
+== a preview whose double has been wrong this run
+{"wave":45,"swaps":[{"out":{"name":"Charizard","slot":0,"icon":null,"s":-2},"in":{"name":"Swampert","slot":2,"icon":null,"s":2.9765625},"foe":"Golem"}],"confidence":"exact","missed":true}
+== quiet: the lead wins it
+quiet
+== quiet: nobody behind it wins
+quiet
+== quiet: one member standing
+quiet
+== quiet: a mystery encounter fields no foes
+quiet
+== quiet: no preview
+quiet
+== quiet: a preview that could not be read
+quiet
+== rewards card: one swap
+reorder first — taking the free reward closes the shop
+⇄ lead Swampert switch with Charizard · beats Golem~
+★ Potion heals Swampert
+summary lead with Swampert over Charizard (beats Golem) [~] · take Potion
+== rewards card: two swaps
+reorder first — taking the free reward closes the shop
+⇄ lead Meganium switch with Charizard · beats Golem
+⇄ lead Swampert switch with Typhlosion · beats Golem
+★ Potion heals Swampert
+summary lead with Meganium over Charizard (beats Golem), Swampert over Typhlosion (beats Golem) · take Potion
+ok

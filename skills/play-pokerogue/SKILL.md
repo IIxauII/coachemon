@@ -31,13 +31,28 @@ The `coachemon` MCP server drives a live PokéRogue tab in Chrome over CDP. Stat
 | `TARGET_SELECT` | In doubles, the enemy you can KO or the bigger threat. |
 | `PARTY/FAINT_SWITCH` | Must answer: pick a non-fainted, non-active mon, then `Send Out`. Never `Cancel`. |
 | `PARTY/POST_BATTLE_SWITCH`, `PARTY/SWITCH` | `Cancel` unless a switch is wanted. |
-| `MODIFIER_SELECT` (shop) | Buy first, reward last: taking the free reward (row 1, cost 0) ends the screen and starts the next wave, so buy any wanted shop-row item (cost > 0, only if money ≥ cost) **before** it. Then take one reward. Item that targets a mon opens `PARTY/MODIFIER` → pick mon → `Apply`/`Use`/`Teach`. |
+| `MODIFIER_SELECT` (shop) | Buy first, reorder second, reward last: taking the free reward (row 1, cost 0) ends the screen and starts the next wave, so buy any wanted shop-row item (cost > 0, only if money ≥ cost) **before** it. When `read_card` says "lead with X", reorder next (see [Reordering in the shop](#reordering-in-the-shop)). Then take one reward. Item that targets a mon opens `PARTY/MODIFIER` → pick mon → `Apply`/`Use`/`Teach`. |
 | `SUMMARY/LEARN_MOVE`, move-replace confirm | `select_option` the move to forget by name, or the new move (last option) to decline. On the confirm, `No` declines. |
 | `OPTION_SELECT` (biome etc.) | Choose; first option if indifferent. |
 | Party full, release a mon | Ask the user which mon to release. Never pick one yourself. |
 | `CONFIRM` you don't understand | `No`. |
 
 `read_menu`'s `screen_class` says whether a screen is `must_answer`.
+
+## Reordering in the shop
+
+The next wave opens on the front of the party, and a trainer fight gives no free switch before its first turn, so the shop is the place to pick the opener. `read_card` says "lead with X over Y" when Y loses the next opener and X wins it.
+
+1. `select_option("Check Team")` (shop row 0, `index: "0:2"`) opens `PARTY/CHECK`.
+2. Pick Y → `Switch` → pick X. The two swap at once, with no confirm. For two members with one name, pick by `index`.
+3. `Cancel` returns to the same shop, with nothing re-rolled. Then take the reward.
+
+On `PARTY/CHECK`:
+
+- A half-made switch (Y marked, X not yet picked) is invisible in `read_menu`, and `Cancel` does nothing while it stands. Finish it by picking X, or clear it by picking Y again or `press(CANCEL)`.
+- Party options' `active` keeps marking the old lead until the next wave. `get_state`'s `active` is the live order.
+- The swap press can take ~3 s to settle or come back `stuck`, since party order is not part of the progress check. `get_state` shows whether the swap landed. Only press again if it didn't.
+- A member trapped on the field refuses `Switch` with a message: `press(ACTION)` and lead with the party as it stands.
 
 ## Rival fights
 
