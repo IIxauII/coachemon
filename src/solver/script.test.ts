@@ -20,6 +20,7 @@ const replayed: Replay = {
   confidence: "replay",
   outcome: "won",
   receipt: [],
+  luck: [],
   steps: [
     {
       turn: 1,

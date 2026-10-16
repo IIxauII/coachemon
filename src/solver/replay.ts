@@ -4,9 +4,10 @@ import { NAMES } from "../enums/generated.ts";
 import { title } from "./describe.ts";
 import { refuse } from "./gate.ts";
 import type { SavedItem, SessionSave, SolveInput } from "./input.ts";
+import { luckOf } from "./luck.ts";
 import { noAnswer } from "./no-answer.ts";
 import type { HygieneRule, NoAnswer, ReplayResult } from "./oracle-line.ts";
-import { checkpoint, input, outcome } from "./schema.ts";
+import { checkpoint, draw, input, outcome } from "./schema.ts";
 import { misses, type Script } from "./script.ts";
 
 /** Runs the oracle's harness in the clone of the pinned game version. `out` is what it wrote, absent if nothing. */
@@ -31,7 +32,9 @@ const report = z.object({
   battle: z.object({ wave: z.int(), battleSeed: z.string() }).optional(),
   /** The loaded scene's own export, at the first decision. */
   scene: z.record(z.string(), z.unknown()).optional(),
-  steps: z.array(z.object({ turn: z.int(), input: input.nullable(), checkpoint, strayPrompts: z.int() })).optional(),
+  steps: z
+    .array(z.object({ turn: z.int(), input: input.nullable(), checkpoint, strayPrompts: z.int(), draws: z.array(draw) }))
+    .optional(),
   end: z
     .union([
       outcome,
@@ -114,6 +117,7 @@ export async function replay(
     replay: {
       confidence: "replay",
       ...played,
+      luck: luckOf(steps),
       receipt: [
         { step: "versions", checked: `the save, the clone and the pin are all game version ${version}` },
         {

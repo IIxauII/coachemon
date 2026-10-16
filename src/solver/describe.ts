@@ -7,6 +7,8 @@ export const title = (key: string) =>
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 
+export const STAGES = ["Atk", "Def", "SpA", "SpD", "Spe", "Acc", "Eva"];
+
 const mon = ({ slot, species }: PartySlot) => `${title(species)} (slot ${slot})`;
 
 export function describeInput(input: Input): string {

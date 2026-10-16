@@ -14,6 +14,7 @@ const replayed = (turns: number): ReplayResult => ({
     outcome: "won",
     steps: Array.from({ length: turns }, (_, i) => ({ turn: i + 1, input: null, checkpoint: { ours: [], foes: [] } })),
     receipt: [],
+    luck: [],
   },
 });
 

@@ -1,8 +1,7 @@
-import { describeInput, title } from "../../src/solver/describe.ts";
+import { describeInput, STAGES, title } from "../../src/solver/describe.ts";
+import { NO_LUCK } from "../../src/solver/luck.ts";
 import type { Checks, Miss } from "../../src/solver/worker.ts";
-import type { MonState, OracleLine, Receipt, Replay, Step } from "../../src/solver/oracle-line.ts";
-
-const STAGES = ["Atk", "Def", "SpA", "SpD", "Spe", "Acc", "Eva"];
+import type { Luck, MonState, OracleLine, Receipt, Replay, Step } from "../../src/solver/oracle-line.ts";
 
 const mon = (m: MonState) =>
   [
@@ -27,16 +26,24 @@ const receipted = (receipt: Receipt) => [
   ...receipt.map(({ step, checked, pending }) => `    ${step}${pending ? " (pending)" : ""}: ${checked}`),
 ];
 
-export function printReplay({ outcome, steps, receipt }: Replay): string {
-  return [`replayed: ${outcome} in ${steps.at(-1)?.turn ?? 0} turns`, ...turns(steps), ...receipted(receipt)].join("\n");
+const luckLines = (luck: readonly Luck[]) =>
+  luck.length === 0
+    ? [`luck: rides none: ${NO_LUCK}`]
+    : [`luck: rides ${luck.length} draw${luck.length === 1 ? "" : "s"}`, ...luck.map(({ turn, what }) => `    ${`T${turn}`.padEnd(4)}${what}`)];
+
+export function printReplay({ outcome, steps, luck, receipt }: Replay): string {
+  return [`replayed: ${outcome} in ${steps.at(-1)?.turn ?? 0} turns`, ...turns(steps), ...luckLines(luck), ...receipted(receipt)].join(
+    "\n",
+  );
 }
 
-export function printOracleLine({ steps, receipt }: OracleLine): string {
+export function printOracleLine({ steps, luck, receipt }: OracleLine): string {
   const ours = steps.at(-1)?.checkpoint.ours ?? [];
   const left = ours.filter(m => m.hp > 0).length;
   return [
     `oracle line: wins in ${steps.at(-1)?.turn ?? 0} turns with ${left} of ${ours.length} left`,
     ...turns(steps),
+    ...luckLines(luck),
     ...receipted(receipt),
   ].join("\n");
 }

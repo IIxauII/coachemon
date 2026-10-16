@@ -40,8 +40,8 @@ const clean = () => ({
   battle: { ...drayton.live },
   scene: structuredClone(drayton.liveExport) as Record<string, any>,
   steps: [
-    { turn: 1, input: bounce, checkpoint: atTurn(346), strayPrompts: 0 },
-    { turn: 2, input: null, checkpoint: atTurn(300), strayPrompts: 0 },
+    { turn: 1, input: bounce, checkpoint: atTurn(346), strayPrompts: 0, draws: [] as unknown[] },
+    { turn: 2, input: null, checkpoint: atTurn(300), strayPrompts: 0, draws: [] as unknown[] },
   ],
   end: "won" as unknown,
 });
@@ -91,6 +91,29 @@ test("a replay hands the harness the save and the inputs, and comes back with th
     { turn: 1, input: bounce, checkpoint: atTurn(346) },
     { turn: 2, input: null, checkpoint: atTurn(300) },
   ]);
+});
+
+test("a replay names the luck it rode, by turn: the draws that went our way (#701)", async () => {
+  const report = clean();
+  report.steps[0].draws = [
+    { kind: "accuracy", side: "ours", species: "PROBOPASS", move: "BOUNCE", chance: 0.85, happened: true },
+    { kind: "crit", side: "ours", species: "PROBOPASS", move: "BOUNCE", chance: 1 / 24, happened: false },
+  ];
+  report.steps[1].draws = [{ kind: "crit", side: "ours", species: "PROBOPASS", move: "BOUNCE", chance: 1 / 24, happened: true }];
+  const { result } = await ask(report);
+
+  assert.deepEqual(result.kind === "replayed" && result.replay.luck, [
+    { turn: 1, what: "Probopass's Bounce hits (85%)" },
+    { turn: 2, what: "Probopass's Bounce crits (4%)" },
+  ]);
+});
+
+test("a replay whose draws all went against us, or were never in doubt, rides no luck (#701)", async () => {
+  const report = clean();
+  report.steps[0].draws = [{ kind: "accuracy", side: "foes", species: "ARCHALUDON", move: "FLASH_CANNON", chance: 1, happened: true }];
+  const { result } = await ask(report);
+
+  assert.deepEqual(result.kind === "replayed" && result.replay.luck, []);
 });
 
 test("a replay that passes every check claims replay, with a receipt naming each check and what it checked (#660, #661)", async () => {
@@ -304,6 +327,7 @@ test("a harness that failed is no answer, never a win or a loss (#660)", async (
     [{ ...clean(), end: undefined }, /stopped without saying how the fight ended/],
     [{ ...clean(), error: "Error: the replay timed out after 540 s" }, /timed out after 540 s$/],
     [{ ...clean(), steps: [{ ...clean().steps[0], checkpoint: { ...atTurn(346), ours: [] } }] }, /our party was empty after turn 1/],
+    [{ ...clean(), steps: [{ ...clean().steps[0], draws: undefined }] }, /draws/],
   ];
   for (const [report, why] of failed) {
     const { clone } = fakeClone({ out: report === undefined || typeof report === "string" ? report : JSON.stringify(report) });
