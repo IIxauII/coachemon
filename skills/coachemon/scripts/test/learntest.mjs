@@ -233,6 +233,10 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.ok(crowded.notes.includes("3 status moves") && crowded.value < sing.value, "a moveset that is mostly status has no room for another");
   const taunted = run(mon("Sableye", ["Dark","Ghost"], 75, 65, [["Knock Off","Dark",65,"P"],["Shadow Sneak","Ghost",40,"P"],["Fake Out","Normal",40,"P"]]), TAUNT);
   assert.ok(taunted.model.move.value > 0 && taunted.model.move.notes.includes("taunt"), `Taunt is scored: ${taunted.model.move.notes}`);
+  // Magnet Rise's tag is FLOATING: a MAGNET_RISEN key matched nothing, and the move went unscored (#730).
+  const MAGNET_RISE = ["Magnet Rise","Electric",-1,"X",-1,[["AddBattlerTagAttr",{ tagType: "FLOATING", selfTarget: true }]],false,0];
+  const risen = run(mon("Magnezone", ["Electric","Steel"], 70, 130, [["Thunderbolt","Electric",90,"S"],["Flash Cannon","Steel",80,"S"],["Tri Attack","Normal",80,"S"]]), MAGNET_RISE);
+  assert.ok(risen.model.move.value > 0 && risen.model.move.notes.includes("floating"), `Magnet Rise is scored: ${risen.model.move.notes}`);
 
   const unknown = run(mon("Smeargle", ["Normal"], 60, 60, [["Tackle","Normal",40,"P"],["Swift","Normal",60,"S"],["Quick Attack","Normal",40,"P"],["Sketch","Normal",-1,"X",-1]]), ["Pound","Normal",40,"P"]);
   assert.equal(byName(unknown.model, "Sketch").value, null);
