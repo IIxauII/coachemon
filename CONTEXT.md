@@ -196,7 +196,7 @@ What a tool call reports about the game and the run, apart from its own payload:
 
 ## Job
 
-Work the coach plugin runs in the background because it outlasts one tool call, such as an **oracle**'s solve or setting up the clone it solves in. The call that starts a job returns at once and the job runs on after it, with a progress line short enough for the coach to relay as it is. A job ends **done** with its answer, **failed** with what stopped it, or **cancelled**, and whichever comes first is final: an answer that arrives after a cancel is dropped. A job lives in the plugin's own process and goes when it does.
+Work the coach plugin runs in the background because it outlasts one tool call, such as an **oracle**'s solve or setting up the clone it solves in. The call that starts a job returns at once and the job runs on after it, with a progress line short enough for the coach to relay as it is. A job ends **done** with its answer, **failed** with what stopped it, or **cancelled**, and whichever comes first is final: an answer that arrives after a cancel is dropped. A job lives in the plugin's own process and goes when it does. One solve runs per fight: starting one for a new fight cancels the last fight's.
 
 ## Confidence
 

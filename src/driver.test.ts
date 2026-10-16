@@ -1,17 +1,18 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test, type TestContext } from "node:test";
 import { Driver } from "./driver.ts";
 import { KEPT_ENDED, type JobKinds, type JobWork } from "./jobs.ts";
-import { ArenaTagSide, Button, MoveCategory, PokemonType, StatusEffect, UiMode } from "./enums/generated.ts";
+import { ArenaTagSide, Button, GameModes, MoveCategory, PokemonType, StatusEffect, UiMode } from "./enums/generated.ts";
 import { Refusal } from "./envelope.ts";
 import { fakeGame, type FakeScreen, type ScreenRead } from "./game/fake-game.ts";
 import { GORDIE_LINE } from "./game/fixtures/oracle-line.ts";
 import type { MenuRead } from "./game/port.ts";
 import { CALL_BUDGET_MS } from "./settle.ts";
 import { CLONE_JOB } from "./solver/clone.ts";
+import { SOLVE_JOB } from "./solver/solve-job.ts";
 
 const money = { money: 1000 };
 
@@ -924,13 +925,14 @@ test("a frame read that fails is not a frozen loop", async () => {
 });
 
 /** Scripts nothing but the reads a coach tool, or the session or extras read, makes. */
+const coachRead = (): ScreenRead => ({
+  ready: true, settled: true, reason: "menu-open", mode: UiMode.COMMAND, screen: "COMMAND", phaseName: "CommandPhase", wave: 12, turn: 1,
+  runLive: true, tutorialActive: false, handler: null, cursor: 0, modeChain: [], messageText: null, onActionInput: false,
+  awaitingActionInput: false, fine: "coach|0", domMode: null, gameVersion: "1.12.0.11", ...money,
+});
+
 function coachTab(over: Pick<FakeScreen, "card" | "starters" | "session" | "extras" | "unreachable" | "lockHolder">) {
-  const read = (): ScreenRead => ({
-    ready: true, settled: true, reason: "menu-open", mode: UiMode.COMMAND, screen: "COMMAND", phaseName: "CommandPhase", wave: 12, turn: 1,
-    runLive: true, tutorialActive: false, handler: null, cursor: 0, modeChain: [], messageText: null, onActionInput: false,
-    awaitingActionInput: false, fine: "coach|0", domMode: null, gameVersion: "1.12.0.11", ...money,
-  });
-  return drive({ ...over, read, menu: () => commandMenu(0) });
+  return drive({ ...over, read: coachRead, menu: () => commandMenu(0) });
 }
 
 test("read_card returns the card the panel is showing, in the settled envelope (extension-distribution.md §11.4)", async () => {
@@ -1308,4 +1310,194 @@ test("with solving on, the clone is set up as a background job that reports its 
 test("solving answers with nothing able to reach the game (extension-distribution.md §12.2)", async t => {
   const unreachable = { rung: 1, code: "unreachable", line: "The Coachemon hub is not running." } as const;
   assert.deepEqual(await drive({ unreachable }, tempHome(t)).driver.solving(true), { status: "ok", solving: true });
+});
+
+const DRAYTON: { save: Record<string, unknown>; live: { wave: number; battleSeed: string }; liveExport: Record<string, unknown> } = JSON.parse(
+  readFileSync(new URL("./solver/fixtures/drayton-w188.json", import.meta.url), "utf8"),
+);
+
+/** The session read at Drayton's first decision, with `save` standing in for its wave-start save. */
+const draytonRead = (save: Record<string, unknown> = DRAYTON.save) => () =>
+  ({ ok: true, wave: DRAYTON.live.wave, battleSeed: DRAYTON.live.battleSeed, waveStart: save, export: DRAYTON.liveExport }) as const;
+
+/** A tab at a fight's decision, on the hub unless said otherwise, with solving on and `solve` as the solve job's work. */
+async function solveTab(t: TestContext, solve: JobWork, over: { session?: FakeScreen["session"]; transport?: "hub" | "cdp"; solving?: boolean } = {}) {
+  const fake = fakeGame({ read: coachRead, menu: () => commandMenu(0), session: over.session ?? draytonRead() });
+  const driver = new Driver(fake.game, tempHome(t), fake.clock, { [SOLVE_JOB]: solve }, over.transport ?? "hub");
+  await driver.solving(over.solving ?? true);
+  return driver;
+}
+
+/** Work that reports `progress`, then answers `result` once `finish` is called; `args` is what it was started with. */
+function heldSolve(result: unknown, progress = "searched 1,200 of 9,000 turns") {
+  const held = { args: null as Record<string, unknown> | null, signal: null as AbortSignal | null, finish: () => {}, started: 0 };
+  const work: JobWork = async (args, ctl) => {
+    held.started++;
+    held.args = args;
+    held.signal = ctl.signal;
+    ctl.progress(progress);
+    await new Promise<void>(r => (held.finish = r));
+    return result;
+  };
+  return { held, work };
+}
+
+const settledJobs = () => new Promise(r => setImmediate(r));
+
+async function refusalOf(p: Promise<unknown>): Promise<Refusal> {
+  try {
+    await p;
+  } catch (e) {
+    if (e instanceof Refusal) return e;
+    throw e;
+  }
+  assert.fail("expected a refusal");
+}
+
+test("a solve job solves the fight on the tab from its wave-start save, relays its progress and answers with the oracle line (#672)", async t => {
+  const answer = { kind: "oracle_line", oracleLine: GORDIE_LINE };
+  const { held, work } = heldSolve(answer);
+  const driver = await solveTab(t, work);
+  const started = await driver.startJob(SOLVE_JOB, {});
+  assert.equal(started.state, "running", JSON.stringify(started));
+  const input = held.args?.input as Record<string, unknown>;
+  assert.deepEqual(input.save, DRAYTON.save, "a solve from the first turn starts from the wave-start save");
+  assert.deepEqual(input.live, DRAYTON.live);
+  assert.deepEqual(input.liveExport, DRAYTON.liveExport);
+  assert.equal(input.cloneVersion, "1.12.0.11");
+  assert.deepEqual(await driver.pollJob(started.job), { job: started.job, kind: SOLVE_JOB, state: "running", progress: "searched 1,200 of 9,000 turns" });
+  held.finish();
+  await settledJobs();
+  assert.deepEqual((await driver.readJob(started.job)).result, answer);
+});
+
+for (const [what, save, code, said] of [
+  ["a Daily", { ...DRAYTON.save, gameMode: GameModes.DAILY }, "daily", /Daily's seed is shared/],
+  ["a live game on another version", { ...DRAYTON.save, gameVersion: "1.12.1.0" }, "version_mismatch", /live game is 1\.12\.1\.0/],
+] as const) {
+  test(`a solve in ${what} refuses at once with its reason, before any job starts (#672)`, async t => {
+    const { held, work } = heldSolve(null);
+    const driver = await solveTab(t, work, { session: draytonRead(save) });
+    const r = await refusalOf(driver.startJob(SOLVE_JOB, {}));
+    assert.equal(r.code, "no_answer", r.message);
+    assert.equal((r.detail.reason as { code: string }).code, code);
+    assert.match(r.message, said);
+    assert.equal(held.started, 0, "no job was started");
+  });
+}
+
+test("a solve over CDP answers that it needs the hub, without reading the game or starting a job (#672)", async t => {
+  const { held, work } = heldSolve(null);
+  const unread = () => assert.fail("the session was read");
+  const driver = await solveTab(t, work, { transport: "cdp", session: unread });
+  const r = await refusalOf(driver.startJob(SOLVE_JOB, {}));
+  assert.equal(r.code, "no_answer", r.message);
+  assert.deepEqual(r.detail.reason, { code: "needs_hub" });
+  assert.match(r.message, /needs the hub/);
+  assert.equal(held.started, 0);
+});
+
+test("a solve with solving off refuses, before it reads the game or starts a job (#672)", async t => {
+  const { held, work } = heldSolve(null);
+  const unread = () => assert.fail("the session was read");
+  const driver = await solveTab(t, work, { solving: false, session: unread });
+  const r = await outcome(driver.startJob(SOLVE_JOB, {}));
+  assert.equal(r.error, "solving_off", JSON.stringify(r));
+  assert.equal(held.started, 0);
+});
+
+test("a solve that finds no win answers no answer with its reason, as its result (#672)", async t => {
+  const answer = { kind: "no_answer", reason: { code: "no_win", beams: [], unreplayed: [], dropped: 0 }, message: "no winning path turned up. The card still coaches." };
+  const { held, work } = heldSolve(answer);
+  const driver = await solveTab(t, work);
+  const { job } = await driver.startJob(SOLVE_JOB, {});
+  held.finish();
+  await settledJobs();
+  assert.deepEqual(await driver.readJob(job), { job, kind: SOLVE_JOB, state: "done", progress: "searched 1,200 of 9,000 turns", result: answer });
+});
+
+test("a cancelled solve stops its work and reads as cancelled, with no result (#672)", async t => {
+  const { held, work } = heldSolve({ kind: "oracle_line", oracleLine: GORDIE_LINE });
+  const driver = await solveTab(t, work);
+  const { job } = await driver.startJob(SOLVE_JOB, {});
+  assert.equal((await driver.cancelJob(job)).state, "cancelled");
+  assert.equal(held.signal?.aborted, true, "the solve's work was told to stop");
+  held.finish();
+  await settledJobs();
+  assert.deepEqual(await driver.readJob(job), { job, kind: SOLVE_JOB, state: "cancelled", progress: "searched 1,200 of 9,000 turns" });
+});
+
+/** Drayton's fight, `wave` waves on: the run's seed with another wave's battle. */
+const draytonLater = (waves: number) => () =>
+  ({
+    ok: true,
+    wave: DRAYTON.live.wave + waves,
+    battleSeed: "LaterBattleSeed1",
+    waveStart: { ...DRAYTON.save, waveIndex: DRAYTON.live.wave + waves },
+    export: { ...DRAYTON.liveExport, waveIndex: DRAYTON.live.wave + waves },
+  }) as const;
+
+test("a solve started for a new fight cancels the previous fight's job (#672)", async t => {
+  const first = heldSolve({ kind: "oracle_line", oracleLine: GORDIE_LINE });
+  let session: FakeScreen["session"] = draytonRead();
+  const fake = fakeGame({ read: coachRead, menu: () => commandMenu(0), session: () => session!() });
+  const driver = new Driver(fake.game, tempHome(t), fake.clock, { [SOLVE_JOB]: first.work }, "hub");
+  await driver.solving(true);
+  const old = await driver.startJob(SOLVE_JOB, {});
+  session = draytonLater(1);
+  const next = await driver.startJob(SOLVE_JOB, {});
+  assert.notEqual(next.job, old.job);
+  assert.equal((await driver.pollJob(old.job)).state, "cancelled", "the old fight's job");
+  assert.equal(first.held.signal?.aborted, false, "the new fight's job runs on");
+  assert.equal((await driver.pollJob(next.job)).state, "running");
+});
+
+test("a solve started again for the fight already being solved hands back its job, rather than a second (#672)", async t => {
+  const { held, work } = heldSolve({ kind: "oracle_line", oracleLine: GORDIE_LINE });
+  const driver = await solveTab(t, work);
+  const first = await driver.startJob(SOLVE_JOB, {});
+  const again = await driver.startJob(SOLVE_JOB, {});
+  assert.equal(again.job, first.job);
+  assert.equal(again.state, "running");
+  assert.equal(held.started, 1, "one job runs per fight");
+});
+
+test("a solve with no battle on the tab refuses, starting no job (#672)", async t => {
+  const { held, work } = heldSolve(null);
+  const driver = await solveTab(t, work, { session: () => ({ ok: false, why: "no-battle" }) });
+  const r = await outcome(driver.startJob(SOLVE_JOB, {}));
+  assert.equal(r.error, "no_battle", JSON.stringify(r));
+  assert.equal(r.why, "no-battle");
+  assert.equal(held.started, 0);
+});
+
+test("a solve for a run the game holds no wave-start save of answers no answer, starting no job (#672)", async t => {
+  const { held, work } = heldSolve(null);
+  const driver = await solveTab(t, work, { session: draytonRead(null as never) });
+  const r = await refusalOf(driver.startJob(SOLVE_JOB, {}));
+  assert.equal(r.code, "no_answer", r.message);
+  assert.deepEqual(r.detail.reason, { code: "no_wave_start" });
+  assert.match(r.message, /no wave-start save/);
+  assert.equal(held.started, 0);
+});
+
+test("a solve whose read of the fight never settles refuses, starting no job (#672)", async t => {
+  const { held, work } = heldSolve(null);
+  const fake = fakeGame({ read: () => ({ ...coachRead(), settled: false, reason: "ui-transition" }), menu: () => commandMenu(0), session: draytonRead() });
+  const driver = new Driver(fake.game, tempHome(t), fake.clock, { [SOLVE_JOB]: work }, "hub");
+  await driver.solving(true);
+  const r = await outcome(driver.startJob(SOLVE_JOB, {}));
+  assert.equal(r.error, "not_settled", JSON.stringify(r));
+  assert.equal(held.started, 0);
+});
+
+test("a solve started again once the fight's job has ended starts a fresh one (#672)", async t => {
+  const { held, work } = heldSolve({ kind: "oracle_line", oracleLine: GORDIE_LINE });
+  const driver = await solveTab(t, work);
+  const first = await driver.startJob(SOLVE_JOB, {});
+  held.finish();
+  await settledJobs();
+  const again = await driver.startJob(SOLVE_JOB, {});
+  assert.notEqual(again.job, first.job);
+  assert.equal(again.state, "running");
 });
