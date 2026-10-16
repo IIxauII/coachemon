@@ -22,7 +22,7 @@ const SPECIES = [
   [25, "Pikachu", ["Electric"], [35,55,40,50,50,90], 1, [[26, 1, true]], 21, 22],
   [26, "Raichu", ["Electric"], [60,90,55,90,80,110]],
   [129, "Magikarp", ["Water"], [20,10,55,15,20,80], 1, [[130, 20]], 23, 24],
-  [130, "Gyarados", ["Water","Flying"], [95,125,79,60,100,81]],
+  [130, "Gyarados", ["Water","Flying"], [95,125,79,60,100,81], undefined, [], 33, 23],
   [147, "Dratini", ["Dragon"], [41,64,45,50,50,50], 4, [[148, 30], [149, 55]], 25, 26],
   [148, "Dragonair", ["Dragon"], [61,84,65,70,70,70]],
   [149, "Dragonite", ["Dragon","Flying"], [91,134,95,100,100,80]],
@@ -31,10 +31,10 @@ const SPECIES = [
   [184, "Azumarill", ["Water","Fairy"], [100,50,80,60,80,50]],
   [443, "Gible", ["Dragon","Ground"], [58,70,45,40,45,42], 6, [[444, 24], [445, 48]], 29, 30],
   [444, "Gabite", ["Dragon","Ground"], [68,90,65,50,55,82]],
-  [445, "Garchomp", ["Dragon","Ground"], [108,130,95,80,85,102]],
+  [445, "Garchomp", ["Dragon","Ground"], [108,130,95,80,85,102], undefined, [], 29, 34],
   [151, "Mew", ["Psychic"], [100,100,100,100,100,100], 8, [], 31, 32],
 ];
-const ABILITY_NAMES = { 11: "Chlorophyll", 13: "Solar Power", 15: "Rain Dish", 17: "Big Pecks", 19: "Guts", 21: "Lightning Rod", 23: "Moxie", 25: "Multiscale", 27: "Huge Power", 29: "Rough Skin", 31: "Synchronize", 24: "Rattled", 30: "Rough Skin (H)" };
+const ABILITY_NAMES = { 11: "Chlorophyll", 13: "Solar Power", 15: "Rain Dish", 17: "Big Pecks", 19: "Guts", 21: "Lightning Rod", 23: "Moxie", 25: "Multiscale", 27: "Huge Power", 29: "Rough Skin", 31: "Synchronize", 24: "Rattled", 30: "Rough Skin (H)", 33: "Intimidate", 34: "Sand Force" };
 
 const byId = new Map();
 for (const [id, name, types, stats, cost, evos = [], passive, hidden] of SPECIES) {
@@ -167,7 +167,16 @@ const checkBudget = (m, limit, label) => {
   assert.deepEqual(m.picks.map(t => t.label).slice(0, 1), ["best"]);
   assert.ok(m.viewing && m.viewing.name === "Rattata", "cursor line");
   const karp = m.picks[0].members.find(x => x.name === "Magikarp") ?? m.picks.flatMap(t => t.members).find(x => x.name === "Magikarp");
-  if (karp) assert.ok(karp.why.some(w => /passive Moxie|rare egg move Dragon Dance/.test(w)), "Magikarp's unlocks are named");
+  if (karp) assert.ok(karp.why.some(w => /passive Intimidate|rare egg move Dragon Dance/.test(w)), "Magikarp's unlocks are named");
+}
+
+// ---- The card names the final form's passive and hidden ability, after that form where the starter's differs.
+{
+  const karp = mount({ looking: 129 }).model.viewing.why;
+  assert.ok(karp.includes("passive Intimidate (Gyarados)"), karp.join(" · "));
+  const gible = mount({ looking: 443 }).model.viewing.why;
+  assert.ok(gible.includes("passive Rough Skin"), gible.join(" · "));
+  assert.ok(gible.includes("hidden Sand Force (Garchomp)"), gible.join(" · "));
 }
 
 // ---- Gible is already on the team: every proposal keeps it and spends the 4 points left.
@@ -208,7 +217,7 @@ const checkBudget = (m, limit, label) => {
   const { model } = mount({ challenges: [randomizer], looking: 129 });
   const why = model.picks.flatMap(t => t.members.flatMap(x => x.why)).concat(model.viewing?.why ?? []).join(" ");
   assert.ok(!/egg move/.test(why), why);
-  assert.ok(/passive Moxie/.test(why), why);
+  assert.ok(/passive Intimidate/.test(why), why);
 }
 
 // ---- Off the grid the last species looked at is no cursor line, though the handler still holds its id.

@@ -2623,7 +2623,15 @@ through their hooks above.
 `generation`; `getEvolutionLevels()` (`src/data/pokemon-species.ts:1106-1123`: every descendant flattened as
 `[speciesId, level]`, item evolutions at level 1); `getPassiveAbility(formIndex)` (`:217`, after
 `PASSIVE_ABILITY_MODIFY`, which the Ability Randomizer skips during `SelectStarterPhase`,
-`src/data/challenge.ts:1683-1695`). The registry (`SpeciesDataRegistry`, found by the chunk scan, §10) gives every
+`src/data/challenge.ts:1683-1695`). Every species carries its own passive (`passives` in
+`src/data/balance/species/generation-*.ts`, one ability or one per form index, read by `SpeciesDataRegistry.getPassive`,
+`src/data/species-data-registry.ts:236-245`, form 0 when the index has none), and in battle a mon has its
+**current** species': `Pokemon.getPassiveAbility` reads `this.species.getPassiveAbility(this.formIndex)`
+(`src/field/pokemon.ts:2261`) and `getAbility` the species form's at the mon's `abilityIndex` (`:2226`). Only the
+switch is the starter's, `this.passive`, copied at run start (`hasPassive`, `:2361`). So an evolution fights with its
+own passive and hidden ability, not the ones the grid shows: at 1.12.1.1, 126 of 394 evolved final forms carry another
+form-0 passive than their starter (Abra Comatose → Alakazam Magician) and 94 another hidden ability (Magikarp Rattled →
+Gyarados Moxie). The registry (`SpeciesDataRegistry`, found by the chunk scan, §10) gives every
 species: `getSpecies(id)`, `getAllStarters()` (`src/data/species-data-registry.ts:293`) and `getEvolutions(id)`
 (`:331`: `level`, `item`, `condition`); on the handler a species is only on the visible containers. Ability and move
 names need `allAbilities` / `allMoves` (`src/data/data-lists.ts:8-9`) and egg-move ids `speciesEggMoves`

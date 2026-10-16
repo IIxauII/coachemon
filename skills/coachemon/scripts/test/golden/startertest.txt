@@ -4,17 +4,17 @@
 Proposals
 ★ best 10 pts · SE vs 10 types
 Gible Gible 6 carry final BST 600 (Garchomp) · passive Rough Skin
-Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Moxie
+Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Intimidate (Gyarados)
 Squirtle Squirtle 3 final BST 530 (Blastoise) · luck +3
 · without Gible 10 pts · SE vs 9 types · weak Rock
 Dratini Dratini 4 carry final BST 600 (Dragonite)
-Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Moxie
+Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Intimidate (Gyarados)
 Squirtle Squirtle 3 final BST 530 (Blastoise) · luck +3
 Pikachu Pikachu 1 final BST 485 (Raichu) · Pokérus 1.5× EXP · but evolves by item or condition
 Pidgey Pidgey 1 final BST 479 (Pidgeot)
 · fuller 10 pts · SE vs 13 types
 Gible Gible 6 carry final BST 600 (Garchomp) · passive Rough Skin
-Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Moxie
+Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Intimidate (Gyarados)
 Pikachu Pikachu 1 final BST 485 (Raichu) · Pokérus 1.5× EXP · but evolves by item or condition
 Pidgey Pidgey 1 final BST 479 (Pidgeot)
 Azurill Azurill 1 final BST 420 (Azumarill) · but evolves by item or condition
@@ -27,7 +27,7 @@ summary best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: D
 Proposals
 ★ best 10 pts · SE vs 10 types
 Gible Gible ✓ 6 carry final BST 600 (Garchomp) · but Rough Skin is off
-Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Moxie
+Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Intimidate (Gyarados)
 Squirtle Squirtle 3 final BST 530 (Blastoise) · luck +3
 · without Magikarp 10 pts · SE vs 9 types
 Gible Gible ✓ 6 carry final BST 600 (Garchomp) · but Rough Skin is off
@@ -35,7 +35,7 @@ Squirtle Squirtle 3 final BST 530 (Blastoise) · luck +3
 Pikachu Pikachu 1 final BST 485 (Raichu) · Pokérus 1.5× EXP · but evolves by item or condition
 · fuller 10 pts · SE vs 13 types
 Gible Gible ✓ 6 carry final BST 600 (Garchomp) · but Rough Skin is off
-Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Moxie
+Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Intimidate (Gyarados)
 Pikachu Pikachu 1 final BST 485 (Raichu) · Pokérus 1.5× EXP · but evolves by item or condition
 Pidgey Pidgey 1 final BST 479 (Pidgeot)
 Azurill Azurill 1 final BST 420 (Azumarill) · but evolves by item or condition
@@ -67,7 +67,7 @@ summary best: Squirtle (carry) + Bulbasaur + Charmander + Azurill · 10/10 pts; 
 🌱 Starters 0/1 pts best: Magikarp (carry) · 1/1 pts
 Proposals
 ★ best 1 pts · SE vs 6 types
-Magikarp Magikarp 1 carry final BST 540 (Gyarados) · passive Moxie
+Magikarp Magikarp 1 carry final BST 540 (Gyarados) · passive Intimidate (Gyarados)
 Notes
 single type: shared weaknesses not counted
 summary best: Magikarp (carry) · 1/1 pts
