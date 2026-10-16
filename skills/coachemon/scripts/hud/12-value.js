@@ -82,6 +82,8 @@ const pairScore = (env, m, t) => {
 
 const pairOf = (run, env, m, t) => run.memo("pair", `${m.key}|${t.key}`, () => pairScore(env, m, t));
 
+export const duel = (run, m, t) => pairOf(run, duelEnv(run?.scene ?? null), m, t);
+
 /**
  * One threat's row: the answer's margin, a discounted backup, the two credits once each however many members earn
  * them, less the exposure of the share of the party the threat beats in the speed-aware race.
