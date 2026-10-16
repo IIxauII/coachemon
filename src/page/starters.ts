@@ -52,7 +52,7 @@ export function starters(L: Located, _args: Record<string, never>): StartersResu
     }))) ?? [];
   return {
     ok: true,
-    // `cursor` is an on-screen container.
+    // (game-code.md §23)
     // @mirrors starter-grid
     cursor: __try(() => (typeof h.cursor === "number" ? h.scrollCursor * 9 + h.cursor : null)),
     scrollCursor: __try(() => h.scrollCursor),

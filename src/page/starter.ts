@@ -11,8 +11,8 @@ export type StarterReads = {
  */
 export function starter(h: Page): StarterReads {
   const __try = (f: () => Page) => { try { return f(); } catch (e) { return null; } };
-  // The grid keeps only its 81 on-screen containers, so a species is named through `setSpecies` on a bare object. It
-  // looks the species up before it reads `props`, and with none throws before it adds a sprite.
+  // On a bare object `setSpecies` looks the species up, then throws on the missing `props` before it adds a sprite, so
+  // naming a species leaves the scene alone (game-code.md §23).
   const setSpecies = __try(() => Object.getPrototypeOf(h.starterContainers[0]).setSpecies);
   return {
     nameOf: id => __try(() => {
@@ -21,7 +21,7 @@ export function starter(h: Page): StarterReads {
       return probe.species.name;
     }),
     valueLimit: () => {
-      // The label reads `<party value>/<limit>`.
+      // (game-code.md §23)
       const limit = __try(() => Number(/\/([\d.]+)$/.exec(h.valueLimitLabel.text)![1]));
       return Number.isFinite(limit) ? limit : null;
     },

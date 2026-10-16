@@ -163,7 +163,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       const { nameOf, valueLimit } = L.starter(h);
       const grid: number[] = h.filteredStarterIds || [];
       out.options = grid.map((id, i) => opt(i, nameOf(id), { cost: __try(() => gd.getSpeciesStarterValue(id)) }));
-      // `cursor` is an on-screen container.
+      // (game-code.md §23)
       // @mirrors starter-grid
       out.cursor = h.scrollCursor * 9 + h.cursor;
       out.extra.scrollCursor = h.scrollCursor;
