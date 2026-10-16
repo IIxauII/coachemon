@@ -166,7 +166,7 @@ src/protocol/                    shared by hub, server and extension
 src/page/                        command handlers as real functions (§10.5)
 ```
 
-- **Not a workspace.** Claude Code installs the plugin with `npm ci --ignore-scripts`; a workspace would pull WXT (about 155 packages, 53 MB) into every player's cache and a nested lockfile does not **[live]**.
+- **Not a workspace.** Claude Code installs the plugin copy's dependencies from its lockfile (§14.7). A workspace would pull WXT (about 155 packages, 53 MB) into every player's cache, and a nested lockfile does not **[live]**.
 - **Shared code lives under the repo's `src/`**, imported by relative path from `extension/`. It is plain TypeScript with no dependencies, so the server and hub use it with Node's type stripping and the extension build bundles it.
 - Glue is TypeScript; the HUD stays plain JS.
 
@@ -783,7 +783,7 @@ From [Release channel, versioning, and how fixes reach users](https://github.com
 
 ### 14.3 Job order in `release.yml`
 
-1. **`release`** (today's job, unchanged): typecheck, test, the plugin's semantic-release. It may push a `chore(release)` commit and a `v*` tag.
+1. **`release`** (today's job): typecheck, test, the plugin's semantic-release. It may push a `chore(release)` commit and a `v*` tag. Then it publishes the plugin copy to the `plugin` branch (§14.7).
 2. **`release-extension`**, `needs: release`: check out `master` fresh with `fetch-depth: 0`, so it builds on top of the plugin's release commit when there is one and ships that commit's randbats; Node 24; `npm ci --ignore-scripts` at the root; `npm ci` in `extension/`; `npx -p semantic-release@25 -p @semantic-release/exec@7 semantic-release` in `extension/`.
 
 Both jobs sit in the existing `release` concurrency group, so two pushes never interleave.
@@ -822,6 +822,18 @@ Carried out by `npm run release:safari -- <version>` (`scripts/release/safari-re
 - **The asset is `Coachemon-safari-<v>.zip`**, apart from the release's `coachemon-safari-web-extension-<v>.zip`, so the two Safari assets sit on one release without colliding.
 - **Both `gh` calls name `--repo`.** The build runs in a scratch directory, which is no checkout, and the repo is private, so `gh` has nothing to infer from.
 - **Gatekeeper is asked with plain `spctl -a -vvv`.** `-t install` is the installer-package assessment; the default, `execute`, is what a downloaded `.app` meets.
+
+### 14.7 What the plugin ships
+
+From [Ship the plugin as a slim release copy](https://github.com/IIxauII/coachemon/issues/712). Before it, the marketplace entry's `"source": "./"` handed every player the whole repo (58 MB installed, `typescript` and the specs included). Now each release appends a copy that holds only what the plugin runs (28 MB, about 26 MB of it `node_modules`) to the `plugin` branch, and players install from there.
+
+- **The include rule** is `shipped()` in `scripts/release/plugin-copy.ts`: `src/` and `skills/`, less tests, fixtures, the HUD golden suite and the few `src/` modules that only tests or dev scripts load, plus `.claude-plugin/plugin.json`, `package.json`, `package-lock.json`, `LICENSE`, `THIRD_PARTY_NOTICES.md`, `README.md` and `PRIVACY.md`. `marketplace.json` stays out: a marketplace file inside the plugin would be a second, dead marketplace. **(picked here, amending the ticket's "`.claude-plugin/`")**
+- **Slim `package.json`, relocked.** The copy's `package.json` drops `devDependencies` and `scripts`, and its lockfile is the release commit's lockfile pruned to match, offline (`npm install --package-lock-only --offline`), so every version stays where the release pinned it. Claude Code installs a plugin's dependencies only when `package.json` and the lockfile list the same ones, and installs nothing otherwise **[doc]**.
+- **The `plugin` branch** is append-only: one commit per release, an orphan root the first time, never force-pushed, untagged. The commit names the version and the source sha. No workflow runs on the branch, since a push runs only the workflows in its own tree and the copy holds no `.github/`. `scripts/release/publish-plugin.ts --push` cuts the copy from the tag `v<version>` of the version in `package.json`, not from HEAD, and skips a version the branch already holds. So the `release` job (§14.3) runs it on every push, and a push that cut no release still publishes the last one if the branch lacks it. It runs after semantic-release, so a failed publish leaves the tag and the GitHub Release standing and players on the previous copy, with the job red; the next push to `master`, or a re-run of the job, publishes it. `release-extension` never reads the marketplace source.
+- **The smoke** (`scripts/release/plugin-smoke.ts`) runs on the assembled copy before anything is pushed, and a failure stops the push. It checks that none of the repo's own trees made it in and that `npm ci` installs no devDependency. It then checks that `src/server.ts` answers MCP `initialize`, that the HUD bundles, and that `watch.ts` loads its whole graph. The watcher is stopped at its first dial, so no hub is touched. The git tree is written before the smoke, so the smoke's `node_modules` never reaches the branch.
+- **The guard test** (`plugin-copy.test.ts`, in `npm test`) runs `strays()` over the working tree. It fails when a shipped file imports a package that is not a runtime dependency, or reaches a path (relative import, `new URL(…, import.meta.url)`, `${CLAUDE_PLUGIN_ROOT}/…`, a shell script's `$here/…`) that the copy leaves out or that does not exist. A runtime import of a left-out module fails here, at the PR, not at release.
+- **Marketplace source:** `{"source": "url", "url": "https://github.com/IIxauII/coachemon.git", "ref": "plugin"}`. A `github` source tries SSH first, and an in-session install or update does not fall back to HTTPS, so a player without a GitHub SSH key could not install **[doc]**. The repo is public, so HTTPS needs no credentials.
+- **Updates follow `plugin.json`'s `version`.** Claude Code re-fetches a plugin only when the version it computes changes, and that is the version `scripts/set-version.ts` stamps **[doc]**. Auto-update is off by default for a marketplace like this one, so players run `claude plugin update` unless they turned it on under `/plugin` **[doc]**. An install from the old `./` source follows the entry to the `plugin` branch on its first update to a new version: `claude plugin marketplace update` and `claude plugin update` took one from a 58 MB 1.44.0 to a 28 MB 1.44.1 **[live]**.
 
 ---
 
