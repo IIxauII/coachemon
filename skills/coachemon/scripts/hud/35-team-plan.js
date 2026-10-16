@@ -51,10 +51,12 @@ const tpTheirMove = (turn, f, me) => {
       const t = threatFrom(turn, f, me, null, { next });
       if (Number.isFinite(t?.expected)) {
         const now = next && f.isOnField?.() ? threatFrom(turn, f, me) : t;
-        const mean = (t.use ?? []).reduce((sum, x) => sum + x.d * x.p, 0);
+        // `dmg` and `use` are a turn after this one (`threatFrom`'s `later`); `entry` is this turn's.
+        const per = t.later ?? t;
+        const mean = (per.use ?? []).reduce((sum, x) => sum + x.d * x.p, 0);
         const moved = t.moves.reduce((sum, m) => sum + m.p, 0);
         return {
-          dmg: mean > 0 ? mean : t.expected, entry: Number.isFinite(now?.expected) ? now.expected : t.expected, use: tpSpread(t.use),
+          dmg: mean > 0 ? mean : per.expected, entry: Number.isFinite(now?.expected) ? now.expected : t.expected, use: tpSpread(per.use),
           name: typeof t.move === "string" ? t.move : t.move?.name ?? null, e: t.move?.e ?? 1, first: t.first, priority: t.move?.priority ?? 0, hits: hitsOn(t),
           drain: t.expected > 0 ? (t.drain ?? 0) / t.expected : 0,
           phys: moved > 0 ? t.moves.reduce((sum, m) => sum + m.p * (m.cat === "special" ? 0 : 1), 0) / moved : 1,

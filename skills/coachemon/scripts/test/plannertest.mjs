@@ -842,6 +842,34 @@ Object.assign(TABLE, {
   assert.ok(slow.field.some(l => /^· focus Porygon-Z : KO before it moves/.test(l)), "and the · row names why it is worth more");
 }
 
+// ---- A lock-in re-draws its target on every use: this turn's aim at one slot says nothing about the next.
+// Dragonite's Outrage (`RANDOM_NEAR_ENEMY`, MoveTarget 7) is aimed at Garchomp this turn. One hit fells neither of
+// ours and a second always does, so from the next use on each slot is down once two of the uses aimed at it have
+// landed, each landing half the time: Garchomp by turn j with 1 − ½^(j−1), so 1 + Σ½^k (k < 8) = 2.9921875 turns
+// expected; Lucario by turn j with P(Bin(j − 1, ½) ≥ 2), so 1 + (1 + 1 + ¾ + ½ + 5⁄16 + 3⁄16 + 7⁄64 + 1⁄16) = 4.921875.
+Object.assign(TABLE, {
+  "Dragonite>Outrage>Garchomp": [[200], 1, 2], "Dragonite>Outrage>Lucario": [[150], 1, 0.5],
+  "Garchomp>Dragon Claw>Dragonite": [[60], 1, 2], "Lucario>Aura Sphere>Dragonite": [[60], 1, 1],
+});
+{
+  const party = doublesParty();
+  const dragonite = foeAt(2, "Dragonite", 80, ["Dragon", "Flying"], [400, 200, 150, 100, 150, 80], [["Outrage", "Dragon", 120, "P", 0, { target: 7 }]]);
+  const atGarchomp = () => [{ name: "Outrage", type: "Dragon", p: 1, score: 10, targets: [0], exact: true }];
+  const { scene: s } = render({ party, foes: [dragonite], live: true, double: true, dist: atGarchomp, switches: () => new Map() });
+  const { exchange } = globalThis.__planner;
+  const [garchomp, lucario] = party;
+  const aimed = exchange(s, garchomp, garchomp.moveset[0], dragonite);
+  const spared = exchange(s, lucario, lucario.moveset[0], dragonite);
+  console.log(`== doubles: a re-rolled Outrage (live)\nGarchomp ${aimed.eTurnsThey} turns · Lucario ${spared.eTurnsThey}`);
+  assert.ok(aimed.turn1.hp <= 100 && spared.turn1.hp === 240, `this turn's aim stands (${aimed.turn1.hp}, ${spared.turn1.hp})`);
+  assert.ok(Math.abs(aimed.eTurnsThey - 2.9921875) < 1e-6, `the slot aimed at now is hit half the time after (${aimed.eTurnsThey})`);
+  assert.ok(Math.abs(spared.eTurnsThey - 4.921875) < 1e-6, `the slot spared now is hit half the time after (${spared.eTurnsThey})`);
+  // The fight plan plays the pairing on one turn's damage: half of Outrage's mean roll, 185 into Garchomp and 138.5
+  // into Lucario.
+  const [vsGarchomp, vsLucario] = globalThis.__hud["35-team-plan"].tpTables(s, party, [dragonite], true).theirs[0];
+  assert.ok(Math.abs(vsGarchomp.dmg - 92.5) < 1e-6 && Math.abs(vsLucario.dmg - 69.25) < 1e-6, `the plan's turn (${vsGarchomp.dmg}, ${vsLucario.dmg})`);
+}
+
 // ---- Free switch: the CheckSwitchPhase offer before the first turn (game-code.md §9).
 // Ninetales is on the field and loses to the faster Rhyperior. Swampert beats it — but as a normal switch it would
 // eat a Stone Edge coming in (≥ 25 % KO), so in the command phase it's rejected. Offered free, it's the answer.

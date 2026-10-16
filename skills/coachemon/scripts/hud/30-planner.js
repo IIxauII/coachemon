@@ -95,9 +95,11 @@ const commandDraws = (turn, me, myPm) => {
   if (!turn.facts.double || !me?.isOnField?.()) return [];
   const mv = myPm?.getMove?.();
   if (!mv || mv.moveTarget !== MoveTarget.RANDOM_NEAR_ENEMY) return [];
-  const n = (me.getOpponents?.(false) ?? []).filter(Boolean).length;
+  const n = opponentCount(me);
   return n > 1 ? [n] : [];
 };
+// The opponents a `RANDOM_NEAR_ENEMY` move draws among.
+const opponentCount = p => (p.getOpponents?.(false) ?? []).filter(Boolean).length;
 
 // [{ o (null for a status move), name, type, p }]: the enemy AI's own distribution for a foe on the field this turn,
 // else its choice replayed against `me` (`aiReplay`), else damage standing in for the move score. A foe with nobody
@@ -117,8 +119,11 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
           if (typeof ts[0] === "object") tp = o?.spread ? 1 : idx == null ? ts.reduce((t, x) => t + (x.p ?? 0), 0) / 2 : ts.find(x => x.battlerIndex === idx)?.p ?? 0;
           else tp = o?.spread ? (idx == null || ts.includes(idx) ? 1 : 0) : idx == null ? 1 / 2 : ts.includes(idx) ? 1 / ts.length : 0;
         }
+        // Only this use's target is drawn yet (game-code.md §5): each later use lands on each of ours alike.
+        const reroll = turn.facts.double && idx != null && o?.pm?.getMove?.()?.moveTarget === MoveTarget.RANDOM_NEAR_ENEMY;
+        const later = reroll ? 1 / Math.max(1, opponentCount(foe)) : tp;
         // The outcome's type is the one the move lands with (Tera Blast); the AI's row can carry the base type.
-        return { o, name: d.name, type: o?.type ?? d.type, p: d.p * tp };
+        return { o, name: d.name, type: o?.type ?? d.type, p: d.p * tp, ...(later !== tp ? { pLater: d.p * later } : {}) };
       });
     }
   }
@@ -178,6 +183,23 @@ const actDelay = p => {
   return Math.max(0, Math.ceil((st.sleepTurnsRemaining ?? 0) / (1 + early)) - 1);
 };
 
+// `{ expected, use }` of one use of `moves`, each row at `pOf(m)`.
+const landing = (foe, moves, pOf, next) => {
+  let expected = 0;
+  const use = [];
+  for (const m of moves) {
+    const q = m.o ? pOf(m) : 0;
+    if (!(q > 0)) continue;
+    const pm = m.o.pm ?? foe.moveset.find(x => x?.getName() === m.name) ?? NO_MOVE_INFO;
+    const p = q * actChance(foe, pm.getMove?.() ?? null, next);
+    expected += p * m.o.expected;
+    for (const x of useOf(m.o)) use.push({ d: x.d, p: x.p * p, n: x.n ?? 1 });
+  }
+  const dealt = use.reduce((sum, x) => sum + x.p, 0);
+  if (dealt < 1) use.push({ d: 0, p: 1 - dealt, n: 0 });
+  return { expected, use: squeezeDist(use, 12) };
+};
+
 // `foe`'s likely moves on `me`, each weighted by the chance it gets to use it. `koFirst`: P(it moves first) over the
 // moves that KO; `boost`: the stat stages its setup adds a turn ({ [stat 1–5]: stages }). Damage is on our true
 // abilities: the AI's blind spots decide what it picks, not what it deals.
@@ -190,8 +212,11 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false } = {}) =>
   const action = turn.live && !next && foe.isOnField?.() ? turn.enemyAction(foe, { ranges }) : null;
   const exactRow = action?.exact ? action.moves[0] : null;
   const live = turn.live && outs.some(o => o.live);
-  let expected = 0, pKo = 0, first = 0, koFirst = 0, worst = null, likely = null, drained = 0;
-  const kos = [], use = [], boost = {};
+  const { expected, use } = landing(foe, moves, m => m.p, next);
+  // `later`: each use after this one, where a re-drawn target (`likelyMoves`) lands on `me` otherwise; null where not.
+  const later = moves.some(m => m.pLater != null) ? landing(foe, moves, m => m.pLater ?? m.p, next) : null;
+  let pKo = 0, first = 0, koFirst = 0, worst = null, likely = null, drained = 0;
+  const kos = [], boost = {};
   for (const m of moves) {
     if (!likely || m.p > likely.p) likely = m;
     if (!(m.p > 0)) continue;
@@ -205,21 +230,17 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false } = {}) =>
     }
     const ko = m.o.pKo ?? 0;
     const p = m.p * actChance(foe, pm.getMove?.() ?? null, next);
-    expected += p * m.o.expected;
     drained += p * (m.o.drain ?? 0) * m.o.expected;
     pKo += p * ko;
     koFirst += p * ko * order;
     if (p >= 0.05 && (!worst || m.o.max > worst.o.max)) worst = m;
     const hits = (m.o.dist ?? []).reduce((sum, d) => sum + d.n * d.p, 0) || 1;
     kos.push({ p, max: m.o.max, pKo: ko, acc: m.o.acc ?? 1, revive: m.o.revive ?? 0, cat: m.o.cat, hits, targetHp: me.hp, live });
-    for (const x of useOf(m.o)) use.push({ d: x.d, p: x.p * p, n: x.n ?? 1 });
   }
-  const dealt = use.reduce((sum, x) => sum + x.p, 0);
-  if (dealt < 1) use.push({ d: 0, p: 1 - dealt, n: 0 });
   const brief = m => m && { name: m.name, type: m.type, e: m.o?.e ?? null, p: m.p, hits: hitCounts(m.o) };
   return {
     expected, worst: worst?.o.max ?? 0, pKo, first, koFirst: pKo > 0 ? koFirst / pKo : first,
-    move: brief(likely), worstMove: brief(worst), moves: kos, hp: me.hp, from: foe.name, live, use: squeezeDist(use, 12),
+    move: brief(likely), worstMove: brief(worst), moves: kos, hp: me.hp, from: foe.name, live, use, later,
     exact: !!exactRow, confidence: exactRow ? action.confidence : "estimate",
     // Battler indices: the game's own answer, not a share.
     targets: exactRow ? [...(exactRow.targets ?? [])] : null,
@@ -426,15 +447,22 @@ const withDrain = (heal, drain) => (!drain ? heal : typeof heal === "function" ?
 // win back a turn, negative into Liquid Ooze.
 export const foeCurve = (turn, t, me, hp, { dealt = 0, foe = null, mult = null, act = () => 1, start = null, drain = 0 } = {}) => {
   const course = turnEndCourse(turn, me, foe, t ? hitsOn(t) : -1, dealt);
-  const attacks = !!t && t.expected > 0;
   const ramp = setupRamp(foe, t);
-  return koCurve(turn.mon(me), attacks ? t.use ?? [{ d: t.expected, p: 1 }] : [{ d: 0, p: 1 }], {
+  const useOn = x => (x?.expected > 0 ? x.use ?? [{ d: x.expected, p: 1 }] : [{ d: 0, p: 1 }]);
+  // A curve from `start` has no use of this turn's, so `later` prices all of it.
+  const later = t?.later ?? null;
+  return koCurve(turn.mon(me), useOn(start && later ? later : t), {
     hp, start, act, turnEnd: withDrain(course.flat ? course.base : course.at, drain),
     scale: mult || ramp ? i => (mult ? mult(i + 1) : 1) * (ramp ? ramp(i + 1) : 1) : undefined,
-    firstKo: attacks && !start ? threatKoAt(t, hp) * act(0) : null,
+    firstKo: t?.expected > 0 && !start ? threatKoAt(t, hp) * act(0) : null,
+    useLater: later && !start ? useOn(later) : null,
   });
 };
 const foeTurns = (turn, t, me, hp, opts = {}) => koTurns(foeCurve(turn, t, me, hp, opts).by);
+
+// Confused uses after a lock-in (game-code.md §5, §8).
+// @mirrors lock-confusion
+const LOCK_CONFUSED = (2 + 5) / 2 - 1;
 
 // One-on-one from now: `me` repeats `pm` into `foe` while `foe` answers with its likely moves. Turn 1 is exact; later
 // turns race the two `koCurve`s. Options: `hp` (ours after an incoming hit); `after` (an earlier exchange's `turn1`,
@@ -505,7 +533,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     if (!exact && nowUse) qWe = curve.by[0];
     hitsWe = koTurn(curve.by);
     const cycle = mt.recharge || mt.noRepeat ? 2 * hitsWe - 1 : mt.charge ? 2 * hitsWe : hitsWe;
-    const confusedHits = mt.lock ? Math.min(Math.max(0, hitsWe - 2), 2) : 0;
+    const confusedHits = mt.lock ? Math.min(Math.max(0, hitsWe - 2), LOCK_CONFUSED) : 0;
     confusion = confusedHits * 0.5;
     turnsWe = mt.once && hitsWe > 1 ? 9 : Math.min(9, Math.ceil(delay + cycle + confusedHits * 0.5));
     const usesBy = j => {
@@ -588,7 +616,11 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   const expTurns = F => Math.min(9, 1 + Array.from({ length: 8 }, (_, j) => 1 - F(j + 1)).reduce((t, x) => t + x, 0));
   const taken = turnsWe >= 9 ? turnsThey : Math.max(0, turnsWe - pLast - lag);
   const boosted = foeMult && taken > 0 ? Array.from({ length: Math.ceil(taken) }, (_, i) => foeMult(i + 1)).reduce((sum, x) => sum + x, 0) / Math.ceil(taken) : 1;
-  const hpLeft = Math.max(0, Math.min(maxHp, hp - (tThey?.expected ?? 0) * defUp * boosted * taken - selfSpent + ourDrain * Math.min(taken, turnsWe))) * (1 - selfKo);
+  // An exchange `after` another has no turn of this one's, so `later` prices all of it.
+  const later = tThey?.later ?? null;
+  const hitsTaken = !later ? (tThey?.expected ?? 0) * defUp * boosted * taken
+    : ((after ? later : tThey).expected * Math.min(1, taken) + later.expected * Math.max(0, taken - 1)) * defUp * boosted;
+  const hpLeft = Math.max(0, Math.min(maxHp, hp - hitsTaken - selfSpent + ourDrain * Math.min(taken, turnsWe))) * (1 - selfKo);
   return {
     pWeKoFirst: Math.min(1, Math.round(pWe * 1e9) / 1e9), pTheyKoFirst: Math.min(1, Math.round(pThey * 1e9) / 1e9),
     expectedHpLeft: Math.round(hpLeft),

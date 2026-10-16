@@ -175,6 +175,8 @@ Dunsparce Dunsparce L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garcho
 Fight plan steps approximate winnable
 ➜ 1.~ Garchomp Dragon Dragon Claw → Porygon-Z KO · 68% left
 ➜ 2.~ Lucario Fighting Aura Sphere → Dunsparce KO · 95% left
+== doubles: a re-rolled Outrage (live)
+Garchomp 2.9921875 turns · Lucario 4.921875
 == free switch — same field in the command phase (live)
 ⚔ Ninetales 💀 Rock ×2 100% {Rhyperior's Stone Edge: ~100% of current HP, 80% KO, before it can act} Fire Flamethrower → Rhyperior
 ⤵ Ninetales falls this turn › Swampert in free

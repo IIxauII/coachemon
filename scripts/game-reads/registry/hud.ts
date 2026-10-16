@@ -1944,6 +1944,13 @@ export const HUD: Area = {
         "src/modifier/modifier.ts#FlinchChanceModifier.apply",
       ],
     },
+    {
+      ours: "skills/coachemon/scripts/hud/30-planner.js#lock-confusion",
+      of: [
+        "src/data/battler-tags.ts#FrenzyTag.onRemove",
+        "src/data/battler-tags.ts#ConfusedTag.lapse",
+      ],
+    },
     { ours: "skills/coachemon/scripts/hud/30-planner.js#stat-names", of: ["src/enums/stat.ts#Stat"] },
     {
       ours: "skills/coachemon/scripts/hud/30-planner.js#para-skip",

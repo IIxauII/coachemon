@@ -300,6 +300,8 @@ export const HUD_DEPS = {
     `${P}#Pokemon.doSetStatus`,
     `src/phases/move-phase.ts#MovePhase.checkSleep`,
     `src/data/abilities/ab-attrs.ts#ReduceStatusEffectDurationAbAttr.apply`,
+    `src/data/battler-tags.ts#MoveLockTag.getNextTargets`,
+    `src/data/moves/move-utils.ts#getMoveTargets`,
   ],
 
   "35-team-plan.js": [
