@@ -75,8 +75,7 @@ const bossSegmentDamage = (dmg, hp, segSize, minIdx = 0, idx) => {
 };
 // The first game version whose Sturdy stops fixed damage (game-code.md §1).
 const STURDY_VS_FIXED_FROM = "1.12.1.0";
-// The pinned build is past it, so an unreadable version has to land on Sturdy holding: `!versionAtLeast` alone hands
-// it the older build's rule (#718).
+// `!versionAtLeast` alone hands an unreadable game version the older rule (#718).
 const fixedIgnoresSturdy = env => {
   const v = gameVersionOf(env.s);
   return !!v && !versionAtLeast(v, STURDY_VS_FIXED_FROM);

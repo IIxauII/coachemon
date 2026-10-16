@@ -186,8 +186,7 @@ Call it only inside `sandbox`.
      Toss, Night Shade, Super Fang, Dragon Rage, Final Gambit, and Psywave through `RandomLevelDamageAttr extends
      FixedDamageAttr` (`src/data/moves/move.ts:2148`) — leaves a full-HP Sturdy mon at 1 HP, as any other hit does.
      That step is upstream [#7620](https://github.com/pagefaultgames/pokerogue/pull/7620), first released in
-     v1.12.1.0 (v1.12.0.11 returns before it); a tab on a build from before it lets the hit through, which is why
-     `hud/10-damage.js` keys the rule on a version constant.
+     v1.12.1.0 (v1.12.0.11 returns before it); a tab on a game version from before it lets the hit through.
    - `OneHitKOAttr.apply` (`src/field/pokemon.ts:3835`; `src/data/moves/move.ts:3630-3639`) returns `{ ONE_HIT_KO, damage: this.hp }`.
      A boss is `isBossImmune`, so it falls through to the normal formula. The level check and Sturdy's block live in
      the attr's condition, not here.
