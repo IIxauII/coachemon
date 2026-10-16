@@ -47,7 +47,7 @@ export const bigFightsAhead = (s, from, n = SPAN) => {
   return out;
 };
 
-const challengeValue = (s, id) => (s?.gameMode?.challenges ?? []).find(c => c?.id === id)?.value ?? 0;
+export const challengeValue = (s, id) => (s?.gameMode?.challenges ?? []).find(c => c?.id === id)?.value ?? 0;
 // A challenge is on at any value but zero, never only a positive one: the one predicate `GameMode.hasChallenge`
 // itself uses (game-code.md §16), and the one every reader of a challenge's on/off state reads here.
 export const challengeOn = (s, id) => challengeValue(s, id) !== 0;

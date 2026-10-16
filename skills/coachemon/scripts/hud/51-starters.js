@@ -1,7 +1,7 @@
 // Which starters this account should take within the point budget: whole teams from what it has unlocked, each pick
 // with its reasons. Every game call here is a pure read, so none runs in `sandbox` (game-code.md §23).
 import { TYPES, vs } from "./01-core.js";
-import { challengeOn } from "./03-calendar.js";
+import { challengeOn, challengeValue } from "./03-calendar.js";
 import { gameTables } from "./04-game-tables.js";
 import { RANDBATS } from "./05-randbats.js";
 import { finalBstOf } from "./08-party.js";
@@ -38,29 +38,62 @@ const rolesOf = names => {
 
 const typeNames = sp => [sp?.type1, sp?.type2].map(t => TYPES[t]).filter((t, i, a) => t && a.indexOf(t) === i);
 
-// The line's strongest final form, and how it first evolves.
-const lineOf = (sp, reg) => {
+// (game-code.md §23)
+// @mirrors ability-randomizer
+const SPARED = new Set([AbilityId.SCHOOLING, AbilityId.POWER_CONSTRUCT, AbilityId.BATTLE_BOND, AbilityId.DISGUISE,
+  AbilityId.ICE_FACE, AbilityId.ZERO_TO_HERO, AbilityId.TERA_SHIFT, AbilityId.TERA_SHELL, AbilityId.TERAFORM_ZERO]);
+const rerolledBy = s => {
+  const value = challengeValue(s, Challenges.ABILITY_RANDOMIZER);
+  return { ability: aid => value >= 1 && !(value >= 3 && SPARED.has(aid)), passive: value >= 2 };
+};
+
+// At 1 an evolution that needs a move counts as out of reach (#721); from 2 it goes as the game's hook leaves it, but
+// with every Tyrogue branch freed, the game's seeded pick being out of sight (game-code.md §23).
+// @mirrors moveset-randomizer-evolutions
+const needsMove = c => c?.key === EvoCondKey.MOVE || c?.key === EvoCondKey.TYROGUE;
+const moveGated = e => !!e.condition?.data?.some(needsMove);
+const evolutionsUnder = (evos, moveset) => {
+  if (!moveset) return evos;
+  if (moveset < 2) return evos.filter(e => !moveGated(e));
+  return evos.map(e => {
+    if (!moveGated(e)) return e;
+    const rest = e.condition.data.filter(c => !needsMove(c));
+    // Never `evoLevelThreshold`: the hook's copies carry none (game-code.md §23).
+    return { ...e, level: e.level === 1 ? 50 : e.level, condition: rest.length ? { data: rest } : null };
+  });
+};
+
+const asFinal = x => ({ final: x.baseTotal ?? 0, finalSp: x, estimated: false });
+
+// The line's strongest final form, and how it first evolves. `moveset` is the Moveset Randomizer's value; at 1,
+// `moveFinal` is the stronger final that only a move would have reached.
+const lineOf = (sp, reg, moveset = 0) => {
   const evos = tryDo(() => sp.getEvolutionLevels(), []);
-  const own = { final: sp.baseTotal ?? 0, finalSp: sp, estimated: false };
-  let best = own;
-  if (evos.length && reg) {
-    for (const [id] of evos) {
-      const x = tryDo(() => reg.getSpecies(id));
-      if (!x || tryDo(() => reg.hasEvolutions(id), false)) continue;
-      if (!best || (x.baseTotal ?? 0) > best.final) best = { final: x.baseTotal ?? 0, finalSp: x, estimated: false };
-    }
-  } else if (evos.length) {
+  const own = asFinal(sp);
+  if (!evos.length) return { ...own, evo: null, moveFinal: null };
+  if (!reg) {
     const est = finalBstOf({ species: sp });
-    best = { final: est.final, finalSp: null, estimated: est.estimated };
+    return { final: est.final, finalSp: null, estimated: est.estimated, evo: evos[0][1] > 1 ? { level: evos[0][1] } : { item: true }, moveFinal: null };
   }
-  let evo = null;
-  if (evos.length) {
-    const direct = reg ? tryDo(() => reg.getEvolutions(sp.speciesId), []) : [];
-    const byLevel = direct.filter(e => !e.item && !e.condition && e.level > 1).map(e => e.level);
-    evo = direct.length ? (byLevel.length ? { level: Math.min(...byLevel) } : { item: true })
-      : evos[0][1] > 1 ? { level: evos[0][1] } : { item: true };
-  }
-  return { ...best, evo };
+  const evolutionsOf = (id, value) => evolutionsUnder(tryDo(() => reg.getEvolutions(id), []) ?? [], value);
+  const strongest = value => {
+    let best = own;
+    const walk = id => {
+      for (const e of evolutionsOf(id, value)) {
+        const x = tryDo(() => reg.getSpecies(e.speciesId));
+        if (x && !evolutionsOf(e.speciesId, value).length && (x.baseTotal ?? 0) > best.final) best = asFinal(x);
+        walk(e.speciesId);
+      }
+    };
+    walk(sp.speciesId);
+    return best;
+  };
+  const best = strongest(moveset);
+  const withMoves = moveset === 1 ? strongest(0) : best;
+  const direct = evolutionsOf(sp.speciesId, moveset);
+  const byLevel = direct.filter(e => !e.item && !e.condition && e.level > 1).map(e => e.level);
+  const evo = direct.length ? (byLevel.length ? { level: Math.min(...byLevel) } : { item: true }) : null;
+  return { ...best, evo, moveFinal: withMoves.final > best.final ? withMoves.finalSp : null };
 };
 
 // The account's entries as the grid shows them: copies, after each active challenge's STARTER_SELECT_MODIFY
@@ -80,7 +113,7 @@ const starterData = (s, id) => {
 const speciesValue = (s, h, sp, ctx, starter = null) => {
   const id = sp.speciesId;
   const { dexEntry: dex, starterDataEntry: st } = starterData(s, id);
-  const line = lineOf(sp, ctx.tables?.species);
+  const line = lineOf(sp, ctx.tables?.species, ctx.movesetRandomizer);
   const why = [];
   const finalForm = line.finalSp && line.finalSp.speciesId !== id ? line.finalSp : null;
   const finalName = finalForm ? ` (${finalForm.name})` : "";
@@ -90,6 +123,7 @@ const speciesValue = (s, h, sp, ctx, starter = null) => {
   why.push({ w: early, text: `BST ${sp.baseTotal} from L5`, quiet: (sp.baseTotal ?? 0) < 450 });
   if (line.evo?.item) why.push({ w: -3, text: "evolves by item or condition" });
   else if (line.evo?.level > 36) why.push({ w: -4, text: `evolves at L${line.evo.level}` });
+  if (line.moveFinal) why.push({ w: -1.5, text: `${line.moveFinal.name} needs a move it likely won't learn` });
 
   const abilityName = aid => tryDo(() => ctx.tables.abilities[aid].name, null);
   // The grid shows the starter's passive and hidden ability, not the final form's (game-code.md §23).
@@ -99,11 +133,14 @@ const speciesValue = (s, h, sp, ctx, starter = null) => {
     return name && aid !== starterAid ? `${name}${finalName}` : name;
   };
   const passiveOn = starter ? !!starter.passive : ((st.passiveAttr ?? 0) & Passive.UNLOCKED) !== 0;
-  const passive = fought(tryDo(() => sp.getPassiveAbility(starter?.formIndex ?? 0)), tryDo(() => finalForm.getPassiveAbility(0)));
-  if (passiveOn) why.push({ w: 8, text: passive ? `passive ${passive}` : "passive" });
-  else if (starter && ((st.passiveAttr ?? 0) & Passive.UNLOCKED)) why.push({ w: -3, text: `${passive ?? "passive"} is off` });
+  const own = ctx.rerolled.passive ? null : fought(tryDo(() => sp.getPassiveAbility(starter?.formIndex ?? 0)), tryDo(() => finalForm.getPassiveAbility(0)));
+  const passive = ctx.rerolled.passive ? { w: 4, text: "random passive", offText: "random passive is off" }
+    : { w: 8, text: own ? `passive ${own}` : "passive", offText: `${own ?? "passive"} is off` };
+  if (passiveOn) why.push({ w: passive.w, text: passive.text });
+  else if (starter && ((st.passiveAttr ?? 0) & Passive.UNLOCKED)) why.push({ w: -3 * passive.w / 8, text: passive.offText });
   const hiddenOn = starter ? starter.abilityIndex === 2 : ((st.abilityAttr ?? 0) & AbilityAttr.ABILITY_HIDDEN) !== 0;
-  if (hiddenOn && (finalForm ?? sp).abilityHidden) {
+  const hidden = (finalForm ?? sp).abilityHidden;
+  if (hiddenOn && hidden && !ctx.rerolled.ability(hidden)) {
     const name = fought(sp.abilityHidden, finalForm?.abilityHidden);
     why.push({ w: 3, text: name ? `hidden ${name}` : "hidden ability" });
   }
@@ -125,7 +162,8 @@ const speciesValue = (s, h, sp, ctx, starter = null) => {
   if (luck) why.push({ w: 1.5 * luck, text: `luck +${luck}` });
 
   const finalSp = line.finalSp ?? sp;
-  const roles = rolesOf([finalSp.name, sp.name]);
+  // A randbats role is a moveset's, which the Moveset Randomizer rerolls (#721).
+  const roles = ctx.movesetRandomizer ? [] : rolesOf([finalSp.name, sp.name]);
   const [, atk, def, spa, spd] = finalSp.baseStats ?? sp.baseStats ?? [];
   const role = roles.some(r => CARRY_ROLES.has(r)) ? "carry" : roles.length ? "support"
     : Math.max(atk ?? 0, spa ?? 0) >= 1.1 * Math.max(def ?? 0, spd ?? 0) ? "carry" : null;
@@ -225,6 +263,8 @@ const build = (s, h, { tables, challenges, has, limit, chosen, candidates, onScr
   const ctx = {
     tables,
     fresh: has(Challenges.FRESH_START), mono: has(Challenges.SINGLE_TYPE), inverse: has(Challenges.INVERSE_BATTLE),
+    rerolled: rerolledBy(s),
+    movesetRandomizer: challengeValue(s, Challenges.MOVESET_RANDOMIZER),
     pokerus: new Set(h.pokerusSpeciesIds ?? []),
   };
   const iconById = new Map([...onScreen].map(([id, c]) => [id, iconOfContainer(c)]));

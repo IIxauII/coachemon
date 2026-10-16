@@ -628,6 +628,25 @@ export const Command = {
 } as const;
 export type Command = (typeof Command)[keyof typeof Command];
 
+export const EvoCondKey = {
+  FRIENDSHIP: 1,
+  TIME: 2,
+  MOVE: 3,
+  MOVE_TYPE: 4,
+  PARTY_TYPE: 5,
+  WEATHER: 6,
+  BIOME: 7,
+  TYROGUE: 8,
+  SHEDINJA: 9,
+  EVO_TREASURE_TRACKER: 10,
+  RANDOM_FORM: 11,
+  SPECIES_CAUGHT: 12,
+  GENDER: 13,
+  NATURE: 14,
+  HELD_ITEM: 15,
+} as const;
+export type EvoCondKey = (typeof EvoCondKey)[keyof typeof EvoCondKey];
+
 export const EvoLevelThresholdKind = {
   STRONG: 0,
   NORMAL: 1,
@@ -3002,6 +3021,7 @@ export const NAMES = {
   Challenges: invert(Challenges),
   ClassicFixedBossWaves: invert(ClassicFixedBossWaves),
   Command: invert(Command),
+  EvoCondKey: invert(EvoCondKey),
   EvoLevelThresholdKind: invert(EvoLevelThresholdKind),
   GameModes: invert(GameModes),
   Gender: invert(Gender),

@@ -722,11 +722,6 @@ export const HUD: Area = {
       at: ["src/data/abilities/ability.ts#Ability.hasAttr", "src/data/moves/move.ts#Move.hasAttr"],
     },
     { name: "hasChallenge", kind: "method", at: ["src/game-mode.ts#GameMode.hasChallenge"] },
-    {
-      name: "hasEvolutions",
-      kind: "method",
-      at: ["src/data/species-data-registry.ts#SpeciesDataRegistry.hasEvolutions"],
-    },
     { name: "hasFlag", kind: "method", at: ["src/data/moves/move.ts#Move.hasFlag"] },
     {
       name: "hasPrevolution",
@@ -2521,6 +2516,21 @@ export const HUD: Area = {
       ],
     },
     { ours: "skills/coachemon/scripts/hud/51-items.js#cap-of", of: ["src/battle-scene.ts#BattleScene.getMaxExpLevel"] },
+    {
+      ours: "skills/coachemon/scripts/hud/51-starters.js#ability-randomizer",
+      of: [
+        "src/data/challenge.ts#AbilityRandomizerChallenge.applySpeciesAbilityModify",
+        "src/data/challenge.ts#AbilityRandomizerChallenge.applyPassiveAbilityModify",
+      ],
+    },
+    {
+      ours: "skills/coachemon/scripts/hud/51-starters.js#moveset-randomizer-evolutions",
+      of: [
+        "src/data/challenge.ts#MovesetRandomizerChallenge.applyModifyEvolutions",
+        "src/data/challenge.ts#MovesetRandomizerChallenge.applyLevelUpMoveset",
+        "src/field/pokemon.ts#Pokemon.getEvolution",
+      ],
+    },
     {
       ours: "skills/coachemon/scripts/hud/51-starters.js#dex-attr-luck",
       of: [
