@@ -47,14 +47,30 @@ const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch 
 const nameOf = id => tryDo(() => readTables().biomeName(id), `#${id}`);
 const linkId = l => (Array.isArray(l) ? l[0] : l);
 // `SelectBiomePhase`'s `allBiomeLinks`: the biome's own, then the timed event's (game-code.md §10).
-const linksOf = id => [...tryDo(() => readTables().biomes.get(id).biomeLinks, []),
-  ...tryDo(() => gameEvents()?.getEventBiomeLinks?.(id), [])];
+const ownLinks = id => tryDo(() => readTables().biomes.get(id).biomeLinks, []);
+const linksOf = id => [...ownLinks(id), ...tryDo(() => gameEvents()?.getEventBiomeLinks?.(id), [])];
+// @mirrors daily-forced-biomes
+const dailyForced = (s, from, wave) => {
+  const gm = s?.gameMode;
+  if (!gm?.isDaily || gm.dailyConfig == null) return null;
+  const entry = tryDo(() => gm.dailyConfig.forcedBiomes.find(b => b.waveIndex === wave));
+  const ids = entry?.allMapOptions ? ownLinks(from).map(linkId) : entry?.biomeId;
+  // The game tests each id against `BiomeId`, and the bundle's `BiomeId` is partial (hud-bundle.mjs, `enumPrelude`):
+  // the biome table holds every one.
+  return Array.isArray(ids) && ids.every(id => readTables()?.biomes?.has(id)) ? ids : null;
+};
+// `links`: what `SelectBiomePhase` chooses among leaving `from` at the end of `wave`, the Daily event seed's forced
+// biomes when `daily` (game-code.md §10).
+const offerAt = (s, from, wave) => {
+  const ids = dailyForced(s, from, wave);
+  return ids?.length ? { links: ids, daily: true } : { links: linksOf(from), daily: false };
+};
 
-// Option labels → biome ids by the game's own localized name; failing that, by position: the options are the links in
-// order, less those that didn't roll (game-code.md §10).
+// Option labels → biome ids by the game's own localized name; failing that, by position: the options are the offer in
+// order, less the links that didn't roll (game-code.md §10).
 const resolveOptions = (s, labels) => {
   const tables = readTables();
-  const links = linksOf(s.arena.biomeId);
+  const { links } = offerAt(s, s.arena.biomeId, s.currentBattle?.waveIndex);
   const ids = [...new Set([...links.map(linkId), ...(tables?.biomes?.keys() ?? [])])];
   const byName = labels.map(l => ids.find(id => nameOf(id) === l) ?? null);
   if (byName.every(x => x != null)) return byName;
@@ -417,7 +433,8 @@ const judge = (run, id, profile, level, wave, luck, fightWave) => {
   if (catchList[0]) reasons.push({ good: true, catch: true, text: `catch ${catchList[0].name} (${catchList[0].tags.join(", ")})` });
 
   const trainerShare = enc.list.reduce((t, e) => t + e.trainer, 0);
-  const onward = linksOf(id).map(l => ({ name: nameOf(linkId(l)), rare: RARE_ONWARD.has(linkId(l)), chance: Array.isArray(l) ? l[1] : 1 }));
+  const next = offerAt(s, id, wave + WINDOW);
+  const onward = next.links.map(l => ({ name: nameOf(linkId(l)), rare: RARE_ONWARD.has(linkId(l)), chance: Array.isArray(l) ? l[1] : 1 }));
   return {
     raw, score: Math.round(raw), offense: Math.round(offense * 100), defense: Math.round(defense * 100),
     opportunity: Math.round(opportunity * 100), bossFit: Math.round(bossFit * 100),
@@ -426,7 +443,7 @@ const judge = (run, id, profile, level, wave, luck, fightWave) => {
     catch: catchList[0] ? { name: catchList[0].name, icon: catchList[0].icon, tags: catchList[0].tags,
       verdict: catchList[0].verdict, net: catchList[0].net, confidence: catchList[0].confidence } : null,
     trainers: enc.trainers.length ? { pct: Math.round(trainerShare * 100), names: enc.trainers.slice(0, 3).map(t => t.name) } : null,
-    fight, trainerChance: biome.trainerChance ?? null, onward,
+    fight, trainerChance: biome.trainerChance ?? null, onward, dailyOnward: next.daily,
   };
 };
 

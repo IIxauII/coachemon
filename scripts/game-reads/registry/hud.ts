@@ -35,6 +35,12 @@ export const HUD: Area = {
     },
     { name: "aiView", kind: "field", at: [], from: "ours", note: "our outcome() options flag" },
     {
+      name: "allMapOptions",
+      kind: "field",
+      at: ["src/@types/daily-run.ts#DailyForcedBiome"],
+      note: "dailyConfig.forcedBiomes entry (union type alias, not in candidates)",
+    },
+    {
       name: "allowLuckUpgrades",
       kind: "field",
       at: ["src/modifier/modifier-type.ts#CustomModifierSettings.allowLuckUpgrades"],
@@ -425,6 +431,14 @@ export const HUD: Area = {
       kind: "field",
       at: ["src/data/mystery-encounters/encounters/berries-abound-encounter.ts#BerriesAboundEncounter"],
       note: "ME misc key",
+    },
+    {
+      name: "forcedBiomes",
+      kind: "field",
+      at: [
+        "src/@types/daily-run.ts#CustomDailyRunConfig.forcedBiomes",
+        "src/@types/daily-run.ts#SerializedDailyRunConfig.forcedBiomes",
+      ],
     },
     {
       name: "forcedWaves",
@@ -2319,6 +2333,13 @@ export const HUD: Area = {
         "src/ai/ai-species-gen.ts#NORMAL_TRAINER_LEVEL_DIFF_PERCENT",
         "src/ai/ai-species-gen.ts#WILD_LEVEL_DIFF_PERCENT",
         "src/enums/evo-level-threshold-kind.ts#EvoLevelThresholdKind",
+      ],
+    },
+    {
+      ours: "skills/coachemon/scripts/hud/47-biome.js#daily-forced-biomes",
+      of: [
+        "src/data/daily-seed/daily-run.ts#getDailyForcedBiomes",
+        "src/phases/select-biome-phase.ts#SelectBiomePhase.start",
       ],
     },
     {

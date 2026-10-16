@@ -1114,8 +1114,10 @@ Read at the pinned tag (`v1.12.1.1`).
 **The choice.** `SelectBiomePhase.start` (`src/phases/select-biome-phase.ts:19`) — draws global RND; sets the UI
 mode — first calls `resetSeed()` (line 22), then forces END when the stretch ahead
 reaches the classic final wave, the Daily final wave or an Endless X50 (lines 29–36). A Daily event seed's
-`forcedBiomes` entry for the wave comes next: one biome is taken outright (lines 38–42); several, or `allMapOptions`
-(every linked biome), stand in for the filtered list below, with no 1/n roll (lines 52–56). Otherwise it filters the
+`forcedBiomes` entry for the wave being left (`waveIndex` 10, 20, 30 or 40) comes next: one biome is taken outright
+(lines 38–42); several, or `allMapOptions` (the biome's own `biomeLinks` with weights dropped, not the event's), stand in
+for the filtered list below, with no 1/n roll (lines 52–56). `allMapOptions` on a one-link biome takes that link
+outright. An entry with any id outside `BiomeId` forces nothing. Otherwise it filters the
 biome's `biomeLinks` plus any the active timed event adds: a plain id stays, `[id, n]` stays when `!randSeedInt(n)`
 (1/n, line 56). With ≥ 2 left and a `MapModifier` it opens UiMode 15 OPTION_SELECT with one
 `{label: getBiomeName(id), handler}` per link and `blockCancelButton` (lines 58–75), else `randSeedItem` picks. The
