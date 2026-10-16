@@ -68,11 +68,11 @@ replay("learn and rewards", [
     hud: hud({ kind: "rewards", rewards: "take Revive" }) }),
 ]);
 
-// A shop with no free reward still carries the HUD's buys, once a wave (#720).
+// One line a wave, carrying the HUD's buys; a buy redraws the same rows and leaves only less money.
 replay("shop with no free reward", [
   snap({ wave: 14, money: 3000, rewards: { free: [], shop: [{ name: "Hyper Potion", desc: null, cost: 1064 }, { name: "Revive", desc: null, cost: 2128 }], rerollCost: -1 },
     hud: hud({ kind: "rewards", wave: 14, rewards: "buy Hyper Potion" }) }),
-  snap({ wave: 14, money: 1936, rewards: { free: [], shop: [{ name: "Revive", desc: null, cost: 2128 }], rerollCost: -1 },
+  snap({ wave: 14, money: 1936, rewards: { free: [], shop: [{ name: "Hyper Potion", desc: null, cost: 1064 }, { name: "Revive", desc: null, cost: 2128 }], rerollCost: -1 },
     hud: hud({ kind: "rewards", wave: 14, rewards: null }) }),
 ]);
 

@@ -85,13 +85,12 @@ export const watchEvents = (state, snap, { withHud = true } = {}) => {
   }
   const r = snap.rewards;
   if (r?.free.length || r?.shop.length) {
-    // A shop with no free reward is one screen a wave: buying spends its rows, and each buy is not a new screen.
-    const key = r.free.length ? `${snap.wave}|${r.free.map(i => i.name).join(",")}` : `${snap.wave}|shop`;
+    const [key, head] = r.free.length
+      ? [`${snap.wave}|${r.free.map(i => i.name).join(",")}`,
+        `REWARDS ${w} money $${snap.money} reroll $${r.rerollCost} | free: ${r.free.map(item).join(", ")}`]
+      : [`${snap.wave}|shop`, `SHOP ${w} money $${snap.money} | no free reward`];
     if (s.kinds.rewards !== key && hudReady("rewards", key, hud?.rewards)) {
-      emit("rewards", key,
-        (r.free.length
-          ? `REWARDS ${w} money $${snap.money} reroll $${r.rerollCost} | free: ${r.free.map(item).join(", ")}`
-          : `SHOP ${w} money $${snap.money} | no free reward`)
+      emit("rewards", key, head
         + ` | shop: ${r.shop.map(item).join(", ")}`
         + `${hud?.rewards ? ` | HUD: ${hud.rewards}` : ""}`
         + `${hud?.audit ? ` | audit: ${hud.audit.split("; ")[0]}` : ""}`);

@@ -89,8 +89,8 @@ const nextShop = (s, from) => {
 
 // The way a fainted member gets back on its feet before the big fight on wave `fight`. Luck is never one: a drawn
 // Revive, a Reviver Seed and Sacred Ash don't count, and money is not priced (#569). `from` is the wave the run
-// stands on — its end still opens a shop, won or fled though not run from (game-code.md §12), while the heal it
-// entered on is behind it. With no `fight` to reach, any way back ahead counts.
+// stands on: its own shop counts, though running from it opens none (game-code.md §12), while the heal it entered on
+// is behind it. With no `fight` to reach, any way back ahead counts.
 export const reviveBefore = (s, from, fight = null) => {
   if (challengeOn(s, Challenges.HARDCORE)) return null;
   const heal = nextHeal(s, from + 1);

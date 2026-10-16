@@ -729,6 +729,11 @@ export const HUD: Area = {
     },
     { name: "hasFlag", kind: "method", at: ["src/data/moves/move.ts#Move.hasFlag"] },
     {
+      name: "hasNoShop",
+      kind: "field",
+      at: ["src/game-mode.ts#GameModeConfig.hasNoShop", "src/game-mode.ts#GameMode.hasNoShop"],
+    },
+    {
       name: "hasPrevolution",
       kind: "method",
       at: ["src/data/species-data-registry.ts#SpeciesDataRegistry.hasPrevolution"],
@@ -751,11 +756,6 @@ export const HUD: Area = {
       name: "hasTrainers",
       kind: "field",
       at: ["src/game-mode.ts#GameModeConfig.hasTrainers", "src/game-mode.ts#GameMode.hasTrainers"],
-    },
-    {
-      name: "hasNoShop",
-      kind: "field",
-      at: ["src/game-mode.ts#GameModeConfig.hasNoShop", "src/game-mode.ts#GameMode.hasNoShop"],
     },
     { name: "hasVoucher", kind: "field", at: ["src/data/trainers/trainer-config.ts#TrainerConfig.hasVoucher"] },
     {
