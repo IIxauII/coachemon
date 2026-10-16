@@ -682,7 +682,7 @@ test("an acting call refuses tab_contended while another live driver holds the l
 });
 
 test("an acting call refuses settings_mode on a settings screen, pressing nothing", async () => {
-  const tab = guardedTab({ mode: UiMode.SETTINGS });
+  const tab = guardedTab({ mode: UiMode.SETTINGS_GENERAL });
   const r = await outcome(tab.driver.press("ACTION", {}));
   assert.equal(r.error, "settings_mode", JSON.stringify(r));
 });

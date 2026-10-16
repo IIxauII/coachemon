@@ -34,5 +34,5 @@ export function screenId(mode: number, d: Discriminators): string {
 
 /** Acting tools refuse here (#11, v1-tool-surface.md §6.5). */
 export function isSettingsMode(mode: number): boolean {
-  return mode >= UiMode.SETTINGS && mode <= UiMode.KEYBOARD_BINDING;
+  return mode >= UiMode.SETTINGS_GENERAL && mode <= UiMode.KEYBOARD_BINDING;
 }
