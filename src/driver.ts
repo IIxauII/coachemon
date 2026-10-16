@@ -567,7 +567,7 @@ export class Driver {
 
     // Only the slot screen knows a slot's state, and a refusal here leaves the setup on it (v1-tool-surface.md §10).
     menu = await this.#game.menu();
-    const { free, occupied, chosen: slotOpt } = planSlot(menu.options, slot);
+    const { free, occupied, loading, chosen: slotOpt } = planSlot(menu.options, slot);
     const leftOn = { screen: "SAVE_SLOT/SAVE", free, occupied, slots: menu.options, log, next: 'select_option("Slot N") to continue, or press(CANCEL) to abandon this setup (no save is touched)' };
     if (!slotOpt) {
       if (slot !== undefined) throw new Refusal("bad_slot", `slot ${slot} ("Slot ${slot + 1}") is not on the save-slot screen`, leftOn);
@@ -575,6 +575,9 @@ export class Driver {
     }
     const chosen = Number(slotOpt.i);
     const chosenLabel = slotLabel(slotOpt);
+    if (loading.includes(chosenLabel)) {
+      throw new Refusal("slot_loading", `${chosenLabel} has not finished loading, so whether it holds a run is unknown. The run setup is waiting on the save-slot screen.`, leftOn);
+    }
     if (slotOpt.hasData === true && !overwrite) {
       throw new Refusal("slot_occupied", `${chosenLabel} has a saved run. Free: ${free.join(", ") || "none"}. The run setup is waiting on the save-slot screen.`, leftOn);
     }
