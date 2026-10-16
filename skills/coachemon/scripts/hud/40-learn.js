@@ -294,8 +294,8 @@ const typeFit = (pk, mv, change, name, roster, ours) => {
   return { mult, note: `vs ${foes[at].name} at W${roster.wave}` };
 };
 
-// Salt Cure's curse (game-code.md §21). Sheer Force and Shield Dust zero its chance (§5, §8); Magic Guard takes no
-// chip, and Mold Breaker is long gone by the turn end.
+// Salt Cure's curse (game-code.md §5, §8, §21). Magic Guard is read past `foeAbilities`: Mold Breaker ignores abilities
+// only while its move runs (§1), and the chip lands at the turn end.
 const CURSE_TWICE = SALT_DOUBLED.map(t => TYPES[t]);
 // @mirrors curse-blocked
 const curseOf = (pk, tr, roster) => {
@@ -306,10 +306,11 @@ const curseOf = (pk, tr, roster) => {
   const { foes, wave } = roster;
   const hurts = f => ![f.ability, f.passive].includes("Magic Guard") && !foeAbilities(pk, f).includes("Shield Dust");
   const twice = f => hurts(f) && (f.types ?? []).some(t => CURSE_TWICE.includes(t));
-  const hurt = foes.filter(hurts).length, n = foes.filter(twice).length, all = foes.length;
-  const notes = !hurt ? [`curse can't hurt at W${wave}`]
-    : [!n ? "curse 1/8 a turn" : n === all ? `curse 1/4 a turn at W${wave}` : `curse 1/4 on ${n} of ${all} at W${wave}`,
-      ...(hurt < all ? [`curse hurts ${hurt} of ${all} at W${wave}`] : [])];
+  const hurtCount = foes.filter(hurts).length, twiceCount = foes.filter(twice).length, all = foes.length;
+  const rate = !twiceCount ? "curse 1/8 a turn"
+    : twiceCount === all ? `curse 1/4 a turn at W${wave}` : `curse 1/4 on ${twiceCount} of ${all} at W${wave}`;
+  const notes = !hurtCount ? [`curse can't hurt at W${wave}`]
+    : [rate, ...(hurtCount < all ? [`curse hurts ${hurtCount} of ${all} at W${wave}`] : [])];
   return { value: value * unsure(roster, shareOf(foes, hurts) + shareOf(foes, twice)), notes };
 };
 

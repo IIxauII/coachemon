@@ -485,7 +485,7 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   const unsure = judge(SALT_CURE, { ...at50(foe("Vaporeon", ["Water"])), exact: false });
   assert.ok(curse(unsure) > curse(blind) && curse(unsure) < curse(doubled), "a roster the preview isn't sure of moves the score half as far");
 
-  // Magic Guard takes no chip, Mold Breaker or not (game-code.md §21).
+  // Magic Guard takes no chip (game-code.md §21), Mold Breaker or not: it ignores abilities only while its move runs (§1).
   const clefable = foe("Clefable", ["Fairy"], { ability: "Magic Guard" });
   const guarded = judge(SALT_CURE, at50(clefable));
   assert.equal(guarded.value, bare.value, "Magic Guard");
