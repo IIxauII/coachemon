@@ -92,7 +92,7 @@ function readCard(game: GameManager) {
   const hud = loadHud();
   const scene = game.scene;
   const handler = scene.ui.getHandler();
-  const account = hud["98-tick"].accountRead(scene);
+  const account = hud["98-watch"].accountRead(scene);
   // Through the run read, as the panel reads it.
   return hud["26-run"].readRun(scene, (run: unknown) => hud["46-encounter"].encounterModel(run, handler, account));
 }
