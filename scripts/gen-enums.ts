@@ -34,6 +34,7 @@ export const ENUMS: Record<string, string> = {
   Challenges: "src/enums/challenges.ts",
   ClassicFixedBossWaves: "src/enums/fixed-boss-waves.ts",
   Command: "src/enums/command.ts",
+  EvoCondKey: "src/data/balance/pokemon-evolutions.ts",
   EvoLevelThresholdKind: "src/enums/evo-level-threshold-kind.ts",
   GameModes: "src/enums/game-modes.ts",
   Gender: "src/data/gender.ts",

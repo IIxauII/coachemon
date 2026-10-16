@@ -2660,6 +2660,20 @@ Lower Starter Points. Inverse Battle flips each defending type's multiplier (bel
 Hardcore, Limited Support and Passives don't change the grid; the Moveset and Ability Randomizers change it only
 through their hooks above.
 
+**What the randomizers hide from the grid.** The Ability Randomizer (`src/data/challenge.ts:1594-1734`, values 1–3)
+rerolls each species ability from 1 (`SPECIES_ABILITY_MODIFY`, `:1645-1681`) and the passive too from 2
+(`PASSIVE_ABILITY_MODIFY`, `:1683-1705`), each a seeded pick (offset `500 · speciesId + abilityId`); 3 spares nine
+form-change abilities from the ability reroll (`:1657-1672`), never from the passive's. Both skip the Pokédex and
+egg-hatch modes and `SelectStarterPhase`, so the grid shows the species' own. The Moveset Randomizer (`:1319-1592`,
+values 1–2) empties the level-up list in `STARTER_SELECT` and outside it swaps each level-up move for a seeded pick
+(`applyLevelUpMoveset`, `:1425-1454`). An evolution that needs a move (`EvoCondKey.MOVE`, or Tyrogue's own key, both
+checked against the moveset, `src/data/balance/pokemon-evolutions.ts:171-206`) keeps that need at 1
+(`applyModifyEvolutions`, `:1511-1557`, returns at once). From 2 the move datum goes, a condition left empty is null
+and a level-1 evolution takes `evoLevelThreshold?.[0] ?? 50`; Tyrogue knowing none of its three moves has one branch,
+picked by seed (offset `pokemon.id`), freed instead. The hook runs on copies `getEvolution` builds
+(`src/field/pokemon.ts:3011-3038`) through a constructor that sets `evoLevelThreshold` only from `evoDelay`
+(`pokemon-evolutions.ts:261-274`), so a level-1 one always lands on 50: Dipplin → Hydrapple.
+
 **Species reads** (on a `PokemonSpecies`, all pure): `baseStats`, `baseTotal`, `type1` / `type2`, `abilityHidden`,
 `generation`; `getEvolutionLevels()` (`src/data/pokemon-species.ts:1106-1123`: every descendant flattened as
 `[speciesId, level]`, item evolutions at level 1); `getPassiveAbility(formIndex)` (`:217`, after
