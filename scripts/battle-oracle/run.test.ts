@@ -39,7 +39,7 @@ test("oracle:battle reads an augmented export's live extras (#659, #664)", () =>
 
 test("oracle:battle on an augmented export missing an extra prints no answer naming it (#664)", () => {
   const { rndState: _gone, ...extras } = gordieT5.extras;
-  const run = oracle({ ...gordieT5, extras }, ["--unchecked"]);
+  const run = oracle({ ...gordieT5, extras });
 
   assert.match(run.stdout, /^no answer: the live read of the fight lacks rndState,/);
   assert.equal(run.status, 2);

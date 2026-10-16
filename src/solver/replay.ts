@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { z } from "zod";
 import { NAMES } from "../enums/generated.ts";
 import { title } from "./describe.ts";
-import { midFight } from "./extras.ts";
+import { augmentedExport } from "./extras.ts";
 import { refuse } from "./gate.ts";
 import type { SavedItem, SessionSave, SolveInput } from "./input.ts";
 import { luckOf } from "./luck.ts";
@@ -61,7 +61,7 @@ export async function replay(
   const refused = refuse(given, { gameVersion: given.cloneVersion });
   if (refused) return refused;
   const { save } = given;
-  const augmented = midFight(given);
+  const augmented = augmentedExport(given);
   const live = given.live ?? augmented?.live;
   if (!live) return noAnswer({ code: "no_live_battle" });
   if (save.waveIndex !== live.wave) return noAnswer({ code: "save_mismatch", save: { wave: save.waveIndex }, live });

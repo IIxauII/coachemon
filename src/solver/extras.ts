@@ -44,8 +44,8 @@ export type MidFightReadOrMissing =
   /** By each one's path in the read, as its `unread` names them. */
   | { kind: "missing"; extras: readonly string[] };
 
-/** For a caller past the gate, which answers "no answer" to an augmented export missing any extra. */
-export function midFight({ save, extras }: Pick<SolveInput, "save" | "extras">): MidFightRead | undefined {
+/** For a caller past the gate. */
+export function augmentedExport({ save, extras }: Pick<SolveInput, "save" | "extras">): MidFightRead | undefined {
   if (!extras) return undefined;
   const read = readExtras(save, extras);
   if (read.kind === "missing") throw new Error(`the gate let through an augmented export lacking ${read.extras.join(", ")}`);
@@ -70,7 +70,7 @@ export function readExtras(save: SessionSave, given: MidFightExtras): MidFightRe
   ] as const) {
     const read = raw[side];
     if (!Array.isArray(read)) continue;
-    // An entry with no id is named for that already.
+    // An entry with no id could stand for any saved mon, so while one has none no slot is named, only that id.
     if (read.every(entry => Number.isInteger(entry?.id))) {
       (saved as SavedMon[]).forEach(({ id }, slot) => {
         if (!read.some(entry => entry.id === id)) missing.add(`${side}.${slot}`);

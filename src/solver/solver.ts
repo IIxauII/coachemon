@@ -1,5 +1,5 @@
 import reviewed from "../escape-ladder/reviewed.json" with { type: "json" };
-import { midFight } from "./extras.ts";
+import { augmentedExport } from "./extras.ts";
 import { refuse } from "./gate.ts";
 import type { Budget, Recheck, SolveInput } from "./input.ts";
 import { noAnswer } from "./no-answer.ts";
@@ -76,7 +76,7 @@ async function withWorker<T>(
   use: (worker: Worker) => Promise<T>,
 ): Promise<T | NoAnswer> {
   const { save, cloneVersion } = given;
-  const worker = await startWorker(clone, save, midFight(given)?.forkPoint);
+  const worker = await startWorker(clone, save, augmentedExport(given)?.forkPoint);
   if ("missing" in worker) return noAnswer({ code: "no_clone", version: cloneVersion, cause: worker.missing });
   if ("failed" in worker) return noAnswer({ code: "harness_failed", why: worker.failed });
   try {
