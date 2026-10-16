@@ -456,8 +456,9 @@ export const HUD: Area = {
       ],
     },
     { name: "form", kind: "field", at: ["src/battle-scene.ts#PartyInfo.form"] },
-    { name: "formIndex", kind: "field", at: ["src/field/pokemon.ts#Pokemon.formIndex"] },
+    { name: "formIndex", kind: "field", at: ["src/field/pokemon.ts#Pokemon.formIndex", "src/system/pokemon-data.ts#PokemonData.formIndex"] },
     { name: "formKey", kind: "field", at: ["src/data/pokemon-species.ts#PokemonForm.formKey"] },
+    { name: "formName", kind: "field", at: ["src/data/pokemon-species.ts#PokemonForm.formName"] },
     {
       name: "forms",
       kind: "field",
@@ -1040,6 +1041,12 @@ export const HUD: Area = {
       at: ["src/ui/handlers/mystery-encounter-ui-handler.ts#MysteryEncounterUiHandler.optionsMeetsReqs"],
     },
     { name: "order", kind: "field", at: ["src/data/pokemon-data.ts#PokemonTurnData.order"] },
+    {
+      name: "oricorioData",
+      kind: "field",
+      at: ["src/data/mystery-encounters/encounters/dancing-lessons-encounter.ts#DancingLessonsEncounter"],
+      note: "ME misc key set in onInit",
+    },
     {
       name: "origin",
       kind: "field",

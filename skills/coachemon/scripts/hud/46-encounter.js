@@ -4,7 +4,7 @@
 import { TYPES, abilityValue, natureOf, stage, typesOf } from "./01-core.js";
 import { bigFightsAhead } from "./03-calendar.js";
 import { gameTables } from "./04-game-tables.js";
-import { partyAtFight, partyProfile } from "./08-party.js";
+import { formOf, partyAtFight, partyProfile, typesOfSpecies } from "./08-party.js";
 import { weakestMember } from "./12-value.js";
 import { SAFARI_MONS, safariMonData, safariPreview, safariReady } from "./44-safari.js";
 import { accountWorth, teamVerdict } from "./45-catch.js";
@@ -711,10 +711,11 @@ const RULES = {
     const name = mon ? `${mon.name}${mon.shiny ? " shiny" : ""}` : "it";
     const why = worthWhy(offer);
     const charm = c.opt(2).enabled, berries = c.opt(1).enabled;
+    const boost = c.wave < 150 ? "Def/SpD" : "Def/SpD/Spe";
     return {
       offers: offer ? [offer.card] : [],
       rows: [
-        { outcome: `fight ${name} (boosted); catchable → rewards`, battle: "wild",
+        { outcome: `fight ${name} (+1 ${boost} on entry); catchable → rewards`, battle: "wild",
           verdict: wanted && (charm || berries) ? "ok" : fight.hard ? "avoid" : "take", why: fight.text },
         { outcome: `give 4 random berries: ${name} joins with a 2nd egg move (may repeat the 1st)`, verdict: wanted && !charm ? "take" : wanted ? "ok" : "avoid",
           why: wanted ? why : `berries for a mon you don't need (${why})`, needs: "4 berries" },
@@ -859,19 +860,27 @@ const RULES = {
 
   [DANCING]: c => {
     const live = tryDo(() => c.s.getEnemyParty()[0]);
+    // `foe` reads the species, whose Fire/Flying is one style of four: the style is the form `onInit` built the mon in
+    // (game-code.md §13).
+    const form = live ? formOf(live.species, live.formIndex)
+      : formOf(c.me.enemyPartyConfigs?.[0]?.pokemonConfigs?.[0]?.species, c.me.misc?.oricorioData?.formIndex);
+    const foe = live ? null : c.foe(0);
     const shown = live
       ? { name: tryDo(() => live.name, "Oricorio"), types: typesOf(live), level: live.level, boss: true, bars: 0, estimated: false }
-      : c.foe(0);
+      : foe && { ...foe, types: typesOfSpecies(form) };
     const fight = c.fight(shown);
     const offer = c.offer(live);
     const wanted = !!offer?.wanted;
     const why = worthWhy(offer);
-    const name = `${shown?.name ?? "Oricorio"}${live?.shiny ? " shiny" : ""}`;
+    const style = form?.formName;
+    const name = `${style ? `${style} ` : ""}${shown?.name ?? "Oricorio"}${live?.shiny ? " shiny" : ""}`;
+    const dance = shown?.types?.[0];
+    const opens = dance ? `${/^[AEIOU]/.test(dance) ? "an" : "a"} ${dance} Revelation Dance` : "Revelation Dance";
     const recruit = c.opt(2).enabled;
     return {
       offers: offer ? [offer.card] : [],
       rows: [
-        { outcome: `fight ${name} (+1 Atk/Def/SpA/SpD on entry, opens with Revelation Dance) → a Baton + rewards; catchable`,
+        { outcome: `fight ${name} (+1 Atk/Def/SpA/SpD on entry, opens with ${opens}) → a Baton + rewards; catchable`,
           battle: "boss", verdict: recruit || !wanted ? "ok" : fight.hard ? "avoid" : "take", why: fight.text },
         { outcome: "learn the dance: one mon of your choice is taught Revelation Dance (100 power, special, always the user's own first type)",
           verdict: recruit || wanted ? "ok" : "take", why: "free, and it keeps the move for the run" },

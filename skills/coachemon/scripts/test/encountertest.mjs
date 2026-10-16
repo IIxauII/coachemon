@@ -339,6 +339,20 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.deepEqual(verdicts(seen), ["take", "off", "ok"]);
 }
 
+// ---- Uncommon Breed: its boost is +1 Def/SpD on entry, and Spe as well from wave 150.
+{
+  const eevee = () => species(133, "Eevee", ["Normal"], 325);
+  const breed = wave => ({ type: 28, labels: ["Battle", "Berries", "Charm"], wave, dex: { 133: { caughtAttr: 255n } },
+    options: [option(), option({ mode: 3, requirements: [make("PersistentModifierRequirement", {})], met: false }), option({ mode: 3, primary: [moveReq(["ATTRACT"])] })],
+    misc: { pokemon: { ...pk("Eevee", ["Normal"], 38, { id: 133 }), species: eevee(), shiny: false } },
+    configs: [{ pokemonConfigs: [{ species: eevee(), level: 38 }] }] });
+  const mid = mount(breed(149)).model();
+  assert.equal(mid.options[0].outcome, "fight Eevee (+1 Def/SpD on entry); catchable → rewards");
+  assert.equal(mid.options[0].verdict, "take", "nothing offensive in the boost, so the level gap and coverage still decide");
+  const late = mount(breed(152)).model();
+  assert.equal(late.options[0].outcome, "fight Eevee (+1 Def/SpD/Spe on entry); catchable → rewards");
+}
+
 // ---- GTS: a card with no species table to build a threat set from claims no call at all (#586).
 {
   const party = team();
@@ -929,6 +943,31 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   // Already caught, no dancer: the free move beats a fight for a mon you don't want.
   const known = mount(dancing({ dex: { 741: { caughtAttr: 255n } } })).model();
   assert.deepEqual(verdicts(known), ["ok", "take", "off"]);
+}
+
+// ---- Dancing Lessons: the card reads the style on the field, and the type its opening Revelation Dance takes from it.
+{
+  const STYLES = [["Baile Style", "Fire"], ["Pom-Pom Style", "Electric"], ["Pa'u Style", "Psychic"], ["Sensu Style", "Ghost"]];
+  const oricorioSp = () => species(741, "Oricorio", ["Fire", "Flying"], 476,
+    { forms: STYLES.map(([formName, t]) => ({ formName, type1: TY.indexOf(t), type2: TY.indexOf("Flying") })) });
+  const styled = k => Object.assign(pk("Oricorio", [STYLES[k][1], "Flying"], 34, { id: 741, bst: 476 }),
+    { species: oricorioSp(), formIndex: k, shiny: false });
+  const dancer = () => [...team(), pk("Lopunny", ["Normal"], 37, { moves: [["Swords Dance", "Normal", 0, "X", "SWORDS_DANCE"]] })];
+  const dancing = extra => ({ type: 22, tier: GREAT, labels: ["Battle", "Learn", "Dance"], catchAllowed: true,
+    options: [option(), option(), option({ mode: 3, primary: [moveReq(["SWORDS_DANCE"])] })],
+    configs: [{ pokemonConfigs: [{ species: oricorioSp(), isBoss: true }] }], party: dancer(), ...extra });
+  const sensu = show("dancing lessons, a Sensu Oricorio", dancing({ enemy: [styled(3)] })).model();
+  assert.equal(sensu.options[0].outcome,
+    "fight Sensu Style Oricorio (+1 Atk/Def/SpA/SpD on entry, opens with a Ghost Revelation Dance) → a Baton + rewards; catchable");
+  assert.equal(sensu.options[2].outcome, "show it a dance: Sensu Style Oricorio joins, keeping the dance move you used");
+  const pomPom = mount(dancing({ enemy: [styled(1)] })).model();
+  assert.match(pomPom.options[0].outcome, /^fight Pom-Pom Style Oricorio \(.*opens with an Electric Revelation Dance\)/);
+  assert.equal(pomPom.options[0].why, "L34 boss vs your L40, 1 mon hits it SE, 1 weak to it",
+    "Electric/Flying: only Lapras's Ice Beam is super effective, and Lapras is the one weak to it");
+  // Nothing on the field: the style is the one the game built the Oricorio from, not the species' own Fire/Flying.
+  const unseen = mount(dancing({ misc: { oricorioData: { formIndex: 1 } } })).model();
+  assert.match(unseen.options[0].outcome, /^fight Pom-Pom Style Oricorio \(.*opens with an Electric Revelation Dance\)/);
+  assert.equal(unseen.options[0].why, "~L32 boss vs your L40, 1 mon hits it SE, 1 weak to it");
 }
 
 // ---- Bug-Type Superfan: the four tutor moves are the option fork's first four draws, one per pool.
