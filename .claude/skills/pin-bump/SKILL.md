@@ -28,7 +28,7 @@ Dispatch these subagents in one message, so they run in parallel. Their briefs a
 each its brief with `<pin>`, `<new>` and its slice filled in.
 
 - **Release notes**: one per game release after `<pin>` up to `<new>` (the brief says how to list them).
-- **Diff**: one per registry area in `scripts/game-reads/registry/` (`page`, `server`, `hud`, `harness`), each over
+- **Diff**: one per registry area in `scripts/game-reads/registry/` (`page`, `server`, `hud`, `harness`, `templates`), each over
   the game's changes from `<pin>` to `<new>` scoped to the reads its area registers.
 - **Checks**: one that runs `npm run reads:check`, `npm run drift:check -- --version <new>` and
   `npm run bump:suite -- --version <new>` (a quarter of an hour) and returns every named entry and failed step.
@@ -60,7 +60,8 @@ updated (`node skills/coachemon/scripts/test/run.mjs --update <name>`) only once
 Then re-check, and loop back to the fix items until all three are clean in one pass:
 
 1. `npm run reads:check` passes.
-2. `npm run drift:check -- --version <new>` names nothing.
+2. `npm run drift:check -- --version <new>` names nothing but MOVED and UNREVIEWED entries, each already on the change
+   list as re-read. Those two clear only when the stamp records the new hashes.
 3. `npm run bump:suite -- --version <new>` passes every step.
 
 Then stamp: `npm run drift:check -- --version <new> --stamp`. It runs the harness re-check on every known fight and
