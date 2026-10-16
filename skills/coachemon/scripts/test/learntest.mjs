@@ -27,7 +27,7 @@ const mv = ([n, t, p, c, a = 100, attrs = [], charge = false, target = 3, extra 
 const AB_ATTRS = { "Skill Link": ["MaxMultiHitAbAttr"], "Magic Guard": ["BlockNonDirectDamageAbAttr"], "Rock Head": ["BlockRecoilDamageAttr"], "Parental Bond": ["AddSecondStrikeAbAttr"] };
 const mon = (name, types, atk, spa, moves, extra = {}) => ({
   name, level: 64, hp: 100, getMaxHp: () => 100, getTypes: () => types.map(t => TY.indexOf(t)), getAbility: () => ({ name: extra.ability ?? "x" }),
-  hasAbilityWithAttr: a => (AB_ATTRS[extra.ability] ?? []).includes(a), getHeldItems: () => [],
+  hasAbilityWithAttr: a => (AB_ATTRS[extra.ability] ?? []).includes(a), getAbilityAttrs: a => extra.abAttrs?.[a] ?? [], getHeldItems: () => [],
   getStat: i => ({ 1: atk, 3: spa }[i] ?? 100), getIconAtlasKey: () => "k", getIconId: () => 1, friendship: 70,
   moveset: moves.map(m => ({ getMove: () => mv(m), getName: () => m[0], getMovePp: () => 10, ppUsed: 0 })),
 });
@@ -210,6 +210,12 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   const moon = run(fletchinder, MOONLIGHT);
   assert.ok(moon.model.move.notes.includes("heal (weather)"), `a weather heal is a flat heal: ${moon.model.move.notes}`);
   assert.ok(!run(fletchinder, SWALLOW).model.move.notes.some(n => /heal/.test(n)), "Swallow heals only off a Stockpile");
+  const HEAL_PULSE = ["Heal Pulse","Psychic",-1,"X",-1,[["HealAttr",{ healRatio: 0.5, selfTarget: false }]],false,3,{ flags: 64 }];
+  const megaLauncher = { getCondition: () => null, canApply: ({ move: m }) => m.hasFlag(64), apply: ({ healRatio }) => { healRatio.value *= 1.5; } };
+  const pulses = [["Water Pulse","Water",60,"S"],["Dark Pulse","Dark",80,"S"],["Aura Sphere","Fighting",80,"S"],["Dragon Pulse","Dragon",85,"S"]];
+  const clawitzer = mon("Clawitzer", ["Water"], 73, 120, pulses, { abAttrs: { MoveHealBoostAbAttr: [megaLauncher] } });
+  assert.ok(run(clawitzer, HEAL_PULSE).model.move.notes.includes("heal 75%"), "Mega Launcher's Heal Pulse is valued at ¾");
+  assert.ok(run(mon("Clawitzer", ["Water"], 73, 120, pulses), HEAL_PULSE).model.move.notes.includes("heal 50%"));
 
   const minccino = mon("Minccino", ["Normal"], 110, 60, [["Pound","Normal",40,"P"],["Baby-Doll Eyes","Fairy",-1,"X",100,[statChange([1], -1)]], HELPING_HAND, SING]);
   const hh = run(minccino, ["Triple Axel","Ice",20,"P",90,[["MultiHitAttr",{ intrinsicMultiHitType: 2 }],"MultiHitPowerIncrementAttr"],false,3,{ flags: 65536 }]);
