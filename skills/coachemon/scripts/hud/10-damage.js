@@ -531,8 +531,8 @@ const asMoveRuns = (env, atk, def, move, opts, fn) => {
   const { ignoreAbilities, ignoringEffectSource } = arena;
   const source = atk.getBattlerIndex?.() ?? null;
   arena.ignoreAbilities = true;
-  // Off the field both answer -1, so exempting the user would exempt the defender too. Neither is exempt, which mutes
-  // the user's own ignorable abilities as well.
+  // Off the field both answer -1 (game-code.md §1): exempting the user there would exempt the defender too, so neither
+  // is, and the user's own ignorable abilities go quiet as well.
   arena.ignoringEffectSource = source !== def.getBattlerIndex?.() ? source : null;
   try { return fn(); } finally { Object.assign(arena, { ignoreAbilities, ignoringEffectSource }); }
 };
@@ -542,7 +542,7 @@ const fromGame = (env, atk, def, pm, opts) => {
   if (attrs(move, "CounterDamageAttr").length) return null; // reacts to damage taken this turn: nothing yet
   const aiBlind = !!opts.aiView && !def.waveData?.abilityRevealed;
   const ignoreAbility = aiBlind || ignoresAbilities(atk, move);
-  // On top of the arena's switch it would also drop the abilities Mold Breaker can't, Shadow Shield's among them (#732).
+  // The live hit leaves the bypass to the arena: `ignoreAbility` would drop Shadow Shield too (game-code.md §1, #732).
   const gameIgnore = aiBlind || (ignoreAbility && !env.s.arena?.ignoreAbilities);
   const ignoreAllyAbility = !!opts.aiView && !def.getAlly?.()?.waveData?.abilityRevealed;
   // A cached Tera Shell result would leak into this move (game-code.md §1); the sandbox restores it.

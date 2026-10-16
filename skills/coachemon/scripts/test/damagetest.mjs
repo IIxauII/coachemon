@@ -627,7 +627,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   const o = moveOutcome(scene, mold, foe, pmOf(quake), { crit: false });
   assert.deepEqual([o.e, o.max], [1, 100], "Mold Breaker Earthquake into Levitate");
   assert.ok(!scene.arena.ignoreAbilities, "the arena is left as the game had it");
-  // Shadow Shield isn't ignorable: only `ignoreAbility` drops it.
+  // Shadow Shield holds against Mold Breaker (game-code.md §1).
   const shield = mon("shadow shield", { player: false, bi: 2 });
   const unshielded = shield.getAttackDamage;
   shield.getAttackDamage = function (o) {

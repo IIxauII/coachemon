@@ -198,6 +198,10 @@ Call it only inside `sandbox`.
      answers -1: a player's `getFieldIndex()` (`:6068-6074`), an enemy's `BattlerIndex.ATTACKER` (`:7254-7264`).
    - The AI's own simulated call (`:6881-6890`) runs in `EnemyCommandPhase`, before any `MovePhase`, so the flag is off
      there and Levitate holds.
+   - The live hit passes `ignoreAbility: false` (`src/phases/move-effect-phase.ts:648`) and leaves the bypass to the
+     flag. `ignoreAbility` would skip the whole `ReceivedMoveDamageMultiplierAbAttr` step, ignorable or not
+     (`src/field/pokemon.ts:3982`): Shadow Shield and Prism Armor are not `.ignorable()`, so they hold against Mold
+     Breaker, while Multiscale is (`src/data/abilities/init-abilities.ts:944-947`, `:1617-1626`).
 3. **Fixed damage and OHKO.**
    - `FixedDamageAttr` (`src/field/pokemon.ts:3801`) returns `{ EFFECTIVE, toDmgValue(fixed × Multi-Lens factor) }`
      (`:3802-3831`). That return skips step 7, so it runs the Sturdy step itself first: a full-HP defender gets
