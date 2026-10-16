@@ -42,7 +42,7 @@ const out = path.join(work, "copy");
 mkdirSync(out);
 const files = assemble(REPO, source, out);
 
-// Written before the smoke, whose `npm ci` fills `out` with a `node_modules`.
+// Written before the smoke (extension-distribution.md §14.7).
 const index = { GIT_INDEX_FILE: path.join(work, "index") };
 execFileSync("git", ["--work-tree", out, "update-index", "--add", "-z", "--stdin"], { cwd: REPO, env: { ...process.env, ...index }, input: files.join("\0") });
 const tree = git(["write-tree"], index);

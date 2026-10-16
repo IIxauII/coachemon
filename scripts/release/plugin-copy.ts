@@ -26,10 +26,10 @@ const LEFT_OUT = [
 export const shipped = (file: string): boolean =>
   SHIPPED_FILES.includes(file) || (SHIPPED_DIRS.some(dir => file.startsWith(dir)) && !LEFT_OUT.some(rule => rule.test(file)));
 
-// `import type` is erased before Node runs the file, so it reaches nothing.
-const IMPORT = /^\s*(?:import|export)\s(?!type\s)[^"';]*?from\s*["']([^"']+)["']/gm;
 const SIDE_EFFECT = /^\s*import\s*["']([^"']+)["']/gm;
 const DYNAMIC = /\bimport\(\s*["']([^"']+)["']\s*\)/g;
+// `import type` is erased before Node runs the file, so it reaches nothing.
+const IMPORT = /^\s*(?:import|export)\s(?!type\s)[^"';]*?from\s*["']([^"']+)["']/gm;
 const URL_READ = /new URL\(\s*["']([^"']+)["']\s*,\s*import\.meta\.url\s*\)/g;
 const BESIDE = /dirname\(\s*fileURLToPath\(\s*import\.meta\.url\s*\)\s*\)\s*,\s*["']([^"']+)["']/g;
 // A shell script's `here` is its own directory: `here=$(cd "$(dirname "$0")" && pwd)`.

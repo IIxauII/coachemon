@@ -47,7 +47,7 @@ test("the copy holds nothing that is ours alone: docs, scripts, tests, fixtures,
   assert.deepEqual(ours, []);
 });
 
-test("the copy's package.json and lockfile list the runtime dependencies alone, at the versions master locks", () => {
+test("the copy's package.json and lockfile list the runtime dependencies alone, at the versions HEAD locks", () => {
   const json = (file: string) => JSON.parse(readFileSync(path.join(OUT, file), "utf8"));
   const atHead = (file: string) => JSON.parse(execFileSync("git", ["show", `HEAD:${file}`], { cwd: REPO, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 }));
   const [pkg, lock, repoPkg, repoLock] = [json("package.json"), json("package-lock.json"), atHead("package.json"), atHead("package-lock.json")];
@@ -55,12 +55,12 @@ test("the copy's package.json and lockfile list the runtime dependencies alone, 
   assert.equal(pkg.scripts, undefined);
   assert.equal(pkg.version, repoPkg.version);
   assert.deepEqual(pkg.dependencies, repoPkg.dependencies);
-  // Claude Code's precondition for installing at all (extension-distribution.md §14.7).
+  // Claude Code installs the dependencies only when these two agree (extension-distribution.md §14.7).
   assert.deepEqual(lock.packages[""].dependencies, pkg.dependencies);
   assert.equal(lock.packages[""].devDependencies, undefined);
   assert.equal(lock.packages["node_modules/typescript"], undefined);
-  for (const [at, entry] of Object.entries(lock.packages as Record<string, { version?: string }>)) {
-    if (at !== "") assert.equal(entry.version, repoLock.packages[at]?.version, at);
+  for (const [key, entry] of Object.entries(lock.packages as Record<string, { version?: string }>)) {
+    if (key !== "") assert.equal(entry.version, repoLock.packages[key]?.version, key);
   }
 });
 
