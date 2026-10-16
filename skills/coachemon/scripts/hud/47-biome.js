@@ -38,12 +38,15 @@ const readTables = () => {
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 const nameOf = id => tryDo(() => readTables().biomeName(id), `#${id}`);
 const linkId = l => (Array.isArray(l) ? l[0] : l);
+// `SelectBiomePhase`'s `allBiomeLinks`: the biome's own, then the timed event's (game-code.md §10).
+const linksOf = id => [...tryDo(() => readTables().biomes.get(id).biomeLinks, []),
+  ...tryDo(() => gameEvents()?.getEventBiomeLinks?.(id), [])];
 
 // Option labels → biome ids by the game's own localized name; failing that, by position: the options are the links in
 // order, less those that didn't roll (game-code.md §10).
 const resolveOptions = (s, labels) => {
   const tables = readTables();
-  const links = tryDo(() => [...tables.biomes.get(s.arena.biomeId).biomeLinks], []);
+  const links = linksOf(s.arena.biomeId);
   const ids = [...new Set([...links.map(linkId), ...(tables?.biomes?.keys() ?? [])])];
   const byName = labels.map(l => ids.find(id => nameOf(id) === l) ?? null);
   if (byName.every(x => x != null)) return byName;
@@ -389,7 +392,7 @@ const judge = (run, id, profile, level, wave, luck, fightWave) => {
   if (catchList[0]) reasons.push({ good: true, catch: true, text: `catch ${catchList[0].name} (${catchList[0].tags.join(", ")})` });
 
   const trainerShare = enc.list.reduce((t, e) => t + e.trainer, 0);
-  const onward = tryDo(() => [...biome.biomeLinks], []).map(l => ({ name: nameOf(linkId(l)), rare: RARE_ONWARD.has(linkId(l)), chance: Array.isArray(l) ? l[1] : 1 }));
+  const onward = linksOf(id).map(l => ({ name: nameOf(linkId(l)), rare: RARE_ONWARD.has(linkId(l)), chance: Array.isArray(l) ? l[1] : 1 }));
   return {
     raw, score: Math.round(raw), offense: Math.round(offense * 100), defense: Math.round(defense * 100),
     opportunity: Math.round(opportunity * 100), bossFit: Math.round(bossFit * 100),
