@@ -192,7 +192,7 @@ const STATUS_TYPES = { [StatusEffect.POISON]: ["Poison", "Steel"], [StatusEffect
 // @mirrors tag-abilities
 const TAG_ABILITIES = { Oblivious: ["TAUNT"], "Aroma Veil": ["TAUNT", "ENCORE", "HEAL_BLOCK", "DISABLED", "TORMENT"] };
 // Never through `foeAbilities`: `isTrapped` asks at the switch, outside the move Mold Breaker ignores abilities for
-// (game-code.md §7, §1).
+// (game-code.md §16).
 // @mirrors never-trapped
 const neverTrapped = foe => (foe.types ?? []).includes("Ghost") || [foe.ability, foe.passive].includes("Run Away");
 const DISRUPT_NEEDS = { TAUNT: "statusMoves", ENCORE: "statusMoves", HEAL_BLOCK: "healMoves" };

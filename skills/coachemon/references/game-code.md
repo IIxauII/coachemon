@@ -1938,7 +1938,7 @@ battles, since whether a wave is one is itself a roll. At base odds that is ~12 
 
 **Status moves against the roster ahead (#122).** A learned move is kept for the run, so both the learn card and the
 TM advice hand `learnAdvice` the same foes: the next big fight's, from `49-ahead.js` (`learnRoster`). With none, nothing
-below applies. Only an inflicted status and a disrupting tag are scaled,
+below applies. Only an inflicted status, a disrupting tag and a trapping tag are scaled,
 each decided from what the preview hands over per foe (types, ability, passive, moveset). Paths relative to `src/`:
 
 - **Can a status move reach the foe at all.** Status moves ignore the type chart unless they carry
@@ -1970,6 +1970,10 @@ each decided from what the preview hands over per foe (types, ability, passive, 
   (`:1124-1131`). A disrupting move with something to take away is worth ×1.4 plus 0.4 × the share of the roster it
   bites on, ×0.3 with nothing; Disable and Torment only by the share they land on. The preview lists a foe's
   `statusMoves` and `healMoves` (recovery attrs and `HitHealAttr`) for this.
+- **Trapping** (`TRAPPED`: Mean Look, Block, Spider Web): each fails on a Ghost type (`failIfGhostTypeCondition`,
+  `data/moves/move.ts:8993`), and `isTrapped` never holds a Ghost type or a Run Away holder (§7). Run Away is asked at
+  the switch, outside the `MovePhase`–`MoveEndPhase` window where a Mold Breaker user's `ignoreAbilities` is set
+  (`phases/move-phase.ts:188`, `phases/move-end-phase.ts:42`), so Mold Breaker never gets past it.
 - **A typing written onto the foe** (Soak, Magic Powder, Forest's Curse, Trick-or-Treat): worth what it opens for the
   party's own coverage — two doublings of the party's best answer is a full opening — plus, for a `set`, the STAB it
   takes away, a whole STAB being worth one of those doublings. That share is a share of the foe's **attacking moves**,

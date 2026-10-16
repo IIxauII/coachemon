@@ -318,7 +318,7 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
 // ---- The roster a status move will face (#122)
 // `roster`: the next big fight's foes, as the preview has them.
 {
-  const foe = (name, types, extra = {}) => ({ name, types, ability: extra.ability ?? null, passive: null, segments: extra.segments ?? 0,
+  const foe = (name, types, extra = {}) => ({ name, types, ability: extra.ability ?? null, passive: extra.passive ?? null, segments: extra.segments ?? 0,
     statusMoves: extra.statusMoves ?? [], healMoves: extra.healMoves ?? [] });
   const at30 = (...foes) => ({ wave: 30, exact: true, foes });
   const whitney = at30(foe("Clefairy", ["Fairy"]), foe("Miltank", ["Normal"], { segments: 2, statusMoves: ["Milk Drink"], healMoves: ["Milk Drink"] }));
@@ -346,6 +346,8 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   const look = judge(MEAN_LOOK, runner);
   assert.ok(look.notes.includes("lands on 1 of 2 at W30") && look.value < lookBlind.value, `Mean Look into a Run Away foe: ${look.notes} (${look.value} vs ${lookBlind.value})`);
   assert.ok(judge(MEAN_LOOK, runner, "Mold Breaker").notes.includes("lands on 1 of 2 at W30"), "Mold Breaker doesn't stop Run Away");
+  const passive = judge(MEAN_LOOK, at30(foe("Snorlax", ["Normal"], { passive: "Run Away" }), foe("Machoke", ["Fighting"])));
+  assert.ok(passive.notes.includes("lands on 1 of 2 at W30"), `Run Away as a passive: ${passive.notes}`);
   const loose = judge(MEAN_LOOK, at30(foe("Rattata", ["Normal"], { ability: "Run Away" }), foe("Gengar", ["Ghost","Poison"])));
   assert.ok(loose.notes.includes("can't land at W30") && loose.value <= Math.round(lookBlind.value * 0.3) + 1, `nobody to hold: ${loose.notes} (${loose.value})`);
 
