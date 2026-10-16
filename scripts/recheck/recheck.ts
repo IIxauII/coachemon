@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import type { Carry } from "../../src/solver/gate.ts";
+import { andJoined } from "../../src/solver/no-answer.ts";
 import type { Input, ReplayResult } from "../../src/solver/oracle-line.ts";
 import { type CheckResult, readScript, type Script, type SolveInput } from "../../src/solver/solver.ts";
 import { printChecks } from "../battle-oracle/print.ts";
@@ -19,8 +20,6 @@ const KNOWN_FIGHTS = [
 ];
 
 const FIXTURES = new URL("../../src/solver/fixtures/", import.meta.url);
-
-const andJoined = (all: readonly string[]) => (all.length > 1 ? `${all.slice(0, -1).join(", ")} and ${all.at(-1)}` : all.join(""));
 
 /** The names of the carried fights, by the game version each was recorded on. */
 function carriedFrom(fights: readonly { name: string; given: Given; carry: Carry }[]): Map<string, string[]> {
@@ -73,11 +72,12 @@ export async function recheck(
   if (failed.length > 0) {
     say("re-check: the fork and chained-restore checks didn't run, since a known fight didn't replay");
     for (const [from, names] of carriedFrom(unreplayed)) {
-      const one = names.length === 1;
+      const how = `on ${version}: "Record a known fight again" in docs/runbooks/pin-bump.md.`;
       say(
-        `re-check: ${andJoined(names)} ${one ? "was" : "were"} recorded on ${from}. Where ${version} changed ` +
-          `${one ? "its line" : "their lines"}, record ${one ? "a fight" : "fights"} in ${one ? "its" : "their"} ` +
-          `place on ${version}: "Record a known fight again" in docs/runbooks/pin-bump.md.`,
+        names.length === 1
+          ? `re-check: ${names[0]} was recorded on ${from}. Where ${version} changed its line, record a fight in its place ${how}`
+          : `re-check: ${andJoined(names)} were recorded on ${from}. Where ${version} changed their lines, record fights ` +
+              `in their place ${how}`,
       );
     }
     return { failed, text: text.join("\n") };

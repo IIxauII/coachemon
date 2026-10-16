@@ -46,7 +46,6 @@ const report = z.object({
   steps: z
     .array(z.object({ turn: z.int(), input: input.nullable(), checkpoint, strayPrompts: z.int(), draws: z.array(draw) }))
     .optional(),
-  /** The save and the live export as the clone migrates them, for a carried replay. */
   migrated: z.object({ save: z.looseObject({}), liveExport: z.looseObject({}) }).optional(),
   end: z
     .union([
@@ -100,10 +99,10 @@ export async function replay(
   }
   if (carried && error === undefined && !migrated) return failed("it didn't say how it migrated the carried save");
   // A migration leaves the save's `gameVersion` as it was, and the loaded scene's export writes its own (game-code.md §31).
-  const held = migrated
+  const expected = migrated
     ? { save: migrated.save as SessionSave, liveExport: { ...migrated.liveExport, gameVersion: version } as SessionSave }
     : { save, liveExport };
-  const unclean = hygiene && loadHygiene(hygiene, held.save);
+  const unclean = hygiene && loadHygiene(hygiene, expected.save);
   if (unclean) return unclean;
   if (error !== undefined) return failed(error.split("\n")[0]);
   if (version === undefined || !hygiene || !battle || !scene || !steps || end === undefined) {
@@ -119,7 +118,7 @@ export async function replay(
   }
   const stray = steps.find(step => step.strayPrompts > 0);
   if (stray) return broke("stray_prompt", `${stray.strayPrompts} after turn ${stray.turn}`);
-  const differences = sceneDiffers(scene, held.liveExport);
+  const differences = sceneDiffers(scene, expected.liveExport);
   if (differences.length > 0) return noAnswer({ code: "scene_mismatch", differences });
   if (typeof end === "object") {
     const { index } = end.illegal;

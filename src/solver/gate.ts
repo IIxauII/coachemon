@@ -5,10 +5,7 @@ import type { Recheck, SolveInput } from "./input.ts";
 import { noAnswer } from "./no-answer.ts";
 import type { NoAnswer } from "./oracle-line.ts";
 
-/**
- * `carried`: the pin bump's re-check replays a known fight's save from an older game, which the clone migrates on load
- * as it migrates a player's (#703). Never a player's own solve.
- */
+/** `carried` lets a save from an older game through, for the pin bump's re-check alone: never a player's solve (#703). */
 export type Carry = { carried?: boolean };
 
 /**
