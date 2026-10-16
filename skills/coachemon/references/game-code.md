@@ -78,9 +78,10 @@ have four kinds of hidden effect, even on the "simulated" paths.
    - `failIfDampCondition` → `FieldPreventExplosiveMovesAbAttr`. This one is simulated only while the current phase
      is `EnemyCommandPhase`. Otherwise it queues a flyout and a "cannot use" message (`src/data/moves/move-condition.ts:206-218`).
    - `Pokemon.canSetStatus` → `IgnoreTypeStatusEffectImmunityAbAttr` (`src/field/pokemon.ts:5011`).
-   - `Pokemon.isForciblyUngrounded` → Levitate's `UngroundedAbAttr`, which has no flyout (`src/field/pokemon.ts:2572-2574`,
-     `src/data/abilities/ab-attrs.ts:216-224`). Reached from `isGrounded` (`src/field/pokemon.ts:2535`) and from
-     `getAttackTypeEffectiveness` for every move, the call coming before the Ground check (`:2823-2829`).
+   - `Pokemon.isForciblyUngrounded` → Levitate's and Eelevate's `UngroundedAbAttr`, which has no flyout
+     (`src/field/pokemon.ts:2572-2574`, `src/data/abilities/ab-attrs.ts:216-224`). Reached from `isGrounded`
+     (`src/field/pokemon.ts:2535`) and from `getAttackTypeEffectiveness` for every move, the call coming before the
+     Ground check (`:2823-2829`).
    - `getBerryPredicate` → `ReduceBerryUseThresholdAbAttr` (`src/data/berry.ts:43-61`).
 
    Muting stops the queued flyouts and messages. It does **not** undo the `abilitiesApplied` writes, and those are
@@ -163,8 +164,8 @@ Call it only inside `sandbox`.
    `getMoveEffectiveness` (`:2717-2795`) covers:
    - the cached `turnData.moveEffectiveness`, checked first, then 1 for a `TypelessAttr` move;
    - `getAttackTypeEffectiveness` (`:2803-2865`): Stellar; 0 for a Ground move into a mon that `isForciblyUngrounded`
-     (Levitate's `UngroundedAbAttr`, Magnet Rise's `FLOATING`, `TELEKINESIS`), unless the move is Thousand Arrows
-     (`:2823-2829`); a Flying type grounded by `IGNORE_FLYING` (Smack Down, Ingrain) or Gravity losing its Ground
+     (Levitate's and Eelevate's `UngroundedAbAttr`, Magnet Rise's `FLOATING`, `TELEKINESIS`), unless the move is
+     Thousand Arrows (`:2823-2829`); a Flying type grounded by `IGNORE_FLYING` (Smack Down, Ingrain) or Gravity losing its Ground
      immunity (`:2888-2890`); Scrappy/Foresight; `MoveTypeChartOverrideAttr` (Freeze-Dry); and strong winds (its
      message is queued only when not simulated);
    - a `FixedDamageAttr` move's non-zero multiplier, set to 1 (`:2740-2742`);
@@ -1942,9 +1943,10 @@ each decided from what the preview hands over per foe (types, ability, passive, 
   `field/pokemon.ts:2744-2746`) and on Overcoat (`data/abilities/init-abilities.ts:979-984`). A Prankster user's status
   moves fail on Dark types (`data/moves/move.ts:473-476`). `TypeImmunityAbAttr.canApply` checks no move category
   (`data/abilities/ab-attrs.ts:418-424`), so Volt Absorb / Lightning Rod / Motor Drive take Thunder Wave, Flash Fire /
-  Well-Baked Body Will-O-Wisp, Sap Sipper the Grass powders. Levitate is an `UngroundedAbAttr` (`init-abilities.ts:343-346`), and an ungrounded
-  target's Ground immunity sits in `getAttackTypeEffectiveness` (`field/pokemon.ts:2823-2829`), which a status move
-  reaches only through `RespectAttackTypeImmunityAttr`: Levitate stops attacks only. Magic
+  Well-Baked Body Will-O-Wisp, Sap Sipper the Grass powders. Levitate and Eelevate are `UngroundedAbAttr`s (`init-abilities.ts:343-346`,
+  `:2182-2186`), and an ungrounded target's Ground immunity sits in `getAttackTypeEffectiveness`
+  (`field/pokemon.ts:2823-2829`), which a status move reaches only through `RespectAttackTypeImmunityAttr`: both stop
+  attacks only. Magic
   Bounce reflects every `REFLECTABLE` move (`init-abilities.ts:1072-1075`, `phases/move-effect-phase.ts:1031-1037`), and
   Good as Gold blocks every status move not aimed at a side (`init-abilities.ts:1973-1983`). Mold Breaker ignores all
   of these but the unsuppressable Comatose and Shields Down (`init-abilities.ts:1508,1372`).

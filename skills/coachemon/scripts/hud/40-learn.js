@@ -1,5 +1,5 @@
 // The learn decision, for the level-up prompt and a TM alike, judged without battle state.
-import { ABILITY_IMMUNE, CHART, SPREAD_TARGETS, STAT_NAMES, STATUS_FRAMES, TYPES, abilitiesOf, effectiveness, iconOf, moveHasFlag, typesOf, vs } from "./01-core.js";
+import { ABILITY_IMMUNE, CHART, SPREAD_TARGETS, STAT_NAMES, STATUS_FRAMES, TYPES, UNGROUNDED, abilitiesOf, effectiveness, iconOf, moveHasFlag, typesOf, vs } from "./01-core.js";
 import { RANDBATS } from "./05-randbats.js";
 import { costNotes, moveTraits } from "./07-move-traits.js";
 import { partyProfile } from "./08-party.js";
@@ -209,8 +209,8 @@ const statusMoveBlocked = (pk, mv, foe) => {
   if (ab.includes("Good as Gold") && !SIDE_TARGETS.has(mv.moveTarget)) return true;
   if (ab.includes("Magic Bounce") && moveHasFlag(mv, MoveFlags.REFLECTABLE)) return true;
   if (abilitiesOf(pk).includes("Prankster") && types.includes("Dark")) return true;
-  // Levitate alone stops only attacks: the absorbing abilities take status moves too (game-code.md §16).
-  if (ab.some(a => a !== "Levitate" && ABILITY_IMMUNE[a] === type)) return true;
+  // (game-code.md §16)
+  if (ab.some(a => !UNGROUNDED.has(a) && ABILITY_IMMUNE[a] === type)) return true;
   if (moveHasFlag(mv, MoveFlags.POWDER_MOVE) && (types.includes("Grass") || ab.includes("Overcoat"))) return true;
   if (moveTraits(mv).attrNames.has("RespectAttackTypeImmunityAttr") && types.some(d => vs(type, d) === 0)) return true;
   return false;

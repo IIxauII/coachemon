@@ -1555,6 +1555,12 @@ export const HUD: Area = {
       ],
     },
     {
+      ours: "skills/coachemon/scripts/hud/01-core.js#ungrounded",
+      of: [
+        "src/data/abilities/init-abilities.ts#initAbilities",
+      ],
+    },
+    {
       ours: "skills/coachemon/scripts/hud/01-core.js#ability-immune-flag",
       of: [
         "src/data/abilities/init-abilities.ts#initAbilities",

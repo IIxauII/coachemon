@@ -582,18 +582,20 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   phaseName = "CommandPhase";
 }
 
-// ---- Thousand Arrows hits a Levitate holder and a Flying type, where every other Ground move estimates 0
+// ---- Thousand Arrows hits a Levitate or Eelevate holder and a Flying type, where every other Ground move estimates 0
 {
   phaseName = "MovePhase";
   class NeutralDamageAgainstFlyingTypeAttr {}
   const arrows = move(614, "Thousand Arrows", 4, 90, { attrs: [new NeutralDamageAgainstFlyingTypeAttr()] });
   const quake = move(89, "Earthquake", 4, 100);
   const atk = mon("a", { moves: [arrows, quake] });
-  const levitate = mon("levitate");
-  levitate.getAbility = () => ({ name: "Levitate", getAttrs: () => [] });
-  setup(atk, levitate);
-  assert.equal(moveOutcome(scene, atk, levitate, pmOf(arrows)).e, 1, "Thousand Arrows into Levitate");
-  assert.equal(moveOutcome(scene, atk, levitate, pmOf(quake)).e, 0, "Earthquake into Levitate");
+  for (const ability of ["Levitate", "Eelevate"]) {
+    const floater = mon("floater");
+    floater.getAbility = () => ({ name: ability, getAttrs: () => [] });
+    setup(atk, floater);
+    assert.equal(moveOutcome(scene, atk, floater, pmOf(arrows)).e, 1, `Thousand Arrows into ${ability}`);
+    assert.equal(moveOutcome(scene, atk, floater, pmOf(quake)).e, 0, `Earthquake into ${ability}`);
+  }
   const flyer = mon("flyer", { types: [2] });
   setup(atk, flyer);
   assert.equal(moveOutcome(scene, atk, flyer, pmOf(arrows)).e, 1, "Thousand Arrows into a Flying type");
