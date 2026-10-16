@@ -1543,10 +1543,11 @@ levelled as two of its strength (§11). The battle fields one member per level (
 however many `pokemonConfigs` there are. The template is whatever `Trainer.getPartyTemplate` answers: the config's
 `partyTemplateFunc` when it has one, else `partyTemplates` at `partyTemplateIndex`, which is `randSeedItem` over the
 indices (`field/trainer.ts:61`, `:255`) — so only a config with no func and a single template settles the party's size
-and levels before the fight. Mysterious Challengers' first option keeps the biome trainer's own. Its second option has
-the same hole: `clone()` keeps a `partyTemplateFunc` (`src/data/trainers/trainer-config.ts:921`) and `setPartyTemplates`
-doesn't clear it (`:472`–`475`), so an Ace Trainer, Breeder, Hooligans, Interviewers or Mysterious Sisters drawn there
-fights on its own func, not `1 STRONGER + min(ceil(w / 20), 5) AVERAGE`; only the third option nulls the func
+and levels before the fight. Mysterious Challengers' first option keeps the biome trainer's own config, so it is settled
+only when that config is. Its second option looks settled but isn't: `clone()` keeps a `partyTemplateFunc`
+(`src/data/trainers/trainer-config.ts:921`) and `setPartyTemplates` doesn't clear it (`:472`–`475`), so an Ace Trainer,
+Breeder, Hooligans, Interviewers or Mysterious Sisters drawn there fights on its own func, not
+`1 STRONGER + min(ceil(w / 20), 5) AVERAGE`; only the third option nulls the func
 (`mysterious-challengers-encounter.ts:95`).
 
 Delibird-y's degradation is a **live modifier read**, not a draw: `getStackCount()` against `getMaxStackCount()` on the

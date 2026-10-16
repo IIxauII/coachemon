@@ -277,9 +277,9 @@ const context = (run, me, options, account) => {
   const trainer = (k = 0) => {
     const cfg = me.enemyPartyConfigs?.[k];
     if (!cfg || (!cfg.trainerConfig && cfg.trainerType == null)) return null;
-    const config = cfg.trainerConfig ?? tryDo(() => gameTables().trainers[cfg.trainerType]);
-    const template = config && !config.partyTemplateFunc && config.partyTemplates?.length === 1 ? config.partyTemplates[0] : null;
-    const doubled = !!template && template.size < 2 && !!(config.doubleOnly || (config.hasDouble && cfg.doubleBattle));
+    const trainerConfig = cfg.trainerConfig ?? tryDo(() => gameTables().trainers[cfg.trainerType]);
+    const template = trainerConfig && !trainerConfig.partyTemplateFunc && trainerConfig.partyTemplates?.length === 1 ? trainerConfig.partyTemplates[0] : null;
+    const doubled = !!template && template.size < 2 && !!(trainerConfig.doubleOnly || (trainerConfig.hasDouble && cfg.doubleBattle));
     const strengths = !template ? null : doubled ? [template.strength, template.strength]
       : Array.from({ length: template.size }, (_, i) => tryDo(() => template.getStrength(i)));
     const d = tryDo(() => s.gameMode.getWaveForDifficulty(wave), wave);

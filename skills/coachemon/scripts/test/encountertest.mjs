@@ -957,7 +957,7 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   const blind = mount(superfan([...team(), bug("Scyther")], { seedOffset: null })).model();
   assert.match(blind.options[0].outcome, /a free tutor move from four bug pools$/);
   assert.equal(blind.options[0].exact, false);
-  // The game fields one mon per level its template gives, whatever `pokemonConfigs` holds: an unread template, no size.
+  // An unread template claims no size, whatever `pokemonConfigs` holds (game-code.md §13).
   const own = mount(superfan([...team(), bug("Scyther")], { configs: [{ ...trainerCfg("Bug-Type Superfan", 0, [],
     { partyTemplateFunc: () => template([4, PartyMemberStrength.AVERAGE]) }), pokemonConfigs: [{ species: species(15, "Beedrill", ["Bug", "Poison"], 395) },
     { species: species(12, "Butterfree", ["Bug", "Flying"], 395) }] }] })).model();
