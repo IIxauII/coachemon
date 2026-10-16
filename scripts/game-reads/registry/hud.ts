@@ -20,8 +20,8 @@ export const HUD: Area = {
       name: "addedType",
       kind: "field",
       at: [
-        "src/data/pokemon/pokemon-data.ts#SerializedPokemonSummonData.addedType",
-        "src/data/pokemon/pokemon-data.ts#PokemonSummonData.addedType",
+        "src/data/pokemon-data.ts#SerializedPokemonSummonData.addedType",
+        "src/data/pokemon-data.ts#PokemonSummonData.addedType",
       ],
     },
     { name: "addEnemyPokemon", kind: "method", at: ["src/battle-scene.ts#BattleScene.addEnemyPokemon"] },
@@ -50,6 +50,11 @@ export const HUD: Area = {
     },
     { name: "applyConditions", kind: "method", at: ["src/data/moves/move.ts#Move.applyConditions"] },
     { name: "applyStarterChoice", kind: "method", at: ["src/data/challenge.ts#Challenge.applyStarterChoice"] },
+    {
+      name: "applyStarterSelectModify",
+      kind: "method",
+      at: ["src/data/challenge.ts#Challenge.applyStarterSelectModify"],
+    },
     {
       name: "arenaTags",
       kind: "field",
@@ -154,7 +159,7 @@ export const HUD: Area = {
       ],
     },
     { name: "biomes", kind: "field", at: ["src/ui/handlers/pokedex-page-ui-handler.ts#PokedexPageUiHandler.biomes"] },
-    { name: "blockEvolution", kind: "field", at: ["src/@types/events.ts#EventEncounter.blockEvolution"] },
+    { name: "blockEvolution", kind: "field", at: ["src/@types/game-events.ts#EventEncounter.blockEvolution"] },
     {
       name: "blockingDuration",
       kind: "field",
@@ -163,7 +168,6 @@ export const HUD: Area = {
       note: "WEB API: Long Animation Frames (PerformanceLongAnimationFrameTiming)",
     },
     { name: "boost", kind: "field", at: ["src/modifier/modifier.ts#TempStatStageBoosterModifier.boost"] },
-    { name: "boostedHealRatio", kind: "field", at: ["src/data/moves/move.ts#BoostHealAttr.boostedHealRatio"] },
     {
       name: "boostPercent",
       kind: "field",
@@ -215,7 +219,6 @@ export const HUD: Area = {
       kind: "field",
       at: [
         "src/data/moves/move.ts#InstantChargeAttr.condition",
-        "src/data/moves/move.ts#BoostHealAttr.condition",
         "src/data/balance/pokemon-evolutions.ts#SpeciesFormEvolution.condition",
       ],
     },
@@ -289,6 +292,7 @@ export const HUD: Area = {
         "src/data/mystery-encounters/mystery-encounter.ts#MysteryEncounterBuilder.dialogueTokens",
       ],
     },
+    { name: "display", kind: "field", at: [], from: "ours", note: "DOM style.display on our panel" },
     { name: "doesFlagEffectApply", kind: "method", at: ["src/data/moves/move.ts#Move.doesFlagEffectApply"] },
     {
       name: "doReturn",
@@ -327,6 +331,7 @@ export const HUD: Area = {
       kind: "field",
       at: ["src/@types/save-data.ts#SystemSaveData.eggs", "src/system/game-data.ts#GameData.eggs"],
     },
+    { name: "enabled", kind: "field", at: [], from: "ours", note: "our encounter option model" },
     {
       name: "encounter",
       kind: "field",
@@ -406,6 +411,13 @@ export const HUD: Area = {
         "test/mocks/mock-texture-manager.ts#MockTextureManager.exists",
       ],
     },
+    {
+      name: "extraCatchCandy",
+      kind: "field",
+      at: [],
+      from: "ours",
+      note: "our account record, filled from getExtraCatchCandy",
+    },
     { name: "face", kind: "field", at: ["src/i18n.ts#LoadingFontFaceProperty.face"] },
     { name: "fainted", kind: "field", at: ["src/modifier/modifier.ts#PokemonHpRestoreModifier.fainted"] },
     {
@@ -422,11 +434,7 @@ export const HUD: Area = {
         "src/@types/daily-run.ts#SerializedDailyRunConfig.forcedWaves",
       ],
     },
-    {
-      name: "form",
-      kind: "field",
-      at: ["src/@types/save-data.ts#StarterAttributes.form", "src/battle-scene.ts#PartyInfo.form"],
-    },
+    { name: "form", kind: "field", at: ["src/battle-scene.ts#PartyInfo.form"] },
     { name: "formIndex", kind: "field", at: ["src/field/pokemon.ts#Pokemon.formIndex"] },
     { name: "formKey", kind: "field", at: ["src/data/pokemon-species.ts#PokemonForm.formKey"] },
     {
@@ -509,20 +517,16 @@ export const HUD: Area = {
       ],
     },
     { name: "getCritStage", kind: "method", at: ["src/field/pokemon.ts#Pokemon.getCritStage"] },
-    {
-      name: "getCurrentDexProps",
-      kind: "method",
-      at: [
-        "src/ui/handlers/pokedex-page-ui-handler.ts#PokedexPageUiHandler.getCurrentDexProps",
-        "src/ui/handlers/pokedex-ui-handler.ts#PokedexUiHandler.getCurrentDexProps",
-        "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.getCurrentDexProps",
-      ],
-    },
     { name: "getEffectiveStat", kind: "method", at: ["src/field/pokemon.ts#Pokemon.getEffectiveStat"] },
     {
       name: "getEncounterBossSegments",
       kind: "method",
       at: ["src/battle-scene.ts#BattleScene.getEncounterBossSegments"],
+    },
+    {
+      name: "getEventBiomeLinks",
+      kind: "method",
+      at: ["src/timed-event-manager.ts#TimedEventManager.getEventBiomeLinks"],
     },
     {
       name: "getEventLuckBoost",
@@ -543,6 +547,11 @@ export const HUD: Area = {
       name: "getEvolutions",
       kind: "method",
       at: ["src/data/species-data-registry.ts#SpeciesDataRegistry.getEvolutions"],
+    },
+    {
+      name: "getExtraCatchCandy",
+      kind: "method",
+      at: ["src/timed-event-manager.ts#TimedEventManager.getExtraCatchCandy"],
     },
     { name: "getFixedBattle", kind: "method", at: ["src/game-mode.ts#GameMode.getFixedBattle"] },
     {
@@ -586,7 +595,6 @@ export const HUD: Area = {
     { name: "getLuck", kind: "method", at: ["src/field/pokemon.ts#Pokemon.getLuck"] },
     { name: "getMatchupScore", kind: "method", at: ["src/field/pokemon.ts#Pokemon.getMatchupScore"] },
     { name: "getMaxExpLevel", kind: "method", at: ["src/battle-scene.ts#BattleScene.getMaxExpLevel"] },
-    { name: "getMode", kind: "locator", at: ["src/ui/ui.ts#UI.getMode"] },
     {
       name: "getModifierCount",
       kind: "method",
@@ -662,20 +670,16 @@ export const HUD: Area = {
         "src/modifier/modifier.ts#EvoTrackerModifier.getSpecies",
       ],
     },
-    {
-      name: "getSpeciesData",
-      kind: "method",
-      at: [
-        "src/data/species-data-registry.ts#SpeciesDataRegistry.getSpeciesData",
-        "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.getSpeciesData",
-      ],
-    },
-    { name: "getSpeciesDexAttrProps", kind: "method", at: ["src/system/game-data.ts#GameData.getSpeciesDexAttrProps"] },
     { name: "getSpeciesForm", kind: "method", at: ["src/field/pokemon.ts#Pokemon.getSpeciesForm"] },
     {
       name: "getStarterCost",
       kind: "method",
       at: ["src/data/species-data-registry.ts#SpeciesDataRegistry.getStarterCost"],
+    },
+    {
+      name: "getStarterDexAttrPropsFromPreferences",
+      kind: "method",
+      at: ["src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.getStarterDexAttrPropsFromPreferences"],
     },
     { name: "getTag", kind: "method", at: ["src/field/arena.ts#Arena.getTag", "src/field/pokemon.ts#Pokemon.getTag"] },
     { name: "getTagOnSide", kind: "method", at: ["src/field/arena.ts#Arena.getTagOnSide"] },
@@ -685,15 +689,6 @@ export const HUD: Area = {
     { name: "getUserBenefitScore", kind: "method", at: ["src/data/moves/move.ts#Move.getUserBenefitScore"] },
     { name: "getWaveForDifficulty", kind: "method", at: ["src/game-mode.ts#GameMode.getWaveForDifficulty"] },
     { name: "getWaveMoneyAmount", kind: "method", at: ["src/battle-scene.ts#BattleScene.getWaveMoneyAmount"] },
-    {
-      name: "getWeatherHealRatio",
-      kind: "method",
-      at: [
-        "src/data/moves/move.ts#WeatherHealAttr.getWeatherHealRatio",
-        "src/data/moves/move.ts#PlantHealAttr.getWeatherHealRatio",
-        "src/data/moves/move.ts#SandHealAttr.getWeatherHealRatio",
-      ],
-    },
     {
       name: "getWildSpeciesForLevel",
       kind: "method",
@@ -750,6 +745,7 @@ export const HUD: Area = {
       at: ["src/@types/locales.ts#StatusEffectTranslationEntry.heal", "src/field/pokemon.ts#Pokemon.heal"],
     },
     { name: "healFactor", kind: "field", at: ["src/data/abilities/ab-attrs.ts#PostWeatherLapseHealAbAttr.healFactor"] },
+    { name: "healFunc", kind: "field", at: ["src/data/moves/move.ts#VariableHealAttr.healFunc"] },
     {
       name: "healPercent",
       kind: "field",
@@ -773,12 +769,12 @@ export const HUD: Area = {
       kind: "field",
       at: [
         "src/data/abilities/ab-attrs.ts#AddSecondStrikeAbAttrParams.hitCount",
-        "src/data/pokemon/pokemon-data.ts#PokemonSummonData.hitCount",
-        "src/data/pokemon/pokemon-data.ts#PokemonTurnData.hitCount",
+        "src/data/pokemon-data.ts#PokemonSummonData.hitCount",
+        "src/data/pokemon-data.ts#PokemonTurnData.hitCount",
       ],
     },
     { name: "hits", kind: "field", at: ["src/data/abilities/ab-attrs.ts#MaxMultiHitAbAttrParams.hits"] },
-    { name: "hitsLeft", kind: "field", at: ["src/data/pokemon/pokemon-data.ts#PokemonTurnData.hitsLeft"] },
+    { name: "hitsLeft", kind: "field", at: ["src/data/pokemon-data.ts#PokemonTurnData.hitsLeft"] },
     { name: "hpCost", kind: "field", at: ["src/data/moves/move.ts#AddSubstituteAttr.hpCost"] },
     { name: "i18nkey", kind: "field", at: ["src/data/moves/move-condition.ts#MoveRestriction.i18nkey"] },
     {
@@ -799,7 +795,7 @@ export const HUD: Area = {
       kind: "field",
       at: [
         "src/data/moves/move.ts#FriendshipPowerAttr.invert",
-        "src/data/pokemon-forms/form-change-triggers.ts#SpeciesFormChangeStatusEffectTrigger.invert",
+        "src/data/form-change-triggers.ts#SpeciesFormChangeStatusEffectTrigger.invert",
       ],
     },
     { name: "isAllowedInBattle", kind: "method", at: ["src/field/pokemon.ts#Pokemon.isAllowedInBattle"] },
@@ -825,7 +821,6 @@ export const HUD: Area = {
       at: ["src/game-mode.ts#GameModeConfig.isDaily", "src/game-mode.ts#GameMode.isDaily"],
     },
     { name: "isDouble", kind: "method", at: ["src/field/trainer.ts#Trainer.isDouble"] },
-    { name: "isEffectSuppressed", kind: "method", at: ["src/data/weather.ts#Weather.isEffectSuppressed"] },
     {
       name: "isEndless",
       kind: "field",
@@ -886,15 +881,12 @@ export const HUD: Area = {
     {
       name: "known",
       kind: "field",
-      at: ["src/data/pokemon-forms/form-change-triggers.ts#SpeciesFormChangeMoveLearnedTrigger.known"],
+      at: ["src/data/form-change-triggers.ts#SpeciesFormChangeMoveLearnedTrigger.known"],
     },
     {
-      name: "lastSpecies",
+      name: "lastStarterId",
       kind: "field",
-      at: [
-        "src/ui/handlers/pokedex-ui-handler.ts#PokedexUiHandler.lastSpecies",
-        "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.lastSpecies",
-      ],
+      at: ["src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.lastStarterId"],
     },
     { name: "layers", kind: "field", at: ["src/data/arena-tag.ts#EntryHazardTag.layers"] },
     {
@@ -929,17 +921,14 @@ export const HUD: Area = {
     },
     { name: "main", kind: "field", at: ["src/audio/audio-manager.ts#GameVolume.main"] },
     { name: "misc", kind: "field", at: ["src/data/mystery-encounters/mystery-encounter.ts#MysteryEncounter.misc"] },
-    {
-      name: "moveEffectiveness",
-      kind: "field",
-      at: ["src/data/pokemon/pokemon-data.ts#PokemonTurnData.moveEffectiveness"],
-    },
+    { name: "modeId", kind: "field", at: ["src/game-mode.ts#GameMode.modeId"] },
+    { name: "moveEffectiveness", kind: "field", at: ["src/data/pokemon-data.ts#PokemonTurnData.moveEffectiveness"] },
     {
       name: "moveQueue",
       kind: "field",
       at: [
-        "src/data/pokemon/pokemon-data.ts#SerializedPokemonSummonData.moveQueue",
-        "src/data/pokemon/pokemon-data.ts#PokemonSummonData.moveQueue",
+        "src/data/pokemon-data.ts#SerializedPokemonSummonData.moveQueue",
+        "src/data/pokemon-data.ts#PokemonSummonData.moveQueue",
       ],
     },
     { name: "moveset", kind: "field", at: ["src/field/pokemon.ts#Pokemon.moveset"] },
@@ -969,7 +958,7 @@ export const HUD: Area = {
       name: "mysteryEncounter",
       kind: "field",
       at: [
-        "src/@types/events.ts#EventMysteryEncounterTier.mysteryEncounter",
+        "src/@types/game-events.ts#EventMysteryEncounterTier.mysteryEncounter",
         "src/battle.ts#Battle.mysteryEncounter",
         "test/helpers/overrides-helper.ts#OverridesHelper.mysteryEncounter",
       ],
@@ -995,7 +984,6 @@ export const HUD: Area = {
       kind: "field",
       at: ["src/data/mystery-encounters/encounters/weird-dream-encounter.ts#PokemonTransformation.newSpecies"],
     },
-    { name: "normalHealRatio", kind: "field", at: ["src/data/moves/move.ts#BoostHealAttr.normalHealRatio"] },
     {
       name: "numBerries",
       kind: "field",
@@ -1018,7 +1006,7 @@ export const HUD: Area = {
       kind: "field",
       at: ["src/ui/handlers/mystery-encounter-ui-handler.ts#MysteryEncounterUiHandler.optionsMeetsReqs"],
     },
-    { name: "order", kind: "field", at: ["src/data/pokemon/pokemon-data.ts#PokemonTurnData.order"] },
+    { name: "order", kind: "field", at: ["src/data/pokemon-data.ts#PokemonTurnData.order"] },
     {
       name: "origin",
       kind: "field",
@@ -1028,6 +1016,11 @@ export const HUD: Area = {
       name: "partyMemberIndex",
       kind: "field",
       at: ["src/phases/party-member-pokemon-phase.ts#PartyMemberPokemonPhase.partyMemberIndex"],
+    },
+    {
+      name: "partyStarters",
+      kind: "field",
+      at: ["src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.partyStarters"],
     },
     {
       name: "partyTemplates",
@@ -1122,12 +1115,9 @@ export const HUD: Area = {
       ],
     },
     {
-      name: "pokerusSpecies",
+      name: "pokerusSpeciesIds",
       kind: "field",
-      at: [
-        "src/ui/handlers/pokedex-ui-handler.ts#PokedexUiHandler.pokerusSpecies",
-        "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.pokerusSpecies",
-      ],
+      at: ["src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.pokerusSpeciesIds"],
     },
     { name: "ppUp", kind: "field", at: ["src/data/moves/pokemon-move.ts#PokemonMove.ppUp"] },
     { name: "preTurnCommands", kind: "field", at: ["src/battle.ts#Battle.preTurnCommands"] },
@@ -1182,7 +1172,6 @@ export const HUD: Area = {
       at: ["src/battle-scene.ts#BattleScene.randomSpecies", "src/field/arena.ts#Arena.randomSpecies"],
     },
     { name: "randSeedInt", kind: "method", at: ["src/battle.ts#Battle.randSeedInt"] },
-    { name: "rank", kind: "field", at: ["src/ui/containers/daily-run-scoreboard.ts#RankingEntry.rank"] },
     { name: "recoil", kind: "field", at: ["src/data/abilities/ab-attrs.ts#FormBlockDamageAbAttr.recoil"] },
     {
       name: "removeEventListener",
@@ -1272,7 +1261,7 @@ export const HUD: Area = {
     },
     { name: "selfTarget", kind: "field", at: ["src/data/moves/move.ts#MoveAttr.selfTarget"] },
     { name: "setup", kind: "method", at: [], from: "ours", note: "our turn.mon().setup() and learn plan" },
-    { name: "shinyCatchMultiplier", kind: "field", at: ["src/@types/events.ts#TimedEvent.shinyCatchMultiplier"] },
+    { name: "shinyCatchMultiplier", kind: "field", at: ["src/@types/game-events.ts#TimedEvent.shinyCatchMultiplier"] },
     {
       name: "shouldTera",
       kind: "method",
@@ -1281,6 +1270,7 @@ export const HUD: Area = {
     { name: "show", kind: "field", at: [], from: "ours", note: "our account-worth row" },
     { name: "shown", kind: "field", at: [], from: "ours", note: "our statusField() result" },
     { name: "shuffle", kind: "method", at: [], from: "phaser", note: "Phaser.Math.RandomDataGenerator.shuffle" },
+    { name: "skip", kind: "field", at: [], from: "ours", note: "our move traits charge.skip" },
     {
       name: "skipEnemyBattleTurns",
       kind: "field",
@@ -1307,6 +1297,12 @@ export const HUD: Area = {
         "src/data/trainers/trainer-config.ts#TrainerConfig.speciesFilter",
       ],
     },
+    {
+      name: "speciesId",
+      kind: "field",
+      at: ["src/data/pokemon-species.ts#PokemonSpeciesForm.speciesId"],
+      note: "always off a PokemonSpecies",
+    },
     { name: "speciesPools", kind: "field", at: ["src/data/trainers/trainer-config.ts#TrainerConfig.speciesPools"] },
     {
       name: "start",
@@ -1321,14 +1317,7 @@ export const HUD: Area = {
       kind: "field",
       at: ["src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.starterContainers"],
     },
-    {
-      name: "starters",
-      kind: "field",
-      at: [
-        "src/@types/daily-run.ts#CustomDailyRunConfig.starters",
-        "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.starters",
-      ],
-    },
+    { name: "starters", kind: "field", at: ["src/@types/daily-run.ts#CustomDailyRunConfig.starters"] },
     {
       name: "starterSelectCallback",
       kind: "field",
@@ -1365,11 +1354,6 @@ export const HUD: Area = {
       kind: "field",
       at: ["src/data/mystery-encounters/encounters/weird-dream-encounter.ts#WeirdDreamEncounter"],
       note: "ME misc key",
-    },
-    {
-      name: "textContent",
-      kind: "field",
-      at: ["src/ui/handlers/base-option-select-ui-handler.ts#BaseOptionSelectUiHandler.textContent"],
     },
     {
       name: "texture",
@@ -1470,11 +1454,6 @@ export const HUD: Area = {
         "src/ui/containers/move-info-overlay.ts#MoveInfoOverlay.val",
       ],
     },
-    {
-      name: "validStarterContainers",
-      kind: "field",
-      at: ["src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.validStarterContainers"],
-    },
     { name: "variant", kind: "field", at: ["src/field/pokemon.ts#Pokemon.variant"] },
     { name: "warn", kind: "method", at: ["test/mocks/mock-console/mock-console.ts#MockConsole.warn"] },
     { name: "waveCycleOffset", kind: "field", at: ["src/battle-scene.ts#BattleScene.waveCycleOffset"] },
@@ -1505,7 +1484,12 @@ export const HUD: Area = {
     { name: "coach-hud-panel", kind: "storage-key", at: [], from: "ours", note: "the HUD's own key" },
     { name: "coach-hud-view", kind: "storage-key", at: [], from: "ours", note: "the HUD's own key" },
     { name: "coach-me-journal", kind: "storage-key", at: [], from: "ours", note: "the HUD's own key" },
-    { name: "prLang", kind: "storage-key", at: ["src/system/settings/settings-language.ts#changeLocaleHandler"] },
+    {
+      name: "prLang",
+      kind: "storage-key",
+      at: ["src/i18n.ts#*"],
+      note: "the language detector's key, set up at the module's top level",
+    },
   ],
   sets: [
     {
@@ -1530,7 +1514,7 @@ export const HUD: Area = {
         "StatStageChangePhase", "SummonMissingPhase", "SummonPhase", "SwitchBiomePhase", "SwitchPhase",
         "SwitchSummonPhase", "TeraPhase", "TitlePhase", "ToggleDoublePositionPhase", "TrainerVictoryPhase",
         "TurnEndPhase", "TurnInitPhase", "TurnStartPhase", "UnavailablePhase", "UnlockPhase", "VictoryPhase",
-        "WeatherEffectPhase",
+        "WeatherEffectPhase", "DancerPhase", "PartyReorderSwitchPhase",
       ],
       handledIn: ["skills/coachemon/scripts/hud/02-decision.js", "src/call-outcome.ts"],
     },
@@ -1539,6 +1523,7 @@ export const HUD: Area = {
       known: [
         "SINGLE_GENERATION", "SINGLE_TYPE", "LOWER_MAX_STARTER_COST", "LOWER_STARTER_POINTS", "FRESH_START",
         "INVERSE_BATTLE", "FLIP_STAT", "LIMITED_CATCH", "LIMITED_SUPPORT", "HARDCORE", "PASSIVES",
+        "MOVESET_RANDOMIZER", "ABILITY_RANDOMIZER",
       ],
       handledIn: ["skills/coachemon/scripts/hud/03-calendar.js", "skills/coachemon/scripts/hud/25-turn.js", "skills/coachemon/scripts/hud/51-starters.js"],
     },
@@ -1763,7 +1748,7 @@ export const HUD: Area = {
     {
       ours: "skills/coachemon/scripts/hud/10-damage.js#SALT_DOUBLED",
       of: [
-        "src/data/battler-tags.ts#SaltCuredTag.lapse",
+        "src/data/battler-tags.ts#SaltCuredTag.getDamageHpRatio",
       ],
     },
     {
@@ -2040,6 +2025,13 @@ export const HUD: Area = {
       of: [
         "src/data/moves/move.ts#VariableMoveTypeAttr",
         "src/data/moves/move.ts#initMoves",
+      ],
+    },
+    {
+      ours: "skills/coachemon/scripts/hud/40-learn.js#WEATHER_HEALS",
+      of: [
+        "src/data/moves/move.ts#sunnyHealRatioFunc",
+        "src/data/moves/move.ts#shoreUpHealRatioFunc",
       ],
     },
     { ours: "skills/coachemon/scripts/hud/40-learn.js#fixedPower", of: ["src/field/pokemon.ts#Pokemon.getBaseDamage"] },

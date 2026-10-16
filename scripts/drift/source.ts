@@ -81,6 +81,8 @@ export class GameSource {
     const [file, symbol] = ref.split("#", 2);
     const sf = this.file(file);
     if (!sf || symbol === undefined) return undefined;
+    // `file#*` is the whole module: what the game does at its top level has no unit of its own.
+    if (symbol === "*") return sf;
     const [outer, member] = symbol.includes(".") ? symbol.split(".", 2) : [symbol, undefined];
     if (member === undefined) {
       for (const node of sf.statements) {

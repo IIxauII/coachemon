@@ -185,11 +185,9 @@ export const HARNESS: Area = {
     {
       name: "remove",
       kind: "method",
-      at: [
-        "src/field/pokemon-sprite-sparkle-handler.ts#PokemonSpriteSparkleHandler.remove",
-        "src/ui/utils/pokemon-icon-anim-helper.ts#PokemonIconAnimHelper.remove",
-      ],
-      note: "field/fieldUI.remove and CanvasPool.remove are Phaser's; HUD el.remove is DOM",
+      at: ["src/field/pokemon-sprite-tera-sparkle-handler.ts#PokemonSpriteTeraSparkleHandler.remove"],
+      from: "phaser",
+      note: "the sweep's field, fieldUI and CanvasPool holders are Phaser's",
     },
     { name: "removeEvent", kind: "method", at: [], from: "phaser", note: "Phaser Clock (scene.time)" },
     { name: "restoreAllMocks", kind: "method", at: [], from: "vitest" },
@@ -233,12 +231,16 @@ export const HARNESS: Area = {
       name: "sprites",
       kind: "field",
       at: [
-        "src/@types/events.ts#TimedEvent.sprites",
+        "src/@types/game-events.ts#TimedEvent.sprites",
         "src/data/battle-anims.ts#BattleAnim.sprites",
-        "src/field/pokemon-sprite-sparkle-handler.ts#PokemonSpriteSparkleHandler.sprites",
+        "src/field/pokemon-sprite-tera-sparkle-handler.ts#PokemonSpriteTeraSparkleHandler.sprites",
       ],
     },
-    { name: "spriteSparkleHandler", kind: "field", at: ["src/battle-scene.ts#BattleScene.spriteSparkleHandler"] },
+    {
+      name: "spriteTeraSparkleHandler",
+      kind: "field",
+      at: ["src/battle-scene.ts#BattleScene.spriteTeraSparkleHandler"],
+    },
     {
       name: "stages",
       kind: "field",
@@ -268,10 +270,7 @@ export const HARNESS: Area = {
     {
       name: "tera",
       kind: "field",
-      at: [
-        "src/@types/save-data.ts#StarterAttributes.tera",
-        "src/data/mystery-encounters/utils/encounter-phase-utils.ts#EnemyPokemonConfig.tera",
-      ],
+      at: ["src/data/mystery-encounters/utils/encounter-phase-utils.ts#EnemyPokemonConfig.tera"],
     },
     {
       name: "teraType",
@@ -326,7 +325,7 @@ export const HARNESS: Area = {
     },
     { name: "#data/battler-tags", kind: "import", at: ["src/data/battler-tags.ts#ConfusedTag"] },
     { name: "#data/data-lists", kind: "import", at: ["src/data/data-lists.ts#allMoves"] },
-    { name: "#data/pokemon-data", kind: "import", at: ["src/data/pokemon/pokemon-data.ts#PokemonSummonData"] },
+    { name: "#data/pokemon-data", kind: "import", at: ["src/data/pokemon-data.ts#PokemonSummonData"] },
     { name: "#enums/buttons", kind: "import", at: ["src/enums/buttons.ts#Button"] },
     { name: "#enums/command", kind: "import", at: ["src/enums/command.ts#Command"] },
     { name: "#enums/hit-check-result", kind: "import", at: ["src/enums/hit-check-result.ts#HitCheckResult"] },

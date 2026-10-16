@@ -123,11 +123,15 @@ export const TEMPLATES: Area = {
       kind: "method",
       at: ["src/ui/handlers/mystery-encounter-ui-handler.ts#MysteryEncounterUiHandler.unblockInput"],
     },
-    { name: "#app/global-event-manager", kind: "import", at: ["src/global-event-manager.ts#timedEventManager"] },
+    {
+      name: "#app/global-event-manager",
+      kind: "import",
+      at: ["src/globals/global-event-manager.ts#timedEventManager"],
+    },
     {
       name: "#app/global-species-data-registry",
       kind: "import",
-      at: ["src/global-species-data-registry.ts#speciesDataRegistry"],
+      at: ["src/globals/global-species-data-registry.ts#speciesDataRegistry"],
     },
     { name: "#enums/ability-id", kind: "import", at: ["src/enums/ability-id.ts#AbilityId"] },
     { name: "#enums/battle-style", kind: "import", at: ["src/enums/battle-style.ts#BattleStyle"] },

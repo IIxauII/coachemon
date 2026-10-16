@@ -6,17 +6,13 @@ export const PAGE: Area = {
       name: "abilitiesApplied",
       kind: "field",
       at: [
-        "src/data/pokemon/pokemon-data.ts#SerializedPokemonSummonData.abilitiesApplied",
-        "src/data/pokemon/pokemon-data.ts#PokemonSummonData.abilitiesApplied",
-        "src/data/pokemon/pokemon-data.ts#PokemonWaveData.abilitiesApplied",
+        "src/data/pokemon-data.ts#SerializedPokemonSummonData.abilitiesApplied",
+        "src/data/pokemon-data.ts#PokemonSummonData.abilitiesApplied",
+        "src/data/pokemon-data.ts#PokemonWaveData.abilitiesApplied",
       ],
     },
     { name: "abilityAttr", kind: "field", at: ["src/@types/save-data.ts#StarterDataEntry.abilityAttr"] },
-    {
-      name: "abilityRevealed",
-      kind: "field",
-      at: ["src/data/pokemon/pokemon-data.ts#PokemonWaveData.abilityRevealed"],
-    },
+    { name: "abilityRevealed", kind: "field", at: ["src/data/pokemon-data.ts#PokemonWaveData.abilityRevealed"] },
     {
       name: "accuracy",
       kind: "field",
@@ -143,6 +139,11 @@ export const PAGE: Area = {
       note: "every handler inherits UiHandler.cursor; TurnCommand.cursor from the HUD",
     },
     {
+      name: "cursorObj",
+      kind: "field",
+      at: ["src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.cursorObj"],
+    },
+    {
       name: "dexData",
       kind: "field",
       at: ["src/@types/save-data.ts#SystemSaveData.dexData", "src/system/game-data.ts#GameData.dexData"],
@@ -163,7 +164,7 @@ export const PAGE: Area = {
         "src/ui/handlers/pokedex-page-ui-handler.ts#PokedexPageUiHandler.eggMoves",
       ],
     },
-    { name: "endured", kind: "field", at: ["src/data/pokemon/pokemon-data.ts#PokemonWaveData.endured"] },
+    { name: "endured", kind: "field", at: ["src/data/pokemon-data.ts#PokemonWaveData.endured"] },
     { name: "enemyFaints", kind: "field", at: ["src/battle.ts#Battle.enemyFaints"] },
     {
       name: "enemyModifiers",
@@ -194,9 +195,9 @@ export const PAGE: Area = {
       note: "handlers on the page; the phases from the HUD's decision reads",
     },
     {
-      name: "filteredStarterContainers",
+      name: "filteredStarterIds",
       kind: "field",
-      at: ["src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.filteredStarterContainers"],
+      at: ["src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.filteredStarterIds"],
     },
     {
       name: "filterMode",
@@ -219,11 +220,6 @@ export const PAGE: Area = {
         "test/mocks/mocks-container/mock-nineslice.ts#MockNineslice.frame",
         "test/mocks/mocks-container/mock-sprite.ts#MockSprite.frame",
       ],
-    },
-    {
-      name: "fullCursor",
-      kind: "field",
-      at: ["src/ui/handlers/base-option-select-ui-handler.ts#BaseOptionSelectUiHandler.fullCursor"],
     },
     {
       name: "game",
@@ -318,11 +314,6 @@ export const PAGE: Area = {
     { name: "getStat", kind: "method", at: ["src/field/pokemon.ts#Pokemon.getStat"] },
     { name: "getTypes", kind: "method", at: ["src/field/pokemon.ts#Pokemon.getTypes"] },
     { name: "getUi", kind: "method", at: ["src/ui/handlers/ui-handler.ts#UiHandler.getUi"] },
-    {
-      name: "getValueLimit",
-      kind: "method",
-      at: ["src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.getValueLimit"],
-    },
     { name: "handlers", kind: "locator", at: ["src/ui/ui.ts#UI.handlers"] },
     { name: "hasData", kind: "field", at: ["src/ui/handlers/save-slot-select-ui-handler.ts#SessionSlot.hasData"] },
     {
@@ -433,6 +424,11 @@ export const PAGE: Area = {
       kind: "field",
       at: ["src/ui/handlers/modifier-select-ui-handler.ts#ModifierSelectUiHandler.lockRarityButtonContainer"],
     },
+    {
+      name: "maxOptions",
+      kind: "field",
+      at: ["src/ui/handlers/base-option-select-ui-handler.ts#BaseOptionSelectUiHandler.maxOptions"],
+    },
     { name: "mode", kind: "field", at: ["src/ui/ui.ts#UI.mode"] },
     { name: "modeChain", kind: "locator", at: ["src/ui/ui.ts#UI.modeChain"] },
     {
@@ -483,10 +479,7 @@ export const PAGE: Area = {
     {
       name: "options",
       kind: "field",
-      at: [
-        "src/@types/ui-types.ts#OptionSelectConfig.options",
-        "src/ui/handlers/modifier-select-ui-handler.ts#ModifierSelectUiHandler.options",
-      ],
+      at: ["src/ui/handlers/modifier-select-ui-handler.ts#ModifierSelectUiHandler.options"],
     },
     {
       name: "optionsContainer",
@@ -497,18 +490,23 @@ export const PAGE: Area = {
       ],
     },
     { name: "optionsCursor", kind: "field", at: ["src/ui/handlers/party-ui-handler.ts#PartyUiHandler.optionsCursor"] },
-    {
-      name: "optionSelectText",
-      kind: "field",
-      at: ["src/ui/handlers/menu-ui-handler.ts#MenuUiHandler.optionSelectText"],
-    },
     { name: "optionsMode", kind: "field", at: ["src/ui/handlers/party-ui-handler.ts#PartyUiHandler.optionsMode"] },
     { name: "optionsScroll", kind: "field", at: ["src/ui/handlers/party-ui-handler.ts#PartyUiHandler.optionsScroll"] },
     { name: "overlayActive", kind: "field", at: ["src/ui/ui.ts#UI.overlayActive"] },
     {
+      name: "partyCursorObj",
+      kind: "field",
+      at: ["src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.partyCursorObj"],
+    },
+    {
       name: "partyDiscardModeButton",
       kind: "field",
       at: ["src/ui/handlers/party-ui-handler.ts#PartyUiHandler.partyDiscardModeButton"],
+    },
+    {
+      name: "partyStarterIds",
+      kind: "field",
+      at: ["src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.partyStarterIds"],
     },
     {
       name: "partyTransferModeButton",
@@ -579,6 +577,16 @@ export const PAGE: Area = {
       at: ["src/ui/ui.ts#UI.processInput", "src/ui/handlers/party-ui-handler.ts#PartyUiHandler.processInput"],
     },
     {
+      name: "randomCursorObj",
+      kind: "field",
+      at: ["src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.randomCursorObj"],
+    },
+    {
+      name: "repeatInput",
+      kind: "field",
+      at: ["src/ui/handlers/base-option-select-ui-handler.ts#BaseOptionSelectUiHandler.repeatInput"],
+    },
+    {
       name: "rerollButtonContainer",
       kind: "field",
       at: ["src/ui/handlers/modifier-select-ui-handler.ts#ModifierSelectUiHandler.rerollButtonContainer"],
@@ -612,6 +620,7 @@ export const PAGE: Area = {
       ],
       note: "written too (acts.ts:78); fine.ts reads it off any handler",
     },
+    { name: "selectable", kind: "field", at: ["src/@types/ui-types.ts#OptionSelectItem.selectable"] },
     {
       name: "sessionSlotId",
       kind: "field",
@@ -640,22 +649,18 @@ export const PAGE: Area = {
       at: ["src/ui/handlers/modifier-select-ui-handler.ts#ModifierSelectUiHandler.setRowCursor"],
     },
     {
+      name: "setScrollCursor",
+      kind: "method",
+      at: ["src/ui/handlers/base-option-select-ui-handler.ts#BaseOptionSelectUiHandler.setScrollCursor"],
+    },
+    { name: "setSpecies", kind: "method", at: ["src/ui/containers/starter-container.ts#StarterContainer.setSpecies"] },
+    { name: "setVisible", kind: "method", at: [], from: "phaser", note: "the starter screen's cursor sprites" },
+    {
       name: "shopOptionsRows",
       kind: "field",
       at: ["src/ui/handlers/modifier-select-ui-handler.ts#ModifierSelectUiHandler.shopOptionsRows"],
     },
     { name: "side", kind: "field", at: ["src/data/arena-tag.ts#ArenaTag.side"] },
-    {
-      name: "skip",
-      kind: "field",
-      at: ["src/@types/ui-types.ts#OptionSelectItem.skip", "src/battle.ts#TurnCommand.skip"],
-    },
-    {
-      name: "speciesId",
-      kind: "field",
-      at: ["src/data/pokemon-species.ts#PokemonSpeciesForm.speciesId"],
-      note: "always off a PokemonSpecies (container.species, starterSpecies, mon.species)",
-    },
     {
       name: "stackCount",
       kind: "field",
@@ -666,17 +671,14 @@ export const PAGE: Area = {
       ],
     },
     {
+      name: "startCursorObj",
+      kind: "field",
+      at: ["src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.startCursorObj"],
+    },
+    {
       name: "starterData",
       kind: "field",
       at: ["src/@types/save-data.ts#SystemSaveData.starterData", "src/system/game-data.ts#GameData.starterData"],
-    },
-    {
-      name: "starterSpecies",
-      kind: "field",
-      at: [
-        "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.starterSpecies",
-        "test/helpers/overrides-helper.ts#OverridesHelper.starterSpecies",
-      ],
     },
     {
       name: "state",
@@ -697,8 +699,8 @@ export const PAGE: Area = {
       kind: "field",
       at: [
         "src/battle-scene.ts#PartyInfo.statStages",
-        "src/data/pokemon/pokemon-data.ts#SerializedPokemonSummonData.statStages",
-        "src/data/pokemon/pokemon-data.ts#PokemonSummonData.statStages",
+        "src/data/pokemon-data.ts#SerializedPokemonSummonData.statStages",
+        "src/data/pokemon-data.ts#PokemonSummonData.statStages",
       ],
     },
     {
@@ -714,7 +716,7 @@ export const PAGE: Area = {
     {
       name: "tags",
       kind: "field",
-      at: ["src/field/arena.ts#Arena.tags", "src/data/pokemon/pokemon-data.ts#PokemonSummonData.tags"],
+      at: ["src/field/arena.ts#Arena.tags", "src/data/pokemon-data.ts#PokemonSummonData.tags"],
     },
     {
       name: "tagType",
@@ -737,7 +739,6 @@ export const PAGE: Area = {
       ],
       note: "the handler on the page; the rest from the HUD's enemy AI",
     },
-    { name: "tempSummonData", kind: "field", at: ["src/field/pokemon.ts#Pokemon.tempSummonData"] },
     {
       name: "text",
       kind: "field",
@@ -807,17 +808,17 @@ export const PAGE: Area = {
       at: ["src/ui/handlers/save-slot-select-ui-handler.ts#SaveSlotSelectUiHandler.uiMode"],
     },
     {
-      name: "unskippedIndices",
-      kind: "field",
-      at: ["src/ui/handlers/base-option-select-ui-handler.ts#BaseOptionSelectUiHandler.unskippedIndices"],
-    },
-    {
       name: "updateScroll",
       kind: "field",
       at: [
         "src/ui/handlers/pokedex-ui-handler.ts#PokedexUiHandler.updateScroll",
         "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.updateScroll",
       ],
+    },
+    {
+      name: "valueLimitLabel",
+      kind: "field",
+      at: ["src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.valueLimitLabel"],
     },
     { name: "valueReduction", kind: "field", at: ["src/@types/save-data.ts#StarterDataEntry.valueReduction"] },
     {
@@ -831,11 +832,7 @@ export const PAGE: Area = {
     {
       name: "wave",
       kind: "field",
-      at: [
-        "src/@types/events.ts#EventWaveReward.wave",
-        "src/battle-scene.ts#GameInfo.wave",
-        "src/ui/containers/daily-run-scoreboard.ts#RankingEntry.wave",
-      ],
+      at: ["src/@types/game-events.ts#EventWaveReward.wave", "src/battle-scene.ts#GameInfo.wave"],
     },
     { name: "waveData", kind: "field", at: ["src/field/pokemon.ts#Pokemon.waveData"] },
     {
@@ -844,6 +841,7 @@ export const PAGE: Area = {
       at: ["src/battle.ts#Battle.waveIndex", "src/@types/save-data.ts#SessionSaveData.waveIndex"],
       note: "SessionSaveData via a save slot's saveData (menu.ts:129)",
     },
+    { name: "waveTurnCount", kind: "field", at: ["src/data/pokemon-data.ts#PokemonSummonData.waveTurnCount"] },
     {
       name: "window",
       kind: "field",
@@ -863,7 +861,7 @@ export const PAGE: Area = {
     {
       name: "sessionData",
       kind: "storage-key",
-      at: ["src/account.ts#getSessionDataLocalStorageKey", "src/system/game-data.ts#getDataTypeKey"],
+      at: ["src/account.ts#getSessionDataLocalStorageKey", "src/utils/data.ts#getDataTypeKey"],
     },
   ],
   mirrors: [
@@ -871,7 +869,7 @@ export const PAGE: Area = {
     {
       ours: "src/page/acts.ts#starter-grid",
       of: [
-        "src/ui/handlers/starter-select-ui-handler.ts#calcStarterPosition",
+        "src/ui/handlers/starter-select-ui-handler.ts#calcStarterContainerPosition",
         "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.updateScroll",
       ],
     },

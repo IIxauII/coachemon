@@ -162,6 +162,7 @@ const STATUS_ATTR = {
   ForceSwitchOutAttr: [12, "forces a switch"], SacrificialFullRestoreAttr: [30, "full restore, user faints"],
 };
 // A flat value: these heal by the weather (game-code.md §14).
+// @mirrors WEATHER_HEALS
 const WEATHER_HEALS = new Set([MoveId.MORNING_SUN, MoveId.SYNTHESIS, MoveId.MOONLIGHT, MoveId.SHORE_UP]);
 const WEATHER_HEAL_VALUE = 45;
 const isRecovery = mv => moveTraits(mv).attrNames.has("HealAttr") || (moveTraits(mv).attrNames.has("VariableHealAttr") && mv.id !== MoveId.SWALLOW);
