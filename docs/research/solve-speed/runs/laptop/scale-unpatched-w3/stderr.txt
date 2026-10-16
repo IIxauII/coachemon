@@ -1,0 +1,181 @@
+(node:5092) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Unhandled Errors [49m[22m[31m⎯⎯⎯⎯⎯⎯[39m
+[31m[1m
+Vitest caught 2 unhandled errors during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.[22m[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'getItem')[39m
+[36m [2m❯[22m src/i18n.ts:[2m202:36[22m[39m
+    [90m200|[39m     [35masync[39m () [33m=>[39m {
+    [90m201|[39m       i18next[33m.[39mservices[33m.[39mformatter[33m?.[39m[34madd[39m([32m"money"[39m[33m,[39m i18nMoneyFormatter)[33m;[39m
+    [90m202|[39m       [35mawait[39m [34minitFonts[39m(localStorage[33m.[39m[34mgetItem[39m([32m"prLang"[39m) [33m??[39m undefined)[33m;[39m
+    [90m   |[39m                                    [31m^[39m
+    [90m203|[39m     }[33m,[39m
+    [90m204|[39m   )[33m;[39m
+[90m [2m❯[22m finish node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1904:9[22m[39m
+[90m [2m❯[22m done node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m2031:21[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m2045:9[22m[39m
+[90m [2m❯[22m Object.callback node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1941:9[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1567:13[22m[39m
+[90m [2m❯[22m Connector.loaded node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1549:16[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1649:12[22m[39m
+[90m [2m❯[22m resolver node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1600:7[22m[39m
+
+[31mThis error originated in "[1mtest/tests/coach-replay-16dc7e2f.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mError[22m: Unexpected error during BattleScene preLoad!
+Reason: Error: EXP Sprites were not array when fetched![39m
+[36m [2m❯[22m src/battle-scene.ts:[2m385:13[22m[39m
+    [90m383|[39m       Promise.all(defaultMoves.map(m => initMoveAnim(m))).then(() => l…
+    [90m384|[39m     ]).catch(reason => {
+    [90m385|[39m       throw new Error(`Unexpected error during BattleScene preLoad!\nR…
+    [90m   |[39m             [31m^[39m
+    [90m386|[39m     });
+    [90m387|[39m   }
+[90m [2m❯[22m processTicksAndRejections node:internal/process/task_queues:[2m104:5[22m[39m
+[90m [2m❯[22m BattleScene.preload src/battle-scene.ts:[2m379:5[22m[39m
+
+[31mThis error originated in "[1mtest/tests/coach-replay-16dc7e2f.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+[31mThe latest test that might've caused the error is "[1mreplay[22m". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.[39m
+[31m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39m
+
+(node:5273) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:5281) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:5289) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Unhandled Errors [49m[22m[31m⎯⎯⎯⎯⎯⎯[39m
+[31m[1m
+Vitest caught 2 unhandled errors during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.[22m[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'getItem')[39m
+[36m [2m❯[22m src/i18n.ts:[2m202:36[22m[39m
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Unhandled Errors [49m[22m[31m⎯⎯⎯⎯⎯⎯[39m
+[31m[1m
+Vitest caught 2 unhandled errors during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.[22m[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'getItem')[39m
+[36m [2m❯[22m src/i18n.ts:[2m202:36[22m[39m
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Unhandled Errors [49m[22m[31m⎯⎯⎯⎯⎯⎯[39m
+[31m[1m
+Vitest caught 2 unhandled errors during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.[22m[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'getItem')[39m
+    [90m200|[39m     [35masync[39m () [33m=>[39m {
+    [90m201|[39m       i18next[33m.[39mservices[33m.[39mformatter[33m?.[39m[34madd[39m([32m"money"[39m[33m,[39m i18nMoneyFormatter)[33m;[39m
+    [90m202|[39m       [35mawait[39m [34minitFonts[39m(localStorage[33m.[39m[34mgetItem[39m([32m"prLang"[39m) [33m??[39m undefined)[33m;[39m
+    [90m   |[39m                                    [31m^[39m
+    [90m203|[39m     }[33m,[39m
+    [90m204|[39m   )[33m;[39m
+[90m [2m❯[22m finish node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1904:9[22m[39m
+[90m [2m❯[22m done node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m2031:21[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m2045:9[22m[39m
+[90m [2m❯[22m Object.callback node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1941:9[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1567:13[22m[39m
+[90m [2m❯[22m Connector.loaded node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1549:16[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1649:12[22m[39m
+[90m [2m❯[22m resolver node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1600:7[22m[39m
+
+[31mThis error originated in "[1mtest/tests/coach-worker-145e0db7.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+[36m [2m❯[22m src/i18n.ts:[2m202:36[22m[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mError[22m: Unexpected error during BattleScene preLoad!
+Reason: Error: EXP Sprites were not array when fetched![39m
+[36m [2m❯[22m src/battle-scene.ts:[2m385:13[22m[39m
+    [90m200|[39m     [35masync[39m () [33m=>[39m {
+    [90m201|[39m       i18next[33m.[39mservices[33m.[39mformatter[33m?.[39m[34madd[39m([32m"money"[39m[33m,[39m i18nMoneyFormatter)[33m;[39m
+    [90m202|[39m       [35mawait[39m [34minitFonts[39m(localStorage[33m.[39m[34mgetItem[39m([32m"prLang"[39m) [33m??[39m undefined)[33m;[39m
+    [90m   |[39m                                    [31m^[39m
+    [90m203|[39m     }[33m,[39m
+    [90m204|[39m   )[33m;[39m
+[90m [2m❯[22m finish node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1904:9[22m[39m
+[90m [2m❯[22m done node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m2031:21[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m2045:9[22m[39m
+[90m [2m❯[22m Object.callback node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1941:9[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1567:13[22m[39m
+[90m [2m❯[22m Connector.loaded node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1549:16[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1649:12[22m[39m
+[90m [2m❯[22m resolver node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1600:7[22m[39m
+
+[31mThis error originated in "[1mtest/tests/coach-worker-03fdce80.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+    [90m383|[39m       Promise.all(defaultMoves.map(m => initMoveAnim(m))).then(() => l…
+    [90m384|[39m     ]).catch(reason => {
+    [90m385|[39m       throw new Error(`Unexpected error during BattleScene preLoad!\nR…
+    [90m   |[39m             [31m^[39m
+    [90m386|[39m     });
+    [90m387|[39m   }
+[90m [2m❯[22m BattleScene.preload src/battle-scene.ts:[2m379:5[22m[39m
+
+[31mThis error originated in "[1mtest/tests/coach-worker-145e0db7.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+[31mThe latest test that might've caused the error is "[1mserve[22m". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.[39m
+[31m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39m
+
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mError[22m: Unexpected error during BattleScene preLoad!
+Reason: Error: EXP Sprites were not array when fetched![39m
+[36m [2m❯[22m src/battle-scene.ts:[2m385:13[22m[39m
+    [90m383|[39m       Promise.all(defaultMoves.map(m => initMoveAnim(m))).then(() => l…
+    [90m384|[39m     ]).catch(reason => {
+    [90m385|[39m       throw new Error(`Unexpected error during BattleScene preLoad!\nR…
+    [90m   |[39m             [31m^[39m
+    [90m386|[39m     });
+    [90m387|[39m   }
+[90m [2m❯[22m BattleScene.preload src/battle-scene.ts:[2m379:5[22m[39m
+
+[31mThis error originated in "[1mtest/tests/coach-worker-03fdce80.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+[31mThe latest test that might've caused the error is "[1mserve[22m". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.[39m
+[31m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39m
+
+    [90m200|[39m     [35masync[39m () [33m=>[39m {
+    [90m201|[39m       i18next[33m.[39mservices[33m.[39mformatter[33m?.[39m[34madd[39m([32m"money"[39m[33m,[39m i18nMoneyFormatter)[33m;[39m
+    [90m202|[39m       [35mawait[39m [34minitFonts[39m(localStorage[33m.[39m[34mgetItem[39m([32m"prLang"[39m) [33m??[39m undefined)[33m;[39m
+    [90m   |[39m                                    [31m^[39m
+    [90m203|[39m     }[33m,[39m
+    [90m204|[39m   )[33m;[39m
+[90m [2m❯[22m finish node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1904:9[22m[39m
+[90m [2m❯[22m done node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m2031:21[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m2045:9[22m[39m
+[90m [2m❯[22m Object.callback node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1941:9[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1567:13[22m[39m
+[90m [2m❯[22m Connector.loaded node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1549:16[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1649:12[22m[39m
+[90m [2m❯[22m resolver node_modules/.pnpm/i18next@26.4.2_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1600:7[22m[39m
+
+[31mThis error originated in "[1mtest/tests/coach-worker-1565aaef.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mError[22m: Unexpected error during BattleScene preLoad!
+Reason: Error: EXP Sprites were not array when fetched![39m
+[36m [2m❯[22m src/battle-scene.ts:[2m385:13[22m[39m
+    [90m383|[39m       Promise.all(defaultMoves.map(m => initMoveAnim(m))).then(() => l…
+    [90m384|[39m     ]).catch(reason => {
+    [90m385|[39m       throw new Error(`Unexpected error during BattleScene preLoad!\nR…
+    [90m   |[39m             [31m^[39m
+    [90m386|[39m     });
+    [90m387|[39m   }
+[90m [2m❯[22m BattleScene.preload src/battle-scene.ts:[2m379:5[22m[39m
+
+[31mThis error originated in "[1mtest/tests/coach-worker-1565aaef.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+[31mThe latest test that might've caused the error is "[1mserve[22m". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.[39m
+[31m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39m
+

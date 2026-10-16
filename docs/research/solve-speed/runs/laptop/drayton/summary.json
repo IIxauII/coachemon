@@ -1,1 +1,1 @@
-{"fight":"src/solver/fixtures/drayton-w188.json","workers":2,"cores":4,"kind":"oracle_line","turns":10,"oursLeft":6,"totalS":950.885,"bootS":27.9,"expansions":3914,"pool":{"size":2,"died":0,"lastDeath":null,"peakHeapMb":342,"heapLimitMb":864}}
+{"fight":"src/solver/fixtures/drayton-w188.json","patch":null,"budgetPerBeam":null,"workers":2,"cores":4,"kind":"oracle_line","turns":10,"oursLeft":6,"totalS":944.795,"bootS":18.453,"expansions":3914,"pool":{"size":2,"died":0,"lastDeath":null,"peakHeapMb":349,"heapLimitMb":864}}
