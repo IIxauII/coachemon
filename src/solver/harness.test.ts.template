@@ -131,7 +131,6 @@ const same = (a: Input, b: Input) =>
     ? b.kind === "move" && a.move === b.move && a.tera === b.tera
     : a.kind === "switch" && b.kind === "switch" && a.to.slot === b.to.slot && a.to.species === b.to.species;
 
-
 // A prompt left queued for a decision the game never asks for is taken by the next one, and every later input lands a
 // turn late (#632).
 function strayPrompts(): number {
@@ -207,7 +206,7 @@ async function turn(input: Input | null, choose = (_offered: PartySlot[]) => inp
 
 /**
  * A turn the game plays for us takes the next input only when that is a `queued` one and our lead faints: a rampage
- * plays two or three such turns, and the faint can fall on any of them (#702).
+ * can play more than one such turn, and the faint can fall on any of them (#702).
  */
 async function queuedTurn(inputs: Input[], next: number): Promise<{ input: Input | null; ended: Turn }> {
   const queued = inputs[next]?.kind === "queued" ? inputs[next] : null;
