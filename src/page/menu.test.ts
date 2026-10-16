@@ -1,6 +1,22 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { onPage, send } from "./fake-page.ts";
+import { UiMode } from "../enums/generated.ts";
+import { onPage, send, starterGrid } from "./fake-page.ts";
+
+test("STARTER_SELECT lists the whole filtered grid by name and puts the cursor on its grid index (v1-tool-surface.md §7)", t => {
+  const names: Record<number, string> = { 1: "Bulbasaur", 4: "Charmander", 7: "Squirtle" };
+  const ids = [1, 4, 1, 4, 1, 4, 1, 4, 1, 7];
+  const { h, sprites } = starterGrid(names, ids, { cursor: 0, scrollCursor: 1, party: [4] });
+  onPage(t, { ui: { mode: UiMode.STARTER_SELECT, handlers: { [UiMode.STARTER_SELECT]: h } }, gameData: { getSpeciesStarterValue: (id: number) => (id === 4 ? 3 : 2) } });
+  const menu = send("menu", {});
+  assert.equal(menu.family, "starter_select");
+  assert.equal(menu.cursor, 9);
+  assert.deepEqual(menu.options.slice(8), [{ i: 8, label: "Bulbasaur", cost: 2 }, { i: 9, label: "Squirtle", cost: 2 }]);
+  assert.deepEqual(menu.extra.party, [{ name: "Charmander", cost: 3 }]);
+  assert.equal(menu.extra.partyValue, 3);
+  assert.equal(menu.extra.valueLimit, 10);
+  assert.equal(sprites.added, 0);
+});
 
 /** BALL as the game builds it (game-code.md §20). */
 function ballScene(counts: number[], cursor: number) {
@@ -74,6 +90,18 @@ test("a reward offer carries the game's own description, the field probe.js's re
   assert.equal(menu.options.find((o: { label: string }) => o.label === "Super Potion").desc, "Restores 50 HP.");
   // A button row has no offer behind it, so it has no description either.
   assert.equal(menu.extra.rows[0].items.length, 0);
+});
+
+test("an option list reads its cursor as the option under it, counting selectable options only", t => {
+  const options = ["Grass", "Fire", "Locked", "Water", "Cancel"].map((label, i) => ({ label, selectable: i !== 2 }));
+  const h = { cursor: 1, scrollCursor: 2, maxOptions: 3, options, config: { options: options.map(o => (o.selectable ? { label: o.label } : o)) } };
+  onPage(t, { ui: { mode: 15, handlers: { 15: h } } });
+  const menu = send("menu", {});
+  assert.equal(menu.family, "option_select");
+  assert.deepEqual(menu.options.map((o: { skip: boolean }) => o.skip), [false, false, true, false, false]);
+  assert.deepEqual(menu.extra.unskippedIndices, [0, 1, 3, 4]);
+  assert.equal(menu.extra.selectedIndex, 3);
+  assert.equal(menu.cursor, 2);
 });
 
 test("a mode without a handler is unreadable", t => {

@@ -28,7 +28,6 @@ export function fine(L: Scene, modes: PageModes): string {
     h && typeof h.optionsCursor === "number" ? h.optionsCursor : "",
     h && typeof h.rowCursor === "number" ? h.rowCursor : "",
     h && typeof h.scrollCursor === "number" ? h.scrollCursor : "",
-    h && typeof h.fullCursor === "number" ? h.fullCursor : "",
     // SUMMARY's move-list row: without it a row press reads as unmoved (#32).
     h && typeof h.moveCursor === "number" ? h.moveCursor : "",
     messageText,

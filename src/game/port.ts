@@ -69,7 +69,6 @@ export type FamilyExtra = {
   learn_move: { moveSelect: boolean; page: number; pokemon: string | null; newMove: string | null };
   paged_viewer: { page: number };
   modal: { formLabels: (string | null)[] };
-  menu: {};
   mystery_encounter: {};
   unmapped: { ownKeys: string[]; texts: string[] | null };
 };
