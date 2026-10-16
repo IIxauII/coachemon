@@ -99,9 +99,6 @@ jobs:
       - name: Prove the deploy key can push
         run: git push --dry-run --no-verify -- git@github.com:${{ github.repository }}.git HEAD:master
 
-      # semantic-release is not a devDependency on purpose: installing the plugin
-      # runs `npm ci` in Claude Code's cache, and it should not pull the release toolchain.
-      #
       # `--repository-url` is what routes the push over that key. semantic-release tries the url it is handed as-is
       # first, with a dry-run push, and only rewrites it into an https url carrying `GITHUB_TOKEN` when that attempt
       # fails — so an ssh url that works is never swapped out. Unset, it would read `origin` from the checkout, which
@@ -117,6 +114,17 @@ jobs:
           -p @semantic-release/git@11
           semantic-release
           --repository-url git@github.com:${{ github.repository }}.git
+
+      # The marketplace installs from the `plugin` branch, so a release this step did not publish is one no player can
+      # install (extension-distribution.md §14.7). The runner has no git identity, and `commit-tree` refuses to run
+      # without one.
+      - name: Publish the plugin copy
+        env:
+          GIT_AUTHOR_NAME: semantic-release-bot
+          GIT_AUTHOR_EMAIL: semantic-release-bot@martynus.net
+          GIT_COMMITTER_NAME: semantic-release-bot
+          GIT_COMMITTER_EMAIL: semantic-release-bot@martynus.net
+        run: node scripts/release/publish-plugin.ts --push git@github.com:${{ github.repository }}.git
 
   # The extension's own semantic-release run, on `extension-v*` tags (§14.2, §14.3). It comes second and checks out
   # `master` fresh, so it builds on top of the job above's `chore(release)` commit when there was one. Both jobs sit

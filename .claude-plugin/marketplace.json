@@ -5,7 +5,7 @@
   "plugins": [
     {
       "name": "coachemon",
-      "source": "./",
+      "source": { "source": "url", "url": "https://github.com/IIxauII/coachemon.git", "ref": "plugin" },
       "description": "Let Claude play PokéRogue through a live pokerogue.net tab."
     }
   ]
