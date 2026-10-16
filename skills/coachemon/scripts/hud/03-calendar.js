@@ -72,7 +72,7 @@ export const healRevives = s => healsAtAll(s) && !challengeOn(s, Challenges.HARD
 
 const SHOP_HORIZON = 12;
 // @mirrors shops-at-all
-const shopsAtAll = s => ![2, 3].includes(challengeValue(s, Challenges.LIMITED_SUPPORT));
+const shopsAtAll = s => !s?.gameMode?.hasNoShop && ![2, 3].includes(challengeValue(s, Challenges.LIMITED_SUPPORT));
 // No rewards screen after an X0 clear, and so no shop row — except under Limited Support 1, whose X1 transition
 // queues one in the removed heal's place (game-code.md §12).
 // @mirrors shop-after
@@ -89,8 +89,8 @@ const nextShop = (s, from) => {
 
 // The way a fainted member gets back on its feet before the big fight on wave `fight`. Luck is never one: a drawn
 // Revive, a Reviver Seed and Sacred Ash don't count, and money is not priced (#569). `from` is the wave the run
-// stands on — its own clear still opens a shop, while the heal it entered on is behind it. With no `fight` to reach,
-// any way back ahead counts.
+// stands on — its end still opens a shop, won or fled though not run from (game-code.md §12), while the heal it
+// entered on is behind it. With no `fight` to reach, any way back ahead counts.
 export const reviveBefore = (s, from, fight = null) => {
   if (challengeOn(s, Challenges.HARDCORE)) return null;
   const heal = nextHeal(s, from + 1);

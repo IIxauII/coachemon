@@ -9,6 +9,7 @@ import { drawReroll } from "./95-render-reroll.js";
 
 export const captionRewards = m => caption("🛒", `$${m.money}`, m.buys.length ? h("span", dim, `→ $${m.left}`) : null,
   !m.buys.length && m.affordable === 0 ? h("span", { ...dim, fontWeight: "normal" }, "nothing affordable") : null,
+  !m.free.length ? h("span", { ...dim, fontWeight: "normal" }, "no free reward") : null,
   m.bossNext ? h("span", {}, "👑 boss next") : null);
 
 export const drawRewards = m => {

@@ -68,6 +68,14 @@ replay("learn and rewards", [
     hud: hud({ kind: "rewards", rewards: "take Revive" }) }),
 ]);
 
+// A shop with no free reward still carries the HUD's buys, once a wave (#720).
+replay("shop with no free reward", [
+  snap({ wave: 14, money: 3000, rewards: { free: [], shop: [{ name: "Hyper Potion", desc: null, cost: 1064 }, { name: "Revive", desc: null, cost: 2128 }], rerollCost: -1 },
+    hud: hud({ kind: "rewards", wave: 14, rewards: "buy Hyper Potion" }) }),
+  snap({ wave: 14, money: 1936, rewards: { free: [], shop: [{ name: "Revive", desc: null, cost: 2128 }], rerollCost: -1 },
+    hud: hud({ kind: "rewards", wave: 14, rewards: null }) }),
+]);
+
 // The biome card is held until the HUD has actually picked one, not merely listed the options.
 replay("biome and encounter", [
   snap({ wave: 30, hud: hud({ kind: "biome", wave: 30, biome: "Swamp · Construction Site" }) }),

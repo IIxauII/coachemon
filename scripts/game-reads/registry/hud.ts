@@ -752,6 +752,11 @@ export const HUD: Area = {
       kind: "field",
       at: ["src/game-mode.ts#GameModeConfig.hasTrainers", "src/game-mode.ts#GameMode.hasTrainers"],
     },
+    {
+      name: "hasNoShop",
+      kind: "field",
+      at: ["src/game-mode.ts#GameModeConfig.hasNoShop", "src/game-mode.ts#GameMode.hasNoShop"],
+    },
     { name: "hasVoucher", kind: "field", at: ["src/data/trainers/trainer-config.ts#TrainerConfig.hasVoucher"] },
     {
       name: "heal",
@@ -1662,6 +1667,7 @@ export const HUD: Area = {
     {
       ours: "skills/coachemon/scripts/hud/03-calendar.js#shops-at-all",
       of: [
+        "src/game-mode.ts#GameMode.getShopStatus",
         "src/data/challenge.ts#LimitedSupportChallenge.applyShop",
       ],
     },
