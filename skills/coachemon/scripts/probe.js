@@ -45,7 +45,7 @@ import { planFile } from "./hud/56-boss-plan.js";
     if (MODE === "starters") {
       const gd = s.gameData;
       const h = s.ui.getHandler();
-      const costs = Object.fromEntries((h.filteredStarterContainers || []).map(c => [c.species.speciesId, c.cost]));
+      const costs = Object.fromEntries((h.filteredStarterIds || []).map(id => [id, gd.getSpeciesStarterValue(id)]));
       out = {
         onStarterScreen: Object.keys(costs).length > 0,
         starters: Object.entries(gd.starterData)
