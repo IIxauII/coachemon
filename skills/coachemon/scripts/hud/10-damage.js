@@ -515,23 +515,24 @@ const cancelledBy = (env, atk, def, move) => {
   } catch {}
   return null;
 };
+const flagApplies = (move, flag, atk, def, fallback) =>
+  typeof move.doesFlagEffectApply === "function" ? !!move.doesFlagEffectApply({ flag, user: atk, target: def }) : fallback;
 const bypassesProtect = (atk, def, move) => {
-  try { return typeof move.doesFlagEffectApply === "function" ? !!move.doesFlagEffectApply({ flag: MoveFlags.IGNORE_PROTECT, user: atk, target: def }) : hasFlag(move, MoveFlags.IGNORE_PROTECT); } catch { return false; }
+  try { return flagApplies(move, MoveFlags.IGNORE_PROTECT, atk, def, hasFlag(move, MoveFlags.IGNORE_PROTECT)); } catch { return false; }
 };
 const ignoresAbilities = (atk, move) => {
-  try { return typeof move.doesFlagEffectApply === "function" ? !!move.doesFlagEffectApply({ flag: MoveFlags.IGNORE_ABILITIES, user: atk }) : ability(atk, "MoveAbilityBypassAbAttr") || hasFlag(move, MoveFlags.IGNORE_ABILITIES); } catch { return false; }
+  try { return flagApplies(move, MoveFlags.IGNORE_ABILITIES, atk, undefined, ability(atk, "MoveAbilityBypassAbAttr") || hasFlag(move, MoveFlags.IGNORE_ABILITIES)); } catch { return false; }
 };
-// Levitate never reads `ignoreAbility`, only the arena's switch, which is on only while such a move runs
-// (game-code.md §1, #732).
+// `ignoreAbility` alone leaves Levitate up (game-code.md §1, #732).
 // @mirrors move-runs
-const asMoveRuns = (env, atk, def, move, fn) => {
+const asMoveRuns = (env, atk, def, move, opts, fn) => {
   const arena = env.s.arena;
-  if (!arena || !ignoresAbilities(atk, move)) return fn();
+  if (!arena || opts.aiView || !ignoresAbilities(atk, move)) return fn();
   const { ignoreAbilities, ignoringEffectSource } = arena;
   const source = atk.getBattlerIndex?.() ?? null;
   arena.ignoreAbilities = true;
-  // Two mons off the field share one index, so exempting the user's would exempt the defender too: none is, and the
-  // user's own ignorable abilities go quiet with the rest.
+  // Off the field both answer -1, so exempting the user would exempt the defender too. Neither is exempt, which mutes
+  // the user's own ignorable abilities as well.
   arena.ignoringEffectSource = source !== def.getBattlerIndex?.() ? source : null;
   try { return fn(); } finally { Object.assign(arena, { ignoreAbilities, ignoringEffectSource }); }
 };
@@ -541,6 +542,8 @@ const fromGame = (env, atk, def, pm, opts) => {
   if (attrs(move, "CounterDamageAttr").length) return null; // reacts to damage taken this turn: nothing yet
   const aiBlind = !!opts.aiView && !def.waveData?.abilityRevealed;
   const ignoreAbility = aiBlind || ignoresAbilities(atk, move);
+  // On top of the arena's switch it would also drop the abilities Mold Breaker can't, Shadow Shield's among them (#732).
+  const gameIgnore = aiBlind || (ignoreAbility && !env.s.arena?.ignoreAbilities);
   const ignoreAllyAbility = !!opts.aiView && !def.getAlly?.()?.waveData?.abilityRevealed;
   // A cached Tera Shell result would leak into this move (game-code.md §1); the sandbox restores it.
   if (def.turnData) def.turnData.moveEffectiveness = null;
@@ -560,10 +563,10 @@ const fromGame = (env, atk, def, pm, opts) => {
   // move reuses the longest count's numbers: nothing that reads `hitCount` applies to it (§2).
   const call = (k, isCritical) => {
     if (atk.turnData) { atk.turnData.hitCount = hitsMax; atk.turnData.hitsLeft = hitsMax - k; }
-    return def.getAttackDamage({ source: atk, move, ignoreAbility, ignoreSourceAbility: false, ignoreAllyAbility, ignoreSourceAllyAbility: false, isCritical, simulated: true });
+    return def.getAttackDamage({ source: atk, move, ignoreAbility: gameIgnore, ignoreSourceAbility: false, ignoreAllyAbility, ignoreSourceAllyAbility: false, isCritical, simulated: true });
   };
   const first = call(0, false);
-  const eGame = def.getMoveEffectiveness?.(atk, move, ignoreAbility, true);
+  const eGame = def.getMoveEffectiveness?.(atk, move, gameIgnore, true);
   const e = first.cancelled ? 0 : typeof eGame === "number" ? eGame : RESULT_MULT[first.result] ?? 1;
   const base = { name: pm.getName(), type, cat, e, priority, spread, spreadApplied, traits: t, self: 0, bypassProtect: bypassesProtect(atk, def, move) };
   const blocked = cancelledBy(env, atk, def, move);
@@ -660,7 +663,7 @@ const fromGame = (env, atk, def, pm, opts) => {
   const landed = checkAll
     ? Array.from({ length: hitsMax }, (_, k) => acc ** (k + 1) * dist.filter(x => x.n > k).reduce((t, x) => t + x.p, 0)).reduce((t, x) => t + x, 0)
     : acc * dist.reduce((t, x) => t + x.n * x.p, 0);
-  const contact = typeof move.doesFlagEffectApply === "function" ? move.doesFlagEffectApply({ flag: MoveFlags.MAKES_CONTACT, user: atk, target: def }) : hasFlag(move, MoveFlags.MAKES_CONTACT);
+  const contact = flagApplies(move, MoveFlags.MAKES_CONTACT, atk, def, hasFlag(move, MoveFlags.MAKES_CONTACT));
   const fromTarget = [];
   if (contact && !t.guarded && maxHp && ability(def, "PostDefendContactDamageAbAttr")) {
     const [abName, ratio] = [def.getAbility?.(), def.hasPassive?.() ? def.getPassiveAbility?.() : null]
@@ -760,8 +763,9 @@ const withDmg = (o, mv, foe) => o && {
 // @only 25-turn, tests: sceneOutcome, sceneOutcomes, sceneStatusMoves
 export const sceneOutcome = (env, atk, def, pm, opts = {}) => {
   try {
-    const o = keepTurnData([atk, def], () => asMoveRuns(env, atk, def, pm.getMove(), () => fromGame(env, atk, def, pm, opts)));
-    return o && withDmg({ ...o, live: true }, pm.getMove(), env.isEnemy(atk));
+    const move = pm.getMove();
+    const o = keepTurnData([atk, def], () => asMoveRuns(env, atk, def, move, opts, () => fromGame(env, atk, def, pm, opts)));
+    return o && withDmg({ ...o, live: true }, move, env.isEnemy(atk));
   } catch (e) {
     sceneOutcome.lastError = e;
     return approxOutcome(env, atk, def, pm);

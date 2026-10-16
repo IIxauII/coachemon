@@ -610,8 +610,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
 // ---- Mold Breaker's Ground move lands on Levitate (#732)
 {
   const quake = move(89, "Earthquake", 4, 100);
-  // Never through `ignoreAbility`: the game's Levitate doesn't read it, and a mock that did would pass on the HUD this
-  // replaced (game-code.md §1).
+  // Never through `ignoreAbility`: the game's Levitate doesn't read it (game-code.md §1).
   const floating = p => !(scene.arena.ignoreAbilities && scene.arena.ignoringEffectSource !== p.getBattlerIndex());
   const levitating = (id, opts) => {
     const p = mon(id, opts);
@@ -628,12 +627,21 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   const o = moveOutcome(scene, mold, foe, pmOf(quake), { crit: false });
   assert.deepEqual([o.e, o.max], [1, 100], "Mold Breaker Earthquake into Levitate");
   assert.ok(!scene.arena.ignoreAbilities, "the arena is left as the game had it");
-  // Off the field, every mon of either side answers -1 (game-code.md §1).
+  // Shadow Shield isn't ignorable: only `ignoreAbility` drops it.
+  const shield = mon("shadow shield", { player: false, bi: 2 });
+  const unshielded = shield.getAttackDamage;
+  shield.getAttackDamage = function (o) {
+    const r = unshielded.call(this, o);
+    return o.ignoreAbility ? r : { ...r, damage: r.damage / 2 };
+  };
+  setup(mold, shield);
+  assert.equal(moveOutcome(scene, mold, shield, pmOf(quake), { crit: false }).max, 50, "Mold Breaker Earthquake into Shadow Shield");
+  // Both off the field (game-code.md §1).
   const benchFoe = levitating("bench levitate", { player: false, bi: -1 });
   const benchMold = mon("bench mold", { abilities: ["MoveAbilityBypassAbAttr"], bi: -1 });
   setup(benchMold, benchFoe);
   assert.equal(moveOutcome(scene, benchMold, benchFoe, pmOf(quake), { crit: false }).e, 1, "off the field, both of them");
-  // Mycelium Might's bypass covers status moves only, and the move's `doesFlagEffectApply` is where the game asks it.
+  // The game asks Mycelium Might through `doesFlagEffectApply` (game-code.md §1).
   const mycelium = mon("mycelium", { abilities: ["MoveAbilityBypassAbAttr"] });
   setup(mycelium, foe);
   const asked = { ...quake, doesFlagEffectApply: () => false };

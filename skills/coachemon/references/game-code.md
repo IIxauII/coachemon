@@ -194,8 +194,8 @@ Call it only inside `sandbox`.
      `MoveAbilityBypassAbAttr` first (`src/data/moves/move.ts:915-925`); Mycelium Might's passes status moves only
      (`init-abilities.ts:2104`), so its attacks fall through to the move's own flag.
    - `canApplyAbility` drops an `.ignorable()` ability while the flag is on, unless the holder's `getBattlerIndex()`
-     equals `arena.ignoringEffectSource` (`:2392-2393`). Off the field every mon of either side answers -1: a player's
-     `getFieldIndex()` (`:6068-6074`), an enemy's `BattlerIndex.ATTACKER` (`:7254-7264`).
+     equals `arena.ignoringEffectSource` (`src/field/pokemon.ts:2392-2393`). Off the field every mon of either side
+     answers -1: a player's `getFieldIndex()` (`:6068-6074`), an enemy's `BattlerIndex.ATTACKER` (`:7254-7264`).
    - The AI's own simulated call (`:6881-6890`) runs in `EnemyCommandPhase`, before any `MovePhase`, so the flag is off
      there and Levitate holds.
 3. **Fixed damage and OHKO.**
