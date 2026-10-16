@@ -518,12 +518,29 @@ const cancelledBy = (env, atk, def, move) => {
 const bypassesProtect = (atk, def, move) => {
   try { return typeof move.doesFlagEffectApply === "function" ? !!move.doesFlagEffectApply({ flag: MoveFlags.IGNORE_PROTECT, user: atk, target: def }) : hasFlag(move, MoveFlags.IGNORE_PROTECT); } catch { return false; }
 };
+const ignoresAbilities = (atk, move) => {
+  try { return typeof move.doesFlagEffectApply === "function" ? !!move.doesFlagEffectApply({ flag: MoveFlags.IGNORE_ABILITIES, user: atk }) : ability(atk, "MoveAbilityBypassAbAttr") || hasFlag(move, MoveFlags.IGNORE_ABILITIES); } catch { return false; }
+};
+// Levitate never reads `ignoreAbility`, only the arena's switch, which is on only while such a move runs
+// (game-code.md §1, #732).
+// @mirrors move-runs
+const asMoveRuns = (env, atk, def, move, fn) => {
+  const arena = env.s.arena;
+  if (!arena || !ignoresAbilities(atk, move)) return fn();
+  const { ignoreAbilities, ignoringEffectSource } = arena;
+  const source = atk.getBattlerIndex?.() ?? null;
+  arena.ignoreAbilities = true;
+  // Two mons off the field share one index, so exempting the user's would exempt the defender too: none is, and the
+  // user's own ignorable abilities go quiet with the rest.
+  arena.ignoringEffectSource = source !== def.getBattlerIndex?.() ? source : null;
+  try { return fn(); } finally { Object.assign(arena, { ignoreAbilities, ignoringEffectSource }); }
+};
 
 const fromGame = (env, atk, def, pm, opts) => {
   const move = pm.getMove();
   if (attrs(move, "CounterDamageAttr").length) return null; // reacts to damage taken this turn: nothing yet
   const aiBlind = !!opts.aiView && !def.waveData?.abilityRevealed;
-  const ignoreAbility = aiBlind || ability(atk, "MoveAbilityBypassAbAttr") || hasFlag(move, MoveFlags.IGNORE_ABILITIES);
+  const ignoreAbility = aiBlind || ignoresAbilities(atk, move);
   const ignoreAllyAbility = !!opts.aiView && !def.getAlly?.()?.waveData?.abilityRevealed;
   // A cached Tera Shell result would leak into this move (game-code.md §1); the sandbox restores it.
   if (def.turnData) def.turnData.moveEffectiveness = null;
@@ -743,7 +760,7 @@ const withDmg = (o, mv, foe) => o && {
 // @only 25-turn, tests: sceneOutcome, sceneOutcomes, sceneStatusMoves
 export const sceneOutcome = (env, atk, def, pm, opts = {}) => {
   try {
-    const o = keepTurnData([atk, def], () => fromGame(env, atk, def, pm, opts));
+    const o = keepTurnData([atk, def], () => asMoveRuns(env, atk, def, pm.getMove(), () => fromGame(env, atk, def, pm, opts)));
     return o && withDmg({ ...o, live: true }, pm.getMove(), env.isEnemy(atk));
   } catch (e) {
     sceneOutcome.lastError = e;

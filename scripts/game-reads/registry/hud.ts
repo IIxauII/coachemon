@@ -821,6 +821,8 @@ export const HUD: Area = {
       kind: "field",
       at: ["src/modifier/modifier-type.ts#ModifierType.iconImage", "src/system/achv.ts#Achv.iconImage"],
     },
+    { name: "ignoreAbilities", kind: "field", at: ["src/field/arena.ts#Arena.ignoreAbilities"] },
+    { name: "ignoringEffectSource", kind: "field", at: ["src/field/arena.ts#Arena.ignoringEffectSource"] },
     { name: "info", kind: "method", at: ["test/mocks/mock-console/mock-console.ts#MockConsole.info"] },
     { name: "intrinsicMultiHitType", kind: "field", at: ["src/data/moves/move.ts#MultiHitAttr.intrinsicMultiHitType"] },
     {
@@ -1837,6 +1839,15 @@ export const HUD: Area = {
       ours: "skills/coachemon/scripts/hud/10-damage.js#lens-share",
       of: [
         "src/modifier/modifier.ts#PokemonMultiHitModifier.applyDamageModifier",
+      ],
+    },
+    {
+      ours: "skills/coachemon/scripts/hud/10-damage.js#move-runs",
+      of: [
+        "src/phases/move-phase.ts#MovePhase.start",
+        "src/phases/move-end-phase.ts#MoveEndPhase.start",
+        "src/field/pokemon.ts#Pokemon.canApplyAbility",
+        "src/field/pokemon.ts#Pokemon.isForciblyUngrounded",
       ],
     },
     {
