@@ -281,5 +281,5 @@ export const rewardsSummary = m => {
   const p = m.pick >= 0 ? m.free[m.pick] : null;
   const take = p ? `take ${p.name}${p.best ? ` → ${p.best.name}${p.best.forget ? ` (forget ${p.best.forget})` : ""}` : p.holder ? ` → ${p.holder.name}` : ""}` : null;
   const buys = m.buys.length ? `buy ${m.buys.map(x => x.name).join(", ")}` : null;
-  return [take, buys, leadSummary(m.lead), rerollSummary(m)].filter(Boolean).join(" · ") || null;
+  return [leadSummary(m.lead), take, buys, rerollSummary(m)].filter(Boolean).join(" · ") || null;
 };

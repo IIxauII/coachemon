@@ -1,6 +1,3 @@
-// Who should lead into the next wave (#713): our members against the preview's openers, one duel each, read off the
-// party as the reward screen holds it. The foes are preview rows — a stat row given whole, move ids into the table
-// below — and our side is the fixture's real species rows.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { mon, species, TY } from "./fixtures/party.mjs";
@@ -47,7 +44,7 @@ const MV = {
   energyBall: ["Energy Ball", "Grass", 90, "S"],
 };
 
-// A preview row as 48-preview's `foeData` hands it: `stats` the `Stat`-indexed row, `moveIds` into `MOVES`.
+// A preview row as 48-preview.js `foeData` hands it: `stats` the `Stat`-indexed row, `moveIds` into `MOVES`.
 const foe = (name, level, types, stats, moves) => ({ name, level, types, stats, moveIds: moves.map(moveId),
   ability: null, passive: null, segments: 0 });
 const GOLEM = foe("Golem", 44, ["Rock", "Ground"], [131, 117, 126, 60, 69, 51], ["Rock Slide", "Earthquake"]);
@@ -80,7 +77,7 @@ const TRIO = () => [
   assert.ok(sw.in.s > 0, `the one leading instead wins it: ${sw.in.s}`);
 }
 
-// ---- A wild opener is judged like a trainer's: the free switch is the player's to skip
+// ---- A wild opener is judged like a trainer's
 {
   const a = advise(TRIO(), preview([GOLEM], { type: "wild" }));
   show("wild single: Charizard loses to Golem", a);
@@ -118,6 +115,19 @@ const TRIO = () => [
   const split = advise([charizard, swampert, typhlosion, meganium], preview([GOLEM, EXEGGUTOR], { double: true }));
   show("double: Charizard beats one opener of the two", split);
   assert.equal(split, null);
+
+  const blind = advise([charizard, typhlosion, swampert, meganium], preview([GOLEM, null], { double: true }));
+  show("double: one opener unreadable", blind);
+  assert.equal(blind, null);
+}
+
+// ---- Two members on the bench that win by the same score: the earlier slot leads
+{
+  const [charizard, typhlosion, swampert] = TRIO();
+  const twin = full(SP.swampert, 45, [MV.surf]);
+  const a = advise([charizard, typhlosion, swampert, twin], preview([GOLEM]));
+  show("tie: two Swamperts on the bench", a);
+  assert.deepEqual(a.swaps.map(sw => [sw.in.name, sw.in.slot]), [["Swampert", 2]]);
 }
 
 // ---- The advice is as sure as the preview fields it rests on: the foes, their levels and whether it is a double
@@ -127,7 +137,6 @@ const TRIO = () => [
   const rolled = { ...preview([GOLEM], { type: "wild" }), confidence: { type: "replay", trainer: null, foes: "estimate",
     double: "replay", levels: "replay" } };
   assert.equal(advise(TRIO(), rolled).confidence, "estimate");
-  // A trainer's name has nothing to do with who wins the opener.
   const grunt = { ...preview([GOLEM]), confidence: { type: "exact", trainer: "estimate", foes: "exact", double: "exact",
     levels: "exact" } };
   assert.equal(advise(TRIO(), grunt).confidence, "exact");
@@ -168,7 +177,7 @@ const TRIO = () => [
   const single = advise(TRIO(), { ...preview([GOLEM]), confidence: { type: "exact", trainer: "exact", foes: "replay",
     double: "exact", levels: "exact" } });
   console.log(`== rewards card: one swap\n${actOf(card(single)).join("\n")}\nsummary ${rewardsSummary(card(single))}`);
-  assert.equal(rewardsSummary(card(single)), "take Potion · lead with Swampert over Charizard (beats Golem) [~]");
+  assert.equal(rewardsSummary(card(single)), "lead with Swampert over Charizard (beats Golem) [~] · take Potion");
   const act = actOf(card(single));
   assert.equal(act[0], "reorder first — taking the free reward closes the shop");
   assert.equal(act[1], "⇄ lead Swampert switch with Charizard · beats Golem~");
@@ -181,10 +190,10 @@ const TRIO = () => [
   const pair = advise([charizard, typhlosion, swampert, full(SP.meganium, 45, [MV.energyBall])], preview([GOLEM, RHYDON], { double: true }));
   console.log(`== rewards card: two swaps\n${actOf(card(pair)).join("\n")}\nsummary ${rewardsSummary(card(pair))}`);
   assert.equal(rewardsSummary(card(pair)),
-    "take Potion · lead with Meganium over Charizard (beats Golem), Swampert over Typhlosion (beats Golem)");
+    "lead with Meganium over Charizard (beats Golem), Swampert over Typhlosion (beats Golem) · take Potion");
 
   const missed = { ...single, missed: true };
-  assert.match(rewardsSummary(card(missed)), / \[!\]$/);
+  assert.match(rewardsSummary(card(missed)), / \[!\] · take Potion$/);
   assert.equal(rewardsSummary(card(null)), "take Potion", "no lead, no clause");
   assert.equal(actOf(card(null))[0].startsWith("★"), true, "and no reorder hint");
 }

@@ -41,8 +41,7 @@ The `coachemon` MCP server drives a live PokéRogue tab in Chrome over CDP. Stat
 
 ## Reordering in the shop
 
-The next wave opens on the front of the party, and a trainer fight gives no free switch before its first turn, so the
-shop is the place to pick the opener. `read_card` says "lead with X over Y" when Y loses the next opener and X wins it.
+The next wave opens on the front of the party, and a trainer fight gives no free switch before its first turn, so the shop is the place to pick the opener. `read_card` says "lead with X over Y" when Y loses the next opener and X wins it.
 
 1. `select_option("Check Team")` (shop row 0, `index: "0:2"`) opens `PARTY/CHECK`.
 2. Pick Y → `Switch` → pick X. The two swap at once, with no confirm. For two members with one name, pick by `index`.
@@ -50,11 +49,9 @@ shop is the place to pick the opener. `read_card` says "lead with X over Y" when
 
 On `PARTY/CHECK`:
 
-- A half-made switch (Y marked, X not yet picked) is invisible in `read_menu`, and `Cancel` does nothing while it
-  stands. Finish it by picking X, or clear it by picking Y again or `press(CANCEL)`.
+- A half-made switch (Y marked, X not yet picked) is invisible in `read_menu`, and `Cancel` does nothing while it stands. Finish it by picking X, or clear it by picking Y again or `press(CANCEL)`.
 - Party options' `active` keeps marking the old lead until the next wave. `get_state`'s `active` is the live order.
-- The swap press can take ~3 s to settle or come back `stuck`, since party order is not part of the progress check.
-  `get_state` shows whether the swap landed. Only press again if it didn't.
+- The swap press can take ~3 s to settle or come back `stuck`, since party order is not part of the progress check. `get_state` shows whether the swap landed. Only press again if it didn't.
 - A member trapped on the field refuses `Switch` with a message: `press(ACTION)` and lead with the party as it stands.
 
 ## Rival fights

@@ -9,7 +9,7 @@ const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch 
 
 const RESTS_ON = ["foes", "levels", "double"];
 
-// A fainted slot 0 does not lead: the first allowed member after it does (game-code.md §32).
+// (game-code.md §32)
 const standing = party => party.map((mon, slot) => ({ mon, slot }))
   .filter(x => tryDo(() => x.mon.isAllowedInBattle(), (x.mon.hp ?? 0) > 0));
 
@@ -23,27 +23,27 @@ const side = (x, s) => ({ name: x.mon.name ?? null, slot: x.slot, icon: tryDo(()
 export const leadAdvice = (run, preview) => {
   if (!preview || preview.unavailable || !preview.foes?.length) return null;
   const n = preview.double ? 2 : 1;
-  const openers = preview.foes.slice(0, n).map(row => ({ row, c: tryDo(() => previewFoeOf(row)) })).filter(o => o.c);
-  const up = standing(run.facts.party ?? []);
-  if (!openers.length || up.length <= n) return null;
+  const openers = preview.foes.slice(0, n).map(row => ({ row, c: tryDo(() => previewFoeOf(row)) }));
+  const allowed = standing(run.facts.party ?? []);
+  if (openers.some(o => !o.c) || allowed.length <= n) return null;
   const built = new Map();
   const scores = x => {
     if (!built.has(x)) built.set(x, combatantOf({ mon: x.mon, hp: x.mon.hp }));
     return openers.map(o => duel(run, built.get(x), o.c).s);
   };
   const top = ss => ss.reduce((b, s, i) => (s > ss[b] ? i : b), 0);
-  const bench = up.slice(n);
+  const bench = allowed.slice(n);
   const taken = new Set();
   const swaps = [];
-  for (const lead of up.slice(0, n)) {
-    const was = scores(lead);
-    if (was.some(s => s >= 0)) continue;
+  for (const lead of allowed.slice(0, n)) {
+    const leadScores = scores(lead);
+    if (leadScores.some(s => s >= 0)) continue;
     const best = bench.filter(x => !taken.has(x))
       .map(x => { const ss = scores(x); return { x, i: top(ss), s: ss[top(ss)] }; })
       .filter(c => c.s > 0).sort((a, b) => b.s - a.s)[0];
     if (!best) continue;
     taken.add(best.x);
-    swaps.push({ out: side(lead, was[best.i]), in: side(best.x, best.s), foe: openers[best.i].row.name });
+    swaps.push({ out: side(lead, leadScores[best.i]), in: side(best.x, best.s), foe: openers[best.i].row.name });
   }
   if (!swaps.length) return null;
   const c = preview.confidence ?? {};

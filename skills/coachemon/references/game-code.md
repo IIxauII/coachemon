@@ -3043,7 +3043,7 @@ session from a newer game skips the migration and loads as is. The only "out of 
 Read at the pinned tag (`v1.12.1.1`), for the rewards card's lead advice (`51-lead.js`) and the play skill's reorder.
 Switch is new in 1.12.1.0: the v1.12.0.11 clone has no `PartyOption.SWITCH`.
 
-**Opening it.** The shop's bottom row, column 2, is Check Team (`checkTeam` in
+**Opening it.** The shop's bottom row (row 0 in Coachemon's `read_menu`), column 2, is Check Team (`checkTeam` in
 `locales/en/modifier-select-ui-handler.json`). It opens the party screen in `PartyUiMode.CHECK` over the shop with
 `setModeWithoutClear` (`src/phases/select-modifier-phase.ts:107-110`), and leaving it runs `resetModifierSelect`
 (`:402-410`), which re-opens the shop on the same `typeOptions`: nothing is re-rolled.

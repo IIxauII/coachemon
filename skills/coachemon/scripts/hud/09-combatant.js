@@ -292,7 +292,7 @@ export const combatantOf = (spec = {}) => {
   };
 };
 
-// A row of 48-preview's, which names its types and holds its moves as ids.
+// A `foeData` row (48-preview.js).
 export const previewFoeOf = row => combatantOf({ name: row.name, level: row.level, stats: row.stats,
   types: (row.types ?? []).map(t => TYPES.indexOf(t)).filter(t => t >= 0), ability: row.ability ?? null,
   passive: row.passive ?? null, moves: row.moveIds ?? [], boss: row.segments ?? 0, player: false });
