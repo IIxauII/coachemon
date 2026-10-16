@@ -1786,6 +1786,17 @@ export const Nature = {
 } as const;
 export type Nature = (typeof Nature)[keyof typeof Nature];
 
+export const PartyMemberStrength = {
+  WEAKEST: 0,
+  WEAKER: 1,
+  WEAK: 2,
+  AVERAGE: 3,
+  STRONG: 4,
+  STRONGER: 5,
+  STRONGEST: 6,
+} as const;
+export type PartyMemberStrength = (typeof PartyMemberStrength)[keyof typeof PartyMemberStrength];
+
 export const Passive = {
   UNLOCKED: 1,
   ENABLED: 2,
@@ -3020,6 +3031,7 @@ export const NAMES = {
   MysteryEncounterTier: invert(MysteryEncounterTier),
   MysteryEncounterType: invert(MysteryEncounterType),
   Nature: invert(Nature),
+  PartyMemberStrength: invert(PartyMemberStrength),
   Passive: invert(Passive),
   PokeballType: invert(PokeballType),
   PokemonType: invert(PokemonType),

@@ -226,6 +226,18 @@ const scenarios = {
   },
 };
 
+// A trainer can field one species twice: a twin's lone answer is the same point of failure, so one finding.
+{
+  const guzma = scenarios["wave 164 guzma"];
+  const foes = guzma.ahead.next.foes;
+  scenarios["wave 164 guzma, twin Flygon"] = { ...guzma,
+    ahead: { next: { ...guzma.ahead.next, foes: [...foes.slice(0, 5), foes[4]] } },
+    expect: a => {
+      const t = a.findings.map(f => f.text);
+      assert.equal(t.filter(x => x === "Flygon (W165) has one answer: Dudunsparce Blizzard (70%)").length, 1, t.join("\n"));
+    } };
+}
+
 for (const [label, sc] of Object.entries(scenarios)) {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;

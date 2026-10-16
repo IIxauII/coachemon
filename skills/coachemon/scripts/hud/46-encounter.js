@@ -45,6 +45,19 @@ const RARE_BIOMES = new Set([BiomeId.SPACE, BiomeId.FAIRY_CAVE, BiomeId.LABORATO
 const RESERVE_WAVES = 3;
 const HARD_LEVEL_GAP = 5, BOSS_LEVEL_EDGE = 3;
 const MONS_EACH = 3;
+// `Trainer.getPartyLevels` for one member, on the difficulty wave (game-code.md §13).
+// @mirrors party-levels
+const STRENGTH_MULTIPLIER = {
+  [PartyMemberStrength.WEAKEST]: 0.95, [PartyMemberStrength.WEAKER]: 1, [PartyMemberStrength.WEAK]: 1.05,
+  [PartyMemberStrength.AVERAGE]: 1.12, [PartyMemberStrength.STRONG]: 1.22, [PartyMemberStrength.STRONGER]: 1.24,
+  [PartyMemberStrength.STRONGEST]: 1.25,
+};
+const memberLevel = (d, strength) => {
+  const base = 1 + d / 2 + (d / 25) ** 2;
+  if (strength >= PartyMemberStrength.STRONG) return Math.ceil(base * STRENGTH_MULTIPLIER[strength]);
+  const ramped = Math.min(STRENGTH_MULTIPLIER[strength] + 0.025 * Math.floor(d / 25), 1.225);
+  return Math.ceil(base * ramped) - Math.floor(d / 50 * (PartyMemberStrength.STRONG - strength));
+};
 // @mirrors challenger-rewards
 const CHALLENGER_REWARDS = ["a Common TM, a Great TM, a Memory Mushroom + the usual rolls",
   "2 Ultra + 2 Great + the usual rolls", "2 Rogue + 1 Ultra + 1 Great + the usual rolls, but 0.9× EXP"];
@@ -258,20 +271,34 @@ const context = (run, me, options, account) => {
       weak.length ? `${weak.length} weak to it` : null].filter(Boolean).join(", ");
     return { hard, text };
   };
+  // `levels` is null where the party template is not one the card can know: a `partyTemplateFunc` it doesn't call, or
+  // one of several templates the `Trainer` constructor draws between. `level` is then an AVERAGE member's
+  // (game-code.md §13).
   const trainer = (k = 0) => {
     const cfg = me.enemyPartyConfigs?.[k];
     if (!cfg || (!cfg.trainerConfig && cfg.trainerType == null)) return null;
-    const size = cfg.pokemonConfigs?.length || tryDo(() => cfg.trainerConfig.partyTemplates?.[0]?.size) || 0;
+    const tc = cfg.trainerConfig ?? tryDo(() => gameTables().trainers[cfg.trainerType]);
+    const template = tc && !tc.partyTemplateFunc && tc.partyTemplates?.length === 1 ? tc.partyTemplates[0] : null;
+    // A double on a one-member template fights two of its strength (game-code.md §11).
+    const doubled = !!template && template.size < 2 && !!(tc.doubleOnly || (tc.hasDouble && cfg.doubleBattle));
+    const strengths = !template ? null : doubled ? [template.strength, template.strength]
+      : Array.from({ length: template.size }, (_, i) => tryDo(() => template.getStrength(i)));
+    const d = tryDo(() => s.gameMode.getWaveForDifficulty(wave), wave);
     const scale = Math.max(Math.round(wave / 10 * (cfg.levelAdditiveModifier ?? 0)), 0);
-    return { name: tryDo(() => cfg.trainerConfig?.name), size, level: (b.enemyLevels?.[0] ?? top?.level ?? 1) + scale };
+    const levels = strengths?.every(st => st in STRENGTH_MULTIPLIER)
+      ? strengths.map((st, i) => cfg.pokemonConfigs?.[i]?.level || memberLevel(d, st) + scale) : null;
+    return { name: tryDo(() => cfg.trainerConfig?.name), levels, size: levels?.length ?? (cfg.pokemonConfigs?.length || null),
+      level: levels ? Math.max(...levels) : memberLevel(d, PartyMemberStrength.AVERAGE) + scale };
   };
   // `mons: null`: a team size nothing here settles (game-code.md §13), so the level gap alone decides.
-  const gauntlet = (t, { mons = t?.size ?? 0, ours = null } = {}) => {
+  const gauntlet = (t, { mons = t?.size, ours = null } = {}) => {
     if (!t || !standing.length) return { hard: false, text: "" };
     const fit = ours ?? standing.filter(p => tryDo(() => p.getHpRatio(), p.hp / p.getMaxHp()) >= 0.5).length;
     const gap = t.level - top.level;
+    const low = t.levels ? Math.min(...t.levels) : null;
+    const at = low == null ? `~L${t.level}` : low < t.level ? `L${low}–${t.level}` : `L${t.level}`;
     return { hard: gap >= HARD_LEVEL_GAP || (mons != null && mons > fit * MONS_EACH), fit,
-      text: `${mons == null ? "their own team" : plural(mons, "mon")} at ~L${t.level} vs your L${top.level}, ${fit} of yours fit to fight` };
+      text: `${mons == null ? "their own team" : plural(mons, "mon")} at ${at} vs your L${top.level}, ${fit} of yours fit to fight` };
   };
   const roomFor = cls => party.find(p => {
     const cur = (tryDo(() => p.getHeldItems(), []) ?? []).find(m => m?.constructor?.name === cls);
@@ -736,10 +763,7 @@ const RULES = {
   },
 
   [CHALLENGERS]: c => {
-    // The first fight's team size can't be read before it starts (game-code.md §13).
-    const rows = [c.trainer(0), c.trainer(1), c.trainer(2)].map((t, k) => ({
-      t, g: c.gauntlet(t, k === 0 ? { mons: null } : {}), reward: CHALLENGER_REWARDS[k],
-    }));
+    const rows = [c.trainer(0), c.trainer(1), c.trainer(2)].map((t, k) => ({ t, g: c.gauntlet(t), reward: CHALLENGER_REWARDS[k] }));
     // A row we couldn't read is never promoted: reading nothing is no evidence the fight is safe.
     let best = 0;
     for (let k = 1; k < rows.length; k++) if (rows[k].t && !rows[k].g.hard) best = k;
@@ -994,6 +1018,8 @@ export const encounterModel = (run, h, account) => {
     // The species table lands partway through a run as well, and the weakest member cannot be priced before it does:
     // a card judged without one must not be served back once it has arrived (#582).
     tryDo(() => typeof gameTables().species.getAllSpecies === "function", false),
+    // So does the trainer table, where a config naming only its `trainerType` finds its party template.
+    tryDo(() => !!gameTables().trainers, false),
     h.optionsMeetsReqs, tryDo(() => h.optionsContainer.list.map(o => o.text), []),
     (s.gameMode?.challenges ?? []).map(c => [c.id, c.value]),
     party.map(p => [p.id, p.hp, p.status?.effect ?? 0, p.nature, p.moveset.filter(Boolean).map(m => m.moveId)])]);

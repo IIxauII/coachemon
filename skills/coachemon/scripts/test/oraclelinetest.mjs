@@ -42,7 +42,8 @@ const commands = cmd => (!cmd ? [{}, {}] : [
   { 0: { command: cmd.tera ? Command.TERA : cmd.switchTo !== undefined ? Command.POKEMON : Command.FIGHT } },
 ]);
 // Gordie's W180 as the game holds it on `turn`: who is in front is whoever the oracle line put there by then.
-const at = (turn, { wave = 180, seed = GORDIE_SEED, phase = { phaseName: "CommandPhase" }, cp = null, cmd = null } = {}) => {
+// `edit(party, foes)` changes either side before the scene is guarded.
+const at = (turn, { wave = 180, seed = GORDIE_SEED, phase = { phaseName: "CommandPhase" }, cp = null, cmd = null, edit = () => {} } = {}) => {
   const front = turn <= 11 ? "RESHIRAM" : turn <= 13 ? "LEAVANNY" : turn <= 15 ? "GOLBAT" : "GYARADOS";
   const party = [
     mon("GYARADOS", "Gyarados", 570, { field: front === "GYARADOS", moves: [move("HYDRO_PUMP", "Hydro Pump", "WATER"), move("BOUNCE", "Bounce", "FLYING")], tera: "WATER" }),
@@ -54,6 +55,7 @@ const at = (turn, { wave = 180, seed = GORDIE_SEED, phase = { phaseName: "Comman
   ];
   const foes = [["GIGALITH", "Gigalith"], ["CARRACOSTA", "Carracosta"], ["COALOSSAL", "Coalossal"], ["STONJOURNER", "Stonjourner"],
     ["BARBARACLE", "Barbaracle"], ["TYRANITAR", "Tyranitar"]].map(([key, name]) => mon(key, name, 100));
+  edit(party, foes);
   if (cp) { live(party, cp.ours); live(foes, cp.foes); }
   const [turnCommands, preTurnCommands] = commands(cmd);
   return guard({ seed, currentBattle: { waveIndex: wave, turn, turnCommands, preTurnCommands }, phaseManager: { getCurrentPhase: () => phase },
@@ -102,6 +104,18 @@ const hand = (label, line) => {
   assert.equal(hand("Gordie's W180", LINE).ok, true);
   assert.equal(hand("another run's seed, with one held", { ...LINE, seed: "x9AbQ" }).ok, false);
   assert.equal(oracleLineModel(scene).steps[0].turn, 11, "the ignored oracle line left the held one as it was");
+}
+
+// ---- A foe the oracle line puts in front is the one in its own slot, though the trainer fields its species twice
+{
+  const twin = (p, iconId) => Object.assign(p, { getIconAtlasKey: () => "pkmn", getIconId: () => iconId });
+  const s = at(15, { edit: (_, foes) => {
+    twin(Object.assign(foes[0], { species: { speciesId: SpeciesId.TYRANITAR }, name: "Tyranitar" }), "248s");
+    twin(foes[5], "248");
+  } });
+  const fronts = oracleLineModel(s).steps.flatMap(st => st.after).filter(m => m.name === "Tyranitar");
+  assert.ok(fronts.length, "the oracle line puts Tyranitar in front");
+  assert.deepEqual([...new Set(fronts.map(m => m.icon?.[1]))], ["248"], "slot 5's Tyranitar, not slot 0's");
 }
 
 // ---- The plan group draws the oracle line in place of the fight plan: ✓ for turns played, ▸ for this one, · for the rest

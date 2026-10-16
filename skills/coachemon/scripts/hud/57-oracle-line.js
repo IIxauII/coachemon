@@ -167,22 +167,27 @@ export const oracleLineModel = s => {
   const { line } = h;
   const { faintPick, turn } = battleTurn(s);
   const party = tryDo(() => s.getPlayerParty(), []), foes = tryDo(() => s.getEnemyParty(), []);
-  const ours = id => party.find(p => p?.species?.speciesId === id) ?? null;
-  const theirs = id => foes.find(p => p?.species?.speciesId === id) ?? null;
-  const inFront = (side, find) => side.filter(m => m.onField).map(m => ({ ...named(find(m.species), m.species), hp: m.hp, maxHp: m.maxHp }));
+  // A trainer can field one species twice (game-code.md §10), so a mon the line names by its slot is looked for there.
+  const finder = side => (id, slot) => {
+    const there = slot == null ? null : side[slot];
+    return there?.species?.speciesId === id ? there : side.find(p => p?.species?.speciesId === id) ?? null;
+  };
+  const ours = finder(party), theirs = finder(foes);
+  const inFront = (side, find) => side.filter(m => m.onField)
+    .map(m => ({ ...named(find(m.species, m.slot), m.species), hp: m.hp, maxHp: m.maxHp }));
   const steps = line.steps.map((st, i) => {
     const by = moverOf(h, i);
     const mover = by == null ? null : ours(by);
     const input = pressed(st.input), sent = st.input?.replacement;
     const act = !input ? null
-      : input.kind === "switch" ? { kind: "switch", to: named(ours(input.to.species), input.to.species) }
+      : input.kind === "switch" ? { kind: "switch", to: named(ours(input.to.species, input.to.slot), input.to.species) }
       : { kind: "move", by: by == null ? null : named(mover, by), ...moveOf(party, input.move),
           tera: input.tera ? { type: tryDo(() => TYPES[mover.getTeraType()]) } : null };
     return {
       turn: st.turn,
       at: st.turn < turn ? "done" : st.turn === turn ? "now" : "later",
       act,
-      send: sent ? named(ours(sent.species), sent.species) : null,
+      send: sent ? named(ours(sent.species, sent.slot), sent.species) : null,
       after: [...inFront(st.checkpoint.ours, ours), ...inFront(st.checkpoint.foes, theirs)],
     };
   });
