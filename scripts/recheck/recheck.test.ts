@@ -143,7 +143,7 @@ test("a carried fight that doesn't replay ends the re-check naming it to record 
   assert.deepEqual(run.failed, ["Gordie W180 didn't replay", "Kieran W190 didn't replay"]);
   assert.match(
     run.text,
-    /Gordie W180 and Kieran W190 were recorded on 1\.12\.0\.11\. Where 1\.12\.1\.1 changed their lines, record fights in their place on 1\.12\.1\.1: "Record a known fight again" in docs\/runbooks\/pin-bump\.md\.$/,
+    /Gordie W180 and Kieran W190 were recorded on 1\.12\.0\.11\. Where 1\.12\.1\.1 changed the fights, record others in their place on 1\.12\.1\.1: "Record a known fight again" in docs\/runbooks\/pin-bump\.md\.$/,
   );
 });
 

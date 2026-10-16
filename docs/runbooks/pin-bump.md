@@ -62,9 +62,8 @@ the new pin to players.
 
 - **A carried fight whose harness failed** (`harness_failed`): the harness leans on a game internal that `<new>`
   changed, and a fight recorded on `<new>` would fail the same way. Fix the harness
-  (`src/solver/harness.test.ts.template`). On 1.12.1.1 the reload's sweep broke twice: `BattleScene.spriteSparkleHandler`
-  became `spriteTeraSparkleHandler`, and an icon animation handler it empties has no `remove`, which only a restore
-  reaches.
+  (`src/solver/harness.test.ts.template`). Part of the reload's sweep runs only on a restore, so the replays can pass
+  and the fork checks still fail on it.
 - **A carried fight that played otherwise**: a `scene_mismatch` names the field the migration and the load disagree
   on. A `known_turn_missed` or an `illegal_step` is the line playing out otherwise. The re-check ends by naming each
   such fight. Once `<new>`'s change to the fight is understood (a move, an ability, an item, the AI, or what the
