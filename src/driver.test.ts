@@ -7,6 +7,7 @@ import { Driver } from "./driver.ts";
 import { KEPT_ENDED, type JobKinds, type JobWork } from "./jobs.ts";
 import { ArenaTagSide, Button, GameModes, MoveCategory, PokemonType, StatusEffect, UiMode } from "./enums/generated.ts";
 import { Refusal } from "./envelope.ts";
+import { PINNED_GAME_VERSION } from "./escape-ladder/lookup.ts";
 import { fakeGame, type FakeScreen, type ScreenRead } from "./game/fake-game.ts";
 import { GORDIE_LINE } from "./game/fixtures/oracle-line.ts";
 import type { MenuRead } from "./game/port.ts";
@@ -42,7 +43,7 @@ function fakeTab(opts: { stallAfterPress: boolean }) {
       ready: true, settled, reason: settled ? "menu-open" : "ui-transition", mode: UiMode.TARGET_SELECT,
       phaseName: "SelectTargetPhase", wave: 13, turn: 1, runLive: true, tutorialActive: false, handler: "TargetSelectUiHandler",
       cursor: 2, modeChain: [], messageText: null, onActionInput: false, awaitingActionInput: false, fine: "target|2",
-      domMode: "TARGET_SELECT", gameVersion: "1.12.0.11", screen: "TARGET_SELECT", ...money,
+      domMode: "TARGET_SELECT", gameVersion: PINNED_GAME_VERSION, screen: "TARGET_SELECT", ...money,
     };
   };
   const menu: MenuRead = {
@@ -88,7 +89,7 @@ function targetGridTab(opts: { targets: { i: number; label: string }[]; cursor: 
     ready: true, settled: true, reason: "menu-open", mode: committed === null ? UiMode.TARGET_SELECT : UiMode.COMMAND,
     phaseName: committed === null ? "SelectTargetPhase" : "CommandPhase", wave: 7, turn: 1, runLive: true, tutorialActive: false,
     handler: "TargetSelectUiHandler", cursor, modeChain: [], messageText: null, onActionInput: false, awaitingActionInput: false,
-    fine: `target|${cursor}|${committed}`, domMode: null, gameVersion: "1.12.0.11", screen: committed === null ? "TARGET_SELECT" : "COMMAND", ...money,
+    fine: `target|${cursor}|${committed}`, domMode: null, gameVersion: PINNED_GAME_VERSION, screen: committed === null ? "TARGET_SELECT" : "COMMAND", ...money,
   });
   const menu = (): MenuRead => ({
     readable: true, mode: UiMode.TARGET_SELECT, screen: "TARGET_SELECT", family: "target_select", cursor, text: null, messagePending: false,
@@ -152,7 +153,7 @@ function startRunTab(opts: { costs?: Record<string, number>; cancelIgnored?: boo
     ready: true, ...(opts.gameModeStalls && screen === gameMode ? { settled: false, reason: "ui-transition" } : { settled: true, reason: "menu-open" }), mode: screen.mode, screen: screen.screen, phaseName: screen.phase, wave: screen === switchConfirm ? 1 : null,
     turn: null, runLive: screen === switchConfirm, tutorialActive: false, handler: null, cursor, modeChain: screen.chain,
     messageText: screen.text ?? null, onActionInput: false, awaitingActionInput: false, fine: `${screen.mode}|${screen.phase}|${cursor}|${party.length}`,
-    domMode: null, gameVersion: "1.12.0.11", ...money,
+    domMode: null, gameVersion: PINNED_GAME_VERSION, ...money,
   });
   // Only what start_run reads: each family's other `extra` fields are left out.
   const menu = (): MenuRead => ({
@@ -320,7 +321,7 @@ function learnMoveTab(opts: { setCursorWorks: boolean; fineTracksRow?: boolean; 
     screen: answered === null ? "SUMMARY/LEARN_MOVE" : "MESSAGE", phaseName: "LearnMovePhase",
     wave: 16, turn: 1, runLive: true, tutorialActive: false, handler: "SummaryUiHandler", cursor: 2, modeChain: [], messageText: null,
     onActionInput: false, awaitingActionInput: false, fine: `summary|2|${opts.fineTracksRow === false ? "" : moveCursor}|${answered}`, domMode: null,
-    gameVersion: "1.12.0.11", ...money,
+    gameVersion: PINNED_GAME_VERSION, ...money,
   });
   const menu = (): MenuRead =>
     opts.readerFailsAfterPress && presses.length > 0
@@ -407,7 +408,7 @@ test("a cursor set that restarts the game's typing settles before the commit, so
       ready: true, settled: typed >= 5, reason: typed >= 5 ? "menu-open" : "ui-transition", mode: answered === null ? UiMode.SUMMARY : UiMode.MESSAGE,
       screen: answered === null ? "SUMMARY/LEARN_MOVE" : "MESSAGE", phaseName: "LearnMovePhase", wave: 16, turn: 1, runLive: true, tutorialActive: false,
       handler: "SummaryUiHandler", cursor: 2, modeChain: [], messageText: null, onActionInput: false, awaitingActionInput: false,
-      fine: `summary|${row}|${typed}|${answered}`, domMode: null, gameVersion: "1.12.0.11", ...money,
+      fine: `summary|${row}|${typed}|${answered}`, domMode: null, gameVersion: PINNED_GAME_VERSION, ...money,
     };
   };
   const menu = (): MenuRead => ({
@@ -439,7 +440,7 @@ function partyMessageTab() {
     ready: true, settled: true, reason: "menu-open", mode: UiMode.PARTY, phaseName: "SelectModifierPhase", wave: 21, turn: 1,
     runLive: true, tutorialActive: false, handler: "PartyUiHandler", cursor, modeChain: [UiMode.MODIFIER_SELECT], messageText: null,
     onActionInput: message !== null, awaitingActionInput: message !== null,
-    fine: `party|${optionsMode}|${cursor}|${optionsCursor}|${message}`, domMode: null, gameVersion: "1.12.0.11",
+    fine: `party|${optionsMode}|${cursor}|${optionsCursor}|${message}`, domMode: null, gameVersion: PINNED_GAME_VERSION,
     screen: screen(), ...money,
   });
   const screen = () => (optionsMode ? "PARTY/MODIFIER:options" : "PARTY/MODIFIER");
@@ -521,7 +522,7 @@ test("a set reach whose setCursor misses refuses cursor_unreachable when its fam
   const read = (): ScreenRead => ({
     ready: true, settled: true, reason: "awaiting-action", mode: UiMode.MODIFIER_SELECT, screen: "MODIFIER_SELECT", phaseName: "SelectModifierPhase", wave: 21, turn: 1,
     runLive: true, tutorialActive: false, handler: "ModifierSelectUiHandler", cursor: 0, modeChain: [], messageText: null, onActionInput: true,
-    awaitingActionInput: true, fine: "shop", domMode: null, gameVersion: "1.12.0.11", ...money,
+    awaitingActionInput: true, fine: "shop", domMode: null, gameVersion: PINNED_GAME_VERSION, ...money,
   });
   const menu = (): MenuRead => ({
     readable: true, mode: UiMode.MODIFIER_SELECT, screen: "MODIFIER_SELECT", family: "modifier_select", cursor: "1:0", text: null, messagePending: false, extra: shopExtra,
@@ -540,7 +541,7 @@ test("a none reach commits a modal through its own button action, pressing nothi
   const read = (): ScreenRead => ({
     ready: true, settled: true, reason: "menu-open", mode: UiMode.LOGIN_FORM, screen: buttons.length ? "TITLE" : "LOGIN_FORM", phaseName: "LoginPhase", wave: null, turn: null,
     runLive: false, tutorialActive: false, handler: "LoginFormUiHandler", cursor: null, modeChain: [], messageText: null, onActionInput: false,
-    awaitingActionInput: false, fine: `login|${buttons.length}`, domMode: null, gameVersion: "1.12.0.11", ...money,
+    awaitingActionInput: false, fine: `login|${buttons.length}`, domMode: null, gameVersion: PINNED_GAME_VERSION, ...money,
   });
   const menu = (): MenuRead => ({
     readable: true, mode: UiMode.LOGIN_FORM, screen: buttons.length ? "TITLE" : "LOGIN_FORM", family: "modal", cursor: null, text: "Login", messagePending: false,
@@ -565,7 +566,7 @@ function messageChainTab(count: number, opts: { cycle: boolean } = { cycle: fals
       screen: onMessage() ? "MESSAGE" : "MODIFIER_SELECT",
       phaseName: onMessage() ? "LevelUpPhase" : "SelectModifierPhase", wave: 18, turn: 1, runLive: true, tutorialActive: false, handler: null,
       cursor: 0, modeChain: [], messageText: onMessage() ? text : null, onActionInput: onMessage(), awaitingActionInput: onMessage(),
-      fine: `chain|${shown}`, domMode: null, gameVersion: "1.12.0.11", ...money,
+      fine: `chain|${shown}`, domMode: null, gameVersion: PINNED_GAME_VERSION, ...money,
     };
   };
   const menu = (): MenuRead =>
@@ -632,7 +633,7 @@ function unmovedChainTab() {
   const read = (): ScreenRead => ({
     ready: true, settled: true, reason: "awaiting-action", mode: UiMode.MESSAGE, phaseName: "LevelUpPhase", wave: 30, turn: 2,
     runLive: true, tutorialActive: false, handler: "BattleMessageUiHandler", cursor: null, modeChain: [], messageText: "Bulbasaur grew to Lv. 24!",
-    onActionInput: true, awaitingActionInput: true, fine: "levelup", domMode: null, gameVersion: "1.12.0.11", screen: "MESSAGE", ...money,
+    onActionInput: true, awaitingActionInput: true, fine: "levelup", domMode: null, gameVersion: PINNED_GAME_VERSION, screen: "MESSAGE", ...money,
   });
   const menu: MenuRead = { readable: true, mode: UiMode.MESSAGE, screen: "MESSAGE", family: "acknowledge", cursor: null, text: "Bulbasaur grew to Lv. 24!", messagePending: false, extra: { awaitingActionInput: true }, options: [] };
   const { driver } = drive({
@@ -662,7 +663,7 @@ function guardedTab(over: Pick<FakeScreen, "lockHolder" | "frame" | "menu" | "on
   const read = (): ScreenRead => ({
     ready: true, settled: true, reason: "menu-open", mode, screen: over.screen ?? "COMMAND", phaseName: "CommandPhase", wave: 5, turn: 1, runLive: true, tutorialActive: false,
     handler: null, cursor: 0, modeChain: [], messageText: null, onActionInput: false, awaitingActionInput: false, fine: `guard|${mode}`,
-    domMode: null, gameVersion: "1.12.0.11", ...money,
+    domMode: null, gameVersion: PINNED_GAME_VERSION, ...money,
   });
   const { mode: _mode, screen: _screen, ...screen } = over;
   return drive({ ...screen, read });
@@ -779,7 +780,7 @@ test("status reports reachability, the transport's own facts and the game, and a
   assert.equal(ok.attached, true, "the transport's facts ride along");
   assert.equal(ok.screen, "COMMAND");
   assert.equal(ok.wave, 5);
-  assert.equal(ok.game_version, "1.12.0.11");
+  assert.equal(ok.game_version, PINNED_GAME_VERSION);
 
   const reach = { code: "unreachable" as const, rung: 3, line: "No browser has Coachemon connected." };
   const out = await drive({ unreachable: reach }).driver.status();
@@ -799,7 +800,7 @@ test("a press decided on a screen the game has since left refuses game_moved, pr
     read: () => ({
       ready: true, settled: true, reason: "menu-open", mode: UiMode.COMMAND, screen: "COMMAND", phaseName: "CommandPhase", wave: 5, turn: 1, runLive: true,
       tutorialActive: false, handler: null, cursor: 0, modeChain: [], messageText: null, onActionInput: false, awaitingActionInput: false,
-      fine: frames >= 2 ? "command|turn 2" : "command|turn 1", domMode: null, gameVersion: "1.12.0.11", ...money,
+      fine: frames >= 2 ? "command|turn 2" : "command|turn 1", domMode: null, gameVersion: PINNED_GAME_VERSION, ...money,
     }),
     frame: () => ++frames,
     onPress: b => { presses.push(b); },
@@ -819,7 +820,7 @@ function confirmTab() {
     read: () => ({
       ready: true, settled: true, reason: "menu-open", mode: answered === null ? UiMode.CONFIRM : UiMode.COMMAND, screen: answered === null ? "CONFIRM" : "COMMAND",
       phaseName: "CheckSwitchPhase", wave: 5, turn: 1, runLive: true, tutorialActive: false, handler: null, cursor, modeChain: [], messageText: null,
-      onActionInput: false, awaitingActionInput: false, fine: `confirm|${cursor}|${answered}`, domMode: null, gameVersion: "1.12.0.11", ...money,
+      onActionInput: false, awaitingActionInput: false, fine: `confirm|${cursor}|${answered}`, domMode: null, gameVersion: PINNED_GAME_VERSION, ...money,
     }),
     menu: () => ({
       readable: true, mode: UiMode.CONFIRM, screen: "CONFIRM", family: "option_select", cursor, text: null, messagePending: false,
@@ -857,7 +858,7 @@ test("auto-advance that finds the game moved on settles again and answers the me
       ready: true, settled: true, reason: onMessage() ? "awaiting-action" : "menu-open", mode: onMessage() ? UiMode.MESSAGE : UiMode.COMMAND,
       screen: onMessage() ? "MESSAGE" : "COMMAND", phaseName: "VictoryPhase", wave: 5, turn: 1, runLive: true, tutorialActive: false, handler: null,
       cursor: 0, modeChain: [], messageText: onMessage() ? texts[shown] : null, onActionInput: onMessage(), awaitingActionInput: onMessage(),
-      fine: `msg|${shown}`, domMode: null, gameVersion: "1.12.0.11", ...money,
+      fine: `msg|${shown}`, domMode: null, gameVersion: PINNED_GAME_VERSION, ...money,
     }),
     menu: () => (onMessage()
       ? { readable: true, mode: UiMode.MESSAGE, screen: "MESSAGE", family: "acknowledge", cursor: null, text: texts[shown], messagePending: false, extra: { awaitingActionInput: true }, options: [] }
@@ -895,7 +896,7 @@ test("a cursor walk that finds the game moved on settles again and walks on, not
     read: () => ({
       ready: true, settled: true, reason: "menu-open", mode: committed === null ? UiMode.TARGET_SELECT : UiMode.COMMAND, screen: committed === null ? "TARGET_SELECT" : "COMMAND",
       phaseName: "SelectTargetPhase", wave: 7, turn: 1, runLive: true, tutorialActive: false, handler: null, cursor, modeChain: [], messageText: null,
-      onActionInput: false, awaitingActionInput: false, fine: `target|${cursor}|${committed}|${tick}`, domMode: null, gameVersion: "1.12.0.11", ...money,
+      onActionInput: false, awaitingActionInput: false, fine: `target|${cursor}|${committed}|${tick}`, domMode: null, gameVersion: PINNED_GAME_VERSION, ...money,
     }),
     menu: () => ({ readable: true, mode: UiMode.TARGET_SELECT, screen: "TARGET_SELECT", family: "target_select", cursor, text: null, messagePending: false, options: targets, extra: { isMultipleTargets: false } }),
     onPress: b => {
@@ -928,7 +929,7 @@ test("a frame read that fails is not a frozen loop", async () => {
 const coachRead = (): ScreenRead => ({
   ready: true, settled: true, reason: "menu-open", mode: UiMode.COMMAND, screen: "COMMAND", phaseName: "CommandPhase", wave: 12, turn: 1,
   runLive: true, tutorialActive: false, handler: null, cursor: 0, modeChain: [], messageText: null, onActionInput: false,
-  awaitingActionInput: false, fine: "coach|0", domMode: null, gameVersion: "1.12.0.11", ...money,
+  awaitingActionInput: false, fine: "coach|0", domMode: null, gameVersion: PINNED_GAME_VERSION, ...money,
 });
 
 function coachTab(over: Pick<FakeScreen, "card" | "starters" | "session" | "extras" | "unreachable" | "lockHolder">) {
@@ -975,7 +976,7 @@ test("read_card needs no grant: it never claims the tab another driver holds", a
     read: (): ScreenRead => ({
       ready: true, settled: true, reason: "menu-open", mode: UiMode.COMMAND, screen: "COMMAND", phaseName: "CommandPhase", wave: 14, turn: 1,
       runLive: true, tutorialActive: false, handler: null, cursor: 0, modeChain: [], messageText: null, onActionInput: false,
-      awaitingActionInput: false, fine: "coach|0", domMode: null, gameVersion: "1.12.0.11", ...money,
+      awaitingActionInput: false, fine: "coach|0", domMode: null, gameVersion: PINNED_GAME_VERSION, ...money,
     }),
     menu: () => commandMenu(0),
   });
@@ -1290,7 +1291,7 @@ test("a server that doesn't set up the clone refuses it as an unknown kind, solv
 test("with solving on, the clone is set up as a background job that reports its progress and answers with the clone (#668)", async t => {
   const fake = fakeGame({});
   let finish = () => {};
-  const clone = { kind: "clone", gameVersion: "1.12.0.11", dir: "/home/.coachemon/clone/v1.12.0.11/game" };
+  const clone = { kind: "clone", gameVersion: PINNED_GAME_VERSION, dir: "/home/.coachemon/clone/v1.12.0.11/game" };
   const driver = new Driver(fake.game, tempHome(t), fake.clock, {
     [CLONE_JOB]: async (_args, { progress }) => {
       progress("setting up the clone for 1.12.0.11, step 1 of 4: fetching the game");
@@ -1364,7 +1365,7 @@ test("a solve job solves the fight on the tab from its wave-start save, relays i
   assert.deepEqual(input.save, DRAYTON.save, "a solve from the first turn starts from the wave-start save");
   assert.deepEqual(input.live, DRAYTON.live);
   assert.deepEqual(input.liveExport, DRAYTON.liveExport);
-  assert.equal(input.cloneVersion, "1.12.0.11");
+  assert.equal(input.cloneVersion, PINNED_GAME_VERSION);
   assert.deepEqual(await driver.pollJob(started.job), { job: started.job, kind: SOLVE_JOB, state: "running", progress: "searched 1,200 of 9,000 turns" });
   held.finish();
   await settledJobs();
