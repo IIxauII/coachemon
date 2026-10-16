@@ -60,10 +60,15 @@ the new pin to players.
 
 ## When the re-check fails
 
-- **A carried fight that doesn't replay**: the re-check ends by naming each one to record again on `<new>`. First rule
-  out the harness, as for any fight. Then, if `<new>` changed the fight itself, record another in its place (below). That covers a
-  move, an ability, an item, the AI, or what the migration rewrites. A `scene_mismatch` names the field the migration
-  and the load disagree on. A `known_turn_missed` or an `illegal_step` is the line playing out otherwise.
+- **A carried fight whose harness failed** (`harness_failed`): the harness leans on a game internal that `<new>`
+  changed, and a fight recorded on `<new>` would fail the same way. Fix the harness
+  (`src/solver/harness.test.ts.template`). On 1.12.1.1 the reload's sweep broke twice: `BattleScene.spriteSparkleHandler`
+  became `spriteTeraSparkleHandler`, and an icon animation handler it empties has no `remove`, which only a restore
+  reaches.
+- **A carried fight that played otherwise**: a `scene_mismatch` names the field the migration and the load disagree
+  on. A `known_turn_missed` or an `illegal_step` is the line playing out otherwise. The re-check ends by naming each
+  such fight. Once `<new>`'s change to the fight is understood (a move, an ability, an item, the AI, or what the
+  migration rewrites), record another fight in its place (below).
 - **A fact live recorded that the replay shows otherwise** (`known_turn_missed`) on a fight recorded on `<new>`: the
   harness drifted since the last stamp, through this repo's own harness or the clone's test framework. No line the
   oracle finds can be trusted until it is fixed.

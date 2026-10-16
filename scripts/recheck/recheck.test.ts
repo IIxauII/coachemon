@@ -147,6 +147,16 @@ test("a carried fight that doesn't replay ends the re-check naming it to record 
   );
 });
 
+test("a carried fight whose harness failed asks for no new recording: a new fight would fail the same way (#703)", async () => {
+  const broke = noAnswer({ code: "harness_failed", why: "TypeError: Cannot read properties of undefined (reading 'sprites')" });
+  const { deps } = fakes({ replays: { 180: broke, 188: broke, 190: broke } });
+
+  const run = await recheck("1.12.1.1", deps);
+
+  assert.equal(run.failed.length, 3);
+  assert.doesNotMatch(run.text, /in (its|their) place/);
+});
+
 test("a known fight that doesn't replay on its own version asks for no new recording: the harness drifted, not the game (#703)", async () => {
   const { deps } = fakes({ replays: { 188: noAnswer({ code: "known_turn_missed", misses: ["turn 1"] }) } });
 

@@ -21,6 +21,9 @@ const KNOWN_FIGHTS = [
 
 const FIXTURES = new URL("../../src/solver/fixtures/", import.meta.url);
 
+/** The replays a new version's own rules can fail. Any other failure would fail a fight recorded on it too. */
+const PLAYED_OTHERWISE: ReadonlySet<string> = new Set(["scene_mismatch", "illegal_step", "known_turn_missed"]);
+
 /** The names of the carried fights, by the game version each was recorded on. */
 function carriedFrom(fights: readonly { name: string; given: Given; carry: Carry }[]): Map<string, string[]> {
   const out = new Map<string, string[]>();
@@ -56,14 +59,14 @@ export async function recheck(
     say(`re-check: carrying the ${from} saves of ${andJoined(names)} to ${version}`);
   }
 
-  const unreplayed: typeof fights = [];
+  const playedOtherwise: typeof fights = [];
   for (const fight of fights) {
     const { name, given, script, carry } = fight;
     const result = await deps.replay(given, script, carry);
     if (result.kind === "no_answer") {
       failed.push(`${name} didn't replay`);
       say(`  ${name}: no answer: ${result.message}`);
-      unreplayed.push(fight);
+      if (PLAYED_OTHERWISE.has(result.reason.code)) playedOtherwise.push(fight);
       continue;
     }
     const { outcome, steps } = result.replay;
@@ -71,7 +74,7 @@ export async function recheck(
   }
   if (failed.length > 0) {
     say("re-check: the fork and chained-restore checks didn't run, since a known fight didn't replay");
-    for (const [from, names] of carriedFrom(unreplayed)) {
+    for (const [from, names] of carriedFrom(playedOtherwise)) {
       const how = `on ${version}: "Record a known fight again" in docs/runbooks/pin-bump.md.`;
       say(
         names.length === 1
