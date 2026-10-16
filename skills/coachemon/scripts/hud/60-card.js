@@ -1,6 +1,7 @@
 // Which card the panel shows, and what it says in plain text: this module detects the screen, builds the card and sets
 // the battle verdict, and the renderers decide nothing. Each card's own wording lives beside its model builder.
 import { note, stage } from "./01-meter.js";
+import { challengeOn } from "./03-calendar.js";
 import { learnState, rewardsScreen, biomeScreen, encounterScreen } from "./02-screens.js";
 import { partyProfile } from "./08-party.js";
 import { readTurn } from "./25-turn.js";
@@ -140,6 +141,7 @@ export const readCard = (s, account, { road = true, estimate = false } = {}) => 
   }
   if (!card) return null;
   card.wave = s.currentBattle?.waveIndex ?? null;
+  if (challengeOn(s, Challenges.MOVESET_RANDOMIZER) || challengeOn(s, Challenges.ABILITY_RANDOMIZER)) card.randomized = true;
   if (road && hasRoad(card)) stage("road", () => readRoad(s, card));
   return card;
 };

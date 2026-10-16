@@ -1585,7 +1585,10 @@ export const HUD: Area = {
         "INVERSE_BATTLE", "FLIP_STAT", "LIMITED_CATCH", "LIMITED_SUPPORT", "HARDCORE", "PASSIVES",
         "MOVESET_RANDOMIZER", "ABILITY_RANDOMIZER",
       ],
-      handledIn: ["skills/coachemon/scripts/hud/03-calendar.js", "skills/coachemon/scripts/hud/25-turn.js", "skills/coachemon/scripts/hud/51-starters.js"],
+      handledIn: [
+        "skills/coachemon/scripts/hud/03-calendar.js", "skills/coachemon/scripts/hud/25-turn.js", "skills/coachemon/scripts/hud/51-starters.js",
+        "skills/coachemon/scripts/hud/60-card.js",
+      ],
     },
     {
       at: "src/enums/mystery-encounter-type.ts#MysteryEncounterType",

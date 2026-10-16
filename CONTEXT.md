@@ -128,7 +128,7 @@ One named part of a **card**, drawn from one closed set of eight: `act`, what to
 
 ## Strip
 
-The line of a **card** that stays in front of the player whatever else they have open or shut: its **caption** — the kind's emoji and what the card is about — the first line of its act **group**, and, where the card has one, its **verdict**. The thing to do now is never a click away.
+The line of a **card** that stays in front of the player whatever else they have open or shut: its **caption** — the kind's emoji and what the card is about — the first line of its act **group**, and, where the card has one, its **verdict**. While a randomizer challenge is on, the strip also says the run is randomized, since a species' moves and abilities are then not what the coach knows of it. The thing to do now is never a click away.
 
 ## Drawer
 

@@ -34,6 +34,8 @@ rows font: clamp(10px, round(min(100vw, 177.78vh) / 240, 8px), 24px)/1.5 pkmnems
 head trainer 🎯 W15 · Youngster Charizard
 call Charizard Flamethrower → Paras · 1 hit
 dot #f8b050 round(calc(1 * clamp(10px, round(min(100vw, 177.78vh) / 240, 8px), 24px)), 1px) 50%
+== randomized strip
+head trainer 🎯 W15 · Youngster Charizard 🔀 randomized
 == drawer
 tabs Now | Foes | Plan
 open act
