@@ -1313,8 +1313,11 @@ test("solving answers with nothing able to reach the game (extension-distributio
   assert.deepEqual(await drive({ unreachable }, tempHome(t)).driver.solving(true), { status: "ok", solving: true });
 });
 
+// Gotcha: a known fight carries the game version it was recorded on, and solving refuses any version but the pin, so it
+// is read as recorded at the pin.
 const DRAYTON: { save: Record<string, unknown>; live: { wave: number; battleSeed: string }; liveExport: Record<string, unknown> } = JSON.parse(
   readFileSync(new URL("./solver/fixtures/drayton-w188.json", import.meta.url), "utf8"),
+  (key, value) => (key === "gameVersion" ? PINNED_GAME_VERSION : value),
 );
 
 /** The session read at Drayton's first decision, with `save` standing in for its wave-start save. */
