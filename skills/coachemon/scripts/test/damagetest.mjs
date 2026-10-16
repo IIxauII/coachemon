@@ -582,6 +582,25 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   phaseName = "CommandPhase";
 }
 
+// ---- Thousand Arrows hits a Levitate holder and a Flying type, where every other Ground move estimates 0
+{
+  phaseName = "MovePhase";
+  class NeutralDamageAgainstFlyingTypeAttr {}
+  const arrows = move(614, "Thousand Arrows", 4, 90, { attrs: [new NeutralDamageAgainstFlyingTypeAttr()] });
+  const quake = move(89, "Earthquake", 4, 100);
+  const atk = mon("a", { moves: [arrows, quake] });
+  const levitate = mon("levitate");
+  levitate.getAbility = () => ({ name: "Levitate", getAttrs: () => [] });
+  setup(atk, levitate);
+  assert.equal(moveOutcome(scene, atk, levitate, pmOf(arrows)).e, 1, "Thousand Arrows into Levitate");
+  assert.equal(moveOutcome(scene, atk, levitate, pmOf(quake)).e, 0, "Earthquake into Levitate");
+  const flyer = mon("flyer", { types: [2] });
+  setup(atk, flyer);
+  assert.equal(moveOutcome(scene, atk, flyer, pmOf(arrows)).e, 1, "Thousand Arrows into a Flying type");
+  assert.equal(moveOutcome(scene, atk, flyer, pmOf(quake)).e, 0, "Earthquake into a Flying type");
+  phaseName = "CommandPhase";
+}
+
 // ---- Drain is a share of the damage dealt, which Heal Block, Healing Charm and Liquid Ooze change (game-code.md §18)
 {
   const hitHeal = (healRatio, healStat = null) => abAttr("HitHealAttr", { healRatio, healStat });

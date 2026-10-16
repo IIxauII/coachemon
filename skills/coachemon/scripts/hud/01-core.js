@@ -47,8 +47,11 @@ export const defenderOf = x => (typeof x?.getTypes === "function"
 // Pass `mv` wherever the move is known: without it, Soundproof and the other flag immunities never apply.
 export const effectiveness = (type, defender, mv) => {
   const { types, abilities: ab } = defenderOf(defender);
-  if (ab.some(a => ABILITY_IMMUNE[a] === type || (mv && ABILITY_IMMUNE_FLAG[a] && moveHasFlag(mv, ABILITY_IMMUNE_FLAG[a])))) return 0;
+  const arrows = !!mv && hitsUngrounded(mv);
+  if (ab.some(a => (ABILITY_IMMUNE[a] === type && !(arrows && a === "Levitate"))
+    || (mv && ABILITY_IMMUNE_FLAG[a] && moveHasFlag(mv, ABILITY_IMMUNE_FLAG[a])))) return 0;
   let m = types.reduce((x, d) => x * vs(type, d), 1);
+  if (arrows && m === 0 && types.includes("Flying")) m = 1;
   if (ab.includes("Wonder Guard") && m < 2) return 0;
   if (ab.includes("Thick Fat") && (type === "Fire" || type === "Ice")) m /= 2;
   if (ab.includes("Heatproof") && type === "Fire") m /= 2;
@@ -91,6 +94,8 @@ export const TIER_NAMES = ["Common", "Great", "Ultra", "Rogue", "Master", "Luxur
 
 export const SPREAD_TARGETS = [MoveTarget.ALL_OTHERS, MoveTarget.ALL_NEAR_OTHERS, MoveTarget.ALL_NEAR_ENEMIES, MoveTarget.ALL_ENEMIES];
 export const hasAttr = (mv, name) => (mv.attrs || []).some(a => a.constructor.name === name);
+// Thousand Arrows: a Ground move that Levitate and a Flying type don't stop (game-code.md §1).
+export const hitsUngrounded = mv => hasAttr(mv, "NeutralDamageAgainstFlyingTypeAttr");
 
 export const CONTACT_PUNISH = ["Iron Barbs", "Rough Skin", "Static", "Flame Body", "Poison Point", "Effect Spore", "Cursed Body", "Gooey", "Tangling Hair", "Mummy"];
 

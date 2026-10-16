@@ -1,6 +1,6 @@
 // Everything about the live battle is the turn's (`25-turn.js`): this opens no sandbox and keeps no cache but
 // `turn.memo`. Against an approximate turn every answer still comes back, labelled `live: false`.
-import { ABILITY_IMMUNE, ABILITY_IMMUNE_FLAG, CONTACT_PUNISH, FIELD_TRAPS, MOVE_TRAPS, SPREAD_TARGETS, STATUS_FRAMES, TYPES, abilitiesOf, effectiveness, iconOf, moveHasFlag, squeezeDist, stage, stat, typesOf, vs } from "./01-core.js";
+import { ABILITY_IMMUNE, ABILITY_IMMUNE_FLAG, CONTACT_PUNISH, FIELD_TRAPS, MOVE_TRAPS, SPREAD_TARGETS, STATUS_FRAMES, TYPES, abilitiesOf, effectiveness, hitsUngrounded, iconOf, moveHasFlag, squeezeDist, stage, stat, typesOf, vs } from "./01-core.js";
 import { moveTraits } from "./07-move-traits.js";
 import { koChanceAt, koCurve, koTurn, koTurns, rawMax, useOf } from "./10-damage.js";
 
@@ -614,7 +614,7 @@ const bites = (a, foe, move) => {
   const mv = move?.pm?.getMove?.();
   if (!mv) return false;
   const type = move.type, phys = move.cat === "physical";
-  return ABILITY_IMMUNE[a] === type
+  return (ABILITY_IMMUNE[a] === type && !(a === "Levitate" && hitsUngrounded(mv)))
     || (ABILITY_IMMUNE_FLAG[a] && moveHasFlag(mv, ABILITY_IMMUNE_FLAG[a]))
     || (a === "Thick Fat" && (type === "Fire" || type === "Ice")) || (a === "Heatproof" && type === "Fire")
     || (a === "Fluffy" && (phys || type === "Fire")) || (a === "Intimidate" && phys && !foe.isOnField?.())
