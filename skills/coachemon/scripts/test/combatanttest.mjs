@@ -8,8 +8,8 @@ const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost",
 const ABILITIES = [];
 // Disguise is one of the abilities that doesn't work on a fusion, and carries the attr the game refuses it by.
 const NO_FUSION = [{ constructor: { name: "NoFusionAbilityAbAttr" } }];
-for (const [id, name, attrs = []] of [[5, "Sturdy"], [8, "Sand Veil"], [17, "Immunity"], [26, "Levitate"],
-  [39, "Rough Skin"], [61, "Shed Skin"], [110, "Inner Focus"], [136, "Multiscale"],
+for (const [id, name, attrs = []] of [[5, "Sturdy"], [8, "Sand Veil"], [17, "Immunity"], [22, "Intimidate"],
+  [26, "Levitate"], [36, "Trace"], [39, "Rough Skin"], [61, "Shed Skin"], [110, "Inner Focus"], [136, "Multiscale"],
   [209, "Disguise", NO_FUSION]]) ABILITIES[id] = { name, attrs };
 const MOVES = [];
 const move = (id, name, type, power, { pp = 10, cat = 0, acc = 100 } = {}) =>
@@ -391,6 +391,15 @@ const shown = x => x.map(o => `${o.name} ×${o.e} ${o.max}${o.pKo ? ` pKo ${o.pK
   const over = combatantOf({ mon, ability: "Sturdy" });
   assert.equal(over.hasAbilityWithAttr("PreDefendFullHpEndureAbAttr"), true, "...unless the name brings the attr itself");
   assert.equal(combatantOf({ mon, passive: "Sturdy" }).hasAbilityWithAttr("PreDefendFullHpEndureAbAttr"), true, "a passive Sturdy brings it too");
+}
+
+// ---- A passive Trace is the member's own, not the passive it copied on the field
+{
+  const snorlax = () => live("Snorlax", SNORLAX, 10, [53, 28, 19, 19, 28, 12], { ability: "Immunity", passive: "Intimidate" });
+  const traced = snorlax();
+  traced.summonData.passiveAbility = ABILITIES.findIndex(a => a?.name === "Intimidate");
+  assert.equal(combatantOf({ mon: traced }).getPassiveAbility().name, "Trace", "the copy stays on the field");
+  assert.equal(combatantOf({ mon: snorlax() }).getPassiveAbility().name, "Intimidate", "an untraced passive is the member's own");
 }
 
 // ---- Stat stages are the ones asked for, and a member is adapted off the field, not on it

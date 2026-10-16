@@ -225,9 +225,11 @@ export const combatantOf = (spec = {}) => {
           : abilityNameOf(firstAbility(form));
   // The passive stays the base half's, fused or not (game-code.md §24), but it is the *species*' own, so an evolved
   // member brings the evolved species' passive rather than the one it has now (game-code.md §23).
+  // `getPassiveAbility` answers what a passive Trace copied on the field (§24).
+  const ownPassive = () => (mon.summonData?.passiveAbility ? AbilityId.TRACE : mon.getPassiveAbility());
   const passive = spec.passive !== undefined ? abilityNameOf(spec.passive)
     : mon && tryDo(() => mon.hasPassive(), false)
-      ? abilityNameOf(evolved ? tryDo(() => species.getPassiveAbility(formIndex)) : tryDo(() => mon.getPassiveAbility()))
+      ? abilityNameOf(evolved ? tryDo(() => species.getPassiveAbility(formIndex)) : tryDo(ownPassive))
       : null;
   const given = statRowOf(spec.stats);
   // A live member's own call folds in its vitamins, its fusion and the Flip Stat challenge (game-code.md §20) — all

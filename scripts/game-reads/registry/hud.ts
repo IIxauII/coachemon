@@ -1038,6 +1038,14 @@ export const HUD: Area = {
       note: "our defender/combatant spec and roster rows (ability names)",
     },
     {
+      name: "passiveAbility",
+      kind: "field",
+      at: [
+        "src/data/pokemon-data.ts#SerializedPokemonSummonData.passiveAbility",
+        "src/data/pokemon-data.ts#PokemonSummonData.passiveAbility",
+      ],
+    },
+    {
       name: "pauseEvolutions",
       kind: "field",
       at: [
