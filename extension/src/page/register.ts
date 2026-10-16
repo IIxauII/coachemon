@@ -9,6 +9,7 @@ import { fine } from "../../../src/page/fine.ts";
 import { locate } from "../../../src/page/locate.ts";
 import { COMMAND_HANDLERS } from "../../../src/page/handlers.ts";
 import { PAGE_MODES } from "../../../src/page/modes.ts";
+import { starter } from "../../../src/page/starter.ts";
 import { STORE_COMMANDS, type CommandSpec } from "../../../src/protocol/commands.ts";
 
 export type Handler = { kind: CommandSpec["kind"]; run: (L: any, args: any) => unknown };
@@ -74,7 +75,7 @@ export function startPage(d: PageDeps): PageInstance {
     const name = cmd.name;
     try {
       // The extension hands the generated mode enums in by importing them; the CDP link inlines them as JSON (#164).
-      const run = () => dispatch(locate, fine, disc, handler.run, name, handler.kind, PAGE_MODES, args);
+      const run = () => dispatch(locate, fine, disc, starter, handler.run, name, handler.kind, PAGE_MODES, args);
       // Read at each command: the panel's meter comes and goes with the HUD (#499).
       const meter = d.global.__coachMeter;
       const result = typeof meter?.driver === "function" ? meter.driver(run) : run();
