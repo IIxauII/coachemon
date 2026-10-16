@@ -837,7 +837,7 @@ The HUD's `predictSwitches` (`20-enemy-ai.js`) follows this rule. The pieces:
 | Leftovers / Shell Bell | TurnEndPhase queued heal `toDmgValue(maxHp/16)·stack` (§21) / `MoveEffectPhase.end` (`move-effect-phase.ts:896`) `toDmgValue(totalDamageDealt·stack/8)` (`modifier.ts:1744`) | no | held item |
 | Toxic / Flame Orb | TurnEndPhase `TurnStatusEffectModifier.apply` → `trySetStatus` (`modifier.ts:1712`); chip starts next turn (§21) | no | held item + `effect` |
 | Boss bar break | `EnemyPokemon.handleBossSegmentCleared` (`pokemon.ts:7211`), wild bosses only: +1 to a stat below +6 by `weightedPick` on `getStat(s,false)` (`:7226`); +2 on reaching index 0 with ≥3 bars, index 1 with ≥5 | global | expectation, on its defences (our hits) and Atk/SpA (its hits) |
-| Grip Claw | `MoveEffectPhase` after each hit of any attack move (`move-effect-phase.ts:815`): `randSeedFloat() <= 0.1·stack` (`modifier.ts:3306`), then `HeldItemTransferModifier.apply` (`:3187`) picks one transferable item | global + battle | expectation: steals per landed hit |
+| Grip Claw | `MoveEffectPhase` after each hit of any attack move (`move-effect-phase.ts:815`), holder not fainted (`HeldItemTransferModifier.shouldApply`, `modifier.ts:3176-3178`): `randSeedFloat() <= 0.1·stack` (`modifier.ts:3306`), then `HeldItemTransferModifier.apply` (`:3187`) picks one transferable item. A hit whose recoil (`move-effect-phase.ts:581`) or whose target's Rough Skin / Iron Barbs (`:805`) felled the holder rolls nothing | global + battle | expectation: steals per landed hit |
 | Mini Black Hole | TurnEndPhase, holder not fainted (`HeldItemTransferModifier.shouldApply`, `modifier.ts:3176-3178`, Grip Claw's too): opponent picked, then `stack` items picked, all `randBattleSeedInt` (`:3187`) | battle | expectation: steals per turn |
 | Sticky Hold | `tryTransferHeldItemModifier` (`src/battle-scene.ts:2514-2522`): `BlockItemTheftAbAttr` on the holder cancels a cross-side transfer | no | ability attr |
 | Sleep / freeze / paralysis | `doSetStatus` (`pokemon.ts:5192`): sleep counter 2 (⅓) or 3 (⅔), freeze 3 (`:5235`). `MovePhase.checkSleep` (`move-phase.ts:317`) ticks it (Early Bird −1 more), wakes at ≤0 → 1 or 2 turns lost; `checkFreeze` (`:361`) ticks, thaws on `randBattleSeedInt(4)===0` or ≤0 → lost with ¾, then 9/16, never a third; `checkPara` (`:518`) `randBattleSeedInt(8)===0`; Speed `>>1` (`pokemon.ts:1555`) | battle | expectation |
@@ -1121,7 +1121,9 @@ biome's `biomeLinks` plus any the active timed event adds: a plain id stays, `[i
 `{label: getBiomeName(id), handler}` per link and `blockCancelButton` (lines 58–75), else `randSeedItem` picks. The
 forced list is `getDailyForcedBiomes` (`src/data/daily-seed/daily-run.ts:374`), the event's links
 `getEventBiomeLinks` (`src/timed-event-manager.ts:376`; no event at this tag sets any). The handler closes over the id: a reader sees only the labels. No biome links to END; it is
-reached only by the forced rule.
+reached only by the forced rule. Laboratory links to Construction Site and Island, both plain
+(`src/data/balance/biomes/laboratory.ts:103`): a Map offers both, and without one it is a coin
+flip. Island's only other way in is Beach's `[ISLAND, 2]` (`beach.ts:114`), and it leads on only to Sea (`island.ts:113`).
 
 **The tables.** `allBiomes` (`src/data/data-lists.ts:17`, a `Map<BiomeId, Biome>` filled by `initBiomes`,
 `src/init/init-biomes.ts:79`; shape `src/@types/biomes.ts:34`: `biomeId, pokemonPool, trainerPool, trainerChance,
@@ -1798,7 +1800,7 @@ has a move of a type booster's type. Per stack, and the max (`src/modifier/modif
 | Toxic / Flame Orb (`TurnStatusEffectModifier`, `:1672`) | badly poisons / burns the holder; either blocks the other | 1 |
 | Mystical Rock (`FieldEffectModifier`, `:1995`) | the holder's weather / terrain +2 turns | 2 |
 | Soul Dew (`PokemonNatureWeightModifier`, `:2639`) | a non-neutral nature multiplier 0.1 further from 1 — both ways | 10 |
-| Grip Claw (`ContactHeldItemTransferChanceModifier`, `modifier.ts:3275`) | 10 % to steal an item after **any** attack (`src/phases/move-effect-phase.ts:814`), rolled with `randSeedFloat` on the global stream (`src/modifier/modifier.ts:3306`) | 5 |
+| Grip Claw (`ContactHeldItemTransferChanceModifier`, `modifier.ts:3275`) | 10 % to steal an item after **any** attack the holder survives (`src/phases/move-effect-phase.ts:814`, §8), rolled with `randSeedFloat` on the global stream (`src/modifier/modifier.ts:3306`) | 5 |
 | Wide Lens (`PokemonMoveAccuracyBoosterModifier`, `:2653`) | +5 accuracy | 3 |
 | Multi Lens (`PokemonMultiHitModifier`, `:2705`) | +1 hit; first hit ×(1 − ¼·stacks), extras ×¼ — **the same total damage** | 2 |
 | Attack type booster (`AttackTypeBoosterModifier`, `:1415`) | power ×(1 + 0.2·stacks) | 99 |
@@ -1993,9 +1995,11 @@ member whose `getLearnableLevelMoves()` is empty. `RememberMoveModifier.apply` (
 `src/field/learnsets.ts:246`) cut to levels ≤ the mon's (`:195`), plus unlocked egg moves when `metBiome === -1`
 outside Daily, Fresh Start and Moveset Randomizer (`src/field/pokemon.ts:1936-1939`), plus every used TM (`:1944`),
 minus known moves
-(`:1949`), sorted by source. The mushroom is a GREAT reward weighted `min(1 + floor(w / 30), 4)` on
-`w = getWaveForDifficulty(wave, true)` (`src/modifier/init-modifier-pools.ts:293`), a shop item from wave 81 (`src/modifier/modifier-type.ts:2658`, rows cut
-at `ceil((wave + 10) / 30)`), and a guaranteed Mysterious Challengers / Weird Dream reward. Taking it costs nothing and
+(`:1949`), sorted by source. The mushroom is a GREAT reward weighted 0 while no member of `getPlayerParty()`,
+fainted ones included, has a `getLearnableLevelMoves()` entry, else `min(1 + floor(w / 30), 4)` on
+`w = getWaveForDifficulty(wave, true)` (`src/modifier/init-modifier-pools.ts:293-303`). Only that roll is gated: it is
+also a shop item from wave 81 (`src/modifier/modifier-type.ts:2656`, rows cut at `ceil((wave + 10) / 30)`), and a
+guaranteed Mysterious Challengers / Weird Dream reward. Taking it costs nothing and
 re-queues a copy of the reward phase (`src/phases/select-modifier-phase.ts:276`). The rewards card gives it to the
 member whose relearn list holds the biggest learn-card upgrade.
 
@@ -2145,8 +2149,8 @@ lockModifierTiers ? modifierTiers : undefined, customModifierSettings)`.
   base-stat and temp-stat boosters, species items, TMs, evolution and form-change items, mints, Tera Shards, berries
   (their draws: `:1328`–`1985`). A generator with no candidates returns before drawing and a one-item pick draws
   nothing, so the draw count depends on the party. The weight functions (`src/modifier/init-modifier-pools.ts`) don't
-  draw or write; they read party HP, PP, status, held items, abilities, mode, wave and ball counts, and the vouchers'
-  read `rerollCount` (`:333`, `:604`, `:624`). It writes the module-private `modifierPoolThresholds` /
+  draw or write; they read party HP, PP, status, held items, abilities, relearn lists (`getLearnableLevelMoves`,
+  `:297`), mode, wave and ball counts, and the vouchers' read `rerollCount` (`:333`, `:604`, `:624`). It writes the module-private `modifierPoolThresholds` /
   `ignoredPoolIndexes` (`src/modifier/modifier-type.ts:2339-2340`, `:2444-2445`) and the exported `itemPoolChecks` (`:2359`,
   no reader in `src/`).
 - `getPlayerModifierTypeOptions` (`:2503`) — draws; writes nothing but its result. Custom settings go first:
@@ -2688,7 +2692,9 @@ Ability (`getAbility`, `:2201-2229`): the **other half's** at its `fusionAbility
 0 / 1 / 2 hidden, then `SPECIES_ABILITY_MODIFY`, `src/data/pokemon-species.ts:196-210`; the Ability Randomizer's swaps in a
 seeded pick outside starter select and the Pokédex, through a seed fork, `src/data/challenge.ts:1645-1681`), with no fallback to ability 1; `canApplyAbility` turns off one
 carrying `NoFusionAbilityAbAttr` (`pokemon.ts:2376-2383`: Disguise, Zen Mode, Schooling, Stance Change, …). The passive
-stays the base's (`:2241-2262`). Learnsets merge both halves (`src/field/learnsets.ts:223-252`), TMs are the union, then
+stays the base's (`:2241-2262`). `getPassiveAbility` answers `summonData.passiveAbility` first (`:2242`), and only a
+passive Trace writes one: the foe's passive, else its ability (`src/data/abilities/ab-attrs.ts:2709`,
+`:2718`). Every other ability swap writes `summonData.ability`, which `getAbility(true)` skips. Learnsets merge both halves (`src/field/learnsets.ts:223-252`), TMs are the union, then
 the Moveset Randomizer's `PLAYER_TM_COMPATIBILITY` (`pokemon.ts:6080-6100`), egg moves the base's only (`:1904-1918`).
 Evolution checks the base's line first, then the other half's, one at a time, each list after the Moveset Randomizer's
 `MODIFY_EVOLUTIONS` (`:3011-3038`). Shiny if either half, luck summed (`:1735-1737`, `:1816-1818`).
@@ -2931,7 +2937,7 @@ Read at the pinned tag (`v1.12.1.1`), for the `extras` read (`src/page/extras.ts
   `RND.state()` reads it as a `"!rnd,…"` string, and given that string sets it.
 - `Battle.battleSeedState` (`battle.ts:82`; private to TypeScript only), the battle stream's carry-over (§11,
   `battle.ts:486-504`). **It is not always null at a command.** `incrementTurn` clears it (`:177`), but `TurnEndPhase`
-  draws from the battle stream after that: Grip Claw (`src/modifier/modifier.ts:3194`, `:3211`) and Moody
+  draws from the battle stream after that: Mini Black Hole (`src/modifier/modifier.ts:3194`, `:3211`) and Moody
   (`src/data/abilities/ab-attrs.ts:4332`, `:4341`). So it can be set at the next `CommandPhase`.
 - Every arena tag that is not a `SerializableArenaTag`, Safeguard among them (§28). The live tags are `Arena.tags`
   (`src/field/arena.ts:67`), each with a `tagType`, an `ArenaTagType` string, and a `side`, an `ArenaTagSide`
