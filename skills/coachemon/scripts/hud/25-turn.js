@@ -165,7 +165,7 @@ const sceneSpeedTie = (env, facts, a, b) => {
   } catch { return null; }
 };
 
-// @mirrors TYPE_STATUS_IMMUNE
+// @mirrors type-status-immune
 const TYPE_STATUS_IMMUNE = {
   [StatusEffect.POISON]: ["Poison", "Steel"], [StatusEffect.TOXIC]: ["Poison", "Steel"],
   [StatusEffect.PARALYSIS]: ["Electric"], [StatusEffect.FREEZE]: ["Ice"], [StatusEffect.BURN]: ["Fire"],

@@ -15,32 +15,32 @@ export const isA = (t, name) => {
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 const STAT_SHORT = ["HP", "Atk", "Def", "SpA", "SpD", "Spe"];
 // The game's own pool weights for Mystical Rock and the status orbs (game-code.md §15).
-// @mirrors FIELD_MOVES
+// @mirrors field-moves
 const FIELD_MOVES = new Set([MoveId.SUNNY_DAY, MoveId.RAIN_DANCE, MoveId.SANDSTORM, MoveId.SNOWSCAPE, MoveId.HAIL, MoveId.CHILLY_RECEPTION,
   MoveId.ELECTRIC_TERRAIN, MoveId.PSYCHIC_TERRAIN, MoveId.GRASSY_TERRAIN, MoveId.MISTY_TERRAIN]);
-// @mirrors FIELD_ABILITIES
+// @mirrors field-abilities
 const FIELD_ABILITIES = new Set(["Drought", "Orichalcum Pulse", "Drizzle", "Sand Stream", "Sand Spit", "Snow Warning", "Electric Surge",
   "Hadron Engine", "Psychic Surge", "Grassy Surge", "Seed Sower", "Misty Surge"]);
-// @mirrors ORB
+// @mirrors orb
 const ORB = {
   TOXIC_ORB: { specific: ["Toxic Boost", "Poison Heal"], opposite: ["Flare Boost"], immuneTypes: ["Poison", "Steel"],
     immuneAbilities: ["Immunity", "Pastel Veil", "Comatose", "Purifying Salt"] },
   FLAME_ORB: { specific: ["Flare Boost"], opposite: ["Toxic Boost", "Poison Heal"], immuneTypes: ["Fire"],
     immuneAbilities: ["Water Veil", "Water Bubble", "Thermal Exchange", "Comatose", "Purifying Salt"] },
 };
-// @mirrors STATUS_ABILITIES
+// @mirrors status-abilities
 const STATUS_ABILITIES = ["Quick Feet", "Guts", "Marvel Scale", "Magic Guard"];
 // `[species, stats it doubles]` (game-code.md §15).
-// @mirrors SPECIES_BOOSTERS
+// @mirrors species-boosters
 const SPECIES_BOOSTERS = {
   LIGHT_BALL: [[SpeciesId.PIKACHU], [Stat.ATK, Stat.SPATK]], THICK_CLUB: [[SpeciesId.CUBONE, SpeciesId.MAROWAK, SpeciesId.ALOLA_MAROWAK], [Stat.ATK]],
   METAL_POWDER: [[SpeciesId.DITTO], [Stat.DEF]], QUICK_POWDER: [[SpeciesId.DITTO], [Stat.SPD]],
   DEEP_SEA_SCALE: [[SpeciesId.CLAMPERL], [Stat.SPDEF]], DEEP_SEA_TOOTH: [[SpeciesId.CLAMPERL], [Stat.SPATK]],
 };
-// @mirrors LEEK_SPECIES
+// @mirrors leek-species
 const LEEK_SPECIES = new Set([SpeciesId.FARFETCHD, SpeciesId.SIRFETCHD, SpeciesId.GALAR_FARFETCHD]);
 // Indexed by `BerryType`.
-// @mirrors BERRY_NAMES
+// @mirrors berry-names
 const BERRY_NAMES = ["Sitrus", "Lum", "Enigma", "Liechi", "Ganlon", "Petaya", "Apicot", "Salac", "Lansat", "Starf", "Leppa"];
 
 const movesOf = p => (p.moveset ?? []).filter(Boolean).map(pm => tryDo(() => pm.getMove())).filter(Boolean);
@@ -68,7 +68,7 @@ const natureValue = (p, n) => {
 export const rewardContext = (s, alive, { bossNext = false, gauntlet = false, double = 0, run = null } = {}) => {
   const wave = s.currentBattle?.waveIndex ?? 0;
   // game-less-backed
-  // @mirrors capOf
+  // @mirrors cap-of
   const capOf = () => {
     const w = Math.ceil((wave || 1) / 10) * 10;
     // The difficulty wave `getMaxExpLevel` caps by (game-code.md §15).
@@ -110,7 +110,7 @@ const stackText = (ctx, p, id, max) => {
 // By held-item id: `(p, ctx, t)` → `[value, reason]`, or `false` where it does nothing for `p` — never the `0` a
 // bare `attacks(p).length &&` would hand back.
 // @only tests: HELD
-// @mirrors HELD
+// @mirrors held
 export const HELD = {
   LEFTOVERS: (p, c) => [8 + 10 * c.bulkShare(p), `${p.name} · 1/16 HP a turn${stackText(c, p, "LEFTOVERS", 4)}`],
   SHELL_BELL: (p, c) => attacks(p).length > 0 && [6 + 8 * (p === c.carry ? 1 : 0.6), `${p.name} · heals 1/8 of damage dealt${stackText(c, p, "SHELL_BELL", 4)}`],

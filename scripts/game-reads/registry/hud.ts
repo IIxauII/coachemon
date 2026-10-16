@@ -1549,33 +1549,33 @@ export const HUD: Area = {
   ],
   mirrors: [
     {
-      ours: "skills/coachemon/scripts/hud/01-core.js#ABILITY_IMMUNE",
+      ours: "skills/coachemon/scripts/hud/01-core.js#ability-immune",
       of: [
         "src/data/abilities/init-abilities.ts#initAbilities",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/01-core.js#ABILITY_IMMUNE_FLAG",
+      ours: "skills/coachemon/scripts/hud/01-core.js#ability-immune-flag",
       of: [
         "src/data/abilities/init-abilities.ts#initAbilities",
       ],
     },
-    { ours: "skills/coachemon/scripts/hud/01-core.js#CHART", of: ["src/data/type.ts#getTypeDamageMultiplier"] },
-    { ours: "skills/coachemon/scripts/hud/01-core.js#NATURES", of: ["src/enums/nature.ts#Nature"] },
+    { ours: "skills/coachemon/scripts/hud/01-core.js#chart", of: ["src/data/type.ts#getTypeDamageMultiplier"] },
+    { ours: "skills/coachemon/scripts/hud/01-core.js#natures", of: ["src/enums/nature.ts#Nature"] },
     {
-      ours: "skills/coachemon/scripts/hud/01-core.js#NATURE_STATS",
+      ours: "skills/coachemon/scripts/hud/01-core.js#nature-stats",
       of: [
         "src/data/nature.ts#getNatureStatMultiplier",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/01-core.js#NATURE_STAT_IDS",
+      ours: "skills/coachemon/scripts/hud/01-core.js#nature-stat-ids",
       of: [
         "src/data/nature.ts#getNatureStatMultiplier",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/01-core.js#QUEUE_METHODS",
+      ours: "skills/coachemon/scripts/hud/01-core.js#queue-methods",
       of: [
         "src/phase-manager.ts#PhaseManager.pushPhase",
         "src/phase-manager.ts#PhaseManager.unshiftPhase",
@@ -1587,58 +1587,58 @@ export const HUD: Area = {
         "src/phase-manager.ts#PhaseManager.queueFaintPhase",
       ],
     },
-    { ours: "skills/coachemon/scripts/hud/01-core.js#STATUS_FRAMES", of: ["src/enums/status-effect.ts#StatusEffect"] },
-    { ours: "skills/coachemon/scripts/hud/01-core.js#STAT_NAMES", of: ["src/enums/stat.ts#Stat"] },
-    { ours: "skills/coachemon/scripts/hud/01-core.js#TIER_NAMES", of: ["src/enums/modifier-tier.ts#ModifierTier"] },
-    { ours: "skills/coachemon/scripts/hud/01-core.js#TYPES", of: ["src/enums/pokemon-type.ts#PokemonType"] },
+    { ours: "skills/coachemon/scripts/hud/01-core.js#status-frames", of: ["src/enums/status-effect.ts#StatusEffect"] },
+    { ours: "skills/coachemon/scripts/hud/01-core.js#stat-names", of: ["src/enums/stat.ts#Stat"] },
+    { ours: "skills/coachemon/scripts/hud/01-core.js#tier-names", of: ["src/enums/modifier-tier.ts#ModifierTier"] },
+    { ours: "skills/coachemon/scripts/hud/01-core.js#types", of: ["src/enums/pokemon-type.ts#PokemonType"] },
     {
-      ours: "skills/coachemon/scripts/hud/03-calendar.js#GRUNT_WAVES",
+      ours: "skills/coachemon/scripts/hud/03-calendar.js#grunt-waves",
       of: [
         "src/enums/fixed-boss-waves.ts#ClassicFixedBossWaves",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/03-calendar.js#RIVAL_WAVES",
+      ours: "skills/coachemon/scripts/hud/03-calendar.js#rival-waves",
       of: [
         "src/enums/fixed-boss-waves.ts#ClassicFixedBossWaves",
       ],
     },
-    { ours: "skills/coachemon/scripts/hud/03-calendar.js#gymRule", of: ["src/game-mode.ts#GameMode.isWaveTrainer"] },
+    { ours: "skills/coachemon/scripts/hud/03-calendar.js#gym-rule", of: ["src/game-mode.ts#GameMode.isWaveTrainer"] },
     {
-      ours: "skills/coachemon/scripts/hud/03-calendar.js#healsAtAll",
+      ours: "skills/coachemon/scripts/hud/03-calendar.js#heals-at-all",
       of: [
         "src/data/challenge.ts#LimitedSupportChallenge.applyPartyHeal",
       ],
     },
-    { ours: "skills/coachemon/scripts/hud/03-calendar.js#isBossWave", of: ["src/game-mode.ts#GameMode.isBoss"] },
-    { ours: "skills/coachemon/scripts/hud/03-calendar.js#isFinalWave", of: ["src/game-mode.ts#GameMode.isWaveFinal"] },
+    { ours: "skills/coachemon/scripts/hud/03-calendar.js#is-boss-wave", of: ["src/game-mode.ts#GameMode.isBoss"] },
+    { ours: "skills/coachemon/scripts/hud/03-calendar.js#is-final-wave", of: ["src/game-mode.ts#GameMode.isWaveFinal"] },
     {
-      ours: "skills/coachemon/scripts/hud/03-calendar.js#nextHeal",
+      ours: "skills/coachemon/scripts/hud/03-calendar.js#next-heal",
       of: [
         "src/phases/select-biome-phase.ts#SelectBiomePhase.setNextBiomeAndEnd",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/03-calendar.js#poolAnchorWave",
+      ours: "skills/coachemon/scripts/hud/03-calendar.js#pool-anchor-wave",
       of: [
         "src/battle-scene.ts#BattleScene.doPostBattleCleanup",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/03-calendar.js#shopAfter",
+      ours: "skills/coachemon/scripts/hud/03-calendar.js#shop-after",
       of: [
         "src/phases/victory-phase.ts#VictoryPhase.start",
         "src/phases/select-biome-phase.ts#SelectBiomePhase.setNextBiomeAndEnd",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/03-calendar.js#shopsAtAll",
+      ours: "skills/coachemon/scripts/hud/03-calendar.js#shops-at-all",
       of: [
         "src/data/challenge.ts#LimitedSupportChallenge.applyShop",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/04-game-tables.js#REWARD_FNS",
+      ours: "skills/coachemon/scripts/hud/04-game-tables.js#reward-fns",
       of: [
         "src/modifier/modifier-type.ts#regenerateModifierPoolThresholds",
         "src/modifier/modifier-type.ts#getPlayerModifierTypeOptions",
@@ -1673,14 +1673,14 @@ export const HUD: Area = {
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/07-move-traits.js#COMMAND_CONDITION",
+      ours: "skills/coachemon/scripts/hud/07-move-traits.js#command-condition",
       of: [
         "src/data/moves/move.ts#initMoves",
         "src/data/moves/move-condition.ts#failIfTargetNotAttackingCondition",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/07-move-traits.js#NO_REPEAT_KEY",
+      ours: "skills/coachemon/scripts/hud/07-move-traits.js#no-repeat-key",
       of: [
         "src/data/moves/move-condition.ts#consecutiveUseRestriction",
       ],
@@ -1692,20 +1692,20 @@ export const HUD: Area = {
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/08-party.js#FIXED_DAMAGE_ATTRS",
+      ours: "skills/coachemon/scripts/hud/08-party.js#fixed-damage-attrs",
       of: [
         "src/data/moves/move.ts#FixedDamageAttr",
         "src/field/pokemon.ts#Pokemon.getAttackDamage",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/09-combatant.js#ATTRS_BY_ABILITY",
+      ours: "skills/coachemon/scripts/hud/09-combatant.js#attrs-by-ability",
       of: [
         "src/data/abilities/init-abilities.ts#initAbilities",
         "src/data/abilities/ab-attrs.ts#PreDefendFullHpEndureAbAttr",
       ],
     },
-    { ours: "skills/coachemon/scripts/hud/09-combatant.js#NEUTRAL_NATURE", of: ["src/enums/nature.ts#Nature.HARDY"] },
+    { ours: "skills/coachemon/scripts/hud/09-combatant.js#neutral-nature", of: ["src/enums/nature.ts#Nature.HARDY"] },
     {
       ours: "skills/coachemon/scripts/hud/09-projection.js#exp-multipliers",
       of: [
@@ -1714,57 +1714,57 @@ export const HUD: Area = {
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/09-projection.js#levelCapAt",
+      ours: "skills/coachemon/scripts/hud/09-projection.js#level-cap-at",
       of: [
         "src/battle-scene.ts#BattleScene.getMaxExpLevel",
         "src/game-mode.ts#GameMode.getWaveForDifficulty",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/10-damage.js#ATE",
+      ours: "skills/coachemon/scripts/hud/10-damage.js#ate",
       of: [
         "src/data/abilities/init-abilities.ts#initAbilities",
       ],
     },
-    { ours: "skills/coachemon/scripts/hud/10-damage.js#ORB_SPARED", of: ["src/field/pokemon.ts#Pokemon.canSetStatus"] },
+    { ours: "skills/coachemon/scripts/hud/10-damage.js#orb-spared", of: ["src/field/pokemon.ts#Pokemon.canSetStatus"] },
     {
-      ours: "skills/coachemon/scripts/hud/10-damage.js#PRESENT",
+      ours: "skills/coachemon/scripts/hud/10-damage.js#present",
       of: [
         "src/data/moves/move.ts#PresentPowerAttr.apply",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/10-damage.js#PRESENT_HEAL",
+      ours: "skills/coachemon/scripts/hud/10-damage.js#present-heal",
       of: [
         "src/data/moves/move.ts#PresentPowerAttr.apply",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/10-damage.js#RESULT_MULT",
+      ours: "skills/coachemon/scripts/hud/10-damage.js#result-mult",
       of: [
         "src/field/pokemon.ts#Pokemon.getAttackDamage",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/10-damage.js#SALT_DOUBLED",
+      ours: "skills/coachemon/scripts/hud/10-damage.js#salt-doubled",
       of: [
         "src/data/battler-tags.ts#SaltCuredTag.getDamageHpRatio",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/10-damage.js#WEATHER_SPARED",
+      ours: "skills/coachemon/scripts/hud/10-damage.js#weather-spared",
       of: [
         "src/data/weather.ts#Weather.isTypeDamageImmune",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/10-damage.js#addRolls",
+      ours: "skills/coachemon/scripts/hud/10-damage.js#add-rolls",
       of: [
         "src/field/pokemon.ts#Pokemon.getAttackDamage",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/10-damage.js#barBreakFactors",
+      ours: "skills/coachemon/scripts/hud/10-damage.js#bar-break-factors",
       of: [
         "src/field/pokemon.ts#EnemyPokemon.handleBossSegmentCleared",
       ],
@@ -1776,7 +1776,7 @@ export const HUD: Area = {
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/10-damage.js#lensShare",
+      ours: "skills/coachemon/scripts/hud/10-damage.js#lens-share",
       of: [
         "src/modifier/modifier.ts#PokemonMultiHitModifier.applyDamageModifier",
       ],
@@ -1788,35 +1788,35 @@ export const HUD: Area = {
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/10-damage.js#targetFacts",
+      ours: "skills/coachemon/scripts/hud/10-damage.js#target-facts",
       of: [
         "src/modifier/modifier.ts#SurviveDamageModifier.shouldApply",
         "src/modifier/modifier.ts#EnemyEndureChanceModifier.apply",
         "src/modifier/modifier.ts#PokemonInstantReviveModifier.apply",
       ],
     },
-    { ours: "skills/coachemon/scripts/hud/10-damage.js#withDmg", of: ["src/field/pokemon.ts#Pokemon.getAttackDamage"] },
-    { ours: "skills/coachemon/scripts/hud/12-value.js#PARTY_SIZE", of: ["src/constants.ts#PLAYER_PARTY_MAX_SIZE"] },
+    { ours: "skills/coachemon/scripts/hud/10-damage.js#with-dmg", of: ["src/field/pokemon.ts#Pokemon.getAttackDamage"] },
+    { ours: "skills/coachemon/scripts/hud/12-value.js#party-size", of: ["src/constants.ts#PLAYER_PARTY_MAX_SIZE"] },
     {
-      ours: "skills/coachemon/scripts/hud/20-enemy-ai.js#NO_CONDITION_CHECK",
+      ours: "skills/coachemon/scripts/hud/20-enemy-ai.js#no-condition-check",
       of: [
         "src/field/pokemon.ts#EnemyPokemon.getNextMove",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/20-enemy-ai.js#aiChain",
+      ours: "skills/coachemon/scripts/hud/20-enemy-ai.js#ai-chain",
       of: [
         "src/field/pokemon.ts#EnemyPokemon.getNextMove",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/20-enemy-ai.js#aiNextTargets",
+      ours: "skills/coachemon/scripts/hud/20-enemy-ai.js#ai-next-targets",
       of: [
         "src/field/pokemon.ts#EnemyPokemon.getNextTargets",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/20-enemy-ai.js#aiTargetScore",
+      ours: "skills/coachemon/scripts/hud/20-enemy-ai.js#ai-target-score",
       of: [
         "src/field/pokemon.ts#EnemyPokemon.getNextMove",
       ],
@@ -1828,7 +1828,7 @@ export const HUD: Area = {
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/25-turn.js#TYPE_STATUS_IMMUNE",
+      ours: "skills/coachemon/scripts/hud/25-turn.js#type-status-immune",
       of: [
         "src/field/pokemon.ts#Pokemon.canSetStatus",
       ],
@@ -1847,23 +1847,23 @@ export const HUD: Area = {
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/30-planner.js#STATUS_SKIP",
+      ours: "skills/coachemon/scripts/hud/30-planner.js#status-skip",
       of: [
         "src/field/pokemon.ts#Pokemon.doSetStatus",
         "src/phases/move-phase.ts#MovePhase.checkSleep",
         "src/phases/move-phase.ts#MovePhase.checkFreeze",
       ],
     },
-    { ours: "skills/coachemon/scripts/hud/30-planner.js#STAT_ABBR", of: ["src/enums/stat.ts#Stat"] },
+    { ours: "skills/coachemon/scripts/hud/30-planner.js#stat-abbr", of: ["src/enums/stat.ts#Stat"] },
     {
-      ours: "skills/coachemon/scripts/hud/30-planner.js#THIEVES",
+      ours: "skills/coachemon/scripts/hud/30-planner.js#thieves",
       of: [
         "src/modifier/modifier.ts#ContactHeldItemTransferChanceModifier",
         "src/modifier/modifier.ts#TurnHeldItemTransferModifier",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/30-planner.js#actChance",
+      ours: "skills/coachemon/scripts/hud/30-planner.js#act-chance",
       of: [
         "src/phases/move-phase.ts#MovePhase.checkSleep",
         "src/phases/move-phase.ts#MovePhase.checkFreeze",
@@ -1872,7 +1872,7 @@ export const HUD: Area = {
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/30-planner.js#advance",
+      ours: "skills/coachemon/scripts/hud/30-planner.js#ai-advance-chance",
       of: [
         "src/field/pokemon.ts#EnemyPokemon.getNextMove",
       ],
@@ -1884,13 +1884,13 @@ export const HUD: Area = {
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/30-planner.js#confusionHit",
+      ours: "skills/coachemon/scripts/hud/30-planner.js#confusion-hit",
       of: [
         "src/data/battler-tags.ts#ConfusedTag.lapse",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/30-planner.js#flinch",
+      ours: "skills/coachemon/scripts/hud/30-planner.js#flinch-chance",
       of: [
         "src/modifier/modifier.ts#FlinchChanceModifier.constructor",
         "src/modifier/modifier.ts#FlinchChanceModifier.apply",
@@ -1904,13 +1904,13 @@ export const HUD: Area = {
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/30-planner.js#kingsRock",
+      ours: "skills/coachemon/scripts/hud/30-planner.js#kings-rock",
       of: [
         "src/modifier/modifier.ts#FlinchChanceModifier.constructor",
         "src/modifier/modifier.ts#FlinchChanceModifier.apply",
       ],
     },
-    { ours: "skills/coachemon/scripts/hud/30-planner.js#names", of: ["src/enums/stat.ts#Stat"] },
+    { ours: "skills/coachemon/scripts/hud/30-planner.js#stat-names", of: ["src/enums/stat.ts#Stat"] },
     {
       ours: "skills/coachemon/scripts/hud/30-planner.js#para-skip",
       of: [
@@ -1918,7 +1918,7 @@ export const HUD: Area = {
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/30-planner.js#quickChance",
+      ours: "skills/coachemon/scripts/hud/30-planner.js#quick-chance",
       of: [
         "src/modifier/modifier.ts#BypassSpeedChanceModifier.apply",
         "src/data/abilities/ab-attrs.ts#BypassSpeedChanceAbAttr",
@@ -1926,56 +1926,56 @@ export const HUD: Area = {
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/30-planner.js#spikes",
+      ours: "skills/coachemon/scripts/hud/30-planner.js#spikes-ratio",
       of: [
         "src/data/arena-tag.ts#SpikesTag.getDamageHpRatio",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/30-planner.js#spreadMult",
+      ours: "skills/coachemon/scripts/hud/30-planner.js#spread-mult",
       of: [
         "src/field/pokemon.ts#Pokemon.getAttackDamage",
       ],
     },
-    { ours: "skills/coachemon/scripts/hud/30-planner.js#steady", of: ["src/phases/move-phase.ts#MovePhase.checkPara"] },
+    { ours: "skills/coachemon/scripts/hud/30-planner.js#para-act-chance", of: ["src/phases/move-phase.ts#MovePhase.checkPara"] },
     {
-      ours: "skills/coachemon/scripts/hud/35-team-plan.js#tpSendBase",
+      ours: "skills/coachemon/scripts/hud/35-team-plan.js#tp-send-base",
       of: [
         "src/field/pokemon.ts#Pokemon.getMatchupScore",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/35-team-plan.js#tpSendScore",
+      ours: "skills/coachemon/scripts/hud/35-team-plan.js#tp-send-score",
       of: [
         "src/field/pokemon.ts#Pokemon.getMatchupScore",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/40-learn.js#ATE",
+      ours: "skills/coachemon/scripts/hud/40-learn.js#ate",
       of: [
         "src/data/abilities/init-abilities.ts#initAbilities",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/40-learn.js#ATK_MULT",
+      ours: "skills/coachemon/scripts/hud/40-learn.js#atk-mult",
       of: [
         "src/data/abilities/init-abilities.ts#initAbilities",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/40-learn.js#HEAL_BLOCKED",
+      ours: "skills/coachemon/scripts/hud/40-learn.js#heal-blocked",
       of: [
         "src/data/moves/invalid-moves.ts#healBlockedMoves",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/40-learn.js#MOLD_BREAKERS",
+      ours: "skills/coachemon/scripts/hud/40-learn.js#mold-breakers",
       of: [
         "src/data/abilities/init-abilities.ts#initAbilities",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/40-learn.js#STAND_INS",
+      ours: "skills/coachemon/scripts/hud/40-learn.js#stand-ins",
       of: [
         "src/data/moves/move.ts#FriendshipPowerAttr",
         "src/data/moves/move.ts#MagnitudePowerAttr",
@@ -1985,56 +1985,56 @@ export const HUD: Area = {
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/40-learn.js#STATUS_ABILITIES",
+      ours: "skills/coachemon/scripts/hud/40-learn.js#status-abilities",
       of: [
         "src/data/abilities/init-abilities.ts#initAbilities",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/40-learn.js#STATUS_TYPES",
+      ours: "skills/coachemon/scripts/hud/40-learn.js#status-types",
       of: [
         "src/field/pokemon.ts#Pokemon.canSetStatus",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/40-learn.js#SUN_ABILITIES",
+      ours: "skills/coachemon/scripts/hud/40-learn.js#sun-abilities",
       of: [
         "src/data/abilities/init-abilities.ts#initAbilities",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/40-learn.js#TAG_ABILITIES",
+      ours: "skills/coachemon/scripts/hud/40-learn.js#tag-abilities",
       of: [
         "src/data/abilities/init-abilities.ts#initAbilities",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/40-learn.js#TYPE_FIXED",
+      ours: "skills/coachemon/scripts/hud/40-learn.js#type-fixed",
       of: [
         "src/data/abilities/init-abilities.ts#initAbilities",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/40-learn.js#UNSUPPRESSABLE",
+      ours: "skills/coachemon/scripts/hud/40-learn.js#unsuppressable",
       of: [
         "src/data/abilities/init-abilities.ts#initAbilities",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/40-learn.js#VARIABLE_TYPE",
+      ours: "skills/coachemon/scripts/hud/40-learn.js#variable-type",
       of: [
         "src/data/moves/move.ts#VariableMoveTypeAttr",
         "src/data/moves/move.ts#initMoves",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/40-learn.js#WEATHER_HEALS",
+      ours: "skills/coachemon/scripts/hud/40-learn.js#weather-heals",
       of: [
         "src/data/moves/move.ts#sunnyHealRatioFunc",
         "src/data/moves/move.ts#shoreUpHealRatioFunc",
       ],
     },
-    { ours: "skills/coachemon/scripts/hud/40-learn.js#fixedPower", of: ["src/field/pokemon.ts#Pokemon.getBaseDamage"] },
+    { ours: "skills/coachemon/scripts/hud/40-learn.js#fixed-power", of: ["src/field/pokemon.ts#Pokemon.getBaseDamage"] },
     {
       ours: "skills/coachemon/scripts/hud/40-learn.js#hustle-accuracy",
       of: [
@@ -2042,7 +2042,7 @@ export const HUD: Area = {
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/40-learn.js#stab",
+      ours: "skills/coachemon/scripts/hud/40-learn.js#stab-multiplier",
       of: [
         "src/field/pokemon.ts#Pokemon.calculateStabMultiplier",
         "src/data/abilities/init-abilities.ts#initAbilities",
@@ -2055,92 +2055,92 @@ export const HUD: Area = {
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/44-safari.js#BASE_HIDDEN_ABILITY_RATE",
+      ours: "skills/coachemon/scripts/hud/44-safari.js#base-hidden-ability-rate",
       of: [
         "src/data/balance/rates.ts#BASE_HIDDEN_ABILITY_RATE",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/44-safari.js#BASE_SHINY_CHANCE",
+      ours: "skills/coachemon/scripts/hud/44-safari.js#base-shiny-chance",
       of: [
         "src/data/balance/rates.ts#BASE_SHINY_CHANCE",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/44-safari.js#NON_LEGEND_PARADOX",
+      ours: "skills/coachemon/scripts/hud/44-safari.js#non-legend-paradox",
       of: [
         "src/data/balance/special-species-groups.ts#NON_LEGEND_PARADOX_POKEMON",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/44-safari.js#SAFARI_MONS",
+      ours: "skills/coachemon/scripts/hud/44-safari.js#safari-mons",
       of: [
         "src/data/mystery-encounters/encounters/safari-zone-encounter.ts#NUM_SAFARI_ENCOUNTERS",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/44-safari.js#chance",
+      ours: "skills/coachemon/scripts/hud/44-safari.js#safari-event-chance",
       of: [
         "src/data/mystery-encounters/encounters/safari-zone-encounter.ts#summonSafariPokemon",
       ],
     },
-    { ours: "skills/coachemon/scripts/hud/44-safari.js#pick", of: ["src/utils/common.ts#randSeedItem"] },
-    { ours: "skills/coachemon/scripts/hud/44-safari.js#rnd", of: ["src/utils/common.ts#randSeedInt"] },
+    { ours: "skills/coachemon/scripts/hud/44-safari.js#rand-seed-item", of: ["src/utils/common.ts#randSeedItem"] },
+    { ours: "skills/coachemon/scripts/hud/44-safari.js#rand-seed-int", of: ["src/utils/common.ts#randSeedInt"] },
     {
-      ours: "skills/coachemon/scripts/hud/44-safari.js#safariSpecies",
+      ours: "skills/coachemon/scripts/hud/44-safari.js#safari-species",
       of: [
         "src/data/mystery-encounters/utils/encounter-pokemon-utils.ts#getRandomSpeciesByStarterCost",
         "src/data/mystery-encounters/encounters/safari-zone-encounter.ts#getSafariSpeciesSpawn",
       ],
     },
-    { ours: "skills/coachemon/scripts/hud/45-catch.js#BALLS", of: ["src/data/pokeball.ts#getPokeballCatchMultiplier"] },
+    { ours: "skills/coachemon/scripts/hud/45-catch.js#balls", of: ["src/data/pokeball.ts#getPokeballCatchMultiplier"] },
     {
-      ours: "skills/coachemon/scripts/hud/45-catch.js#STATUS_MULT",
+      ours: "skills/coachemon/scripts/hud/45-catch.js#status-mult",
       of: [
         "src/data/status-effect.ts#getStatusEffectCatchRateMultiplier",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/45-catch.js#attr",
+      ours: "skills/coachemon/scripts/hud/45-catch.js#dex-attr",
       of: [
         "src/field/pokemon.ts#Pokemon.getDexAttr",
         "src/enums/dex-attr.ts#DexAttr",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/45-catch.js#candy",
+      ours: "skills/coachemon/scripts/hud/45-catch.js#catch-candy",
       of: [
         "src/system/game-data.ts#GameData.setPokemonSpeciesCaught",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/45-catch.js#captureChance",
+      ours: "skills/coachemon/scripts/hud/45-catch.js#capture-chance",
       of: [
         "src/phases/attempt-capture-phase.ts#AttemptCapturePhase.start",
         "src/data/pokeball.ts#getCriticalCaptureChance",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/45-catch.js#critFactorOf",
+      ours: "skills/coachemon/scripts/hud/45-catch.js#crit-factor-of",
       of: [
         "src/data/pokeball.ts#getCriticalCaptureChance",
         "src/modifier/modifier.ts#CriticalCatchChanceBoosterModifier.apply",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/45-catch.js#cure",
+      ours: "skills/coachemon/scripts/hud/45-catch.js#status-heal-chance",
       of: [
         "src/modifier/modifier.ts#EnemyStatusEffectHealChanceModifier.constructor",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/45-catch.js#limitedCatch",
+      ours: "skills/coachemon/scripts/hud/45-catch.js#limited-catch",
       of: [
         "src/data/challenge.ts#LimitedCatchChallenge.applyPokemonAddToParty",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/46-encounter.js#BAIT_FLEES",
+      ours: "skills/coachemon/scripts/hud/46-encounter.js#bait-flees",
       of: [
         "src/data/mystery-encounters/encounters/safari-zone-encounter.ts#SafariZoneEncounter",
         "src/data/mystery-encounters/encounters/safari-zone-encounter.ts#tryChangeFleeStage",
@@ -2148,7 +2148,7 @@ export const HUD: Area = {
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/46-encounter.js#BUG_TUTORS",
+      ours: "skills/coachemon/scripts/hud/46-encounter.js#bug-tutors",
       of: [
         "src/data/mystery-encounters/encounters/bug-type-superfan-encounter.ts#PHYSICAL_TUTOR_MOVES",
         "src/data/mystery-encounters/encounters/bug-type-superfan-encounter.ts#SPECIAL_TUTOR_MOVES",
@@ -2158,26 +2158,26 @@ export const HUD: Area = {
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/46-encounter.js#CHALLENGER_REWARDS",
+      ours: "skills/coachemon/scripts/hud/46-encounter.js#challenger-rewards",
       of: [
         "src/data/mystery-encounters/encounters/mysterious-challengers-encounter.ts#MysteriousChallengersEncounter",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/46-encounter.js#DISABLED_MODES",
+      ours: "skills/coachemon/scripts/hud/46-encounter.js#disabled-modes",
       of: [
         "src/ui/handlers/mystery-encounter-ui-handler.ts#MysteryEncounterUiHandler.processInput",
         "src/ui/handlers/mystery-encounter-ui-handler.ts#MysteryEncounterUiHandler.unblockInput",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/46-encounter.js#NAMES",
+      ours: "skills/coachemon/scripts/hud/46-encounter.js#names",
       of: [
         "src/enums/mystery-encounter-type.ts#MysteryEncounterType",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/46-encounter.js#OVERRIDES",
+      ours: "skills/coachemon/scripts/hud/46-encounter.js#overrides",
       of: [
         "src/data/mystery-encounters/encounters/safari-zone-encounter.ts#SafariZoneEncounter",
         "src/data/mystery-encounters/encounters/safari-zone-encounter.ts#tryChangeFleeStage",
@@ -2185,7 +2185,7 @@ export const HUD: Area = {
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/46-encounter.js#RARE_BIOMES",
+      ours: "skills/coachemon/scripts/hud/46-encounter.js#rare-biomes",
       of: [
         "src/data/balance/biomes/mountain.ts#biomeLinks",
         "src/data/balance/biomes/factory.ts#biomeLinks",
@@ -2196,7 +2196,7 @@ export const HUD: Area = {
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/46-encounter.js#RULES",
+      ours: "skills/coachemon/scripts/hud/46-encounter.js#rules",
       of: [
         "src/data/mystery-encounters/encounters/training-session-encounter.ts#TrainingSessionEncounter",
         "src/data/mystery-encounters/encounters/the-pokemon-salesman-encounter.ts#ThePokemonSalesmanEncounter",
@@ -2251,25 +2251,25 @@ export const HUD: Area = {
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/46-encounter.js#TELEPORT_BIOMES",
+      ours: "skills/coachemon/scripts/hud/46-encounter.js#teleport-biomes",
       of: [
         "src/data/mystery-encounters/encounters/teleporting-hijinks-encounter.ts#BIOME_CANDIDATES",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/46-encounter.js#safariCatch",
+      ours: "skills/coachemon/scripts/hud/46-encounter.js#safari-catch",
       of: [
         "src/data/mystery-encounters/encounters/safari-zone-encounter.ts#throwPokeball",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/46-encounter.js#safariFlee",
+      ours: "skills/coachemon/scripts/hud/46-encounter.js#safari-flee",
       of: [
         "src/data/mystery-encounters/encounters/safari-zone-encounter.ts#isPokemonFlee",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/46-encounter.js#safariPlay",
+      ours: "skills/coachemon/scripts/hud/46-encounter.js#safari-play",
       of: [
         "src/data/mystery-encounters/encounters/safari-zone-encounter.ts#SafariZoneEncounter",
         "src/data/mystery-encounters/encounters/safari-zone-encounter.ts#tryChangeFleeStage",
@@ -2277,20 +2277,20 @@ export const HUD: Area = {
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/47-biome.js#BOSS_CUTS",
+      ours: "skills/coachemon/scripts/hud/47-biome.js#boss-cuts",
       of: [
         "src/field/arena.ts#Arena.generateBossBiomeTier",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/47-biome.js#BOSS_POOL_TIERS",
+      ours: "skills/coachemon/scripts/hud/47-biome.js#boss-pool-tiers",
       of: [
         "src/field/arena.ts#Arena.generateBossBiomeTier",
       ],
     },
-    { ours: "skills/coachemon/scripts/hud/47-biome.js#CATCH_TIER", of: ["src/enums/biome-pool-tier.ts#BiomePoolTier"] },
+    { ours: "skills/coachemon/scripts/hud/47-biome.js#catch-tier", of: ["src/enums/biome-pool-tier.ts#BiomePoolTier"] },
     {
-      ours: "skills/coachemon/scripts/hud/47-biome.js#EVO_SPREAD",
+      ours: "skills/coachemon/scripts/hud/47-biome.js#evo-spread",
       of: [
         "src/ai/ai-species-gen.ts#STRONG_LEVEL_DIFF_PERCENT",
         "src/ai/ai-species-gen.ts#NORMAL_TRAINER_LEVEL_DIFF_PERCENT",
@@ -2299,13 +2299,13 @@ export const HUD: Area = {
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/47-biome.js#POOL_TIERS",
+      ours: "skills/coachemon/scripts/hud/47-biome.js#pool-tiers",
       of: [
         "src/field/arena.ts#Arena.generateNonBossBiomeTier",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/47-biome.js#RARE_ONWARD",
+      ours: "skills/coachemon/scripts/hud/47-biome.js#rare-onward",
       of: [
         "src/data/balance/biomes/mountain.ts#biomeLinks",
         "src/data/balance/biomes/factory.ts#biomeLinks",
@@ -2316,30 +2316,30 @@ export const HUD: Area = {
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/47-biome.js#TIER_CUTS",
+      ours: "skills/coachemon/scripts/hud/47-biome.js#tier-cuts",
       of: [
         "src/field/arena.ts#Arena.generateNonBossBiomeTier",
         "src/field/trainer.ts#Trainer.genNewPartyMemberSpecies",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/47-biome.js#TRAINER_POOL_TIERS",
+      ours: "skills/coachemon/scripts/hud/47-biome.js#trainer-pool-tiers",
       of: [
         "src/field/trainer.ts#Trainer.genNewPartyMemberSpecies",
       ],
     },
-    { ours: "skills/coachemon/scripts/hud/47-biome.js#gym", of: ["src/game-mode.ts#GameMode.isTrainerBoss"] },
-    { ours: "skills/coachemon/scripts/hud/47-biome.js#legalAt", of: ["src/field/arena.ts#Arena.checkLegendBST"] },
-    { ours: "skills/coachemon/scripts/hud/47-biome.js#max", of: ["src/field/arena.ts#Arena.randomSpecies"] },
+    { ours: "skills/coachemon/scripts/hud/47-biome.js#trainer-boss", of: ["src/game-mode.ts#GameMode.isTrainerBoss"] },
+    { ours: "skills/coachemon/scripts/hud/47-biome.js#legal-at", of: ["src/field/arena.ts#Arena.checkLegendBST"] },
+    { ours: "skills/coachemon/scripts/hud/47-biome.js#pool-tier-roll-max", of: ["src/field/arena.ts#Arena.randomSpecies"] },
     {
-      ours: "skills/coachemon/scripts/hud/47-biome.js#randomBossChance",
+      ours: "skills/coachemon/scripts/hud/47-biome.js#random-boss-chance",
       of: [
         "src/battle-scene.ts#BattleScene.getEncounterBossSegments",
       ],
     },
-    { ours: "skills/coachemon/scripts/hud/47-biome.js#timeOfDayAt", of: ["src/field/arena.ts#Arena.getTimeOfDay"] },
+    { ours: "skills/coachemon/scripts/hud/47-biome.js#time-of-day-at", of: ["src/field/arena.ts#Arena.getTimeOfDay"] },
     {
-      ours: "skills/coachemon/scripts/hud/48-preview.js#NEEDED",
+      ours: "skills/coachemon/scripts/hud/48-preview.js#needed",
       of: [
         "src/battle-scene.ts#BattleScene.executeWithSeedOffset",
         "src/battle-scene.ts#BattleScene.isWaveMysteryEncounter",
@@ -2351,7 +2351,7 @@ export const HUD: Area = {
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/48-preview.js#replay",
+      ours: "skills/coachemon/scripts/hud/48-preview.js#new-battle-replay",
       of: [
         "src/battle-scene.ts#BattleScene.newBattle",
         "src/battle-scene.ts#BattleScene.handleFixedBattle",
@@ -2359,125 +2359,125 @@ export const HUD: Area = {
         "src/phases/encounter-phase.ts#EncounterPhase.isEncounterShinyLocked",
       ],
     },
-    { ours: "skills/coachemon/scripts/hud/48-preview.js#rnd", of: ["src/utils/common.ts#randSeedInt"] },
-    { ours: "skills/coachemon/scripts/hud/48-preview.js#waveSeedOf", of: ["src/utils/common.ts#shiftCharCodes"] },
+    { ours: "skills/coachemon/scripts/hud/48-preview.js#rand-seed-int", of: ["src/utils/common.ts#randSeedInt"] },
+    { ours: "skills/coachemon/scripts/hud/48-preview.js#wave-seed-of", of: ["src/utils/common.ts#shiftCharCodes"] },
     {
-      ours: "skills/coachemon/scripts/hud/49-ahead.js#DOUBLE_ABILITIES",
+      ours: "skills/coachemon/scripts/hud/49-ahead.js#double-abilities",
       of: [
         "src/data/abilities/init-abilities.ts#initAbilities",
         "src/data/abilities/ab-attrs.ts#DoubleBattleChanceAbAttr",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/49-ahead.js#ETERNATUS_FACTS",
+      ours: "skills/coachemon/scripts/hud/49-ahead.js#eternatus-facts",
       of: [
         "src/field/pokemon.ts#EnemyPokemon.generateAndPopulateMoveset",
         "src/field/pokemon.ts#EnemyPokemon.damage",
         "src/battle-scene.ts#BattleScene.initFinalBossPhaseTwo",
       ],
     },
-    { ours: "skills/coachemon/scripts/hud/49-ahead.js#GRUNT_DOUBLE", of: ["src/battle.ts#getRandomTrainerFunc"] },
+    { ours: "skills/coachemon/scripts/hud/49-ahead.js#grunt-double", of: ["src/battle.ts#getRandomTrainerFunc"] },
     {
-      ours: "skills/coachemon/scripts/hud/49-ahead.js#LUCK_GRADES",
+      ours: "skills/coachemon/scripts/hud/49-ahead.js#luck-grades",
       of: [
         "src/modifier/modifier-type.ts#getLuckString",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/49-ahead.js#doubleOdds",
+      ours: "skills/coachemon/scripts/hud/49-ahead.js#double-odds",
       of: [
         "src/battle-scene.ts#BattleScene.checkIsDouble",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/49-ahead.js#upgradeChance",
+      ours: "skills/coachemon/scripts/hud/49-ahead.js#upgrade-chance",
       of: [
         "src/modifier/modifier-type.ts#getNewModifierTypeOption",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/49-fusion.js#bstPair",
+      ours: "skills/coachemon/scripts/hud/49-fusion.js#bst-pair",
       of: [
         "src/field/pokemon.ts#Pokemon.calculateBaseStats",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/50-audit.js#ATK_DOUBLED",
+      ours: "skills/coachemon/scripts/hud/50-audit.js#atk-doubled",
       of: [
         "src/data/abilities/init-abilities.ts#initAbilities",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/50-audit.js#EXP_CLASSES",
+      ours: "skills/coachemon/scripts/hud/50-audit.js#exp-classes",
       of: [
         "src/modifier/modifier.ts#ExpBoosterModifier",
         "src/modifier/modifier.ts#ExpShareModifier",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/50-audit.js#PRIORITY_ABILITIES",
+      ours: "skills/coachemon/scripts/hud/50-audit.js#priority-abilities",
       of: [
         "src/data/abilities/init-abilities.ts#initAbilities",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/50-audit.js#STATUS_IMMUNE",
+      ours: "skills/coachemon/scripts/hud/50-audit.js#status-immune",
       of: [
         "src/field/pokemon.ts#Pokemon.canSetStatus",
       ],
     },
-    { ours: "skills/coachemon/scripts/hud/51-items.js#BERRY_NAMES", of: ["src/enums/berry-type.ts#BerryType"] },
+    { ours: "skills/coachemon/scripts/hud/51-items.js#berry-names", of: ["src/enums/berry-type.ts#BerryType"] },
     {
-      ours: "skills/coachemon/scripts/hud/51-items.js#FIELD_ABILITIES",
+      ours: "skills/coachemon/scripts/hud/51-items.js#field-abilities",
       of: [
         "src/modifier/init-modifier-pools.ts#initUltraModifierPool",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/51-items.js#FIELD_MOVES",
+      ours: "skills/coachemon/scripts/hud/51-items.js#field-moves",
       of: [
         "src/modifier/init-modifier-pools.ts#initUltraModifierPool",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/51-items.js#HELD",
+      ours: "skills/coachemon/scripts/hud/51-items.js#held",
       of: [
         "src/modifier/modifier-type.ts#modifierTypeInitObj",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/51-items.js#LEEK_SPECIES",
+      ours: "skills/coachemon/scripts/hud/51-items.js#leek-species",
       of: [
         "src/modifier/modifier-type.ts#modifierTypeInitObj",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/51-items.js#ORB",
+      ours: "skills/coachemon/scripts/hud/51-items.js#orb",
       of: [
         "src/modifier/init-modifier-pools.ts#initUltraModifierPool",
         "src/field/pokemon.ts#Pokemon.canSetStatus",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/51-items.js#SPECIES_BOOSTERS",
+      ours: "skills/coachemon/scripts/hud/51-items.js#species-boosters",
       of: [
         "src/modifier/modifier-type.ts#SpeciesStatBoosterModifierTypeGenerator.items",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/51-items.js#STATUS_ABILITIES",
+      ours: "skills/coachemon/scripts/hud/51-items.js#status-abilities",
       of: [
         "src/modifier/init-modifier-pools.ts#initUltraModifierPool",
       ],
     },
-    { ours: "skills/coachemon/scripts/hud/51-items.js#capOf", of: ["src/battle-scene.ts#BattleScene.getMaxExpLevel"] },
+    { ours: "skills/coachemon/scripts/hud/51-items.js#cap-of", of: ["src/battle-scene.ts#BattleScene.getMaxExpLevel"] },
     {
-      ours: "skills/coachemon/scripts/hud/51-starters.js#luck",
+      ours: "skills/coachemon/scripts/hud/51-starters.js#dex-attr-luck",
       of: [
         "src/system/game-data.ts#GameData.getDexAttrLuck",
       ],
     },
-    { ours: "skills/coachemon/scripts/probe.js#CATS", of: ["src/enums/move-category.ts#MoveCategory"] },
-    { ours: "skills/coachemon/scripts/probe.js#STATS", of: ["src/enums/stat.ts#Stat"] },
+    { ours: "skills/coachemon/scripts/probe.js#cats", of: ["src/enums/move-category.ts#MoveCategory"] },
+    { ours: "skills/coachemon/scripts/probe.js#stats", of: ["src/enums/stat.ts#Stat"] },
   ],
 };

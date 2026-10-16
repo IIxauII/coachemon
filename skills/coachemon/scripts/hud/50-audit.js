@@ -124,7 +124,7 @@ const levelSpread = (s, party) => {
 };
 
 // A party at the cap gains nothing from any EXP item (game-code.md §17).
-// @mirrors EXP_CLASSES
+// @mirrors exp-classes
 const EXP_CLASSES = new Set(["ExpBoosterModifier", "ExpShareModifier"]);
 const expAtCap = (s, party) => {
   const stacks = (s.modifiers ?? []).filter(m => EXP_CLASSES.has(m?.constructor?.name))
@@ -135,7 +135,7 @@ const expAtCap = (s, party) => {
     text: `whole party at the Lv ${cap} cap: ${stacks} EXP item stacks do nothing — take battle items` }];
 };
 
-// @mirrors ATK_DOUBLED
+// @mirrors atk-doubled
 const ATK_DOUBLED = ["Huge Power", "Pure Power"];
 const onStat = (p, mv) => {
   const atk = tryDo(() => p.getStat(Stat.ATK), 0) * (tryDo(() => abilitiesOf(p), []).some(a => ATK_DOUBLED.includes(a)) ? 2 : 1);
@@ -147,7 +147,7 @@ const answersTo = (p, foe) => typedAttacks(p).filter(mv => effectiveness(TYPES[m
   .map(mv => ({ name: nameOf(mv), acc: mv.accuracy > 0 ? mv.accuracy : 100 }));
 
 // Gale Wings only: Triage's draining attacks move first too (game-code.md §17) and aren't counted yet (#474).
-// @mirrors PRIORITY_ABILITIES
+// @mirrors priority-abilities
 const PRIORITY_ABILITIES = new Set(["Gale Wings"]);
 const speedCheck = (party, foes, wave) => {
   const fastest = foes.reduce((a, f) => ((f.stats?.[Stat.SPD] ?? 0) > (a?.stats?.[Stat.SPD] ?? -1) ? f : a), null);
@@ -170,7 +170,7 @@ const singleAnswers = (party, foes, wave) => foes.map(f => {
 }).filter(Boolean);
 
 // `canSetStatus`'s type checks alone (game-code.md §17).
-// @mirrors STATUS_IMMUNE
+// @mirrors status-immune
 const STATUS_IMMUNE = { [StatusEffect.POISON]: ["Poison", "Steel"], [StatusEffect.TOXIC]: ["Poison", "Steel"], [StatusEffect.PARALYSIS]: ["Electric"],
   [StatusEffect.FREEZE]: ["Ice"], [StatusEffect.BURN]: ["Fire"] };
 const deadStatus = (party, foes, wave) => party.flatMap(p => movesOf(p).filter(mv => mv.category === MoveCategory.STATUS).flatMap(mv => {

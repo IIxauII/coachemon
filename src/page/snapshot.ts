@@ -13,7 +13,7 @@ export function snapshot(L: Located, args: { detail: SnapshotDetail }): Record<s
   const withCoach = args.detail === "full";
   const { scene, ui } = L;
   const b = scene.currentBattle || null;
-  // @mirrors STATS
+  // @mirrors stats
   const STATS = ["hp", "atk", "def", "spa", "spd", "spe"];
   const move = (m: any) => m ? __try(() => {
     const mv = m.getMove ? m.getMove() : null;

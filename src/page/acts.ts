@@ -26,7 +26,7 @@ export function press(L: Located, args: { button: number; fine: string }): Press
  * §10.4).
  */
 export function key(_L: Located, args: { button: string; fine: string }): KeyResult {
-  // @mirrors KEYS
+  // @mirrors keys
   const KEYS: Record<string, [string, string, number]> = {
     UP: ["ArrowUp", "ArrowUp", 38],
     DOWN: ["ArrowDown", "ArrowDown", 40],

@@ -10,7 +10,7 @@ import { SAFARI_MONS, safariMonData, safariPreview, safariReady } from "./44-saf
 import { accountWorth, teamVerdict } from "./45-catch.js";
 
 // Indexed by `MysteryEncounterType`: keep it in enum order.
-// @mirrors NAMES
+// @mirrors names
 const NAMES = ["Mysterious Challengers", "Mysterious Chest", "Dark Deal", "Fight or Flight", "Slumbering Snorlax",
   "Training Session", "Department Store Sale", "Shady Vitamin Dealer", "Field Trip", "Safari Zone", "Lost at Sea",
   "Fiery Fallout", "The Strong Stuff", "The Pokémon Salesman", "An Offer You Can't Refuse", "Delibird-y",
@@ -33,23 +33,23 @@ const TRAINING = MysteryEncounterType.TRAINING_SESSION, SALESMAN = MysteryEncoun
   TRAINERS_TEST = MysteryEncounterType.A_TRAINERS_TEST, WEIRD_DREAM = MysteryEncounterType.WEIRD_DREAM,
   WINSTRATE = MysteryEncounterType.THE_WINSTRATE_CHALLENGE;
 const TIERS = { [MysteryEncounterTier.COMMON]: "common", [MysteryEncounterTier.GREAT]: "great", [MysteryEncounterTier.ULTRA]: "ultra", [MysteryEncounterTier.ROGUE]: "rogue" };
-// @mirrors DISABLED_MODES
+// @mirrors disabled-modes
 const DISABLED_MODES = new Set([MysteryEncounterOptionMode.DISABLED_OR_DEFAULT, MysteryEncounterOptionMode.DISABLED_OR_SPECIAL]);
 // Teleporting Hijinks' `BIOME_CANDIDATES`, in the game's order: the replay indexes it (game-code.md §13).
-// @mirrors TELEPORT_BIOMES
+// @mirrors teleport-biomes
 const TELEPORT_BIOMES = [[BiomeId.SPACE, "Space"], [BiomeId.FAIRY_CAVE, "Fairy Cave"], [BiomeId.LABORATORY, "Laboratory"],
   [BiomeId.ISLAND, "Island"], [BiomeId.WASTELAND, "Wasteland"], [BiomeId.DOJO, "Dojo"]];
 // 47-biome's `RARE_ONWARD` is the same set: change both.
-// @mirrors RARE_BIOMES
+// @mirrors rare-biomes
 const RARE_BIOMES = new Set([BiomeId.SPACE, BiomeId.FAIRY_CAVE, BiomeId.LABORATORY]);
 const RESERVE_WAVES = 3;
 const HARD_LEVEL_GAP = 5, BOSS_LEVEL_EDGE = 3;
 const MONS_EACH = 3;
-// @mirrors CHALLENGER_REWARDS
+// @mirrors challenger-rewards
 const CHALLENGER_REWARDS = ["a Common TM, a Great TM, a Memory Mushroom + the usual rolls",
   "2 Ultra + 2 Great + the usual rolls", "2 Rogue + 1 Ultra + 1 Great + the usual rolls, but 0.9× EXP"];
 // Bug-Type Superfan's four tutor pools, in the game's order: the replay indexes them (game-code.md §13).
-// @mirrors BUG_TUTORS
+// @mirrors bug-tutors
 const BUG_TUTORS = [
   [[MoveId.MEGAHORN, "Megahorn"], [MoveId.ATTACK_ORDER, "Attack Order"], [MoveId.BUG_BITE, "Bug Bite"], [MoveId.FIRST_IMPRESSION, "First Impression"], [MoveId.LUNGE, "Lunge"]],
   [[MoveId.SILVER_WIND, "Silver Wind"], [MoveId.SIGNAL_BEAM, "Signal Beam"], [MoveId.BUG_BUZZ, "Bug Buzz"], [MoveId.POLLEN_PUFF, "Pollen Puff"], [MoveId.STRUGGLE_BUG, "Struggle Bug"]],
@@ -89,17 +89,17 @@ const readOptions = (s, h, me, party) => {
 // Safari Zone's own throw and flee (game-code.md §13).
 const clampStage = st => Math.min(Math.max(st ?? 0, -6), 6);
 const stageMod = st => stage(clampStage(st));
-// @mirrors safariCatch
+// @mirrors safari-catch
 const safariCatch = (rate, st) => {
   const catchRate = Math.round(rate * 1.5 * stageMod(st));
   if (!(catchRate > 0)) return 0;
   return Math.min(1, Math.round(1048560 / Math.sqrt(Math.sqrt(16711680 / catchRate))) / 65536) ** 3;
 };
 // `randSeedInt(256)` is 0–255, so a flee rate of 12.3 bolts on 13 of the 256 rolls.
-// @mirrors safariFlee
+// @mirrors safari-flee
 const safariFlee = (rate, st) => Math.min(1, Math.max(0, Math.ceil(((255 * 255 - rate * rate) / 255 / 2) * stageMod(st))) / 256);
 // Bait's flee +1 and mud's catch −1 (game-code.md §13).
-// @mirrors BAIT_FLEES
+// @mirrors bait-flees
 const BAIT_FLEES = 0.8, MUD_DULLS = 0.8;
 
 /**
@@ -173,7 +173,7 @@ const worthWhy = o => o?.why ?? "nothing new";
 const SAFARI_MENU = "ball, bait, mud or run each time, each turn judged as it comes";
 
 // Each move's chance that this mon is eventually caught under best play, from a stage pair (game-code.md §13).
-// @mirrors safariPlay
+// @mirrors safari-play
 const safariPlay = rate => {
   const at = (c, f) => (c + 6) * 13 + (f + 6);
   const p = [], q = [];
@@ -300,7 +300,7 @@ const LEAVE = { outcome: "shop only, no reward", verdict: "ok" };
 
 // One row per `me.options` index, `{ outcome, battle, verdict: take|ok|avoid|null, why, exact, needs }`, or
 // `{ rows, state, notes }` when a rule has something to say outside an option.
-// @mirrors RULES
+// @mirrors rules
 const RULES = {
   [TRAINING]: c => {
     const bars = (every, cap) => Math.min(2 + Math.floor(c.wave / every), cap);
@@ -896,7 +896,7 @@ const RULES = {
 
 // The secondary menu an encounter re-opens the screen with, read positionally, as `{ rows, state, notes }`. `null`
 // falls back to the generic reading.
-// @mirrors OVERRIDES
+// @mirrors overrides
 const OVERRIDES = {
   [SAFARI]: c => {
     const misc = c.me.misc ?? {};

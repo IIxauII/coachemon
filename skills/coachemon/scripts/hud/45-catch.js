@@ -9,7 +9,7 @@ import { koCurve, koTurn, useOf } from "./10-damage.js";
 import { PARTY_SIZE, judgeNewcomer } from "./12-value.js";
 import { exchange, threatFrom } from "./30-planner.js";
 
-// @mirrors BALLS
+// @mirrors balls
 const BALLS = [
   { id: PokeballType.POKEBALL, ball: "Poké Ball", short: "PB", key: "pb", mult: 1 },
   { id: PokeballType.GREAT_BALL, ball: "Great Ball", short: "GB", key: "gb", mult: 1.5 },
@@ -17,14 +17,14 @@ const BALLS = [
   { id: PokeballType.ROGUE_BALL, ball: "Rogue Ball", short: "RB", key: "rb", mult: 3 },
   { id: PokeballType.MASTER_BALL, ball: "Master Ball", short: "MB", key: "mb", mult: -1 },
 ];
-// @mirrors STATUS_MULT
+// @mirrors status-mult
 const STATUS_MULT = {
   [StatusEffect.POISON]: 1.5, [StatusEffect.TOXIC]: 1.5, [StatusEffect.PARALYSIS]: 1.5,
   [StatusEffect.SLEEP]: 2.5, [StatusEffect.FREEZE]: 2.5, [StatusEffect.BURN]: 1.5,
 };
 
 // `critFactor`: the factor in front of `min(255, w) / 6` in the critical-capture chance, 0 for none.
-// @mirrors captureChance
+// @mirrors capture-chance
 export const captureChance = ({ maxHp, hp, catchRate, ball, status = 0, shiny = false, critFactor = 0, shinyMult = 2 }) => {
   const mult = BALLS[ball]?.mult ?? 1;
   if (mult === -1) return 1;
@@ -41,7 +41,7 @@ const big = x => { try { return BigInt(x ?? 0); } catch { return 0n; } };
 const tryDo = (fn, fallback = null) => { try { const v = fn(); return v === undefined ? fallback : v; } catch { return fallback; } };
 const isShinyMon = p => tryDo(() => p.isShiny(), !!p.shiny || (!!p.fusionSpecies && !!p.fusionShiny));
 
-// @mirrors critFactorOf
+// @mirrors crit-factor-of
 const critFactorOf = (turn, account) => {
   const { mode, modifiers } = turn.facts;
   if (mode.noCriticalCatch) return 0;
@@ -79,7 +79,7 @@ const masterBlocked = turn => {
 // Limited Catch keeps the mon out of the party altogether, so there is no team to judge it against: the line is the
 // whole of the team part, landed road or not (game-code.md §20).
 const LIMITED = "Limited Catch: won't join the party";
-// @mirrors limitedCatch
+// @mirrors limited-catch
 const limitedCatch = turn => !!turn.facts.mode.limitedCatch && turn.facts.wave % 10 !== 1;
 
 const rootOf = p => tryDo(() => p.species.getRootSpeciesId(true), p.species?.speciesId) ?? p.species?.speciesId;
@@ -105,11 +105,11 @@ const accountReasons = (account, foe) => {
   }
   // `Pokemon.getDexAttr()`, rebuilt (game-code.md §20, §23).
   const variant = foe.variant ?? 0;
-  // @mirrors attr
+  // @mirrors dex-attr
   const attr = (foe.gender === Gender.GENDERLESS || foe.gender == null ? 0n : foe.gender === Gender.FEMALE ? 8n : 4n)
     | (foe.shiny ? 2n : 1n) | (variant >= 2 ? 64n : variant === 1 ? 32n : 16n) | (1n << BigInt(7 + (foe.formIndex ?? 0)));
   // The base `variant`, not `getVariant()` (game-code.md §20).
-  // @mirrors candy
+  // @mirrors catch-candy
   const candy = 5 * 2 ** variant * (foe.isBoss?.() ? 2 : 1) + (account.extraCatchCandy ?? 0);
   // A Daily run pays candy only for a new dex attribute, asked of the **masked** bits of the entry the candy goes to
   // (game-code.md §20): read raw, `attr` promises candy the game won't pay. Only this line is masked. The reasons
@@ -368,7 +368,7 @@ const targetAdvice = (turn, account, foe, party, crit, counts, multi, noMaster) 
   if (hp > 0.5) tips.push(lowerHpTip(turn, foe, party));
   else if (!foe.status?.effect) {
     // The wave's status-cure tokens (game-code.md §21).
-    // @mirrors cure
+    // @mirrors status-heal-chance
     const cure = turn.facts.enemyModifiers.filter(m => m.constructor?.name === "EnemyStatusEffectHealChanceModifier")
       .reduce((t, m) => t + 2.5 * (m.getStackCount?.() ?? 1), 0);
     tips.push(`sleep/paralyse it for better odds${cure ? ` (it cures itself ${Math.min(100, cure)}%/turn)` : ""}`);

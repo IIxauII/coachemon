@@ -4,7 +4,7 @@
 let tables = null, triedAt = -Infinity;
 // @only tests: setGameTables, setRewardFns
 export const setGameTables = t => { tables = t; };
-// @mirrors REWARD_FNS
+// @mirrors reward-fns
 const REWARD_FNS = ["regenerateModifierPoolThresholds", "getPlayerModifierTypeOptions"];
 let rewardFns = null;
 export const setRewardFns = f => { rewardFns = f; };

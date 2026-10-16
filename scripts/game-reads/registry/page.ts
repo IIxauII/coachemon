@@ -875,7 +875,7 @@ export const PAGE: Area = {
     },
   ],
   mirrors: [
-    { ours: "src/page/acts.ts#KEYS", of: ["src/configs/inputs/cfg-keyboard-qwerty.ts#CFG_KEYBOARD_QWERTY"] },
+    { ours: "src/page/acts.ts#keys", of: ["src/configs/inputs/cfg-keyboard-qwerty.ts#CFG_KEYBOARD_QWERTY"] },
     {
       ours: ["src/page/acts.ts#starter-grid", "src/page/menu.ts#starter-grid", "src/page/starters.ts#starter-grid"],
       of: [
@@ -912,6 +912,6 @@ export const PAGE: Area = {
       ],
     },
     { ours: "src/page/session.ts#session-key-prefix", of: ["src/account.ts#getSessionDataLocalStorageKey"] },
-    { ours: "src/page/snapshot.ts#STATS", of: ["src/enums/stat.ts#Stat"] },
+    { ours: "src/page/snapshot.ts#stats", of: ["src/enums/stat.ts#Stat"] },
   ],
 };

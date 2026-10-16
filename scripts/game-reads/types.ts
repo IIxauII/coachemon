@@ -33,7 +33,7 @@ export type GameSet = { at: SourceRef; known: readonly string[]; handledIn: read
 
 /**
  * A hand constant in our code that copies game data. `ours` is `<repo file>#<id>`, or one per file when the copy recurs,
- * and each file carries `// @mirrors <id>` above the constant.
+ * and each file carries `// @mirrors <id>` above the constant. The id is lower-kebab.
  */
 export type Mirror = { ours: string | readonly string[]; of: GameRef[] };
 

@@ -8,7 +8,7 @@ const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch 
 // game-less-backed
 // `getMaxExpLevel` (game-code.md §15). The game's own call answers for the wave the run stands on; a projection asks
 // about a wave ahead of it, and about the waves on the way.
-// @mirrors levelCapAt
+// @mirrors level-cap-at
 export const levelCapAt = (s, wave) => {
   const r = Math.ceil(Math.max(1, Math.floor(wave) || 1) / 10) * 10;
   const w = s?.gameMode?.isDaily ? r + 30 + Math.floor(r / 5) : r;

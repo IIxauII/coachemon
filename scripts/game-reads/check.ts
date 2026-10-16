@@ -16,6 +16,9 @@ export type ScannedRead = Found & { area: AreaName; file: string };
 
 export type Problem = { kind: "UNREGISTERED" | "STALE" | "INVALID"; area: AreaName; what: string; where?: string };
 
+/** A mirror id: lower-kebab, so it never reads as the name of the constant it marks. */
+const KEBAB = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
 export type Repo = {
   reads: ScannedRead[];
   own: ReadonlySet<string>;
@@ -123,6 +126,7 @@ export function check(repo: Repo, registry: Registry): Problem[] {
       for (const ours of oursOf(m)) {
         const { file, symbol: id } = refParts(ours);
         if (!mine.some(r => r.kind === "mirror" && r.file === file && r.name === id)) problems.push({ kind: "STALE", area, what: `mirror ${ours}` });
+        if (!KEBAB.test(id)) problems.push({ kind: "INVALID", area, what: `mirror ${ours} is not lower-kebab` });
       }
       if (m.of.length === 0) problems.push({ kind: "INVALID", area, what: `mirror ${oursOf(m).join(", ")} names no game ref` });
     }

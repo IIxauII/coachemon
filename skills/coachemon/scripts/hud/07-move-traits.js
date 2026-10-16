@@ -28,10 +28,10 @@ const sideFlags = (mv, a) => ({ self: !!a?.selfTarget, side: SELF_SIDE.has(mv?.m
 const guaranteedChance = mv => !(mv?.chance > 0 && mv.chance < 100);
 // These read the target's chosen command, which doesn't exist yet while we choose (game-code.md §6). Upper Hand is
 // left out on purpose: it needs a priority move from the target, not just an attack.
-// @mirrors COMMAND_CONDITION
+// @mirrors command-condition
 const COMMAND_CONDITION = [MoveId.SUCKER_PUNCH, MoveId.THUNDERCLAP];
 // Gigaton Hammer and Blood Moon share one restriction, known here by its i18n key (game-code.md §5).
-// @mirrors NO_REPEAT_KEY
+// @mirrors no-repeat-key
 const NO_REPEAT_KEY = "battle:moveDisabledConsecutive";
 
 // One use's hit count, before the target's HP or a boss bar cuts it short (game-code.md §2).

@@ -25,7 +25,7 @@ const protectChance = (turn, foe) => turn.memo(`protect:${foe.id}`, () => {
 });
 
 // Approximation only: live damage already carries the spread ¾ (game-code.md §1).
-// @mirrors spreadMult
+// @mirrors spread-mult
 const spreadMult = (turn, atk) => {
   const { double, foes, field } = turn.facts;
   if (!double) return 1;
@@ -60,7 +60,7 @@ export const planOutcomes = (turn, atk, def) => turn.memo(`o:${atk.id}>${def.id}
 
 const NO_MOVE_INFO = { priority: 0 };
 // Quick Claw and Quick Draw (game-code.md §5).
-// @mirrors quickChance
+// @mirrors quick-chance
 const quickChance = (p, category) => {
   const status = category === MoveCategory.STATUS;
   if (status && abilitiesOf(p).includes("Mycelium Might")) return 0;
@@ -140,7 +140,7 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
   const kos = pool.filter(o => (o.perHit?.[0]?.max ?? o.max) >= me.hp);
   const list = kos.length ? kos : pool;
   if (foe.aiType === AiType.RANDOM) return list.map(o => ({ o, name: o.name, type: o.type, p: 1 / list.length }));
-  // @mirrors advance
+  // @mirrors ai-advance-chance
   const advance = i => (foe.aiType === AiType.SMART_RANDOM ? 0.375 : Math.min(1, Math.round(list[i + 1].expected / list[i].expected * 50) / 100));
   let reach = 1;
   return list.map((o, i) => {
@@ -153,7 +153,7 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
 
 // P(`p` gets to use `mv` this turn, or next turn with `next`): sleep, freeze, paralysis and confusion as game-code.md
 // §8 has them.
-// @mirrors actChance
+// @mirrors act-chance
 export const actChance = (p, mv = null, next = false) => {
   const later = next ? 1 : 0;
   if (!next && p.getTag?.("RECHARGING")) return 0;
@@ -259,7 +259,7 @@ export const koStageFactor = (p, boost, n, st) => {
   const s0 = p?.isOnField?.() ? p.summonData?.statStages?.[st - 1] ?? 0 : 0;
   return stage(Math.max(-6, Math.min(6, s0 + k * n))) / stage(s0);
 };
-// @mirrors STAT_ABBR
+// @mirrors stat-abbr
 const STAT_ABBR = ["HP", "Atk", "Def", "SpA", "SpD", "Spe"];
 export const koBoostText = b => Object.entries(b.up).map(([st, n]) => `${n > 0 ? "+" : "−"}${Math.abs(n)} ${STAT_ABBR[st]}`).join(" ");
 // What feeding `foe` one KO costs the fight still to come, in turns of ours.
@@ -297,7 +297,7 @@ const statusTokens = (turn, foe, me) => {
     .filter(x => x.q > 0 && turn.mon(me).canTake(x.effect, foe));
 };
 // The share of an attempt a status cancels, by attempts since it landed (game-code.md §8).
-// @mirrors STATUS_SKIP
+// @mirrors status-skip
 const STATUS_SKIP = {
   [StatusEffect.SLEEP]: (a, early) => (early ? (a === 0 ? 2 / 3 : 0) : a === 0 ? 1 : a === 1 ? 2 / 3 : 0),
   [StatusEffect.FREEZE]: a => (a === 0 ? 3 / 4 : a === 1 ? 9 / 16 : 0),
@@ -344,7 +344,7 @@ export const tokenActs = (turn, foe, me, hitsPerTurn, pFoeFirst) => {
 };
 
 // Item thieves (game-code.md §8).
-// @mirrors THIEVES
+// @mirrors thieves
 const THIEVES = { ContactHeldItemTransferChanceModifier: "Grip Claw", TurnHeldItemTransferModifier: "Mini Black Hole" };
 const transferable = p => (p.getHeldItems?.() ?? []).filter(m => m.isTransferable !== false);
 const thieves = (foe, me) => (me.hasAbilityWithAttr?.("BlockItemTheftAbAttr") || !transferable(me).length ? []
@@ -470,9 +470,9 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   // This turn only: the replay of later turns can't see the first Protect, and a second in a row mostly fails.
   const guard = opts.free || opts.next || after || mine?.bypassProtect ? 0 : protectChance(turn, foe);
   // King's Rock (game-code.md §8).
-  // @mirrors flinch
+  // @mirrors flinch-chance
   const flinch = Math.min(1, 0.1 * heldStack(foe, "FlinchChanceModifier")) * foeAttacks;
-  // @mirrors steady
+  // @mirrors para-act-chance
   const steady = (me.status?.effect === StatusEffect.PARALYSIS ? 7 / 8 : 1) * needs * (1 - flinch * (1 - pF));
   const acts = opts.free || !t ? null : tokenActs(turn, foe, me, hitsOn(t), 1 - pF);
   const now = actChance(me, pm?.getMove?.() ?? null, !!opts.next) * needs * (mine?.semi ? 1 - pF : 1) * (acts ? acts.act(1) : 1) * (1 - guard);
@@ -531,7 +531,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
       };
     }
     // Confusion's self-hit at its mean roll (game-code.md §8).
-    // @mirrors confusionHit
+    // @mirrors confusion-hit
     const confusionHit = confusedHits && ((2 * me.level / 5 + 2) * 40 * stat(me, Stat.ATK) / stat(me, Stat.DEF) / 50 + 2) * 0.925;
     selfSpent = (mine.self ?? 0) * Math.min(hitsWe, turnsWe) + confusedHits * 1.5 * confusionHit / 3;
     const soften = st => (mt.drops?.[st] ? stage(me.summonData?.statStages?.[st - 1] ?? 0) / stage(Math.max(-6, (me.summonData?.statStages?.[st - 1] ?? 0) + mt.drops[st])) : 1);
@@ -765,7 +765,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const t = threatFrom(turn, f, me, pm, { next });
       const aimed = !play.self;
       const guard = aimed && !info.bypassProtect && !free(f) && !next ? protectChance(turn, f) : 0;
-      // @mirrors kingsRock
+      // @mirrors kings-rock
       const kingsRock = free(f) || !t ? 0 : Math.min(1, 0.1 * heldStack(f, "FlinchChanceModifier")) * Math.min(1, t.moves.reduce((q, m) => q + m.p, 0));
       const works = actChance(me, mv, next) * (1 - kingsRock * (1 - pF)) * (aimed ? (1 - guard) * info.acc * (info.e > 0 && !info.bounce ? 1 : 0) : 1);
       if (!(works >= 0.05)) return null;
@@ -1419,7 +1419,7 @@ const statusPlay = (turn, me, f, info) => {
   if (t.inflicts.some(x => x.self)) return null;
   const up = turn.mon(me).setup(mv);
   if (up) {
-    // @mirrors names
+    // @mirrors stat-names
     const names = ["HP", "Atk", "Def", "SpA", "SpD", "Spe"];
     return {
       kind: "setup", self: true, patches: [{ mon: me, stages: up }], hpCost: t.cutHp ? Math.max(1, Math.floor(me.getMaxHp() / t.cutHp.ratio)) : 0,
@@ -1472,7 +1472,7 @@ const hazardValue = (turn, me, tagType) => {
   const grounded = p => { try { return p.isGrounded?.() ?? !typesOf(p).includes("Flying"); } catch { return true; } };
   const guarded = p => !!p.hasAbilityWithAttr?.("BlockNonDirectDamageAbAttr");
   if (tagType === "TOXIC_SPIKES" && coming.some(p => grounded(p) && typesOf(p).includes("Poison"))) return null;
-  // @mirrors spikes
+  // @mirrors spikes-ratio
   const spikes = n => (n > 0 ? 1 / (10 - 2 * n) : 0);
   const share = p => {
     if (tagType === "STEALTH_ROCK") return turn.mon(p).rockChip;

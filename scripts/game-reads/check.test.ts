@@ -30,7 +30,7 @@ const CLEAN: Registry = {
       { name: "biomeId", kind: "field", at: ["src/field/arena.ts#Arena.biomeId"] },
       { name: "prLang", kind: "storage-key", at: ["src/plugins/i18n.ts#initI18n"] },
     ],
-    mirrors: [{ ours: `${FIXTURES}/hud.js#RARE`, of: ["src/data/balance/biomes.ts#biomeLinks"] }],
+    mirrors: [{ ours: `${FIXTURES}/hud.js#rare-biomes`, of: ["src/data/balance/biomes.ts#biomeLinks"] }],
   },
   templates: { reads: [] },
   harness: {
@@ -104,22 +104,28 @@ test("an unregistered import specifier fails, and so does a binding its entry do
 });
 
 test("a mirror marker must resolve to a Mirror entry, and a Mirror must keep its marker", () => {
-  const renamed = fixture("hud.js").replace("@mirrors RARE", "@mirrors RARE_ONWARD");
+  const renamed = fixture("hud.js").replace("@mirrors rare-biomes", "@mirrors rare-onward");
   assert.deepEqual(problems(repo({ hud: renamed })), [
-    `UNREGISTERED [hud] mirror RARE_ONWARD (${FIXTURES}/hud.js:1)`,
-    `STALE [hud] mirror ${FIXTURES}/hud.js#RARE`,
+    `UNREGISTERED [hud] mirror rare-onward (${FIXTURES}/hud.js:1)`,
+    `STALE [hud] mirror ${FIXTURES}/hud.js#rare-biomes`,
   ]);
 });
 
+test("a mirror id is lower-kebab: one in any other case is INVALID", () => {
+  const shouting = fixture("hud.js").replace("@mirrors rare-biomes", "@mirrors RARE_BIOMES");
+  const registry: Registry = { ...CLEAN, hud: { ...CLEAN.hud, mirrors: [{ ours: `${FIXTURES}/hud.js#RARE_BIOMES`, of: ["src/data/balance/biomes.ts#biomeLinks"] }] } };
+  assert.deepEqual(problems(repo({ hud: shouting }), registry), [`INVALID [hud] mirror ${FIXTURES}/hud.js#RARE_BIOMES is not lower-kebab`]);
+});
+
 test("one mirror marker may sit in several files, each named by the Mirror and each kept", () => {
-  const again = { file: `${FIXTURES}/hud-too.js`, text: "// @mirrors RARE\nexport const rareCount = () => 1;\n" };
+  const again = { file: `${FIXTURES}/hud-too.js`, text: "// @mirrors rare-biomes\nexport const rareCount = () => 1;\n" };
   const both: Repo = { ...repo(), reads: [...repo().reads, ...scan({ page: [], server: [], hud: [again], harness: [], templates: [] }, TABLES)] };
   const registry: Registry = {
     ...CLEAN,
-    hud: { ...CLEAN.hud, mirrors: [{ ours: [`${FIXTURES}/hud.js#RARE`, again.file + "#RARE"], of: ["src/data/balance/biomes.ts#biomeLinks"] }] },
+    hud: { ...CLEAN.hud, mirrors: [{ ours: [`${FIXTURES}/hud.js#rare-biomes`, again.file + "#rare-biomes"], of: ["src/data/balance/biomes.ts#biomeLinks"] }] },
   };
   assert.deepEqual(problems(both, registry), []);
-  assert.deepEqual(problems(repo(), registry), [`STALE [hud] mirror ${FIXTURES}/hud-too.js#RARE`]);
+  assert.deepEqual(problems(repo(), registry), [`STALE [hud] mirror ${FIXTURES}/hud-too.js#rare-biomes`]);
 });
 
 test("an enum member the generated table lacks fails", () => {

@@ -14,10 +14,10 @@ const KIND_LABEL = { final: "final boss", fixed: "fixed battle", gym: "gym leade
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 
-// @mirrors LUCK_GRADES
+// @mirrors luck-grades
 const LUCK_GRADES = ["D", "C", "C+", "B-", "B", "B+", "A-", "A", "A+", "A++", "S", "S+", "SS", "SS+", "SSS"];
 // The luck loop's first roll: one reward's chance of at least one tier upgrade (game-code.md §12).
-// @mirrors upgradeChance
+// @mirrors upgrade-chance
 const upgradeChance = luck => 4 / Math.floor(128 / ((luck + 4) / 4));
 
 // A fixed battle's pinned reward tiers (game-code.md §12), or null for a free roll.
@@ -31,13 +31,13 @@ const rewardRules = (s, wave) => {
 };
 
 const DOUBLE_HORIZON = 10;
-// @mirrors DOUBLE_ABILITIES
+// @mirrors double-abilities
 const DOUBLE_ABILITIES = ["Illuminate", "Arena Trap", "No Guard", "Commander"];
-// @mirrors GRUNT_DOUBLE
+// @mirrors grunt-double
 const GRUNT_DOUBLE = 1 / 3;
 // The expected share of double battles over the next `n` waves (game-code.md §16): a fixed battle at its config's
 // `double`, a grunt wave at its unseeded 1/3 (§12).
-// @mirrors doubleOdds
+// @mirrors double-odds
 export const doubleOdds = (s, from, n = DOUBLE_HORIZON) => stage("odds", () => {
   const gm = s?.gameMode;
   const lures = (s?.modifiers ?? []).filter(m => m?.constructor?.name === "DoubleBattleChanceBoosterModifier")
@@ -92,7 +92,7 @@ const readiness = (model, profile) => {
 };
 
 // The classic final boss, all read and none rolled (game-code.md §12).
-// @mirrors ETERNATUS_FACTS
+// @mirrors eternatus-facts
 const ETERNATUS_FACTS = [
   { good: false, text: "phase 1 can't be KO'd — damage is capped at 1 HP, so it always reaches Eternamax" },
   { good: false, text: "Eternamax steals one held item per turn (Mini Black Hole) and the fight turns double" },

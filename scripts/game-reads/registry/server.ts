@@ -61,8 +61,8 @@ export const SERVER: Area = {
     },
     { ours: "src/driver.ts#title-classic", of: ["src/phases/title-phase.ts#TitlePhase.showOptions"] },
     { ours: "src/driver.ts#title-new-game", of: ["src/phases/title-phase.ts#TitlePhase.showOptions"] },
-    { ours: "src/game/save.ts#SALTED", of: ["src/utils/data.ts#encrypt"] },
-    { ours: "src/game/save.ts#SAVE_KEY", of: ["src/constants.ts#saveKey"] },
+    { ours: "src/game/save.ts#salted", of: ["src/utils/data.ts#encrypt"] },
+    { ours: "src/game/save.ts#save-key", of: ["src/constants.ts#saveKey"] },
     { ours: "src/screen.ts#settings-mode-range", of: ["src/enums/ui-mode.ts#UiMode"] },
   ],
 };
