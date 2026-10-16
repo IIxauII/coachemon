@@ -85,6 +85,9 @@ export function cursorStarter(L: Located, args: { index: number; fine: string })
   const h = L.ui.handlers[L.m.STARTER_SELECT];
   if (h.filterMode === true) return { ok: false, why: "filter-mode" };
   const n = (h.filteredStarterIds || []).length;
+  // `setCursor` clamps to the 81 recycled containers, not the filtered count, so past the end it lands on a container
+  // still showing an old species (#711).
+  if (!(args.index >= 0 && args.index < n)) return { ok: false, why: "no-such-starter" };
   // @mirrors starter-grid
   const rows = Math.ceil(n / 9);
   const row = Math.floor(args.index / 9);

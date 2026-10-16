@@ -107,6 +107,17 @@ test("the starter cursor scrolls its row on screen and lands on the grid index, 
   assert.equal(h.startCursorObj.visible, false);
 });
 
+test("the starter cursor refuses an index past the filtered grid, where a recycled container still shows an old species", t => {
+  const ids = Array.from({ length: 100 }, (_, i) => i + 1);
+  const names = Object.fromEntries(ids.map(id => [id, `Mon ${id}`]));
+  const { h } = starterGrid(names, ids, { cursor: 0, scrollCursor: 0 });
+  onPage(t, { ui: { mode: UiMode.STARTER_SELECT, handlers: { [UiMode.STARTER_SELECT]: h } } });
+  const { fine } = send("probe", {});
+  assert.deepEqual(send("cursor.starter", { index: 100, fine }), { ok: false, why: "no-such-starter" });
+  assert.deepEqual(send("cursor.starter", { index: -1, fine }), { ok: false, why: "no-such-starter" });
+  assert.equal(h.cursor, 0);
+});
+
 test("modal runs the handler's own button action", t => {
   const clicked: number[] = [];
   const h = { active: true, config: { buttonActions: [() => clicked.push(0), () => clicked.push(1)] } };
