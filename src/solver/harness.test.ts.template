@@ -1,0 +1,790 @@
+// The oracle's harness, in one of two modes. Handed a save and inputs at COACH_IN, it plays them forward on the
+// battle's seed and writes what it saw to COACH_OUT. Handed COACH_PORT as well, it serves the search's jobs over that
+// socket until the socket closes. It judges nothing: `src/solver/replay.ts` and `src/solver/worker.ts` read it.
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { connect } from "node:net";
+import { createInterface } from "node:readline";
+import { getHeapStatistics } from "node:v8";
+import { BattleScene } from "#app/battle-scene";
+import { activeOverrides, defaultOverrides } from "#app/overrides";
+import { ConfusedTag } from "#data/battler-tags";
+import { allMoves } from "#data/data-lists";
+import { PokemonSummonData } from "#data/pokemon-data";
+import { Button } from "#enums/buttons";
+import { Command } from "#enums/command";
+import { HitCheckResult } from "#enums/hit-check-result";
+import { MoveId } from "#enums/move-id";
+import { isIgnorePP, isVirtual, MoveUseMode } from "#enums/move-use-mode";
+import { SpeciesId } from "#enums/species-id";
+import { Stat } from "#enums/stat";
+import { StatusEffect } from "#enums/status-effect";
+import { UiMode } from "#enums/ui-mode";
+import { applySessionVersionMigration } from "#system/version-converter";
+import { Pokemon } from "#field/pokemon";
+import { BypassSpeedChanceModifier, FlinchChanceModifier, SurviveDamageModifier } from "#modifiers/modifier";
+import { Move, MoveEffectAttr } from "#moves/move";
+import type { CommandPhase } from "#phases/command-phase";
+import { MoveEffectPhase } from "#phases/move-effect-phase";
+import { MovePhase } from "#phases/move-phase";
+import { GameManager } from "#test/framework/game-manager";
+import { PromptHandler } from "#test/helpers/prompt-handler";
+import type { PartyUiHandler } from "#ui/party-ui-handler";
+import { canTerastallize } from "#utils/pokemon-utils";
+import { beforeAll, describe, it, vi } from "vitest";
+
+const DEADLINE_MS = 540_000;
+const PORT = process.env.COACH_PORT;
+
+// `GameManager`'s constructor swaps the prototype's for a max roll (#632).
+const realRand = BattleScene.prototype.randBattleSeedInt;
+const OVERRIDES = [
+  "IVS_OVERRIDE",
+  "ENEMY_IVS_OVERRIDE",
+  "NATURE_OVERRIDE",
+  "ENEMY_NATURE_OVERRIDE",
+  "SHINY_OVERRIDE",
+  "ENEMY_SHINY_OVERRIDE",
+] as const;
+
+type PartySlot = { slot: number; species: string };
+type Input =
+  | (({ kind: "move"; move: string; tera: boolean } | { kind: "switch"; to: PartySlot }) & { replacement?: PartySlot })
+  | { kind: "queued"; replacement: PartySlot };
+type Turn = "won" | "lost" | "on" | { illegal: string };
+
+/**
+ * `at`: a fork point to start from, for a save that isn't the wave's start (`src/solver/extras.ts`). `liveExport`: a
+ * carried save's live export, migrated as a load migrates the save (#703).
+ */
+const job: { save: any; inputs: Input[]; at?: string; liveExport?: any } = JSON.parse(
+  readFileSync(process.env.COACH_IN as string, "utf8"),
+);
+const report: Record<string, unknown> = {};
+
+let phaserGame: Phaser.Game;
+let game: GameManager;
+let boots = 0;
+const scene = () => game.scene as any;
+const species = (p: any): string => SpeciesId[p.species.speciesId];
+
+const mon = (p: any, slot: number) => ({
+  slot,
+  species: species(p),
+  onField: p.isOnField(),
+  hp: p.hp,
+  maxHp: p.getMaxHp(),
+  status: StatusEffect[p.status?.effect ?? StatusEffect.NONE],
+  statStages: [...p.getStatStages()],
+  tera: p.isTerastallized,
+  // Index 0 is the last bar (game-code.md §3).
+  ...(p.isBoss() && { bossBars: p.isFainted() ? 0 : p.bossSegmentIndex + 1 }),
+});
+const checkpoint = () => ({ ours: scene().getPlayerParty().map(mon), foes: scene().getEnemyParty().map(mon) });
+
+function stackTotals(items: any[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const item of items) out[item.type.id] = (out[item.type.id] ?? 0) + item.stackCount;
+  return out;
+}
+
+function unlikeTheSave(side: string, mons: any[], saved: any[]): string[] {
+  return mons.flatMap((p, i) =>
+    [
+      JSON.stringify(p.ivs) !== JSON.stringify(saved[i]?.ivs) && "IVs",
+      p.nature !== saved[i]?.nature && "nature",
+      p.shiny !== saved[i]?.shiny && "shininess",
+    ]
+      .filter(Boolean)
+      .map(what => `${side} ${species(p)}'s ${what}`),
+  );
+}
+
+// Mirrors `CommandPhase.tryExecuteQueuedMove`: true when the turn runs a queued move (a two-turn move's second turn, a
+// rampage, a recharge) without asking for a command.
+function queuedRuns(active: any): boolean {
+  const moveset: any[] = active.getMoveset();
+  const next = active
+    .getMoveQueue()
+    .find(
+      (q: any) =>
+        q.move === MoveId.NONE ||
+        isVirtual(q.useMode) ||
+        (moveset.find(m => m.moveId === q.move)?.isUsable(active, isIgnorePP(q.useMode), true)?.[0] ?? false),
+    );
+  return next !== undefined && (next.move === MoveId.NONE || isVirtual(next.useMode) || moveset.some(m => m.moveId === next.move));
+}
+
+function legal(): Input[] {
+  const active = scene().getPlayerField()[0];
+  const usable = active.getMoveset().filter((m: any) => m.isUsable(active, false, true)[0]);
+  // With nothing usable, the fight command plays Struggle (`CommandPhase.handleFightCommand`).
+  const moves: string[] = usable.length > 0 ? usable.map((m: any) => MoveId[m.moveId]) : ["STRUGGLE"];
+  const tera = canTerastallize(active);
+  const out: Input[] = moves.flatMap(move => [
+    { kind: "move" as const, move, tera: false },
+    ...(tera ? [{ kind: "move" as const, move, tera: true }] : []),
+  ]);
+  if (!active.isTrapped()) {
+    scene()
+      .getPlayerParty()
+      .forEach((p: any, slot: number) => {
+        if (!p.isFainted() && !p.isOnField()) out.push({ kind: "switch", to: { slot, species: species(p) } });
+      });
+  }
+  return out;
+}
+
+const same = (a: Input, b: Input) =>
+  a.kind === "move"
+    ? b.kind === "move" && a.move === b.move && a.tera === b.tera
+    : a.kind === "switch" && b.kind === "switch" && a.to.slot === b.to.slot && a.to.species === b.to.species;
+
+// A prompt left queued for a decision the game never asks for is taken by the next one, and every later input lands a
+// turn late (#632).
+function strayPrompts(): number {
+  const prompts: unknown[] = (game.promptHandler as any).prompts;
+  const stray = prompts.length;
+  prompts.length = 0;
+  return stray;
+}
+
+function command(input: Input | null) {
+  if (input === null || input.kind === "queued") return;
+  if (input.kind === "switch") return game.doSwitchPokemon(input.to.slot);
+  const move = MoveId[input.move as keyof typeof MoveId];
+  if (move !== MoveId.STRUGGLE) return input.tera ? game.move.selectWithTera(move) : game.move.select(move);
+  // The move helper refuses a move with no PP left, so this sends what the menu would.
+  game.onNextPrompt("CommandPhase", UiMode.COMMAND, () => {
+    scene().ui.setMode(UiMode.FIGHT, (scene().phaseManager.getCurrentPhase() as CommandPhase).getFieldIndex());
+  });
+  game.onNextPrompt("CommandPhase", UiMode.FIGHT, () => {
+    const phase = scene().phaseManager.getCurrentPhase() as CommandPhase;
+    phase.handleCommand(input.tera ? Command.TERA : Command.FIGHT, 0, MoveUseMode.NORMAL);
+  });
+}
+
+/**
+ * One turn, to the next decision or to the battle's end. `choose` picks the faint replacement the turn asks for from
+ * those the party can send in; by default, the one the input names.
+ */
+async function turn(input: Input | null, choose = (_offered: PartySlot[]) => input?.replacement): Promise<Turn> {
+  command(input);
+  const interceptor: any = game.phaseInterceptor;
+  // A wipe never reaches TurnEndPhase; the interceptor reads its target afresh on every pass (#632).
+  const watch = setInterval(() => {
+    if (scene().phaseManager.getCurrentPhase()?.is("GameOverPhase")) interceptor.target = "GameOverPhase";
+  }, 1);
+  try {
+    await interceptor.to("TurnEndPhase", false);
+  } finally {
+    clearInterval(watch);
+  }
+  // Stopped short of GameOverPhase, which clears the party.
+  if (scene().phaseManager.getCurrentPhase().is("GameOverPhase")) return "lost";
+  if (game.isVictory()) {
+    // Where `Checkpoint` (oracle-line.ts) reads the last: not SelectModifierPhase, which a tenth wave never reaches
+    // (game-code.md §12).
+    await game.phaseInterceptor.to("BattleEndPhase");
+    return "won";
+  }
+  await game.phaseInterceptor.to("TurnEndPhase");
+  const party: any[] = scene().getPlayerParty();
+  const fainted = scene().getPlayerField()[0]?.isFainted() ?? false;
+  if (!fainted && input?.replacement !== undefined) {
+    return { illegal: "names a faint replacement, but nothing of ours fainted" };
+  }
+  if (fainted) {
+    const offered = party.flatMap((p, slot) => (!p.isFainted() && !p.isOnField() ? [{ slot, species: species(p) }] : []));
+    const replacement = choose(offered);
+    if (replacement === undefined) return { illegal: "leaves a faint replacement to pick, and names none" };
+    if (!offered.some(o => o.slot === replacement.slot && o.species === replacement.species)) {
+      return { illegal: `names a faint replacement the party can't send in` };
+    }
+    // Registered once the faint has happened: up front, it blocks the command prompts queued behind it (#632).
+    game.onNextPrompt("SwitchPhase", UiMode.PARTY, () => {
+      const handler = scene().ui.getHandler() as PartyUiHandler;
+      handler.setCursor(replacement.slot);
+      handler.processInput(Button.ACTION);
+      handler.processInput(Button.ACTION);
+    });
+  }
+  await game.phaseInterceptor.to("CommandPhase");
+  return "on";
+}
+
+/**
+ * A turn the game plays for us takes the next input only when that is a `queued` one and our lead faints: a rampage
+ * can play more than one such turn, and the faint can fall on any of them (#702).
+ */
+async function queuedTurn(inputs: Input[], next: number): Promise<{ input: Input | null; ended: Turn }> {
+  const queued = inputs[next]?.kind === "queued" ? inputs[next] : null;
+  let taken = false;
+  const ended = await turn(null, () => {
+    taken = queued !== null;
+    return queued?.replacement;
+  });
+  return { input: taken ? queued : null, ended };
+}
+
+async function boot() {
+  // A second GameManager in one process needs what vitest does between tests: wrapping the shared UI's spies twice
+  // recurses, and the old prompt interval would answer the new game's prompts (#655).
+  if (boots > 0) vi.restoreAllMocks();
+  clearInterval(PromptHandler.runInterval);
+  PromptHandler.runInterval = undefined;
+  game = new GameManager(phaserGame);
+  boots++;
+  kept = undefined;
+  BattleScene.prototype.randBattleSeedInt = realRand;
+  const constructed = scene().randBattleSeedInt === realRand;
+  game.override.normalizeIVs = false;
+  game.override.normalizeNatures = false;
+  game.override.disableShinies = false;
+  await game.classicMode.startBattle(1 as any);
+  return constructed;
+}
+
+type Holder = { items(): Iterable<unknown>; drop(item: unknown): void };
+
+/**
+ * Where a replaced battle's objects stay reachable. A test reload skips the reset that destroys the old battle, and a
+ * mock container drops its children without destroying them: every reload left about 1.1 MB alive until the worker
+ * ran out of heap (#663).
+ */
+function holders(): Holder[] {
+  const s = scene();
+  const canvases = Phaser.Display.Canvas.CanvasPool as any;
+  const icons: any[] = s.ui.handlers.flatMap((h: any) => (h?.iconAnimHandler?.icons ? [h.iconAnimHandler] : []));
+  return [
+    // Destroyed, not only dropped: a foe's battle info listens on the scene for the berries and moves it shows.
+    { items: () => [...s.field.list], drop: o => s.field.remove(o, true) },
+    { items: () => [...s.fieldUI.list], drop: o => s.fieldUI.remove(o, true) },
+    { items: () => [...s.spriteTeraSparkleHandler.sprites], drop: o => s.spriteTeraSparkleHandler.remove(o) },
+    ...icons.map(h => ({ items: () => [...h.icons.keys()], drop: (o: unknown) => h.icons.delete(o) })),
+    { items: () => canvases.pool.flatMap((c: any) => c.parent ?? []), drop: o => canvases.remove(o) },
+  ];
+}
+
+/** What the holders held before this GameManager's first reload, which no reload replaces. */
+let kept: Set<unknown> | undefined;
+
+/** `before` runs once the session is parsed, and before it loads. */
+async function reload(session: string, before = () => {}) {
+  const s = scene();
+  const replaced = new Set(holders().flatMap(h => [...h.items()]));
+  kept ??= replaced;
+  (game.reload as any).sessionData = s.gameData.parseSessionData(session);
+  // `initSessionFromData` clears `modifiers` and never `enemyModifiers` (#632).
+  s.enemyModifiers = [];
+  s.modifiers = [];
+  // `initSession` destroys the old timer without taking it off the clock, which ticks it for the worker's life (#663).
+  if (s.playTimeTimer) s.time.removeEvent(s.playTimeTimer);
+  before();
+  await game.reload.reloadSession();
+  BattleScene.prototype.randBattleSeedInt = realRand;
+  sweep(replaced);
+}
+
+function sweep(replaced: Set<unknown>) {
+  for (const holder of holders()) {
+    for (const item of holder.items()) if (replaced.has(item) && !kept?.has(item)) holder.drop(item);
+  }
+  const s = scene();
+  // Never booted, so it never updates: what it queues stays queued.
+  s.sys.updateList._pending.length = 0;
+  s.sys.updateList._toProcess = 0;
+  // Every sprite's animation state adds a listener here that nothing takes off.
+  s.game.anims.off("remove");
+  // Records the test framework keeps and nothing here reads.
+  s.textures.list.length = 0;
+  vi.clearAllMocks();
+  game.phaseInterceptor.clearLogs();
+  game.textInterceptor.clearLogs();
+}
+
+function migrated(session: any) {
+  const copy = structuredClone(session);
+  applySessionVersionMigration(copy);
+  return copy;
+}
+
+async function load() {
+  if (job.liveExport !== undefined) report.migrated = { save: migrated(job.save), liveExport: migrated(job.liveExport) };
+  const saved = (report.migrated as { save: any } | undefined)?.save ?? job.save;
+  const realRng = { constructed: await boot(), reloaded: false };
+  let enemyItemsBeforeReload = 0;
+  await reload(JSON.stringify(job.save), () => (enemyItemsBeforeReload = scene().enemyModifiers.length));
+  realRng.reloaded = scene().randBattleSeedInt === realRand;
+  if (job.at !== undefined) putBack(JSON.parse(job.at));
+
+  report.hygiene = {
+    realRng,
+    overrides: [
+      ...OVERRIDES.filter(name => activeOverrides[name] !== defaultOverrides[name]),
+      ...unlikeTheSave("our", scene().getPlayerParty(), saved.party),
+      ...unlikeTheSave("the foe's", scene().getEnemyParty(), saved.enemyParty),
+    ],
+    enemyItemsBeforeReload,
+    items: { ours: stackTotals(scene().modifiers), foes: stackTotals(scene().enemyModifiers) },
+  };
+  report.battle = { wave: scene().currentBattle.waveIndex, battleSeed: scene().currentBattle.battleSeed };
+  // Copied now: the export shares arrays with the mons, such as `moveHistory`, which the fight goes on to change.
+  report.scene = JSON.parse(JSON.stringify(scene().gameData.getSessionSaveData()));
+}
+
+type Roll = { range: number; value: number };
+
+/** Every call on the battle RNG since `readDraws`, which the hooks read their draws from. */
+const rolls: Roll[] = [];
+let draws: unknown[] = [];
+
+/** The chance that `randBattleSeedInt(100)` falls under a threshold that need not be whole (game-code.md §5). */
+const under100 = (threshold: number) => Math.min(100, Math.max(0, Math.ceil(threshold))) / 100;
+
+const drew = (p: any, kind: string, chance: number, happened: boolean, about: object = {}) =>
+  draws.push({ kind, side: p.isPlayer() ? "ours" : "foes", species: species(p), ...about, chance, happened });
+
+function rolled<T>(run: () => T): [T, Roll[]] {
+  const from = rolls.length;
+  const result = run();
+  return [result, rolls.slice(from)];
+}
+
+function wrap(owner: any, name: string, around: (original: (...args: any[]) => any, self: any, args: any[]) => any) {
+  const original = owner.prototype[name];
+  if (typeof original !== "function") throw new Error(`the game has no ${owner.name}.${name} to read draws from`);
+  owner.prototype[name] = function (this: any, ...args: any[]) {
+    return around(original, this, args);
+  };
+}
+
+const effectOf = (attr: any) => {
+  if (attr.is("StatusEffectAttr")) return { status: StatusEffect[attr.effect] };
+  if (attr.is("AddBattlerTagAttr") || attr.is("AddArenaTagAttr")) return { tag: attr.tagType };
+  if (attr.is("StatStageChangeAttr")) return { stats: attr.stats.map((s: number) => Stat[s]), stages: attr.stages };
+  return { attr: attr.constructor.name };
+};
+
+/**
+ * Reads each draw from the rolls the game's own method made, and changes nothing it plays: every wrapper hands back
+ * what the method returned (#701).
+ */
+function readDraws() {
+  const s = scene();
+  const rand = s.randBattleSeedInt;
+  /** The added effect being applied: its chance once asked, and whether the roll that follows it passed. */
+  let effect: { chance?: number; at?: number; passed?: boolean } | null = null;
+  s.randBattleSeedInt = function (this: any, range: number, min = 0) {
+    const value = rand.call(this, range, min);
+    rolls.push({ range, value: value - min });
+    if (effect?.chance !== undefined && effect.at === rolls.length - 1 && range === 100) effect.passed = value < effect.chance;
+    return value;
+  };
+
+  let accuracy = 0;
+  let multiplier: number | undefined;
+  wrap(Move, "calculateBattleAccuracy", (f, move, args) => (accuracy = f.apply(move, args)));
+  wrap(Pokemon, "getAccuracyMultiplier", (f, p, args) => (multiplier = f.apply(p, args)));
+  wrap(MoveEffectPhase, "hitCheck", (f, phase, args) => {
+    multiplier = undefined;
+    const entry = f.apply(phase, args);
+    // Asked for only on the way to the roll: a hit check that never rolled leaves it unset (game-code.md §5).
+    if (multiplier !== undefined) {
+      drew(phase.getUserPokemon(), "accuracy", under100(accuracy * multiplier), entry[0] === HitCheckResult.HIT, {
+        move: MoveId[phase.move.id],
+      });
+    }
+    return entry;
+  });
+
+  wrap(Pokemon, "getCriticalHitResult", (f, target, args) => {
+    const [source, move] = args;
+    const [crit, during] = rolled(() => f.apply(target, args));
+    // No roll where the crit was sure or impossible (game-code.md §1).
+    if (during.length > 0) drew(source, "crit", 1 / during[0].range, crit, { move: MoveId[move.id] });
+    return crit;
+  });
+
+  // The game asks an effect's chance outside a hit too, scoring the foe's moves, and rolls nothing after.
+  wrap(MoveEffectAttr, "getMoveChance", (f, attr, args) => {
+    const chance = f.apply(attr, args);
+    if (effect && chance >= 0 && chance < 100) Object.assign(effect, { chance, at: rolls.length });
+    return chance;
+  });
+  // Each instance, not the class: a subclass's `apply` calls its parent's, and the instance's runs once per use. A roll
+  // that passed can still add nothing, such as a burn on a foe the hit knocked out.
+  for (const move of allMoves) {
+    for (const attr of move.attrs as any[]) {
+      if (!attr.is("MoveEffectAttr")) continue;
+      const apply = attr.apply;
+      attr.apply = function (this: any, user: any, ...rest: any[]) {
+        const outer = effect;
+        const mine: NonNullable<typeof effect> = {};
+        effect = mine;
+        try {
+          const applied = apply.call(this, user, ...rest);
+          if (mine.passed !== undefined) {
+            drew(user, "effect", under100(mine.chance as number), mine.passed && applied !== false, {
+              move: MoveId[move.id],
+              effect: effectOf(attr),
+            });
+          }
+          return applied;
+        } finally {
+          effect = outer;
+        }
+      };
+    }
+  }
+
+  const items: [any, (m: any) => number][] = [
+    [BypassSpeedChanceModifier, m => m.getStackCount() / 10],
+    [FlinchChanceModifier, m => (m.getStackCount() * m.chance) / 100],
+    [SurviveDamageModifier, m => m.getStackCount() / 10],
+  ];
+  for (const [item, chance] of items) {
+    wrap(item, "apply", (f, m, args) => {
+      const [procced, during] = rolled(() => f.apply(m, args));
+      if (during.length > 0) drew(args[0], "item", Math.min(1, chance(m)), procced, { item: m.type.id });
+      return procced;
+    });
+  }
+
+  wrap(MovePhase, "checkPara", (f, phase, args) => {
+    const [stopped, during] = rolled(() => f.apply(phase, args));
+    if (during.length > 0) drew(phase.pokemon, "paralysis", 1 / during[0].range, stopped);
+    return stopped;
+  });
+  wrap(ConfusedTag, "lapse", (f, tag, args) => {
+    const [kept, during] = rolled(() => f.apply(tag, args));
+    // The first roll is whether it hits itself, at 0; a self-hit then rolls its damage.
+    if (during.length > 0) drew(args[0], "confusion", 1 / during[0].range, during[0].value === 0);
+    return kept;
+  });
+}
+
+async function play() {
+  const steps: unknown[] = [];
+  report.steps = steps;
+  let next = 0;
+  for (;;) {
+    const at = scene().currentBattle.turn;
+    let input: Input | null;
+    let ended: Turn;
+    if (queuedRuns(scene().getPlayerField()[0])) {
+      draws = [];
+      ({ input, ended } = await queuedTurn(job.inputs, next));
+      if (input) next++;
+    } else {
+      if (next === job.inputs.length) return "open";
+      input = job.inputs[next];
+      const offered = legal();
+      if (!offered.some(o => same(o, input as Input))) {
+        return { illegal: { index: next, turn: at, why: "isn't offered", legal: offered } };
+      }
+      next++;
+      draws = [];
+      ended = await turn(input);
+    }
+    if (typeof ended === "object") {
+      return { illegal: { index: input === null ? null : next - 1, turn: at, why: ended.illegal, legal: [] } };
+    }
+    steps.push({ turn: at, input, checkpoint: checkpoint(), strayPrompts: strayPrompts(), draws });
+    if (ended !== "on") return ended;
+  }
+}
+
+// An entry's `pokemon` is the live mon, which only its id names across a reload (game-code.md §30).
+const faints = (history: any[]) => history.map(f => ({ id: f.pokemon.id, turn: f.turn }));
+
+/** The save at a decision, and the live fields a reload loses or resets (#636, #655). */
+function forkPoint(): string {
+  const s = scene();
+  const battle = s.currentBattle;
+  const all: any[] = [...s.getPlayerParty(), ...s.getEnemyParty()];
+  return JSON.stringify({
+    session: JSON.stringify(s.gameData.getSessionSaveData()),
+    turn: battle.turn,
+    rng: Phaser.Math.RND.state(),
+    battleSeedState: battle.battleSeedState,
+    switchCounter: battle.enemySwitchCounter,
+    lastMove: battle.lastMove,
+    enemyFaints: battle.enemyFaints,
+    faints: { ours: faints(battle.playerFaintsHistory), foes: faints(battle.enemyFaintsHistory) },
+    teamIndex: Object.fromEntries(s.getEnemyParty().map((p: any) => [p.id, p.initialTeamIndex])),
+    bossIndex: Object.fromEntries(s.getEnemyParty().map((p: any) => [p.id, p.bossSegmentIndex])),
+    temp: Object.fromEntries(all.map(p => [p.id, { turnCount: p.summonData.turnCount, waveTurnCount: p.summonData.waveTurnCount }])),
+    wave: Object.fromEntries(all.map(p => [p.id, { ...p.waveData, abilitiesApplied: [...p.waveData.abilitiesApplied] }])),
+    summon: Object.fromEntries(all.filter(p => p.isOnField()).map(p => [p.id, JSON.parse(JSON.stringify(p.summonData))])),
+    status: Object.fromEntries(
+      all.filter(p => p.status).map(p => [p.id, { toxic: p.status.toxicTurnCount, sleep: p.status.sleepTurnsRemaining }]),
+    ),
+  });
+}
+
+/** Set after a lost turn: the next reload may throw, and a fresh GameManager recovers (#655). */
+let dirty = false;
+
+async function loadSession(session: string) {
+  strayPrompts();
+  try {
+    await reload(session);
+  } catch (err) {
+    if (!dirty) throw err;
+    await boot();
+    await reload(session);
+  }
+  dirty = false;
+}
+
+async function restore(at: string) {
+  // Parsed afresh each time: `PokemonSummonData` keeps the arrays it is given, so a turn played after a restore
+  // would write back into a shared copy, and a fork point restored twice would come back changed (#655).
+  const fork = JSON.parse(at);
+  await loadSession(fork.session);
+  putBack(fork);
+}
+
+/** Onto the scene its session just loaded. */
+function putBack(fork: any) {
+  const s = scene();
+  const battle = s.currentBattle;
+  const all: any[] = [...s.getPlayerParty(), ...s.getEnemyParty()];
+  battle.turn = fork.turn;
+  battle.battleSeedState = fork.battleSeedState;
+  battle.enemySwitchCounter = fork.switchCounter;
+  battle.lastMove = fork.lastMove;
+  battle.enemyFaints = fork.enemyFaints;
+  const mons = (history: { id: number; turn: number }[]) =>
+    history.map(({ id, turn }) => ({ pokemon: all.find(p => p.id === id), turn }));
+  battle.playerFaintsHistory = mons(fork.faints.ours);
+  battle.enemyFaintsHistory = mons(fork.faints.foes);
+  Phaser.Math.RND.state(fork.rng);
+  // A load gives the trainer's Tera slot its specialty type again, by party slot: after a switch, another mon's
+  // (game-code.md §30).
+  const { party, enemyParty } = JSON.parse(fork.session);
+  const teraTypes = new Map([...party, ...enemyParty].map((m: any) => [m.id, m.teraType]));
+  for (const p of all) {
+    p.teraType = teraTypes.get(p.id) ?? p.teraType;
+    const wave = fork.wave[p.id];
+    p.waveData.endured = wave.endured;
+    p.waveData.abilityRevealed = wave.abilityRevealed;
+    p.waveData.abilitiesApplied = new Set(wave.abilitiesApplied);
+    const status = fork.status[p.id];
+    if (status && p.status) {
+      p.status.toxicTurnCount = status.toxic;
+      p.status.sleepTurnsRemaining = status.sleep;
+    }
+  }
+  for (const p of s.getEnemyParty()) {
+    p.initialTeamIndex = fork.teamIndex[p.id];
+    if (p.bossSegments) p.bossSegmentIndex = fork.bossIndex[p.id];
+  }
+  // Ours too, though the save keeps it: the reload's summon fires entry abilities again, and a foe's Intimidate took a
+  // second stage off our lead at every fork point it was on the field for (#662).
+  for (const p of [...s.getPlayerField(), ...s.getEnemyField()]) {
+    if (fork.summon[p.id]) p.summonData = new PokemonSummonData(fork.summon[p.id]);
+  }
+  // After the summon data, which a copy constructs with the turn counts at 1: its `toJSON` leaves them out.
+  for (const p of all) Object.assign(p.summonData, fork.temp[p.id]);
+}
+
+const hp = () => {
+  const s = scene();
+  const share = (p: any) => (p.isFainted() ? 0 : p.hp / p.getMaxHp());
+  return { ours: s.getPlayerParty().map(share), foes: s.getEnemyParty().map(share) };
+};
+
+/** Leaves the draws out: of two paths it merges, the search keeps one's draws and drops the other's (#655). */
+function sig(): string {
+  const s = scene();
+  const pokemon = (p: any) =>
+    [
+      p.species.speciesId,
+      p.level,
+      p.exp,
+      p.hp,
+      p.isOnField() ? 1 : 0,
+      p.status?.effect ?? 0,
+      p.status?.toxicTurnCount ?? 0,
+      p.status?.sleepTurnsRemaining ?? 0,
+      p.isTerastallized ? 1 : 0,
+      p.isOnField() ? p.getStatStages().join(".") : "",
+      p.isOnField() ? p.summonData.tags.map((t: any) => `${t.tagType}/${t.turnCount}`).join(".") : "",
+      // A pending recharge, rampage turn or charge turn (#655).
+      p.isOnField() ? p.getMoveQueue().map((q: any) => q.move).join(".") : "",
+      p.getMoveset().map((m: any) => m.ppUsed).join("."),
+      p.getHeldItems().map((item: any) => `${item.type.id}${item.stackCount}`).join("."),
+    ].join(":");
+  return [
+    s.currentBattle.turn,
+    s.arena.playerTerasUsed,
+    s.currentBattle.enemySwitchCounter,
+    s.arena.weather?.weatherType ?? 0,
+    s.arena.terrain?.terrainType ?? 0,
+    s.arena.tags.map((t: any) => `${t.tagType}/${t.side}/${t.turnCount}`).join("."),
+    ...s.getPlayerParty().map(pokemon),
+    "|",
+    ...s.getEnemyParty().map(pokemon),
+  ].join(",");
+}
+
+const position = () => ({
+  sig: sig(),
+  hp: hp(),
+  legal: queuedRuns(scene().getPlayerField()[0]) ? [null] : legal(),
+  forkPoint: forkPoint(),
+});
+
+async function expand(at: string, inputs: (Input | null)[]) {
+  const children: unknown[] = [];
+  const queue = [...inputs];
+  while (queue.length > 0) {
+    const input = queue.shift() as Input | null;
+    await restore(at);
+    let offered: PartySlot[] = [];
+    let ended: Turn;
+    try {
+      ended = await turn(input, all => {
+        offered = all;
+        return input?.replacement ?? all[0];
+      });
+    } catch (err) {
+      dirty = true;
+      ended = { illegal: `threw ${err instanceof Error ? err.message : String(err)}`.split("\n")[0] };
+    }
+    const naming = (replacement: PartySlot): Input => (input === null ? { kind: "queued", replacement } : { ...input, replacement });
+    const played = offered.length > 0 ? naming(input?.replacement ?? offered[0]) : input;
+    if (input?.replacement === undefined) queue.push(...offered.slice(1).map(naming));
+    const stray = strayPrompts();
+    if (ended === "lost") dirty = true;
+    if (typeof ended === "object") children.push({ input: played, end: "dropped", why: ended.illegal });
+    else if (stray > 0) children.push({ input: played, end: "dropped", why: `left ${stray} prompts queued` });
+    else if (ended === "on") children.push({ input: played, end: "on", at: position() });
+    else children.push({ input: played, end: ended, hp: hp() });
+  }
+  const { used_heap_size, heap_size_limit } = getHeapStatistics();
+  const mb = (bytes: number) => Math.round(bytes / 2 ** 20);
+  return { children, heap: { usedMb: mb(used_heap_size), limitMb: mb(heap_size_limit) } };
+}
+
+type Played = { input: Input | null; turn: number; checkpoint: unknown; end: Turn };
+
+async function checks(inputs: Input[]) {
+  if (job.at === undefined) await loadSession(JSON.stringify(job.save));
+  else await restore(job.at);
+  const straight: Played[] = [];
+  const forks: string[] = [];
+  let next = 0;
+  for (;;) {
+    const at = scene().currentBattle.turn;
+    let input: Input | null;
+    let end: Turn;
+    if (queuedRuns(scene().getPlayerField()[0])) {
+      forks.push(forkPoint());
+      ({ input, ended: end } = await queuedTurn(inputs, next));
+      if (input) next++;
+    } else {
+      input = inputs[next] ?? null;
+      if (input === null) break;
+      if (input.kind === "queued") throw new Error(`input ${next + 1} is for a turn the game plays for us, but turn ${at} asks for one`);
+      next++;
+      forks.push(forkPoint());
+      end = await turn(input);
+    }
+    straight.push({ input, turn: at, checkpoint: checkpoint(), end });
+    if (end !== "on") break;
+  }
+  const differs = (from: number, i: number, got: Played) =>
+    JSON.stringify([got.checkpoint, got.end]) === JSON.stringify([straight[i].checkpoint, straight[i].end])
+      ? []
+      : [{ from: straight[from].turn, turn: straight[i].turn, want: straight[i], got }];
+  const replayFrom = async (from: number, chained: boolean) => {
+    await restore(forks[from]);
+    const misses: unknown[] = [];
+    for (let i = from; i < straight.length; i++) {
+      if (chained && i > from) await restore(forkPoint());
+      const at = scene().currentBattle.turn;
+      const end = await turn(straight[i].input);
+      const got = { input: straight[i].input, turn: at, checkpoint: checkpoint(), end };
+      misses.push(...differs(from, i, got));
+      if (end !== "on" || misses.length > 0) break;
+    }
+    return misses;
+  };
+  const fork: unknown[] = [];
+  for (let from = 1; from < straight.length; from++) fork.push(...(await replayFrom(from, false)));
+  const chain = straight.length > 0 ? await replayFrom(0, true) : [];
+  return { straight: straight.map(({ turn, end }) => ({ turn, end })), fork, chain };
+}
+
+async function serve(port: number) {
+  const socket = connect(port, "127.0.0.1");
+  await new Promise<void>((resolve, reject) => socket.once("connect", resolve).once("error", reject));
+  const send = (message: unknown) => socket.write(`${JSON.stringify(message)}\n`);
+  await load();
+  send({ kind: "root", root: position() });
+  for await (const line of createInterface({ input: socket })) {
+    const asked = JSON.parse(line);
+    try {
+      const answer = asked.kind === "expand" ? await expand(asked.forkPoint, asked.inputs) : await checks(asked.inputs);
+      send({ id: asked.id, ...answer });
+    } catch (err) {
+      dirty = true;
+      send({ id: asked.id, error: err instanceof Error ? (err.stack ?? err.message) : String(err) });
+    }
+  }
+}
+
+describe("coach harness", () => {
+  beforeAll(() => {
+    phaserGame = new Phaser.Game({ type: Phaser.HEADLESS });
+  });
+
+  it.skipIf(PORT !== undefined)(
+    "replay",
+    async () => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      // Inside vitest's own timeout, which would end the test before it writes the report.
+      const deadline = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`the replay timed out after ${DEADLINE_MS / 1000} s`)), DEADLINE_MS);
+      });
+      try {
+        report.version = JSON.parse(readFileSync("package.json", "utf8")).version;
+        await Promise.race([
+          (async () => {
+            await load();
+            readDraws();
+            report.end = await play();
+          })(),
+          deadline,
+        ]);
+      } catch (err) {
+        report.error = err instanceof Error ? (err.stack ?? err.message) : String(err);
+      } finally {
+        clearTimeout(timer);
+      }
+      writeFileSync(process.env.COACH_OUT as string, JSON.stringify(report));
+    },
+    DEADLINE_MS + 60_000,
+  );
+
+  it.runIf(PORT !== undefined)(
+    "serve",
+    async () => {
+      // Left on, the game's log of every phase piles up in the runner's copy of vitest's output for the worker's whole
+      // life (#662).
+      for (const quiet of ["log", "info", "debug", "warn"] as const) console[quiet] = () => {};
+      try {
+        report.version = JSON.parse(readFileSync("package.json", "utf8")).version;
+        await serve(Number(PORT));
+      } catch (err) {
+        report.error = err instanceof Error ? (err.stack ?? err.message) : String(err);
+      }
+      // An interrupted coordinator closes the socket and removes its files at once: written after that, the report
+      // would be left in the clone (#658).
+      if (existsSync(process.env.COACH_IN as string)) writeFileSync(process.env.COACH_OUT as string, JSON.stringify(report));
+    },
+    24 * 3_600_000,
+  );
+});

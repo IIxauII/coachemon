@@ -1,0 +1,186 @@
+// Which two members a DNA Splicer should fuse, in which order, and whether any fusion is worth the member it spends.
+// The pairs are ranked by the fusion judgment (#588), so this module scores nothing itself: it reads the run, orders
+// what comes back and says it in words. It is built inside the run read's `sandbox` and opens none of its own
+// (game-code.md §24).
+import { TYPES, iconOf } from "./01-core.js";
+import { standardThreats } from "./11-threats.js";
+import { judgeFusionPair } from "./12-value.js";
+
+const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
+const nameOf = x => String(x?.name ?? "").replace(/ \((N|P)\)$/, "");
+
+// A team-value figure in the tenth of a turn the judgment's margin is set in, which 46-encounter and 47-biome print
+// the same way: the card's figures are the judgment's own, rounded once here and nowhere else.
+const r1 = x => Math.round((x ?? 0) * 10) / 10;
+export const signed = n => `${n >= 0 ? "+" : "−"}${Math.abs(n).toFixed(1)}`;
+// The figure with its unit, wherever a pair's ΔV is printed on its own: a bare number on a card whose other newcomer
+// cards all say "turns" would read as the percent of a carry's power the retired scale was in (#589).
+export const inTurns = n => `${signed(n)} turns`;
+
+const attacksOf = p => (p.moveset ?? []).filter(Boolean).map(pm => tryDo(() => pm.getMove())).filter(mv => mv && mv.category !== MoveCategory.STATUS && mv.power !== 0);
+const baseOf = p => [...(tryDo(() => p.getSpeciesForm(true), p.species)?.baseStats ?? [])];
+const bstOf = row => (row.length === 6 ? row.reduce((t, x) => t + x, 0) : null);
+// What the base runs on now and what the fused mon would: the halves' mean, as `calculateStats` takes it
+// (game-code.md §24), and under Spliced Endless an unfused mon runs on half its own row.
+// @mirrors bst-pair
+const bstPair = (a, b, spliced) => {
+  const ra = baseOf(a), rb = baseOf(b);
+  if (ra.length < 6 || rb.length < 6) return { before: null, after: null };
+  return { before: bstOf(spliced ? ra.map(x => Math.ceil(x / 2)) : ra),
+    after: bstOf(ra.map((x, i) => Math.ceil((x + rb[i]) / 2))) };
+};
+
+/**
+ * One pair, as the card says it: `a` is the base and `b` the half it spends (CONTEXT.md, `Fusion`), and `j` is the
+ * judgment on them.
+ *
+ * `value` is **ΔV** — what the party is worth with the fused mon in the base's slot and the other half's slot left
+ * empty, against what it is worth now — and `net` is ΔV less what releasing the other half destroys, which is what
+ * decides the call. Both are the judgment's own figures, unrounded: the pairs are ranked by ΔV itself (#567, story
+ * 24), and `fusionRow` rounds to the tenth of a turn the card prints. Rounding before the sort would tie every pair
+ * within a tenth of a turn and fall back to party order, which is how a weak base wins a rank it didn't earn.
+ *
+ * `why` is the judgment's own reasons, so a reason can never argue with the call it explains: each names a threat
+ * whose answer, backup or exposure moved most. The rest — the typing, the ability, the BST, the moves the other half
+ * offers — is `notes`: the fused mon's own description, which the duels behind the judgment have already priced
+ * through the combatant adapter and which no longer scores anything here (#588, #589).
+ */
+const fusionOf = (a, b, j, spliced) => {
+  const fused = j.fused?.combatant ?? null;
+  const bst = bstPair(a, b, spliced);
+  const ability = nameOf(fused?.getAbility?.()) || null;
+  // The fused mon's ability is the other half's, so an ability `canApplyAbility` refuses on a fusion — Disguise, Zen
+  // Mode, Schooling, Stance Change (game-code.md §24) — leaves it with none at all. The adapter already refuses it,
+  // and a player picking that half has to be told why the fusion comes out blank.
+  const lent = nameOf(tryDo(() => b.getAbility(true)) ?? tryDo(() => b.getAbility()));
+  const known = new Set((a.moveset ?? []).map(m => m?.moveId));
+  const offered = attacksOf(b).filter(mv => !known.has(mv.id)).map(nameOf);
+  const items = j.cost?.items ?? 0;
+  const evolves = [a, b].filter(p => tryDo(() => p.species.getEvolutionLevels().length, 0) > 0).map(p => p.name);
+  const notes = [
+    // This net and "held items move over" below disagree on purpose: the net is charged for the other half's items,
+    // which the game moves over (game-code.md §24, #588).
+    `ΔV ${signed(r1(j.delta))} turns${j.release ? `, net ${signed(r1(j.net))} after a ${Math.abs(r1(j.release)).toFixed(1)} release` : ""}`,
+    `spends ${b.name} L${b.level}${b.hp > 0 ? "" : " (fainted)"}`,
+    !ability && lent ? `${lent} doesn't work fused` : null,
+    bst.before != null && bst.after != null && bst.before !== bst.after ? `${a.name} BST ${bst.before} → ${bst.after}` : null,
+    offered.length ? `offers ${offered.slice(0, 2).join("/")}${offered.length > 2 ? ` +${offered.length - 2}` : ""}` : null,
+    items ? `${items} held item${items > 1 ? "s" : ""} move over` : null,
+    evolves.length ? `${evolves.join(" & ")} still evolve${evolves.length > 1 ? "" : "s"}` : null,
+    a.hasPassive?.() ? `keeps passive ${nameOf(tryDo(() => a.getPassiveAbility()))}` : null,
+  ].filter(Boolean);
+  return {
+    a, b, value: j.delta, release: j.release, net: j.net, fuse: j.verdict === "fuse",
+    types: (tryDo(() => fused.getTypes(), []) ?? []).map(t => TYPES[t]).filter(Boolean),
+    ability, bst: bst.after,
+    why: [...(j.plain ? [j.plain.text] : []), ...j.reasons.map(r => r.text)],
+    notes, confidence: j.confidence ?? null,
+  };
+};
+
+/**
+ * Every pair the Splicer would take, best ΔV first. `allowed(p)` is the Splicer's select filter: null means pickable.
+ *
+ * It runs inside a run read, which is the only read that can ask the judgment at all, and the answers live in the
+ * run's own memo rather than in a cache of this module's: the card's cache is gone (#589). The memo key holds what
+ * varies within one run key (26-run.js) — which members the Splicer will take, and the form, ability, nature and
+ * moveset the run key does not carry.
+ *
+ * `unread` is what the judgment could not reach, for a card that has no pair to show and has to say why rather than
+ * go quiet: the game's species table lands partway through a run, and until it does there is no threat set to judge
+ * a fusion against. It is asked *before* the memo and never memoised with the pairs, exactly as 11-threats refuses
+ * to memoise an answer taken before the tables landed — the party screen opens on the same run key either side of
+ * that moment, and a memo filled in from the earlier side would answer for the rest of the run.
+ */
+export const fusionOptions = (run, { allowed = () => null } = {}) => {
+  const s = run.scene;
+  const party = (run.facts?.party ?? []).filter(Boolean);
+  const spliced = !!s?.gameMode?.isSplicedOnly;
+  const pickable = party.filter(p => !p.fusionSpecies && tryDo(() => allowed(p), null) == null);
+  const unread = standardThreats(run).unavailable ?? null;
+  if (unread) return { spliced, options: [], pickable: pickable.length, unread };
+  const key = JSON.stringify([spliced, pickable.map(p => p.id), party.map(p => [p.id, p.species?.speciesId, p.formIndex,
+    p.fusionSpecies?.speciesId ?? null, p.abilityIndex, p.level, p.hp > 0, p.nature, (p.moveset ?? []).map(m => m?.moveId)])]);
+  const value = run.memo("fusion", key, () => build(run, party, pickable, spliced));
+  // The memo hands a throw back as `{ unavailable }` (26-run.js), so what comes back is not always a pair list, and
+  // a caller handed one raw would read `options.filter` off nothing — the fusion card and the rewards card with it,
+  // for as long as the run key lives. An answer that came back unread is said as one more thing the judgment could
+  // not reach, which is what 46-encounter and 47-biome do with the same seam.
+  if (!value.options) return { spliced, options: [], pickable: pickable.length, unread: value.unavailable ?? "fusion: no pairs read" };
+  return value;
+};
+
+const build = (run, party, pickable, spliced) => {
+  const options = [];
+  for (const a of pickable) {
+    for (const b of pickable) {
+      if (a === b) continue;
+      const j = tryDo(() => judgeFusionPair(run, a, b));
+      // A pair the judgment refuses — a base that is dead weight, a half that is fused already — is no option at
+      // all: it is a pair the Splicer would make and the coach cannot price, not a pair it turns down. A pair this
+      // module cannot say in words is dropped the same way: a throw out of `build` is what the memo keeps as the
+      // card's whole answer, so one pair must never be able to decide the rest of them.
+      const f = j && !j.unavailable ? tryDo(() => fusionOf(a, b, j, spliced)) : null;
+      if (f) options.push(f);
+    }
+  }
+  // Ranked by ΔV (#567, story 24), and stable, so two pairs worth the same fall to the base the party lists first.
+  options.sort((x, y) => y.value - x.value);
+  return { spliced, options, pickable: pickable.length, unread: null };
+};
+
+export const fusionRow = f => ({
+  base: { name: f.a.name, icon: iconOf(f.a), level: f.a.level }, other: { name: f.b.name, icon: iconOf(f.b), level: f.b.level },
+  value: r1(f.value), release: r1(f.release), net: r1(f.net), fuse: f.fuse, types: f.types, ability: f.ability, bst: f.bst,
+  why: f.why.slice(0, 2), notes: f.notes, confidence: f.confidence,
+});
+
+// `v` is on the rewards card's scale, about 10 a rarity tier. The figure it reads is the fusion's **net value** in
+// turns, one point to the turn, which is 47-biome's own rate for the same judgment: a Splicer is worth a tier and a
+// bit where a fusion clears the margin, and never the Master tier its rarity would hand it.
+export const splicerReward = (run, t) => {
+  if (!run) return { v: -6, why: "no team read here" };
+  const { options, pickable, unread } = fusionOptions(run, { allowed: p => (typeof t?.selectFilter === "function" ? t.selectFilter(p) : null) });
+  if (pickable < 2) return { v: -6, why: "nobody left to fuse" };
+  if (!options.length) return { v: -6, why: unread ? `no team read here: ${unread}` : "nobody left to fuse" };
+  const row = fusionRow(options[0]);
+  const order = `${row.base.name} ← ${row.other.name}`;
+  if (!row.fuse) return { v: -2, why: `no fusion worth a member · best ${order} ${inTurns(row.value)}` };
+  return { v: 12 + Math.min(25, row.net), why: [`fuse ${order} · ${inTurns(row.value)}`, row.why[0]].filter(Boolean).join(" · "),
+    holder: { icon: row.base.icon, name: row.base.name } };
+};
+
+export const spliceScreen = (s, h) => (s.ui?.mode === UiMode.PARTY && h?.partyUiMode === PartyUiMode.SPLICE ? h : null);
+
+// The margin a pair has to clear is ΔV less the release, in turns, so two pairs can be within it of each other: the
+// `better` prompt stays on the gap it was on, read in the judgment's unit rather than in percent of a carry's power.
+const BETTER_BY = 0.2;
+
+export const fusionModel = (run, h) => {
+  const party = (run.facts?.party ?? []).filter(Boolean);
+  const all = fusionOptions(run, { allowed: p => (typeof h.selectFilter === "function" ? h.selectFilter(p) : null) });
+  const picked = h.transferMode && h.transferCursor >= 0 ? party[h.transferCursor] ?? null : null;
+  const rows = (picked ? all.options.filter(f => f.a === picked) : all.options).slice(0, 3).map(fusionRow);
+  const best = all.options[0] ? fusionRow(all.options[0]) : null;
+  return {
+    kind: "fusion", spliced: all.spliced, pickable: all.pickable, unread: all.unread ?? null,
+    picked: picked ? { name: picked.name, icon: iconOf(picked) } : null,
+    rows,
+    better: picked && best?.fuse && (!rows[0] || best.value > rows[0].value + BETTER_BY) ? best : null,
+  };
+};
+
+export const fusionCall = m => {
+  const top = m.rows[0];
+  if (!top) {
+    if (m.unread) return `no team read here: ${m.unread}`;
+    return m.picked ? `nothing to fuse ${m.picked.name} with` : "no two members can be fused";
+  }
+  if (m.better) return `back out: ${m.better.base.name} ← ${m.better.other.name} is better (${inTurns(m.better.value)})`;
+  // Story 25: no pair clears the margin, so the member is spent for nothing and the Splicer is better left unspent.
+  if (!top.fuse) return "no fusion worth a member — back out, the Splicer stays unspent";
+  return m.picked ? `then pick ${top.other.name}` : `pick ${top.base.name} first, then ${top.other.name}`;
+};
+
+export const fusionSummary = m =>
+  [m.rows[0] ? `${m.rows[0].base.name} ← ${m.rows[0].other.name} (${inTurns(m.rows[0].value)})` : null, fusionCall(m)].filter(Boolean).join(" · ");

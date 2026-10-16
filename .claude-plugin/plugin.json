@@ -1,0 +1,16 @@
+{
+  "name": "coachemon",
+  "displayName": "Coachemon",
+  "version": "1.52.1",
+  "description": "Let Claude play PokéRogue: an MCP server that drives a live pokerogue.net tab over CDP, plus a skill for the play loop.",
+  "author": { "name": "xau" },
+  "homepage": "https://github.com/IIxauII/coachemon",
+  "keywords": ["coachemon", "pokerogue", "game", "mcp", "cdp"],
+  "mcpServers": {
+    "coachemon": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/src/server.ts"],
+      "timeout": 60000
+    }
+  }
+}

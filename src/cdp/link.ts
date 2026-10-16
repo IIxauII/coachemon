@@ -1,0 +1,131 @@
+/**
+ * The CDP link and the tab's CDP side (extension-distribution.md §12.1). Every command is one `Runtime.evaluate`, so an
+ * act's fingerprint check and the act itself run in the same page turn (§10.2).
+ */
+import { Button } from "../enums/generated.ts";
+import type { Claim, Fault, GameLink, Presence, Tab } from "../game/link.ts";
+import type { Contention, DriverLock } from "./lock.ts";
+import { disc } from "../page/disc.ts";
+import { dispatch } from "../page/dispatch.ts";
+import type { ConsoleLine } from "../page/errors.ts";
+import { fine } from "../page/fine.ts";
+import { COMMAND_HANDLERS, type Result } from "../page/handlers.ts";
+import { PAGE_MODES } from "../page/modes.ts";
+import { locate } from "../page/locate.ts";
+import { starter } from "../page/starter.ts";
+import { COMMAND_NAMES, STORE_COMMANDS, type Args, type CommandName } from "../protocol/commands.ts";
+import { isThrown, type CdpSession } from "./session.ts";
+
+export type LinkSession = Pick<CdpSession, "attached" | "launchedChrome" | "onException" | "ensure" | "evaluate" | "keepAlive" | "rawKey" | "screenshot" | "consoleTail">;
+
+/** The raw keyboard fallback's keys (v1-tool-surface.md §6.4). */
+const RAW_KEYS: Partial<Record<Button, [key: string, code: string, keyCode: number]>> = {
+  [Button.UP]: ["ArrowUp", "ArrowUp", 38],
+  [Button.DOWN]: ["ArrowDown", "ArrowDown", 40],
+  [Button.LEFT]: ["ArrowLeft", "ArrowLeft", 37],
+  [Button.RIGHT]: ["ArrowRight", "ArrowRight", 39],
+  [Button.ACTION]: ["z", "KeyZ", 90],
+  [Button.CANCEL]: ["x", "KeyX", 88],
+  [Button.SUBMIT]: ["Enter", "Enter", 13],
+  [Button.MENU]: ["Escape", "Escape", 27],
+};
+
+/** Each command's expression up to its arguments, the mode enums serialized into it (#164). */
+const PREFIX = Object.fromEntries(
+  COMMAND_NAMES.map(name => [name, `(${dispatch})(${locate}, ${fine}, ${disc}, ${starter}, ${COMMAND_HANDLERS[name]}, ${JSON.stringify(name)}, ${JSON.stringify(STORE_COMMANDS[name].kind)}, ${JSON.stringify(PAGE_MODES)}, `]),
+) as Record<CommandName, string>;
+
+const UNCONTENDED: Contention = { contended: false, holder: null };
+
+/** The hub carries these to the plugin, or nothing does (extension-distribution.md §10.1). */
+const HUB_ONLY: ReadonlySet<CommandName> = new Set(["session", "oracle.line"]);
+
+const hubOnly = (name: CommandName) => `The ${name} command goes over the Coachemon hub only, and this server reads the game over CDP: set COACHEMON_TRANSPORT=hub.`;
+
+export class CdpLink implements GameLink, Tab {
+  readonly commands: ReadonlySet<CommandName> = new Set(COMMAND_NAMES.filter(n => !HUB_ONLY.has(n)));
+  /** CDP reads never advance a frozen loop: the guard still checks the frame and refuses `loop_frozen` (#23, extension-distribution.md §10.3). */
+  readonly pumps = false;
+  readonly #session: LinkSession;
+  readonly #lock: DriverLock | null;
+
+  constructor(session: LinkSession, lock: DriverLock | null = null) {
+    this.#session = session;
+    this.#lock = lock;
+  }
+
+  async #run<N extends CommandName>(name: N, args: Args<N>): Promise<Result<N> | Fault> {
+    await this.#session.ensure();
+    const r = await this.#session.evaluate<Result<N>>(`${PREFIX[name]}${JSON.stringify(args)})`);
+    return isThrown(r) ? { fault: "threw", message: r.__throw } : r;
+  }
+
+  probe(args: Args<"probe">) { return this.#run("probe", args); }
+  menu() { return this.#run("menu", {}); }
+  snapshot(args: Args<"snapshot">) { return this.#run("snapshot", args); }
+  starters() { return this.#run("starters", {}); }
+  card() { return this.#run("card", {}); }
+  async session(): Promise<Fault> { return { fault: "missing-command", message: hubOnly("session") }; }
+  extras() { return this.#run("extras", {}); }
+  async oracleLine(): Promise<Fault> { return { fault: "missing-command", message: hubOnly("oracle.line") }; }
+  press(args: Args<"press">) { return this.#run("press", args); }
+  key(args: Args<"key">) { return this.#run("key", args); }
+  cursorOption(args: Args<"cursor.option">) { return this.#run("cursor.option", args); }
+  cursorShop(args: Args<"cursor.shop">) { return this.#run("cursor.shop", args); }
+  cursorStarter(args: Args<"cursor.starter">) { return this.#run("cursor.starter", args); }
+  cursorLearn(args: Args<"cursor.learn">) { return this.#run("cursor.learn", args); }
+  modal(args: Args<"modal">) { return this.#run("modal", args); }
+
+  async screenshot(): Promise<string> {
+    await this.#session.ensure();
+    return this.#session.screenshot();
+  }
+
+  /** No rung of the ladder can be evaluated here: a tab that will not attach is simply not there (extension-distribution.md §12.3). */
+  async presence(needs?: readonly CommandName[]): Promise<Presence> {
+    let error: string | null = null;
+    try {
+      await this.#session.ensure();
+    } catch (e) {
+      error = (e as Error).message;
+    }
+    const contended = this.#lock?.contention() ?? UNCONTENDED;
+    const attached = error === null && this.#session.attached;
+    const missing = needs?.find(n => !this.commands.has(n));
+    return {
+      reach: !attached
+        ? { code: "unreachable", rung: null, line: error ?? "The server is not attached to a PokéRogue tab." }
+        : missing !== undefined ? { code: "missing_command", rung: null, line: hubOnly(missing) } : null,
+      facts: { attached, error, tab_contended: contended.contended, lock_holder: contended.holder, chrome_launched_by_server: this.#session.launchedChrome },
+    };
+  }
+
+  /** Taken here, never at startup: the role begins at the first act, and a session that only reads never calls this (extension-distribution.md §7.5). */
+  async claim(): Promise<Claim> {
+    const c = this.#lock?.take() ?? UNCONTENDED;
+    if (!c.contended) return { ok: true };
+    return { ok: false, code: "tab_contended", message: `Another driver (pid ${c.holder}) holds the tab. Nothing was pressed.`, detail: { holder: c.holder } };
+  }
+
+  async keepAlive(): Promise<void> {
+    await this.#session.ensure();
+    await this.#session.keepAlive();
+  }
+
+  async rawKey(b: Button): Promise<boolean> {
+    const k = RAW_KEYS[b];
+    if (!k) return false;
+    await this.#session.ensure();
+    await this.#session.rawKey(...k);
+    return true;
+  }
+
+  /** CDP's own console events, already collected: nothing is asked of the page (extension-distribution.md §12.4). */
+  async tail(): Promise<ConsoleLine[]> {
+    return this.#session.consoleTail();
+  }
+
+  onRejection(cb: (t: number) => void): void {
+    this.#session.onException = cb;
+  }
+}

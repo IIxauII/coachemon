@@ -1,0 +1,20 @@
+import type { Input, PartySlot } from "./oracle-line.ts";
+
+export const title = (key: string) =>
+  key
+    .toLowerCase()
+    .split("_")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+
+export const STAGES = ["Atk", "Def", "SpA", "SpD", "Spe", "Acc", "Eva"];
+
+const mon = ({ slot, species }: PartySlot) => `${title(species)} (slot ${slot})`;
+
+export function describeInput(input: Input): string {
+  const act =
+    input.kind === "move" ? `${input.tera ? "Tera + " : ""}${title(input.move)}`
+    : input.kind === "switch" ? `switch → ${mon(input.to)}`
+    : "played for us";
+  return input.replacement ? `${act}, replacement ${mon(input.replacement)}` : act;
+}
