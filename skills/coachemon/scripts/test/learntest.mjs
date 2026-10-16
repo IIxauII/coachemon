@@ -339,6 +339,16 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.ok(judge(TAUNT, oblivious).notes.includes("nothing to stop at W30"));
   assert.ok(judge(HEAL_BLOCK, oblivious).notes.includes("vs Miltank's Milk Drink at W30"));
 
+  // Who stays trapped (game-code.md §7).
+  const MEAN_LOOK = ["Mean Look","Normal",-1,"X",-1,[["AddBattlerTagAttr",{ tagType: "TRAPPED" }]],false,3,{ flags: 262144 }];
+  const lookBlind = judge(MEAN_LOOK, null);
+  const runner = at30(foe("Rattata", ["Normal"], { ability: "Run Away" }), foe("Machoke", ["Fighting"]));
+  const look = judge(MEAN_LOOK, runner);
+  assert.ok(look.notes.includes("lands on 1 of 2 at W30") && look.value < lookBlind.value, `Mean Look into a Run Away foe: ${look.notes} (${look.value} vs ${lookBlind.value})`);
+  assert.ok(judge(MEAN_LOOK, runner, "Mold Breaker").notes.includes("lands on 1 of 2 at W30"), "Mold Breaker doesn't stop Run Away");
+  const loose = judge(MEAN_LOOK, at30(foe("Rattata", ["Normal"], { ability: "Run Away" }), foe("Gengar", ["Ghost","Poison"])));
+  assert.ok(loose.notes.includes("can't land at W30") && loose.value <= Math.round(lookBlind.value * 0.3) + 1, `nobody to hold: ${loose.notes} (${loose.value})`);
+
   // Who a status move can land on (game-code.md §16). Flags: 262144 reflectable, 2048 powder.
   const WISP = ["Will-O-Wisp","Fire",-1,"X",85,[["StatusEffectAttr",{ effect: 6 }]],false,3,{ flags: 262144 }];
   const wispBlind = judge(WISP, null);

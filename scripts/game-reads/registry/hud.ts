@@ -2003,6 +2003,12 @@ export const HUD: Area = {
       ],
     },
     {
+      ours: "skills/coachemon/scripts/hud/40-learn.js#never-trapped",
+      of: [
+        "src/field/pokemon.ts#Pokemon.isTrapped",
+      ],
+    },
+    {
       ours: "skills/coachemon/scripts/hud/40-learn.js#stand-ins",
       of: [
         "src/data/moves/move.ts#FriendshipPowerAttr",
