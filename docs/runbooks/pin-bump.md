@@ -6,19 +6,44 @@ all three. A live game past the pin gets no ladder, and no solving.
 
 Decisions: [ADR 0001](../adr/0001-escape-ladder-hand-curated-checked-at-pin-bump.md) (the drift check) and
 [ADR 0003](../adr/0003-solving-a-fight-is-an-opt-in-plugin-feature.md) (the version lock). Ticket:
-[#665](https://github.com/IIxauII/coachemon/issues/665).
+[#665](https://github.com/IIxauII/coachemon/issues/665), [#711](https://github.com/IIxauII/coachemon/issues/711).
 
 ## The bump
 
+Bump with the repo's `pin-bump` skill (`.claude/skills/pin-bump/`): ask a session in this repo to bump the pin to
+`<new>`. It runs the steps below as one workflow: setup, subagents over the game's release notes and its diff, the
+checks and the suite, one change list, fixes until everything is clean, the stamp, the live run on the owner's go, and
+the PR. The rest of this page is the reference it works from, and the way to run any one step by hand.
+
+The skill is repo-only: plugin users never load it, and `scripts/plugin-skills.test.ts` fails if the plugin's
+loadable skills ever hold more than `skills/coachemon` and `skills/play-pokerogue`.
+
+## The checks
+
 ```sh
+npm run reads:check
 npm run drift:check -- --version <new>
 ```
 
-It clones `.cache/pokerogue/v<new>` and names every dep whose body **MOVED**, is **MISSING** or was never stamped
-(**UNREVIEWED**), each with the ladder entry or HUD module that leans on it, and every ladder entry whose mode or handler
-is **MISPLACED**. Re-read each one and fix what changed: screens in `src/escape-ladder/table.ts`, HUD modules in
-`skills/coachemon/scripts/hud/`, their deps in `scripts/hud-deps.ts`. Run it again until it says only what you have
-re-read.
+`reads:check` holds at any version: every game name our code reads (in the page readers, the server files that read
+the page, the HUD scripts and the harness template) is registered in `scripts/game-reads/registry/`. A read with no
+entry is **UNREGISTERED**, and an entry nothing reads is **STALE**. It runs inside `npm test` too.
+
+`drift:check` clones `.cache/pokerogue/v<new>` and names every dep whose body **MOVED**, is **MISSING** or was never
+stamped (**UNREVIEWED**), each with the ladder entry, HUD module or registry entry that leans on it, and every ladder
+entry whose mode or handler is **MISPLACED**. At the target version it also names:
+
+- **ADDED**: a member of a game enum or list we mirror or switch on (UiMode, PartyUiMode, the phases, `Challenges`)
+  that the registry's `known` lacks. Handle it where the entry's `handledIn` points, so a new mode never falls through
+  to a generic entry, then add it to `known`.
+- **SHIFTED**: a generated enum's value at `<new>` differs from `src/enums/generated.ts`. Regenerate
+  (`npm run enums:gen -- --version <new> --source .cache/pokerogue/v<new>`) and re-read each user of the shifted
+  member.
+- **UNREGISTERED**: a name our code reads that the game at `<new>` declares, but the registry lacks. Register it.
+
+Re-read each entry and fix what changed: screens in `src/escape-ladder/table.ts`, HUD modules in
+`skills/coachemon/scripts/hud/`, their deps in `scripts/hud-deps.ts`, the reads in `scripts/game-reads/registry/`.
+Run both again until they name only what you have re-read.
 
 Set the clone up for the harness. The checkout `drift:check` makes has no submodules and no `node_modules`; the stamp
 names whichever step is missing. In a worktree, link the main checkout's `.cache` first (`CLAUDE.md`), or the `assets`
@@ -30,13 +55,31 @@ git submodule update --init --depth 1 assets locales
 npx --yes pnpm@<the game's packageManager pnpm> install --frozen-lockfile
 ```
 
-Then stamp:
+## The suite
+
+```sh
+npm run bump:suite -- --version <new>
+```
+
+It runs, at `<new>`, everything but the stamp's harness re-check and the live run: the typecheck, the unit tests, the
+HUD goldens, `enums:gen --check` against the `<new>` checkout, `clone:smoke`, `oracle:encounter` and `oracle:preview`.
+Each step's output goes to its own log under `.cache/bump-suite/v<new>/`; the summary names each step's result,
+duration and log, and a failed step prints its log's tail. It exits 1 on any failure. At 1.12.0.11 it took 16 minutes
+on the dev's Mac, 15 of them `oracle:preview`.
+
+The clone steps run off the pin through `COACHEMON_GAME_VERSION=<new>`, which any of them takes alone:
+`oracle:encounter` and `oracle:preview` run in the `<new>` checkout with its own pnpm, and `clone:smoke` sets a player's
+clone up from a pin read off that checkout, in `.cache/coachemon-home` so the player's own clone in `~/.coachemon` is
+left alone. `enums:gen --check` fails until the enums are regenerated at `<new>`, which the bump does.
+
+## The stamp
 
 ```sh
 npm run drift:check -- --version <new> --stamp
 ```
 
-The stamp refuses while a dep is MISSING or an entry MISPLACED, or when the game's `package.json` names no pnpm. Then
+The stamp refuses while any MISSING, MISPLACED, ADDED, SHIFTED or UNREGISTERED remain, or when the game's
+`package.json` names no pnpm. Then
 it runs the **harness re-check** in that clone:
 
 1. It replays the three known fights from their wave-start saves (`src/solver/fixtures/`): Gordie W180, Drayton W188
@@ -57,6 +100,12 @@ on a version without it get "no answer". Players have no override.
 
 On 1.12.0.11 the whole stamp took about five minutes on the dev's Mac. Commit `reviewed.json` with the fixes; the release carries
 the new pin to players.
+
+## The live run
+
+The last check is a short run on pokerogue.net through this checkout's server once it serves `<new>`: a start, the
+starter screen, a few waves and a shop (the skill's step 5 has the commands). It plays on the owner's real account, so
+it runs only on the owner's go, asked before each run, in a save slot they name.
 
 ## When the re-check fails
 
