@@ -159,6 +159,7 @@ export const TEMPLATES: Area = {
       kind: "import",
       at: ["test/utils/encounter-test-utils.ts#runSelectMysteryEncounterOption"],
     },
+    { name: "#trainers/trainer-config", kind: "import", at: ["src/data/trainers/trainer-config.ts#trainerConfigs"] },
     { name: "#ui/message-ui-handler", kind: "import", at: ["src/ui/handlers/message-ui-handler.ts#MessageUiHandler"] },
     {
       name: "#ui/modifier-select-ui-handler",

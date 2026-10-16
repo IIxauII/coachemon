@@ -190,7 +190,7 @@ summary Trash to Treasure: take Investigate — fight a Gmax Garbodor boss (6 ba
 🎭 Clowning Around ultra Clowning Around: take Battle — double vs boss Mr. Mime and boss Blacephalon (Fire / Electric, Prankster; Mr. Mime copies that ability, both Taunt your slots) → rewards, then Prankster onto one of your mons for good
 Options
 ★ Battle — double vs boss Mr. Mime and boss Blacephalon (Fire / Electric, Prankster; Mr. Mime copies that ability, both Taunt your slots) → rewards, then Prankster onto one of your mons for good
-⚔ double · Prankster is worth keeping — 2 mons at ~L92 vs your L90, 2 of yours fit to fight
+⚔ double · Prankster is worth keeping — 2 mons at L72–74 vs your L90, 2 of yours fit to fight
 · Item shuffle — Garchomp's berries and Ultra / Rogue items are rerolled inside their own tiers
 same count, different items
 · Type shuffle fixed {fixed by the run seed: this is what happens} — every member's 2nd type is redrawn: Garchomp → Bug, Lapras → Normal
@@ -201,11 +201,11 @@ summary Clowning Around: take Battle — double vs boss Mr. Mime and boss Blacep
 🎭 The Expert Pokémon Breeder ultra The Expert Pokémon Breeder: take Magikarp — Magikarp fights the breeder's 3 alone → 4 Great eggs + 5 Common eggs + a Soothe Bell + rewards
 Options
 ★ Magikarp — Magikarp fights the breeder's 3 alone → 4 Great eggs + 5 Common eggs + a Soothe Bell + rewards
-3 mons at ~L82 vs your L80, 1 of yours fit to fight — lose and the party comes back, Magikarp fainted at 0 friendship with no rewards
+3 mons at ~L61 vs your L80, 1 of yours fit to fight — lose and the party comes back, Magikarp fainted at 0 friendship with no rewards
 · Lapras — Lapras fights the breeder's 3 alone → 2 Great eggs + 5 Common eggs + a Soothe Bell + rewards
-3 mons at ~L82 vs your L80, 1 of yours fit to fight — lose and the party comes back, Lapras fainted at 0 friendship with no rewards
+3 mons at ~L61 vs your L80, 1 of yours fit to fight — lose and the party comes back, Lapras fainted at 0 friendship with no rewards
 · Jolteon — Jolteon fights the breeder's 3 alone → 3 Common eggs + a Soothe Bell + rewards
-3 mons at ~L82 vs your L80, 1 of yours fit to fight — lose and the party comes back, Jolteon fainted at 0 friendship with no rewards
+3 mons at ~L61 vs your L80, 1 of yours fit to fight — lose and the party comes back, Jolteon fainted at 0 friendship with no rewards
 summary The Expert Pokémon Breeder: take Magikarp — Magikarp fights the breeder's 3 alone → 4 Great eggs + 5 Common eggs + a Soothe Bell + rewards
 == dark deal, it takes the weakest
 ⌃ {Hide the drawer} × {Close}
@@ -266,7 +266,7 @@ next big fight  none · weakest first  Jolteon 0.0 · Lapras 1.1 · Garchomp 2.6
 🎭 A Trainer's Test rogue A Trainer's Test: take Accept — fight Cheryl: 6 mons, Elite Four strength → an Epic egg + Relic Gold + 2 Rogue rewards
 Options
 ★ Accept — fight Cheryl: 6 mons, Elite Four strength → an Epic egg + Relic Gold + 2 Rogue rewards
-⚔ trainer · 6 mons at ~L68 vs your L65, 3 of yours fit to fight
+⚔ trainer · 6 mons at L49–52 vs your L65, 3 of yours fit to fight
 · Decline — a full party heal + a Rare egg, then the shop with no free reward
 summary A Trainer's Test: take Accept — fight Cheryl: 6 mons, Elite Four strength → an Epic egg + Relic Gold + 2 Rogue rewards
 == weird dream
@@ -276,7 +276,7 @@ Options
 ★ Accept — your whole party is swapped: Garchomp → Dragonite (+100), Lapras → Gyarados (+105), Jolteon → Zapdos (+55) — same levels, held items and the better IVs, then a full heal; pick one of a Memory Mushroom, a Rogue Ball or 4 Mints
 +260 base stats across the party; natures come out neutral, which is what the Mints are for
 · Battle — fight that same team at your own levels, holding your items → pick one of 2 Rogue / 2 Ultra / 2 Great, and one member without a passive gets one for the run
-⚔ trainer · 3 mons at ~L92 vs your L90, 3 of yours fit to fight
+⚔ trainer · 3 mons at L88–90 vs your L90, 3 of yours fit to fight
 ✗ Refuse — every member loses 10% of its level (your L90 drops 9)
 the only option that costs you something and gives nothing back
 summary Weird Dream: take Accept — your whole party is swapped: Garchomp → Dragonite (+100), Lapras → Gyarados (+105), Jolteon → Zapdos (+55) — same levels, held items and the better IVs, then a full heal; pick one of a Memory Mushroom, a Rogue Ball or 4 Mints · avoid Refuse
@@ -285,7 +285,7 @@ summary Weird Dream: take Accept — your whole party is swapped: Garchomp → D
 🎭 The Winstrate Challenge rogue The Winstrate Challenge: take Refuse — a full party heal + a Rarer Candy · avoid Accept
 Options
 ✗ Accept — 5 trainer battles back to back, 13 mons in all, no healing between → a Premium Voucher + a Macho Brace
-⚔ trainer · 13 mons at ~L122 vs your L120, 3 of yours fit to fight
+⚔ trainer · 13 mons at L101–103 vs your L120, 3 of yours fit to fight
 ★ Refuse — a full party heal + a Rarer Candy
 you would not finish the run of five
 summary The Winstrate Challenge: take Refuse — a full party heal + a Rarer Candy · avoid Accept
@@ -294,11 +294,11 @@ summary The Winstrate Challenge: take Refuse — a full party heal + a Rarer Can
 🎭 Mysterious Challengers great Mysterious Challengers: take Hard — fight Ace Trainer May → 2 Ultra + 2 Great + the usual rolls · avoid Brutal
 Options
 · Normal — fight Youngster Joey → a Common TM, a Great TM, a Memory Mushroom + the usual rolls
-⚔ trainer · their own team at ~L32 vs your L32, 3 of yours fit to fight
+⚔ trainer · their own team at ~L20 vs your L22, 3 of yours fit to fight
 ★ Hard — fight Ace Trainer May → 2 Ultra + 2 Great + the usual rolls
-⚔ trainer · 3 mons at ~L35 vs your L32, 3 of yours fit to fight
+⚔ trainer · 3 mons at L23–25 vs your L22, 3 of yours fit to fight
 ✗ Brutal — fight Leader Brock with an Elite Four team → 2 Rogue + 1 Ultra + 1 Great + the usual rolls, but 0.9× EXP
-⚔ trainer · 6 mons at ~L37 vs your L32, 3 of yours fit to fight
+⚔ trainer · 6 mons at L25–27 vs your L22, 3 of yours fit to fight
 summary Mysterious Challengers: take Hard — fight Ace Trainer May → 2 Ultra + 2 Great + the usual rolls · avoid Brutal
 == slumbering snorlax, thief
 ⌃ {Hide the drawer} × {Close}
@@ -378,7 +378,7 @@ summary Dancing Lessons: take Dance — show it a dance: Oricorio joins, keeping
 🎭 Bug-Type Superfan great Bug-Type Superfan: take Give — hand over the bug item → a Golden Bug Net (Rogue) + a Reviver Seed, no fight
 Options
 · Battle fixed {fixed by the run seed: this is what happens} — fight Bug-Type Superfan → rewards, then a free tutor move: Megahorn, Bug Buzz, Sticky Web & U-turn
-⚔ trainer · 3 mons at ~L32 vs your L40, 4 of yours fit to fight
+⚔ trainer · 3 mons at L20 vs your L40, 4 of yours fit to fight
 · Show — show off your bug types (1 bug) → a Super Lure + a Great Ball
 by Scyther · 5 more bugs would make it a Master Ball
 ★ Give — hand over the bug item → a Golden Bug Net (Rogue) + a Reviver Seed, no fight

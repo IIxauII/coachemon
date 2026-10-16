@@ -302,6 +302,12 @@ export const HUD: Area = {
     { name: "display", kind: "field", at: [], from: "ours", note: "DOM style.display on our panel" },
     { name: "doesFlagEffectApply", kind: "method", at: ["src/data/moves/move.ts#Move.doesFlagEffectApply"] },
     {
+      name: "doubleBattle",
+      kind: "field",
+      at: ["src/data/mystery-encounters/utils/encounter-phase-utils.ts#EnemyPartyConfig.doubleBattle"],
+    },
+    { name: "doubleOnly", kind: "field", at: ["src/data/trainers/trainer-config.ts#TrainerConfig.doubleOnly"] },
+    {
       name: "doReturn",
       kind: "field",
       at: [
@@ -698,6 +704,14 @@ export const HUD: Area = {
       kind: "method",
       at: ["src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.getStarterDexAttrPropsFromPreferences"],
     },
+    {
+      name: "getStrength",
+      kind: "method",
+      at: [
+        "src/data/trainers/trainer-party-template.ts#TrainerPartyTemplate.getStrength",
+        "src/data/trainers/trainer-party-template.ts#TrainerPartyCompoundTemplate.getStrength",
+      ],
+    },
     { name: "getTag", kind: "method", at: ["src/field/arena.ts#Arena.getTag", "src/field/pokemon.ts#Pokemon.getTag"] },
     { name: "getTagOnSide", kind: "method", at: ["src/field/arena.ts#Arena.getTagOnSide"] },
     { name: "getTargetBenefitScore", kind: "method", at: ["src/data/moves/move.ts#Move.getTargetBenefitScore"] },
@@ -760,6 +774,7 @@ export const HUD: Area = {
       kind: "field",
       at: ["src/game-mode.ts#GameModeConfig.hasTrainers", "src/game-mode.ts#GameMode.hasTrainers"],
     },
+    { name: "hasDouble", kind: "field", at: ["src/data/trainers/trainer-config.ts#TrainerConfig.hasDouble"] },
     { name: "hasVoucher", kind: "field", at: ["src/data/trainers/trainer-config.ts#TrainerConfig.hasVoucher"] },
     {
       name: "heal",
@@ -1044,6 +1059,11 @@ export const HUD: Area = {
       name: "partyStarters",
       kind: "field",
       at: ["src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.partyStarters"],
+    },
+    {
+      name: "partyTemplateFunc",
+      kind: "field",
+      at: ["src/data/trainers/trainer-config.ts#TrainerConfig.partyTemplateFunc"],
     },
     {
       name: "partyTemplates",
@@ -1370,6 +1390,11 @@ export const HUD: Area = {
         "test/mocks/mock-video-game-object.ts#MockVideoGameObject.stop",
         "test/mocks/mocks-container/mock-sprite.ts#MockSprite.stop",
       ],
+    },
+    {
+      name: "strength",
+      kind: "field",
+      at: ["src/data/trainers/trainer-party-template.ts#TrainerPartyTemplate.strength"],
     },
     {
       name: "subLegendary",
@@ -2235,6 +2260,13 @@ export const HUD: Area = {
         "src/data/mystery-encounters/encounters/safari-zone-encounter.ts#SafariZoneEncounter",
         "src/data/mystery-encounters/encounters/safari-zone-encounter.ts#tryChangeFleeStage",
         "src/data/mystery-encounters/encounters/safari-zone-encounter.ts#tryChangeCatchStage",
+      ],
+    },
+    {
+      ours: "skills/coachemon/scripts/hud/46-encounter.js#party-levels",
+      of: [
+        "src/field/trainer.ts#Trainer.getPartyLevels",
+        "src/enums/party-member-strength.ts#PartyMemberStrength",
       ],
     },
     {

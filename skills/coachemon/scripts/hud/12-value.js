@@ -423,6 +423,8 @@ const reasonsOf = (before, after, gain) => {
     .filter(x => x && (gain ? x.d >= MARGIN : x.d <= -MARGIN))
     // Stable, so a tie between two threats falls to the one the threat set lists first.
     .sort((x, y) => Math.abs(y.d) * y.a.weight - Math.abs(x.d) * x.a.weight)
+    // Twin foes of a roster are two rows under one name (game-code.md §10), and would be one reason said twice.
+    .filter((x, i, all) => all.findIndex(y => y.a.threat === x.a.threat) === i)
     .slice(0, MAX_REASONS)
     .map(x => {
       const words = wordsOf(x.part, gain, x.b, x.a);

@@ -1554,17 +1554,23 @@ left unjudged for the same reason Field Trip is. Gates are waves 10–180 unless
 | Fun and Games | money ≥ ×1.5 (`:47`) | pay ×1.5, pick a mon → a Wobbuffet at **that mon's level** with 0 IVs and a Mild nature that never attacks (`skipEnemyBattleTurns`, `skipToFightInput`), and three turns on it. The prize is its HP ratio at the end: < 3 % MULTI_LENS, < 15 % SCOPE_LENS, < 33 % WIDE_LENS, else nothing and a heal (`:266`–`:293`). **KO it and the player loses**: `handleLoseMinigame` ends the encounter and charges `getWaveMoneyAmount(1.5)` again (`:251`) · leave | no draws |
 
 **Two readings the great tier adds.** A config carrying `trainerConfig` instead of `pokemonConfigs` has **no species to
-read**: `initBattleWithEnemyConfig` takes its levels from `trainer.getPartyLevels(waveIndex)` (`src/field/trainer.ts:262`,
-a base of `1 + w/2 + (w/25)²` times a per-slot strength multiplier) and only then adds the shared
-`max(round(wave / 10 × levelAdditiveModifier), 0)`. What is knowable before the fight is the trainer's name, that
-additive, and the team size **where the encounter sets the templates itself** — which is what the card reports, by the
-rule the ultra and rogue table below states in full. Where it does not, the size is not knowable here at all:
-`Trainer.getPartyTemplate` prefers the config's `partyTemplateFunc`, and without one indexes `partyTemplates` at
-`partyTemplateIndex`, which is `randSeedItem` over the indices (`field/trainer.ts:61`, `:255`) — so `partyTemplates[0]`
-is not what the battle will use, and Mysterious Challengers' first option claims no count. Its second option has the
-same hole: `clone()` keeps a `partyTemplateFunc` (`src/data/trainers/trainer-config.ts:921`) and `setPartyTemplates`
-doesn't clear it (`:472`–`475`), so an Ace Trainer, Breeder, Hooligans, Interviewers or Mysterious Sisters drawn there
-fights on its own func, not `1 STRONGER + min(ceil(w / 20), 5) AVERAGE`; only the third option nulls the func
+read**: `initBattleWithEnemyConfig` takes its levels from `trainer.getPartyLevels(waveIndex)` (`src/field/trainer.ts:262`)
+and only then adds the shared `max(round(wave / 10 × levelAdditiveModifier), 0)`, a `pokemonConfigs[i].level` replacing
+both. `getPartyLevels` works on `d = getWaveForDifficulty(w)`: each slot is `ceil((1 + d/2 + (d/25)²) × m)` for its
+template strength's `m` — WEAKEST 0.95, WEAKER 1, WEAK 1.05, AVERAGE 1.12, STRONG 1.22, STRONGER 1.24, STRONGEST 1.25 —
+and a slot below STRONG has `m` raised by `0.025 × floor(d/25)`, capped at 1.225, then gives back
+`floor(d/50 × (STRONG − strength))` levels (`:279`–`:309`). It reads no draw. A config naming only a `trainerType` takes
+`trainerConfigs[trainerType]` (`encounter-phase-utils.ts:158`), and the trainer is a double when that config is
+`doubleOnly`, or `hasDouble` with the party config's `doubleBattle` (`:160`); a double on a one-member template is
+levelled as two of its strength (§11). The battle fields one member per level (`battle.enemyLevels.forEach`, `:205`),
+however many `pokemonConfigs` there are. The template is whatever `Trainer.getPartyTemplate` answers: the config's
+`partyTemplateFunc` when it has one, else `partyTemplates` at `partyTemplateIndex`, which is `randSeedItem` over the
+indices (`field/trainer.ts:61`, `:255`) — so only a config with no func and a single template settles the party's size
+and levels before the fight. Mysterious Challengers' first option keeps the biome trainer's own config, so it is settled
+only when that config is. Its second option looks settled but isn't: `clone()` keeps a `partyTemplateFunc`
+(`src/data/trainers/trainer-config.ts:921`) and `setPartyTemplates` doesn't clear it (`:472`–`475`), so an Ace Trainer,
+Breeder, Hooligans, Interviewers or Mysterious Sisters drawn there fights on its own func, not
+`1 STRONGER + min(ceil(w / 20), 5) AVERAGE`; only the third option nulls the func
 (`mysterious-challengers-encounter.ts:95`).
 
 Delibird-y's degradation is a **live modifier read**, not a draw: `getStackCount()` against `getMaxStackCount()` on the
@@ -1619,12 +1625,6 @@ on three of them, so at most one a run). Same file convention as the table above
 | A Trainer's Test | rogue, no wave gate of its own | `onInit` draws one of five stat trainers with `randSeedInt(5)` — Cheryl, Marley, Mira, Riley, else Buck — and leaves it on `misc` and in the `statTrainerName` token (`:53`–`107`); the config is `levelAdditiveModifier: 1` over an **`ELITE_FOUR` party template, 6 mons** (`initForStatTrainer`, `trainer-config.ts:605`). Accept: fight it → an **Epic egg** plus a Relic Gold, 2 Rogue tiers and `fillRemaining` (`:158`–`172`) · decline: a **full party heal** (`PartyHealPhase`) plus a **Rare egg**, and the shop with no free reward (`:184`–`193`) | `onInit` fork at `w`: which trainer |
 | Weird Dream | waves 30–140 (`:142`), party ≥ 3, once a run | `onInit` transforms the **whole team** and leaves it on `misc.teamTransformations` (`:168`): two members (shuffled, so not the first two) to a species +90–110 BST, the rest +40–50, at most one over 600 and one in 570–600 (`getTeamTransformations`, `:394`). Accept: the party is swapped, each new mon keeping the old one's **level, held items, moveset, passive, luck, Pokérus and the better of the two IV sets**, with a **neutral nature**, a redrawn ability, an extra egg move and a random second type (`postProcessTransformedPokemon`, `:535`) — then a **full party heal** and a screen of exactly a Memory Mushroom, a Rogue Ball and 4 Mints (`:236`–`246`) · battle that same team at your own levels, holding your items, bosses over 570 BST → exactly 2 Rogue / 2 Ultra / 2 Great, and `onBeforeRewards` **unlocks the passive on one random member without one, for the run** (`:312`–`354`) · refuse: **every member drops to `ceil(0.9 × level)`** (`:372`) | `onInit` fork at `w`: the species each member becomes. The ability, IVs, nature and second type are redrawn later, on the live stream |
 | The Winstrate Challenge | waves 100–180 (`:48`), party ≥ 3, once a run | accept: **five trainer battles back to back** — configs pushed Vito, Vicky, Vivi, Victoria, Victor and `pop`ped, so Victor is first and Vito's five last, 13 mons in all — with **no healing between them**: `endTrainerBattleAndShowDialogue` only resets per-battle state (`:184`–`256`). Clearing all five gives a **Premium Voucher** and a screen of exactly a **Macho Brace**, its tier forced to Master (`:165`–`178`) · refuse: a **full party heal** plus a Rarer Candy (`:146`–`150`) | no draws |
-
-The card judges a fight it can't see the party of — every trainer battle above — on the level gap alone, or on whether
-the trainer brings more mons than its `MONS_EACH` allowance for each member of ours still above half HP. The level is
-`enemyLevels[0]` plus the same `levelAdditiveModifier` scaling as a wild config, and the size is the config's own
-`pokemonConfigs` where it has them, else `trainerConfig.partyTemplates[0].size` — which only settles the fight where the
-encounter set that template itself, per the great-tier note above.
 
 `onInit` leaves what it rolled on the encounter: `misc` (Fight or Flight's item, Berries Abound's `numBerries` /
 `fastestPokemon` / `enemySpeed`, Uncommon Breed's `pokemon`, the GTS offers, Teleporting Hijinks' `price`) and
