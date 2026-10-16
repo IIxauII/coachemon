@@ -2035,13 +2035,13 @@ Delete while the current phase is `SelectModifierPhase` (`:566`, checked again o
 reaches that summary through its party check and through the target picker of a TM or another party item
 (`src/ui/handlers/party-ui-handler.ts:1407`, `:1511-1518`), not through the Memory Mushroom's; the phase stays
 `SelectModifierPhase` throughout. A mon with one move gets the error sound and no list (`:551-553`). Delete, once
-confirmed, is `moveset.splice(moveCursor, 1)` on the live array (`:611`): no phase, no cost, no draw, no undo. It buys
-a TM or a Memory Mushroom nothing: `TmModifier.apply` and `RememberMoveModifier.apply` (`src/modifier/modifier.ts:2297`,
-`:2323`) unshift a `LearnMovePhase`, whose `start` learns into a free slot and otherwise asks which move to forget
-(`src/phases/learn-move-phase.ts:62-66`) — the same choice, except that the new move takes the old one's slot and the
-prompt can still be declined, back to the reward screen with the item unspent (`src/phases/select-modifier-phase.ts:273-278`).
-What Delete adds is a forget with nothing learned in its place; the slot it frees is filled, unasked, by the next move
-learned, a level-up move included (`src/phases/level-up-phase.ts:97`).
+confirmed, is `moveset.splice(moveCursor, 1)` on the live array (`:611`): no phase, no cost, no draw, no undo. A TM or
+a Memory Mushroom on a full moveset asks the same question itself: `TmModifier.apply` and `RememberMoveModifier.apply`
+(`src/modifier/modifier.ts:2297`, `:2323`) unshift a `LearnMovePhase`, whose `start` learns into a free slot and
+otherwise asks which move to forget (`src/phases/learn-move-phase.ts:62-66`). There the new move takes the forgotten
+one's slot, and the prompt can be declined, back to the reward screen with the item unspent
+(`src/phases/select-modifier-phase.ts:273-278`). A slot Delete frees is filled, unasked, by the next move learned, a
+level-up move included (`src/phases/level-up-phase.ts:97`).
 
 **No unattached held items.** A held item is a `PokemonHeldItemModifier` with a `pokemonId`
 (`src/modifier/modifier.ts:656`). It is created with its holder — the reward / shop path's

@@ -201,8 +201,9 @@ scene = game;
   assert.equal(count("replacement"), 1);
 }
 
-// ---- a shop builds once its offers are out, and a buy, a lock toggle, an item transfer, a forgotten move, a reorder and a reroll each build again
+// ---- a shop builds once its offers are out, and again after each change made between two visits
 {
+  const moves = three.moveset.slice();
   const offers = { options: [], awaitingActionInput: false };
   let shop = { phaseName: "SelectModifierPhase" };
   const watched = () => __coachHud.stats().ticks.filter(t => t.why === "watch").length;
@@ -244,7 +245,7 @@ scene = game;
     ["watch:rewards", "road:rewards"]);
   assert.deepEqual([count("fusion"), count("reward"), watched() - before], [5, 12, 15]);
   g.party = [full, three];
-  three.moveset = [33, 22, 45].map(m => new Move(m));
+  three.moveset = moves;
 }
 
 // ---- a learn into a full moveset builds, and an automatic or already-known one does not
