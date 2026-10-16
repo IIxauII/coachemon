@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { wholeCard } from "./panel.mjs";
 import { GAME_PROTO } from "./game-proto.mjs";
+import { PartyMemberStrength } from "../../../../src/enums/generated.ts";
 
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
@@ -40,14 +41,13 @@ const team = () => [
 
 const teamAt = level => team().map(p => Object.assign(p, { level }));
 
-// `PartyMemberStrength`, and a party template built the way `trainer-party-template.ts` builds one: runs of `[count,
-// strength]`, compounded when there is more than one.
-const STRENGTH = { WEAKEST: 0, WEAKER: 1, WEAK: 2, AVERAGE: 3, STRONG: 4, STRONGER: 5, STRONGEST: 6 };
+// A party template built the way `trainer-party-template.ts` builds one: runs of `[count, strength]`, compounded when
+// there is more than one.
 const template = (...runs) => {
   const strengths = runs.flatMap(([n, s]) => Array(n).fill(s));
   return { size: strengths.length, strength: strengths[0], getStrength: i => strengths[i] };
 };
-const ELITE_FOUR = template([1, STRENGTH.AVERAGE], [3, STRENGTH.STRONG], [1, STRENGTH.STRONGER], [1, STRENGTH.AVERAGE]);
+const ELITE_FOUR = template([1, PartyMemberStrength.AVERAGE], [3, PartyMemberStrength.STRONG], [1, PartyMemberStrength.STRONGER], [1, PartyMemberStrength.AVERAGE]);
 
 // A requirement is recognised by its class name, so a mock one is an instance of a class with that name.
 const named = name => { const C = function () {}; Object.defineProperty(C, "name", { value: name }); return C; };
@@ -439,7 +439,7 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
 {
   const party = [pk("Garchomp", ["Dragon", "Ground"], 90, { stats: [150, 130, 95, 80, 85, 102], bst: 600, moves: [["Earthquake", "Ground", 100, "P"]] }),
     pk("Lapras", ["Water", "Ice"], 88, { stats: [170, 85, 80, 85, 95, 60], bst: 535, moves: [["Body Slam", "Normal", 85, "P"], ["Surf", "Water", 90, "S"]] })];
-  const clown = (harlequin = template([1, STRENGTH.STRONG], [1, STRENGTH.STRONGER])) => ({ type: 20, tier: 19, wave: 90,
+  const clown = (harlequin = template([1, PartyMemberStrength.STRONG], [1, PartyMemberStrength.STRONGER])) => ({ type: 20, tier: 19, wave: 90,
     labels: ["Battle", "Item shuffle", "Type shuffle"], options: [option(), option(), option()], party,
     tokens: { ability: "[color=#fff]Prankster[/color]" }, draws: { 30512: [6] },
     configs: [{ trainerConfig: { name: "Harlequin", partyTemplates: [harlequin], doubleOnly: true }, doubleBattle: true,
@@ -451,8 +451,7 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.match(m.options[0].outcome, /Fire \/ Electric, Prankster/);
   // Base 58.96: STRONG ceil(×1.22) = 72, STRONGER ceil(×1.24) = 74.
   assert.equal(m.options[0].why, "Prankster is worth keeping — 2 mons at L72–74 vs your L90, 2 of yours fit to fight");
-  // A double on a one-member template fields two of its strength.
-  const doubled = mount(clown(template([1, STRENGTH.STRONGER]))).model();
+  const doubled = mount(clown(template([1, PartyMemberStrength.STRONGER]))).model();
   assert.match(doubled.options[0].why, /2 mons at L74 vs your L90/);
   // Garchomp attacks only on its own types, so its new one is the fork's `randSeedInt(18)`; Lapras has an off-type
   // Normal move, which the game prefers (game-code.md §13), and which hands it STAB it didn't have.
@@ -629,7 +628,7 @@ const threatTables = () => {
       { previousPokemon: party[0], newSpecies: to(149, "Dragonite", ["Dragon", "Flying"], 700) },
       { previousPokemon: party[1], newSpecies: to(131, "Gyarados", ["Water", "Flying"], 640) },
       { previousPokemon: party[2], newSpecies: to(145, "Zapdos", ["Electric", "Flying"], 580) }] },
-    configs: [{ trainerConfig: { name: "Your alternate self", partyTemplates: [template([3, STRENGTH.STRONG])] },
+    configs: [{ trainerConfig: { name: "Your alternate self", partyTemplates: [template([3, PartyMemberStrength.STRONG])] },
       pokemonConfigs: [90, 89, 88].map(level => ({ species: species(149, "Dragonite", ["Dragon", "Flying"], 700), level })) }] }).model();
   assert.deepEqual(verdicts(m), ["take", "ok", "avoid"]);
   // Each mon's own level, which the config sets, beats the template's.
@@ -645,7 +644,7 @@ const threatTables = () => {
   // Pushed back to front: Vito's five are config 0, Victor's two are popped first (game-code.md §13).
   const configs = [mons(1, 5), mons(2, 1), mons(3, 3), mons(4, 2), mons(5, 2)];
   // A config naming only its `trainerType` fights on the game's own table's template for it.
-  const { AVERAGE, STRONG } = STRENGTH;
+  const { AVERAGE, STRONG } = PartyMemberStrength;
   const trainers = Object.fromEntries([[[3, AVERAGE], [2, STRONG]], [[1, AVERAGE]], [[2, AVERAGE], [1, STRONG]],
     [[1, AVERAGE], [1, STRONG]], [[1, AVERAGE], [1, STRONG]]].map((runs, k) => [k + 1, { partyTemplates: [template(...runs)] }]));
   const m = show("winstrate, three left standing", { type: 24, tier: 3, wave: 120, labels: ["Accept", "Refuse"],
@@ -669,13 +668,11 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
 
 // ---- Mysterious Challengers: the richest of three trainer fights that isn't hard.
 {
-  // The last two carry the templates the encounter sets: 1 STRONGER + min(ceil(wave / 20), 5) AVERAGE, then
-  // ELITE_FOUR. The first keeps the biome trainer's own, of which the `Trainer` constructor draws one
-  // (game-code.md §13).
-  const hard = wave => template([1, STRENGTH.STRONGER], [Math.min(Math.ceil(wave / 20), 5), STRENGTH.AVERAGE]);
+  // Each option's template (game-code.md §13).
+  const hard = wave => template([1, PartyMemberStrength.STRONGER], [Math.min(Math.ceil(wave / 20), 5), PartyMemberStrength.AVERAGE]);
   const challengers = ({ wave = 30, level = 22, may = {}, ...extra } = {}) => ({ type: 0, tier: GREAT, wave,
     party: teamAt(level), labels: ["Normal", "Hard", "Brutal"], options: [option(), option(), option()],
-    configs: [trainerCfg("Youngster Joey", 0, [template([2, STRENGTH.WEAKER]), template([3, STRENGTH.WEAK])]),
+    configs: [trainerCfg("Youngster Joey", 0, [template([2, PartyMemberStrength.WEAKER]), template([3, PartyMemberStrength.WEAK])]),
       trainerCfg("Ace Trainer May", 1, [hard(wave)], may), trainerCfg("Leader Brock", 1.5, [ELITE_FOUR])], ...extra });
   const m = show("mysterious challengers", challengers()).model();
   assert.match(m.options[0].outcome, /^fight Youngster Joey → a Common TM/);
@@ -689,10 +686,10 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   assert.equal(m.options[0].why, "their own team at ~L20 vs your L22, 3 of yours fit to fight");
   assert.deepEqual(verdicts(m), ["ok", "take", "avoid"], "the gym leader's ace 5 levels up is hard, the tougher trainer isn't");
   // A biome trainer with a single template has nothing to draw: WEAKER is ceil(17.44 × 1.025) − 1 = 17.
-  const single = mount(challengers({ configs: [trainerCfg("Youngster Joey", 0, [template([2, STRENGTH.WEAKER])])] })).model();
+  const single = mount(challengers({ configs: [trainerCfg("Youngster Joey", 0, [template([2, PartyMemberStrength.WEAKER])])] })).model();
   assert.equal(single.options[0].why, "2 mons at L17 vs your L22, 3 of yours fit to fight");
   // A hard trainer with a `partyTemplateFunc` fights on that instead, which the card doesn't call.
-  const own = mount(challengers({ may: { partyTemplateFunc: () => template([6, STRENGTH.STRONG]) } })).model();
+  const own = mount(challengers({ may: { partyTemplateFunc: () => template([6, PartyMemberStrength.STRONG]) } })).model();
   assert.equal(own.options[1].why, "their own team at ~L23 vs your L22, 3 of yours fit to fight");
   // Late enough and the built teams outgrow a party at the level cap, so the mildest fight is the call.
   const late = mount(challengers({ wave: 100, level: 84, seedOffset: 100512 })).model();
@@ -938,7 +935,7 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
 {
   const superfan = (party, extra = {}) => ({ type: 26, tier: GREAT, labels: ["Battle", "Show", "Give"],
     options: [option(), option({ mode: 1, primary: [typeReq(["Bug"])] }), option({ mode: 1, primary: [moveReq(["CLAW"])] })],
-    configs: [trainerCfg("Bug-Type Superfan", 0, [template([3, STRENGTH.AVERAGE])])], party, ...extra });
+    configs: [trainerCfg("Bug-Type Superfan", 0, [template([3, PartyMemberStrength.AVERAGE])])], party, ...extra });
   const bug = (name, level = 35) => pk(name, ["Bug", "Flying"], level, { moves: [["claw", "Normal", 0, "X", "CLAW"]] });
   const { forks, model } = show("bug-type superfan", superfan([...team(), bug("Scyther")], { draws: { [30512 * 500]: [0, 2, 3, 1] } }));
   assert.ok(forks.includes(30512 * 500), `option fork at ×500: ${forks}`);
@@ -960,6 +957,11 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   const blind = mount(superfan([...team(), bug("Scyther")], { seedOffset: null })).model();
   assert.match(blind.options[0].outcome, /a free tutor move from four bug pools$/);
   assert.equal(blind.options[0].exact, false);
+  // The game fields one mon per level its template gives, whatever `pokemonConfigs` holds: an unread template, no size.
+  const own = mount(superfan([...team(), bug("Scyther")], { configs: [{ ...trainerCfg("Bug-Type Superfan", 0, [],
+    { partyTemplateFunc: () => template([4, PartyMemberStrength.AVERAGE]) }), pokemonConfigs: [{ species: species(15, "Beedrill", ["Bug", "Poison"], 395) },
+    { species: species(12, "Butterfree", ["Bug", "Flying"], 395) }] }] })).model();
+  assert.equal(own.options[0].why, "their own team at ~L20 vs your L40, 4 of yours fit to fight");
 }
 
 // ---- Fun and Games: the prize ladder, and that a KO loses and charges the fee twice.

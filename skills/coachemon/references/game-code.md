@@ -1536,13 +1536,15 @@ and only then adds the shared `max(round(wave / 10 × levelAdditiveModifier), 0)
 both. `getPartyLevels` works on `d = getWaveForDifficulty(w)`: each slot is `ceil((1 + d/2 + (d/25)²) × m)` for its
 template strength's `m` — WEAKEST 0.95, WEAKER 1, WEAK 1.05, AVERAGE 1.12, STRONG 1.22, STRONGER 1.24, STRONGEST 1.25 —
 and a slot below STRONG has `m` raised by `0.025 × floor(d/25)`, capped at 1.225, then gives back
-`floor(d/50 × (STRONG − strength))` levels (`:279`–`:309`). It reads no draw. What is knowable before the fight is the trainer's name, that
-additive, and the team size **where the encounter sets the templates itself** — which is what the card reports, by the
-rule the ultra and rogue table below states in full. Where it does not, the size is not knowable here at all:
-`Trainer.getPartyTemplate` prefers the config's `partyTemplateFunc`, and without one indexes `partyTemplates` at
-`partyTemplateIndex`, which is `randSeedItem` over the indices (`field/trainer.ts:61`, `:255`) — so `partyTemplates[0]`
-is not what the battle will use, and Mysterious Challengers' first option claims no count. Its second option has the
-same hole: `clone()` keeps a `partyTemplateFunc` (`src/data/trainers/trainer-config.ts:921`) and `setPartyTemplates`
+`floor(d/50 × (STRONG − strength))` levels (`:279`–`:309`). It reads no draw. A config naming only a `trainerType` takes
+`trainerConfigs[trainerType]` (`encounter-phase-utils.ts:158`), and the trainer is a double when that config is
+`doubleOnly`, or `hasDouble` with the party config's `doubleBattle` (`:160`); a double on a one-member template is
+levelled as two of its strength (§11). The battle fields one member per level (`battle.enemyLevels.forEach`, `:205`),
+however many `pokemonConfigs` there are. The template is whatever `Trainer.getPartyTemplate` answers: the config's
+`partyTemplateFunc` when it has one, else `partyTemplates` at `partyTemplateIndex`, which is `randSeedItem` over the
+indices (`field/trainer.ts:61`, `:255`) — so only a config with no func and a single template settles the party's size
+and levels before the fight. Mysterious Challengers' first option keeps the biome trainer's own. Its second option has
+the same hole: `clone()` keeps a `partyTemplateFunc` (`src/data/trainers/trainer-config.ts:921`) and `setPartyTemplates`
 doesn't clear it (`:472`–`475`), so an Ace Trainer, Breeder, Hooligans, Interviewers or Mysterious Sisters drawn there
 fights on its own func, not `1 STRONGER + min(ceil(w / 20), 5) AVERAGE`; only the third option nulls the func
 (`mysterious-challengers-encounter.ts:95`).

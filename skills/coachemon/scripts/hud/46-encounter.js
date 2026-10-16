@@ -271,23 +271,22 @@ const context = (run, me, options, account) => {
       weak.length ? `${weak.length} weak to it` : null].filter(Boolean).join(", ");
     return { hard, text };
   };
-  // `levels` is null where the party template is not one the card can know: a `partyTemplateFunc` it doesn't call, or
-  // one of several templates the `Trainer` constructor draws between. `level` is then an AVERAGE member's
-  // (game-code.md §13).
+  // `levels` and `size` are null where the party template is not one the card can know: a `partyTemplateFunc` it
+  // doesn't call, or one of several templates the `Trainer` constructor draws between (game-code.md §13). `level` is
+  // then an AVERAGE member's.
   const trainer = (k = 0) => {
     const cfg = me.enemyPartyConfigs?.[k];
     if (!cfg || (!cfg.trainerConfig && cfg.trainerType == null)) return null;
-    const tc = cfg.trainerConfig ?? tryDo(() => gameTables().trainers[cfg.trainerType]);
-    const template = tc && !tc.partyTemplateFunc && tc.partyTemplates?.length === 1 ? tc.partyTemplates[0] : null;
-    // A double on a one-member template fights two of its strength (game-code.md §11).
-    const doubled = !!template && template.size < 2 && !!(tc.doubleOnly || (tc.hasDouble && cfg.doubleBattle));
+    const config = cfg.trainerConfig ?? tryDo(() => gameTables().trainers[cfg.trainerType]);
+    const template = config && !config.partyTemplateFunc && config.partyTemplates?.length === 1 ? config.partyTemplates[0] : null;
+    const doubled = !!template && template.size < 2 && !!(config.doubleOnly || (config.hasDouble && cfg.doubleBattle));
     const strengths = !template ? null : doubled ? [template.strength, template.strength]
       : Array.from({ length: template.size }, (_, i) => tryDo(() => template.getStrength(i)));
     const d = tryDo(() => s.gameMode.getWaveForDifficulty(wave), wave);
     const scale = Math.max(Math.round(wave / 10 * (cfg.levelAdditiveModifier ?? 0)), 0);
     const levels = strengths?.every(st => st in STRENGTH_MULTIPLIER)
       ? strengths.map((st, i) => cfg.pokemonConfigs?.[i]?.level || memberLevel(d, st) + scale) : null;
-    return { name: tryDo(() => cfg.trainerConfig?.name), levels, size: levels?.length ?? (cfg.pokemonConfigs?.length || null),
+    return { name: tryDo(() => cfg.trainerConfig?.name), levels, size: levels?.length ?? null,
       level: levels ? Math.max(...levels) : memberLevel(d, PartyMemberStrength.AVERAGE) + scale };
   };
   // `mons: null`: a team size nothing here settles (game-code.md §13), so the level gap alone decides.
