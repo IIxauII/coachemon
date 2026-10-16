@@ -1,7 +1,7 @@
 import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
 
-export type AreaName = "page" | "server" | "hud" | "harness";
+export type AreaName = "page" | "server" | "hud" | "harness" | "templates";
 
 const listed = (root: string, dir: string, keep: (f: string) => boolean): string[] =>
   readdirSync(path.join(root, dir)).filter(keep).sort().map(f => `${dir}/${f}`);
@@ -15,6 +15,7 @@ export function scannedFiles(root: string): Record<AreaName, string[]> {
     server: ["src/driver.ts", "src/screen.ts", "src/slots.ts", "src/call-outcome.ts", "src/stuck/hang.ts", "src/game/save.ts"],
     hud: [...listed(root, "skills/coachemon/scripts/hud", f => f.endsWith(".js")), "skills/coachemon/scripts/probe.js"],
     harness: ["src/solver/harness.test.ts.template"],
+    templates: ["scripts/clone-smoke/smoke.test.ts.template", "scripts/encounter-oracle/oracle.test.ts.template", "scripts/preview-stability/stability.test.ts.template"],
   };
 }
 
@@ -34,6 +35,6 @@ export function ownFiles(root: string): string[] {
   };
   walk("src");
   walk("skills/coachemon/scripts");
-  out.push("src/solver/harness.test.ts.template");
+  out.push("src/solver/harness.test.ts.template", ...scannedFiles(root).templates);
   return out.sort();
 }

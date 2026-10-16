@@ -151,6 +151,13 @@ export function declaredIn(file: string, text: string): Set<string> {
     ) {
       const name = nameText(n.name);
       if (name !== null) out.add(name);
+    } else if (
+      (ts.isFunctionDeclaration(n) || ts.isVariableStatement(n)) &&
+      ts.getModifiers(n)?.some(m => m.kind === ts.SyntaxKind.ExportKeyword)
+    ) {
+      // An export is a member of its module's namespace, which the HUD's expose mode reads by name.
+      if (ts.isFunctionDeclaration(n) && n.name) out.add(n.name.text);
+      if (ts.isVariableStatement(n)) for (const d of n.declarationList.declarations) if (ts.isIdentifier(d.name)) out.add(d.name.text);
     } else if (ts.isParameter(n) && ts.isConstructorDeclaration(n.parent) && ts.getModifiers(n)?.length) {
       const name = nameText(n.name);
       if (name !== null) out.add(name);

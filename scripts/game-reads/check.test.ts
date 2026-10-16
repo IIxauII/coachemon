@@ -32,6 +32,7 @@ const CLEAN: Registry = {
     ],
     mirrors: [{ ours: `${FIXTURES}/hud.js#RARE`, of: ["src/data/balance/biomes.ts#biomeLinks"] }],
   },
+  templates: { reads: [] },
   harness: {
     reads: [
       {
@@ -51,6 +52,7 @@ const repo = (edit: Partial<Record<"page" | "hud" | "harness", string>> = {}): R
     server: [],
     hud: [{ file: `${FIXTURES}/hud.js`, text: text("hud", "hud.js") }],
     harness: [{ file: `${FIXTURES}/harness.ts.template`, text: text("harness", "harness.ts.template") }],
+    templates: [],
   };
   return { reads: scan(files, TABLES), own: new Set(["m", "scene", "result"]), builtin: new Set(["keys", "has", "getItem"]), tables: TABLES };
 };
@@ -116,7 +118,7 @@ test("an enum member the generated table lacks fails", () => {
 
 test("in a typed file only a read off an `any` counts: a read our own types declare is never the game's", () => {
   const file = `${FIXTURES}/typed.ts`;
-  const files = { page: [{ file, text: fixture("typed.ts") }], server: [], hud: [], harness: [] };
+  const files = { page: [{ file, text: fixture("typed.ts") }], server: [], hud: [], harness: [], templates: [] };
   const reads = scan(files, TABLES, program(ROOT, [file])).filter(r => r.kind === "property").map(r => r.name);
   assert.deepEqual(reads, ["optionsContainer"]);
 });

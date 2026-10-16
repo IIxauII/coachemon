@@ -3,5 +3,6 @@ import { HARNESS } from "./harness.ts";
 import { HUD } from "./hud.ts";
 import { PAGE } from "./page.ts";
 import { SERVER } from "./server.ts";
+import { TEMPLATES } from "./templates.ts";
 
-export const REGISTRY: Registry = { page: PAGE, server: SERVER, hud: HUD, harness: HARNESS };
+export const REGISTRY: Registry = { page: PAGE, server: SERVER, hud: HUD, harness: HARNESS, templates: TEMPLATES };

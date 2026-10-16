@@ -41,15 +41,19 @@ export const findSuiteClone = (env: Env = process.env, cwd = process.cwd()): Fou
 };
 
 /** The pin a player's clone at the suite's version is set up from: read off its drift checkout until a stamp writes it. */
-export const suitePin = (env: Env = process.env, cwd = process.cwd()): ClonePin => {
-  const gameVersion = env.COACHEMON_GAME_VERSION;
-  if (!gameVersion) return reviewed.pinned;
-  const source = checkoutOf(gameVersion, cwd);
+/** The pin a stamp records for the game checkout at `source`: its commit, its submodules and the pnpm it names. */
+export const pinOf = (gameVersion: string, source: string): ClonePin => {
   const rev = (what: string) => execFileSync("git", ["-C", source, "rev-parse", what], { encoding: "utf8" }).trim();
   const packageManager = JSON.parse(readFileSync(path.join(source, "package.json"), "utf8")).packageManager ?? "";
   const pnpm = /^pnpm@([^+]+)/.exec(packageManager)?.[1];
   if (pnpm === undefined) throw new Error(`${source}/package.json names no pnpm packageManager to set a clone up with.`);
   return { gameVersion, sha: rev("HEAD"), locales: rev("HEAD:locales"), assets: rev("HEAD:assets"), pnpm };
+};
+
+export const suitePin = (env: Env = process.env, cwd = process.cwd()): ClonePin => {
+  const gameVersion = env.COACHEMON_GAME_VERSION;
+  if (!gameVersion) return reviewed.pinned;
+  return pinOf(gameVersion, checkoutOf(gameVersion, cwd));
 };
 
 export const findClone = (clone: string): FoundClone => {

@@ -14,7 +14,7 @@ import { GLOBAL_DEPS, LADDER } from "../src/escape-ladder/table.ts";
 import type { Entry } from "../src/escape-ladder/types.ts";
 import type { ClonePin } from "../src/solver/clone.ts";
 import { checkForks, type Recheck, replay } from "../src/solver/solver.ts";
-import { findClone, harnessIn } from "./clone-test/clone-test.ts";
+import { findClone, harnessIn, pinOf } from "./clone-test/clone-test.ts";
 import { blockers, drift, type Group, type Item } from "./drift/check.ts";
 import { GameSource } from "./drift/source.ts";
 import { generatedTables, loadRepo } from "./game-reads/check.ts";
@@ -136,14 +136,14 @@ if (args.stamp) {
     );
     process.exit(1);
   }
-  const gitlink = (submodule: string) =>
-    execFileSync("git", ["-C", source, "rev-parse", `HEAD:${submodule}`], { encoding: "utf8" }).trim();
-  const packageManager = JSON.parse(readFileSync(path.join(source, "package.json"), "utf8")).packageManager ?? "";
-  const pnpm = /^pnpm@([^+]+)/.exec(packageManager)?.[1];
-  if (pnpm === undefined) {
-    console.error("\nRefusing to stamp: the game's package.json names no pnpm `packageManager` to set the player's clone up with.");
+  let pin: ClonePin;
+  try {
+    pin = pinOf(version, source);
+  } catch (e) {
+    console.error(`\nRefusing to stamp: ${(e as Error).message}`);
     process.exit(1);
   }
+  const { pnpm } = pin;
   const inSource = harnessIn(() => findClone(source), pnpm);
   console.log();
   const { failed } = await recheck(
@@ -158,7 +158,7 @@ if (args.stamp) {
     console.error(`\nRefusing to stamp: the harness re-check failed. ${failed.join("; ")}.`);
     process.exit(1);
   }
-  const pinned = { gameVersion: version, tag: `v${version}`, sha, locales: gitlink("locales"), assets: gitlink("assets"), pnpm };
+  const pinned = { gameVersion: version, tag: `v${version}`, sha: pin.sha, locales: pin.locales, assets: pin.assets, pnpm };
   const next: Reviewed = { pinned, hashes: found.hashes, recheck: { gameVersion: version } };
   writeFileSync(REVIEWED, `${JSON.stringify(next, null, 2)}\n`);
   console.log(

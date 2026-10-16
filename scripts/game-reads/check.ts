@@ -75,7 +75,8 @@ export function check(repo: Repo, registry: Registry): Problem[] {
   const strings = (kind: string) => new Map(all.flatMap(a => a.reads.filter(r => r.kind === kind).map(r => [r.name, r] as const)));
   const phases = strings("phase");
   const keys = strings("storage-key");
-  const imports = strings("import");
+  const imports = new Map<string, string[]>();
+  for (const a of all) for (const r of a.reads) if (r.kind === "import") imports.set(r.name, [...(imports.get(r.name) ?? []), ...r.at]);
   const mirrors = new Set(all.flatMap(a => (a.mirrors ?? []).map(m => m.ours)));
   const where = (r: ScannedRead) => `${r.file}:${r.line}`;
   const seen = new Set<string>();
@@ -100,7 +101,7 @@ export function check(repo: Repo, registry: Registry): Problem[] {
       case "import": {
         const entry = imports.get(r.name);
         if (!entry) fail(`import ${r.name}`);
-        else for (const b of r.bindings) if (!entry.at.some(ref => symbolOf(ref) === b)) fail(`import ${r.name} { ${b} }`);
+        else for (const b of r.bindings) if (!entry.some(ref => symbolOf(ref) === b)) fail(`import ${r.name} { ${b} }`);
         break;
       }
       case "enum-member":

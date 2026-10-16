@@ -26,7 +26,7 @@ const OURS: Record<AreaName, { file: string; text: string }[]> = {
       text: [
         "export function read(L: any, game: any) {",
         "  const h = L.ui.handlers[L.m.STARTER_SELECT];",
-        "  return [h.filteredStarterContainers, h.lastSpecies, h.cursor, L.scene.phaseManager, game.config.gameVersion];",
+        "  return [h.filteredStarterContainers, h.lastSpecies, h.cursor, L.scene.phaseManager, game.config.gameVersion, L.ui.mode];",
         "}",
         "export function stored(L: any) {",
         "  return globalThis.localStorage.getItem(\"sessionData\" + L.slot);",
@@ -58,6 +58,7 @@ const OURS: Record<AreaName, { file: string; text: string }[]> = {
       ].join("\n"),
     },
   ],
+  templates: [],
   harness: [
     {
       file: "src/solver/harness.test.ts.template",
@@ -77,6 +78,7 @@ const REGISTRY: Registry = {
       { name: "lastSpecies", kind: "field", at: [`${SSU}#StarterSelectUiHandler.lastSpecies`] },
       { name: "cursor", kind: "field", at: [`${SSU}#StarterSelectUiHandler.cursor`] },
       { name: "ui", kind: "locator", at: ["src/battle-scene.ts#BattleScene.ui"] },
+      { name: "mode", kind: "field", at: ["src/ui/ui.ts#UI.mode"] },
       { name: "phaseManager", kind: "locator", at: ["src/battle-scene.ts#BattleScene.phaseManager"] },
       { name: "gameVersion", kind: "locator", at: ["src/main.ts#startGame"], from: "phaser" },
       { name: "sessionData", kind: "storage-key", at: ["src/system/game-data.ts#GameData.getSessionKey"] },
@@ -103,6 +105,7 @@ const REGISTRY: Registry = {
     ],
     mirrors: [{ ours: "skills/coachemon/scripts/hud/52-shop.js#LAB_LINKS", of: ["src/data/balance/biomes.ts#biomeLinks"] }],
   },
+  templates: { reads: [] },
   harness: {
     reads: [
       {
@@ -153,6 +156,11 @@ test("a handler field the new version drops is MISSING", () => {
   assert.ok(refs(V2.missing).includes(`${SSU}#StarterSelectUiHandler.filteredStarterContainers`));
   assert.ok(refs(V2.missing).includes(`${SSU}#StarterSelectUiHandler.lastSpecies`));
   assert.ok(!refs(V2.missing).includes(`${SSU}#StarterSelectUiHandler.cursor`));
+});
+
+test("a field the game turns into a getter is MOVED, not MISSING", () => {
+  assert.ok(refs(V2.moved).includes("src/ui/ui.ts#UI.mode"));
+  assert.ok(!refs(V2.missing).includes("src/ui/ui.ts#UI.mode"));
 });
 
 test("a field the harness template reads, renamed, is MISSING", () => {
