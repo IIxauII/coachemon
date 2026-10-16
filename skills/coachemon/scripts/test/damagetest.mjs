@@ -464,6 +464,9 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(endOfTurnHp(m({ player: false }), { s: waveHeal }), 9, "enemy turn heal ×3");
   assert.equal(endOfTurnHp(m(), { s: waveHeal }), 0, "not for the player");
   assert.equal(endOfTurnHp(m({ hp: 20, maxHp: 40, player: false }), { s: waveHeal }), 2, "the stacks are floored together");
+  const oneToken = at(0, 0, { enemyModifiers: [held("EnemyTurnHealModifier")] });
+  assert.equal(endOfTurnHp(m({ hp: 20, maxHp: 49, player: false }), { s: oneToken }), 0, "one stack under 50 max HP heals nothing");
+  assert.equal(endOfTurnHp(m({ hp: 20, maxHp: 50, player: false }), { s: oneToken }), 1, "and 1 at 50");
   assert.equal(endOfTurnHp(m({ items: [held("HitHealModifier", {}, 2)] }), { s: at(), dealt: 100 }), 25, "Shell Bell ×2");
   assert.equal(endOfTurnHp(m({ items: [held("HitHealModifier")] }), { s: at() }), 0, "Shell Bell without damage");
   // Shell Bell heals in `MoveEffectPhase`, so Sitrus reads the HP after it (game-code.md §8).
@@ -488,6 +491,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(endOfTurnHp(m({ types: [10], battlerTags: [tag("SaltCuredTag")] }), { s: at() }), -40, "Salt Cure on a Water mon");
   assert.equal(endOfTurnHp(m({ battlerTags: [tag("AquaRingTag")] }), { s: at() }), 10, "Aqua Ring");
   assert.equal(endOfTurnHp(m({ abilities: ["BlockNonDirectDamageAbAttr"], battlerTags: [tag("NightmareTag")] }), { s: at() }), 0, "Magic Guard vs Nightmare");
+  assert.equal(endOfTurnHp(m({ types: [8], abilities: ["BlockNonDirectDamageAbAttr"], battlerTags: [tag("SaltCuredTag")] }), { s: at() }), 0, "Magic Guard vs Salt Cure on a Steel mon");
   const seed = Object.assign(tag("SeedTag"), { sourceIndex: 1 });
   const seeder = mon("seeder", { hp: 50, maxHp: 160, bi: 1 });
   const seeded = mon("seeded", { hp: 160, maxHp: 160, player: false, battlerTags: [seed], bi: 2 });

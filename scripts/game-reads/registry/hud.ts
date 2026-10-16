@@ -1985,6 +1985,15 @@ export const HUD: Area = {
       ],
     },
     {
+      ours: "skills/coachemon/scripts/hud/40-learn.js#curse-blocked",
+      of: [
+        "src/data/moves/move.ts#MoveEffectAttr.getMoveChance",
+        "src/data/moves/move.ts#AddBattlerTagAttr.apply",
+        "src/data/battler-tags.ts#DamagingBattlerTag",
+        "src/data/abilities/init-abilities.ts#initAbilities",
+      ],
+    },
+    {
       ours: "skills/coachemon/scripts/hud/40-learn.js#status-abilities",
       of: [
         "src/data/abilities/init-abilities.ts#initAbilities",

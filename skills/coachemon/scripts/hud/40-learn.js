@@ -3,6 +3,7 @@ import { ABILITY_IMMUNE, CHART, SPREAD_TARGETS, STAT_NAMES, STATUS_FRAMES, TYPES
 import { RANDBATS } from "./05-randbats.js";
 import { costNotes, moveTraits } from "./07-move-traits.js";
 import { partyProfile } from "./08-party.js";
+import { SALT_DOUBLED } from "./10-damage.js";
 
 // `new PokemonMove(id).getMove()`, off any move the party holds (game-code.md §17).
 export const learnMoveById = (party, id) => {
@@ -148,7 +149,7 @@ const priorOf = (pk, mv, ctx) => {
 const STATUS_VALUE = [0, 30, 45, 45, 70, 55, 45]; // StatusEffect NONE, POISON, TOXIC, PARALYSIS, SLEEP, FREEZE, BURN
 const TAG_VALUE = {
   TAUNT: 30, ENCORE: 30, DISABLED: 25, HEAL_BLOCK: 25, TORMENT: 20, IMPRISON: 15,
-  SEEDED: 35, SALT_CURED: 30, PERISH_SONG: 25, TRAPPED: 15, DROWSY: 45,
+  SEEDED: 35, PERISH_SONG: 25, TRAPPED: 15, DROWSY: 45,
   SUBSTITUTE: 25, ALWAYS_CRIT: 25, CRIT_BOOST: 20, AQUA_RING: 20, INGRAIN: 20, FLOATING: 10, HELPING_HAND: 25,
   CENTER_OF_ATTENTION: 10, MINIMIZED: 5,
 };
@@ -291,6 +292,25 @@ const typeFit = (pk, mv, change, name, roster, ours) => {
   let at = 0;
   gains.forEach((g, i) => { if (g > gains[at] || (g === gains[at] && weightOf(foes[i]) > weightOf(foes[at]))) at = i; });
   return { mult, note: `vs ${foes[at].name} at W${roster.wave}` };
+};
+
+// Salt Cure's curse (game-code.md §21). Sheer Force and Shield Dust zero its chance (§5, §8); Magic Guard takes no
+// chip, and Mold Breaker is long gone by the turn end.
+const CURSE_TWICE = SALT_DOUBLED.map(t => TYPES[t]);
+// @mirrors curse-blocked
+const curseOf = (pk, tr, roster) => {
+  if (!tr.tags.some(x => x.tag === "SALT_CURED" && !(x.self || x.side))) return null;
+  if (abilitiesOf(pk).includes("Sheer Force")) return { value: 0, notes: ["no curse with Sheer Force"] };
+  const value = STATUS_VALUE[StatusEffect.POISON];
+  if (!roster) return { value, notes: ["curse 1/8 a turn"] };
+  const { foes, wave } = roster;
+  const hurts = f => ![f.ability, f.passive].includes("Magic Guard") && !foeAbilities(pk, f).includes("Shield Dust");
+  const twice = f => hurts(f) && (f.types ?? []).some(t => CURSE_TWICE.includes(t));
+  const hurt = foes.filter(hurts).length, n = foes.filter(twice).length, all = foes.length;
+  const notes = !hurt ? [`curse can't hurt at W${wave}`]
+    : [!n ? "curse 1/8 a turn" : n === all ? `curse 1/4 a turn at W${wave}` : `curse 1/4 on ${n} of ${all} at W${wave}`,
+      ...(hurt < all ? [`curse hurts ${hurt} of ${all} at W${wave}`] : [])];
+  return { value: value * unsure(roster, shareOf(foes, hurts) + shareOf(foes, twice)), notes };
 };
 
 // `value` null when nothing here recognises the move: the card says "your call", and the slot stays off the forget list.
@@ -479,6 +499,8 @@ const moveScore = (pk, mv, others, double, ctx = {}) => {
   }
   if (loss) times(Math.max(0.7, 1 - loss));
   value *= drag;
+  const curse = curseOf(pk, tr, ctx.roster?.foes?.length ? ctx.roster : null);
+  if (curse) { value += curse.value * acc; notes.push(...curse.notes); }
   const drawbacks = [...costNotes(tr, { sun, type }), ...(movesLast ? [movesLast] : [])];
   notes.push(...drawbacks);
   if (double && SPREAD_TARGETS.includes(mv.moveTarget)) {

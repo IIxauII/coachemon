@@ -459,4 +459,49 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   // The HUD's own tick has no look-ahead in this fake scene, so the card prints the blind value.
   show("Ludicolo ← Soak (Skarmory ahead)", run(ludicolo, SOAK, { roster: skarm }));
 }
+// ---- Salt Cure's curse (#727): an attack that also chips whatever it hits every turn it stays in.
+{
+  const foe = (name, types, extra = {}) => ({ name, types, ability: extra.ability ?? null, passive: null, segments: 0,
+    attackTypes: types, statusMoves: [], healMoves: [] });
+  const at50 = (...foes) => ({ wave: 50, exact: true, foes });
+  const SALT_CURE = ["Salt Cure","Rock",40,"P",100,[["AddBattlerTagAttr",{ tagType: "SALT_CURED" }]]];
+  const BARE = ["Salt Cure","Rock",40,"P",100];
+  const garganacl = ability => mon("Garganacl", ["Rock"], 100, 45,
+    [["Body Press","Fighting",80,"P"],["Earthquake","Ground",100,"P",100,[],false,4],["Iron Head","Steel",80,"P"]], { ability });
+  const judge = (move, roster = null, ability) => globalThis.__lm.learnAdvice(garganacl(ability), mv(move), { roster }).plan.incoming;
+
+  const bare = judge(BARE), blind = judge(SALT_CURE);
+  assert.ok(blind.value > bare.value, `the curse counts on top of the hit (${blind.value} vs ${bare.value})`);
+  assert.ok(blind.notes.includes("curse 1/8 a turn"), `${blind.notes}`);
+  const curse = x => x.value - bare.value;
+  assert.equal(judge(SALT_CURE, at50(foe("Snorlax", ["Normal"]), foe("Machamp", ["Fighting"]))).value, blind.value, "a roster taking the 1/8 changes nothing");
+  // A Water or Steel type takes 1/4 a turn (game-code.md §21). ±1: the card rounds.
+  const doubled = judge(SALT_CURE, at50(foe("Vaporeon", ["Water"]), foe("Skarmory", ["Steel","Flying"])));
+  assert.ok(Math.abs(curse(doubled) - 2 * curse(blind)) <= 1, `twice the curse (${curse(doubled)} vs ${curse(blind)})`);
+  assert.ok(doubled.notes.includes("curse 1/4 a turn at W50"), `${doubled.notes}`);
+  const half = judge(SALT_CURE, at50(foe("Vaporeon", ["Water"]), foe("Snorlax", ["Normal"])));
+  assert.ok(Math.abs(curse(half) - 1.5 * curse(blind)) <= 1, `half the roster doubled (${curse(half)})`);
+  assert.ok(half.notes.includes("curse 1/4 on 1 of 2 at W50"), `${half.notes}`);
+  const unsure = judge(SALT_CURE, { ...at50(foe("Vaporeon", ["Water"])), exact: false });
+  assert.ok(curse(unsure) > curse(blind) && curse(unsure) < curse(doubled), "a roster the preview isn't sure of moves the score half as far");
+
+  // Magic Guard takes no chip, Mold Breaker or not (game-code.md §21).
+  const clefable = foe("Clefable", ["Fairy"], { ability: "Magic Guard" });
+  const guarded = judge(SALT_CURE, at50(clefable));
+  assert.equal(guarded.value, bare.value, "Magic Guard");
+  assert.ok(guarded.notes.includes("curse can't hurt at W50"), `${guarded.notes}`);
+  assert.equal(judge(SALT_CURE, at50(clefable), "Mold Breaker").value, judge(BARE, null, "Mold Breaker").value, "Mold Breaker doesn't reach the turn end");
+  const some = judge(SALT_CURE, at50(clefable, foe("Snorlax", ["Normal"])));
+  assert.ok(Math.abs(curse(some) - 0.5 * curse(blind)) <= 1, `half the roster spared (${curse(some)})`);
+  assert.ok(some.notes.includes("curse hurts 1 of 2 at W50"), `${some.notes}`);
+  // Shield Dust zeroes the chance of the curse landing, unless Mold Breaker gets past it; Sheer Force zeroes it on the
+  // user's side (game-code.md §5, §8).
+  const vivillon = at50(foe("Vivillon", ["Bug","Flying"], { ability: "Shield Dust" }));
+  assert.equal(judge(SALT_CURE, vivillon).value, bare.value, "Shield Dust");
+  assert.equal(judge(SALT_CURE, vivillon, "Mold Breaker").value - judge(BARE, null, "Mold Breaker").value, curse(blind), "Mold Breaker gets past it");
+  const forced = judge(SALT_CURE, null, "Sheer Force");
+  assert.equal(forced.value, judge(BARE, null, "Sheer Force").value, "Sheer Force");
+  assert.ok(forced.notes.includes("no curse with Sheer Force"), `${forced.notes}`);
+  show("Garganacl ← Salt Cure", run(garganacl(), SALT_CURE));
+}
 console.log("ok");

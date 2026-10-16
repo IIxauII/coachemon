@@ -338,7 +338,7 @@ const WEATHER_SPARED = { [WeatherType.SANDSTORM]: [PokemonType.GROUND, PokemonTy
 // @mirrors orb-spared
 const ORB_SPARED = { [StatusEffect.POISON]: [PokemonType.POISON, PokemonType.STEEL], [StatusEffect.TOXIC]: [PokemonType.POISON, PokemonType.STEEL], [StatusEffect.BURN]: [PokemonType.FIRE] };
 // @mirrors salt-doubled
-const SALT_DOUBLED = [PokemonType.WATER, PokemonType.STEEL];
+export const SALT_DOUBLED = [PokemonType.WATER, PokemonType.STEEL];
 const opponentsOf = (env, p) => {
   try { const o = p.getOpponents?.(); if (Array.isArray(o)) return o.filter(Boolean); } catch {}
   try { return (env?.field ?? []).filter(q => q && q !== p && q.isPlayer?.() !== p.isPlayer?.()); } catch { return []; }
