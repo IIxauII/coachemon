@@ -20,9 +20,9 @@ const move = ({ id = 1, name = "Move", attrs = [], chargeAttrs = [], conditions 
   hasFlag(f) { return (this.flags & f) !== 0; }, isChargingMove: () => charging,
   canBeMultiStrikeEnhanced: () => !attrs.some(a => (typeof a === "string" ? a : a[0]) === "MultiHitAttr"),
 });
-const mon = ({ id = "user", abilities = [], items = [], species = 1, formIndex = 0, status = null } = {}) => ({
+const mon = ({ id = "user", abilities = [], abAttrs = {}, items = [], species = 1, formIndex = 0, status = null } = {}) => ({
   id, species: { speciesId: species }, formIndex, status,
-  hasAbilityWithAttr: a => abilities.includes(a), getHeldItems: () => items,
+  hasAbilityWithAttr: a => abilities.includes(a), getAbilityAttrs: a => abAttrs[a] ?? [], getHeldItems: () => items,
 });
 const lens = n => Object.assign(new (classFor("PokemonMultiHitModifier"))(), { getStackCount: () => n });
 
@@ -191,6 +191,25 @@ const counts = t => t.hits.dist.map(x => `${x.n}@${x.p}`).join(" ");
   assert.deepEqual(moveTraits(gigaDrain).drain, { ratio: 0.5 });
   assert.equal(moveTraits(strengthSap).drain, null, "healing by a stat isn't drain");
   log("status", `burn ${moveTraits(willowisp).inflicts[0].effect} · Howl side ${moveTraits(howl).stages[0].side} · heal ${moveTraits(recover).heal.ratio} · hazard ${moveTraits(spikes).hazard.tag} · drain ${moveTraits(gigaDrain).drain.ratio} · types ${moveTraits(soak).typeChange.kind}/${moveTraits(trickOrTreat).typeChange.kind}`);
+}
+
+// ---- A Mega Launcher user's pulse heal is half again as big (game-code.md §14)
+{
+  const megaLauncher = Object.assign(new (classFor("MoveHealBoostAbAttr"))(), {
+    getCondition: () => null,
+    canApply: ({ move: m }) => m.hasFlag(MoveFlags.PULSE_MOVE),
+    apply: ({ healRatio }) => { healRatio.value *= 1.5; },
+  });
+  const launcher = mon({ abAttrs: { MoveHealBoostAbAttr: [megaLauncher] } });
+  const healPulse = move({ name: "Heal Pulse", flags: MoveFlags.PULSE_MOVE, attrs: [["HealAttr", { healRatio: 0.5, selfTarget: false }]] });
+  const recover = move({ name: "Recover", target: MoveTarget.USER, attrs: [["HealAttr", { healRatio: 0.5, selfTarget: true }]] });
+  assert.equal(moveTraits(healPulse, launcher).heal.ratio, 0.75, "Mega Launcher's Heal Pulse heals ¾");
+  assert.equal(moveTraits(healPulse, mon()).heal.ratio, 0.5, "anyone else's heals ½");
+  assert.equal(moveTraits(recover, launcher).heal.ratio, 0.5, "a heal that isn't a pulse move takes no boost");
+  assert.equal(moveTraits(healPulse).heal.ratioIn(launcher), 0.75, "ratioIn boosts for the user it is handed");
+  const twice = mon({ abAttrs: { MoveHealBoostAbAttr: [megaLauncher, megaLauncher] } });
+  assert.equal(moveTraits(healPulse, twice).heal.ratio, 0.75, "a passive that repeats the ability boosts once, as in the game");
+  log("heal boost", `Heal Pulse ${moveTraits(healPulse, launcher).heal.ratio} with Mega Launcher · ${moveTraits(healPulse, mon()).heal.ratio} without · Recover ${moveTraits(recover, launcher).heal.ratio}`);
 }
 
 // ---- The wording every card shares

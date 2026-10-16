@@ -1,6 +1,6 @@
 // What the coach reads off a move's attributes, read once (#128). No battle state, and no game calls beyond methods on
-// the move, its attributes, the user and the user's held items, so it works outside a battle; what a trait is worth
-// stays with each caller.
+// the move, its attributes, the user and the user's held items and ability attributes, so it works outside a battle;
+// what a trait is worth stays with each caller.
 
 import { SPREAD_TARGETS, STAT_NAMES } from "./01-core.js";
 
@@ -16,6 +16,18 @@ const heldStackOf = (p, name) => {
   try { return (p?.getHeldItems?.() ?? []).filter(m => m?.constructor?.name === name).reduce((t, m) => t + (m.getStackCount?.() ?? m.stackCount ?? 1), 0); } catch { return 0; }
 };
 const moveFlag = (mv, f) => (typeof mv?.hasFlag === "function" ? mv.hasFlag(f) : !!((mv?.flags ?? 0) & f));
+// `HealAttr.apply`'s pass over the user's `MoveHealBoostAbAttr`s (game-code.md §14). The `Set` is the game's skip of a
+// passive that repeats the ability, which `getAbilityAttrs` doesn't make (§0).
+const healBoosted = (u, mv, target, ratio) => {
+  const healRatio = { value: ratio };
+  try {
+    for (const a of new Set(u?.getAbilityAttrs?.("MoveHealBoostAbAttr") ?? [])) {
+      const cond = a.getCondition?.();
+      if ((!cond || cond(u)) && a.canApply({ pokemon: u, opponent: target ?? undefined, move: mv })) a.apply({ healRatio });
+    }
+  } catch { return ratio; }
+  return healRatio.value;
+};
 
 // `selfTarget` alone misses a move aimed at the user's side, like Howl (game-code.md §14). So each effect carries
 // `self` (the game's `selfTarget`), `side` (aimed at the user's side at all) and `ally` (at a partner's slot), and each
@@ -92,10 +104,11 @@ export const moveTraits = (mv, user = null, { party = null, target = null } = {}
   const healAttr = firstAttr(mv, "HealAttr");
   // A `VariableHealAttr` is built with `healRatio` 1 and its `apply` overwrites it with the last use's ratio,
   // so only `healFunc` answers for this user.
-  const ratioIn = (u = user) => {
+  const baseRatioIn = u => {
     if (typeof healAttr.healFunc !== "function") return healAttr.healRatio ?? 0.5;
     try { return healAttr.healFunc(u); } catch { return 0.5; }
   };
+  const ratioIn = (u = user) => healBoosted(u, mv, target, baseRatioIn(u));
   const heal = healAttr
     ? { ratio: ratioIn(), self: healAttr.selfTarget !== false, cls: healAttr.constructor?.name ?? "", ratioIn }
     : null;

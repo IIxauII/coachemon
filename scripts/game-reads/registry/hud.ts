@@ -193,6 +193,7 @@ export const HUD: Area = {
     { name: "calculateBattleAccuracy", kind: "method", at: ["src/data/moves/move.ts#Move.calculateBattleAccuracy"] },
     { name: "calculateStabMultiplier", kind: "method", at: ["src/field/pokemon.ts#Pokemon.calculateStabMultiplier"] },
     { name: "calculateStats", kind: "method", at: ["src/field/pokemon.ts#Pokemon.calculateStats"] },
+    { name: "canApply", kind: "method", at: ["src/data/abilities/ab-attrs.ts#MoveHealBoostAbAttr.canApply"] },
     { name: "canApplyAbility", kind: "method", at: ["src/field/pokemon.ts#Pokemon.canApplyAbility"] },
     { name: "canBeMultiStrikeEnhanced", kind: "method", at: ["src/data/moves/move.ts#Move.canBeMultiStrikeEnhanced"] },
     { name: "cancelled", kind: "field", at: ["src/@types/damage-result.ts#DamageCalculationResult.cancelled"] },
@@ -482,6 +483,7 @@ export const HUD: Area = {
       at: ["src/battle-scene.ts#BattleScene.generateNewBattleTrainer"],
     },
     { name: "genPartyMember", kind: "method", at: ["src/field/trainer.ts#Trainer.genPartyMember"] },
+    { name: "getAbilityAttrs", kind: "method", at: ["src/field/pokemon.ts#Pokemon.getAbilityAttrs"] },
     { name: "getAccuracyMultiplier", kind: "method", at: ["src/field/pokemon.ts#Pokemon.getAccuracyMultiplier"] },
     {
       name: "getAllSpecies",
@@ -530,6 +532,7 @@ export const HUD: Area = {
         "src/field/pokemon.ts#EnemyPokemon.getBattlerIndex",
       ],
     },
+    { name: "getCondition", kind: "method", at: ["src/data/abilities/ab-attrs.ts#AbAttr.getCondition"] },
     { name: "getCritStage", kind: "method", at: ["src/field/pokemon.ts#Pokemon.getCritStage"] },
     { name: "getEffectiveStat", kind: "method", at: ["src/field/pokemon.ts#Pokemon.getEffectiveStat"] },
     {
@@ -777,6 +780,7 @@ export const HUD: Area = {
       name: "healRatio",
       kind: "field",
       at: [
+        "src/data/abilities/ab-attrs.ts#MoveHealBoostAbAttrParams.healRatio",
         "src/data/abilities/ab-attrs.ts#PostSummonAllyHealAbAttr.healRatio",
         "src/data/moves/move.ts#HealAttr.healRatio",
         "src/data/moves/move.ts#HitHealAttr.healRatio",
