@@ -561,7 +561,7 @@ const threatTables = () => {
   assert.match(healed.options[0].outcome, /Lapras is taken for good/,
     "two members still stand, so the game draws from them and never from fainted Jolteon");
   assert.deepEqual(verdicts(healed), ["ok", "ok"]);
-  assert.equal(healed.options[0].why, "L38 Lapras for a legendary", "Jolteon is back by W40, so it is still the weakest");
+  assert.equal(healed.options[0].why, "L38 Lapras for a likely legendary", "Jolteon is back by W40, so it is still the weakest");
   assert.match(ladder(heal.scene), /^Jolteon -?\d+\.\d ·/, "revived, it is a member the duels price, not dead weight");
   const hard = show("dark deal, Hardcore makes the fainted member dead weight",
     fainted({ gameMode: { isFixedBattle: () => false, challenges: [{ id: 9, value: 1 }] } }));
@@ -569,7 +569,7 @@ const threatTables = () => {
   const hardcore = hard.model();
   assert.match(hardcore.options[0].outcome, /Lapras is taken for good/, "the same pool: the game's filter is unmoved");
   assert.deepEqual(verdicts(hardcore), ["ok", "ok"]);
-  assert.equal(hardcore.options[0].why, "L38 Lapras for a legendary",
+  assert.equal(hardcore.options[0].why, "L38 Lapras for a likely legendary",
     "Jolteon is dead weight and so the weakest member: Lapras is not the weakest link and the deal is not a bargain");
   assert.match(ladder(hard.scene), /^Jolteon fainted 0\.0 ·/,
     "dead weight is weakest, at zero, and said to be dead weight rather than priced");
@@ -608,6 +608,11 @@ const threatTables = () => {
     /Pinsir is taken for good → 5 Rogue Balls \+ a catchable non-legendary boss \(starter tier 5\) of its types, holding its items — Scyther or Heracross$/,
     "Buzzwole and Slither Wing are excluded, so the band widens down to tier 5");
   assert.doesNotMatch(bug.options[0].why ?? "", /legendary/);
+  const lone = team().map(p => Object.assign(p, { isAllowedInChallenge: () => false }));
+  lone[2] = bugs[2];
+  const last = mount(deal({ 30512: [0], [30512 * 500]: [70] }, { party: lone })).model();
+  assert.match(last.options[0].outcome, /^Pinsir is taken for good → .*non-legendary boss/,
+    "the only legal member, standing, with no legal one fainted");
 
   const ghost = { isChallenge: true, isFixedBattle: () => false, challenges: [{ id: Challenges.SINGLE_TYPE, value: PokemonType.GHOST + 1 }] };
   const monoLow = mount(deal({ 30512: [2], [30512 * 500]: [70] }, { gameMode: ghost })).model();

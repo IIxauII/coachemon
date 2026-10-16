@@ -221,7 +221,7 @@ weakest first  Jolteon -0.1 · Garchomp 0.7 · Lapras 0.7
 🎭 Dark Deal rogue Dark Deal: your call
 Options
 · Deal fixed {fixed by the run seed: this is what happens} — Lapras is taken for good → 5 Rogue Balls + a catchable boss (starter tier 6) of its types, holding its items, usually legendary
-⚔ boss · L38 Lapras for a legendary
+⚔ boss · L38 Lapras for a likely legendary
 · Refuse — shop only, no reward
 summary Dark Deal: your call
 weakest first  Jolteon -0.2 · Lapras 1.0 · Garchomp 1.3
@@ -230,7 +230,7 @@ weakest first  Jolteon -0.2 · Lapras 1.0 · Garchomp 1.3
 🎭 Dark Deal rogue Dark Deal: your call
 Options
 · Deal fixed {fixed by the run seed: this is what happens} — Lapras is taken for good → 5 Rogue Balls + a catchable boss (starter tier 6) of its types, holding its items, usually legendary
-⚔ boss · L38 Lapras for a legendary
+⚔ boss · L38 Lapras for a likely legendary
 · Refuse — shop only, no reward
 summary Dark Deal: your call
 weakest first  Jolteon fainted 0.0 · Lapras 1.4 · Garchomp 1.9
@@ -271,7 +271,7 @@ summary Dark Deal: your call
 🎭 Dark Deal rogue Dark Deal: your call
 Options
 · Deal fixed {fixed by the run seed: this is what happens} — Lapras is taken for good → 5 Rogue Balls + a catchable boss (starter tier 6) of its types, holding its items, usually legendary
-⚔ boss · L38 Lapras for a legendary
+⚔ boss · L38 Lapras for a likely legendary
 · Refuse — shop only, no reward
 summary Dark Deal: your call
 next big fight  gym 50 · weakest first  Jolteon 0.1 · Lapras 0.9 · Garchomp 2.3
@@ -289,7 +289,7 @@ next big fight  gym 50 · weakest first  Garchomp fainted 0.0 · Jolteon 0.7 · 
 🎭 Dark Deal rogue Dark Deal: your call
 Options
 · Deal fixed {fixed by the run seed: this is what happens} — Lapras is taken for good → 5 Rogue Balls + a catchable boss (starter tier 6) of its types, holding its items, usually legendary
-⚔ boss · L38 Lapras for a legendary
+⚔ boss · L38 Lapras for a likely legendary
 · Refuse — shop only, no reward
 summary Dark Deal: your call
 next big fight  none · weakest first  Jolteon 0.0 · Lapras 1.1 · Garchomp 2.6

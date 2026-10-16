@@ -2,7 +2,7 @@
 // calls `meetsRequirements()`, which writes and can draw, and replays only the draws a closure makes before its first
 // `await`: past that the card gives odds (game-code.md §13).
 import { TYPES, abilityValue, natureOf, stage, typesOf } from "./01-core.js";
-import { bigFightsAhead } from "./03-calendar.js";
+import { bigFightsAhead, challengeValue } from "./03-calendar.js";
 import { gameTables } from "./04-game-tables.js";
 import { formOf, partyAtFight, partyProfile, typesOfSpecies } from "./08-party.js";
 import { weakestMember } from "./12-value.js";
@@ -85,12 +85,12 @@ const DARK_DEAL_EXCLUDED = [SpeciesId.ETERNATUS,
   SpeciesId.DIANCIE, SpeciesId.HOOPA, SpeciesId.VOLCANION, SpeciesId.MAGEARNA, SpeciesId.MARSHADOW, SpeciesId.ZERAORA,
   SpeciesId.MELTAN, SpeciesId.MELMETAL, SpeciesId.ZARUDE, SpeciesId.PECHARUNT,
   SpeciesId.ETERNAL_FLOETTE, SpeciesId.BLOODMOON_URSALUNA, SpeciesId.BATTLE_BOND_GRENINJA];
-// The starter tier Dark Deal's `randSeedInt(100)` lands on, and the share of rolls each takes.
+// The starter tier Dark Deal's `randSeedInt(100)` lands on.
 // @mirrors dark-deal-tiers
 const dealTier = roll => (roll >= 65 ? 6 : roll >= 15 ? 7 : roll >= 5 ? 8 : [9, 10]);
-const DEAL_TIER_ODDS = [[6, 0.35], [7, 0.5], [8, 0.1], [[9, 10], 0.05]];
-// `getRandomSpeciesByStarterCost(tier, excludedBosses, bossTypes)`'s band; it draws from it evenly. Where the types
-// have nothing left at the tier, the band widens and can land on ordinary starters (game-code.md §13).
+const DEAL_TIER_ODDS = Object.values(Array.from({ length: 100 }, (_, roll) => dealTier(roll))
+  .reduce((odds, tier) => ({ ...odds, [tier]: [tier, (odds[tier]?.[1] ?? 0) + 1 / 100] }), {}));
+// `getRandomSpeciesByStarterCost(tier, excludedBosses, bossTypes)`'s band, which it draws from evenly (game-code.md §13).
 const dealBand = (reg, tier, types) => starterBand(reg, tier, sp => !DARK_DEAL_EXCLUDED.includes(sp.speciesId)
   && (!types.length || types.includes(sp.type1) || (sp.type2 != null && types.includes(sp.type2))));
 const isLegend = sp => !!(sp.legendary || sp.subLegendary || sp.mythical);
@@ -496,14 +496,15 @@ const RULES = {
     // `getRandomPlayerPokemon(true, false, true)` (game-code.md §13).
     const legal = c.party.filter(p => tryDo(() => p.isAllowedInChallenge(), true));
     const standing = legal.filter(p => p.hp > 0);
-    const pool = standing.length === 1 ? legal.filter(p => p.hp <= 0) : standing;
+    const downed = legal.filter(p => p.hp <= 0);
+    const pool = standing.length === 1 && downed.length ? downed : standing.length ? standing : legal;
     const k = pool.length ? c.pre(() => int(pool.length)) : null;
     const taken = k != null ? pool[k] : null;
     const roll = c.during(() => int(100));
     const tier = roll == null ? null : dealTier(roll);
     // A mono-type challenge's own type stands in for the taken member's.
-    const mono = c.s.gameMode?.isChallenge
-      ? (c.s.gameMode.challenges ?? []).filter(ch => ch.value && ch.id === Challenges.SINGLE_TYPE).map(ch => ch.value - 1) : [];
+    const monoValue = c.s.gameMode?.isChallenge ? challengeValue(c.s, Challenges.SINGLE_TYPE) : 0;
+    const mono = monoValue ? [monoValue - 1] : [];
     const reg = tryDo(() => gameTables().species);
     const boss = typeof reg?.getAllStarters === "function" && typeof reg.getStarterCost === "function" && pool.length
       ? dealOdds(reg, taken ? [taken] : pool, tier != null ? [[tier, 1]] : DEAL_TIER_ODDS, mono) : null;
@@ -516,7 +517,7 @@ const RULES = {
     const tail = !boss ? ", usually legendary" : legend ? "" : plain ? (names ? ` — ${names}` : "")
       : `: legendary ${pct}% of the time${names ? `, else ${names}` : ""}`;
     const prize = `5 Rogue Balls + ${head}${tierText} of ${mono.length ? `the run's ${TYPES[mono[0]]} type` : "its types"}, holding its items${tail}`;
-    const gets = legend ? "a legendary" : plain ? names ?? "a non-legendary" : `a ${pct}% shot at a legendary`;
+    const gets = !boss ? "a likely legendary" : legend ? "a legendary" : plain ? names ?? "a non-legendary" : `a ${pct}% shot at a legendary`;
     // The pool above mirrors the game's filter; which member the party would miss, or not, is judged against the
     // team at the next big fight (#571).
     const carry = taken && taken === c.strongest;
