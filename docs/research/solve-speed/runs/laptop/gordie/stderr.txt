@@ -1,0 +1,116 @@
+(node:839) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Unhandled Errors [49m[22m[31m⎯⎯⎯⎯⎯⎯[39m
+[31m[1m
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.[22m[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'getItem')[39m
+[36m [2m❯[22m src/i18n.ts:[2m207:36[22m[39m
+    [90m205|[39m     [35masync[39m () [33m=>[39m {
+    [90m206|[39m       i18next[33m.[39mservices[33m.[39mformatter[33m?.[39m[34madd[39m([32m"money"[39m[33m,[39m i18nMoneyFormatter)[33m;[39m
+    [90m207|[39m       [35mawait[39m [34minitFonts[39m(localStorage[33m.[39m[34mgetItem[39m([32m"prLang"[39m) [33m??[39m undefined)[33m;[39m
+    [90m   |[39m                                    [31m^[39m
+    [90m208|[39m     }[33m,[39m
+    [90m209|[39m   )[33m;[39m
+[90m [2m❯[22m finish node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1870:9[22m[39m
+[90m [2m❯[22m done node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1997:21[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m2011:9[22m[39m
+[90m [2m❯[22m Object.callback node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1907:9[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1533:13[22m[39m
+[90m [2m❯[22m Connector.loaded node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1515:16[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1615:12[22m[39m
+[90m [2m❯[22m resolver node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1566:7[22m[39m
+
+[31mThis error originated in "[1mtest/tests/coach-replay-43d1ca37.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+[31m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39m
+
+(node:971) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:965) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1681) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[33mBattlerTag SPIKY_SHIELD is missing a score![39m
+[33mBattlerTag SPIKY_SHIELD is missing a score![39m
+[33mBattlerTag SPIKY_SHIELD is missing a score![39m
+[33mBattlerTag SPIKY_SHIELD is missing a score![39m
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Unhandled Errors [49m[22m[31m⎯⎯⎯⎯⎯⎯[39m
+[31m[1m
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.[22m[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'getItem')[39m
+[36m [2m❯[22m src/i18n.ts:[2m207:36[22m[39m
+    [90m205|[39m     [35masync[39m () [33m=>[39m {
+    [90m206|[39m       i18next[33m.[39mservices[33m.[39mformatter[33m?.[39m[34madd[39m([32m"money"[39m[33m,[39m i18nMoneyFormatter)[33m;[39m
+    [90m207|[39m       [35mawait[39m [34minitFonts[39m(localStorage[33m.[39m[34mgetItem[39m([32m"prLang"[39m) [33m??[39m undefined)[33m;[39m
+    [90m   |[39m                                    [31m^[39m
+    [90m208|[39m     }[33m,[39m
+    [90m209|[39m   )[33m;[39m
+[90m [2m❯[22m finish node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1870:9[22m[39m
+[90m [2m❯[22m done node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1997:21[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m2011:9[22m[39m
+[90m [2m❯[22m Object.callback node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1907:9[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1533:13[22m[39m
+[90m [2m❯[22m Connector.loaded node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1515:16[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1615:12[22m[39m
+[90m [2m❯[22m resolver node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1566:7[22m[39m
+
+[31mThis error originated in "[1mtest/tests/coach-replay-bf3222fa.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+[31m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Unhandled Errors [49m[22m[31m⎯⎯⎯⎯⎯⎯[39m
+[31m[1m
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.[22m[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'getItem')[39m
+[36m [2m❯[22m src/i18n.ts:[2m207:36[22m[39m
+    [90m205|[39m     [35masync[39m () [33m=>[39m {
+    [90m206|[39m       i18next[33m.[39mservices[33m.[39mformatter[33m?.[39m[34madd[39m([32m"money"[39m[33m,[39m i18nMoneyFormatter)[33m;[39m
+    [90m207|[39m       [35mawait[39m [34minitFonts[39m(localStorage[33m.[39m[34mgetItem[39m([32m"prLang"[39m) [33m??[39m undefined)[33m;[39m
+    [90m   |[39m                                    [31m^[39m
+    [90m208|[39m     }[33m,[39m
+    [90m209|[39m   )[33m;[39m
+[90m [2m❯[22m finish node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1870:9[22m[39m
+[90m [2m❯[22m done node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1997:21[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m2011:9[22m[39m
+[90m [2m❯[22m Object.callback node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1907:9[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1533:13[22m[39m
+[90m [2m❯[22m Connector.loaded node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1515:16[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1615:12[22m[39m
+[90m [2m❯[22m resolver node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1566:7[22m[39m
+
+[31mThis error originated in "[1mtest/tests/coach-worker-569bc6b7.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+[31m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Unhandled Errors [49m[22m[31m⎯⎯⎯⎯⎯⎯[39m
+[31m[1m
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.[22m[39m
+
+[31m⎯⎯⎯⎯[39m[1m[41m Unhandled Rejection [49m[22m[31m⎯⎯⎯⎯⎯[39m
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'getItem')[39m
+[36m [2m❯[22m src/i18n.ts:[2m207:36[22m[39m
+    [90m205|[39m     [35masync[39m () [33m=>[39m {
+    [90m206|[39m       i18next[33m.[39mservices[33m.[39mformatter[33m?.[39m[34madd[39m([32m"money"[39m[33m,[39m i18nMoneyFormatter)[33m;[39m
+    [90m207|[39m       [35mawait[39m [34minitFonts[39m(localStorage[33m.[39m[34mgetItem[39m([32m"prLang"[39m) [33m??[39m undefined)[33m;[39m
+    [90m   |[39m                                    [31m^[39m
+    [90m208|[39m     }[33m,[39m
+    [90m209|[39m   )[33m;[39m
+[90m [2m❯[22m finish node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1870:9[22m[39m
+[90m [2m❯[22m done node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1997:21[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m2011:9[22m[39m
+[90m [2m❯[22m Object.callback node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1907:9[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1533:13[22m[39m
+[90m [2m❯[22m Connector.loaded node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1515:16[22m[39m
+[90m [2m❯[22m node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1615:12[22m[39m
+[90m [2m❯[22m resolver node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:[2m1566:7[22m[39m
+
+[31mThis error originated in "[1mtest/tests/coach-worker-8f5655ab.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
+[31m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39m
+

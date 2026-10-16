@@ -1,0 +1,1 @@
+{"fight":"src/solver/fixtures/gordie-w180.json","workers":2,"cores":4,"kind":"oracle_line","turns":14,"oursLeft":6,"totalS":1311.844,"bootS":26.193,"expansions":4983,"pool":{"size":2,"died":0,"lastDeath":null,"peakHeapMb":343,"heapLimitMb":864}}
