@@ -40,11 +40,11 @@ const typeNames = sp => [sp?.type1, sp?.type2].map(t => TYPES[t]).filter((t, i, 
 
 // (game-code.md §23)
 // @mirrors ability-randomizer
-const SPARED = new Set([AbilityId.SCHOOLING, AbilityId.POWER_CONSTRUCT, AbilityId.BATTLE_BOND, AbilityId.DISGUISE,
+const FORM_CHANGE_ABILITIES = new Set([AbilityId.SCHOOLING, AbilityId.POWER_CONSTRUCT, AbilityId.BATTLE_BOND, AbilityId.DISGUISE,
   AbilityId.ICE_FACE, AbilityId.ZERO_TO_HERO, AbilityId.TERA_SHIFT, AbilityId.TERA_SHELL, AbilityId.TERAFORM_ZERO]);
 const rerolledBy = s => {
   const value = challengeValue(s, Challenges.ABILITY_RANDOMIZER);
-  return { ability: aid => value >= 1 && !(value >= 3 && SPARED.has(aid)), passive: value >= 2 };
+  return { ability: aid => value >= 1 && !(value >= 3 && FORM_CHANGE_ABILITIES.has(aid)), passive: value >= 2 };
 };
 
 // At 1 an evolution that needs a move counts as out of reach (#721); from 2 it goes as the game's hook leaves it, but

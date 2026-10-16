@@ -41,6 +41,7 @@ const SPECIES = [
   [1019, "Hydrapple", ["Grass","Dragon"], [106,80,110,120,80,44]],
   [656, "Froakie", ["Water"], [41,56,40,62,44,71], 3, [[657, 16], [658, 36]], 37, 38],
   [657, "Frogadier", ["Water"], [54,63,52,83,56,97]],
+  // Invented: no species in the game holds a form-change ability hidden, and Greninja's is Protean.
   [658, "Greninja", ["Water","Dark"], [72,95,67,103,71,122], undefined, [], 37, AbilityId.BATTLE_BOND],
 ];
 const ABILITY_NAMES = { 11: "Chlorophyll", 13: "Solar Power", 15: "Rain Dish", 17: "Big Pecks", 19: "Guts", 21: "Lightning Rod", 23: "Moxie", 25: "Multiscale", 27: "Huge Power", 29: "Rough Skin", 31: "Synchronize", 24: "Rattled", 30: "Rough Skin (H)", 33: "Intimidate", 34: "Sand Force", [AbilityId.BATTLE_BOND]: "Battle Bond" };
