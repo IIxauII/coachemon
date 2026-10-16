@@ -274,7 +274,6 @@ function rolled<T>(run: () => T): [T, Roll[]] {
 
 function wrap(owner: any, name: string, around: (original: (...args: any[]) => any, self: any, args: any[]) => any) {
   const original = owner.prototype[name];
-  // Wrapped as missing, it would throw only on the turn that first reached it.
   if (typeof original !== "function") throw new Error(`the game has no ${owner.name}.${name} to read draws from`);
   owner.prototype[name] = function (this: any, ...args: any[]) {
     return around(original, this, args);

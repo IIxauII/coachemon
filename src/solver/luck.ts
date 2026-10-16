@@ -26,10 +26,14 @@ const HAPPENING_HELPS_US: Record<Draw["kind"], boolean> = {
   confusion: false,
 };
 
-// A foe's crit, effect or proc that never came would put most of its hits on the list.
 const FOES_COUNTED = new Set<Draw["kind"]>(["accuracy", "paralysis", "confusion"]);
 
-function said(draw: Draw): string {
+/** The draws `luckOf` reads, as a line riding none says them: edit it with `HAPPENING_HELPS_US` and `FOES_COUNTED`. */
+export const NO_LUCK =
+  "nothing of ours (a hit, a crit, an added effect, an item proc, moving through paralysis or confusion) and nothing " +
+  "of the foe's (a miss, full paralysis, a confusion self-hit) went its way on a draw";
+
+function describeDraw(draw: Draw): string {
   const who = `${draw.side === "foes" ? "the foe's " : ""}${title(draw.species)}`;
   switch (draw.kind) {
     case "accuracy":
@@ -52,7 +56,7 @@ function ourWay(draw: Draw): string | null {
   if (!ours && !FOES_COUNTED.has(draw.kind)) return null;
   if (draw.happened !== (HAPPENING_HELPS_US[draw.kind] === ours)) return null;
   const odds = draw.happened ? draw.chance : 1 - draw.chance;
-  return odds < 1 ? `${said(draw)} (${percent(odds)})` : null;
+  return odds < 1 ? `${describeDraw(draw)} (${percent(odds)})` : null;
 }
 
 export function luckOf(steps: readonly { turn: number; draws: readonly Draw[] }[]): Luck[] {

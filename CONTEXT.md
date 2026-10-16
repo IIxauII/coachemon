@@ -252,6 +252,9 @@ The **oracle**'s answer to a trainer fight: the inputs, turn by turn, that it ha
 seed, with a **checkpoint** after each turn — what the battle will look like when the next **decision** comes, if the
 game has drawn what the oracle drew. Every checkpoint is a **replay** claim, checked when that decision arrives.
 
+An oracle line names the luck it rides: each draw that went its way with less than a sure chance, with its turn and
+that chance. One that rides none says so, naming the draws it read.
+
 While every checkpoint has matched, the oracle line's step is the call for the turn in place of the **turn line**,
 and it stands in for the **fight plan**. One miss and the game is **off the line**: the oracle line is void for the
 rest of the run, the turn line leads again and the fight plan returns, and the oracle may solve again from where the
