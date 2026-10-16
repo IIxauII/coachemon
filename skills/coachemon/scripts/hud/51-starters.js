@@ -82,7 +82,8 @@ const speciesValue = (s, h, sp, ctx, starter = null) => {
   const { dexEntry: dex, starterDataEntry: st } = starterData(s, id);
   const line = lineOf(sp, ctx.tables?.species);
   const why = [];
-  const finalName = line.finalSp && line.finalSp.speciesId !== id ? ` (${line.finalSp.name})` : "";
+  const finalForm = line.finalSp && line.finalSp.speciesId !== id ? line.finalSp : null;
+  const finalName = finalForm ? ` (${finalForm.name})` : "";
   const power = 45 * clamp((line.final - 380) / 220, 0, 1.5) ** 1.5;
   why.push({ w: power, text: `final BST ${line.estimated ? "~" : ""}${line.final}${finalName}` });
   const early = 8 * clamp(((sp.baseTotal ?? 0) - 250) / 250, 0, 1);
@@ -91,21 +92,19 @@ const speciesValue = (s, h, sp, ctx, starter = null) => {
   else if (line.evo?.level > 36) why.push({ w: -4, text: `evolves at L${line.evo.level}` });
 
   const abilityName = aid => tryDo(() => ctx.tables.abilities[aid].name, null);
-  // A line fights with its final form's passive and hidden ability, not the starter's the grid shows (game-code.md §23).
-  const later = line.finalSp && line.finalSp.speciesId !== id ? line.finalSp : null;
-  const fought = (own, last) => {
-    const aid = later ? last : own;
+  // The grid shows the starter's passive and hidden ability, not the final form's (game-code.md §23).
+  const fought = (starterAid, finalAid) => {
+    const aid = finalForm ? finalAid : starterAid;
     const name = abilityName(aid);
-    return name && later && aid !== own ? `${name} (${later.name})` : name;
+    return name && aid !== starterAid ? `${name}${finalName}` : name;
   };
   const passiveOn = starter ? !!starter.passive : ((st.passiveAttr ?? 0) & Passive.UNLOCKED) !== 0;
-  const passive = fought(tryDo(() => sp.getPassiveAbility(starter?.formIndex ?? 0)), tryDo(() => later.getPassiveAbility(0)));
+  const passive = fought(tryDo(() => sp.getPassiveAbility(starter?.formIndex ?? 0)), tryDo(() => finalForm.getPassiveAbility(0)));
   if (passiveOn) why.push({ w: 8, text: passive ? `passive ${passive}` : "passive" });
   else if (starter && ((st.passiveAttr ?? 0) & Passive.UNLOCKED)) why.push({ w: -3, text: `${passive ?? "passive"} is off` });
   const hiddenOn = starter ? starter.abilityIndex === 2 : ((st.abilityAttr ?? 0) & AbilityAttr.ABILITY_HIDDEN) !== 0;
-  const hidden = (later ?? sp).abilityHidden;
-  if (hiddenOn && hidden) {
-    const name = fought(sp.abilityHidden, hidden);
+  if (hiddenOn && (finalForm ?? sp).abilityHidden) {
+    const name = fought(sp.abilityHidden, finalForm?.abilityHidden);
     why.push({ w: 3, text: name ? `hidden ${name}` : "hidden ability" });
   }
   const eggs = st.eggMoves ?? 0;

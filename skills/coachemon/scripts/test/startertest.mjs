@@ -170,8 +170,7 @@ const checkBudget = (m, limit, label) => {
   if (karp) assert.ok(karp.why.some(w => /passive Intimidate|rare egg move Dragon Dance/.test(w)), "Magikarp's unlocks are named");
 }
 
-// ---- Gyarados and Garchomp carry their own passive and hidden ability, as every species does in the game: the card
-// names the final form's, after that form where the starter's differs (game-code.md §23).
+// ---- The card names the final form's passive and hidden ability, after that form where the starter's differs.
 {
   const karp = mount({ looking: 129 }).model.viewing.why;
   assert.ok(karp.includes("passive Intimidate (Gyarados)"), karp.join(" · "));
