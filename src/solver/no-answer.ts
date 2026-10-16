@@ -12,7 +12,7 @@ const BROKE: Record<HygieneRule, string> = {
 const firstFew = (all: readonly string[]) =>
   all.length > 3 ? `${all.slice(0, 3).join("; ")}; and ${all.length - 3} more` : all.join("; ");
 
-const andJoined = (all: readonly string[]) => (all.length > 1 ? `${all.slice(0, -1).join(", ")} and ${all.at(-1)}` : all.join(""));
+export const andJoined = (all: readonly string[]) => (all.length > 1 ? `${all.slice(0, -1).join(", ")} and ${all.at(-1)}` : all.join(""));
 
 export const noAnswer = (reason: Reason): NoAnswer => ({
   kind: "no_answer",

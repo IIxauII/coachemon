@@ -202,8 +202,8 @@ if (args.stamp) {
   const { failed } = await recheck(
     version,
     {
-      replay: (given, script) => replay(given, script, inSource),
-      checkForks: (given, inputs) => checkForks(given, inputs, inSource),
+      replay: (given, script, carry) => replay(given, script, inSource, carry),
+      checkForks: (given, inputs, carry) => checkForks(given, inputs, inSource, carry),
     },
     console.log,
   );
