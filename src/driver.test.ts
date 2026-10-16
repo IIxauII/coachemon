@@ -968,13 +968,14 @@ test("read_card on a tab with no panel says so and keeps reading the game (exten
   assert.equal(r.groups, null);
   assert.equal(r.summary, null);
   assert.equal(r.oracle_line, null);
+  assert.equal(r.randomized, null);
   assert.match(String(r.next), /coach panel is not running/);
 });
 
 test("read_card needs no grant: it never claims the tab another driver holds", async () => {
   const fake = fakeGame({
     lockHolder: 4242,
-    card: () => ({ ok: true, kind: "learn", key: "14|Charmeleon|Flamethrower", wave: 14, verdict: "your call", groups: [], text: "🎓 Flamethrower", oracleLine: null, randomized: null, summary: null }),
+    card: () => ({ ok: true, kind: "learn", key: "14|Charmeleon|Flamethrower", wave: 14, verdict: "your call", groups: [], text: "🎓 Flamethrower", oracleLine: null, randomized: false, summary: null }),
     read: (): ScreenRead => ({
       ready: true, settled: true, reason: "menu-open", mode: UiMode.COMMAND, screen: "COMMAND", phaseName: "CommandPhase", wave: 14, turn: 1,
       runLive: true, tutorialActive: false, handler: null, cursor: 0, modeChain: [], messageText: null, onActionInput: false,
@@ -1031,7 +1032,7 @@ test("read_session reports a failed read rather than an empty save (#669)", asyn
 });
 
 test("read_card keeps the panel's own wave when it is a refresh behind the game", async () => {
-  const tab = coachTab({ card: () => ({ ok: true, kind: "battle", key: "11", wave: 11, verdict: "easy", groups: [], text: "⚔", oracleLine: null, randomized: null, summary: null }) });
+  const tab = coachTab({ card: () => ({ ok: true, kind: "battle", key: "11", wave: 11, verdict: "easy", groups: [], text: "⚔", oracleLine: null, randomized: false, summary: null }) });
   const r = await outcome(tab.driver.readCard({}));
   assert.equal(r.wave, 12, "the envelope is the settled game's wave");
   assert.equal(r.card_wave, 11, "the card is still on the wave before it");
