@@ -15,9 +15,11 @@ export const isDamaging = mv => !!mv && mv.category !== MoveCategory.STATUS && (
 const unimplemented = mv => / \(N\)$/.test(mv.name ?? "");
 
 // The base power that deals about as much at this level, with even Atk and Def and no STAB (game-code.md §1).
+// @mirrors fixed-power
 const fixedPower = (dmg, level) => Math.round(Math.max(0, dmg) * 50 / (2 * (level || 50) / 5 + 2));
 // `[attr, power(pk, mv, attr, party), note, fixed?]` for a power −1 move; `fixed` damage ignores STAB and the type
 // chart. 08-party's `FIXED_DAMAGE_ATTRS` is the `fixed` rows: change both.
+// @mirrors stand-ins
 const STAND_INS = [
   ["LevelDamageAttr", pk => fixedPower(pk.level, pk.level), "damage = level", true],
   ["RandomLevelDamageAttr", pk => fixedPower(pk.level, pk.level), "damage ≈ level", true],
@@ -67,6 +69,7 @@ export const isFixed = mv => mv.power === -1 && STAND_INS.some(([name, , , fixed
 const seTypes = moves => new Set(moves.filter(m => isDamaging(m) && !isFixed(m)).flatMap(m => CHART[TYPES[m.type]]?.[0] ?? []));
 // Gorilla Tactics is left out on purpose: its Atk comes with a lock into one move (game-code.md §1), which a per-move
 // score can't carry.
+// @mirrors atk-mult
 const ATK_MULT = { "Huge Power": 2, "Pure Power": 2, Hustle: 1.5 };
 const atkOf = pk => abilitiesOf(pk).reduce((n, a) => n * (ATK_MULT[a] ?? 1), pk.getStat(Stat.ATK));
 const spaOf = pk => pk.getStat(Stat.SPATK);
@@ -159,33 +162,40 @@ const STATUS_ATTR = {
   ForceSwitchOutAttr: [12, "forces a switch"], SacrificialFullRestoreAttr: [30, "full restore, user faints"],
 };
 // A flat value: these heal by the weather (game-code.md §14).
-const HEAL_FLAT = { WeatherHealAttr: 45, PlantHealAttr: 45, SandHealAttr: 45 };
-const isRecovery = mv => ["HealAttr", "BoostHealAttr", ...Object.keys(HEAL_FLAT)].some(n => moveTraits(mv).attrNames.has(n));
+// @mirrors weather-heals
+const WEATHER_HEALS = new Set([MoveId.MORNING_SUN, MoveId.SYNTHESIS, MoveId.MOONLIGHT, MoveId.SHORE_UP]);
+const WEATHER_HEAL_VALUE = 45;
+const isRecovery = mv => moveTraits(mv).attrNames.has("HealAttr") || (moveTraits(mv).attrNames.has("VariableHealAttr") && mv.id !== MoveId.SWALLOW);
 const inflictsStatus = mv => moveTraits(mv).inflicts.some(x => x.cls === "StatusEffectAttr" && !(x.self || x.side));
 
 const doublesNote = share => `${Math.round(share * 100)}% doubles ahead`;
 
 // The roster a status move will face (#122), judged by the rules in game-code.md §16.
+// @mirrors mold-breakers
 const MOLD_BREAKERS = ["Mold Breaker", "Teravolt", "Turboblaze"];
+// @mirrors unsuppressable
 const UNSUPPRESSABLE = new Set(["Comatose", "Shields Down"]);
 const SIDE_TARGETS = new Set([MoveTarget.USER_SIDE, MoveTarget.ENEMY_SIDE, MoveTarget.BOTH_SIDES]);
 const POISONS = [StatusEffect.POISON, StatusEffect.TOXIC];
 // `[]` blocks every status.
+// @mirrors status-abilities
 const STATUS_ABILITIES = {
   Limber: [StatusEffect.PARALYSIS], Insomnia: [StatusEffect.SLEEP], "Vital Spirit": [StatusEffect.SLEEP], "Sweet Veil": [StatusEffect.SLEEP],
   Immunity: POISONS, "Pastel Veil": POISONS, "Magma Armor": [StatusEffect.FREEZE],
   "Water Veil": [StatusEffect.BURN], "Water Bubble": [StatusEffect.BURN], "Thermal Exchange": [StatusEffect.BURN],
   "Purifying Salt": [], Comatose: [], "Flower Veil": [],
 };
+// @mirrors status-types
 const STATUS_TYPES = { [StatusEffect.POISON]: ["Poison", "Steel"], [StatusEffect.TOXIC]: ["Poison", "Steel"],
   [StatusEffect.PARALYSIS]: ["Electric"], [StatusEffect.FREEZE]: ["Ice"], [StatusEffect.BURN]: ["Fire"] };
+// @mirrors tag-abilities
 const TAG_ABILITIES = { Oblivious: ["TAUNT"], "Aroma Veil": ["TAUNT", "ENCORE", "HEAL_BLOCK", "DISABLED", "TORMENT"] };
 const DISRUPT_NEEDS = { TAUNT: "statusMoves", ENCORE: "statusMoves", HEAL_BLOCK: "healMoves" };
 const DISRUPT_TAGS = new Set(["TAUNT", "ENCORE", "HEAL_BLOCK", "DISABLED", "TORMENT"]);
 const STATUS_FLOOR = 0.3, DISRUPT_HIT = 1.4, DISRUPT_SPREAD = 0.4, DISRUPT_NONE = 0.3, UNSURE = 0.5;
 // `healBlockedMoves`, by attribute (game-code.md §16).
-const HEAL_BLOCKED = ["HealAttr", "RestAttr", "WeatherHealAttr", "PlantHealAttr", "SandHealAttr", "BoostHealAttr",
-  "HealOnAllyAttr", "SwallowHealAttr", "WishAttr", "HitHealAttr"];
+// @mirrors heal-blocked
+const HEAL_BLOCKED = ["HealAttr", "RestAttr", "VariableHealAttr", "HealOnAllyAttr", "WishAttr", "HitHealAttr"];
 export const blockedByHealBlock = mv => HEAL_BLOCKED.some(n => moveTraits(mv).attrNames.has(n));
 
 const foeAbilities = (pk, foe) => {
@@ -247,6 +257,7 @@ const TYPE_FLOOR = 0.35, TYPE_FULL = 2;
 // `TYPE_MIN` floors a foe nothing touches: at 0, any rewrite that opens an immune foe at all scores the full gain.
 const TYPE_STEPS = 2, TYPE_MIN = 0.25, TYPE_STAB = 0.5;
 // Never through `foeAbilities`: Mold Breaker doesn't get past these (game-code.md §14).
+// @mirrors type-fixed
 const TYPE_FIXED = ["Multitype", "RKS System"];
 const bestHit = (types, foe, ours) => {
   const def = { types, abilities: [foe.ability, foe.passive].filter(Boolean) };
@@ -294,8 +305,10 @@ const statusScore = (pk, mv, others, double, ctx) => {
   const tr = moveTraits(mv, pk, { party: ctx.party ?? [pk] });
   const aimedAtFoe = x => !(x.self || x.side);
   for (const [name, [n, text]] of Object.entries(STATUS_ATTR)) if (tr.attrNames.has(name)) add(n, text);
-  for (const [name, n] of Object.entries(HEAL_FLAT)) if (tr.attrNames.has(name)) add(n, "heal (weather)");
-  if (tr.heal && (tr.heal.cls === "HealAttr" || tr.heal.cls === "BoostHealAttr")) {
+  const weatherHeal = WEATHER_HEALS.has(mv.id) && tr.attrNames.has("VariableHealAttr");
+  if (weatherHeal) add(WEATHER_HEAL_VALUE, "heal (weather)");
+  // Swallow's ratio is 0 without a Stockpile.
+  if (tr.heal && !weatherHeal && (tr.heal.cls === "HealAttr" || tr.heal.cls === "VariableHealAttr") && tr.heal.ratio > 0) {
     add(Math.round(120 * tr.heal.ratio), `heal ${Math.round(tr.heal.ratio * 100)}%`);
   }
   const roster = ctx.roster?.foes?.length ? ctx.roster : null;
@@ -358,11 +371,14 @@ const statusScore = (pk, mv, others, double, ctx) => {
 };
 
 // game-code.md §4.
+// @mirrors ate
 const ATE = { Refrigerate: "Ice", Pixilate: "Fairy", Aerilate: "Flying", Galvanize: "Electric", Dragonize: "Dragon" };
 // Tera Blast is absent on purpose: it is Normal until the mon terastallizes (game-code.md §4).
+// @mirrors variable-type
 const VARIABLE_TYPE = ["FormChangeItemTypeAttr", "TechnoBlastTypeAttr", "AuraWheelTypeAttr", "RagingBullTypeAttr",
   "IvyCudgelTypeAttr", "WeatherBallTypeAttr", "TerrainPulseTypeAttr", "HiddenPowerTypeAttr", "TeraStarstormTypeAttr",
   "CombinedPledgeTypeAttr"];
+// @mirrors sun-abilities
 const SUN_ABILITIES = new Set(["Drought", "Desolate Land", "Orichalcum Pulse"]);
 const effectiveType = (pk, mv) => {
   const base = TYPES[mv.type];
@@ -391,6 +407,7 @@ const moveScore = (pk, mv, others, double, ctx = {}) => {
   const atk = atkOf(pk), spa = spaOf(pk);
   // Hustle's Atk is already in `atk`; this is its accuracy cost (game-code.md §5).
   let acc = mv.accuracy > 0 ? mv.accuracy / 100 : 1;
+  // @mirrors hustle-accuracy
   if (mv.category === MoveCategory.PHYSICAL && ability.includes("Hustle")) { acc *= 0.8; notes.push("Hustle"); }
   let power = mv.power;
   let fixed = false;
@@ -401,12 +418,14 @@ const moveScore = (pk, mv, others, double, ctx = {}) => {
   }
   if (et.note) notes.push(et.note);
   if (et.boost && !fixed) power *= et.boost;
+  // @mirrors technician-boost
   if (!fixed && ability.includes("Technician") && power * (tr.hits.grows ? 3 : 1) <= 60) { power *= 1.5; notes.push("Technician"); }
   const mh = multiHit(tr, acc);
   if (mh.hits > 1) notes.push(`${mh.hits} hits`);
   const fit = fixed ? 1 : (mv.category === MoveCategory.PHYSICAL ? atk : spa) / Math.max(atk, spa);
   // A type the card can't pin down is scored like fixed damage: no STAB, no coverage.
   const blind = fixed || !!et.variable;
+  // @mirrors stab-multiplier
   const stab = !blind && typesOf(pk).includes(type) ? (ability.includes("Adaptability") ? 2 : 1.5) : 1;
   let value = power * mh.factor * stab * fit;
 

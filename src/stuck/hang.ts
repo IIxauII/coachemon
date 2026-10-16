@@ -2,6 +2,7 @@
  * The `hang` verdict: the save-failure hang (#11), a rejected per-wave save that leaves the phase on `MESSAGE(0)` with no
  * `onActionInput`, where no press reaches it (game-code.md §26). Source-derived; never reproduced live.
  */
+import { UiMode } from "../enums/generated.ts";
 
 /**
  * `CALL_BUDGET_MS`, for an uncorroborated hold. A healthy encounter shows the same signature through its intro and its
@@ -27,8 +28,6 @@ export type HangAssessment =
   | { status: "ok" }
   | { status: "run_interrupted"; cause: "save_hang"; hang: { heldMs: number; corroborated: boolean } };
 
-const MESSAGE = 0;
-
 export class HangWatch {
   #since: number | null = null;
   #last: number | null = null;
@@ -39,7 +38,7 @@ export class HangWatch {
   poll(p: HangPoll): void {
     if (p === null) return;
     // `EncounterPhase` alone misses every later wave's save hang (#488, game-code.md §26).
-    if (p.mode === MESSAGE && p.phaseName === "EncounterPhase" && !p.onActionInput) {
+    if (p.mode === UiMode.MESSAGE && p.phaseName === "EncounterPhase" && !p.onActionInput) {
       this.#since ??= p.t;
       this.#last = p.t;
       return;

@@ -75,10 +75,11 @@ const bossSegmentDamage = (dmg, hp, segSize, minIdx = 0, idx) => {
 };
 // The first game version whose Sturdy stops fixed damage (game-code.md §1), or null while no release has it.
 // `scripts/hud-deps.ts` watches Pokemon.getAttackDamage, so a pin bump that moves it asks again.
-const STURDY_VS_FIXED_FROM = null;
+const STURDY_VS_FIXED_FROM = "1.12.1.0";
 const fixedIgnoresSturdy = env => !STURDY_VS_FIXED_FROM || !versionAtLeast(gameVersionOf(env.s), STURDY_VS_FIXED_FROM);
 
 // @only 25-turn, 12-value, tests: targetFacts
+// @mirrors target-facts
 export const targetFacts = (env, t, ignoreAbility = false) => {
   const maxHp = t.getMaxHp();
   const segs = t.bossSegments > 0 && (t.isBoss?.() ?? true) ? t.bossSegments : 0;
@@ -332,8 +333,11 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
 const abAttrs = (p, name) => (ability(p, name)
   ? [p.getAbility?.(), p.hasPassive?.() ? p.getPassiveAbility?.() : null].flatMap(a => a?.getAttrs?.(name) ?? []) : []);
 const frac = (max, n) => Math.max(1, Math.floor(max / n));
+// @mirrors weather-spared
 const WEATHER_SPARED = { [WeatherType.SANDSTORM]: [PokemonType.GROUND, PokemonType.ROCK, PokemonType.STEEL], [WeatherType.HAIL]: [PokemonType.ICE] };
+// @mirrors orb-spared
 const ORB_SPARED = { [StatusEffect.POISON]: [PokemonType.POISON, PokemonType.STEEL], [StatusEffect.TOXIC]: [PokemonType.POISON, PokemonType.STEEL], [StatusEffect.BURN]: [PokemonType.FIRE] };
+// @mirrors salt-doubled
 const SALT_DOUBLED = [PokemonType.WATER, PokemonType.STEEL];
 const opponentsOf = (env, p) => {
   try { const o = p.getOpponents?.(); if (Array.isArray(o)) return o.filter(Boolean); } catch {}
@@ -358,8 +362,8 @@ const endOfTurnSteps = (env, p, { tookSuperEffective = false, hp = p.hp, dealt =
     steps.push({ d: -n });
     cur = Math.max(0, cur - n);
   };
-  const queued = (n, cap = max) => {
-    const v = blocked ? 0 : Math.floor(n * charm);
+  const queued = (n, cap = max, most = Infinity) => {
+    const v = blocked ? 0 : Math.min(Math.floor(n * charm), most);
     if (cur <= 0 || !(v > 0) || cur >= cap) return;
     steps.push({ d: v, cap });
     cur = Math.min(cap, cur + v);
@@ -367,7 +371,8 @@ const endOfTurnSteps = (env, p, { tookSuperEffective = false, hp = p.hp, dealt =
   // Heal Block doesn't stop a negative heal (game-code.md §18).
   const reverse = n => chip(Math.floor(n * charm));
 
-  if (dealt > 0) queued(frac(dealt, 8) * stack(p, "HitHealModifier"));
+  const shellBells = stack(p, "HitHealModifier");
+  if (dealt > 0 && shellBells > 0) queued(frac(dealt * shellBells, 8));
 
   if (WEATHER_SPARED[weather] && !guard && !types.some(t => WEATHER_SPARED[weather].includes(t))
     && !abAttrs(p, "BlockWeatherDamageAttr").some(a => !a.weatherTypes?.length || inWeather(a))
@@ -397,7 +402,7 @@ const endOfTurnSteps = (env, p, { tookSuperEffective = false, hp = p.hp, dealt =
     if (guard) continue;
     if (isA(t, "SeedTag") || isA(t, "DamagingTrapTag")) chip(frac(max, 8));
     else if (isA(t, "NightmareTag") || isA(t, "CursedTag")) chip(frac(max, 4));
-    else if (isA(t, "SaltCuredTag")) chip(frac(max, types.some(x => SALT_DOUBLED.includes(x)) ? 8 : 16));
+    else if (isA(t, "SaltCuredTag")) chip(frac(max, types.some(x => SALT_DOUBLED.includes(x)) ? 4 : 8));
   }
   // The seeder's payout reads the seeded mon's HP as it stands, so a seed that this turn's chip would fell first
   // still pays here.
@@ -412,7 +417,8 @@ const endOfTurnSteps = (env, p, { tookSuperEffective = false, hp = p.hp, dealt =
   if (env?.terrain === TerrainType.GRASSY && (p.isGrounded?.() ?? !types.includes(PokemonType.FLYING))) queued(frac(max, 16));
   if (p.isPlayer?.() === false) {
     for (const m of (env?.enemyModifiers ?? []).filter(x => x.constructor.name === "EnemyTurnHealModifier")) {
-      queued(Math.max(Math.floor(max / (100 / (m.healPercent ?? 2))) * (m.getStackCount?.() ?? 1), 1), max - 1);
+      // `preventFullHeal` caps the amount at max − 1, not the HP, so the token can heal to full.
+      queued((max * (m.getStackCount?.() ?? 1) * (m.healPercent ?? 2)) / 100, max, max - 1);
     }
   }
   if (abAttrs(p, "PostTurnStatusHealAbAttr").some(a => (a.effects ?? []).includes(effect))) queued(frac(max, 8));
@@ -441,9 +447,11 @@ export const sceneTurnEndHp = (env, p, opts = {}) => {
   return applyTurnEnd(endOfTurnSteps(env, p, opts), hp, p.getMaxHp()) - hp;
 };
 
+// @mirrors result-mult
 const RESULT_MULT = { [HitResult.EFFECTIVE]: 1, [HitResult.EXTREMELY_EFFECTIVE]: 4, [HitResult.SUPER_EFFECTIVE]: 2, [HitResult.NOT_VERY_EFFECTIVE]: 0.5,
   [HitResult.MOSTLY_INEFFECTIVE]: 0.25, [HitResult.ONE_HIT_KO]: 1, [HitResult.NO_EFFECT]: 0, [HitResult.IMMUNE]: 0 };
 // The damage roll (game-code.md §1).
+// @mirrors add-rolls
 const addRolls = (m, max, p) => {
   for (let r = 85; r <= 100; r++) {
     const d = max > 0 ? Math.max(1, Math.floor(max * r / 100)) : 0;
@@ -458,11 +466,14 @@ const withSeed = (seed, fn) => {
 };
 // Rows are [seed, chance] for `withSeed` (game-code.md §4). The heal is carried as zero damage, and the strikes it
 // would cancel still play out.
+// @mirrors present
 const PRESENT = k => (k === 0
   ? [[0, 41 / 100], [50, 30 / 100], [75, 10 / 100]]
   : [[0, 41 / 80], [50, 30 / 80], [75, 9 / 80]]);
+// @mirrors present-heal
 const PRESENT_HEAL = 19 / 100;
 // Multi-Lens' share of strike `k` (game-code.md §2). `n` is the lens count 07-move-traits already checked.
+// @mirrors lens-share
 const lensShare = (n, k) => (!n ? 1 : k === 0 ? 1 - 0.25 * n : k === n + 1 ? 1 : 0.25);
 
 // The game's own damage at roll `r`, asked by scaling STAB, which shares the roll's product (game-code.md §1).
@@ -546,6 +557,7 @@ const fromGame = (env, atk, def, pm, opts) => {
     const side = def.isPlayer?.() ? ArenaTagSide.PLAYER : ArenaTagSide.ENEMY;
     if ((env.arenaTags ?? []).some(t => t.constructor.name === "NoCritTag" && (!t.side || t.side === side))) return 0;
     if (attrs(move, "CritOnlyAttr").length || atk.getTag?.("ALWAYS_CRIT") || (ability(atk, "ConditionalCritAbAttr") && [StatusEffect.POISON, StatusEffect.TOXIC].includes(def.status?.effect))) return 1;
+    // @mirrors crit-odds
     return [1 / 24, 1 / 8, 1 / 2, 1][Math.max(0, Math.min(3, def.getCritStage?.(atk, move) ?? 0))];
   })();
 
@@ -563,6 +575,7 @@ const fromGame = (env, atk, def, pm, opts) => {
     } else if (psywave) {
       // Psywave (game-code.md §0).
       const lens = lensShare(t.hits.lenses, k);
+      // @mirrors psywave-range
       const fix = r => Math.max(1, Math.floor(Math.max(1, Math.floor(atk.level * (r * 0.01))) * lens));
       for (let r = 50; r <= 150; r++) { const d = fix(r); m.set(d, (m.get(d) ?? 0) + 1 / 101); }
       maxes.push(fix(150));
@@ -664,6 +677,7 @@ const fromGame = (env, atk, def, pm, opts) => {
   };
 };
 
+// @mirrors ate
 const ATE = { Refrigerate: "Ice", Pixilate: "Fairy", Aerilate: "Flying", Galvanize: "Electric" };
 const approx = (a, d, pm) => {
   const mv = pm.getMove();
@@ -712,6 +726,7 @@ const fromApprox = (env, atk, def, pm) => {
 
 // `dmg` is what moves are compared by. The game applies the ¾ spread factor and the planner applies its own, so the
 // game's comes back out here.
+// @mirrors with-dmg
 const withDmg = (o, mv, foe) => o && {
   ...o,
   dmg: o.live === false
@@ -784,6 +799,7 @@ export const koChanceAt = (o, hp) => {
 
 // The damage factor on each bar from now, 1 for the current one, from the expected rise of `st` as a wild boss's bars
 // break (game-code.md §3). `offence`: what its own hits gain, not what hits into it lose.
+// @mirrors bar-break-factors
 export const barBreakFactors = (foe, st, bars, offence = false, trainer = false) => {
   const out = [1];
   if (bars <= 1 || (foe.hasTrainer?.() ?? !!trainer)) return Array(Math.max(1, bars)).fill(1);

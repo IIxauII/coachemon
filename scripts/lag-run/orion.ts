@@ -37,6 +37,13 @@ const AUDIO = inPage(`try {
   document.documentElement.dataset.mcpOut = JSON.stringify({ state: game.sound.context?.state ?? null });
 } catch (err) { document.documentElement.dataset.mcpOut = JSON.stringify({ error: String(err) }); }`);
 
+/**
+ * Why the run can't start on this audio, or null. No context at all is the game's own audio switched off, where no
+ * phase waits on a sound (#711).
+ */
+export const audioBlocker = (a: { state?: string | null; error?: string }): string | null =>
+  a.error ? `audio-probe:${a.error}` : a.state == null || a.state === "running" ? null : "audio-locked";
+
 export type Drained = { hudActive: boolean; meterActive: boolean; stats: Record<string, unknown> & { ticks: unknown[]; gaps: unknown[] } | null; error?: string };
 
 export function orion() {

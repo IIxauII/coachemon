@@ -9,8 +9,8 @@ class PreUseInterruptAttr {}
 class RecoilAttr { constructor(useHp = false, damageRatio = 0.25, unblockable = false) { Object.assign(this, { useHp, damageRatio, unblockable }); } }
 class HalfSacrificialAttr {}
 class SacrificialAttr {}
-class FrenzyAttr {}
 class MissEffectAttr {}
+class AddBattlerTagAttr { constructor(tagType, selfTarget = false) { Object.assign(this, { tagType, selfTarget }); } }
 class StatStageChangeAttr { constructor(stats, stages, selfTarget) { Object.assign(this, { stats, stages, selfTarget }); } }
 class HitsTagAttr { constructor(tagType) { this.tagType = tagType; } }
 class InstantChargeAttr { constructor(condition) { this.condition = condition; } }
@@ -168,7 +168,7 @@ const log = (...a) => console.log(...a);
     [move(796, "Steel Beam", 140, { cat: 1, acc: 95, attrs: [new HalfSacrificialAttr()] }), o => near(o.self, 100, "Steel Beam half max HP")],
     [move(136, "High Jump Kick", 130, { acc: 90, attrs: [new MissEffectAttr()] }), o => near(o.self, 100 * 0.1, "crash half max HP on a 10 % miss")],
     [move(153, "Explosion", 250, { attrs: [new SacrificialAttr()] }), o => assert.equal(o.selfKo, 1)],
-    [move(200, "Outrage", 120, { attrs: [new FrenzyAttr(), new MissEffectAttr()] }), o => { assert.equal(o.traits.lock, true); assert.equal(o.self, 0, "Outrage's miss isn't a crash"); }],
+    [move(200, "Outrage", 120, { attrs: [new AddBattlerTagAttr("FRENZY", true)] }), o => { assert.equal(o.traits.lock, true); assert.equal(o.self, 0, "Outrage's miss isn't a crash"); }],
     [move(315, "Overheat", 130, { cat: 1, acc: 90, attrs: [new StatStageChangeAttr([3], -2, true)] }), o => assert.deepEqual(o.traits.drops, { 3: -2 })],
     [move(893, "Gigaton Hammer", 160, { restrictions: [{ i18nkey: "battle:moveDisabledConsecutive" }] }), o => assert.equal(o.traits.noRepeat, true)],
   ];
@@ -340,7 +340,7 @@ const log = (...a) => console.log(...a);
   }
 
   // Outrage's confusion after the lock and Overheat's falling SpA stretch a long exchange.
-  const outrage = move(200, "Outrage", 100, { attrs: [new FrenzyAttr()] });
+  const outrage = move(200, "Outrage", 100, { attrs: [new AddBattlerTagAttr("FRENZY", true)] });
   const overheat = move(315, "Overheat", 100, { cat: 1, attrs: [new StatStageChangeAttr([3], -2, true)] });
   const flat = move(1, "Pound", 100);
   const wall = () => mon("Blissey", { player: false, hp: 360, spe: 10, moves: [move(2, "Pound", 5)] });

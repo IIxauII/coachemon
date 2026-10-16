@@ -1,6 +1,6 @@
 // Everything about the live battle is the turn's (`25-turn.js`): this opens no sandbox and keeps no cache but
 // `turn.memo`. Against an approximate turn every answer still comes back, labelled `live: false`.
-import { ABILITY_IMMUNE, ABILITY_IMMUNE_FLAG, CONTACT_PUNISH, FIELD_TRAPS, MOVE_TRAPS, SPREAD_TARGETS, STATUS_FRAMES, TYPES, abilitiesOf, effectiveness, iconOf, moveHasFlag, squeezeDist, stage, stat, typesOf, vs } from "./01-core.js";
+import { ABILITY_IMMUNE, ABILITY_IMMUNE_FLAG, CONTACT_PUNISH, FIELD_TRAPS, MOVE_TRAPS, SPREAD_TARGETS, STATUS_FRAMES, TYPES, abilitiesOf, effectiveness, hitsUngrounded, iconOf, moveHasFlag, squeezeDist, stage, stat, typesOf, vs } from "./01-core.js";
 import { moveTraits } from "./07-move-traits.js";
 import { koChanceAt, koCurve, koTurn, koTurns, rawMax, useOf } from "./10-damage.js";
 
@@ -25,6 +25,7 @@ const protectChance = (turn, foe) => turn.memo(`protect:${foe.id}`, () => {
 });
 
 // Approximation only: live damage already carries the spread ¾ (game-code.md §1).
+// @mirrors spread-mult
 const spreadMult = (turn, atk) => {
   const { double, foes, field } = turn.facts;
   if (!double) return 1;
@@ -59,6 +60,7 @@ export const planOutcomes = (turn, atk, def) => turn.memo(`o:${atk.id}>${def.id}
 
 const NO_MOVE_INFO = { priority: 0 };
 // Quick Claw and Quick Draw (game-code.md §5).
+// @mirrors quick-chance
 const quickChance = (p, category) => {
   const status = category === MoveCategory.STATUS;
   if (status && abilitiesOf(p).includes("Mycelium Might")) return 0;
@@ -138,6 +140,7 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
   const kos = pool.filter(o => (o.perHit?.[0]?.max ?? o.max) >= me.hp);
   const list = kos.length ? kos : pool;
   if (foe.aiType === AiType.RANDOM) return list.map(o => ({ o, name: o.name, type: o.type, p: 1 / list.length }));
+  // @mirrors ai-advance-chance
   const advance = i => (foe.aiType === AiType.SMART_RANDOM ? 0.375 : Math.min(1, Math.round(list[i + 1].expected / list[i].expected * 50) / 100));
   let reach = 1;
   return list.map((o, i) => {
@@ -150,6 +153,7 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
 
 // P(`p` gets to use `mv` this turn, or next turn with `next`): sleep, freeze, paralysis and confusion as game-code.md
 // §8 has them.
+// @mirrors act-chance
 export const actChance = (p, mv = null, next = false) => {
   const later = next ? 1 : 0;
   if (!next && p.getTag?.("RECHARGING")) return 0;
@@ -255,6 +259,7 @@ export const koStageFactor = (p, boost, n, st) => {
   const s0 = p?.isOnField?.() ? p.summonData?.statStages?.[st - 1] ?? 0 : 0;
   return stage(Math.max(-6, Math.min(6, s0 + k * n))) / stage(s0);
 };
+// @mirrors stat-abbr
 const STAT_ABBR = ["HP", "Atk", "Def", "SpA", "SpD", "Spe"];
 export const koBoostText = b => Object.entries(b.up).map(([st, n]) => `${n > 0 ? "+" : "−"}${Math.abs(n)} ${STAT_ABBR[st]}`).join(" ");
 // What feeding `foe` one KO costs the fight still to come, in turns of ours.
@@ -292,6 +297,7 @@ const statusTokens = (turn, foe, me) => {
     .filter(x => x.q > 0 && turn.mon(me).canTake(x.effect, foe));
 };
 // The share of an attempt a status cancels, by attempts since it landed (game-code.md §8).
+// @mirrors status-skip
 const STATUS_SKIP = {
   [StatusEffect.SLEEP]: (a, early) => (early ? (a === 0 ? 2 / 3 : 0) : a === 0 ? 1 : a === 1 ? 2 / 3 : 0),
   [StatusEffect.FREEZE]: a => (a === 0 ? 3 / 4 : a === 1 ? 9 / 16 : 0),
@@ -338,6 +344,7 @@ export const tokenActs = (turn, foe, me, hitsPerTurn, pFoeFirst) => {
 };
 
 // Item thieves (game-code.md §8).
+// @mirrors thieves
 const THIEVES = { ContactHeldItemTransferChanceModifier: "Grip Claw", TurnHeldItemTransferModifier: "Mini Black Hole" };
 const transferable = p => (p.getHeldItems?.() ?? []).filter(m => m.isTransferable !== false);
 const thieves = (foe, me) => (me.hasAbilityWithAttr?.("BlockItemTheftAbAttr") || !transferable(me).length ? []
@@ -463,7 +470,9 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   // This turn only: the replay of later turns can't see the first Protect, and a second in a row mostly fails.
   const guard = opts.free || opts.next || after || mine?.bypassProtect ? 0 : protectChance(turn, foe);
   // King's Rock (game-code.md §8).
+  // @mirrors flinch-chance
   const flinch = Math.min(1, 0.1 * heldStack(foe, "FlinchChanceModifier")) * foeAttacks;
+  // @mirrors para-act-chance
   const steady = (me.status?.effect === StatusEffect.PARALYSIS ? 7 / 8 : 1) * needs * (1 - flinch * (1 - pF));
   const acts = opts.free || !t ? null : tokenActs(turn, foe, me, hitsOn(t), 1 - pF);
   const now = actChance(me, pm?.getMove?.() ?? null, !!opts.next) * needs * (mine?.semi ? 1 - pF : 1) * (acts ? acts.act(1) : 1) * (1 - guard);
@@ -522,6 +531,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
       };
     }
     // Confusion's self-hit at its mean roll (game-code.md §8).
+    // @mirrors confusion-hit
     const confusionHit = confusedHits && ((2 * me.level / 5 + 2) * 40 * stat(me, Stat.ATK) / stat(me, Stat.DEF) / 50 + 2) * 0.925;
     selfSpent = (mine.self ?? 0) * Math.min(hitsWe, turnsWe) + confusedHits * 1.5 * confusionHit / 3;
     const soften = st => (mt.drops?.[st] ? stage(me.summonData?.statStages?.[st - 1] ?? 0) / stage(Math.max(-6, (me.summonData?.statStages?.[st - 1] ?? 0) + mt.drops[st])) : 1);
@@ -604,7 +614,7 @@ const bites = (a, foe, move) => {
   const mv = move?.pm?.getMove?.();
   if (!mv) return false;
   const type = move.type, phys = move.cat === "physical";
-  return ABILITY_IMMUNE[a] === type
+  return (ABILITY_IMMUNE[a] === type && !(a === "Levitate" && hitsUngrounded(mv)))
     || (ABILITY_IMMUNE_FLAG[a] && moveHasFlag(mv, ABILITY_IMMUNE_FLAG[a]))
     || (a === "Thick Fat" && (type === "Fire" || type === "Ice")) || (a === "Heatproof" && type === "Fire")
     || (a === "Fluffy" && (phys || type === "Fire")) || (a === "Intimidate" && phys && !foe.isOnField?.())
@@ -755,6 +765,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const t = threatFrom(turn, f, me, pm, { next });
       const aimed = !play.self;
       const guard = aimed && !info.bypassProtect && !free(f) && !next ? protectChance(turn, f) : 0;
+      // @mirrors kings-rock
       const kingsRock = free(f) || !t ? 0 : Math.min(1, 0.1 * heldStack(f, "FlinchChanceModifier")) * Math.min(1, t.moves.reduce((q, m) => q + m.p, 0));
       const works = actChance(me, mv, next) * (1 - kingsRock * (1 - pF)) * (aimed ? (1 - guard) * info.acc * (info.e > 0 && !info.bounce ? 1 : 0) : 1);
       if (!(works >= 0.05)) return null;
@@ -1109,6 +1120,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   // P(KO | both hits land), `a` acting first with probability `q`. Without game code rolls are max, as elsewhere.
   const comboKo = (X, a, b, q) => {
     const live = a.o.live || b.o.live;
+    // @mirrors combo-damage-roll
     const roll = (M, need) => (need <= 0 ? 1 : M < need ? 0 : !live ? 1 : Math.min(1, (M - need) / (0.15 * M) + 1 / 16));
     const alone = Math.max(a.roll, b.roll);
     const bars = bossBarsLeft(X);
@@ -1271,6 +1283,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     if (bossBarsLeft(X) > 1) return 0;
     const o = b.target === "both" ? planOutcomes(turn, b.me, X).find(x => x.name === b.move.name) : b.move;
     if (!o) return 0;
+    // @mirrors helping-hand-roll
     const M = rawMax(o) * 1.5;
     const roll = M < X.hp ? 0 : !o.live ? 1 : Math.min(1, (M - X.hp) / (0.15 * M) + 1 / 16);
     return landOf(b, X) * Math.max(o.pKo ?? 0, (o.acc ?? 1) * roll);
@@ -1406,6 +1419,7 @@ const statusPlay = (turn, me, f, info) => {
   if (t.inflicts.some(x => x.self)) return null;
   const up = turn.mon(me).setup(mv);
   if (up) {
+    // @mirrors stat-names
     const names = ["HP", "Atk", "Def", "SpA", "SpD", "Spe"];
     return {
       kind: "setup", self: true, patches: [{ mon: me, stages: up }], hpCost: t.cutHp ? Math.max(1, Math.floor(me.getMaxHp() / t.cutHp.ratio)) : 0,
@@ -1419,6 +1433,7 @@ const statusPlay = (turn, me, f, info) => {
     const skip = a => STATUS_SKIP[StatusEffect.SLEEP](a, early);
     return {
       kind: "status", self: false, patches: [{ mon: f, status: { effect: inflict.effect, toxicTurnCount: 0, sleepTurnsRemaining: 0 } }],
+      // @mirrors para-skip
       skip0: inflict.effect === StatusEffect.SLEEP ? skip(0) : inflict.effect === StatusEffect.PARALYSIS ? 1 / 8 : 0,
       // Given it landed on turn 1, the foe's next attempt is its second if we moved first, else its first.
       foeAct: inflict.effect === StatusEffect.SLEEP ? pF => i => 1 - (pF * skip(i + 1) + (1 - pF) * skip(i)) : null,
@@ -1439,8 +1454,8 @@ const statusPlay = (turn, me, f, info) => {
   if (t.heal?.self) {
     const max = me.getMaxHp?.() ?? me.hp;
     if (me.hp >= max) return null;
-    const ratio = t.heal.ratioIn(turn.mon(me).weather, me, f);
-    return { kind: "heal", self: true, amount: Math.max(1, Math.floor(max * ratio)), note: `heal ${Math.round(ratio * 100)}%` };
+    const ratio = t.heal.ratioIn(me);
+    return { kind: "heal", self: true, amount: Math.round(max * ratio), note: `heal ${Math.round(ratio * 100)}%` };
   }
   if (t.hazard) {
     const v = hazardValue(turn, me, t.hazard.tag);
@@ -1457,6 +1472,7 @@ const hazardValue = (turn, me, tagType) => {
   const grounded = p => { try { return p.isGrounded?.() ?? !typesOf(p).includes("Flying"); } catch { return true; } };
   const guarded = p => !!p.hasAbilityWithAttr?.("BlockNonDirectDamageAbAttr");
   if (tagType === "TOXIC_SPIKES" && coming.some(p => grounded(p) && typesOf(p).includes("Poison"))) return null;
+  // @mirrors spikes-ratio
   const spikes = n => (n > 0 ? 1 / (10 - 2 * n) : 0);
   const share = p => {
     if (tagType === "STEALTH_ROCK") return turn.mon(p).rockChip;
@@ -1469,8 +1485,8 @@ const hazardValue = (turn, me, tagType) => {
   const total = shares.reduce((t, x) => t + x, 0);
   return total > 0 ? { turns: total * HAZARD_TURNS, n: shares.filter(x => x > 0).length } : null;
 };
-const lastMoveOf = me => ((me.tempSummonData?.turnCount ?? 0) >= 2 ? me.getLastXMoves?.(1)?.[0]?.move ?? null : null);
-const cameInLastTurn = (turn, p) => (p.tempSummonData?.turnCount ?? 2) <= 1 && (turn.facts.turn ?? 1) > 1;
+const lastMoveOf = me => ((me.summonData?.turnCount ?? 0) >= 2 ? me.getLastXMoves?.(1)?.[0]?.move ?? null : null);
+const cameInLastTurn = (turn, p) => (p.summonData?.turnCount ?? 2) <= 1 && (turn.facts.turn ?? 1) > 1;
 
 // Slot 0's command, read at slot 1's prompt: a move → `{ me, pm, target }`, `target` an index into `active` ("both" for
 // a spread move, null for our side); a switch → `{ me, switchIn }`.

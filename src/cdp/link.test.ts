@@ -42,7 +42,7 @@ function commandScene(inputs: number[]) {
       mode: 2,
       handlers: {
         2: { active: true, cursor: 0, commandsContainer: { list: [{ text: "Fight" }, { text: "Ball" }] } },
-        10: { cursor: 0, scrollCursor: 0, filteredStarterContainers: [], starterSpecies: [] },
+        10: { cursor: 0, scrollCursor: 0, filteredStarterIds: [], starterContainers: [], partyStarterIds: [] },
       },
       processInput: (b: number) => inputs.push(b),
     },

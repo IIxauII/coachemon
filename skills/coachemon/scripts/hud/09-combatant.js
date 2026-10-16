@@ -8,15 +8,19 @@ import { baseStatsOf, formOf } from "./08-party.js";
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 
 const NEUTRAL_IV = 15; // floor(31 / 2)
+// @mirrors neutral-nature
 const NEUTRAL_NATURE = 0; // Hardy: nothing up, nothing down
 const BASE_STAGES = [0, 0, 0, 0, 0, 0, 0];
 // Sturdy is the one ability the approx duel asks for by attr rather than by name (game-code.md §8).
+// @mirrors attrs-by-ability
 const ATTRS_BY_ABILITY = { Sturdy: ["PreDefendFullHpEndureAbAttr"] };
 
 // The " (N)" / " (P)" a nickname or a passive hangs off the game's ability names.
 const nameOf = x => (typeof x === "string" ? x : x?.name == null ? null : String(x.name).replace(/ \((N|P)\)$/, ""));
 const abilityOf = x => (typeof x === "number" ? tryDo(() => gameTables().abilities[x]) : x);
 const abilityNameOf = x => nameOf(abilityOf(x));
+// The raw `ability1` skips the Ability Randomizer, which the form's own call applies (game-code.md §24).
+const firstAbility = form => tryDo(() => form.getAbility(0)) ?? form?.ability1;
 // The attr `canApplyAbility` refuses on a fusion — Disguise, Zen Mode, Schooling, Stance Change (game-code.md §24).
 // An ability given by name alone carries no attrs, and is taken at its word.
 const worksFused = ab => !(ab?.attrs ?? []).some(a => a?.constructor?.name === "NoFusionAbilityAbAttr");
@@ -158,7 +162,7 @@ const halfOf = h => {
   // The other half lends the ability at its own index, with no fallback to the species' first (game-code.md §24).
   const ability = h?.ability !== undefined ? abilityOf(h.ability)
     : mon ? abilityOf(tryDo(() => mon.getAbility(true)))
-      : abilityOf(form?.ability1);
+      : abilityOf(firstAbility(form));
   return { species, formIndex, base: form?.baseStats, type1: types?.[0] ?? null, type2: types?.[1] ?? null, ability };
 };
 // `calculateBaseStats`' and `getBaseTypes`' fusion halves, re-implemented (game-code.md §24).
@@ -218,7 +222,7 @@ export const combatantOf = (spec = {}) => {
     : other ? (worksFused(other.ability) ? nameOf(other.ability) : null)
       : evolved ? abilityNameOf(evolvedAbility())
         : mon ? abilityNameOf(tryDo(() => mon.getAbility(true)))
-          : abilityNameOf(form?.ability1);
+          : abilityNameOf(firstAbility(form));
   // The passive stays the base half's, fused or not (game-code.md §24), but it is the *species*' own, so an evolved
   // member brings the evolved species' passive rather than the one it has now (game-code.md §23).
   const passive = spec.passive !== undefined ? abilityNameOf(spec.passive)

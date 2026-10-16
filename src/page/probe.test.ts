@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { UiMode } from "../enums/generated.ts";
 import { offPage, onPage, send } from "./fake-page.ts";
 
 /** A MESSAGE screen as LevelUpPhase leaves it (game-code.md §26). */
@@ -26,6 +27,17 @@ test("the fine fingerprint moves through the level-up stats window, whose presse
     fps.add(r.fine);
   }
   assert.equal(fps.size, 3);
+});
+
+test("the save-slot screen is unsettled until every slot has loaded: ACTION on a loading slot skips the overwrite confirm (#711)", t => {
+  const slots = [{ hasData: true }, { hasData: undefined as boolean | undefined }, { hasData: false }];
+  const h = { active: true, cursor: 0, sessionSlots: slots };
+  onPage(t, { ui: { mode: UiMode.SAVE_SLOT, handlers: { [UiMode.SAVE_SLOT]: h } }, phaseManager: { currentPhase: { phaseName: "SelectStarterPhase" } } });
+  const loading = send("probe", {});
+  assert.equal(loading.settled, false);
+  assert.equal(loading.reason, "slots-loading");
+  slots[1].hasData = true;
+  assert.equal(send("probe", {}).settled, true);
 });
 
 function partyOptionsScene() {

@@ -68,6 +68,8 @@ Biomes
 == trainer configs landing late
 before  null
 after   {"pct":6,"names":["Parasol Lady","Black Belt"]}
+== Valerie's party at level 40
+common [["Snorlax",89],["Gardevoir",5],["Granbull",5]]
 == hardcore, Snorlax fainted
 ⌃ {Hide the drawer} × {Close}
 🗺 Next biome from Tall Grass Swamp 79 pick — 2 mons hit SE · Construction Site 74

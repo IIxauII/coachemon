@@ -55,6 +55,7 @@ for (const sp of byId.values()) {
 }
 const registry = {
   getSpecies: id => byId.get(id),
+  getAllStarters: () => STARTERS,
   hasEvolutions: id => !!direct[id],
   getEvolutions: id => (direct[id] ?? []).map(to => ({ speciesId: to, level: evoLevel[to][0], item: evoLevel[to][1] ? 1 : 0, condition: null })),
 };
@@ -82,39 +83,41 @@ const account = () => {
   return { dexData, starterData };
 };
 
-// `fresh`: getSpeciesData strips unlocks as Fresh Start's STARTER_SELECT_MODIFY does (game-code.md §23).
-const mount = ({ limit = 10, chosen = [], valid = STARTERS, challenges = [], fresh = false, withTables = true, looking = null, picking = true }) => {
+// Fresh Start's STARTER_SELECT_MODIFY strips unlocks but, from 1.12.1.0, leaves shiny and variants (game-code.md §23).
+const freshStart = {
+  id: 4, value: 1, applyStarterChoice: () => true,
+  applyStarterSelectModify: (id, dexEntry, starterDataEntry) => {
+    Object.assign(starterDataEntry, { eggMoves: 0, passiveAttr: 0, abilityAttr: starterDataEntry.abilityAttr & 3, valueReduction: 0 });
+    for (let i = 0; i < 6; i++) dexEntry.ivs[i] = Math.min(dexEntry.ivs[i], 15);
+    return true;
+  },
+};
+// `valid`: the grid's challenge-filtered ids, which a challenge run's candidates come from; the other modes take the
+// registry's starters.
+const mount = ({ limit = 10, chosen = [], valid = STARTERS, challenges = [], withTables = true, looking = null, onGrid = true, picking = true }) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const { dexData, starterData } = account();
   const species = id => byId.get(id);
-  const containers = STARTERS.map(id => ({ species: species(id), cost: species(id).cost, icon: { texture: { key: "pokemon_icons_1" }, frame: { name: String(id) } } }));
+  const shown = valid.slice(0, 81);
+  const containers = shown.map(id => ({ species: species(id), cost: species(id).cost, icon: { texture: { key: "pokemon_icons_1" }, frame: { name: String(id) } } }));
   const handler = {
     starterSelectCallback: picking ? () => {} : null,
-    getValueLimit: () => limit,
-    starterSpecies: chosen.map(species),
-    starters: chosen.map(id => ({ speciesId: id, passive: (starterData[id].passiveAttr & 3) === 3, abilityIndex: 0, formIndex: 0 })),
+    valueLimitLabel: { text: `${chosen.reduce((t, id) => t + species(id).cost, 0)}/${limit}` },
+    partyStarterIds: chosen,
+    partyStarters: chosen.map(id => ({ speciesId: id, passive: (starterData[id].passiveAttr & 3) === 3, abilityIndex: 0, formIndex: 0 })),
+    filteredStarterIds: valid,
     starterContainers: containers,
-    validStarterContainers: containers.filter(c => valid.includes(c.species.speciesId)),
-    pokerusSpecies: [species(25)],
-    lastSpecies: looking ? species(looking) : null,
-    getSpeciesData: id => {
-      const dexEntry = { ...(dexData[id] ?? { caughtAttr: 0n, ivs: [0, 0, 0, 0, 0, 0] }) };
-      const starterDataEntry = { ...starterData[id] };
-      if (fresh) {
-        Object.assign(starterDataEntry, { eggMoves: 0, passiveAttr: 0, abilityAttr: starterDataEntry.abilityAttr & 3, valueReduction: 0 });
-        dexEntry.ivs = dexEntry.ivs.map(v => Math.min(15, v));
-        dexEntry.caughtAttr &= ~(2n | 32n | 64n);
-      }
-      return { dexEntry, starterDataEntry };
-    },
-    getCurrentDexProps: () => 0n,
+    pokerusSpeciesIds: [25],
+    lastStarterId: looking ?? shown[0],
+    cursorObj: { visible: looking !== null && onGrid },
+    getStarterDexAttrPropsFromPreferences: () => ({ formIndex: 0, shiny: false, variant: 0, female: false }),
   };
   const scene = {
-    ui: { handlers: { 10: handler }, getMode: () => 10, getHandler: () => handler },
+    ui: { handlers: { 10: handler }, mode: 10, getHandler: () => handler },
     phaseManager: { getCurrentPhase: () => ({ phaseName: "SelectStarterPhase" }) },
-    gameData: { dexData, starterData, getSpeciesStarterValue: id => species(id).cost, getSpeciesDexAttrProps: () => ({ formIndex: 0 }) },
-    gameMode: { challenges },
+    gameData: { dexData, starterData, getSpeciesStarterValue: id => species(id).cost },
+    gameMode: { challenges, modeId: challenges.length ? 4 : 0 }, // `GameModes.CHALLENGE`, `GameModes.CLASSIC`
     currentBattle: null, getPlayerParty: () => [], getEnemyParty: () => [], modifiers: [],
   };
   globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
@@ -193,10 +196,25 @@ const checkBudget = (m, limit, label) => {
 
 // ---- Fresh Start: no passive, egg moves, luck or high IVs reach the reasons.
 {
-  const m = show("Fresh Start", { challenges: [{ id: 4, value: 1, applyStarterChoice: () => true }], fresh: true, looking: 129 });
+  const m = show("Fresh Start", { challenges: [freshStart], looking: 129 });
   checkBudget(m, 10, "fresh");
   const why = m.picks.flatMap(t => t.members.flatMap(x => x.why)).concat(m.viewing?.why ?? []).join(" ");
   assert.ok(!/passive|egg move|luck|IVs 186/.test(why), `Fresh Start strips unlocks: ${why}`);
+}
+
+// ---- The Moveset Randomizer's STARTER_SELECT_MODIFY takes egg moves off the grid, so none is a reason.
+{
+  const randomizer = { id: 11, value: 1, applyStarterSelectModify: (id, dexEntry, starterDataEntry) => { starterDataEntry.eggMoves = 0; return true; } };
+  const { model } = mount({ challenges: [randomizer], looking: 129 });
+  const why = model.picks.flatMap(t => t.members.flatMap(x => x.why)).concat(model.viewing?.why ?? []).join(" ");
+  assert.ok(!/egg move/.test(why), why);
+  assert.ok(/passive Moxie/.test(why), why);
+}
+
+// ---- Off the grid the last species looked at is no cursor line, though the handler still holds its id.
+{
+  const { model } = mount({ looking: 19, onGrid: false });
+  assert.equal(model.viewing, null);
 }
 
 // ---- The Pokédex (no team being chosen) draws no starter card.

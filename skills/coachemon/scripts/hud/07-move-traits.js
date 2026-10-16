@@ -28,8 +28,10 @@ const sideFlags = (mv, a) => ({ self: !!a?.selfTarget, side: SELF_SIDE.has(mv?.m
 const guaranteedChance = mv => !(mv?.chance > 0 && mv.chance < 100);
 // These read the target's chosen command, which doesn't exist yet while we choose (game-code.md §6). Upper Hand is
 // left out on purpose: it needs a priority move from the target, not just an attack.
+// @mirrors command-condition
 const COMMAND_CONDITION = [MoveId.SUCKER_PUNCH, MoveId.THUNDERCLAP];
 // Gigaton Hammer and Blood Moon share one restriction, known here by its i18n key (game-code.md §5).
+// @mirrors no-repeat-key
 const NO_REPEAT_KEY = "battle:moveDisabledConsecutive";
 
 // One use's hit count, before the target's HP or a boss bar cuts it short (game-code.md §2).
@@ -39,6 +41,7 @@ const hitShape = (mv, user, party, target) => {
   if (mh && attrsNamed(mv, "ChangeMultiHitTypeAttr").length && user?.species?.speciesId === SpeciesId.BATTLE_BOND_GRENINJA && user?.formIndex === 1) type = MultiHitType.THREE;
   const skillLink = hasAbAttr(user, "MaxMultiHitAbAttr");
   const beatUp = () => (party ?? []).reduce((t, p) => t + (p && (p.id === user?.id || !(p.status?.effect > StatusEffect.NONE)) ? 1 : 0), 0);
+  // @mirrors multi-hit-odds
   let dist = type == null ? [{ n: 1, p: 1 }]
     : type === MultiHitType.TWO_TO_FIVE ? (skillLink ? [{ n: 5, p: 1 }] : [{ n: 2, p: 0.35 }, { n: 3, p: 0.35 }, { n: 4, p: 0.15 }, { n: 5, p: 0.15 }])
     : [{ n: type === MultiHitType.TWO ? 2 : type === MultiHitType.THREE ? 3 : type === MultiHitType.TEN ? 10 : Math.max(1, beatUp()), p: 1 }];
@@ -69,8 +72,7 @@ export const moveTraits = (mv, user = null, { party = null, target = null } = {}
   const recoil = rec
     ? { ratio: rec.damageRatio ?? 0.25, useHp: !!rec.useHp, blocked: !rec.unblockable && (guarded || hasAbAttr(user, "BlockRecoilDamageAttr")) }
     : null;
-  // A frenzy move's MissEffectAttr only ends its lock, so it never crashes (game-code.md §5).
-  const lock = attrsNamed(mv, "FrenzyAttr").length > 0;
+  const lock = attrsNamed(mv, "AddBattlerTagAttr").some(a => a.tagType === "FRENZY" && a.selfTarget);
   // Guaranteed self stat changes, boosts included.
   const drops = {};
   if (guaranteedChance(mv)) {
@@ -88,17 +90,14 @@ export const moveTraits = (mv, user = null, { party = null, target = null } = {}
   const inflicts = attrsNamed(mv, "StatusEffectAttr").map(a => ({ effect: a.effect, chance: mv?.chance ?? -1, ...sideFlags(mv, a), cls: a.constructor?.name ?? "" }));
   const tags = attrsNamed(mv, "AddBattlerTagAttr").map(a => ({ tag: a.tagType, ...sideFlags(mv, a), cls: a.constructor?.name ?? "" }));
   const healAttr = firstAttr(mv, "HealAttr");
+  // A `VariableHealAttr` is built with `healRatio` 1 and its `apply` overwrites it with the last use's ratio,
+  // so only `healFunc` answers for this user.
+  const ratioIn = (u = user) => {
+    if (typeof healAttr.healFunc !== "function") return healAttr.healRatio ?? 0.5;
+    try { return healAttr.healFunc(u); } catch { return 0.5; }
+  };
   const heal = healAttr
-    ? {
-      ratio: healAttr.healRatio ?? 0.5, self: healAttr.selfTarget !== false, cls: healAttr.constructor?.name ?? "",
-      ratioIn: (w, u = user, t = target) => {
-        try {
-          if (typeof healAttr.getWeatherHealRatio === "function") return healAttr.getWeatherHealRatio(w);
-          if (isAttr(healAttr, "BoostHealAttr")) return healAttr.condition?.(u, t, mv) ? healAttr.boostedHealRatio ?? healAttr.healRatio ?? 0.5 : healAttr.normalHealRatio ?? healAttr.healRatio ?? 0.5;
-        } catch {}
-        return healAttr.healRatio ?? 0.5;
-      },
-    }
+    ? { ratio: ratioIn(), self: healAttr.selfTarget !== false, cls: healAttr.constructor?.name ?? "", ratioIn }
     : null;
   const trap = firstAttr(mv, "AddArenaTrapTagAttr");
   const cut = firstAttr(mv, "CutHpStatStageBoostAttr");

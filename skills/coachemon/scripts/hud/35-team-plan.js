@@ -85,6 +85,7 @@ const tpFoeFirst = (turn, me, f, ours, theirs) => {
 // `getMatchupScore` in two halves (game-code.md §7): our HP moves over the plan, so the game is asked with ours at 0
 // and `tpSendScore` puts the HP and Speed factor back. That factor is not always 1 at 0: a slower foe at 21–40 % HP
 // comes back scaled by (1 + its HP ratio) × 0.5 already, and `tpSendScore` halves it again (#464).
+// @mirrors tp-send-base
 const tpSendBase = (turn, f, me) => {
   const outspeed = (f.isActive?.(true) ? turn.mon(f).speed : f.getStat(Stat.SPD, false)) >= turn.mon(me).speed;
   const v = turn.sendInScore(f, me);
@@ -95,6 +96,7 @@ const tpSendBase = (turn, f, me) => {
   const def = typesOf(me).reduce((x, t) => x / Math.max(effectiveness(t, f), 0.25), 1);
   return { base: atk + def, outspeed };
 };
+// @mirrors tp-send-score
 export const tpSendScore = (T, st, fi, mi) => {
   const x = T.send[fi][mi];
   if (typeof x === "number") return x;

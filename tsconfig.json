@@ -12,5 +12,6 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["src", "scripts", "skills"]
+  "include": ["src", "scripts", "skills"],
+  "exclude": ["scripts/drift/fixtures"]
 }

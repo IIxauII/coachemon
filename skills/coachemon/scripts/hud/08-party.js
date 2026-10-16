@@ -7,6 +7,7 @@ import { reviveBefore } from "./03-calendar.js";
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 
 // These ignore the type chart (game-code.md §1). 40-learn's `STAND_INS` marks the same list `fixed`: change both.
+// @mirrors fixed-damage-attrs
 const FIXED_DAMAGE_ATTRS = ["LevelDamageAttr", "RandomLevelDamageAttr", "TargetHalfHpDamageAttr", "FixedDamageAttr",
   "MatchHpAttr", "UserHpDamageAttr", "CounterDamageAttr"];
 const movesOf = p => (p?.moveset ?? []).filter(Boolean).map(pm => { try { return pm.getMove(); } catch { return null; } }).filter(Boolean);

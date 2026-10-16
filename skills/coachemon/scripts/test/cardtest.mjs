@@ -128,3 +128,13 @@ const verdictOf = m => cardSummary(m).verdict;
   assert.equal(cardEvent(null), null);
   console.log("card events ok");
 }
+
+// ---- A shop with no free rewards is still a rewards screen; a closed one, its rows spliced out, is not
+{
+  const { rewardsScreen } = globalThis.__hud["02-screens"];
+  const at = handler => ({ ui: { mode: 6, getHandler: () => handler } });
+  const shop = { options: [], shopOptionsRows: [[{}], [{}]] };
+  assert.equal(rewardsScreen(at(shop)), shop);
+  assert.equal(rewardsScreen(at({ options: [], shopOptionsRows: [] })), null);
+  assert.equal(rewardsScreen({ ui: { mode: 8, getHandler: () => shop } }), null);
+}

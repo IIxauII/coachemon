@@ -57,7 +57,7 @@ const game = {
   // The calendar the road group reads (game-code.md §12), as `shoptest.mjs` keeps it.
   gameMode: { isClassic: true, isWaveFinal: w => w === 200, isBoss: w => w % 10 === 0, isFixedBattle: w => w === 8, getFixedBattle: () => ({}), hasChallenge: () => false, challenges: [] },
   phaseManager: { getCurrentPhase: () => g.phase },
-  ui: { getMode: () => g.mode, getHandler: () => g.handler, get handlers() { return g.handlers; } },
+  ui: { get mode() { return g.mode; }, getHandler: () => g.handler, get handlers() { return g.handlers; } },
   getPlayerParty: () => g.party, getEnemyParty: () => g.foes, getField: () => [g.party[0], ...g.foes],
 };
 let scene = null;

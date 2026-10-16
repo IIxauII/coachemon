@@ -106,15 +106,15 @@ Options
 summary Teleporting Hijinks: take Machine — free: teleport to Fairy Cave, fight an enraged boss there, EXP
 == uncommon breed, new species
 ⌃ {Hide the drawer} × {Close}
-🎭 Uncommon Breed common Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and a 2nd egg move, EXP
+🎭 Uncommon Breed common Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and a 2nd egg move (may repeat the 1st), EXP
 Options
 · Battle — fight Eevee (boosted); catchable → rewards
 ⚔ wild · L38 vs your L40, nothing hits it SE
-· Berries — give 4 random berries: Eevee joins with a 2nd egg move
+· Berries — give 4 random berries: Eevee joins with a 2nd egg move (may repeat the 1st)
 new species
-★ Charm — charm it: Eevee joins with better IVs and a 2nd egg move, EXP
+★ Charm — charm it: Eevee joins with better IVs and a 2nd egg move (may repeat the 1st), EXP
 by Milotic · new species
-summary Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and a 2nd egg move, EXP
+summary Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and a 2nd egg move (may repeat the 1st), EXP
 == gts, no team read
 ⌃ {Hide the drawer} × {Close}
 🎭 Global Trade System common Global Trade System: your call
@@ -394,15 +394,15 @@ pick a mon whose damage you can hold back, not your hardest hitter
 summary Fun and Games: your call
 == uncommon breed, judged
 ⌃ {Hide the drawer} × {Close}
-🎭 Uncommon Breed common Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and a 2nd egg move, EXP · Eevee: take, Ground now beats 2 of 5, down from 2 of 4, Rock now beats 2 of 5, down from 2 of 4
+🎭 Uncommon Breed common Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and a 2nd egg move (may repeat the 1st), EXP · Eevee: take, Ground now beats 2 of 5, down from 2 of 4, Rock now beats 2 of 5, down from 2 of 4
 Options
 · Battle — fight Eevee (boosted); catchable → rewards
 ⚔ wild · L38 vs your L40, nothing hits it SE
-· Berries — give 4 random berries: Eevee joins with a 2nd egg move
+· Berries — give 4 random berries: Eevee joins with a 2nd egg move (may repeat the 1st)
 team: take, Ground now beats 2 of 5, down from 2 of 4, Rock now beats 2 of 5, down from 2 of 4, new species
-★ Charm — charm it: Eevee joins with better IVs and a 2nd egg move, EXP
+★ Charm — charm it: Eevee joins with better IVs and a 2nd egg move (may repeat the 1st), EXP
 by Milotic · team: take, Ground now beats 2 of 5, down from 2 of 4, Rock now beats 2 of 5, down from 2 of 4, new species
-summary Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and a 2nd egg move, EXP · Eevee: take, Ground now beats 2 of 5, down from 2 of 4, Rock now beats 2 of 5, down from 2 of 4
+summary Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and a 2nd egg move (may repeat the 1st), EXP · Eevee: take, Ground now beats 2 of 5, down from 2 of 4, Rock now beats 2 of 5, down from 2 of 4
 offer Eevee: team take (Ground now beats 2 of 5, down from 2 of 4; Rock now beats 2 of 5, down from 2 of 4) · account 3 of 2 · estimate
 == salesman, judged
 ⌃ {Hide the drawer} × {Close}

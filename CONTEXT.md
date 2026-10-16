@@ -282,6 +282,17 @@ game's own migration, as a player's save is carried when the game updates.
 
 Distinct from a **build id**, which is which build of the extension a tab runs.
 
+## Game read
+
+A name our code takes from the game: a field or method it reads off a game object, a phase's name, a storage key, a
+module the harness imports, a table it reads by shape. Every game read is registered with where the game defines it,
+so a new **game version** that renames or drops one is caught before the pin moves, not by a card that goes quiet.
+
+A **mirror** is a game read written down by hand: a constant of ours that copies game data (a biome's links, a tier's
+cut, a title option's index) and goes stale without a word when the game changes it. A **game set** is one of the
+game's lists that we switch on (its UI modes, phases, challenges), whose members we know; a member the game adds is one
+we have not handled yet.
+
 ## Preview
 
 What the **run seed** already decides about something the run has not reached yet, read out ahead of time: a **wave** ahead, the rewards a reroll the player hasn't paid for would bring, or the three mons behind Safari Zone's fee. A preview is a read: it never advances the game or the run's own sequence of rolls.

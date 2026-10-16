@@ -103,7 +103,7 @@ const mount = ({ type, labels, options, party = team(), wave = 30, money = 5000,
         } });
       return p;
     },
-    ui: { getMode: () => 45, getHandler: () => handler }, getPlayerParty: () => party, getEnemyParty: () => enemy,
+    ui: { mode: 45, getHandler: () => handler }, getPlayerParty: () => party, getEnemyParty: () => enemy,
     money, modifiers, pokeballCounts: balls, gameData: { dexData: dex, starterData: {} },
     getWaveMoneyAmount: mult => waveMoney(wave, mult),
     executeWithSeedOffset(fn, offset) {

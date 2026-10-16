@@ -25,6 +25,7 @@ export const UNKNOWN_ITEM = 0.1;
 const WEAKENED = 0.5, SWITCH_IN_HP = 1 / 3;
 const NO_KO = 9; // `koTurns`' own ceiling, which is what a side with nothing that damages scores
 
+// @mirrors party-size
 export const PARTY_SIZE = 6; // `PLAYER_PARTY_MAX_SIZE` (game-code.md §23)
 
 // On the count alone a free slot was one more body for every threat to beat, and no newcomer ever paid for filling

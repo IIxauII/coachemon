@@ -52,11 +52,11 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
   try {
     if (h.config && Array.isArray(h.config.options)) {
       out.family = "option_select";
-      out.options = h.config.options.map((o: any, i: number) => opt(i, __strip(o.label), { skip: o.skip === true }));
-      out.cursor = typeof h.fullCursor === "number" ? h.fullCursor : h.cursor;
-      out.extra.unskippedIndices = Array.isArray(h.unskippedIndices) ? h.unskippedIndices.slice() : null;
-      const unskipped = out.extra.unskippedIndices as number[] | null;
-      out.extra.selectedIndex = unskipped && typeof unskipped[out.cursor as number] === "number" ? unskipped[out.cursor as number] : out.cursor;
+      out.options = h.config.options.map((o: any, i: number) => opt(i, __strip(o.label), { skip: o.selectable === false }));
+      const unskipped = out.options.filter(o => o.skip !== true).map(o => o.i as number);
+      out.extra.unskippedIndices = unskipped;
+      out.extra.selectedIndex = h.cursor + h.scrollCursor;
+      out.cursor = unskipped.indexOf(out.extra.selectedIndex as number);
       out.readable = out.options.length > 0;
     } else if (mode === m.COMMAND) {
       out.family = "command";
@@ -80,6 +80,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
     } else if (mode === m.BALL) {
       out.family = "ball";
       // One text of names, a line per `pokeballCounts` key then Cancel, beside `countsText` (#46, game-code.md §20).
+      // @mirrors ball-lines
       const names = __kids(h.pokeballSelectContainer).find((k: any) => k !== h.countsText && typeof k.text === "string" && k.text.indexOf("\n") > -1);
       const lines: string[] = names ? names.text.split("\n").map(__strip) : [];
       const counts = Object.entries(scene.pokeballCounts || {});
@@ -106,6 +107,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       const rows: { row: number; kind: string; items: { col: number; label: string | null; cost?: unknown; desc?: string | null }[] }[] = [];
       // Row 0's labels are the game's own text, never hardcoded (v1-tool-surface.md §7, §10).
       const btn = (c: any, col: number) => ({ col, label: __strip(__texts(c)[0]) || null, visible: !!(c && c.visible) });
+      // @mirrors shop-buttons
       const buttons = [btn(h.rerollButtonContainer, 0), btn(h.transferButtonContainer, 1), btn(h.checkButtonContainer, 2), btn(h.lockRarityButtonContainer, 3)];
       if (h.continueButtonContainer && h.continueButtonContainer.visible) buttons.push(btn(h.continueButtonContainer, 4));
       rows.push({ row: 0, kind: "buttons", items: buttons.filter(b => b.visible && b.label) });
@@ -114,6 +116,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       const shop = h.shopOptionsRows || [];
       for (let r = 0; r < shop.length; r++) {
         // Shop rows are indexed backwards (v1-tool-surface.md §7).
+        // @mirrors shop-rows-reversed
         rows.push({ row: 2 + r, kind: "shop", items: (shop[shop.length - 1 - r] || []).map(item) });
       }
       out.extra.rows = rows;
@@ -148,6 +151,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
         // Cancel is the fixed cursor 6, not `party.length` (v1-tool-surface.md §10).
         const party = __try(() => scene.getPlayerParty()) || [];
         out.options = party.map((p: any, i: number) => opt(i, p.name, { level: p.level, hp: p.hp, maxHp: __try(() => p.getMaxHp()), fainted: __try(() => p.isFainted()), active: __try(() => p.isActive(true)) }));
+        // @mirrors party-button-cursors
         out.options.push(opt(6, "Cancel", { synthetic: true }));
         if (__try(() => h.isItemManageMode()) === true) out.options.push(opt(7, __try(() => __texts(h.partyDiscardModeButton || h.partyTransferModeButton)[0]) || "Toggle", { synthetic: true }));
         out.cursor = h.cursor;
@@ -156,14 +160,25 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
     } else if (mode === m.STARTER_SELECT) {
       out.family = "starter_select";
       const gd = scene.gameData;
-      const grid = h.filteredStarterContainers || [];
-      out.options = grid.map((c: any, i: number) => opt(i, __try(() => c.species.name), { cost: __try(() => gd.getSpeciesStarterValue(c.species.speciesId)) }));
-      out.cursor = h.cursor;
+      // The grid keeps only its 81 on-screen containers, so a species is named through `setSpecies` on a bare
+      // object. It looks the species up before it reads `props`, and with none throws before it adds a sprite.
+      const setSpecies = __try(() => Object.getPrototypeOf(h.starterContainers[0]).setSpecies);
+      const nameOf = (id: number): string | null => __try(() => {
+        const probe: any = {};
+        try { setSpecies.call(probe, id); } catch (e) {}
+        return probe.species.name;
+      });
+      const grid: number[] = h.filteredStarterIds || [];
+      out.options = grid.map((id, i) => opt(i, nameOf(id), { cost: __try(() => gd.getSpeciesStarterValue(id)) }));
+      // `cursor` is an on-screen container; the label reads `<party value>/<limit>`.
+      // @mirrors starter-grid
+      out.cursor = h.scrollCursor * 9 + h.cursor;
       out.extra.scrollCursor = h.scrollCursor;
-      const party = (h.starterSpecies || []).map((s: any) => ({ name: s.name, cost: __try(() => gd.getSpeciesStarterValue(s.speciesId)) }));
+      const party = (h.partyStarterIds || []).map((id: number) => ({ name: nameOf(id), cost: __try(() => gd.getSpeciesStarterValue(id)) }));
       out.extra.party = party;
       out.extra.partyValue = party.reduce((t: number, s: any) => t + (s.cost || 0), 0);
-      out.extra.valueLimit = __try(() => h.getValueLimit());
+      const limit = __try(() => Number(/\/([\d.]+)$/.exec(h.valueLimitLabel.text)![1]));
+      out.extra.valueLimit = Number.isFinite(limit) ? limit : null;
       out.extra.partyValid = __try(() => h.isPartyValid());
       out.readable = out.options.length > 0;
     } else if (mode === m.MESSAGE || mode === m.EVOLUTION_SCENE || mode === m.EGG_HATCH_SCENE || mode === m.EGG_HATCH_SUMMARY || mode === m.LOADING || mode === m.UNAVAILABLE || mode === m.ALERT_MODAL) {
@@ -180,6 +195,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       const pp = (m: any) => __try(() => ({ pp: m.getMovePp() - m.ppUsed, maxPp: m.getMovePp() })) || {};
       out.options = ms.map((m: any, i: number) => opt(i, __try(() => m.getName()), Object.assign({ forget: true }, pp(m))));
       const nm = h.newMove;
+      // @mirrors learn-new-move-row
       if (nm) out.options.push(opt(4, __try(() => nm.name), { forget: false, new: true, pp: nm.pp, maxPp: nm.pp }));
       out.cursor = h.moveSelect === true ? h.moveCursor : null;
       out.extra.moveSelect = h.moveSelect === true;
@@ -199,11 +215,6 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       out.text = __try(() => __txt(h.titleText)) || out.text;
       out.extra.formLabels = (h.formLabels || []).map(__txt);
       out.cursor = null;
-      out.readable = out.options.length > 0;
-    } else if (mode === m.MENU) {
-      out.family = "menu";
-      out.options = (__txt(h.optionSelectText) || "").split("\n").map((t: string, i: number) => opt(i, t));
-      out.cursor = h.cursor;
       out.readable = out.options.length > 0;
     } else if (mode === m.MYSTERY_ENCOUNTER) {
       out.family = "mystery_encounter";

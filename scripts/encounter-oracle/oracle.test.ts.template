@@ -92,7 +92,7 @@ function readCard(game: GameManager) {
   const hud = loadHud();
   const scene = game.scene;
   const handler = scene.ui.getHandler();
-  const account = hud["98-tick"].accountRead(scene);
+  const account = hud["98-watch"].accountRead(scene);
   // Through the run read, as the panel reads it.
   return hud["26-run"].readRun(scene, (run: unknown) => hud["46-encounter"].encounterModel(run, handler, account));
 }
@@ -357,7 +357,7 @@ async function walkSafari(game: GameManager, option: number) {
 }
 
 function rewardOptions(game: GameManager) {
-  expect(game.scene.ui.getMode()).toBe(UiMode.MODIFIER_SELECT);
+  expect(game.scene.ui.mode).toBe(UiMode.MODIFIER_SELECT);
   const handler = game.scene.ui.handlers.find(h => h instanceof ModifierSelectUiHandler) as ModifierSelectUiHandler;
   return handler.options.map(o => o.modifierTypeOption.type);
 }
@@ -830,7 +830,7 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     };
     console.log(`ORACLE-DIFF safari-menu claimed=${JSON.stringify(card.minigame)} actual=${JSON.stringify(held)}`);
 
-    expect(game.scene.ui.getMode()).toBe(UiMode.MYSTERY_ENCOUNTER);
+    expect(game.scene.ui.mode).toBe(UiMode.MYSTERY_ENCOUNTER);
     expect(ui.encounterOptions).toHaveLength(4);
     expect(me.options).toHaveLength(2);
     expect(card.options).toHaveLength(4);

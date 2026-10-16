@@ -11,6 +11,8 @@ class SummonData {
   statStages: number[];
   tags: Tag[];
   abilitiesApplied: Set<number>;
+  turnCount = 1;
+  waveTurnCount = 1;
   constructor(src: SummonInit) {
     this.statStages = [...src.statStages];
     this.tags = src.tags.filter(t => t.serializable);
@@ -23,7 +25,7 @@ class SummonData {
 
 /** A live mon: a Phaser container is circular, so nothing may serialize one whole. */
 function mon(fields: Record<string, unknown>) {
-  const m: Record<string, unknown> = { status: null, tempSummonData: { turnCount: 1, waveTurnCount: 1 }, waveData: { endured: false, abilityRevealed: false, abilitiesApplied: new Set() }, isOnField: () => false, ...fields };
+  const m: Record<string, unknown> = { status: null, summonData: { turnCount: 1, waveTurnCount: 1 }, waveData: { endured: false, abilityRevealed: false, abilitiesApplied: new Set() }, isOnField: () => false, ...fields };
   m.parentContainer = m;
   return m;
 }
@@ -35,13 +37,16 @@ function mon(fields: Record<string, unknown>) {
 function gordieT5() {
   const coalossal = mon({
     id: 77, initialTeamIndex: 5, bossSegmentIndex: undefined, status: { effect: StatusEffect.TOXIC, toxicTurnCount: 3 },
-    tempSummonData: { turnCount: 2, waveTurnCount: 4 }, waveData: { endured: false, abilityRevealed: true, abilitiesApplied: new Set([70]) },
-    summonData: new SummonData({ statStages: [1, 0, 0, 0, 0, 0, 0], tags: [{ tagType: "CONFUSED", serializable: true }, { tagType: "FLINCHED", serializable: false }], abilitiesApplied: new Set([70]) }),
+    waveData: { endured: false, abilityRevealed: true, abilitiesApplied: new Set([70]) },
+    summonData: Object.assign(
+      new SummonData({ statStages: [1, 0, 0, 0, 0, 0, 0], tags: [{ tagType: "CONFUSED", serializable: true }, { tagType: "FLINCHED", serializable: false }], abilitiesApplied: new Set([70]) }),
+      { turnCount: 2, waveTurnCount: 4 },
+    ),
     isOnField: () => true,
   });
   const probopass = mon({ id: 79, initialTeamIndex: 0, bossSegmentIndex: undefined });
   const carracosta = mon({ id: 78, initialTeamIndex: 3, bossSegmentIndex: 1 });
-  const leavanny = mon({ id: 12, tempSummonData: { turnCount: 3, waveTurnCount: 5 }, waveData: { endured: true, abilityRevealed: false, abilitiesApplied: new Set() } });
+  const leavanny = mon({ id: 12, summonData: { turnCount: 3, waveTurnCount: 5 }, waveData: { endured: true, abilityRevealed: false, abilitiesApplied: new Set() } });
   const currentBattle = {
     waveIndex: 180, battleSeed: "s33d", turn: 5, battleSeedState: null, enemySwitchCounter: 1, lastMove: 450, enemyFaints: 1,
     playerFaintsHistory: [], enemyFaintsHistory: [{ pokemon: probopass, turn: 3 }], enemyParty: [coalossal, probopass, carracosta],

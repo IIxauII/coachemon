@@ -7,7 +7,7 @@ const cat = { P: 0, S: 1, X: 2 };
 // subclasses carries its parent here, or a WeatherInstantChargeAttr wouldn't read as an instant charge.
 const PARENTS = {
   WeatherInstantChargeAttr: "InstantChargeAttr",
-  BoostHealAttr: "HealAttr", WeatherHealAttr: "HealAttr", PlantHealAttr: "HealAttr", SandHealAttr: "HealAttr",
+  VariableHealAttr: "HealAttr",
   LeechSeedAttr: "AddBattlerTagAttr", ConfuseAttr: "AddBattlerTagAttr", ProtectAttr: "AddBattlerTagAttr",
   AddArenaTrapTagAttr: "AddArenaTagAttr",
 };
@@ -35,7 +35,7 @@ const mon = (name, types, atk, spa, moves, extra = {}) => ({
 const run = (pk, newMove, { double = false, party = [pk], roster = null } = {}) => {
   let el; const ds = {};
   globalThis.window = globalThis; delete globalThis.__coachHud;
-  const scene = { currentBattle: { double }, ui: { getMode: () => 9, getHandler: () => ({ summaryUiMode: 1, pokemon: pk, newMove: mv(newMove) }) }, getEnemyParty: () => [], getPlayerParty: () => party };
+  const scene = { currentBattle: { double }, ui: { mode: 9, getHandler: () => ({ summaryUiMode: 1, pokemon: pk, newMove: mv(newMove) }) }, getEnemyParty: () => [], getPlayerParty: () => party };
   globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
   const node = () => { const n = { style: {}, children: [], title: "", addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
   globalThis.document = { documentElement: { dataset: ds }, body: { appendChild: e => (el = e) }, createElement: node };
@@ -125,7 +125,7 @@ for (const [label, pk, newMove, double] of cases) {
   assert.notEqual(r.model.moves[r.model.forget]?.name, "Iron Head", "keeps Iron Head");
 
   const dragonite = mon("Dragonite", ["Dragon","Flying"], 134, 100, [["Dragon Claw","Dragon",80,"P"],["Extreme Speed","Normal",80,"P",100,[],false,3,{ fields: { priority: 2 } }],["Fire Punch","Fire",75,"P"],["Thunder Punch","Electric",75,"P"]]);
-  const o = run(dragonite, ["Outrage","Dragon",120,"P",100,["FrenzyAttr",["MissEffectAttr",{}],["NoEffectAttr",{}]],false,7]);
+  const o = run(dragonite, ["Outrage","Dragon",120,"P",100,[["AddBattlerTagAttr",{ tagType: "FRENZY", selfTarget: true }]],false,7]);
   show("Dragonite ← Outrage", o);
   assert.ok(o.model.move.drawbacks.includes("locks 2–3 turns, then confused"));
   assert.ok(!o.model.move.drawbacks.some(d => /misses/.test(d)), "Outrage's miss effect isn't crash damage");
@@ -205,6 +205,11 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.equal(roost.model.moves[roost.model.forget]?.name, "Growl");
   assert.ok(roost.model.move.notes.includes("heal 50%"));
   assert.ok(byName(roost.model, "Growl").value <= 10, `a foe's −1 Atk is worth little (${byName(roost.model, "Growl").value})`);
+  const MOONLIGHT = ["Moonlight","Fairy",-1,"X",-1,[["VariableHealAttr",{ healRatio: 1, healFunc: () => 0.5 }]],false,0,{ fields: { id: 236 } }];
+  const SWALLOW = ["Swallow","Normal",-1,"X",-1,[["VariableHealAttr",{ healRatio: 1, healFunc: () => 0 }]],false,0,{ fields: { id: 256 } }];
+  const moon = run(fletchinder, MOONLIGHT);
+  assert.ok(moon.model.move.notes.includes("heal (weather)"), `a weather heal is a flat heal: ${moon.model.move.notes}`);
+  assert.ok(!run(fletchinder, SWALLOW).model.move.notes.some(n => /heal/.test(n)), "Swallow heals only off a Stockpile");
 
   const minccino = mon("Minccino", ["Normal"], 110, 60, [["Pound","Normal",40,"P"],["Baby-Doll Eyes","Fairy",-1,"X",100,[statChange([1], -1)]], HELPING_HAND, SING]);
   const hh = run(minccino, ["Triple Axel","Ice",20,"P",90,[["MultiHitAttr",{ intrinsicMultiHitType: 2 }],"MultiHitPowerIncrementAttr"],false,3,{ flags: 65536 }]);
@@ -246,7 +251,7 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.ok(["Howl", "Leer"].includes(r.model.moves[r.model.forget]?.name), `forgets a dead status slot, not an attack (${r.model.moves[r.model.forget]?.name})`);
 
   const moves = [["Dragon Claw","Dragon",80,"P"],["Extreme Speed","Normal",80,"P",100,[],false,3,{ fields: { priority: 2 } }],["Fire Punch","Fire",75,"P"],["Thunder Punch","Electric",75,"P"]];
-  const outrage = ["Outrage","Dragon",120,"P",100,["FrenzyAttr",["MissEffectAttr",{}],["NoEffectAttr",{}]],false,7];
+  const outrage = ["Outrage","Dragon",120,"P",100,[["AddBattlerTagAttr",{ tagType: "FRENZY", selfTarget: true }]],false,7];
   const known = run(mon("Dragonite", ["Dragon","Flying"], 134, 100, moves), outrage);
   const unknown = run(mon("Dracowidget", ["Dragon","Flying"], 134, 100, moves), outrage);
   assert.ok(known.model.move.notes.some(n => n.startsWith("set move")), "randbats runs Outrage on Dragonite");
@@ -350,7 +355,8 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   // What the preview lists as a foe's heals: recovery and drain, not a status cure.
   const hb = m => globalThis.__lm.blockedByHealBlock(mv(m));
   assert.deepEqual([hb(["Milk Drink","Normal",-1,"X",-1,[["HealAttr",{ healRatio: 0.5 }]]]), hb(["Giga Drain","Grass",75,"S",100,[["HitHealAttr",{}]]]),
-    hb(["Rest","Psychic",-1,"X",-1,["RestAttr"]]), hb(["Refresh","Normal",-1,"X",-1,["HealStatusEffectAttr"]])], [true, true, true, false]);
+    hb(["Rest","Psychic",-1,"X",-1,["RestAttr"]]), hb(["Refresh","Normal",-1,"X",-1,["HealStatusEffectAttr"]]),
+    hb(["Synthesis","Grass",-1,"X",-1,[["VariableHealAttr",{ healFunc: () => 0.5 }]]])], [true, true, true, false, true]);
 
   const tm = globalThis.__lm.tmAdvice(mv(TAUNT), [sableye()], { roster: whitney });
   assert.equal(tm.best?.gain, globalThis.__lm.learnAdvice(sableye(), mv(TAUNT), { roster: whitney }).gain, "the TM card and the learn card agree");
