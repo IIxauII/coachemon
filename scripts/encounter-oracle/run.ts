@@ -6,7 +6,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { type CloneTestResult, hudBundle, pinnedClone, testInClone } from "../clone-test/clone-test.ts";
+import { type CloneTestResult, hudBundle, suiteClone, suitePin, testInClone, vitestOn } from "../clone-test/clone-test.ts";
 
 const TEMPLATE = path.join(path.dirname(fileURLToPath(import.meta.url)), "oracle.test.ts.template");
 
@@ -17,7 +17,7 @@ const NO_ANSWER = 2;
 /** So a stray `return` in `answer` cannot compile into an exit code that means something else. */
 type Exit = typeof AGREES | typeof DISAGREES | typeof NO_ANSWER;
 
-const clone = pinnedClone();
+const clone = suiteClone();
 
 // Written as an escape, not the raw control byte it used to be: invisible in a diff, it reads as a missing `\u001b`
 // and invites a "fix" that would leave a bare ESC in front of `Errors`, where `\s` does not match it.
@@ -83,6 +83,7 @@ try {
       bundle: hudBundle(),
       args: process.argv.slice(2),
       echo: true,
+      vitest: vitestOn(suitePin().pnpm),
     }),
   );
 } catch (err) {

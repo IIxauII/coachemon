@@ -7,7 +7,7 @@ import reviewed from "../escape-ladder/reviewed.json" with { type: "json" };
 import type { Clone } from "./replay.ts";
 
 const KILL_MS = 5_000;
-const vitestOn = (pnpm: string) => ["npx", "--yes", `pnpm@${pnpm}`, "exec", "vitest"];
+export const vitestOn = (pnpm: string) => ["npx", "--yes", `pnpm@${pnpm}`, "exec", "vitest"];
 const VITEST = vitestOn(reviewed.pinned.pnpm);
 
 export type FoundClone = { clone: string } | { missing: string; how: string };
