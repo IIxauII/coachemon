@@ -1,13 +1,13 @@
-Quotes below are from `pagefaultgames/pokerogue` (https://github.com/pagefaultgames/pokerogue), tag `v1.12.1.1`, AGPL-3.0-only, Copyright Pagefault Games and contributors.
+Quotes below are from `pagefaultgames/pokerogue` (https://github.com/pagefaultgames/pokerogue), tag `v1.12.1.2`, AGPL-3.0-only, Copyright Pagefault Games and contributors.
 
 # PokéRogue game-code spec for the coach HUD
 
 The game code the coach HUD (`skills/coachemon/scripts/hud/`) calls, replays or re-implements, read from the
-**pinned source**: `pagefaultgames/pokerogue` tag `v1.12.1.1`, commit `bdfbef6585baf8c34f71df8871f8d6c1c5efb488`
-(the pin in `src/escape-ladder/reviewed.json`). `npm run drift:check` clones it to `.cache/pokerogue/v1.12.1.1`.
+**pinned source**: `pagefaultgames/pokerogue` tag `v1.12.1.2`, commit `b271d3e63f82059da9bb93b01f69ec33ed7a10a0`
+(the pin in `src/escape-ladder/reviewed.json`). `npm run drift:check` clones it to `.cache/pokerogue/v1.12.1.2`.
 
 **Citations.** `src/path/file.ts:LINE` is a line at that commit, i.e.
-`https://github.com/pagefaultgames/pokerogue/blob/bdfbef6585baf8c34f71df8871f8d6c1c5efb488/src/path/file.ts#LLINE`.
+`https://github.com/pagefaultgames/pokerogue/blob/b271d3e63f82059da9bb93b01f69ec33ed7a10a0/src/path/file.ts#LLINE`.
 `:LINE` alone means the file last named. At a pin bump the lines move: `scripts/hud-deps.ts` lists the functions
 the HUD leans on, per module, and the drift check names the ones whose bodies changed.
 
@@ -118,7 +118,7 @@ have four kinds of hidden effect, even on the "simulated" paths.
    writes `user.turnData.hitCount = hitsLeft = 1` and calls `unshiftNew("PokemonHealPhase")`. That applies even
    when simulated. It's reached from `calculateBattlePower` (`move.ts:1106`) and `AttackMove.getTargetBenefitScore` (`:1438`).
 
-   `executeWithSeedOffset` (`src/battle-scene.ts:2017-2031`) is used by Magnitude (`move.ts:4938`), `DoublePowerChanceAttr`
+   `executeWithSeedOffset` (`src/battle-scene.ts:2022-2036`) is used by Magnitude (`move.ts:4938`), `DoublePowerChanceAttr`
    (`:4658`) and the `sortInSpeedOrder` shuffle (`src/utils/speed-order.ts:35`). It saves and restores `RND.state()`,
    `rngOffset` and `rngSeedOverride`, with no try/finally. Its draws are seeded from `waveSeed` and `turn << 6`, so one
    sandboxed call returns this turn's actual Magnitude or Fickle Beam result.
@@ -434,7 +434,7 @@ return [toDmgValue(currentHp - segmentThreshold + segmentHp * segmentsBypassed),
 ```
 Here `toDmgValue(v) = max(floor(v), 1)` (`src/utils/common.ts:369`).
 
-`ignoreSegments` is true for an OHKO move's hit (`isOneHitKo`, `src/phases/move-effect-phase.ts:669,687`) and for most indirect damage: weather chip (`src/phases/weather-effect-phase.ts:53`), recoil and self-KO (`move.ts:2252-2422`), and KO tags (`src/data/battler-tags.ts:1360,2184`). Status chip calls `damage(…, false, true)` and **is** clamped (`src/phases/post-turn-status-effect-phase.ts:57`).
+`ignoreSegments` is true for an OHKO move's hit (`isOneHitKo`, `src/phases/move-effect-phase.ts:669,687`) and for most indirect damage: weather chip (`src/phases/weather-effect-phase.ts:53`), recoil and self-KO (`move.ts:2252-2422`), and KO tags (`src/data/battler-tags.ts:1360,2188`). Status chip calls `damage(…, false, true)` and **is** clamped (`src/phases/post-turn-status-effect-phase.ts:57`).
 
 One hit deals at most `hp − segSize·idx` (down to the current boundary). The only exception is overflow past that boundary of at least `2^c · segSize` (c ≥ 1), which breaks `c` more segments, capped at `idx − minIdx`. A 2-segment boss at full HP H is one-shot only by a hit ≥ `H − round(H/2) + H` ≈ **1.5 × maxHp**; anything less stops at H/2. Each strike of a multi-hit move is clamped on its own and starts from the new index.
 
@@ -443,7 +443,7 @@ One hit deals at most `hp − segSize·idx` (down to the current boundary). The 
 **Survival.** `Pokemon.damage` (`pokemon.ts:4072-4110`) checks these only when `!preventEndure && hp − damage <= 0`: the `ENDURING` tag (Endure), else the `STURDY` tag at `hp === maxHp`, else `ENDURE_TOKEN`, each lapsed when used. Failing those, `SurviveDamageModifier` (Focus Band, `src/modifier/modifier.ts:1520-1537`) saves on `randBattleSeedInt(10) < stack`, i.e. 10 % per stack (max 5), leaving 1 HP. Then `hp -= min(damage, hp)`, and a faint queues `FaintPhase` unless `ignoreFaintPhase`. — writes `hp`, lapses tags, draws battle RNG (Focus Band), queues messages/phases. `damageAndUpdate` passes `preventEndure = true` for INDIRECT results (`pokemon.ts:4142`), so none of these save from chip.
 - The STURDY tag is only added by a non-simulated `getAttackDamage`, through `PreDefendFullHpEndureAbAttr` (full HP, maxHp > 1, damage ≥ hp; `ab-attrs.ts:310-324`) at `pokemon.ts:3995-3997`. `FixedDamageAttr` moves (Seismic Toss, Night Shade, Dragon Rage, Super Fang, Final Gambit, Psywave) return earlier (`:3799-3831`) but run the same step first (`:3814-3824`), so **at the pin Sturdy saves from them too**. OHKO moves return at `:3834-3842`; Sturdy blocks those separately with `BlockOneHitKOAbAttr`.
 - Enemy Endure token (`EnemyEndureChanceModifier.apply`, `modifier.ts:3666-3676`) is rolled in `MoveEffectPhase.applyMoveDamage` whenever the enemy's **pre-clamp** damage ≥ `hp` (`move-effect-phase.ts:677-678`). It needs `!waveData.endured` and `randBattleSeedInt(100) < 2 × stack` (max 10 stacks); on success it adds `ENDURE_TOKEN` and sets `waveData.endured`. A boss hit the clamp would stop anyway can still spend it. — draws battle RNG; writes a tag and `waveData.endured`.
-  The token saves **one** lethal hit. It is an `EnduringTag` with lapse type `AFTER_HIT` (`src/data/battler-tags.ts:4000-4001`): `Pokemon.damage` lapses it as `CUSTOM`, which keeps it (`pokemon.ts:4085-4086`, `battler-tags.ts:2136-2139`), and `MoveEffectPhase` removes it after that hit (`move-effect-phase.ts:846`). The next lethal hit that turn, a later strike of the same move included, KOs.
+  The token saves **one** lethal hit. It is an `EnduringTag` with lapse type `AFTER_HIT` (`src/data/battler-tags.ts:4004-4005`): `Pokemon.damage` lapses it as `CUSTOM`, which keeps it (`pokemon.ts:4085-4086`, `battler-tags.ts:2140-2143`), and `MoveEffectPhase` removes it after that hit (`move-effect-phase.ts:846`). The next lethal hit that turn, a later strike of the same move included, KOs.
 
 **Berries do not trigger on hit.** `BerryModifier` is applied only in `BerryPhase.eatBerries` (`src/phases/berry-phase.ts:33-82`), a turn-end phase that runs after `WeatherEffectPhase` and before `CheckStatusEffectPhase` (status chip) and `TurnEndPhase` (`src/phase-manager.ts:231-237`). The only other ways to eat one are Bug Bite / Pluck / Stuff Cheeks / Teatime (`EatBerryAttr`, `move.ts:3334`) and Cud Chew / Harvest. An opposing Unnerve (`PreventBerryUseAbAttr`) skips the phase for that mon (`berry-phase.ts:43-52`). Predicates (`getBerryPredicate`, `src/data/berry.ts:23-65`, pure):
 - Sitrus: `getHpRatio() < 0.5`, with the ratio rounded to 0.01 (`pokemon.ts:1692-1694`), so 49.5 % doesn't trigger it. Enigma: any `turnData.attacksReceived` this turn with result SUPER_EFFECTIVE or EXTREMELY_EFFECTIVE. Both heal `toDmgValue(maxHp / 4)`, ×2 with Ripen (`DoubleBerryEffectAbAttr`), via `PokemonHealPhase` (`berry.ts:73-85`). They are separate modifiers, so both can fire in the same phase.
@@ -478,7 +478,7 @@ Only Weather Ball has a side effect. `getEffectiveWeatherForMove` (`src/data/wea
 
 **Power.** `Move.calculateBattlePower(source, target, simulated = false)` (`move.ts:1099`) returns the final power the damage formula uses: `VariablePowerAttr`s, `VariableMovePowerAbAttr`, ally boosts, the Tera 60 floor, auras, `TypeBoostTag`, type-boost items, Helping Hand, Supreme Overlord, terrain (all items and abilities in §1 step 5). Pass `simulated = true`, because the default is false. The `VariablePowerAttr`s get no simulated flag:
 - `PresentPowerAttr` (`:5099-5127`) draws `randSeedInt(firstHit ? 100 : 80)` from the **global** Phaser RND. 0–40 → 40, 41–70 → 80, 71–80 → 120, 81–99 → heals the target ¼, sets `hitCount = hitsLeft = 1` and queues `PokemonHealPhase`. So 41 / 30 / 10 / 19 %. — draws global RNG; writes `turnData`; queues a phase.
-- `DoublePowerChanceAttr` (Fickle Beam, `:4658`) and `MagnitudePowerAttr` (`:4938`) roll inside `executeWithSeedOffset(…, turn << 6, waveSeed)`, a seed fork that restores Phaser RND (`src/battle-scene.ts:2017-2031`). The value is fixed for the turn and the call leaves no trace.
+- `DoublePowerChanceAttr` (Fickle Beam, `:4658`) and `MagnitudePowerAttr` (`:4938`) roll inside `executeWithSeedOffset(…, turn << 6, waveSeed)`, a seed fork that restores Phaser RND (`src/battle-scene.ts:2022-2036`). The value is fixed for the turn and the call leaves no trace.
 - Values read at the command prompt, where `turnData` is fresh (reset in `TurnInitPhase`, `src/phases/turn-init-phase.ts:65`):
   - Bolt Beak / Fishious Rend double on `!target.turnData.acted` (`move.ts:11958-11962`) → read as doubled.
   - Payback doubles on `target.turnData.acted` or a BALL command (`:10648-10655`) → read as not doubled.
@@ -553,7 +553,7 @@ The check is `Arena.isMoveTerrainCancelled` (`src/field/arena.ts:484`, pure), ca
    - `BypassSpeedChanceModifier.apply` (Quick Claw, `modifier.ts:1555`): `randBattleSeedInt(10) < stack`, any move, up to 3 stacks.
 
    Either one adds the `BYPASS_SPEED` tag. This draws from the battle RNG, writes the tag and queues a message.
-   `BypassSpeedTag.canAdd` (`src/data/battler-tags.ts:3781`) refuses the tag through `PreventBypassSpeedChanceAbAttr` (Mycelium Might on a status move).
+   `BypassSpeedTag.canAdd` (`src/data/battler-tags.ts:3785`) refuses the tag through `PreventBypassSpeedChanceAbAttr` (Mycelium Might on a status move).
 4. Each FIGHT command pushes a `MovePhase` (`turn-start-phase.ts:153`). `PhaseManager.checkDynamic` (`src/phase-manager.ts:319`) parks the phase in the
    `MovePhasePriorityQueue` and leaves a marker in the queue. `CheckInterludePhase` and the turn-end phases follow (`turn-start-phase.ts:98-104`, §21).
 5. Each time a marker comes up, `MovePhasePriorityQueue.pop` (`src/queues/move-phase-priority-queue.ts:73`) re-sorts the moves still waiting.
@@ -563,7 +563,7 @@ The check is `Arena.isMoveTerrainCancelled` (`src/field/arena.ts:484`, pure), ca
 `sortInSpeedOrder(list)` (`src/utils/speed-order.ts:21`) returns a new array:
 1. `groupPokemon` (`:91`) groups consecutive entries of the same mon.
 2. `shufflePokemonList` (`:32`) shuffles the groups with `randSeedShuffle` (Fisher–Yates on `Phaser.Math.RND`, `src/utils/common.ts:150`).
-   The shuffle runs inside `executeWithSeedOffset(…, turn * 1000 + groupCount, waveSeed)`. That function (`src/battle-scene.ts:2017`)
+   The shuffle runs inside `executeWithSeedOffset(…, turn * 1000 + groupCount, waveSeed)`. That function (`src/battle-scene.ts:2022`)
    re-sows the RNG and afterwards restores `RND.state()`, `rngOffset` and `rngSeedOverride`.
 3. `sortBySpeed` (`speed-order.ts:57`) does a stable sort by `getEffectiveStat(SPD)` descending, then reverses the whole list when a `TRICK_ROOM` tag applies.
    `turnCommandManager.setOrder`, which tests and Mystery Encounters use, replaces the speed sort.
@@ -597,11 +597,13 @@ move (`:60`) aimed at the removed mon (`:61`) by one of its opponents (`:62`), a
 one `consecutiveUseRestriction` (`src/data/moves/move-condition.ts:292-295`), a `MoveRestriction` whose `i18nkey` is
 `"battle:moveDisabledConsecutive"`, pushed onto the private `restrictions` list (`move.ts:601`). Thrash, Petal Dance,
 Outrage and Raging Fury add a self `FRENZY` tag of 2–3 uses (`AddBattlerTagAttr(FRENZY, true, false, 2, 3)`,
-`move.ts:9503`, `:9637`, `:10033`, `:12227`). `FrenzyTag` is a `MoveLockTag` (`src/data/battler-tags.ts:1625-1690`):
+`move.ts:9503`, `:9637`, `:10033`, `:12227`). `FrenzyTag` is a `MoveLockTag` (`src/data/battler-tags.ts:1625-1694`):
 each `AFTER_MOVE` lapse (`src/phases/move-end-phase.ts:37-39`) ticks it down and, while it lasts and the use's
 result was SUCCESS, queues the next use as `IGNORE_PP`, re-rolling a `RANDOM_NEAR_ENEMY` target
-(`battler-tags.ts:1640-1647`, `:1662-1664`). A miss, no effect or failure ends the lock and deals no damage;
-confusion (`randBattleSeedIntRange(2, 5)` turns) comes only once the count has run down to 0 (`:1686-1688`). Crash damage is
+(`battler-tags.ts:1640-1647`, `:1663-1669`). When no foe stands to re-roll onto, as after the use knocked out the
+last one, the next use keeps the last target, so the lock carries onto whatever is sent into that slot. A miss, no
+effect or failure ends the lock and deals no damage;
+confusion (`randBattleSeedIntRange(2, 5)` turns) comes only once the count has run down to 0 (`:1690-1692`). Crash damage is
 `crashDamageFunc` (`move.ts:6424-6438`), on the Jump Kick moves. `RecoilAttr(useHp = false, damageRatio = 0.25,
 unblockable = false)` (`move.ts:2211`) takes `damageRatio` of the user's max HP when `useHp` is set, else of
 `turnData.totalDamageDealt` (`:2250`); Chloroblast is `RecoilAttr(true, 0.5)` (`:12232-12233`). A move's `chance` is a
@@ -721,7 +723,7 @@ without drawing when range ≤ 1 (`src/battle.ts:486-489`), and otherwise draws 
 **Singles: the call returns the real choice.** The battle stream re-seeds from `shiftCharCodes(battleSeed, turn << 6)`
 whenever `battleSeedState` is null (`src/battle.ts:492-500`). `incrementTurn` nulls it (`:173-178`). Between our
 command prompt and `EnemyCommandPhase` in a single battle, nothing draws from it:
-- our `CommandPhase` draws only through `getMoveTargets` (`src/phases/command-phase.ts:279`), and one opponent means
+- our `CommandPhase` draws only through `getMoveTargets` (`src/phases/command-phase.ts:281`), and one opponent means
   `randSeedInt(1)`, which doesn't draw;
 - the switch check before `getNextMove` uses only a seed fork (§7).
 
@@ -804,7 +806,7 @@ The HUD's `predictSwitches` (`20-enemy-ai.js`) follows this rule. The pieces:
 - **The two benches.** A double trainer's party is tagged by generation index, even `TRAINER`, odd
   `TRAINER_PARTNER` (`src/field/trainer.ts:437`), and every switch path picks from the leaver's tag:
   `getNextSummonIndex(trainerSlot)`, and `ForceSwitchOutAttr` when `isPartner()` (`src/data/moves/move.ts:7347-7355`),
-  which holds for every `doubleOnly` trainer (`src/battle-scene.ts:1458-1476`). So the benches stay disjoint by
+  which holds for every `doubleOnly` trainer (`src/battle-scene.ts:1463-1481`). So the benches stay disjoint by
   party-index parity. An enemy Revival Blessing breaks it: it revives a random fainted mon of either tag into the
   ally's slot (`move.ts:7160-7198`).
 - **Doubles sequencing.** Slot 0 decides first and moves `enemySwitchCounter` (+1 on a switch, −1 floored at 0
@@ -862,11 +864,11 @@ The HUD's `predictSwitches` (`20-enemy-ai.js`) follows this rule. The pieces:
 | Boss bar break | `EnemyPokemon.handleBossSegmentCleared` (`pokemon.ts:7211`), wild bosses only: +1 to a stat below +6 by `weightedPick` on `getStat(s,false)` (`:7226`); +2 on reaching index 0 with ≥3 bars, index 1 with ≥5 | global | expectation, on its defences (our hits) and Atk/SpA (its hits) |
 | Grip Claw | `MoveEffectPhase` after each hit of any attack move (`move-effect-phase.ts:815`), holder not fainted (`HeldItemTransferModifier.shouldApply`, `modifier.ts:3176-3178`): `randSeedFloat() <= 0.1·stack` (`modifier.ts:3306`), then `HeldItemTransferModifier.apply` (`:3187`) picks one transferable item. A hit whose recoil (`move-effect-phase.ts:581`) or whose target's Rough Skin / Iron Barbs (`:805`) felled the holder rolls nothing | global + battle | expectation: steals per landed hit |
 | Mini Black Hole | TurnEndPhase, holder not fainted (`HeldItemTransferModifier.shouldApply`, `modifier.ts:3176-3178`, Grip Claw's too): opponent picked, then `stack` items picked, all `randBattleSeedInt` (`:3187`) | battle | expectation: steals per turn |
-| Sticky Hold | `tryTransferHeldItemModifier` (`src/battle-scene.ts:2514-2522`): `BlockItemTheftAbAttr` on the holder cancels a cross-side transfer | no | ability attr |
+| Sticky Hold | `tryTransferHeldItemModifier` (`src/battle-scene.ts:2519-2527`): `BlockItemTheftAbAttr` on the holder cancels a cross-side transfer | no | ability attr |
 | Sleep / freeze / paralysis | `doSetStatus` (`pokemon.ts:5192`): sleep counter 2 (⅓) or 3 (⅔), freeze 3 (`:5235`). `MovePhase.checkSleep` (`move-phase.ts:317`) ticks it (Early Bird −1 more), wakes at ≤0 → 1 or 2 turns lost; `checkFreeze` (`:361`) ticks, thaws on `randBattleSeedInt(4)===0` or ≤0 → lost with ¾, then 9/16, never a third; `checkPara` (`:518`) `randBattleSeedInt(8)===0`; Speed `>>1` (`pokemon.ts:1555`) | battle | expectation |
 | Confusion | `ConfusedTag.lapse` (`src/data/battler-tags.ts:1263-1297`), before each move: ticks down, and if still confused, `randBattleSeedInt(3) === 0` → the user takes `toDmgValue(((2·lv/5+2)·40·Atk/Def/50+2)·randBattleSeedIntRange(85,100)/100)` off its effective Atk and Def, and the move is cancelled | battle | expectation |
 | Enemy wave heal | TurnEndPhase `EnemyTurnHealModifier.apply` (`modifier.ts:3526`): `maxHp·stack·2/100` when not full, which `PokemonHealPhase` floors and caps at maxHp−1 (`preventFullHeal`, `src/phases/pokemon-heal-phase.ts:195`), so 0 for one stack under 50 max HP (§21) | no | `s.enemyModifiers` |
-| Enemy wave status | Each hit of an enemy attack move (`move-effect-phase.ts:810`): `applyShuffledModifiers` (order shuffled in a seed fork, `battle-scene.ts:2864`), each `randSeedFloat() <= chance·stack` (5 % burn/poison, 2.5 % others, max 10; `modifier.ts:3561`, `:3581`) → `trySetStatus`. `EnemyStatusEffectHealChanceModifier` 2.5 %·stack cure at turn end (`:3621`) | global | `s.enemyModifiers` |
+| Enemy wave status | Each hit of an enemy attack move (`move-effect-phase.ts:810`): `applyShuffledModifiers` (order shuffled in a seed fork, `battle-scene.ts:2869`), each `randSeedFloat() <= chance·stack` (5 % burn/poison, 2.5 % others, max 10; `modifier.ts:3561`, `:3581`) → `trySetStatus`. `EnemyStatusEffectHealChanceModifier` 2.5 %·stack cure at turn end (`:3621`) | global | `s.enemyModifiers` |
 | Choice items, Life Orb, Expert Belt, Focus Sash, Loaded Dice | no modifier type exists (`src/modifier/modifier-type.ts`) | — | drop from models |
 
 Item lookup: `p.getHeldItems()` (`pokemon.ts:1194`) is a pure read. It returns the player's `s.modifiers` or the enemy's `s.enemyModifiers` filtered by `pokemonId`.
@@ -1132,7 +1134,7 @@ switches run in the outgoing mons' speed order (`SwitchSummonPhase` is a dynamic
 
 ## 10. Biome choice, and module-private game tables
 
-Read at the pinned tag (`v1.12.1.1`).
+Read at the pinned tag (`v1.12.1.2`).
 
 **The choice.** `SelectBiomePhase.start` (`src/phases/select-biome-phase.ts:19`) — draws global RND; sets the UI
 mode — first calls `resetSeed()` (line 22), then forces END when the stretch ahead
@@ -1158,7 +1160,7 @@ weatherPool, terrainPool, bgm?, biomeLinks`), `speciesDataRegistry` (`src/global
 biome's pools. `Arena` keeps only its own (`src/field/arena.ts:94`): `trainerPool`, and a `pokemonPool` merged per tier
 as `[...pool[ALL], ...pool[timeOfDay]]` by `updatePoolsForTimeOfDay` (`src/field/arena.ts:542` — writes `pokemonPool`,
 `lastTimeOfDay`). That merge runs when `newArena` builds the arena, while `currentBattle` is still the X0 wave, and again
-on an X5 wave (`src/battle-scene.ts:1549`): waves X1–X4 spawn from X0's time of day, X5–X0 from X5's. Time of day is
+on an X5 wave (`src/battle-scene.ts:1554`): waves X1–X4 spawn from X0's time of day, X5–X0 from X5's. Time of day is
 `(wave + waveCycleOffset) % 40`: < 15 DAY, < 20 DUSK, < 35 NIGHT, else DAWN; ABYSS always NIGHT (`Arena.getTimeOfDay`,
 `src/field/arena.ts:918`, pure). Pool keys: tier 0–4 COMMON…ULTRA_RARE, 5–8 BOSS…BOSS_ULTRA_RARE
 (`src/enums/biome-pool-tier.ts`); time of day -1 ALL, 0 DAWN, 1 DAY, 2 DUSK, 3 NIGHT (`src/enums/time-of-day.ts`). A
@@ -1184,7 +1186,7 @@ tables at runtime is a live-bundle matter (§22).
 **the gym leader is the biome's**. An empty tier drops one at a time; an empty COMMON gives BREEDER; the pick is
 `randSeedItem`. Its party, slot by slot, is `Trainer.genNewPartyMemberSpecies` (`src/field/trainer.ts:451`) — draws
 global RND: `speciesPools` by the same 512 cut (a nested entry is rerolled until a number, line 478), else
-`BattleScene.randomSpecies(w, level, false, speciesFilter)` (`src/battle-scene.ts:2293`, pure but for one
+`BattleScene.randomSpecies(w, level, false, speciesFilter)` (`src/battle-scene.ts:2298`, pure but for one
 `randSeedItem`): every catchable species passing the filter, taken back to its root. Every config has a filter (no
 legendary, sub-legendary, mythical or trainer-forbidden species, `src/data/trainers/trainer-config.ts:201`).
 `genNewPartyMemberSpecies` retries up to 25 times (line 512) when the pick came out as a prevolution of the species
@@ -1196,7 +1198,7 @@ same-species template then replaces (lines 414–426). The specialty type steers
 **A wild spawn.** `Arena.randomSpecies` (`src/field/arena.ts:573`) — draws global RND. A Daily override species wins
 (`getOverrideSpecies`, `src/game-mode.ts:268`). It is a boss spawn when `getEncounterBossSegments(w, level) > 0`, the
 BOSS tier is non-empty and the biome isn't END (unless classic or final) (lines 580–585): `randSeedInt(64 − luck/2)`
-over the boss cuts, else `randSeedInt(512 − 2·luck)`. `getEncounterBossSegments` (`src/battle-scene.ts:1936`) answers
+over the boss cuts, else `randSeedInt(512 − 2·luck)`. `getEncounterBossSegments` (`src/battle-scene.ts:1941`) answers
 in a fork at `w << 2`: every X0, **plus, when the mode `hasRandomBosses` (Endless and Spliced Endless),
 `randSeedInt(100) < min(max(ceil((w − 250) / 50), 0) × 2, 30)`** — nothing before wave 250, then 2 % more of every
 wave per 50 waves, capped at 30 %. A sub-legendary, legendary or mythical species is forced to a boss, but that is
@@ -1243,11 +1245,11 @@ re-sows in place. There is no draw counter.
   `Math.random`, unseeded.
 - `shiftCharCodes(str, n)` (`src/utils/common.ts:33`) — pure: adds `n` to every char code. Every seed below is
   `shiftCharCodes(base, offset)`.
-- `resetSeed(w?)` (`src/battle-scene.ts:2010`) — writes `waveSeed = shiftCharCodes(seed, w ?? currentBattle.waveIndex)`
-  and sows the live stream with it. Called at the top of `newBattle` (`:1263`), again by `EncounterPhase` once the
+- `resetSeed(w?)` (`src/battle-scene.ts:2015`) — writes `waveSeed = shiftCharCodes(seed, w ?? currentBattle.waveIndex)`
+  and sows the live stream with it. Called at the top of `newBattle` (`:1268`), again by `EncounterPhase` once the
   enemy party exists (`src/phases/encounter-phase.ts:294`, `:308`), by a wave's first reward roll (§19) and by
   `SelectBiomePhase.start` (`src/phases/select-biome-phase.ts:22`).
-- `executeWithSeedOffset(fn, offset, seedOverride?)` (`src/battle-scene.ts:2017`) — saves `RND.state()`, `rngOffset`
+- `executeWithSeedOffset(fn, offset, seedOverride?)` (`src/battle-scene.ts:2022`) — saves `RND.state()`, `rngOffset`
   and `rngSeedOverride`; sows `shiftCharCodes(seedOverride || seed, offset)`; runs `fn`; puts the three back. It does
   not save `waveSeed` or anything `fn` writes, and has no `try/finally` (a throwing `fn` leaves the fork's stream
   live). This is a **fork**: its draws depend only on the seed and offset, and the live stream carries on as if it never
@@ -1260,7 +1262,7 @@ re-sows in place. There is no draw counter.
   its own seed. It is reached as `BattleScene.randBattleSeedInt` (`src/battle-scene.ts:1098`) and
   `Pokemon.randBattleSeedInt` (`src/field/pokemon.ts:5858`, which falls back to `randSeedInt` with no battle).
 
-**The run seed itself.** A new run's is `randomString(24)` (`src/battle-scene.ts:1152`), drawn from `A–Z a–z 0–9`
+**The run seed itself.** A new run's is `randomString(24)` (`src/battle-scene.ts:1157`), drawn from `A–Z a–z 0–9`
 (`src/utils/common.ts:21`); a loaded session keeps its saved one (`src/system/game-data.ts:890`). A Daily's is not:
 it is the text `GET /daily/seed` returns, unchecked (`src/api/daily-api.ts:6`), or offline the date through `btoa`,
 `==` included (`src/phases/title-phase.ts:340`), passed through `trySetCustomDailyConfig` (`src/game-mode.ts:448`),
@@ -1268,33 +1270,33 @@ whose custom JSON form may set the seed to any string.
 
 Forks by offset, run seed unless marked: `isWaveTrainer` look-back `w`; ME roll `w * 3000`; which ME `w * 16`; ME
 `onInit` `w`; fixed-battle trainer `(seedOffsetWaveIndex || w) << 8`; `new Battle` `w << 3` (**wave** seed); boss bars
-`w << 2` (`getEncounterBossSegments`, `src/battle-scene.ts:1936`); a trainer's party members (below); Pokérus
-`w + (slot << 8)` (`:1980`); `waveCycleOffset` / `offsetGym` at 0 (`:1912`, `:1924`); speed-tie shuffle
+`w << 2` (`getEncounterBossSegments`, `src/battle-scene.ts:1941`); a trainer's party members (below); Pokérus
+`w + (slot << 8)` (`:1985`); `waveCycleOffset` / `offsetGym` at 0 (`:1917`, `:1929`); speed-tie shuffle
 `turn * 1000 + groups` (wave seed, `src/utils/speed-order.ts:34`); `applyShuffledModifiers` `turn << 4` (wave seed,
-`src/battle-scene.ts:2872`); Daily luck at 0 (`src/modifier/modifier-type.ts:2913`).
+`src/battle-scene.ts:2877`); Daily luck at 0 (`src/modifier/modifier-type.ts:2913`).
 
-**What a wave's content hangs on.** `newBattle()` (`src/battle-scene.ts:1256`) sows the wave seed at its top, then
+**What a wave's content hangs on.** `newBattle()` (`src/battle-scene.ts:1261`) sows the wave seed at its top, then
 runs the rows below while `currentBattle` is still wave w−1 (null on a run's first wave): it is reassigned only when
-`new Battle` returns (`:1300`). So a `getPartyLevels` reached from row 5 sees w−1's `waveIndex`, and an evil team's
+`new Battle` returns (`:1305`). So a `getPartyLevels` reached from row 5 sees w−1's `waveIndex`, and an evil team's
 party template is read off it (§12).
 
 | # | Call | Draws | Stream or fork |
 |---|---|---|---|
-| 1 | `gameMode.isWaveTrainer(w)` (`src/game-mode.ts:206`) | look-back per earlier wave, then `!randSeedInt(arena.trainerChance)` | look-back forks at `w` (`:237`); the final roll (`:248`) is on the stream. A gym wave (`w % 30 === (offsetGym ? 0 : 20)`, `:217`) and Daily's calendar return before drawing. Skipped entirely when `!gameMode.hasTrainers` (Endless, `src/battle-scene.ts:1422`) |
-| 2 | `isWaveMysteryEncounter(type, w)` (`src/battle-scene.ts:3419`) | `randSeedInt(256)` vs the spawn rate | fork `w * 3000`, run seed (`:3457`). The caller then writes `encounterSpawnChance` (`:1435`) |
-| 3 | `generateNewBattleTrainer(w)` (`:1452`) | `arena.randomTrainerType` tier + type (`src/field/arena.ts:520`), the double roll, the variant roll, then the `Trainer` constructor's party template (`src/field/trainer.ts:62`) and name(s) (`:77`, `:90`) | stream |
-| 3′ | `getFixedBattle(w).getTrainer()` (`src/battle-scene.ts:1381`) | the `Trainer` constructor's template and name | fork `(seedOffsetWaveIndex \|\| w) << 8`, run seed (`:1390`) — replaces 1–3 on a fixed wave |
-| 4 | `checkIsDouble(...)` (`:1484`) | the wild double roll, `randSeedInt(getDoubleBattleChance(w))` (`:1507`); a trainer's is its variant, no draw | stream |
-| 5 | `new Battle(...)` (`src/battle.ts:111`) | `battleSeed`, then per slot `getLevelForWave` (`:133`: `randSeedFloat` loop, or `RND.realInRange` on a boss wave); a trainer's levels are `getPartyLevels`, no draw | fork `w << 3`, **wave** seed (`src/battle-scene.ts:1297`) |
+| 1 | `gameMode.isWaveTrainer(w)` (`src/game-mode.ts:206`) | look-back per earlier wave, then `!randSeedInt(arena.trainerChance)` | look-back forks at `w` (`:237`); the final roll (`:248`) is on the stream. A gym wave (`w % 30 === (offsetGym ? 0 : 20)`, `:217`) and Daily's calendar return before drawing. Skipped entirely when `!gameMode.hasTrainers` (Endless, `src/battle-scene.ts:1427`) |
+| 2 | `isWaveMysteryEncounter(type, w)` (`src/battle-scene.ts:3424`) | `randSeedInt(256)` vs the spawn rate | fork `w * 3000`, run seed (`:3462`). The caller then writes `encounterSpawnChance` (`:1440`) |
+| 3 | `generateNewBattleTrainer(w)` (`:1457`) | `arena.randomTrainerType` tier + type (`src/field/arena.ts:520`), the double roll, the variant roll, then the `Trainer` constructor's party template (`src/field/trainer.ts:62`) and name(s) (`:77`, `:90`) | stream |
+| 3′ | `getFixedBattle(w).getTrainer()` (`src/battle-scene.ts:1386`) | the `Trainer` constructor's template and name | fork `(seedOffsetWaveIndex \|\| w) << 8`, run seed (`:1395`) — replaces 1–3 on a fixed wave |
+| 4 | `checkIsDouble(...)` (`:1489`) | the wild double roll, `randSeedInt(getDoubleBattleChance(w))` (`:1512`); a trainer's is its variant, no draw | stream |
+| 5 | `new Battle(...)` (`src/battle.ts:111`) | `battleSeed`, then per slot `getLevelForWave` (`:133`: `randSeedFloat` loop, or `RND.realInRange` on a boss wave); a trainer's levels are `getPartyLevels`, no draw | fork `w << 3`, **wave** seed (`src/battle-scene.ts:1302`) |
 
 On a Mystery Encounter wave `EncounterPhase.start` picks *which* encounter with `getMysteryEncounter()`
-(`src/battle-scene.ts:3487`) in a fork at `w * 16` (`src/phases/encounter-phase.ts:73`), then runs its `onInit` in a
+(`src/battle-scene.ts:3492`) in a fork at `w * 16` (`src/phases/encounter-phase.ts:73`), then runs its `onInit` in a
 fork at `w` (`:82`).
 
 **The enemy party** is built in `EncounterPhase.start`. A trainer's `genPartyMember(i)` (`src/field/trainer.ts:316`)
 **forks per member** at `waveIndex + (getDerivedType() << 10) + (((useSameSeedForAllMembers ? 0 : i) + 1) << 8)`, or
 `getDerivedType() + ((i + 1) << 8)` with `hasStaticParty` (`:440-444`), run seed. A wild member rides the stream:
-`BattleScene.randomSpecies(w, level, true)` (`src/battle-scene.ts:2293`) → `arena.randomSpecies(w, level, 0,
+`BattleScene.randomSpecies(w, level, true)` (`src/battle-scene.ts:2298`) → `arena.randomSpecies(w, level, 0,
 getPartyLuckValue(party))` (`src/field/arena.ts:573`: a luck-shifted tier roll, `randSeedItem` of the pool, up to ten
 retries on a legendary BST mismatch); a Golden Bug Net holder's `randSeedInt(10)` (`src/phases/encounter-phase.ts:116`);
 then `addEnemyPokemon` (`src/battle-scene.ts:888`). That constructor draws ability, id (the IVs), gender, nature
@@ -1317,9 +1319,9 @@ trainer member's IV floor `:6661`), never `enemyLevels`.
 constructor and a boss's second IV set (`src/battle-scene.ts:925`), and the rival's write `level` outright
 (`src/data/trainers/rival-party-config.ts:651`, `:392`, `:463`, `:579`), some changing `formIndex` too (`:398`). The
 constructor has already computed the stats at the old level and form (`src/field/pokemon.ts:458`); they catch up at
-the first `updateModifiers(false)` — the tail of `generateEnemyModifiers` (`src/battle-scene.ts:2711`, called from
+the first `updateModifiers(false)` — the tail of `generateEnemyModifiers` (`src/battle-scene.ts:2716`, called from
 `EncounterPhase.start`, `src/phases/encounter-phase.ts:279`), again in `doEncounter` (`:339`) — which runs
-`calculateStats()` over the enemy party (`src/battle-scene.ts:2790`). `calculateStats` draws nothing, and the modifiers
+`calculateStats()` over the enemy party (`src/battle-scene.ts:2795`). `calculateStats` draws nothing, and the modifiers
 it applies match by the Pokémon's own id (`PokemonHeldItemModifier.shouldApply`, `src/modifier/modifier.ts:691`).
 
 **So**: a fork is exact from any point in the run; the stream is only as good as a replay that draws what the game
@@ -1339,8 +1341,8 @@ one-member template is levelled from a local two-member copy, `:269-271`, not by
 the `Trainer` constructor builds sprites via `addFieldSprite` (`src/field/trainer.ts:109`);
 `getMysteryEncounter` runs `meetsRequirements()` on the shared encounter templates (assigning their primary /
 secondary Pokémon, §13) inside its fork. **Not safe**: `newBattle()` itself — it re-sows the live stream, assigns
-`currentBattle`, `field.add`s the trainer (`src/battle-scene.ts:1398`, `:1444`), calls `incrementTurn` and queues
-phases in `doPostBattleCleanup` (`:1535`).
+`currentBattle`, `field.add`s the trainer (`src/battle-scene.ts:1403`, `:1449`), calls `incrementTurn` and queues
+phases in `doPostBattleCleanup` (`:1540`).
 
 **Unmeasured**: whether anything draws on the stream between `newBattle`'s double roll and the wild party loop that
 the replay doesn't (`doPostBattleCleanup`'s Pokérus spread is forked). The arrival check measures it;
@@ -1366,7 +1368,7 @@ Only classic and challenge modes carry the table. `isFixedBattle` and `getFixedB
 and champion there (`src/data/challenge.ts:626`). The rules overlap (190 is both the champion and a tenth wave); the
 table's order is the precedence the HUD uses. The calendar holds from any point in a run.
 
-**Who the fixed trainers are.** `handleFixedBattle` (`src/battle-scene.ts:1381`) runs `config.getTrainer()` in a fork
+**Who the fixed trainers are.** `handleFixedBattle` (`src/battle-scene.ts:1386`) runs `config.getTrainer()` in a fork
 at `(seedOffsetWaveIndex || w) << 8` on the run seed and `field.add`s the trainer. Rivals take their variant from the
 player's gender (no draw); the youngster rolls `randSeedInt(2)`. Every evil-team wave sets `seedOffsetWave(35)` and the
 Elite Four and champion `seedOffsetWave(182)`, so each group rolls in the same fork and the same `randSeedItem` index
@@ -1397,11 +1399,11 @@ leader (`:694`), Elite Four (`:750`) and champion (`:782`) inits call, and rival
 leader (`:696`), Elite Four (`:752`) and champion (`:784`) — and false by the admin's (`:589`); no rival sets one.
 `clone()` (`:893`) carries `isBoss` (`:904`) but never `hasVoucher`, so the gym leader that Mysterious Challengers'
 brutal option clones from the biome's boss pool (`src/data/mystery-encounters/encounters/mysterious-challengers-encounter.ts:89`)
-has none, and its battle stays `MYSTERY_ENCOUNTER` (`src/battle-scene.ts:1433`). A double trainer's `getName()`
+has none, and its battle stays `MYSTERY_ENCOUNTER` (`src/battle-scene.ts:1438`). A double trainer's `getName()`
 carries its double title even without `includeTitle`: `Gym Leader Duo Tate & Liza` (`src/field/trainer.ts:196`).
 
 **Full heals.** `VictoryPhase.start` (`src/phases/victory-phase.ts:23`) — phase queue — pushes `SelectBiomePhase` when
-`hasRandomBiomes || isNewBiome()` (line 125); `isNewBiome` (`src/battle-scene.ts:1243`, pure) is every X0, plus X5 with
+`hasRandomBiomes || isNewBiome()` (line 125); `isNewBiome` (`src/battle-scene.ts:1248`, pure) is every X0, plus X5 with
 short biomes and X49 in Endless and Daily. `setNextBiomeAndEnd` heals entering an X1 (§10). `PartyHealPhase.start` —
 writes `hp = getMaxHp()`, `resetStatus`, every `ppUsed = 0`, `arena.playerTerasUsed = 0` — revives the fallen unless
 `PREVENT_REVIVE`. So a classic run heals entering 11, 21 … 191 and nowhere else, and **waves 181–190 hold the four
@@ -1444,20 +1446,20 @@ modifier applies last.
 
 **The classic final boss (wave 200).** All read, none rolled:
 
-- `generateEnemyModifiers` (`src/battle-scene.ts:2646`) returns early for `currentBattle.isClassicFinalBoss`
+- `generateEnemyModifiers` (`src/battle-scene.ts:2651`) returns early for `currentBattle.isClassicFinalBoss`
   (`src/battle.ts:129`), so **phase 1 carries no held items**; `Pokemon.hasPassive` (`src/field/pokemon.ts:2325`)
   returns false for it unless the Passives challenge is on — **no passive ability**.
 - `EnemyPokemon.damage` (`src/field/pokemon.ts:7156`) caps damage at `hp - 1` in form 0 while `bossSegmentIndex < 1`,
   and `getMinimumSegmentIndex` (`src/field/pokemon.ts:7194`) returns 1 in form 0: **phase 1 cannot be knocked out**.
 - `DamageAnimPhase.end` (`src/phases/damage-anim-phase.ts:97`) calls `BattleScene.initFinalBossPhaseTwo`
-  (`src/battle-scene.ts:3261`) — state writes, phase queue — which gives Eternamax a **non-transferrable Mini Black
+  (`src/battle-scene.ts:3266`) — state writes, phase queue — which gives Eternamax a **non-transferrable Mini Black
   Hole** (`TurnHeldItemTransferModifier`: one of the player's held items every turn), regenerates its moveset at form 1,
   changes form and sets `currentBattle.double = true`: **the fight becomes a double**.
 - Movesets are fixed (`EnemyPokemon.generateAndPopulateMoveset`, `src/field/pokemon.ts:6758`): form 0 Eternabeam /
   Sludge Bomb / Flamethrower / **Cosmic Power**; form 1 Dynamax Cannon / Cross Poison / Flamethrower / Recover, built as
   `new PokemonMove(MoveId.RECOVER, 0, -4)` — `ppUp` −4 on a 5-PP move, so **Recover has 1 PP** at normal priority
   (`PokemonMove.getMovePp`, `src/data/moves/pokemon-move.ts:98`). Inverse Battle swaps Flamethrower for Earth Power.
-- Bars come from `getEncounterBossSegments(200, level, ETERNATUS, true)` (`src/battle-scene.ts:1936`, pure when forced):
+- Bars come from `getEncounterBossSegments(200, level, ETERNATUS, true)` (`src/battle-scene.ts:1941`, pure when forced):
   2, +1 at level ≥ 100, +1 for BST ≥ 670, +1 per 250 waves. Each break boosts a stat picked by weight, +2 for the last
   shield (≥ 3 bars) and the second-last (≥ 5) (`handleBossSegmentCleared`, `src/field/pokemon.ts:7211`) — §3.
 
@@ -1492,7 +1494,7 @@ party picker; with `excludePrimaryFromSecondaryRequirements` and secondaries it 
 draws a **random** primary among the qualifiers (`:411`). Each requirement's `queryParty(party)` only filters, and no
 requirement draws. `MoneyRequirement.meetsRequirement`
 (`src/data/mystery-encounters/mystery-encounter-requirements.ts:393`) writes `requiredMoney` from
-`getWaveMoneyAmount(scalingMultiplier)` (`src/battle-scene.ts:2366`), which is pure arithmetic on the wave index.
+`getWaveMoneyAmount(scalingMultiplier)` (`src/battle-scene.ts:2371`), which is pure arithmetic on the wave index.
 
 **The forks.** `EncounterPhase` runs `onInit` and the dialogue tokens in a fork at `waveIndex`
 (`src/phases/encounter-phase.ts:82`). An option's closures run on the run seed at offsets from `getSeedOffset()`
@@ -1528,14 +1530,14 @@ items, **pick one**; `fillRemaining: true` tops it up to the normal count with o
 (`src/phases/select-modifier-phase.ts:384`).
 
 **The twelve common encounters** (tier weight 66, `src/enums/mystery-encounter-tier.ts:6`, less 6 per common already
-seen, `src/battle-scene.ts:3540`; Field Trip is common too but commented out,
+seen, `src/battle-scene.ts:3545`; Field Trip is common too but commented out,
 `src/data/mystery-encounters/mystery-encounter-biomes.ts:145`). All are gated to waves 10–180
 (`src/constants.ts:17`) unless a row says otherwise. Files are `src/data/mystery-encounters/encounters/<name>-encounter.ts`;
 bare line numbers in a row are in that file.
 
-**No encounter on a boss wave or the one after it.** `isMysteryEncounterValidForWave` (`src/battle-scene.ts:3470`)
+**No encounter on a boss wave or the one after it.** `isMysteryEncounterValidForWave` (`src/battle-scene.ts:3475`)
 refuses `isBoss(w)` (`w % 10 === 0`) and `w % 10 === 1` on top of every gate, so a gate "from wave 100" is first
-servable at 102; only a Daily's scheduled encounter returns before it (`:3420`). A rate override does not reach this
+servable at 102; only a Daily's scheduled encounter returns before it (`:3425`). A rate override does not reach this
 check, and on a refused wave `currentBattle.mysteryEncounter` is never set (`src/phases/encounter-phase.ts:72`).
 
 | Encounter | Gate | Options, as the source does them | Forked before an `await` |
@@ -1550,10 +1552,10 @@ check, and on a refused wave `currentBattle.mysteryEncounter` is never set (`src
 | Berries Abound | — | fight a boss → pick of 5 berries + `numBerries` (> 160: 7, > 120: 5, > 40: 4, else 2; `:92`) · race: `d = fastest.getStat(SPD) / (enemySpeed × 1.1)` (`:199`); `d ≥ 1` grabs `max(min(round((d − 1) / 0.08), numBerries), 2)` berries + the pick of 5, no fight, EXP (`:267`); `d < 1` is the fight with the boss +1 Def/SpD/Spe (wave < 50) or all five (`:240`) · leave | option ×500: the 5 berry options (`:202`); `d` is arithmetic |
 | Part-Timer | — | a picked mon earns `getWaveMoneyAmount(mult)` × Amulet Coin (`value += floor(value × 0.2 × stacks)`, `src/modifier/modifier.ts:2899`): deliver `mult = clamp(2.5 × Spe / base, 1, 4)`, `base = floor(196 · L / 100) + 5` (`:107`); warehouse the same on `HP + 1.5 (Atk + Def)` against `floor(166 · L / 100) + L + 10 + 1.5 × 2 (floor(166 · L / 100) + 5)` (`:181`); sell (a `CHARMING_MOVES` user) ×2.5 (`:281`). Every move of that mon is left with **at most 2 PP** (`:118`); 100 EXP, normal rewards | no draws |
 | Teleporting Hijinks | waves X2–X4, money ≥ ×1.75 (`:64`–`66`) | pay ×1.75, or free with a Steel/Electric mon (+EXP): `BIOME_CANDIDATES` minus the current biome, `[randSeedInt(n)]` (`:195`) — Space, Fairy Cave, Laboratory, Island, Wasteland, Dojo — then an enraged boss there · stay: a boss here, Magnet and Metal Coat among the rewards | option ×500: the destination (before `:200`); the boss there is drawn after |
-| Uncommon Breed | — | `misc.pokemon` (level = top party level − 2, egg move `randSeedItem(eggMoves)` in its **last** move slot; `:67`–`87`), not a boss (`:102`) — fight it (+1 Def/SpD on entry, +1 Spe too from wave 150; `:92`–`94`, `:104`–`111`), it opens with its egg move, catchable · spend 4 random berries: it joins, +2nd egg move · a `CHARMING_MOVES` user: it joins with each IV `max(iv, randSeedInt(31))` (never 31, `:260`), +2nd egg move, EXP; both with rewards. The 2nd egg move goes in the third slot, and `givePokemonExtraEggMove` splices the first out of the pool by its move id rather than its index, so it can draw the first again (`:274`–`286`) | option ×500: the berries, and the charm's IVs (not replayed) |
+| Uncommon Breed | — | `misc.pokemon` (level = top party level − 2, egg move `randSeedItem(eggMoves)` in its **last** move slot; `:67`–`87`), not a boss (`:102`) — fight it (+1 Def/SpD on entry, +1 Spe too from wave 150; `:92`–`94`, `:104`–`111`), it opens with its egg move, catchable · spend 4 random berries: it joins, +2nd egg move · a `CHARMING_MOVES` user: it joins with each IV `max(iv, randSeedInt(31))` (never 31, `:260`), +2nd egg move, EXP; both with rewards. The 2nd egg move goes in the third slot, and `givePokemonExtraEggMove` filters the first out of the pool before it draws, so the two always differ (`:274`–`285`) | option ×500: the berries, and the charm's IVs (not replayed) |
 | Global Trade System | party ≥ 2 allowed for trades (`:153`, `:260`) | trade a mon for one of 3 offers built in `onInit` (`getPokemonTradeOptions`: non-legendary, non-paradox species within ±100 BST, widened until > 20, same level; a legendary gets a fixed pool; `:481`–`538`) · wonder trade: random species, boosted shiny / hidden-ability odds (all in the picker callback, `:270`) · a held item for a random item one tier up (`:433`) · leave | `onInit` fork at `w`: the offers, readable in `misc.tradeOptionsMap` |
 
-**The eight great encounters** (tier weight 40, less 4 per great already seen, `src/battle-scene.ts:3542`). An Offer You Can't Refuse is great tier
+**The eight great encounters** (tier weight 40, less 4 per great already seen, `src/battle-scene.ts:3547`). An Offer You Can't Refuse is great tier
 too but commented out of the biome table (`mystery-encounter-biomes.ts:153`), so a run can never serve it, and it is
 left unjudged for the same reason Field Trip is. Gates are waves 10–180 unless a row says otherwise.
 
@@ -1863,11 +1865,11 @@ SpD]`, neutral on the diagonal. There is **no Ability Capsule** at this tag; the
 (`src/modifier/modifier.ts:2984`) only multiplies a wild mon's hidden-ability chance by `2^(−1 − stacks)` (1/256 →
 1/64 … 1/8, 4 stacks).
 
-**EXP and the level cap.** `getMaxExpLevel(ignoreLevelCap)` (`src/battle-scene.ts:2277`) — pure: `w =
+**EXP and the level cap.** `getMaxExpLevel(ignoreLevelCap)` (`src/battle-scene.ts:2282`) — pure: `w =
 getWaveForDifficulty(r)` for the rounded wave `r = ceil(wave / 10) × 10`, which is `r` itself outside Daily and
 `r + 30 + floor(r / 5)` in Daily (`src/game-mode.ts:192-198`), so wave 30 caps at 52 there and 24 in classic; cap
 `ceil((1 + w/2 + (w/25)²) × 1.2 / 2) × 2 + 2` (wave 10 → 10, 20 → 16, 50 → 38, 200 → 200); with `ignoreLevelCap`,
-`MAX_SAFE_INTEGER`. `applyPartyExp` (`src/battle-scene.ts:3299`, §17) shares EXP only among members **below** the cap — a member at
+`MAX_SAFE_INTEGER`. `applyPartyExp` (`src/battle-scene.ts:3304`, §17) shares EXP only among members **below** the cap — a member at
 it gets nothing and its share is not passed on — and `PlayerPokemon.addExp` (`src/field/pokemon.ts:6561`, writes
 `exp` / `level`) stops at it. Exp Share gives the bench `0.2 × stacks` of a participant's share; EXP Charms multiply
 every member's share in `ExpPhase`.
@@ -1892,7 +1894,7 @@ scale) are untested against how a strong player would rank them.
 
 ## 16. TMs: who can be taught, and how often battles are doubles
 
-Read at the pinned tag (`v1.12.1.1`). `52-shop.js` judges a TM with the learn card's own decision (`learnAdvice`,
+Read at the pinned tag (`v1.12.1.2`). `52-shop.js` judges a TM with the learn card's own decision (`learnAdvice`,
 `40-learn.js`); this section is what it reads besides the move.
 
 **Fainted members.** `TmModifierType`'s select filter (`src/modifier/modifier-type.ts:1130`) is
@@ -1941,7 +1943,7 @@ named as a relearner although the TM *could* have been drawn for it: an egg move
 on the species TM list. That is still true — a Mushroom would put it back — and the card says only that, never
 dropping a member from the scoring or skipping the TM over it.
 
-**Double battles.** `newBattle` asks `checkIsDouble` (`src/battle-scene.ts:1484`, draws global RND) every wave:
+**Double battles.** `newBattle` asks `checkIsDouble` (`src/battle-scene.ts:1489`, draws global RND) every wave:
 
 | Wave | Double when |
 |---|---|
@@ -1950,11 +1952,11 @@ dropping a member from the scoring or skipping the TM over it.
 | wild | `randSeedInt(getDoubleBattleChance(w)) === 0` |
 | any trainer, fixed ones included | the trainer's `DOUBLE` variant |
 
-A generic trainer's variant comes from `generateNewBattleTrainer` (`src/battle-scene.ts:1453`): `doubleOnly` always, no
+A generic trainer's variant comes from `generateNewBattleTrainer` (`src/battle-scene.ts:1458`): `doubleOnly` always, no
 `hasDouble` (or a `trainerTypeDouble` other than Tate & Liza) never, else the same roll. A fixed evil-team grunt is
 double on `randInt(3) === 0`, which is unseeded (§12).
 
-`getDoubleBattleChance(w)` (`src/battle-scene.ts:1233`) starts at **8** (**32** on an X0 wave), is divided by **4** by
+`getDoubleBattleChance(w)` (`src/battle-scene.ts:1238`) starts at **8** (**32** on an X0 wave), is divided by **4** by
 each `DoubleBattleChanceBoosterModifier` (`src/modifier/modifier.ts:461`) — one per lure kind, since `match` requires
 the same `maxBattles` (Lure / Super Lure / Max Lure: 10 / 15 / 30 battles); taking one the party already has only
 resets its count (`LapsingPersistentModifier.add`, `src/modifier/modifier.ts:373`) — and by 4 again for each mon in
@@ -2000,10 +2002,10 @@ each decided from what the preview hands over per foe (types, ability, passive, 
   are left out. The side-wide veils cover the foe itself (`field/pokemon.ts:5051-5063`): Pastel Veil poison, Sweet Veil
   sleep, Flower Veil everything on a Grass type. Scaled by the share of the roster it lands on (a boss weighs one per
   health bar), keeping 0.3 of its value into a roster that takes none of it.
-- **Disruption** (`data/battler-tags.ts`): Taunt stops every status move (`TauntTag.isMoveRestricted`, `:3535`); Heal
-  Block stops `healBlockedMoves` (`:3116`, `data/moves/invalid-moves.ts:277`: recovery and drain) and cancels every heal
+- **Disruption** (`data/battler-tags.ts`): Taunt stops every status move (`TauntTag.isMoveRestricted`, `:3539`); Heal
+  Block stops `healBlockedMoves` (`:3120`, `data/moves/invalid-moves.ts:277`: recovery and drain) and cancels every heal
   in `PokemonHealPhase` (`phases/pokemon-heal-phase.ts:123-127`), Leftovers included, which the preview can't see; Encore
-  needs a last move to lock (`EncoreTag.canAdd`, `data/battler-tags.ts:1721`), and is worth most locking a foe into a status move. Oblivious
+  needs a last move to lock (`EncoreTag.canAdd`, `data/battler-tags.ts:1725`), and is worth most locking a foe into a status move. Oblivious
   blocks only Taunt (`init-abilities.ts:277`), Aroma Veil Taunt, Encore, Heal Block, Disable and Torment
   (`:1124-1131`). A disrupting move with something to take away is worth ×1.4 plus 0.4 × the share of the roster it
   bites on, ×0.3 with nothing; Disable and Torment only by the share they land on. The preview lists a foe's
@@ -2069,20 +2071,20 @@ level-up move included (`src/phases/level-up-phase.ts:97`).
 **No unattached held items.** A held item is a `PokemonHeldItemModifier` with a `pokemonId`
 (`src/modifier/modifier.ts:656`). It is created with its holder — the reward / shop path's
 `newModifier(party[slot])` once a slot is picked (`src/phases/select-modifier-phase.ts:357`) — or cloned onto a new
-holder by `tryTransferHeldItemModifier` (`src/battle-scene.ts:2504`; theft, the transfer screen, encounters).
-`BattleScene.updateModifiers` (`:2748`) — writes `modifiers`: deletes any whose holder `getPokemonById` (`:821`)
+holder by `tryTransferHeldItemModifier` (`src/battle-scene.ts:2509`; theft, the transfer screen, encounters).
+`BattleScene.updateModifiers` (`:2753`) — writes `modifiers`: deletes any whose holder `getPokemonById` (`:821`)
 can't find, or that no longer has the item's species. Releasing (or fusing) a mon deletes its items
-(`removePartyMemberModifiers`, `:2632`); a fainted mon keeps them. So "held items sitting in the bag" can't happen,
+(`removePartyMemberModifiers`, `:2637`); a fainted mon keeps them. So "held items sitting in the bag" can't happen,
 and the audit has no such check.
 
-**EXP.** `BattleScene.applyPartyExp` (`src/battle-scene.ts:3299`) — no draw; writes friendship and Macho Brace stacks
-and unshifts the EXP phases. Only non-fainted members below `getMaxExpLevel()` get a share (`:3312`): a participant
+**EXP.** `BattleScene.applyPartyExp` (`src/battle-scene.ts:3304`) — no draw; writes friendship and Macho Brace stacks
+and unshifts the EXP phases. Only non-fainted members below `getMaxExpLevel()` get a share (`:3317`): a participant
 `1 / participants` (+0.2 a `MultipleParticipantExpBonusModifier` stack when several fought), a non-participant
 nothing, or `0.2 · EXP. All stacks / participants` with EXP. All (`ExpShareModifier`, 5 stacks); then ×1.5 for a
-trainer, the encounter's `expMultiplier`, ×1.5 Pokérus and Lucky / Golden Egg (`:3322`–`3364`). The charms
+trainer, the encounter's `expMultiplier`, ×1.5 Pokérus and Lucky / Golden Egg (`:3327`–`3369`). The charms
 (`ExpBoosterModifier`: +25 % / +60 % / +100 %, 99 / 30 / 10 stacks) multiply each share later, in `ExpPhase` /
 `ShowPartyExpBarPhase` (`src/phases/exp-phase.ts:28`, `src/phases/show-party-exp-bar-phase.ts:25`). EXP. Balance
-exists (`battle-scene.ts:3368`) but is in no pool. So a party at the cap gains nothing from any EXP item, and a member far behind
+exists (`battle-scene.ts:3373`) but is in no pool. So a party at the cap gains nothing from any EXP item, and a member far behind
 the carry only catches up by fighting or through EXP. All.
 
 **Status immunity.** `Pokemon.canSetStatus(effect, quiet, …)` (`src/field/pokemon.ts:4969`) — no draw, but not a
@@ -2105,10 +2107,10 @@ Trick Room (`:79`) — then sorts by timing modifier, `getPriority` and the in-b
 items and abilities move during a fight.
 
 **Mega and Tera** (not audited). A Mega Bracelet only lets MEGA / PRIMAL form-change items into the reward pool
-(`src/modifier/modifier-type.ts:1598`); attaching the stone applies the modifier at once (`src/battle-scene.ts:2394`),
-which queues the form-change phase (`:2980`). A Tera is limited by `MAX_TERAS_PER_ARENA = 1` (`src/constants.ts:120`)
-on `arena.playerTerasUsed` (`src/phases/tera-phase.ts:47`), reset by a new `Arena` (`src/battle-scene.ts:1595`), a
-party heal (`src/phases/party-heal-phase.ts:48`) or post-battle cleanup with a Terapagos (`src/battle-scene.ts:1570`).
+(`src/modifier/modifier-type.ts:1598`); attaching the stone applies the modifier at once (`src/battle-scene.ts:2399`),
+which queues the form-change phase (`:2985`). A Tera is limited by `MAX_TERAS_PER_ARENA = 1` (`src/constants.ts:120`)
+on `arena.playerTerasUsed` (`src/phases/tera-phase.ts:47`), reset by a new `Arena` (`src/battle-scene.ts:1600`), a
+party heal (`src/phases/party-heal-phase.ts:48`) or post-battle cleanup with a Terapagos (`src/battle-scene.ts:1575`).
 Neither leaves an "owned but unused" state the audit could read before a fight.
 
 **Unmeasured.** Every threshold is a first cut: a shared weakness at two members and a third of the party with no
@@ -2119,7 +2121,7 @@ resist, a dead status slot below 20 on the learn scorer's scale, an attack off a
 
 ## 18. Drain, on-KO boosts, and what a switch-in takes
 
-Read at the pinned tag (`v1.12.1.1`), for the battle guidance gaps a Guzma fight (wave 165) exposed: a draining
+Read at the pinned tag (`v1.12.1.2`), for the battle guidance gaps a Guzma fight (wave 165) exposed: a draining
 Golisopod out-healed the damage the HUD promised, and a Buzzwole with Beast Boost was fed KOs.
 
 **Drain.**
@@ -2264,13 +2266,13 @@ scale (≈10 a tier); `REROLL_GAIN` 5 is a first cut.
 
 ## 20. Catching: AttemptCapturePhase and checkCanUseBall
 
-Read at the pinned tag (`v1.12.1.1`); not called live.
+Read at the pinned tag (`v1.12.1.2`); not called live.
 
-**When a ball may be thrown.** `CommandPhase.handleBallCommand` (`src/phases/command-phase.ts:407`) — queues a message
+**When a ball may be thrown.** `CommandPhase.handleBallCommand` (`src/phases/command-phase.ts:409`) — queues a message
 on refusal; on success writes `turnCommands[fieldIndex]` (BALL, targets) and skips the partner's command — checks, in
 order:
 
-1. `checkCanUseBall` (`src/phases/command-phase.ts:354`; pure apart from the message):
+1. `checkCanUseBall` (`src/phases/command-phase.ts:356`; pure apart from the message):
    - **End biome, wild battle.** Refused (`noPokeballForce`) in classic (challenge runs included) short of the final boss
      while any active foe's species has no `caughtAttr`; under a full Fresh Start (`isFullFreshStartChallenge`,
      `src/game-mode.ts:121`, value 1) short of the final boss; in Endless except on a minor boss (`isEndlessMinorBoss`,
@@ -2367,8 +2369,8 @@ add or drop keys (`src/system/version-migration/versions/v1_0_3.ts:13`, `v1_12_0
 challenge and Shuckle Juice / Old Gateau, averages with the fusion's form stat by stat rounding up (halves them in Spliced
 Endless when unfused), then applies vitamins, and returns a fresh array (`:1619`). Its one side effect is a log: each of
 its three `applyModifiers` calls (`:1622`, `:1624`, `:1638`) reaches `applyModifiersInternal`, which `console.log`s
-`Applied …` once per applied modifier (`src/battle-scene.ts:2916`). A held-item change (`updatePartyForModifiers`,
-`src/battle-scene.ts:2790`), `changeForm` (`src/field/pokemon.ts:4666`), `fuse` (`:6482`) and `unfuse` (through `clearFusionSpecies`,
+`Applied …` once per applied modifier (`src/battle-scene.ts:2921`). A held-item change (`updatePartyForModifiers`,
+`src/battle-scene.ts:2795`), `changeForm` (`src/field/pokemon.ts:4666`), `fuse` (`:6482`) and `unfuse` (through `clearFusionSpecies`,
 `:3278`) each go on to `calculateStats` (`:1575`), which rewrites `stats`. Shininess itself is set at spawn by `trySetShiny`
 (`src/field/pokemon.ts:3053`) — writes `shiny`, no draw of its own (the `id` was drawn at construction, line 399):
 `(trainerId ^ secretId) ^ (id >>> 16 ^ id & 0xffff) < threshold`, threshold 64 of 65536 (`BASE_SHINY_CHANCE`,
@@ -2461,9 +2463,9 @@ Side effects: writes `hp` and status counters. No RNG.
 2. Unless `upcomingInterlude` is set, each field mon in speed order goes through the steps below (`:33-68`):
    1. If not switched out, `lapseTags(TURN_END)` (`pokemon.ts:4377`) ends one-turn tags (`FLINCHED`, `BYPASS_SPEED`, `STURDY`, protect…) and runs the tag effects in tag order:
       - Leech Seed: 1/8 at once, then a queued heal to the seeder, reversed by Liquid Ooze (`src/data/battler-tags.ts:1504`).
-      - Nightmare 1/4 (`:2716`), binding moves 1/8 (`DamagingTrapTag`, `:944`), Salt Cure 1/8, or 1/4 on a Water or Steel type (`:2662`, `:2681-2686`), Curse 1/4 (`:2689`).
+      - Nightmare 1/4 (`:2720`), binding moves 1/8 (`DamagingTrapTag`, `:944`), Salt Cure 1/8, or 1/4 on a Water or Steel type (`:2666`, `:2685-2690`), Curse 1/4 (`:2693`).
         Each deals `toDmgValue(maxHp·ratio)` at once through `DamagingBattlerTag.damage`, which Magic Guard cancels (`:900-918`).
-      - Perish Song faints the mon when its count runs out (`:2173`). Ingrain and Aqua Ring queue a 1/16 heal (`:821`, `:1847`). Yawn puts the mon to sleep (`:1908`).
+      - Perish Song faints the mon when its count runs out (`:2177`). Ingrain and Aqua Ring queue a 1/16 heal (`:821`, `:1851`). Yawn puts the mon to sleep (`:1912`).
    2. Leftovers (`TurnHealModifier.apply`, `modifier.ts:1644`) queues a heal of `toDmgValue(maxHp/16)·stack` if the mon is below full HP.
    3. Grassy Terrain queues a heal of `toDmgValue(maxHp/16)` for a grounded mon (`turn-end-phase.ts:39-50`).
    4. Enemies only:
@@ -2506,7 +2508,7 @@ Nothing in §21 is pure. RNG, by stream:
   and the rewards to the bottom of the queue (`src/phases/victory-phase.ts:43-58`). They run after the turn-end phases.
   So on the turn a wave is won, the player's mons still take the chip, eat berries and heal, except on X0 waves (step 1).
 - The EXP is not pushed: `VictoryPhase.start` calls `applyPartyExp` (`victory-phase.ts:34`), which unshifts `ExpPhase` or `ShowPartyExpBarPhase`
-  (`src/battle-scene.ts:3401-3404`), whose level-up unshifts `LevelUpPhase` (`exp-phase.ts:41`, `show-party-exp-bar-phase.ts:33`) and in turn
+  (`src/battle-scene.ts:3406-3409`), whose level-up unshifts `LevelUpPhase` (`exp-phase.ts:41`, `show-party-exp-bar-phase.ts:33`) and in turn
   `LearnMovePhase` (`level-up-phase.ts:97`). So **a move prompt from a KO by a move comes before that turn's `TurnEndPhase`**, Leftovers and all;
   from a KO inside `TurnEndPhase` (Leech Seed, Curse, a trap, Toxic Orb), after it. `TurnEndPhase.start` increments the turn first
   (`turn-end-phase.ts:27`), so the rewards screen after a win reads one past the winning turn.
@@ -2603,53 +2605,54 @@ Facts about the served build at `https://pokerogue.net`, not the source. Most of
 
 ## 23. Starter select: the grid, the budget, and what a starter brings to a run
 
-Read at `v1.12.1.1`, where 1.12.1.0's rework split the screen: the info panel is `StarterSummary`
+Read at `v1.12.1.2`, where 1.12.1.0's rework split the screen: the info panel is `StarterSummary`
 (`src/ui/containers/starter-summary.ts`) and the pure helpers moved to module functions in
 `src/ui/utils/starter-select-ui-utils.ts`, which the page cannot reach. The starter card (`51-starters.js`) calls only
 the pure reads marked below; nothing here draws from an RNG stream or queues a phase, so it runs outside `sandbox`.
 
 **The screen.** `StarterSelectUiHandler` (`src/ui/handlers/starter-select-ui-handler.ts:152`) serves
-`UiMode.STARTER_SELECT` (10). Its own pop-ups change the UI mode (`OPTION_SELECT` for the starter's menu, `:2089`, whose
-first option is Add to Party while the starter can join, `:1596-1601`; `CONFIRM` for start and exit, `:3162,3259`), so
+`UiMode.STARTER_SELECT` (10). Its own pop-ups change the UI mode (`OPTION_SELECT` for the starter's menu, `:2103`, whose
+first option is Add to Party while the starter can join, `:1606-1611`; `CONFIRM` for start and exit, `:3178,3275`), so
 `ui.getHandler()` stops returning it; `ui.handlers[STARTER_SELECT]` is the same instance throughout
 (`src/ui/ui.ts:146`). `SelectStarterPhase.start` (`src/phases/select-starter-phase.ts:17`) is the only outside caller;
-`starterSelectCallback` is set by `show` (`:587`) and cleared when the run starts (`:3150`), so a set callback during
+`starterSelectCallback` is set by `show` (`:587`) and cleared when the run starts (`:3166`), so a set callback during
 `SelectStarterPhase` means a team is being chosen. The Pokédex is a different handler
 (`src/ui/handlers/pokedex-ui-handler.ts:197`). Daily runs never show the grid (`getDailyRunStarters`,
 `src/phases/title-phase.ts:239`). `gameMode` and its challenges are final before the grid opens
 (`src/phases/title-phase.ts:355-360`, `src/ui/handlers/challenges-select-ui-handler.ts:553`).
 
 **The grid cursor.** The grid is 81 on-screen containers (`starterContainers`, `:155`, built in `setup`, `:286-294`)
-that `updateScroll` (`:2526-2623`) fills from `filteredStarterIds[scrollCursor × 9 + i]`, so `cursor` is an on-screen
-index (0–80) and the grid index is `scrollCursor × 9 + cursor`. `setCursor` (`:2625-2651`) writes `filterBarCursor`
+that `updateScroll` (`:2540-2637`) fills from `filteredStarterIds[scrollCursor × 9 + i]`, so `cursor` is an on-screen
+index (0–80) and the grid index is `scrollCursor × 9 + cursor`. `setCursor` (`:2639-2665`) writes `filterBarCursor`
 instead in filter mode; on the grid it clamps to 80, places the cursor by the on-screen index and calls
-`setStarter(container.species.speciesId)`, which sets `lastStarterId` (`:2715`). It never scrolls. ACTION opens the
-starter's menu only from the grid cursor (`cursorObj` shown): the party icons, the start button and the random button
-each take their own inputs first (`:2131-2137`).
+`setStarter(container.species.speciesId)`, which sets `lastStarterId` (`:2729`). It never scrolls. The party icons, the start
+button and the random button each take their own inputs first (`:2145-2151`), so ACTION opens the grid starter's
+menu only while the grid cursor (`cursorObj`) shows. On a party icon ACTION opens that member's menu, whose first
+option is then Remove from Party (`processPartyIconInput`, `:1380-1382`).
 
-**What is offered.** `filterStarters` (`:2337-2524`) builds `filteredStarterIds` from
+**What is offered.** `filterStarters` (`:2351-2538`) builds `filteredStarterIds` from
 `speciesDataRegistry.getAllStarters()`: in challenge mode only those the challenges allow by the **soft** check, where
 the species or any evolution or item form change passes (`isStarterValidForChallenge`,
 `src/ui/utils/starter-select-ui-utils.ts:87-118`, over `checkStarterValidForChallenge(id, props, true)`,
 `src/utils/challenge-utils.ts:600-626`), then the filter bar, whose Caught column defaults to caught only (`:748-760`).
 No list of every allowed starter is kept. A container has `species`, `cost` and an `icon` sprite
 (`src/ui/containers/starter-container.ts:9-20`); `setSpecies(id, props)` (`:88-120`) looks the species up first, then
-replaces the sprite. The grid greys an icon (`icon.alpha` 0.375) in `tryUpdateValue` (`:3043-3125`), which is a state
+replaces the sprite. The grid greys an icon (`icon.alpha` 0.375) in `tryUpdateValue` (`:3059-3141`), which is a state
 write — never call it.
 
 **The team being built.** `partyStarterIds` (`:170`) with a parallel `partyStarters` (`:168`), each built in
-`addToParty` (`:2189-2236`): `{ speciesId, shiny, variant, formIndex, female, abilityIndex, passive, nature, moveset,
+`addToParty` (`:2203-2250`): `{ speciesId, shiny, variant, formIndex, female, abilityIndex, passive, nature, moveset,
 pokerus, nickname, teraType, ivs }`, `passive` true only when `passiveAttr` is `UNLOCKED | ENABLED`. At most
-`PLAYER_PARTY_MAX_SIZE` 6, no duplicates (`:1596-1601`). **A team may start** once `isPartyValid()` (`:3179-3197`,
+`PLAYER_PARTY_MAX_SIZE` 6, no duplicates (`:1606-1611`). **A team may start** once `isPartyValid()` (`:3195-3213`,
 pure): at least one member passes the **strict** check (`soft` false: each active challenge's
 `applyStarterChoice(species, holder, props)` on the species itself); the others need only the soft one. The props a
-challenge check takes come from `getStarterDexAttrPropsFromPreferences(id)` (`:3221-3223`, pure, over the module
+challenge check takes come from `getStarterDexAttrPropsFromPreferences(id)` (`:3237-3239`, pure, over the module
 function at `src/ui/utils/starter-select-ui-utils.ts:376-390` and `gameData.getSpeciesDefaultDexAttrProps`,
 `src/system/game-data.ts:1925`).
 
 **The budget.** `getRunValueLimit()` (`src/ui/utils/starter-select-ui-utils.ts:438-452`, a module function): 15 in
 Endless and Spliced Endless, 10 otherwise, less `LowerStarterPointsChallenge`'s value (`src/data/challenge.ts:1173`).
-`tryUpdateValue` writes it into `valueLimitLabel` as `<party value>/<limit>` (`:3052-3053`), the one copy on the handler. A
+`tryUpdateValue` writes it into `valueLimitLabel` as `<party value>/<limit>` (`:3068-3069`), the one copy on the handler. A
 species costs `gameData.getSpeciesStarterValue(id)` (`src/system/game-data.ts:2023`, pure): the base cost from the
 species registry, then `ChallengeType.STARTER_COST`, then `starterData[id].valueReduction` steps (−1 while above 1, then
 halve). Fresh Start adds the reduction back first, so the steps cancel it (`src/data/challenge.ts:991-996`); the Ability
@@ -2706,8 +2709,9 @@ species: `getSpecies(id)`, `getAllStarters()` (`src/data/species-data-registry.t
 (`:331`: `level`, `item`, `condition`); on the handler a species is only on the visible containers. Ability and move
 names need `allAbilities` / `allMoves` (`src/data/data-lists.ts:8-9`) and egg-move ids `speciesEggMoves`
 (`src/data/balance/moves/egg-moves.ts:17`), all module exports (§22). `h.lastStarterId` is the id in the info panel
-(`:162`) and is not cleared when the cursor leaves the grid (`setNoStarter`, `:2686-2692`); `h.pokerusSpeciesIds` the
-day's Pokérus starters (`:197`, set in `show`, `:581`), which earn 1.5× EXP (`src/battle-scene.ts:3357-3359`).
+(`:162`) and is not cleared when the cursor leaves the grid (`setNoStarter`, `:2700-2706`), and the party-icon
+cursor sets it to the member under it (`setPartyStarter`, `:2753`); `h.pokerusSpeciesIds` the
+day's Pokérus starters (`:197`, set in `show`, `:581`), which earn 1.5× EXP (`src/battle-scene.ts:3362-3364`).
 
 **What a run starts with.** `getStartingLevel()` (`src/game-mode.ts:137-147`): 5, or 20 in Daily. `SelectStarterPhase`
 (`src/phases/select-starter-phase.ts:44-105`) adds each starter with its ability index, form, gender, shiny, variant,
@@ -2718,18 +2722,18 @@ Fresh Start uses (ability index `% 2`, passive off, egg moves replaced by level 
 non-shiny form is picked (`src/phases/select-starter-phase.ts:80-82`) — none under Fresh Start, shiny or not
 (`src/data/challenge.ts:1050`).
 
-**Leaving.** CANCEL on the grid (`src/ui/handlers/starter-select-ui-handler.ts:2110-2121`) leaves the IV view
+**Leaving.** CANCEL on the grid (`src/ui/handlers/starter-select-ui-handler.ts:2124-2135`) leaves the IV view
 (`showIvsMode`, toggled from the starter's menu), else pops the last starter added, and only on an empty party calls
-`tryExit` (`:3231-3261`); with the filter bar active (`:895-920`) it first closes an open dropdown or resets a filter
+`tryExit` (`:3247-3277`); with the filter bar active (`:895-920`) it first closes an open dropdown or resets a filter
 column off its default. `tryExit` shows the `confirmExit` text, then `CONFIRM`. Yes's callback sets `STARTER_SELECT`
-again at once (`:3241`; `CONFIRM` is a no-transition mode, `src/ui/ui.ts:82-84`), then outside challenge mode goes to
+again at once (`:3257`; `CONFIRM` is a no-transition mode, `src/ui/ui.ts:82-84`), then outside challenge mode goes to
 the title (`phaseManager.toTitleScreen()`, `src/phase-manager.ts:262-269`), whose `TitlePhase.start` awaits
 `checkLastSaveSlot` before it shows `TITLE` (`src/phases/title-phase.ts:49`); the mode stays `STARTER_SELECT` until
-then. STATS no longer toggles a stats view: it opens the filter bar's first dropdown (`:2122-2130`).
+then. STATS no longer toggles a stats view: it opens the filter bar's first dropdown (`:2136-2144`).
 
 ## 24. DNA Splicers: who can be fused, pick order, and what a fusion is
 
-Read at the pinned tag (`v1.12.1.1`). The fusion advisor (`49-fusion.js`) reads the run: the pairs come from the
+Read at the pinned tag (`v1.12.1.2`). The fusion advisor (`49-fusion.js`) reads the run: the pairs come from the
 fusion judgment in `12-value.js`, and what it adds on top is everything below — who can be fused, the pick order, and
 what the fused mon is — from species data and pure reads (species forms, `getAbility`, the select filter). It is built
 inside the run read's `sandbox` and opens no `sandbox` of its own. The game
@@ -2760,7 +2764,7 @@ unlock, Pokérus, used TMs and moveset. From the second it copies `fusionSpecies
 `fusionAbilityIndex`, shiny, variant, gender, luck and custom data (`:6462-6472`). HP becomes the halves' mean HP share
 of the base's pre-fusion max, then `updateModifiers` recalculates (`:6478-6493`, `:6511`). Every held item of the second
 moves over, `isTransferable` unchecked, up to the base's stack limits; the rest is lost (`:6504-6513`,
-`src/battle-scene.ts:2504-2577`). The second leaves the party (`:6513`), and a `LearnMovePhase` is queued for each of its
+`src/battle-scene.ts:2509-2582`). The second leaves the party (`:6513`), and a `LearnMovePhase` is queued for each of its
 moves the base doesn't know (`:6515-6519`). No evolution check.
 
 **What a fusion is.** Base stats (`calculateBaseStats`, `:1618-1640`): each stat `Math.ceil((base + other) / 2)`, after
@@ -2799,14 +2803,14 @@ member of `targets` (`target-select-ui-handler.ts:48`). UP goes to the first ent
 moves — no direction moves it and ACTION sends every target (`:95`, `:105-106`). CANCEL answers `[]` (`:96`).
 
 **A committed command is a new object.** Every commit assigns a fresh literal to `currentBattle.turnCommands[fieldIndex]`:
-FIGHT (`src/phases/command-phase.ts:265-270,315`), BALL (`:450-454`), POKEMON and RUN (`:548-556`). The target screen
+FIGHT (`src/phases/command-phase.ts:265-270,317`), BALL (`:452-456`), POKEMON and RUN (`:550-558`). The target screen
 writes its pick onto that same object (`src/phases/select-target-phase.ts:60`), or nulls the entry and asks the command
-again (`:57-58`). Cancelling slot 1's command queues `CommandPhase` 0 then 1 (`command-phase.ts:671-676`), so slot 0
+again (`:57-58`). Cancelling slot 1's command queues `CommandPhase` 0 then 1 (`command-phase.ts:673-678`), so slot 0
 commits anew. While slot 1 is asked, slot 0's entry is one object, and a second ask of slot 1 sees a different one.
 
 ## 26. The screens the MCP driver walks: title, save slot, and who answers a prompt
 
-Read at the pinned tag (`v1.12.1.1`) for the MCP driver (`src/driver.ts`), not the HUD; nothing here is called from the
+Read at the pinned tag (`v1.12.1.2`) for the MCP driver (`src/driver.ts`), not the HUD; nothing here is called from the
 page. §9 has the switch prompt, §23 the starter grid.
 
 **Title.** `TitlePhase` (`src/phases/title-phase.ts:82-193`) offers, in order, [Continue,] New Game, Load Game, Run
@@ -2870,7 +2874,7 @@ mode's `show()` nor any pending callback. `CONFIRM` and `OPTION_SELECT` drop the
 handlers do call their `exitCallback` on `clear()` (`src/ui/handlers/pokedex-ui-handler.ts:2428-2432`,
 `src/ui/handlers/game-stats-ui-handler.ts:545-548`).
 
-**`globalScene.reset(true)`** (`src/battle-scene.ts:1103-1230`) wipes the run in memory, destroys the UI and the scene,
+**`globalScene.reset(true)`** (`src/battle-scene.ts:1103-1235`) wipes the run in memory, destroys the UI and the scene,
 and calls `launchBattle()`, which ends in `phaseManager.toTitleScreen(true)` (`:631-632`): the queue cleared, then
 `LoginPhase` and `TitlePhase` (`src/phase-manager.ts:262-269`), with no `GameOverPhase` on the way. A failed per-wave
 save takes this path: `EncounterPhase` calls it when `gameData.saveAll` resolves false
@@ -2882,7 +2886,7 @@ calls `end()`, and the rejection goes unhandled. The rejecting call is the ungua
 (`src/api/system-savedata-api.ts:40-45`, `src/api/api-base.ts:97`), which `saveAll` reaches only on a logged-in wave
 that does not sync (`src/system/game-data.ts:554-559`, `:1248-1249`); a syncing wave's `updateAll` catches its own
 errors and resolves `false` (`src/api/savedata-api.ts:23-33`). Of a run's played waves only the first is an
-`EncounterPhase`: later ones are `NextEncounterPhase` or `NewBiomeEncounterPhase` (`src/battle-scene.ts:1583-1586`),
+`EncounterPhase`: later ones are `NextEncounterPhase` or `NewBiomeEncounterPhase` (`src/battle-scene.ts:1588-1591`),
 subclasses with their own `phaseName` that inherit this save. Continue, Load Game and a retry after a loss push an
 `EncounterPhase` too, with `loaded` set, which never saves (§29). The hung phase sits in MESSAGE with no
 `onActionInput`, the state a healthy one also passes through during its 2 s intro tween and its unprompted wild-wave
@@ -2904,7 +2908,7 @@ session save holds comes back (§28).
 
 ## 27. The canvas and its message window
 
-Read at the pinned tag (`v1.12.1.1`), for the panel's footprint (`90-render.js`).
+Read at the pinned tag (`v1.12.1.2`), for the panel's footprint (`90-render.js`).
 
 **The canvas.** The game is 1920×1080 under `Phaser.Scale.FIT` (`src/main.ts:30-40`), with no zoom. Its parent `#app`
 is stretched to the page by Phaser's default `expandParent`, so the drawn width is `min(page width, 16/9 × 100vh)`.
@@ -2916,21 +2920,21 @@ the bottom 48 of 180, so its top edge is at 11/15 of the height (canvas y 792).
 
 ## 28. Loading a session save: what a reload keeps and what it loses
 
-Read at the pinned tag (`v1.12.1.1`), for the solver's refusal gate (`src/solver/gate.ts`), which refuses a fight a
+Read at the pinned tag (`v1.12.1.2`), for the solver's refusal gate (`src/solver/gate.ts`), which refuses a fight a
 reload of its save would not rebuild.
 
 **Doubles.** A session save carries no double flag. `newBattle(fromSession)` decides it from the save
-(`src/battle-scene.ts:1320-1366`): a wild battle is double when `enemyParty` holds more than one mon, a trainer battle
+(`src/battle-scene.ts:1325-1371`): a wild battle is double when `enemyParty` holds more than one mon, a trainer battle
 when its config is `doubleOnly`, or `hasDouble` with the trainer's `DOUBLE` variant, and a Mystery Encounter never. A
-save whose trainer carries `DOUBLE` with neither is loaded single (`:1338-1344`), and a `doubleOnly` trainer saved
-without `DOUBLE` is given it (`:1345-1352`). That answer then passes through `checkIsDouble` (`:1280`, `:1484`), which
-keeps a final wave and an Endless boss single whatever the save says (`:1491-1498`). Every `doubleOnly` config is a
+save whose trainer carries `DOUBLE` with neither is loaded single (`:1343-1349`), and a `doubleOnly` trainer saved
+without `DOUBLE` is given it (`:1350-1357`). That answer then passes through `checkIsDouble` (`:1285`, `:1489`), which
+keeps a final wave and an Endless boss single whatever the save says (`:1496-1503`). Every `doubleOnly` config is a
 generic trainer (`src/data/trainers/trainer-config.ts`, `setDoubleOnly`), and the live game gives each one `DOUBLE`
 (§16), so on a save the live game wrote the variant alone tells a trainer's double from its single.
 
 **Mystery Encounters.** `mysteryEncounterType` is `-1` on a save from a wave with no encounter
 (`src/system/game-data.ts:782`, `src/@types/save-data.ts:69`), and `getNewBattleProps` reads `-1` as none
-(`src/battle-scene.ts:1334`).
+(`src/battle-scene.ts:1339`).
 
 **Arena tags.** A save keeps only the `SerializableArenaTag` instances on the field: `ArenaData`'s constructor drops
 every other tag (`src/system/arena-data.ts:32-35`), both when the save is written (`src/system/game-data.ts:769`) and
@@ -2947,7 +2951,7 @@ that `#modifiers/modifier` does not export (`src/system/modifier-data.ts:31-62`)
 
 ## 29. The wave-start save and the session export
 
-Read at the pinned tag (`v1.12.1.1`), for the `session` command (`src/page/session.ts`) and the oracle's input.
+Read at the pinned tag (`v1.12.1.2`), for the `session` command (`src/page/session.ts`) and the oracle's input.
 
 **The session export.** `gameData.getSessionSaveData()` (`src/system/game-data.ts:759-786`) builds the session as it
 stands: seed, game mode, both parties, both modifier lists, the arena, money, `waveIndex`, `battleType`, the trainer,
@@ -2990,16 +2994,16 @@ fetches the save from the server and writes the key.
 
 ## 30. The session save, and what a reload resets mid-fight
 
-Read at the pinned tag (`v1.12.1.1`), for the `extras` read (`src/page/extras.ts`).
+Read at the pinned tag (`v1.12.1.2`), for the `extras` read (`src/page/extras.ts`).
 
 **What the save never carries.** `getSessionSaveData()` writes each mon through `new PokemonData(p)`
 (`src/system/game-data.ts:766`). None of these are in it, and a reload starts each one fresh:
 
-- `Battle.turn` (`src/battle.ts:70`): `newBattle` → `incrementTurn` sets it to 1 (`src/battle-scene.ts:1305`,
+- `Battle.turn` (`src/battle.ts:70`): `newBattle` → `incrementTurn` sets it to 1 (`src/battle-scene.ts:1310`,
   `src/battle.ts:173-178`).
 - `enemySwitchCounter` (`:69`), the AI's switch damping (§7); `lastMove` (`:80`), which Copycat reads
   (`src/data/moves/move.ts:8080`); `enemyFaints` (`battle.ts:95`), which Last Respects (`move.ts:12419`) and Supreme Overlord
-  (`src/data/battler-tags.ts:3867`) count.
+  (`src/data/battler-tags.ts:3871`) count.
 - `playerFaintsHistory` and `enemyFaintsHistory` (`battle.ts:96-97`). An entry is `{ pokemon, turn }` (`:50-53`), and
   `pokemon` is the live mon: a Phaser container, circular. Its readers take only `pokemon.id` (`Trainer.shouldTera`,
   `src/field/trainer.ts:779`) and `turn` (Retaliate, `move.ts:11118-11122`).
@@ -3013,7 +3017,7 @@ Read at the pinned tag (`v1.12.1.1`), for the `extras` read (`src/page/extras.ts
   The save's copy of `summonData` holds them, but its `toJSON` writes both as `undefined` (`:265-266`), so neither
   reaches the save. `waveData` (`pokemon.ts:292`): `endured`, `abilityRevealed`, and `abilitiesApplied`, a `Set`
   (`pokemon-data.ts:308-320`). `PokemonWaveData` has no `toJSON`, so the Set serializes as `{}`.
-- The global `Phaser.Math.RND` state. A reload sows it again (`game-data.ts:890-891`, `battle-scene.ts:1263`).
+- The global `Phaser.Math.RND` state. A reload sows it again (`game-data.ts:890-891`, `battle-scene.ts:1268`).
   `RND.state()` reads it as a `"!rnd,…"` string, and given that string sets it.
 - `Battle.battleSeedState` (`battle.ts:82`; private to TypeScript only), the battle stream's carry-over (§11,
   `battle.ts:486-504`). **It is not always null at a command.** `incrementTurn` clears it (`:177`), but `TurnEndPhase`
@@ -3052,7 +3056,7 @@ after any switches.
 
 ## 31. Loading a save from an older game: the session migration
 
-Read at the pinned tag (`v1.12.1.1`), for the pin bump's harness re-check (`scripts/recheck/recheck.ts`), which
+Read at the pinned tag (`v1.12.1.2`), for the pin bump's harness re-check (`scripts/recheck/recheck.ts`), which
 replays a known fight's save on a newer game.
 
 **When it runs.** `parseSessionData` runs `applySessionVersionMigration` on the raw `JSON.parse` result before it
@@ -3083,7 +3087,7 @@ session from a newer game skips the migration and loads as is. The only "out of 
 
 ## 32. The reward screen's party check: reordering, and who leads the next wave
 
-Read at the pinned tag (`v1.12.1.1`), for the rewards card's lead advice (`51-lead.js`) and the play skill's reorder.
+Read at the pinned tag (`v1.12.1.2`), for the rewards card's lead advice (`51-lead.js`) and the play skill's reorder.
 Switch is new in 1.12.1.0: the v1.12.0.11 clone has no `PartyOption.SWITCH`.
 
 **Opening it.** The shop's bottom row (row 0 in Coachemon's `read_menu`), column 2, is Check Team (`checkTeam` in
@@ -3106,16 +3110,16 @@ in every language (`:1665-1671`).
 (`src/battle-scene.ts:731-736`). A member sent out that is not allowed in battle, fainted or barred by a challenge, is
 swapped with the first allowed member after it (`SummonPhase.preSummon`, `src/phases/summon-phase.ts:37-64`), so a wave
 opens on the first one or two allowed members in party order. After the shop, `doPostBattleCleanup` queues
-`PartyReorderSwitchPhase` (`src/battle-scene.ts:1535-1553`), which brings the party's new front onto the field
+`PartyReorderSwitchPhase` (`src/battle-scene.ts:1540-1558`), which brings the party's new front onto the field
 (`src/phases/party-reorder-switch-phase.ts:38-48`). A trainer battle offers no free switch before its first turn (§9),
 so the reward screen is the only free place to choose a trainer fight's opener.
 
 ## 33. The randomizer challenges: what they rewrite, and which calls see it
 
-Read at the pinned tag (`v1.12.1.1`). Both randomizers (`ChallengeCategory.RANDOMIZER`) rewrite species data in
+Read at the pinned tag (`v1.12.1.2`). Both randomizers (`ChallengeCategory.RANDOMIZER`) rewrite species data in
 challenge hooks, never in the data itself, so a read sees the randomized value only through a call that applies the
 hook. Each is on at any value but zero (§16). Every pick is an `executeWithSeedOffset` fork (§11) sown from the **run
-seed**, `this.seed` rather than the wave seed (`src/battle-scene.ts:2017-2031`), so a species' randomized learnset,
+seed**, `this.seed` rather than the wave seed (`src/battle-scene.ts:2022-2036`), so a species' randomized learnset,
 TMs and abilities hold for the whole run. The fork puts `RND.state()`, `rngOffset` and `rngSeedOverride` back itself.
 
 **Moveset Randomizer** (`Challenges.MOVESET_RANDOMIZER`, `src/data/challenge.ts:1319`): value 1 randomizes movesets,
