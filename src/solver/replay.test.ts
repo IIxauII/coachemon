@@ -173,6 +173,28 @@ test("a scene that differs only in play time, timestamp or the abilities applied
   assert.equal(result.kind, "replayed");
 });
 
+const foesOf = (save: SessionSave) => save.enemyParty as Record<string, unknown>[];
+
+test("a foe the live game built fresh, with no passive or fusion fields, matches the same foe loaded from its save (#673)", async () => {
+  const liveExport = structuredClone(drayton.liveExport);
+  for (const foe of foesOf(liveExport)) {
+    delete foe.passive;
+    delete foe.fusionSpecies;
+    delete foe.fusionVariant;
+  }
+  const { result } = await ask(clean(), { liveExport });
+
+  assert.equal(result.kind, "replayed", `got ${JSON.stringify(result).slice(0, 300)}`);
+});
+
+test("a foe whose passive live has set is still held to it (#673)", async () => {
+  const liveExport = structuredClone(drayton.liveExport);
+  foesOf(liveExport)[0].passive = true;
+  const { result } = await ask(clean(), { liveExport });
+
+  assert.match(reason(result).message, /the foe's Dragonite \(slot 0\) passive: loaded false, live true/);
+});
+
 test("a play time or timestamp below the top of the export is compared like any other field (#661)", async () => {
   const report = clean();
   report.scene.arena.timestamp = 1;

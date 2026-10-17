@@ -2964,6 +2964,13 @@ objects, not copies: `pokeballCounts`, `mysteryEncounterSaveData`, the arena's `
 replacer (`src/system/game-data.ts:1243`), which would throw on one. It reads `currentBattle.waveIndex`, so it throws
 with no battle.
 
+**A Pokémon built fresh, and one loaded.** The `Pokemon` constructor sets `passive` to `!!dataSource.passive`,
+`fusionSpecies` to the data's species or `null`, and `fusionVariant` to `dataSource.fusionVariant || 0` only when it is
+given data (`src/field/pokemon.ts:357`, `:362`, `:379-383`, `:388`); the branch that builds one fresh sets none of the
+three (`:398` on). `PokemonData` copies each as it finds it (`src/system/pokemon-data.ts:91`, `:127`, `:131`). So the
+export of a wave the game generated leaves the three out of every Pokémon it built there, and the same wave loaded
+from its save holds `false`, `null` and `0`. Seen live on a trainer wave at 1.12.1.2 (#673).
+
 **The wave-start save.** On a wave it did not load, `EncounterPhase` and its subclasses (§26) generate the enemy side,
 set new-biome weather and terrain, then call `saveAll(true, sync)`, all before `doEncounter` and so before any summon
 (`src/phases/encounter-phase.ts:291-310`). `loaded` is set by Continue and Load Game (`src/phases/title-phase.ts:88-90`,

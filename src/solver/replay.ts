@@ -170,7 +170,7 @@ export async function replay(
           checked:
             "the loaded scene's export at the first decision is the live tab's export at the decision" +
             `${migrated ? `, as game version ${version} migrates it,` : ""} all but its play time, timestamp and the ` +
-            "abilities applied on entry",
+            "abilities applied on entry, with a passive or fusion a fresh Pokémon leaves unset read as a load sets it",
         },
         known
           ? {
@@ -218,6 +218,8 @@ function tally(items: readonly SavedItem[]): Record<string, number> {
 // (#636)
 const UNCOMPARED_AT_TOP = new Set(["playTime", "timestamp"]);
 const UNCOMPARED = new Set(["abilitiesApplied"]);
+// What a load sets on every Pokémon that a fresh build leaves out (game-code.md §29).
+const LOAD_DEFAULTS = { passive: false, fusionSpecies: null, fusionVariant: 0 };
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 const json = (v: unknown) => JSON.stringify(v) ?? "nothing";
@@ -225,8 +227,11 @@ const keysOf = (a: object, b: object) => [...new Set([...Object.keys(a), ...Obje
 
 const SIDES = { party: "our", enemyParty: "the foe's" } as const;
 
+const asLoaded = (mon: unknown) => (isRecord(mon) ? { ...LOAD_DEFAULTS, ...mon } : mon);
+
 function sceneDiffers(loaded: Record<string, unknown>, live: SessionSave): string[] {
-  return paths(loaded, live).map(
+  const read = { ...live, party: live.party.map(asLoaded), enemyParty: live.enemyParty.map(asLoaded) };
+  return paths(loaded, read).map(
     ([path, there, here]) => `${describePath(path, live)}: loaded ${json(there)}, live ${json(here)}`,
   );
 }
