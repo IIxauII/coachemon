@@ -81,5 +81,5 @@ test("the coach skill solves a fight through tools the plugin offers, and throug
     assert.ok(section.includes(`\`${tool}\``), `the coach's solving text names ${tool}`);
     assert.ok(offered.has(tool), `the plugin offers ${tool}`);
   }
-  for (const acting of ["press", "select_option", "start_run"]) assert.ok(!section.includes(`\`${acting}\``), `the coach's solving text names ${acting}`);
+  for (const acting of ["press", "select_option", "start_run"]) assert.ok(!section.includes(`\`${acting}\``), `the coach's solving text names ${acting}, which acts on the game`);
 });

@@ -236,11 +236,11 @@ export class Driver {
     });
   }
 
-  /** A settled read, never a claim: a handoff changes the overlay alone (extension-distribution.md §10.1). */
+  /** Never a claim: a handoff changes the overlay alone (extension-distribution.md §10.1). */
   async handOracleLine(job: string, ctx: CallContext): Promise<Record<string, unknown>> {
     await this.#reachable("hand_oracle_line");
     const line = solvedLine(this.#jobs.read(job));
-    return this.#readCall("hand_oracle_line", ctx, async ready => {
+    return this.#readReached("hand_oracle_line", ctx, async ready => {
       refuseMovedOn(ready, line);
       const menu = await this.#game.menu();
       const r = await this.#game.oracleLine(line);
@@ -322,12 +322,11 @@ export class Driver {
   ): Promise<Record<string, unknown>> {
     return (async () => {
       await this.#reachable(tool);
-      return this.#readCall(tool, ctx, body);
+      return this.#readReached(tool, ctx, body);
     })();
   }
 
-  /** `#read` once reach has been checked. */
-  #readCall(
+  #readReached(
     tool: keyof typeof TOOL_COMMANDS,
     ctx: CallContext,
     body: (ready: Ready) => Promise<{ menu: MenuRead; fields: Record<string, unknown>; next?: string }>,
@@ -1003,7 +1002,6 @@ function refuseMovedScreen(ready: Ready, menu: MenuRead): void {
   throw new Refusal("screen_changed", `The screen changed from ${ready.screen} to ${menu.screen} between the settled read and the menu read. Nothing was pressed.`, { screen: menu.screen, was: ready.screen });
 }
 
-/** The oracle line a solve job ended with, or the refusal saying why it has none. */
 function solvedLine(job: JobView): OracleLine {
   const result = job.result as SolveResult | undefined;
   if (job.kind === SOLVE_JOB && job.state === "done" && result?.kind === "oracle_line") return result.oracleLine;
@@ -1017,10 +1015,7 @@ function solvedLine(job: JobView): OracleLine {
   throw none(`${job.job} found no oracle line: ${answer.message}`, { reason: answer.reason });
 }
 
-/**
- * The overlay takes the turns played before a handoff as the ones the oracle line was solved from, never scoring them,
- * so an oracle line handed past its first turn would lead a fight that never went its way (#673).
- */
+/** (extension-distribution.md §12.2) */
 function refuseMovedOn(ready: Ready, line: OracleLine): void {
   const from = line.steps[0].turn;
   if (ready.wave === line.wave && ready.turn !== null && ready.turn <= from) return;

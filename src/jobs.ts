@@ -30,7 +30,7 @@ export class Jobs {
   readonly #ended: string[] = [];
   readonly #endsIn: string;
   /** Job ids restart with each process and two plugin processes can share one home: without it, both write `solve-1`'s end to one file. */
-  readonly #process = randomBytes(4).toString("hex");
+  readonly #processTag = randomBytes(4).toString("hex");
   #started = 0;
 
   constructor(kinds: JobKinds, endsIn: string) {
@@ -52,7 +52,7 @@ export class Jobs {
     if (!this.runs(kind)) throw new Refusal("unknown_job_kind", `This server runs no job of kind ${JSON.stringify(kind)}.`, { kinds: Object.keys(this.#kinds) });
     const work = this.#kinds[kind];
     const id = `${kind}-${++this.#started}`;
-    const endFile = path.join(this.#endsIn, `${this.#process}-${id}.json`);
+    const endFile = path.join(this.#endsIn, `${this.#processTag}-${id}.json`);
     const job: Job = { id, kind, state: "running", progress: null, endFile, controller: new AbortController() };
     this.#jobs.set(job.id, job);
     const ctl = {
@@ -111,7 +111,7 @@ function view(job: Job): JobView {
   return { job: job.id, kind: job.kind, state: job.state, progress: job.progress, end_file: job.endFile };
 }
 
-/** Another plugin process may share the home, its coach still waiting on a fresh end file: only a day-old one goes. */
+/** Another plugin process may share the home, its coach still waiting on a fresh end file. */
 function clearStaleEnds(dir: string): void {
   const before = Date.now() - STALE_END_MS;
   let names: string[];
@@ -143,7 +143,7 @@ function writeEnd(job: Job): void {
   }
 }
 
-/** Runs inside a job's own end, where a throw would go unhandled. */
+/** Never throws: `#end` calls it where a throw would go unhandled. */
 function removeEnd(file: string): void {
   try {
     rmSync(file, { force: true });
