@@ -2969,7 +2969,11 @@ with no battle.
 given data (`src/field/pokemon.ts:357`, `:362`, `:379-383`, `:388`); the branch that builds one fresh sets none of the
 three (`:398` on). `PokemonData` copies each as it finds it (`src/system/pokemon-data.ts:91`, `:127`, `:131`). So the
 export of a wave the game generated leaves the three out of every Pokémon it built there, and the same wave loaded
-from its save holds `false`, `null` and `0`. Seen live on a trainer wave at 1.12.1.2 (#673).
+from its save holds `false`, `null` and `0`. A weather or terrain that ends is set to `null`
+(`src/field/arena.ts:303`, `:432`), whether it runs out at turn end (`src/phases/turn-end-phase.ts:73-80`) or a trainer
+battle or new biome clears it (`src/battle-scene.ts:1543-1546`, `:1563`, `src/field/arena.ts:167-178`). A load sets
+each only when the save holds one (`src/system/game-data.ts:954-968`), so the same wave loaded has neither. Both seen
+live on trainer waves at 1.12.1.2 (#673).
 
 **The wave-start save.** On a wave it did not load, `EncounterPhase` and its subclasses (§26) generate the enemy side,
 set new-biome weather and terrain, then call `saveAll(true, sync)`, all before `doEncounter` and so before any summon

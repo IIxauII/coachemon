@@ -195,6 +195,25 @@ test("a foe whose passive live has set is still held to it (#673)", async () => 
   assert.match(reason(result).message, /the foe's Dragonite \(slot 0\) passive: loaded false, live true/);
 });
 
+const arenaOf = (save: SessionSave) => (save as unknown as { arena: Record<string, unknown> }).arena;
+
+test("a live arena whose weather and terrain ended, left null, matches the load that leaves them unset (#673)", async () => {
+  const liveExport = structuredClone(drayton.liveExport);
+  arenaOf(liveExport).weather = null;
+  arenaOf(liveExport).terrain = null;
+  const { result } = await ask(clean(), { liveExport });
+
+  assert.equal(result.kind, "replayed", `got ${JSON.stringify(result).slice(0, 300)}`);
+});
+
+test("a terrain still up on the live arena is still held to the loaded one (#673)", async () => {
+  const liveExport = structuredClone(drayton.liveExport);
+  arenaOf(liveExport).terrain = { terrainType: 1, turnsLeft: 3, maxDuration: 5 };
+  const { result } = await ask(clean(), { liveExport });
+
+  assert.match(reason(result).message, /arena\.terrain: loaded nothing, live \{"terrainType":1/);
+});
+
 test("a play time or timestamp below the top of the export is compared like any other field (#661)", async () => {
   const report = clean();
   report.scene.arena.timestamp = 1;
