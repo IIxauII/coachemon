@@ -55,7 +55,7 @@ Thin wrapper. The server holds no game logic — the game is the source of truth
 src/server.ts        MCP entry: the tools over stdio
 src/tools.ts         the MCP tools, each a thin call into the driver
 src/driver.ts        settle → press → auto-advance → detect → envelope
-src/jobs.ts          background jobs: work that outlasts one tool call (#667)
+src/jobs.ts          background jobs: work that outlasts one tool call, each leaving an end file to wait on (#667, #673)
 src/home.ts          the coachemon home directory (`COACHEMON_HOME`, else `~/.coachemon`)
 src/settings.ts      the plugin's settings, persisted in the home directory: solving, off by default
 src/solver/          the solver behind an oracle line, the player's clone it runs in, and the solve job (#672)

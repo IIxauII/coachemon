@@ -679,6 +679,7 @@ The coach reads through the same MCP server, never through `read.sh`. The coach 
 | `screenshot` | Needs the dev table. Against a store build it returns an error `unavailable`: *"screenshot needs a dev build of Coachemon. Use read_menu or get_state to see the screen."* |
 | `read_card`, `read_starters` | New, read-only (§11.4). |
 | `solving` | New. The plugin's own setting: it never reaches the game, so it never checks reachability (#666). |
+| `hand_oracle_line` | New. Hands the overlay a solve job's oracle line (`oracle.line`, §10.1) after a settled read, never a claim. Only while the battle still stands at the oracle line's first turn: past it, or on another wave, it refuses `moved_on` and hands nothing, since the overlay takes the turns already played as the ones the oracle line was solved from (#673). |
 
 Every tool that reaches the game, acting or reading, first checks reachability. Unreachable → error `unreachable` carrying `rung` and `line` from §12.3. More than one tab → `tabs`, with the list. A needed command missing from the extension → `missing_command` with the rung 4 wording.
 

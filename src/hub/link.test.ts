@@ -79,18 +79,17 @@ test("an extension older than the extras read refuses the Driver's read missing_
   assert.deepEqual(ext.seen.filter(f => f.t === "cmd"), []);
 });
 
-test("the Driver's handoff crosses the hub as the one command it sends, the oracle line's keys as the game's ids (#670)", async () => {
+test("the handoff crosses the hub as one command, the oracle line's keys as the game's ids (#670)", async () => {
   const { ext, link } = await linked();
-  const held = new Driver(new LinkGame(link, link), UNWRITTEN_HOME).handOracleLine(GORDIE_LINE);
+  const held = new LinkGame(link, link).oracleLine(GORDIE_LINE);
   assert.deepEqual(await answer(ext, { ok: true }), { name: "oracle.line", args: { line: pageOracleLine(GORDIE_LINE) } });
-  assert.deepEqual(await held, { status: "ok", held: true });
-  assert.deepEqual(ext.seen.filter(f => f.t === "cmd"), [], "no probe and no settle, before or after");
+  assert.deepEqual(await held, { ok: true });
 });
 
 test("an extension older than the handoff refuses it missing_command at rung 4, sending nothing (#670, extension-distribution.md §8.5)", async () => {
   const { ext, link } = await linked({ commands: COMMAND_NAMES.filter(n => n !== "oracle.line") });
   const driver = new Driver(new LinkGame(link, link), UNWRITTEN_HOME);
-  await assert.rejects(driver.handOracleLine(GORDIE_LINE), (e: Refusal) => e.code === "missing_command" && e.detail.rung === 4);
+  await assert.rejects(driver.handOracleLine("solve-1", {}), (e: Refusal) => e.code === "missing_command" && e.detail.rung === 4);
   assert.deepEqual(ext.seen.filter(f => f.t === "cmd"), []);
 });
 

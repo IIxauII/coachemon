@@ -250,7 +250,9 @@ wants, so it reaches what a run may never show.
 
 The **oracle**'s answer to a trainer fight: the inputs, turn by turn, that it has played to a win on the battle's own
 seed, with a **checkpoint** after each turn — what the battle will look like when the next **decision** comes, if the
-game has drawn what the oracle drew. Every checkpoint is a **replay** claim, checked when that decision arrives.
+game has drawn what the oracle drew. Every checkpoint is a **replay** claim, checked when that decision arrives. An
+oracle line leads only from the decision it was solved from: one that comes after the fight has moved past that
+decision never leads at all.
 
 An oracle line names the luck it rides: each draw that went its way with less than a sure chance, with its turn and
 that chance. One that rides none says so, naming the draws it read.
