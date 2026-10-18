@@ -1,4 +1,4 @@
-import { oracleLineNow, oracleLineUnasked } from "./57-oracle-line.js";
+import { oracleLineNow, oracleLineUnasked, pickWords } from "./57-oracle-line.js";
 import { badge, dim, h, ICON, ink, line, mon } from "./90-render.js";
 
 const MARK = { done: "✓", now: "▸", later: "·" };
@@ -19,23 +19,31 @@ const after = (st, mark) => [h("span", { flex: "1" }), h("span", { ...dim, margi
   ...st.after.flatMap((m, i) => [i ? h("span", dim, "·") : null, mon(m.icon, m.name, ICON.ref), h("span", dim, `${m.hp}/${m.maxHp}`)])];
 const turnOf = st => h("span", { ...dim, marginRight: "3px" }, `T${st.turn}`);
 const sendTo = (words, st) => [h("span", { ...ink.ours, margin: "0 3px" }, words), mon(st.send.icon, st.send.name, ICON.mon)];
+const picked = p => [mon(p.icon, p.name, ICON.mon), h("span", { ...ink.ours, marginLeft: "3px" }, pickWords(p))];
+const thenPicked = p => [h("span", { ...ink.ours, margin: "0 3px" }, "then"), ...picked(p)];
 
 export const drawOracleLine = m => (m?.steps ?? []).map(st => line(MARK[st.at],
   turnOf(st),
   ...act(st.act),
+  ...st.learns.flatMap(p => [h("span", { ...dim, margin: "0 3px" }, "·"), ...picked(p)]),
   ...(st.send ? [h("span", { ...dim, margin: "0 3px" }, "· send"), mon(st.send.icon, st.send.name, ICON.mon)] : []),
   ...(st.at === "later" ? [] : after(st, m.mark))));
 
 export const drawOracleStep = m => {
   const st = oracleLineNow(m);
   if (!st) return [];
-  const picking = m.faintPick && st.send;
+  const learning = m.learning, picking = !learning && m.faintPick && st.send;
+  // A move prompt from a KO by a move comes before the turn's faint prompt (game-code.md §21).
+  const toCome = learning ? st.learns.slice(st.learns.indexOf(learning) + 1) : picking ? [] : st.learns;
   return [
-    picking ? line("⚔", ...sendTo("send", st), ...after(st, m.mark))
+    learning ? line("⚔", ...picked(learning), ...after(st, m.mark))
+      : picking ? line("⚔", ...sendTo("send", st), ...after(st, m.mark))
       : line(st.act ? "⚔" : "·", turnOf(st), ...act(st.act), ...after(st, m.mark)),
+    ...toCome.map(p => line("⤵", ...thenPicked(p), h("span", { ...dim, marginLeft: "3px" }, "at the move prompt"))),
     !picking && st.send ? line("⤵", ...sendTo("then send", st), h("span", { ...dim, marginLeft: "3px" }, "at the faint prompt")) : null,
-    !picking && st.act?.tera ? line("·", h("span", dim, "Tera: ← from Fight to the Tera button")) : null,
-    ...oracleLineUnasked(m).map(x => line("·", turnOf(x), ...act(null), ...(x.send ? sendTo("then send", x) : []), ...after(x, m.mark))),
+    !picking && !learning && st.act?.tera ? line("·", h("span", dim, "Tera: ← from Fight to the Tera button")) : null,
+    ...oracleLineUnasked(m).map(x => line("·", turnOf(x), ...act(null), ...x.learns.flatMap(thenPicked), ...(x.send ? sendTo("then send", x) : []),
+      ...after(x, m.mark))),
   ].filter(Boolean);
 };
 

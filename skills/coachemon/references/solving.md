@@ -26,7 +26,11 @@ it. The solve is a plugin **job**, run through the MCP tools named below, whatev
    - **An oracle line** (`result.kind` is `oracle_line`): call `hand_oracle_line` with the job's id at once.
      - `held: true`: tell the player in one line that the card now leads with the oracle line, as its `plan` group
        says (`~ oracle line wins in 19 turns · 4 of 6 left`), and name the luck it rides from `result.oracleLine.luck`,
-       if any. The strip's ⚔ is now the oracle line's step (`⚔ ~ T1/19 · …`).
+       if any. The strip's ⚔ is now the oracle line's step (`⚔ ~ T1/19 · …`). Each step's `input.learns` answers a
+       "forget a move?" prompt: add one line naming every answer before the last step, with its turn, `T3: Bulbasaur
+       skips Leech Seed` for a `forget` of null, else `T3: Bulbasaur learns Leech Seed over Sunny Day`. Older panels
+       leave them off the card, so this line is how the player hears them, and any other answer takes the game off the
+       line. The last step's picks are placeholders the search never weighs, so the learn card's own call stands there.
      - `moved_on`: the fight left its first turn before the oracle line came, so the oracle line no longer holds. Say
        so in one line; the card carries the fight.
      - `held: false` with `no-hud`: start the panel and hand it again. With `other-fight` or `malformed`, the panel
@@ -35,7 +39,8 @@ it. The solve is a plugin **job**, run through the MCP tools named below, whatev
    - **Failed**: one line saying the solve broke, with its `failure`; the card carries the fight.
    - **Cancelled**: a newer fight's solve replaced it, and there is nothing to say.
 
-   Done when the panel holds the oracle line and the player knows, or the player knows why there is none.
+   Done when the panel holds the oracle line and the player knows it and every answer to a move prompt before its last
+   step, or the player knows why there is none.
 5. **No answer** is the oracle declining to give an oracle line it can't trust. It says nothing about whether the fight
    can be won: the card and its fight plan carry the fight from there, and the player plays on. It comes two ways:
    - **At once, from `start_job`, with no job started**, for a fight solving can't take: a Daily, whose seed every

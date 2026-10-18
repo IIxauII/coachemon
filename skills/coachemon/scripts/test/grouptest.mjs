@@ -205,11 +205,11 @@ const catchAdvice = {
 {
   const ref = name => ({ icon: null, name });
   const hp = (name, now, max) => ({ ...ref(name), hp: now, maxHp: max });
-  const oracleLine = { id: 1, mark: "~", faintPick: false, last: 6, turns: 3, left: 3, of: 4, steps: [
-    { turn: 4, at: "done", act: { kind: "switch", to: ref("Lapras") }, send: null, after: [hp("Lapras", 301, 380), hp("Roserade", 250, 250)] },
-    { turn: 5, at: "now", act: { kind: "move", by: ref("Lapras"), move: "Ice Beam", type: "Ice", tera: { type: "Ice" } }, send: ref("Blastoise"),
+  const oracleLine = { id: 1, mark: "~", faintPick: false, learning: null, last: 6, turns: 3, left: 3, of: 4, steps: [
+    { turn: 4, at: "done", act: { kind: "switch", to: ref("Lapras") }, learns: [], send: null, after: [hp("Lapras", 301, 380), hp("Roserade", 250, 250)] },
+    { turn: 5, at: "now", act: { kind: "move", by: ref("Lapras"), move: "Ice Beam", type: "Ice", tera: { type: "Ice" } }, learns: [], send: ref("Blastoise"),
       after: [hp("Blastoise", 362, 362), hp("Garchomp", 120, 420)] },
-    { turn: 6, at: "later", act: null, send: null, after: [hp("Blastoise", 362, 362), hp("Garchomp", 0, 420)] },
+    { turn: 6, at: "later", act: null, learns: [], send: null, after: [hp("Blastoise", 362, 362), hp("Garchomp", 0, 420)] },
   ] };
   const teamPlan = { result: "win", summary: "winnable", win: null, reserve: [], only: [], sacrifice: [], prefers: null, warnings: [], notes: [], steps: [] };
   const { groups } = show("trainer · an oracle line in place of the fight plan", battle({ trainer: true, verdict: "trainer", title: "W89 · Cynthia", teamPlan, oracleLine }));
