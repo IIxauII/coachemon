@@ -62,6 +62,15 @@ export const SERVER: Area = {
     { ours: "src/driver.ts#title-classic", of: ["src/phases/title-phase.ts#TitlePhase.showOptions"] },
     { ours: "src/driver.ts#title-new-game", of: ["src/phases/title-phase.ts#TitlePhase.showOptions"] },
     { ours: "src/game/save.ts#salted", of: ["src/utils/data.ts#encrypt"] },
+    {
+      ours: "src/solver/replay.ts#ended-arena-fields",
+      of: [
+        "src/field/arena.ts#Arena.trySetWeather",
+        "src/field/arena.ts#Arena.trySetTerrain",
+        "src/system/game-data.ts#GameData.initSessionFromData",
+      ],
+    },
+    { ours: "src/solver/replay.ts#load-defaults", of: ["src/field/pokemon.ts#Pokemon.constructor"] },
     { ours: "src/game/save.ts#save-key", of: ["src/constants.ts#saveKey"] },
     { ours: "src/screen.ts#settings-mode-range", of: ["src/enums/ui-mode.ts#UiMode"] },
   ],

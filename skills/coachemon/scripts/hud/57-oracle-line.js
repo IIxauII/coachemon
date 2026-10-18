@@ -28,7 +28,7 @@ const battleTurn = s => {
   return { faintPick, turn: s.currentBattle.turn - (faintPick ? 1 : 0) };
 };
 const lastBefore = (steps, turn) => steps.findLastIndex(st => st.turn < turn);
-// A pick on the line's last step is no claim: the search never weighs the prompts of the turn that wins (#673).
+// A pick on the line's last step is no claim (extension-distribution.md §11.1).
 const picksOf = (line, st) => (st.turn === lastTurn(line) ? [] : st.input?.learns ?? []);
 // A move prompt comes inside its turn, or after it from a faint at the turn's end (game-code.md §21): the oracle line
 // answers it in the step whose turn asked it.

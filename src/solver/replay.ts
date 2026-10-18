@@ -219,7 +219,9 @@ function tally(items: readonly SavedItem[]): Record<string, number> {
 const UNCOMPARED_AT_TOP = new Set(["playTime", "timestamp"]);
 const UNCOMPARED = new Set(["abilitiesApplied"]);
 // How a load reads a fresh wave's scene (game-code.md §29).
+// @mirrors load-defaults
 const LOAD_DEFAULTS = { passive: false, fusionSpecies: null, fusionVariant: 0 };
+// @mirrors ended-arena-fields
 const ENDED = new Set(["weather", "terrain"]);
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
