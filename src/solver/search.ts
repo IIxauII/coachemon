@@ -12,8 +12,8 @@ export type Hp = { ours: readonly number[]; foes: readonly number[] };
 export type Position = { sig: string; hp: Hp; legal: readonly Action[]; forkPoint: string };
 
 /**
- * One action played from a fork point; `input` names the faint replacement the turn took, if it asked for one, so a
- * `null` that asked for one comes back as a `queued` input (#702).
+ * One action played from a fork point; `input` names the faint replacement and the learn picks the turn took, where it
+ * asked for them, so a `null` that asked for either comes back as a `queued` input (#702, #673).
  */
 export type Child =
   | { input: Action; end: "on"; at: Position }
@@ -22,7 +22,7 @@ export type Child =
 
 export type Pool = {
   size: number;
-  /** A child per action, and one more per other faint replacement an action's turn could have taken. */
+  /** A child per action, and one more per other faint replacement or learn pick an action's turn could have taken. */
   expand(forkPoint: string, inputs: readonly Action[]): Promise<Child[]>;
 };
 
@@ -125,7 +125,7 @@ export function search({ root, pool, validate, budget, portfolio = PORTFOLIO, pr
             beam.inFlight -= inputs.length;
             if (over) return;
             beam.spent += children.length;
-            // A turn's other faint replacements can carry a beam past its budget by part of a job.
+            // A turn's other faint replacements and learn picks can carry a beam past its budget by part of a job.
             const spent = sum(beams.map(b => Math.min(b.spent, budget.expansions)));
             progress?.({ spent, budget: budget.expansions * beams.length });
             next.done(children);

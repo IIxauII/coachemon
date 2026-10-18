@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { MoveId, SpeciesId, Stat, StatusEffect } from "../enums/generated.ts";
-import type { Checkpoint, Input, MonState, Outcome, PartySlot } from "./oracle-line.ts";
+import type { Checkpoint, Input, LearnPick, MonState, Outcome, PartySlot } from "./oracle-line.ts";
 
 const keyOf = <T extends object>(table: T, what: string) =>
   z.custom<keyof T & string>(v => typeof v === "string" && Object.hasOwn(table, v), `not a ${what}`);
@@ -10,15 +10,22 @@ export const partySlot = z.strictObject({
   species: keyOf(SpeciesId, "species"),
 }) satisfies z.ZodType<PartySlot>;
 
+const learnPick = z.strictObject({
+  ...partySlot.shape,
+  move: keyOf(MoveId, "move"),
+  forget: keyOf(MoveId, "move").nullable(),
+}) satisfies z.ZodType<LearnPick>;
+
+const asked = { replacement: partySlot.optional(), learns: z.array(learnPick).min(1).readonly().optional() };
+
 export const input = z.discriminatedUnion("kind", [
-  z.strictObject({
-    kind: z.literal("move"),
-    move: keyOf(MoveId, "move"),
-    tera: z.boolean(),
-    replacement: partySlot.optional(),
-  }),
-  z.strictObject({ kind: z.literal("switch"), to: partySlot, replacement: partySlot.optional() }),
-  z.strictObject({ kind: z.literal("queued"), replacement: partySlot }),
+  z.strictObject({ kind: z.literal("move"), move: keyOf(MoveId, "move"), tera: z.boolean(), ...asked }),
+  z.strictObject({ kind: z.literal("switch"), to: partySlot, ...asked }),
+  z
+    .strictObject({ kind: z.literal("queued"), ...asked })
+    .refine(q => q.replacement !== undefined || q.learns !== undefined, {
+      message: "a turn the game plays for us names a faint replacement, learn picks or both",
+    }),
 ]) satisfies z.ZodType<Input>;
 
 export const monFacts = z.strictObject({

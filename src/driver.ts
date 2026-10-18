@@ -2,6 +2,7 @@
  * Everything a tool does between the MCP request and the game, under v1-tool-surface.md §1's principles. A reading call
  * settles like an acting call minus the press, which is what makes a timed-out wait resumable (#14).
  */
+import path from "node:path";
 import { CallOutcomes, type CallEnd, type Outcome } from "./call-outcome.ts";
 import { driverLock } from "./cdp/lock.ts";
 import { CdpLink } from "./cdp/link.ts";
@@ -23,7 +24,7 @@ import { readSettings, writeSettings } from "./settings.ts";
 import { CLONE_JOB, cloneJob } from "./solver/clone.ts";
 import { isOverwriteConfirm, planSlot, slotLabel } from "./slots.ts";
 import { CALL_BUDGET_MS, settle, type SettleResult } from "./settle.ts";
-import { DEFAULT_BUDGET, gate, type NoAnswer, type OracleLine, type SessionSave, type SolveInput } from "./solver/solver.ts";
+import { DEFAULT_BUDGET, gate, type NoAnswer, type OracleLine, type SessionSave, type SolveInput, type SolveResult } from "./solver/solver.ts";
 import { noAnswer } from "./solver/no-answer.ts";
 import { SOLVE_JOB, solveJob } from "./solver/solve-job.ts";
 import type { Choice } from "./stuck/detector.ts";
@@ -90,7 +91,7 @@ const TOOL_COMMANDS = {
   read_starters: ["probe", "menu", "starters"],
   read_session: ["probe", "menu", "session"],
   read_extras: ["probe", "menu", "extras"],
-  hand_oracle_line: ["oracle.line"],
+  hand_oracle_line: ["probe", "menu", "oracle.line"],
   press: ["probe", "press"],
   select_option: ["probe", "menu", "press"],
   start_run: ["probe", "menu", "starters", "press"],
@@ -122,7 +123,7 @@ export class Driver {
     this.#transport = transport;
     this.#home = home;
     this.#clock = clock;
-    this.#jobs = new Jobs(jobKinds);
+    this.#jobs = new Jobs(jobKinds, path.join(home, "jobs"));
     game.onRejection(t => this.#outcomes.rejection(t));
   }
 
@@ -235,11 +236,16 @@ export class Driver {
     });
   }
 
-  /** Nothing is read or settled first: a handoff leaves the game alone (extension-distribution.md §10.1). */
-  async handOracleLine(line: OracleLine): Promise<Record<string, unknown>> {
+  /** Never a claim: a handoff changes the overlay alone (extension-distribution.md §10.1). */
+  async handOracleLine(job: string, ctx: CallContext): Promise<Record<string, unknown>> {
     await this.#reachable("hand_oracle_line");
-    const r = await this.#game.oracleLine(line);
-    return r.ok ? { status: "ok", held: true } : { status: "ok", held: false, oracle_line_error: r.why };
+    const line = solvedLine(this.#jobs.read(job));
+    return this.#readReached("hand_oracle_line", ctx, async ready => {
+      refuseMovedOn(ready, line);
+      const menu = await this.#game.menu();
+      const r = await this.#game.oracleLine(line);
+      return { menu, fields: r.ok ? { held: true } : { held: false, oracle_line_error: r.why } };
+    });
   }
 
   readMenu(ctx: CallContext): Promise<Record<string, unknown>> {
@@ -316,15 +322,23 @@ export class Driver {
   ): Promise<Record<string, unknown>> {
     return (async () => {
       await this.#reachable(tool);
-      return this.#call(ctx, async call => {
-        const s = await this.#settleRead(call);
-        if (!s.settled) return this.#openingTimedOut(call, s, tool);
-        const ready = s.last as Ready;
-        const { menu, fields, next } = await body(ready);
-        const outcome = this.#end(call, { kind: "read", settle: s, options: optionLabels(menu) });
-        return await this.#settledResult(ready, screenOf(ready, menu), outcome, fields, next);
-      });
+      return this.#readReached(tool, ctx, body);
     })();
+  }
+
+  #readReached(
+    tool: keyof typeof TOOL_COMMANDS,
+    ctx: CallContext,
+    body: (ready: Ready) => Promise<{ menu: MenuRead; fields: Record<string, unknown>; next?: string }>,
+  ): Promise<Record<string, unknown>> {
+    return this.#call(ctx, async call => {
+      const s = await this.#settleRead(call);
+      if (!s.settled) return this.#openingTimedOut(call, s, tool);
+      const ready = s.last as Ready;
+      const { menu, fields, next } = await body(ready);
+      const outcome = this.#end(call, { kind: "read", settle: s, options: optionLabels(menu) });
+      return await this.#settledResult(ready, screenOf(ready, menu), outcome, fields, next);
+    });
   }
 
   async press(buttonName: string, ctx: CallContext): Promise<Record<string, unknown>> {
@@ -986,6 +1000,31 @@ function screenOf(ready: Ready, menu: MenuRead): string {
 function refuseMovedScreen(ready: Ready, menu: MenuRead): void {
   if (screenOf(ready, menu) === ready.screen) return;
   throw new Refusal("screen_changed", `The screen changed from ${ready.screen} to ${menu.screen} between the settled read and the menu read. Nothing was pressed.`, { screen: menu.screen, was: ready.screen });
+}
+
+function solvedLine(job: JobView): OracleLine {
+  const result = job.result as SolveResult | undefined;
+  if (job.kind === SOLVE_JOB && job.state === "done" && result?.kind === "oracle_line") return result.oracleLine;
+  const none = (message: string, detail: Record<string, unknown> = {}) =>
+    new Refusal("no_oracle_line", message, { job: job.job, kind: job.kind, state: job.state, ...detail });
+  if (job.kind !== SOLVE_JOB) throw none(`${job.job} is a ${job.kind} job: only a solve answers with an oracle line.`);
+  if (job.state === "running") throw none(`${job.job} is still running: hand its oracle line over once it is done, which its end_file shows.`);
+  if (job.state === "cancelled") throw none(`${job.job} was cancelled before it found an oracle line.`);
+  if (job.state === "failed") throw none(`${job.job} failed, so it found no oracle line: ${job.failure}`);
+  const answer = result as NoAnswer;
+  throw none(`${job.job} found no oracle line: ${answer.message}`, { reason: answer.reason });
+}
+
+/** (extension-distribution.md §12.2) */
+function refuseMovedOn(ready: Ready, line: OracleLine): void {
+  const from = line.steps[0].turn;
+  if (ready.wave === line.wave && ready.turn !== null && ready.turn <= from) return;
+  const at = ready.turn === null ? `wave ${ready.wave}, with no battle` : `turn ${ready.turn} of wave ${ready.wave}`;
+  throw new Refusal(
+    "moved_on",
+    `The oracle line starts at turn ${from} of wave ${line.wave}, and the game has moved on to ${at}, so it was not handed: an oracle line holds only from where it was solved.`,
+    { wave: ready.wave, turn: ready.turn, from: { wave: line.wave, turn: from } },
+  );
 }
 
 /** The option labels the stuck detector judges untried against, or `null` when the menu gave none. */

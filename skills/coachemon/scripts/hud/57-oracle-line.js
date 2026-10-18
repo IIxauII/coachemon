@@ -3,12 +3,14 @@
 import { iconOf, STAT_NAMES, STATUS_FRAMES, TYPES } from "./01-core.js";
 import { isReplacement } from "./02-decision.js";
 import { gameTables } from "./04-game-tables.js";
+import { learnMoveById } from "./40-learn.js";
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 
 // `lead`: our mon in front when the oracle line was handed on or before its first turn. Its first move names no mover,
 // and only then is the game still showing it. `scored`: the last step scored, or played before the handoff. `played`:
-// the player's command by turn, as the frames saw it. `strayed`: a free switch since the last step scored.
+// the player's command by turn, as the frames saw it. `strayed`: a free switch since the last step scored. `asked`: by
+// pick, the mon each move prompt the oracle line answers was put to, as the frames saw it.
 let held = null, holds = 0;
 // (CONTEXT.md, `Confidence`)
 let wrongSeed = null;
@@ -26,16 +28,35 @@ const battleTurn = s => {
   return { faintPick, turn: s.currentBattle.turn - (faintPick ? 1 : 0) };
 };
 const lastBefore = (steps, turn) => steps.findLastIndex(st => st.turn < turn);
+// A pick on the line's last step is no claim (extension-distribution.md §11.1).
+const picksOf = (line, st) => (st.turn === lastTurn(line) ? [] : st.input?.learns ?? []);
+// A move prompt comes inside its turn, or after it from a faint at the turn's end (game-code.md §21): the oracle line
+// answers it in the step whose turn asked it.
+const promptOf = (s, h) => {
+  const ph = phaseOf(s);
+  if (ph?.phaseName !== "LearnMovePhase") return null;
+  const t = s.currentBattle.turn, learner = tryDo(() => s.getPlayerParty()[ph.partyMemberIndex]);
+  const fits = p => p.move === ph.moveId && p.species === learner?.species?.speciesId;
+  for (const [i, st] of h.line.steps.entries()) {
+    if (i <= h.scored || (st.turn !== t && st.turn !== t - 1)) continue;
+    const picks = picksOf(h.line, st);
+    const pick = picks.find(p => fits(p) && p.slot === ph.partyMemberIndex) ?? picks.find(fits);
+    if (pick) return { st, pick, learner };
+  }
+  return null;
+};
 const moverOf = (h, i) => (i ? h.line.steps[i - 1].checkpoint.ours.find(m => m.onField)?.species ?? null : h.lead);
 const isObject = v => typeof v === "object" && v !== null;
 const mons = side => Array.isArray(side) && side.every(isObject);
 // The page is not trusted (extension-distribution.md §9.5), and an oracle line `oracleLineModel` cannot read would fail
 // every card built for its fight.
+const pickShaped = p => isObject(p) && [p.slot, p.species, p.move].every(Number.isInteger) && (p.forget === null || Number.isInteger(p.forget));
+const inputShaped = i => i === null || (isObject(i) && (i.kind !== "switch" || isObject(i.to))
+  && (i.kind !== "queued" || isObject(i.replacement) || i.learns?.length > 0)
+  && (i.replacement === undefined || isObject(i.replacement)) && (i.learns === undefined || (Array.isArray(i.learns) && i.learns.every(pickShaped))));
 const shaped = line => typeof line?.seed === "string" && Number.isInteger(line.wave) && Array.isArray(line.steps) && line.steps.length > 0
   && line.steps.every((st, i) => Number.isInteger(st?.turn) && st.turn >= 1 && (i === 0 || st.turn > line.steps[i - 1].turn)
-    && (st.input === null || (isObject(st.input) && (st.input.kind !== "switch" || isObject(st.input.to))
-      && (st.input.kind !== "queued" || isObject(st.input.replacement))))
-    && (st.input?.replacement === undefined || isObject(st.input.replacement)) && mons(st.checkpoint?.ours) && mons(st.checkpoint?.foes));
+    && inputShaped(st.input) && mons(st.checkpoint?.ours) && mons(st.checkpoint?.foes));
 // A turn the game plays for us asks for no press, even one that names a faint replacement.
 const pressed = input => (input?.kind === "queued" ? null : input);
 
@@ -45,7 +66,7 @@ export const holdOracleLine = (s, line) => {
   if (!sameFight(s, line)) return { ok: false, why: "other-fight" };
   const lead = s.currentBattle.turn <= line.steps[0].turn ? frontOf(s) : null;
   // The turns already played when it was handed are where the oracle line was solved from, not its claims.
-  held = { line, lead, id: ++holds, scored: lastBefore(line.steps, battleTurn(s).turn), played: {}, strayed: false, off: null };
+  held = { line, lead, id: ++holds, scored: lastBefore(line.steps, battleTurn(s).turn), played: {}, strayed: false, asked: new Map(), off: null };
   return { ok: true };
 };
 
@@ -83,8 +104,9 @@ const scoredOf = (h, st, turn, misses, wrong) => ({ turn, of: lastTurn(h.line), 
 export const oracleLineSeen = s => {
   const h = leading(s);
   if (!h) return null;
-  const b = s.currentBattle, cmd = b.turnCommands?.[0], ph = phaseOf(s);
+  const b = s.currentBattle, cmd = b.turnCommands?.[0], ph = phaseOf(s), prompt = promptOf(s, h);
   if (ph?.phaseName === "SwitchPhase" && !ph.isModal) h.strayed = true;
+  if (prompt) h.asked.set(prompt.pick, prompt.learner);
   if (ph?.phaseName === "GameOverPhase") {
     // A fight lost to a TURN_END tag (Leech Seed, Curse…) ends after the turn has moved on (game-code.md §21).
     const turn = cmd ? b.turn : b.turn - 1;
@@ -127,6 +149,25 @@ const missesOf = (s, cp) => [[cp.ours, tryDo(() => s.getPlayerParty(), [])], [cp
     });
   }).filter(Boolean);
 
+const knows = (p, id) => !!tryDo(() => p.moveset.some(m => m?.moveId === id), false);
+// A later pick on the same mon that forgets this one's move, or learns back its forget, is what the moveset shows.
+const overtaken = (p, later) => later.some(q => q.species === p.species && (q.forget === p.move || q.move === p.forget));
+// The move prompts of steps `from` exclusive to `i` inclusive, read off the learner's moves. `asked`: the game put the
+// prompt, so an answer other than the oracle line's is the player's; one it never put is the oracle line's own miss.
+const answersOf = (s, h, from, i) => {
+  const party = tryDo(() => s.getPlayerParty(), []);
+  const picks = h.line.steps.slice(from + 1, i + 1).flatMap(st => picksOf(h.line, st));
+  return picks.filter((p, k) => !overtaken(p, picks.slice(k + 1))).map(p => {
+    const asked = h.asked.has(p), learner = h.asked.get(p) ?? inSlot(party)(p);
+    if (!learner) return null;
+    const name = id => moveOf(party, id).move, learned = knows(learner, p.move);
+    const came = !asked ? "no prompt"
+      : learned === (p.forget === null) ? `${learned ? "learned" : "skipped"} ${name(p.move)}`
+      : p.forget !== null && knows(learner, p.forget) ? `kept ${name(p.forget)}` : null;
+    return came && { ...named(learner, p.species), expected: p.forget === null ? `skip ${name(p.move)}` : `${name(p.move)} over ${name(p.forget)}`, came, asked };
+  }).filter(Boolean);
+};
+
 // A won fight's last checkpoint is read once the battle has ended (oracle-line.ts, `Checkpoint`): the next decision is
 // its rewards screen, or a tenth wave's biome screen (game-code.md §12). A move prompt from the win's level-up can come
 // before the turn's end (§21), and a send-in builds mid-turn, so neither scores.
@@ -139,8 +180,9 @@ export const oracleLineCheck = s => {
   if (i <= h.scored) return null;
   const from = h.scored, st = h.line.steps[i];
   h.scored = i;
-  const misses = missesOf(s, st.checkpoint);
-  if (misses.length) return scoredOf(h, st, st.turn, misses, miss(h, from, i, misses, pickedOther(s, st, moverOf(h, i))));
+  const answers = answersOf(s, h, from, i);
+  const misses = [...missesOf(s, st.checkpoint), ...answers.map(({ asked: _asked, ...m }) => m)];
+  if (misses.length) return scoredOf(h, st, st.turn, misses, miss(h, from, i, misses, pickedOther(s, st, moverOf(h, i)) || answers.some(a => a.asked)));
   h.strayed = false;
   return scoredOf(h, st, st.turn, [], false);
 };
@@ -152,26 +194,31 @@ export const offTheLineModel = s => {
 };
 export const offTheLineSummary = o => (o ? `off the line · ${o.mark} re-solving…` : null);
 
+// A trainer can field one species twice (game-code.md §10), so a mon the line names by its slot is looked for there.
+const inSlot = side => ({ species, slot }) => {
+  const there = slot == null ? null : side[slot];
+  return there?.species?.speciesId === species ? there : side.find(p => p?.species?.speciesId === species) ?? null;
+};
 const named = (p, id) => ({ icon: p ? iconOf(p) : null,
   name: p?.name ?? tryDo(() => gameTables().species.getSpecies(id).name, `#${id}`) });
 const moveOf = (party, id) => {
   const known = party.find(p => p?.moveset?.some(m => m?.moveId === id));
-  const mv = tryDo(() => known.moveset.find(m => m?.moveId === id).getMove()) ?? tryDo(() => gameTables().moves[id]);
+  const mv = tryDo(() => known.moveset.find(m => m?.moveId === id).getMove()) ?? learnMoveById(party, id) ?? tryDo(() => gameTables().moves[id]);
   return { move: String(mv?.name ?? `#${id}`).replace(/ \(N\)$/, ""), type: TYPES[mv?.type] ?? null };
 };
+
+// `forgetSlot`: the forgotten move's place in the learner's moves, −1 for a skip.
+const pickOf = (party, p, pick) => ({ ...named(p, pick.species), move: moveOf(party, pick.move).move,
+  forget: pick.forget === null ? null : moveOf(party, pick.forget).move,
+  forgetSlot: pick.forget === null ? -1 : tryDo(() => p.moveset.filter(Boolean).findIndex(m => m.moveId === pick.forget), -1) });
 
 // @only 60-card, tests: oracleLineModel
 export const oracleLineModel = s => {
   const h = leading(s);
   if (!h) return null;
   const { line } = h;
-  const { faintPick, turn } = battleTurn(s);
+  const { faintPick, turn: t } = battleTurn(s), prompt = promptOf(s, h), turn = prompt?.st.turn ?? t;
   const party = tryDo(() => s.getPlayerParty(), []), foes = tryDo(() => s.getEnemyParty(), []);
-  // A trainer can field one species twice (game-code.md §10), so a mon the line names by its slot is looked for there.
-  const inSlot = side => ({ species, slot }) => {
-    const there = slot == null ? null : side[slot];
-    return there?.species?.speciesId === species ? there : side.find(p => p?.species?.speciesId === species) ?? null;
-  };
   const ours = inSlot(party), theirs = inSlot(foes);
   const inFront = (side, find) => side.filter(m => m.onField)
     .map(m => ({ ...named(find(m), m.species), hp: m.hp, maxHp: m.maxHp }));
@@ -187,6 +234,7 @@ export const oracleLineModel = s => {
       turn: st.turn,
       at: st.turn < turn ? "done" : st.turn === turn ? "now" : "later",
       act,
+      learns: picksOf(line, st).map(p => pickOf(party, ours(p), p)),
       send: sent ? named(ours(sent), sent.species) : null,
       after: [...inFront(st.checkpoint.ours, ours), ...inFront(st.checkpoint.foes, theirs)],
     };
@@ -196,6 +244,7 @@ export const oracleLineModel = s => {
     id: h.id,
     mark: markOf(line),
     faintPick,
+    learning: prompt ? steps[line.steps.indexOf(prompt.st)].learns[picksOf(line, prompt.st).indexOf(prompt.pick)] : null,
     last: last.turn,
     turns: last.turn - line.steps[0].turn + 1,
     left: last.checkpoint.ours.filter(m => m.hp > 0).length,
@@ -220,14 +269,20 @@ const expectText = after => after.map(x => `${x.name} ${x.hp}/${x.maxHp}`).join(
 const actText = a => (a.kind === "switch" ? `switch to ${a.to.name}`
   : [a.by?.name, ...(a.tera ? [`Tera ${a.tera.type ?? ""}`.trim(), "+"] : []), a.move].filter(Boolean).join(" "));
 
+export const pickWords = p => (p.forget ? `learns ${p.move} over ${p.forget}` : `skips ${p.move}`);
+const pickText = p => `${p.name} ${pickWords(p)}`;
+
 export const oracleStepSummary = m => {
   const st = oracleLineNow(m);
   if (!st) return null;
   const at = `${m.mark} T${st.turn}/${m.last}`;
+  if (m.learning) return `⚔ ${at} · ${pickText(m.learning)}`;
   if (m.faintPick && st.send) return `⚔ ${at} · send ${st.send.name}`;
-  if (!st.act) return [at, "no input", st.send ? `then send ${st.send.name}` : null, `expect ${expectText(st.after)}`].filter(Boolean).join(" · ");
-  return [`⚔ ${at}`, actText(st.act), st.send ? `then send ${st.send.name}` : null].filter(Boolean).join(" · ");
+  const then = [...st.learns.map(p => `then ${pickText(p)}`), st.send ? `then send ${st.send.name}` : null];
+  if (!st.act) return [at, "no input", ...then, `expect ${expectText(st.after)}`].filter(Boolean).join(" · ");
+  return [`⚔ ${at}`, actText(st.act), ...then].filter(Boolean).join(" · ");
 };
+export const oracleLearnCall = m => (m?.learning ? pickText(m.learning) : null);
 
 // The card event's `oracleLine` (extension-distribution.md §11.1).
 export const oracleLineState = (m, off) => {

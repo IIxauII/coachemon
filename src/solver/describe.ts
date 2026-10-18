@@ -1,4 +1,4 @@
-import type { Input, PartySlot } from "./oracle-line.ts";
+import type { Input, LearnPick, PartySlot } from "./oracle-line.ts";
 
 export const title = (key: string) =>
   key
@@ -11,10 +11,15 @@ export const STAGES = ["Atk", "Def", "SpA", "SpD", "Spe", "Acc", "Eva"];
 
 const mon = ({ slot, species }: PartySlot) => `${title(species)} (slot ${slot})`;
 
+const learned = ({ move, forget, ...at }: LearnPick) =>
+  forget === null ? `${mon(at)} declines ${title(move)}` : `${mon(at)} forgets ${title(forget)} for ${title(move)}`;
+
+/** In the order the turn asks: the command, each learn pick, then the faint replacement. */
 export function describeInput(input: Input): string {
   const act =
     input.kind === "move" ? `${input.tera ? "Tera + " : ""}${title(input.move)}`
     : input.kind === "switch" ? `switch → ${mon(input.to)}`
     : "played for us";
-  return input.replacement ? `${act}, replacement ${mon(input.replacement)}` : act;
+  const replacement = input.replacement ? [`replacement ${mon(input.replacement)}`] : [];
+  return [act, ...(input.learns ?? []).map(learned), ...replacement].join(", ");
 }

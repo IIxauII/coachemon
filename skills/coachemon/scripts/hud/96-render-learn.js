@@ -1,5 +1,6 @@
-import { learnSummary } from "./40-learn.js";
+import { learnActSummary } from "./60-card.js";
 import { badge, caption, dim, h, ICON, img, ink, line, mon, some } from "./90-render.js";
+import { drawOracleStep } from "./95-render-oracle-line.js";
 
 const ordinal = n => `${n}${n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th"}`;
 const learnNote = n => n.replace(/^(\d+)× (\w+)$/, (_, k, t) => `${ordinal(+k)} ${t} move`);
@@ -40,8 +41,15 @@ export const drawLearn = m => {
   const gain = (m.decision === "learn" || (m.decision === "skip" && m.gain < 0)) && m.gain
     ? h("span", { ...dim, marginLeft: "6px" }, `${m.gain > 0 ? "+" : "−"}${Math.abs(m.gain)} power`) : null;
   const blind = m.blind ? line("", h("span", dim, `next big fight unread: ${m.blind}`)) : null;
+  // The oracle line's answer is the call (extension-distribution.md §11.1), and the card's own forget gives way to it.
+  const pick = m.oracleLine?.learning;
+  if (pick) return [
+    some("act", "Now", learnActSummary(m), [...drawOracleStep(m.oracleLine), row(m.move, "·", false)]),
+    some("options", "Moves", null, m.moves.map((x, i) => row(x, i === pick.forgetSlot ? "✗" : "·", false))),
+    some("notes", "Notes", null, [blind]),
+  ].filter(Boolean);
   return [
-    some("act", "Now", learnSummary(m), [row(m.move, "✓", false, gain)]),
+    some("act", "Now", learnActSummary(m), [row(m.move, "✓", false, gain)]),
     some("options", "Moves", null,
       m.moves.map((x, i) => (i === m.forget ? row(x, "✗", warnAt(i)) : i === slot ? row(x, "★", warnAt(i)) : row(x, "·")))),
     some("audit", "Team", null, [teamLine(teamParts)]),

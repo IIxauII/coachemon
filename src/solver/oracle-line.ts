@@ -36,17 +36,31 @@ export type Step = {
 };
 
 export type Input =
-  | ((
-      | { kind: "move"; move: keyof typeof MoveId; tera: boolean }
-      | { kind: "switch"; to: PartySlot }
-    ) & {
-      /** The faint replacement this step's turn asks for, picked inside the step (#660). */
-      replacement?: PartySlot;
-    })
-  /** A turn the game plays for us that asks for a faint replacement: one that asks for none is a step with no input (#702). */
-  | { kind: "queued"; replacement: PartySlot };
+  | (({ kind: "move"; move: keyof typeof MoveId; tera: boolean } | { kind: "switch"; to: PartySlot }) & Asked)
+  /**
+   * A turn the game plays for us that asks for a faint replacement, a learn pick or both, and names at least one: one
+   * that asks for neither is a step with no input (#702, #673).
+   */
+  | ({ kind: "queued" } & Asked);
+
+/** What this step's turn asks for after its command, each picked inside the step. */
+type Asked = {
+  /** (#660) */
+  replacement?: PartySlot;
+  /** Absent where the turn asks for none (#673). */
+  learns?: readonly LearnPick[];
+};
 
 export type PartySlot = { slot: number; species: keyof typeof SpeciesId };
+
+/** One answer to a level-up's "forget a move?" prompt, in the order the game asks within the step's turn. */
+export type LearnPick = {
+  slot: number;
+  species: keyof typeof SpeciesId;
+  move: keyof typeof MoveId;
+  /** `null` declines the move. */
+  forget: keyof typeof MoveId | null;
+};
 
 /**
  * A won fight's last is read once the battle has ended: after the end-of-turn effects that follow the last faint, with

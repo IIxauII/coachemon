@@ -157,18 +157,19 @@ The panel already shows the decision; the user glances at it mid-battle. Speak o
 - **Catch:** one line — catch or not, and why, if you'd weigh it differently from the panel.
 - **DANGER / boss:** 2–3 lines, move first: what to click, then the threat and the out (switch, sacrifice, heal).
 - **Trainer:** send-in order and the win condition, ≤4 lines. Don't repeat the ⚔ line; add ability traps from the rules below and what the plan can't see.
-- **Learn move:** reply only if the HUD verdict is "your call" or you disagree — coverage the party loses (dropping the only Dark move), setup and status value, recoil, accuracy, spread moves in doubles.
+- **Learn move:** reply only if the HUD verdict is "your call" or you disagree — coverage the party loses (dropping the only Dark move), setup and status value, recoil, accuracy, spread moves in doubles. A verdict that is the oracle line's answer (`⚔ ~ T3/6 · Bulbasaur skips Leech Seed`) is the call: any other answer takes the game off the line.
 - **Rewards:** when the `audit:` part names a ✗ finding before a big fight, say what fixes it with this screen (a TM, a mushroom, a catch to look for); otherwise only what the HUD can't judge: held items (`items`), long-term team building, whether a reroll is worth it. Buy shop items **before** taking the free reward: taking it ends the screen. On a `SHOP` line there is no reward to wait for: it is a chance to buy the heals, PP and revives the next big fight needs, so say so when the HUD's buys leave one out. Don't quote item effects from memory; use `desc`.
 - **Biome:** reply only to add what the card doesn't weigh: the evil-team boss or rival ahead (fixed battles aren't the biome's), a gym leader's signature mons beyond its type, a rare biome two steps away, or a close call the edge line doesn't settle.
 - **Mystery Encounter:** reply when the card says `not judged` or `your call` (read the options off the screenshot or the card and weigh them), or when the run's longer plan disagrees — a vitamin on the wrong mon, money the next boss shop needs, a biome detour before a gym.
 
 ## Solving
 
-**Solving** is the player's standing setting, off until they turn it on: while it is on, the coach may solve a trainer fight on the run's own seed for an **oracle line**, the inputs that win it, but never in a Daily run, whose seed every player shares. The `solving` tool reads it (no argument) and turns it on or off (`on: true` / `on: false`); it needs no game.
+**Solving** is the player's standing setting, off until they turn it on: while it is on, the coach solves every trainer fight on the run's own seed, unasked, for an **oracle line**, the inputs that win it, but never in a Daily run, whose seed every player shares. The `solving` tool reads it (no argument) and turns it on or off (`on: true` / `on: false`); it needs no game. Read it once a session, before the first trainer fight.
 
 - **State the cost before turning it on**, plainly: about 0.6 GB of disk, a one-time setup, and minutes of CPU per fight. Turn it on only once the player says yes to that, and never unasked: off is the coach teaching.
 - It is standing: it stays on across sessions until the player turns it off, so never ask again before a fight. Turn it off whenever they ask.
 - **While it is on, keep its clone set up**: `start_job` with `kind: "clone"` sets it up in the background, and `poll_job`'s progress line is short enough to relay as it is. It ends with the clone, or with "no answer" and its cause (no network, say), which you tell the player as given: the card still coaches. A clone already set up answers at once, so start it again whenever in doubt — once solving is turned on, in a new session, after a no answer.
+- **With it on, at every trainer fight's first command, follow `references/solving.md` from its first step**: the solve, the wait for its end, the oracle line handed to the card, or a no answer and its cause. With it off, the coach teaches, and the card and you carry every fight.
 
 ## Boss-fight plan
 

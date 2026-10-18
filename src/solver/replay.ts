@@ -170,7 +170,7 @@ export async function replay(
           checked:
             "the loaded scene's export at the first decision is the live tab's export at the decision" +
             `${migrated ? `, as game version ${version} migrates it,` : ""} all but its play time, timestamp and the ` +
-            "abilities applied on entry",
+            "abilities applied on entry, with what a fresh wave leaves unset or ended read as a load reads it",
         },
         known
           ? {
@@ -218,6 +218,11 @@ function tally(items: readonly SavedItem[]): Record<string, number> {
 // (#636)
 const UNCOMPARED_AT_TOP = new Set(["playTime", "timestamp"]);
 const UNCOMPARED = new Set(["abilitiesApplied"]);
+// How a load reads a fresh wave's scene (game-code.md §29).
+// @mirrors load-defaults
+const LOAD_DEFAULTS = { passive: false, fusionSpecies: null, fusionVariant: 0 };
+// @mirrors ended-arena-fields
+const ENDED = new Set(["weather", "terrain"]);
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 const json = (v: unknown) => JSON.stringify(v) ?? "nothing";
@@ -225,8 +230,19 @@ const keysOf = (a: object, b: object) => [...new Set([...Object.keys(a), ...Obje
 
 const SIDES = { party: "our", enemyParty: "the foe's" } as const;
 
+const asLoaded = (mon: unknown) => (isRecord(mon) ? { ...LOAD_DEFAULTS, ...mon } : mon);
+const asLoadedArena = (arena: unknown) =>
+  isRecord(arena) ? Object.fromEntries(Object.entries(arena).filter(([key, v]) => v !== null || !ENDED.has(key))) : arena;
+
 function sceneDiffers(loaded: Record<string, unknown>, live: SessionSave): string[] {
-  return paths(loaded, live).map(
+  const { arena } = live as { arena?: unknown };
+  const read = {
+    ...live,
+    arena: asLoadedArena(arena),
+    party: live.party.map(asLoaded),
+    enemyParty: live.enemyParty.map(asLoaded),
+  };
+  return paths(loaded, read).map(
     ([path, there, here]) => `${describePath(path, live)}: loaded ${json(there)}, live ${json(here)}`,
   );
 }
