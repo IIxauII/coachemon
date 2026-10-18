@@ -62,6 +62,8 @@ export const SERVER: Area = {
     { ours: "src/driver.ts#title-classic", of: ["src/phases/title-phase.ts#TitlePhase.showOptions"] },
     { ours: "src/driver.ts#title-new-game", of: ["src/phases/title-phase.ts#TitlePhase.showOptions"] },
     { ours: "src/game/save.ts#salted", of: ["src/utils/data.ts#encrypt"] },
+    { ours: "src/game/save.ts#save-key", of: ["src/constants.ts#saveKey"] },
+    { ours: "src/screen.ts#settings-mode-range", of: ["src/enums/ui-mode.ts#UiMode"] },
     {
       ours: "src/solver/replay.ts#ended-arena-fields",
       of: [
@@ -71,7 +73,5 @@ export const SERVER: Area = {
       ],
     },
     { ours: "src/solver/replay.ts#load-defaults", of: ["src/field/pokemon.ts#Pokemon.constructor"] },
-    { ours: "src/game/save.ts#save-key", of: ["src/constants.ts#saveKey"] },
-    { ours: "src/screen.ts#settings-mode-range", of: ["src/enums/ui-mode.ts#UiMode"] },
   ],
 };

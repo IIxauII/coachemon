@@ -16,9 +16,8 @@ it. The solve is a plugin **job**, run through the MCP tools named below, whatev
    `n=0; until [ -e <end_file> ]; do sleep 10; n=$((n+1)); [ $((n % 30)) -ne 0 ] || echo "still solving"; done; cat <end_file>`,
    with `timeout_ms` 1800000, armed again while `poll_job` still reads `running` when it expires. A `poll_job` that
    refuses `unknown_job` means the server restarted and the solve went with it, so the end file never comes: say so
-   in one line, and the card carries the fight. A `still solving`
-   line every five minutes is the cue for step 3's progress; the end file's line is the cue for step 4. Done when the
-   Monitor is armed.
+   in one line, and the card carries the fight. A `still solving` line every five minutes is the cue for step 3's
+   progress; the end file's line is the cue for step 4. Done when the Monitor is armed.
 3. **Tell the player once**, in two lines: the fight is being solved, for minutes on a fast machine and up to about
    forty on a laptop; and the oracle line plays from turn 1, so it takes the card over only while the fight still
    stands at its first turn. They choose: wait at this command for it, or play on with the card, which coaches with its
