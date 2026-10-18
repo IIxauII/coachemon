@@ -402,6 +402,29 @@ test("an illegal replacement on a turn the game plays for us names that input an
   );
 });
 
+const zapCannon = { slot: 0, species: "PROBOPASS", move: "ZAP_CANNON", forget: "THUNDER_WAVE" } as const;
+
+test("a replay comes back with the learn picks each turn took, on a turn the game plays for us too (#673)", async () => {
+  const learning: Input = { ...bounce, learns: [zapCannon] };
+  const declining: Input = { kind: "queued", learns: [{ ...zapCannon, forget: null }] };
+  const { result } = await ask(
+    { ...clean(), steps: [{ ...clean().steps[0], input: learning }, { ...clean().steps[1], input: declining }] },
+    { inputs: [learning, declining] },
+  );
+
+  assert.deepEqual(result.kind === "replayed" && result.replay.steps.map(st => st.input), [learning, declining]);
+});
+
+test("a learn pick the prompt can't take stops the replay with no answer naming the pick and the turn (#673)", async () => {
+  const learning: Input = { ...bounce, learns: [zapCannon] };
+  const why = "names a learn pick the prompt can't take (PROBOPASS in slot 0 learning ZAP_CANNON, knowing IRON_DEFENSE)";
+  const illegal = { index: 0, turn: 1, why, legal: [] };
+  const { result } = await ask({ ...clean(), steps: [], end: { illegal } }, { inputs: [learning] });
+
+  assert.deepEqual(reason(result).reason, { code: "illegal_step", ...illegal, tried: learning });
+  assert.match(reason(result).message, /^input 1, Bounce, Probopass \(slot 0\) forgets Thunder Wave for Zap Cannon, names a learn pick/);
+});
+
 test("no clone to run in gives no answer naming what is missing (#660)", async () => {
   const missing = "No pinned clone at .cache/pokerogue/v1.12.0.11. Set it up with `npm run drift:check`";
   const { clone } = fakeClone({ missing });

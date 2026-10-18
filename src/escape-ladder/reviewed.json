@@ -186,6 +186,7 @@
     "src/battle.ts#Battle.lastMove": "3283c7b39552f441",
     "src/battle.ts#Battle.mysteryEncounter": "5b8c626827866907",
     "src/battle.ts#Battle.playerFaintsHistory": "3c7bb24ee392d010",
+    "src/battle.ts#Battle.playerParticipantIds": "95f5930a5a2a0c76",
     "src/battle.ts#Battle.preTurnCommands": "982486b333d179aa",
     "src/battle.ts#Battle.randSeedGaussForLevel": "a3810467a2ef0670",
     "src/battle.ts#Battle.randSeedInt": "ddf175d82213a8ea",

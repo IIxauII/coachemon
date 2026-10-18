@@ -47,9 +47,12 @@ const OVERRIDES = [
 ] as const;
 
 type PartySlot = { slot: number; species: string };
+/** `forget` null declines the move. */
+type LearnPick = PartySlot & { move: string; forget: string | null };
+type Asked = { replacement?: PartySlot; learns?: LearnPick[] };
 type Input =
-  | (({ kind: "move"; move: string; tera: boolean } | { kind: "switch"; to: PartySlot }) & { replacement?: PartySlot })
-  | { kind: "queued"; replacement: PartySlot };
+  | (({ kind: "move"; move: string; tera: boolean } | { kind: "switch"; to: PartySlot }) & Asked)
+  | ({ kind: "queued" } & Asked);
 type Turn = "won" | "lost" | "on" | { illegal: string };
 
 /**
@@ -163,12 +166,94 @@ function command(input: Input | null) {
   });
 }
 
+/** A level-up's prompt to forget a move for a new one: the mon, the move, and the moves it knows (game-code.md §17). */
+type Learning = PartySlot & { move: string; knows: string[] };
+
+const declined = ({ knows: _knows, ...asked }: Learning): LearnPick => ({ ...asked, forget: null });
+
+const fits = (pick: LearnPick, asked: Learning) =>
+  pick.slot === asked.slot &&
+  pick.species === asked.species &&
+  pick.move === asked.move &&
+  (pick.forget === null || asked.knows.includes(pick.forget));
+
 /**
- * One turn, to the next decision or to the battle's end. `choose` picks the faint replacement the turn asks for from
- * those the party can send in; by default, the one the input names.
+ * Answers each learn prompt as it comes, as upstream's own learn-move test does: yes to forgetting a move, then the move
+ * on the summary screen, where the new move's own slot declines (game-code.md §17). A pick missing or not fitting
+ * declines, so the turn can end, and is the turn's illegal step.
  */
-async function turn(input: Input | null, choose = (_offered: PartySlot[]) => input?.replacement): Promise<Turn> {
+function learning(pick: (asked: Learning, i: number) => LearnPick | undefined) {
+  const picked: LearnPick[] = [];
+  let illegal: string | undefined;
+  let answering: { phase: unknown; cursor: number; stage: "summary" | "stop" | "done" } | undefined;
+  const watch = setInterval(() => {
+    const phase: any = scene().phaseManager.getCurrentPhase();
+    const ui = scene().ui;
+    if (!phase?.is("LearnMovePhase") || !ui.getHandler()?.active) return;
+    if (ui.mode === UiMode.CONFIRM && answering?.phase !== phase) {
+      const p = scene().getPlayerParty()[phase.partyMemberIndex];
+      const asked: Learning = {
+        slot: phase.partyMemberIndex,
+        species: species(p),
+        move: MoveId[phase.moveId],
+        knows: p.getMoveset().map((m: any) => MoveId[m.moveId]),
+      };
+      let chosen = pick(asked, picked.length);
+      if (chosen === undefined || !fits(chosen, asked)) {
+        const why = chosen === undefined ? "leaves a move to learn, and names no pick" : "names a learn pick the prompt can't take";
+        const knows = asked.knows.join(", ");
+        illegal ??= `${why} (${asked.species} in slot ${asked.slot} learning ${asked.move}, knowing ${knows})`;
+        chosen = declined(asked);
+      }
+      picked.push(chosen);
+      answering = { phase, cursor: chosen.forget === null ? 4 : asked.knows.indexOf(chosen.forget), stage: "summary" };
+      ui.processInput(Button.ACTION);
+    } else if (answering?.phase === phase && answering.stage === "summary" && ui.mode === UiMode.SUMMARY) {
+      answering.stage = answering.cursor === 4 ? "stop" : "done";
+      ui.setCursor(answering.cursor);
+      ui.processInput(Button.ACTION);
+    } else if (answering?.phase === phase && answering.stage === "stop" && ui.mode === UiMode.CONFIRM) {
+      // Asked only under the level-move confirmation setting (game-code.md §17).
+      answering.stage = "done";
+      ui.processInput(Button.ACTION);
+    }
+  }, 1);
+  return { picked, illegal: () => illegal, stop: () => clearInterval(watch) };
+}
+
+type Asks = {
+  /** From those the party can send in. */
+  choose?: (offered: PartySlot[]) => PartySlot | undefined;
+  pick?: (asked: Learning, i: number) => LearnPick | undefined;
+  /** The input the turn is held to: a turn the game plays for us takes one only once it asks for something (#702). */
+  holds?: () => Input | null;
+};
+
+/**
+ * One turn, to the next decision or to the battle's end. By default what the turn asks for is what the input names: its
+ * faint replacement, and its learn picks in the order asked.
+ */
+async function turn(input: Input | null, asks: Asks = {}): Promise<Turn> {
+  const {
+    choose = () => input?.replacement,
+    pick = (_: Learning, i: number) => input?.learns?.[i],
+    holds = () => input,
+  } = asks;
   command(input);
+  const learns = learning(pick);
+  let ended: Turn;
+  try {
+    ended = await toNextDecision(choose, holds);
+  } finally {
+    learns.stop();
+  }
+  const illegal = learns.illegal();
+  if (illegal !== undefined) return { illegal };
+  if ((holds()?.learns?.length ?? 0) > learns.picked.length) return { illegal: "names a learn pick no level-up asked for" };
+  return ended;
+}
+
+async function toNextDecision(choose: NonNullable<Asks["choose"]>, holds: NonNullable<Asks["holds"]>): Promise<Turn> {
   const interceptor: any = game.phaseInterceptor;
   // A wipe never reaches TurnEndPhase; the interceptor reads its target afresh on every pass (#632).
   const watch = setInterval(() => {
@@ -190,7 +275,7 @@ async function turn(input: Input | null, choose = (_offered: PartySlot[]) => inp
   await game.phaseInterceptor.to("TurnEndPhase");
   const party: any[] = scene().getPlayerParty();
   const fainted = scene().getPlayerField()[0]?.isFainted() ?? false;
-  if (!fainted && input?.replacement !== undefined) {
+  if (!fainted && holds()?.replacement !== undefined) {
     return { illegal: "names a faint replacement, but nothing of ours fainted" };
   }
   if (fainted) {
@@ -213,15 +298,23 @@ async function turn(input: Input | null, choose = (_offered: PartySlot[]) => inp
 }
 
 /**
- * A turn the game plays for us takes the next input only when that is a `queued` one and our lead faints: a rampage
- * can play more than one such turn, and the faint can fall on any of them (#702).
+ * A turn the game plays for us takes the next input only when that is a `queued` one and the turn asks for something,
+ * our lead's faint replacement or a learn pick: a rampage can play more than one such turn, and the ask can fall on any
+ * of them (#702, #673).
  */
 async function queuedTurn(inputs: Input[], next: number): Promise<{ input: Input | null; ended: Turn }> {
   const queued = inputs[next]?.kind === "queued" ? inputs[next] : null;
   let taken = false;
-  const ended = await turn(null, () => {
-    taken = queued !== null;
-    return queued?.replacement;
+  const ended = await turn(null, {
+    choose: () => {
+      taken = queued !== null;
+      return queued?.replacement;
+    },
+    pick: (_, i) => {
+      taken = queued !== null;
+      return queued?.learns?.[i];
+    },
+    holds: () => (taken ? queued : null),
   });
   return { input: taken ? queued : null, ended };
 }
@@ -511,6 +604,9 @@ function forkPoint(): string {
     lastMove: battle.lastMove,
     enemyFaints: battle.enemyFaints,
     faints: { ours: faints(battle.playerFaintsHistory), foes: faints(battle.enemyFaintsHistory) },
+    // A reload empties it, and the next KO's EXP skipped every mon switched out before the fork point (#673,
+    // game-code.md §30).
+    participants: [...battle.playerParticipantIds],
     teamIndex: Object.fromEntries(s.getEnemyParty().map((p: any) => [p.id, p.initialTeamIndex])),
     bossIndex: Object.fromEntries(s.getEnemyParty().map((p: any) => [p.id, p.bossSegmentIndex])),
     temp: Object.fromEntries(all.map(p => [p.id, { turnCount: p.summonData.turnCount, waveTurnCount: p.summonData.waveTurnCount }])),
@@ -559,6 +655,9 @@ function putBack(fork: any) {
     history.map(({ id, turn }) => ({ pokemon: all.find(p => p.id === id), turn }));
   battle.playerFaintsHistory = mons(fork.faints.ours);
   battle.enemyFaintsHistory = mons(fork.faints.foes);
+  // An augmented export's fork point has none (`src/solver/extras.ts`), so a mid-fight solve keeps the reload's: the
+  // mon on the field alone.
+  if (fork.participants) battle.playerParticipantIds = new Set(fork.participants);
   Phaser.Math.RND.state(fork.rng);
   // A load gives the trainer's Tera slot its specialty type again, by party slot: after a switch, another mon's
   // (game-code.md §30).
@@ -603,6 +702,7 @@ function sig(): string {
       p.species.speciesId,
       p.level,
       p.exp,
+      s.currentBattle.playerParticipantIds.has(p.id) ? 1 : 0,
       p.hp,
       p.isOnField() ? 1 : 0,
       p.status?.effect ?? 0,
@@ -613,7 +713,7 @@ function sig(): string {
       p.isOnField() ? p.summonData.tags.map((t: any) => `${t.tagType}/${t.turnCount}`).join(".") : "",
       // A pending recharge, rampage turn or charge turn (#655).
       p.isOnField() ? p.getMoveQueue().map((q: any) => q.move).join(".") : "",
-      p.getMoveset().map((m: any) => m.ppUsed).join("."),
+      p.getMoveset().map((m: any) => `${m.moveId}/${m.ppUsed}`).join("."),
       p.getHeldItems().map((item: any) => `${item.type.id}${item.stackCount}`).join("."),
     ].join(":");
   return [
@@ -636,26 +736,53 @@ const position = () => ({
   forkPoint: forkPoint(),
 });
 
+/** As its turn played it: the command, then what the turn asked for, a `queued` input on a turn with no command. */
+function naming(input: Input | null, learns: LearnPick[], replacement?: PartySlot): Input | null {
+  const asked: Asked = { ...(learns.length > 0 && { learns }), ...(replacement !== undefined && { replacement }) };
+  if (input !== null && input.kind !== "queued") {
+    const { learns: _learns, replacement: _replacement, ...played } = input;
+    return { ...played, ...asked };
+  }
+  return asked.learns || asked.replacement ? { kind: "queued", ...asked } : null;
+}
+
 async function expand(at: string, inputs: (Input | null)[]) {
   const children: unknown[] = [];
   const queue = [...inputs];
   while (queue.length > 0) {
     const input = queue.shift() as Input | null;
     await restore(at);
+    const named = input?.learns ?? [];
+    const asked: Learning[] = [];
     let offered: PartySlot[] = [];
     let ended: Turn;
     try {
-      ended = await turn(input, all => {
-        offered = all;
-        return input?.replacement ?? all[0];
+      ended = await turn(input, {
+        choose: all => {
+          offered = all;
+          return input?.replacement ?? all[0];
+        },
+        pick: (prompt, i) => {
+          asked.push(prompt);
+          return named[i] ?? declined(prompt);
+        },
       });
     } catch (err) {
       dirty = true;
       ended = { illegal: `threw ${err instanceof Error ? err.message : String(err)}`.split("\n")[0] };
     }
-    const naming = (replacement: PartySlot): Input => (input === null ? { kind: "queued", replacement } : { ...input, replacement });
-    const played = offered.length > 0 ? naming(input?.replacement ?? offered[0]) : input;
-    if (input?.replacement === undefined) queue.push(...offered.slice(1).map(naming));
+    const learns = asked.map((prompt, i) => named[i] ?? declined(prompt));
+    const played = naming(input, learns, offered.length > 0 ? (input?.replacement ?? offered[0]) : undefined);
+    // Each pick the input left open is a sibling of its own, the picks before it as played and what follows it open. A
+    // won or lost turn's picks change nothing after it.
+    if (ended !== "won" && ended !== "lost") {
+      for (let i = named.length; i < asked.length; i++) {
+        for (const forget of asked[i].knows) {
+          queue.push(naming(input, [...learns.slice(0, i), { ...declined(asked[i]), forget }]));
+        }
+      }
+    }
+    if (input?.replacement === undefined) queue.push(...offered.slice(1).map(other => naming(input, learns, other)));
     const stray = strayPrompts();
     if (ended === "lost") dirty = true;
     if (typeof ended === "object") children.push({ input: played, end: "dropped", why: ended.illegal });

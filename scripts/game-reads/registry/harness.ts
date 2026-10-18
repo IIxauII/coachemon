@@ -156,6 +156,7 @@ export const HARNESS: Area = {
     },
     { name: "phaseInterceptor", kind: "field", at: ["test/framework/game-manager.ts#GameManager.phaseInterceptor"] },
     { name: "playerFaintsHistory", kind: "field", at: ["src/battle.ts#Battle.playerFaintsHistory"] },
+    { name: "playerParticipantIds", kind: "field", at: ["src/battle.ts#Battle.playerParticipantIds"] },
     {
       name: "playerTerasUsed",
       kind: "field",

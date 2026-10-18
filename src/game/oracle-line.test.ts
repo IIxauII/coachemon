@@ -28,3 +28,24 @@ test("a turn the game plays for us reaches the page with its faint replacement a
   const line = { ...GORDIE_LINE, steps: [{ ...GORDIE_LINE.steps[0], input: { kind: "queued", replacement: { slot: 5, species: "GOLBAT" } } as const }] };
   assert.deepEqual(pageOracleLine(line).steps[0].input, { kind: "queued", replacement: { slot: 5, species: SpeciesId.GOLBAT } });
 });
+
+test("a step's learn picks reach the page as the game's own ids, a declined one's forget as null (#673)", () => {
+  const learns = [
+    { slot: 5, species: "GOLBAT", move: "CROSS_POISON", forget: "BITE" },
+    { slot: 5, species: "GOLBAT", move: "AIR_SLASH", forget: null },
+  ] as const;
+  const steps = [
+    { ...GORDIE_LINE.steps[0], input: { kind: "move", move: "BUG_BITE", tera: false, learns } as const },
+    { ...GORDIE_LINE.steps[1], input: { kind: "queued", learns: [learns[1]] } as const },
+  ];
+  const [moved, queued] = pageOracleLine({ ...GORDIE_LINE, steps }).steps;
+  const airSlash = { slot: 5, species: SpeciesId.GOLBAT, move: MoveId.AIR_SLASH, forget: null };
+
+  assert.deepEqual(moved.input, {
+    kind: "move",
+    move: MoveId.BUG_BITE,
+    tera: false,
+    learns: [{ slot: 5, species: SpeciesId.GOLBAT, move: MoveId.CROSS_POISON, forget: MoveId.BITE }, airSlash],
+  });
+  assert.deepEqual(queued.input, { kind: "queued", learns: [airSlash] });
+});

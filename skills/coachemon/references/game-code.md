@@ -2054,6 +2054,18 @@ member whose relearn list holds the biggest learn-card upgrade.
 the prompt's closures until `forgetMoveProcess` opens the summary screen in `LEARN_MOVE` mode with it (`:116-120`).
 `new PokemonMove(id).getMove()` is `allMoves[id]` (`src/data/moves/pokemon-move.ts:85-87`).
 
+**Answering it.** `start` ends at once on a move the mon already knows or one unimplemented
+(`src/phases/learn-move-phase.ts:48-57`), and learns into the next slot unasked while the mon knows fewer than four
+(`:62-63`). With four, it asks in `UiMode.CONFIRM` whether to forget one (`:78-100`). Yes opens the summary screen in
+`SummaryUiMode.LEARN_MOVE`, whose cursor picks the move to forget, 0 to 3 in moveset order, the new move taking that
+slot (`:113-136`, `:211`); cursor 4 is the new move itself, and declines (`:122-125`). No declines too (`:94-97`). A
+decline asks once more, in a second `CONFIRM`, whether to stop teaching the move, but only under the
+`levelMoveConfirmation` setting (`:148-176`), on by default (`src/system/settings/default-settings.ts:40`): yes ends
+the phase with the move unlearned, no asks the first question again. A level-up unshifts one `LearnMovePhase` per new
+move (`src/phases/level-up-phase.ts:96-98`), and a benched member's EXP levels it the same way (§21, faints and the end
+of a wave), so one KO can ask more than once, mid-turn. Upstream's own test answers each screen as it comes
+(`test/tests/phases/learn-move-phase.test.ts`).
+
 **Forgetting a move on the reward screen.** From 1.12.1.0 (pokerogue #7697), picking a move on the summary screen's
 moves page opens a list instead of starting a swap (`src/ui/handlers/summary-ui-handler.ts:548-636`): Swap always, and
 Delete while the current phase is `SelectModifierPhase` (`:566`, checked again on confirm at `:572`). The reward screen
@@ -3037,6 +3049,14 @@ Read at the pinned tag (`v1.12.1.2`), for the `extras` read (`src/page/extras.ts
 - Every arena tag that is not a `SerializableArenaTag`, Safeguard among them (§28). The live tags are `Arena.tags`
   (`src/field/arena.ts:67`), each with a `tagType`, an `ArenaTagType` string, and a `side`, an `ArenaTagSide`
   (`src/data/arena-tag.ts:119`, `:125`).
+- `Battle.playerParticipantIds` (`src/battle.ts:73`), the ids of ours that have fought this battle, over which
+  `applyPartyExp` splits a KO's EXP (`src/battle-scene.ts:3304-3308`, §17). `TurnInitPhase` adds each of ours on the
+  field at every turn (`src/phases/turn-init-phase.ts:60-63`), `FaintPhase` adds our field before any faint resolves
+  (`src/phases/faint-phase.ts:83-87`), and our own faint drops that mon (`:220`, `src/battle.ts:184-186`). A reload's
+  new `Battle` starts it empty (`:73`), and the first turn after it adds only the mon on the field. One switched out
+  before the reload loses its participant's share of the next KO (`src/battle-scene.ts:3354-3355`) and the
+  participation friendship and Macho Brace stack (`:3336-3345`), keeping only what EXP. All gives the bench
+  (`:3359-3360`). The ids name the same mons across a reload (**Identity**, below).
 
 **What the save carries and a reload resets.**
 

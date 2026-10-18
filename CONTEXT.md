@@ -265,6 +265,17 @@ game now stands.
 Always said in full. A bare *line* is ambiguous next to a **turn line**, which is one decision's call, and the **fight
 plan**, which is the card's own read of the whole battle.
 
+## Learn pick
+
+The answer to a level-up that would give one of our **party** a fifth move: which of its four moves it forgets, or
+that it declines the new one. The game asks in the middle of a turn, once the KO that brought the level has landed, so
+an **oracle line** names the pick inside the step whose turn asked, as it names a faint replacement. One turn can ask
+more than once, two members levelling or one levelling past two new moves, and its picks follow the order asked. A
+member with a move slot free learns without being asked, and needs no pick.
+
+Each pick is a choice the **oracle** solves over, as it does a command. A line that leaves a prompt unanswered, or
+answers one the game never asks, does not replay.
+
 ## Augmented export
 
 What the **oracle** solves from when the fight is already under way: the session export taken at a **decision**, and
