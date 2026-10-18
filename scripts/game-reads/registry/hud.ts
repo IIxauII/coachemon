@@ -1281,6 +1281,7 @@ export const HUD: Area = {
     { name: "right", kind: "field", at: ["src/ui/containers/move-info-overlay.ts#MoveInfoOverlaySettings.right"] },
     { name: "rngOffset", kind: "field", at: ["src/battle-scene.ts#BattleScene.rngOffset"] },
     { name: "rngSeedOverride", kind: "field", at: ["src/battle-scene.ts#BattleScene.rngSeedOverride"] },
+    { name: "row", kind: "field", at: [], from: "ours", note: "51-lead's opener: a 48-preview foe row" },
     { name: "rows", kind: "field", at: ["src/ui/containers/filter-text.ts#FilterText.rows"] },
     { name: "run", kind: "method", at: ["test/framework/phase-interceptor.ts#PhaseInterceptor.run"] },
     {
