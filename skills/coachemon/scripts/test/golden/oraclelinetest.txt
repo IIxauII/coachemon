@@ -257,4 +257,117 @@ W188 from T18                           held
 W188 rewards: done done | off null
 W180 from T19                           held
 W180 biome screen: off {"turn":19,"misses":[{"icon":null,"name":"Gyarados","expected":"423/570","came":"388/570"}],"of":19,"mark":"!"}
+a skip on T3                            held
+a forget on T3                          held
+a switch's                              held
+a queued step's, with no replacement    held
+out of shape                            malformed
+out of shape                            malformed
+out of shape                            malformed
+out of shape                            malformed
+out of shape                            malformed
+out of shape                            malformed
+a queued step with an empty list        malformed
+Roland's W5, Leech Seed skipped         held
+== W5 T3, Leech Seed skipped
+strip | trainer ⚔ ~ T3/6 · Charmander Scratch · then Bulbasaur skips Leech Seed
+    ⚔ T3 Charmander Normal Scratch → ~ Charmander 30/39 · Patrat 30/30
+    ⤵ then Bulbasaur skips Leech Seed at the move prompt
+== W5 T3, its plan
+Plan | ~ oracle line wins in 6 turns · 2 of 2 left
+    ✓ T1 Normal Scratch → ~ Charmander 36/39 · Lillipup 20/30
+    ✓ T2 Charmander Normal Scratch → ~ Charmander 33/39 · Lillipup 10/30
+    ▸ T3 Charmander Normal Scratch · Bulbasaur skips Leech Seed → ~ Charmander 30/39 · Patrat 30/30
+    · T4 Charmander Normal Scratch
+    · T5 Charmander Normal Scratch
+    · T6 Charmander Normal Scratch
+Roland's W5, Leech Seed over Sunny Day  held
+== W5 T3, Leech Seed over Sunny Day
+strip | trainer ⚔ ~ T3/6 · Charmander Scratch · then Bulbasaur learns Leech Seed over Sunny Day
+    ⚔ T3 Charmander Normal Scratch → ~ Charmander 30/39 · Patrat 30/30
+    ⤵ then Bulbasaur learns Leech Seed over Sunny Day at the move prompt
+Roland's W5, a queued T3                held
+== W5 T3, queued
+strip | trainer ~ T3/6 · no input · then Bulbasaur skips Leech Seed · expect Charmander 30/39 · Patrat 30/30
+    · T3 no input → ~ Charmander 30/39 · Patrat 30/30
+    ⤵ then Bulbasaur skips Leech Seed at the move prompt
+Roland's W5, Leech Seed skipped         held
+== W5 T3's Leech Seed prompt, skipped
+strip | 🎓 Bulbasaur learns Bulbasaur Atk 9 / SpA 11 ⚔ ~ T3/6 · Bulbasaur skips Leech Seed
+  act     ⚔ Bulbasaur skips Leech Seed → ~ Charmander 30/39 · Patrat 30/30
+  act     · Grass Leech Seed status
+  options · Normal Tackle power 40
+  options · Normal Growl status
+  options · Grass Vine Whip power 45
+  options · Fire Sunny Day status
+== W5 T3's prompt, the turn already 4
+strip | 🎓 Bulbasaur learns Bulbasaur Atk 9 / SpA 11 ⚔ ~ T3/6 · Bulbasaur skips Leech Seed
+  act     ⚔ Bulbasaur skips Leech Seed → ~ Charmander 30/39 · Patrat 30/30
+  act     · Grass Leech Seed status
+  options · Normal Tackle power 40
+  options · Normal Growl status
+  options · Grass Vine Whip power 45
+  options · Fire Sunny Day status
+== W5 T3, a prompt the oracle line has no answer for
+strip | 🎓 Bulbasaur learns Bulbasaur Atk 9 / SpA 11 Learn → forget Sunny Day
+  act     ✓ Grass Leech Seed status +5 power
+  options · Normal Tackle power 40
+  options · Normal Growl status
+  options · Grass Vine Whip power 45
+  options ✗ Fire Sunny Day status
+  audit   team: +SE Water
+Roland's W5, Leech Seed over Sunny Day  held
+== W5 T3's Leech Seed prompt, over Sunny Day
+strip | 🎓 Bulbasaur learns Bulbasaur Atk 9 / SpA 11 ⚔ ~ T3/6 · Bulbasaur learns Leech Seed over Sunny Day
+  act     ⚔ Bulbasaur learns Leech Seed over Sunny Day → ~ Charmander 30/39 · Patrat 30/30
+  act     · Grass Leech Seed status
+  options · Normal Tackle power 40
+  options · Normal Growl status
+  options · Grass Vine Whip power 45
+  options ✗ Fire Sunny Day status
+a W5 run, skipped as said               held
+scored T3/6 match
+a W5 run, forgotten as said             held
+scored T3/6 match
+== W5 T4, Leech Seed learned as said
+strip | trainer ⚔ ~ T4/6 · Charmander Scratch
+    ⚔ T4 Charmander Normal Scratch → ~ Charmander 27/39 · Patrat 20/30
+a W5 run, learned, not skipped          held
+scored T3/6 miss Bulbasaur skip Leech Seed · learned Leech Seed
+== W5 T4, Leech Seed learned where the oracle line skipped it
+strip | trainer off the line · ~ re-solving… · Golbat Venoshock → Tyranitar · 3 hits
+    ✗ T3 Bulbasaur expected skip Leech Seed · came learned Leech Seed
+    ⚔ Golbat Poison Venoshock → Tyranitar 3 hits
+a W5 run, skipped, not learned          held
+scored T3/6 miss Bulbasaur Leech Seed over Sunny Day · skipped Leech Seed
+a W5 run, Growl forgotten instead       held
+scored T3/6 miss Bulbasaur Leech Seed over Sunny Day · kept Sunny Day
+a W5 run, never asked                   held
+scored T3/6 miss ! Bulbasaur Leech Seed over Sunny Day · no prompt
+== W5 T4, never asked
+strip | trainer off the line · ! re-solving… · Golbat Venoshock → Tyranitar · 3 hits
+    ✗ T3 Bulbasaur expected Leech Seed over Sunny Day · came no prompt
+    ⚔ Golbat Poison Venoshock → Tyranitar 3 hits
+Roland's W5, Leech Seed skipped on T6   held
+== W5 T6, the winning turn
+strip | trainer ⚔ ~ T6/6 · Charmander Scratch
+    ⚔ T6 Charmander Normal Scratch → ~ Charmander 24/39
+== W5 T6, its plan
+Plan | ~ oracle line wins in 6 turns · 2 of 2 left
+    ✓ T1 Normal Scratch → ~ Charmander 36/39 · Lillipup 20/30
+    ✓ T2 Charmander Normal Scratch → ~ Charmander 33/39 · Lillipup 10/30
+    ✓ T3 Charmander Normal Scratch → ~ Charmander 30/39 · Patrat 30/30
+    ✓ T4 Charmander Normal Scratch → ~ Charmander 27/39 · Patrat 20/30
+    ✓ T5 Charmander Normal Scratch → ~ Charmander 24/39 · Patrat 10/30
+    ▸ T6 Charmander Normal Scratch → ~ Charmander 24/39
+== W5 T6's Leech Seed prompt
+strip | 🎓 Bulbasaur learns Bulbasaur Atk 9 / SpA 11 Learn → forget Sunny Day
+  act     ✓ Grass Leech Seed status +5 power
+  options · Normal Tackle power 40
+  options · Normal Growl status
+  options · Grass Vine Whip power 45
+  options ✗ Fire Sunny Day status
+  audit   team: +SE Water
+a W5 run, learned on the winning turn   held
+scored T6/6 match
 writes to the game: none

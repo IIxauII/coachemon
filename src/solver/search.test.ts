@@ -285,6 +285,43 @@ test("each faint replacement a turn the game plays for us could take is a path o
   assert.deepEqual(asked, [[move("BOUNCE"), toSnorlax]]);
 });
 
+test("each learn pick a turn could take is a path of its own, replayed with the pick it took (#673)", async () => {
+  // As the harness answers a turn whose level-up asks: a child per pick, and the picks are told apart by the moves kept.
+  const learns = (forget: "TACKLE" | null) => [{ slot: 1, species: "BULBASAUR", move: "LEECH_SEED", forget } as const];
+  const scratch = (forget: "TACKLE" | null): Input => ({ ...move("SCRATCH"), learns: learns(forget) });
+  const queued = (forget: "TACKLE" | null): Input => ({ kind: "queued", learns: learns(forget) });
+  const at = (sig: string, foes: number, legal: readonly Action[]): Position => ({
+    sig,
+    hp: { foes: [foes], ours: [1, 1] },
+    legal,
+    forkPoint: sig,
+  });
+  const pool: Pool = {
+    size: 1,
+    async expand(forkPoint) {
+      if (forkPoint === "root") {
+        return [
+          { input: scratch(null), end: "on", at: at("declined", 0.5, [move("TACKLE")]) },
+          { input: scratch("TACKLE"), end: "on", at: at("forgot", 0.5, [null]) },
+        ];
+      }
+      if (forkPoint === "declined") return [{ input: move("TACKLE"), end: "lost", hp: { foes: [0.5], ours: [0, 0] } }];
+      return [
+        { input: queued(null), end: "on", at: at("rampaging", 0.2, [null]) },
+        { input: queued("TACKLE"), end: "won", hp: { foes: [0], ours: [1, 1] } },
+      ];
+    },
+  };
+  const root: Position = at("root", 1, [move("SCRATCH")]);
+  const asked: (readonly Input[])[] = [];
+  const validate = async (inputs: readonly Input[]) => (asked.push(inputs), replayed("won"));
+
+  const result = await search({ root, pool, validate, budget: BUDGET });
+
+  assert.deepEqual(result.kind === "found" && result.inputs, [scratch("TACKLE"), queued("TACKLE")]);
+  assert.deepEqual(asked, [[scratch("TACKLE"), queued("TACKLE")]]);
+});
+
 test("a worker that fails ends the solve in no answer naming it (#662)", async () => {
   const root: Position = { sig: "root", hp: { foes: [1], ours: [1] }, legal: [move("TACKLE")], forkPoint: "root" };
   const pool: Pool = {

@@ -173,6 +173,47 @@ test("a scene that differs only in play time, timestamp or the abilities applied
   assert.equal(result.kind, "replayed");
 });
 
+const foesOf = (save: SessionSave) => save.enemyParty as Record<string, unknown>[];
+
+test("a foe the live game built fresh, with no passive or fusion fields, matches the same foe loaded from its save (#673)", async () => {
+  const liveExport = structuredClone(drayton.liveExport);
+  for (const foe of foesOf(liveExport)) {
+    delete foe.passive;
+    delete foe.fusionSpecies;
+    delete foe.fusionVariant;
+  }
+  const { result } = await ask(clean(), { liveExport });
+
+  assert.equal(result.kind, "replayed", `got ${JSON.stringify(result).slice(0, 300)}`);
+});
+
+test("a foe whose passive live has set is still held to it (#673)", async () => {
+  const liveExport = structuredClone(drayton.liveExport);
+  foesOf(liveExport)[0].passive = true;
+  const { result } = await ask(clean(), { liveExport });
+
+  assert.match(reason(result).message, /the foe's Dragonite \(slot 0\) passive: loaded false, live true/);
+});
+
+const arenaOf = (save: SessionSave) => (save as unknown as { arena: Record<string, unknown> }).arena;
+
+test("a live arena whose weather and terrain ended, left null, matches the load that leaves them unset (#673)", async () => {
+  const liveExport = structuredClone(drayton.liveExport);
+  arenaOf(liveExport).weather = null;
+  arenaOf(liveExport).terrain = null;
+  const { result } = await ask(clean(), { liveExport });
+
+  assert.equal(result.kind, "replayed", `got ${JSON.stringify(result).slice(0, 300)}`);
+});
+
+test("a terrain still up on the live arena is still held to the loaded one (#673)", async () => {
+  const liveExport = structuredClone(drayton.liveExport);
+  arenaOf(liveExport).terrain = { terrainType: 1, turnsLeft: 3, maxDuration: 5 };
+  const { result } = await ask(clean(), { liveExport });
+
+  assert.match(reason(result).message, /arena\.terrain: loaded nothing, live \{"terrainType":1/);
+});
+
 test("a play time or timestamp below the top of the export is compared like any other field (#661)", async () => {
   const report = clean();
   report.scene.arena.timestamp = 1;
@@ -359,6 +400,29 @@ test("an illegal replacement on a turn the game plays for us names that input an
     reason(result).message,
     /^input 2, played for us, replacement Golbat \(slot 4\), names a faint replacement, but nothing of ours fainted at turn 2\./,
   );
+});
+
+const zapCannon = { slot: 0, species: "PROBOPASS", move: "ZAP_CANNON", forget: "THUNDER_WAVE" } as const;
+
+test("a replay comes back with the learn picks each turn took, on a turn the game plays for us too (#673)", async () => {
+  const learning: Input = { ...bounce, learns: [zapCannon] };
+  const declining: Input = { kind: "queued", learns: [{ ...zapCannon, forget: null }] };
+  const { result } = await ask(
+    { ...clean(), steps: [{ ...clean().steps[0], input: learning }, { ...clean().steps[1], input: declining }] },
+    { inputs: [learning, declining] },
+  );
+
+  assert.deepEqual(result.kind === "replayed" && result.replay.steps.map(st => st.input), [learning, declining]);
+});
+
+test("a learn pick the prompt can't take stops the replay with no answer naming the pick and the turn (#673)", async () => {
+  const learning: Input = { ...bounce, learns: [zapCannon] };
+  const why = "names a learn pick the prompt can't take (PROBOPASS in slot 0 learning ZAP_CANNON, knowing IRON_DEFENSE)";
+  const illegal = { index: 0, turn: 1, why, legal: [] };
+  const { result } = await ask({ ...clean(), steps: [], end: { illegal } }, { inputs: [learning] });
+
+  assert.deepEqual(reason(result).reason, { code: "illegal_step", ...illegal, tried: learning });
+  assert.match(reason(result).message, /^input 1, Bounce, Probopass \(slot 0\) forgets Thunder Wave for Zap Cannon, names a learn pick/);
 });
 
 test("no clone to run in gives no answer naming what is missing (#660)", async () => {

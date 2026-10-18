@@ -64,5 +64,14 @@ export const SERVER: Area = {
     { ours: "src/game/save.ts#salted", of: ["src/utils/data.ts#encrypt"] },
     { ours: "src/game/save.ts#save-key", of: ["src/constants.ts#saveKey"] },
     { ours: "src/screen.ts#settings-mode-range", of: ["src/enums/ui-mode.ts#UiMode"] },
+    {
+      ours: "src/solver/replay.ts#ended-arena-fields",
+      of: [
+        "src/field/arena.ts#Arena.trySetWeather",
+        "src/field/arena.ts#Arena.trySetTerrain",
+        "src/system/game-data.ts#GameData.initSessionFromData",
+      ],
+    },
+    { ours: "src/solver/replay.ts#load-defaults", of: ["src/field/pokemon.ts#Pokemon.constructor"] },
   ],
 };

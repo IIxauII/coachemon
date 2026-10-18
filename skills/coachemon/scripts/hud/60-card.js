@@ -18,7 +18,7 @@ import { auditSummary } from "./50-audit.js";
 import { spliceScreen, fusionModel, fusionSummary } from "./49-fusion.js";
 import { rewardsModel, rewardsSummary } from "./52-shop.js";
 import { starterScreen, starterModel, startersSummary } from "./51-starters.js";
-import { offTheLineModel, offTheLineSummary, oracleLineModel, oracleLineState, oracleLineSummary, oracleStepSummary } from "./57-oracle-line.js";
+import { offTheLineModel, offTheLineSummary, oracleLearnCall, oracleLineModel, oracleLineState, oracleLineSummary, oracleStepSummary } from "./57-oracle-line.js";
 
 export const hitsText = n => `${n} hit${n === 1 ? "" : "s"}`;
 // A spread move KOing the two foes on different turns carries `koEach` instead of one `ko`: the slower one counts.
@@ -62,6 +62,12 @@ export const composeBattleCard = (turn, account) => {
 const battleCard = (s, account, estimate) => readTurn(s, turn => composeBattleCard(turn, account), { estimate });
 
 export const readOracleLine = (s, card) => {
+  // A learn card carries one only at a move prompt the oracle line answers (extension-distribution.md §11.1).
+  if (card?.kind === "learn") {
+    const m = oracleLineModel(s);
+    card.oracleLine = m?.learning ? m : null;
+    return;
+  }
   if (card?.kind !== "battle") return;
   card.oracleLine = oracleLineModel(s);
   card.offTheLine = offTheLineModel(s);
@@ -121,6 +127,7 @@ export const readCard = (s, account, { road = true, estimate = false } = {}) => 
   } else if (learn) {
     // The roster the rewards card judges a TM against, so the two cards weigh a move alike.
     card = readRun(s, run => learnModel({ ...learn, roster: learnRoster(aheadModel(run)) }));
+    readOracleLine(s, card);
   } else if (spliceScreen(s, handler)) {
     // Inside a run read, like the learn card above: the fusion judgment runs there and nowhere else (#589).
     card = readRun(s, run => fusionModel(run, handler));
@@ -153,6 +160,7 @@ const turnLineSummary = card => (card.unavailable ? `no advice — ${card.unavai
   : card.field ? card.field.slots.map(slotText).join(" ; ") : null);
 export const actSummary = card => oracleStepSummary(card.oracleLine)
   ?? ([offTheLineSummary(card.offTheLine), turnLineSummary(card)].filter(Boolean).join(" · ") || null);
+export const learnActSummary = card => oracleStepSummary(card.oracleLine) ?? learnSummary(card);
 
 // A mon the turn both attacks with and switches out carries its threat on two rows, so identical clauses collapse.
 export const foesSummary = card => {
@@ -207,7 +215,8 @@ const encounterCall = s => {
 const wave = card => `${card.wave ?? null}`;
 const KINDS = {
   battle: { event: "battle", key: wave, call: s => s.verdict },
-  learn: { event: "learn", key: card => `${wave(card)}|${card.name ?? ""}|${card.move?.name ?? ""}`, call: s => leading(s.learn) },
+  learn: { event: "learn", key: card => `${wave(card)}|${card.name ?? ""}|${card.move?.name ?? ""}`,
+    call: (s, card) => oracleLearnCall(card.oracleLine) ?? leading(s.learn) },
   // A reroll changes the offers, so the rewards screen is a new decision under the same wave.
   rewards: { event: "reward", key: card => `${wave(card)}|${(card.free ?? []).map(f => f.name).join(",")}`, call: s => leading(s.rewards) },
   biome: { event: "biome", key: wave, call: s => biomePick(s.biome) },
@@ -229,7 +238,7 @@ export const cardEvent = card => {
   const k = KINDS[card.kind];
   if (!k) return null;
   const s = cardSummary(card);
-  return { kind: k.event ?? card.kind, key: k.key(card), wave: card.wave ?? null, verdict: s ? k.call(s) : null,
+  return { kind: k.event ?? card.kind, key: k.key(card), wave: card.wave ?? null, verdict: s ? k.call(s, card) : null,
     oracleLine: oracleLineState(card.oracleLine, card.offTheLine), randomized: !!card.randomized };
 };
 // What the stream pushes and the relay's gate admits (extension-distribution.md §11.1).
@@ -247,7 +256,7 @@ export const cardSummary = card => {
   if (card.kind === "fusion") return { ...base, fusion: fusionSummary(card) };
   if (card.kind === "biome") return { ...base, biome: biomeSummary(card) };
   if (card.kind === "encounter") return { ...base, encounter: encounterSummary(card) };
-  if (card.kind === "learn") return { ...base, learn: learnSummary(card) };
+  if (card.kind === "learn") return { ...base, learn: learnActSummary(card) };
   if (card.kind === "rewards") return { ...base, rewards: rewardsSummary(card) };
   if (card.unavailable) return { ...base, verdict: "unavailable", field: actSummary(card), plan: planSummary(card) };
   // The foe the fight plan is keeping that mon for: the win condition's answers, or the foes only it beats (#170).

@@ -179,13 +179,13 @@ export function toolServer(driver: Driver): McpServer {
     "start_job",
     {
       description:
-        "Start a background job: work that outlasts one tool call. Returns at once with the job's id, and the job runs on after the call ends: poll_job reads its progress, read_job its answer, cancel_job stops it. A job lasts only as long as this server process. Refuses unknown_job_kind, naming the kinds this server runs, and solving_off for a solving job while the player has solving off.",
+        "Start a background job: work that outlasts one tool call. Returns at once with the job's id, and the job runs on after the call ends: poll_job reads its progress, read_job its answer, cancel_job stops it. Every job's fields carry end_file, a file that appears only once the job has ended (done, failed or cancelled), so its end can be waited on from outside this server, as a Monitor running `until [ -e <end_file> ]; do sleep 10; done; cat <end_file>` does. A job lasts only as long as this server process. Refuses unknown_job_kind, naming the kinds this server runs, and solving_off for a solving job while the player has solving off.",
       inputSchema: {
         kind: z
           .string()
           .describe(
             "Which job to run. clone sets up the game clone solving runs in: once per pinned game version, answering at once when it is already set up, else with the clone or a no answer naming the cause. " +
-              "solve solves the trainer fight on the tab from its wave-start save, setting the clone up first if it needs to: its progress is how far the search has gone of its budget, and its result an oracle line or a no answer with the reason. One runs per fight: a solve for a new fight cancels the last fight's job, and one for the fight already being solved hands back that job. " +
+              "solve solves the trainer fight on the tab from its wave-start save, setting the clone up first if it needs to: its progress is how far the search has gone of its budget, and its result an oracle line, which hand_oracle_line gives the coach panel, or a no answer with the reason. One runs per fight: a solve for a new fight cancels the last fight's job, and one for the fight already being solved hands back that job. " +
               "Where the fight can't be solved (a Daily, a game version other than the pinned one, no hub, …) it refuses no_answer at once with the reason, and no job starts; relay the message as given.",
           ),
         args: z.record(z.string(), z.unknown()).optional().describe("The job's own arguments"),
@@ -221,6 +221,16 @@ export function toolServer(driver: Driver): McpServer {
       inputSchema: { job: jobId },
     },
     async ({ job }) => run("cancel_job", { job }, () => driver.cancelJob(job)),
+  );
+
+  server.registerTool(
+    "hand_oracle_line",
+    {
+      description:
+        "Hand the coach panel the oracle line a solve job found, so the card leads with it: its step is the turn's call and it stands in for the fight plan until a checkpoint misses. Pass the solve's job id once the job is done with an oracle line. An oracle line holds only from where it was solved, so it is handed only while the fight on the tab still stands at the oracle line's first turn: past that, or on another wave, it refuses moved_on and hands nothing. Refuses no_oracle_line for a job still running, cancelled, failed, answered no answer (its reason and message come with the refusal) or not a solve. Returns held: true once the panel holds the oracle line, or held: false with oracle_line_error: no-hud, other-fight (another run's or wave's) or malformed. A settled read: it never presses anything and needs no grant.",
+      inputSchema: { job: jobId },
+    },
+    async ({ job }, extra) => run("hand_oracle_line", { job }, () => driver.handOracleLine(job, context(extra as Extra))),
   );
 
   return server;

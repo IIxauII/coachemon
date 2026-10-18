@@ -57,13 +57,29 @@ test("the plugin runs a solve as a job, which over CDP answers that it needs the
   assert.deepEqual(r.reason, { code: "needs_hub" });
 });
 
+function solvingSection(): string {
+  const skill = readFileSync(path.join(import.meta.dirname, "../skills/coachemon/SKILL.md"), "utf8");
+  const at = skill.indexOf("\n## Solving");
+  return skill.slice(at, skill.indexOf("\n## ", at + 1));
+}
+
 test("the solving tool and the coach skill both state what turning solving on costs (#666)", async t => {
   const { tools } = await (await plugin(t, tempHome(t))).listTools();
   const description = tools.find(tool => tool.name === "solving")?.description ?? "";
-  const skill = readFileSync(path.join(import.meta.dirname, "../skills/coachemon/SKILL.md"), "utf8");
-  const solvingSection = skill.slice(skill.indexOf("## Solving"), skill.indexOf("\n## ", skill.indexOf("## Solving") + 1));
+  const solving = solvingSection();
   for (const cost of ["0.6 GB of disk", "one-time setup", "minutes of CPU per fight"]) {
     assert.ok(description.includes(cost), `the tool's description names ${cost}`);
-    assert.ok(solvingSection.includes(cost), `the skill's Solving section names ${cost}`);
+    assert.ok(solving.includes(cost), `the skill's Solving section names ${cost}`);
   }
+});
+
+test("the coach skill solves a fight through tools the plugin offers, and through no tool that acts on the game (#673)", async t => {
+  const { tools } = await (await plugin(t, tempHome(t))).listTools();
+  const offered = new Set(tools.map(tool => tool.name));
+  const section = solvingSection() + readFileSync(path.join(import.meta.dirname, "../skills/coachemon/references/solving.md"), "utf8");
+  for (const tool of ["solving", "start_job", "poll_job", "read_job", "hand_oracle_line"]) {
+    assert.ok(section.includes(`\`${tool}\``), `the coach's solving text names ${tool}`);
+    assert.ok(offered.has(tool), `the plugin offers ${tool}`);
+  }
+  for (const acting of ["press", "select_option", "start_run"]) assert.ok(!section.includes(`\`${acting}\``), `the coach's solving text names ${acting}, which acts on the game`);
 });

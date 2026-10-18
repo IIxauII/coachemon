@@ -117,3 +117,18 @@ test("a replay prints its outcome, then each turn's input and checkpoint, then i
     ].join("\n"),
   );
 });
+
+test("a step prints each learn pick its turn took, after the input and before the faint replacement (#673)", () => {
+  const leechSeed = { slot: 1, species: "BULBASAUR", move: "LEECH_SEED" } as const;
+  const steps = [
+    { ...won.steps[0], input: { kind: "move", move: "SCRATCH", tera: false, learns: [{ ...leechSeed, forget: "GUNK_SHOT" }] } },
+    {
+      ...won.steps[1],
+      input: { kind: "queued", replacement: { slot: 2, species: "SQUIRTLE" }, learns: [{ ...leechSeed, forget: null }] },
+    },
+  ] as const;
+  const lines = printReplay({ ...won, steps }).split("\n");
+
+  assert.equal(lines[1], "T6  Scratch, Bulbasaur (slot 1) forgets Gunk Shot for Leech Seed");
+  assert.equal(lines[4], "T7  played for us, Bulbasaur (slot 1) declines Leech Seed, replacement Squirtle (slot 2)");
+});

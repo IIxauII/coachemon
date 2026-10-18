@@ -2,10 +2,10 @@ import type { OracleLine } from "../solver/solver.ts";
 import type { Located } from "./locate.ts";
 
 type Ids<T> = T extends readonly (infer E)[] ? readonly Ids<E>[]
-  : T extends object ? { [K in keyof T]: K extends "move" | "species" | "status" ? number : Ids<T[K]> }
+  : T extends object ? { [K in keyof T]: K extends "move" | "species" | "status" | "forget" ? number | Extract<T[K], null> : Ids<T[K]> }
   : T;
 
-/** `move`, `species` and `status` are the game's own ids: no enum name exists in the page (hud-bundle.mjs). */
+/** `move`, `species`, `status` and `forget` are the game's own ids: no enum name exists in the page (hud-bundle.mjs). */
 export type PageOracleLine = Ids<OracleLine>;
 
 export type OracleLineResult = { ok: true } | { ok: false; why: "no-hud" | "other-fight" | "malformed" };

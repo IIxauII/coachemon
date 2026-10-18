@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, utimesSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test, type TestContext } from "node:test";
@@ -1077,25 +1077,9 @@ test("an extras read the page refused is reported, never an empty set of extras 
   assert.equal(r.extras, undefined);
 });
 
-test("the handoff gives the overlay the oracle line and asks nothing else of the game: no read, no settle, no grant (#670)", async () => {
-  const handed: unknown[] = [];
-  const fake = fakeGame({ lockHolder: 4242, oracleLine: line => { handed.push(line); return { ok: true }; } });
-  const r = await outcome(new Driver(fake.game, UNWRITTEN_HOME, fake.clock).handOracleLine(GORDIE_LINE));
-  assert.deepEqual(r, { status: "ok", held: true });
-  assert.deepEqual(handed, [GORDIE_LINE]);
-});
-
-test("an oracle line the overlay did not take comes back unheld, with the overlay's reason (#670)", async () => {
-  for (const why of ["other-fight", "no-hud"]) {
-    const fake = fakeGame({ oracleLine: () => ({ ok: false, why }) });
-    const r = await outcome(new Driver(fake.game, UNWRITTEN_HOME, fake.clock).handOracleLine(GORDIE_LINE));
-    assert.deepEqual(r, { status: "ok", held: false, oracle_line_error: why });
-  }
-});
-
 test("a coach tool refuses by rung when nothing can reach the game (extension-distribution.md §12.3)", async () => {
   const unreachable = { rung: 2, code: "unreachable", line: "No browser is connected to the hub." } as const;
-  for (const call of [(d: Driver) => d.readCard({}), (d: Driver) => d.readStarters({}), (d: Driver) => d.readSession({}), (d: Driver) => d.readExtras({}), (d: Driver) => d.handOracleLine(GORDIE_LINE)]) {
+  for (const call of [(d: Driver) => d.readCard({}), (d: Driver) => d.readStarters({}), (d: Driver) => d.readSession({}), (d: Driver) => d.readExtras({}), (d: Driver) => d.handOracleLine("solve-1", {})]) {
     const r = await outcome(call(coachTab({ unreachable }).driver));
     assert.equal(r.error, "unreachable", JSON.stringify(r));
     assert.equal(r.rung, 2);
@@ -1130,14 +1114,14 @@ function steppedJob() {
   };
 }
 
-function jobDriver(kinds: JobKinds): Driver {
+function jobDriver(kinds: JobKinds, home: string): Driver {
   const fake = fakeGame({});
-  return new Driver(fake.game, UNWRITTEN_HOME, fake.clock, kinds);
+  return new Driver(fake.game, home, fake.clock, kinds);
 }
 
-test("start_job returns at once with the job running, before the job has taken a step (#667)", async () => {
+test("start_job returns at once with the job running, before the job has taken a step (#667)", async t => {
   const job = steppedJob();
-  const driver = jobDriver({ stepped: job.work });
+  const driver = jobDriver({ stepped: job.work }, tempHome(t));
   const r = await outcome(driver.startJob("stepped", { steps: 3 }));
   assert.equal(r.state, "running", JSON.stringify(r));
   assert.equal(r.kind, "stepped");
@@ -1145,41 +1129,41 @@ test("start_job returns at once with the job running, before the job has taken a
   assert.equal(r.progress, null);
 });
 
-test("poll_job reads the progress line change as the job runs (#667)", async () => {
+test("poll_job reads the progress line change as the job runs (#667)", async t => {
   const job = steppedJob();
-  const driver = jobDriver({ stepped: job.work });
-  const { job: id } = await driver.startJob("stepped", { steps: 3 });
+  const driver = jobDriver({ stepped: job.work }, tempHome(t));
+  const { job: id, end_file } = await driver.startJob("stepped", { steps: 3 });
   await job.step();
-  assert.deepEqual(await driver.pollJob(id), { job: id, kind: "stepped", state: "running", progress: "step 1 of 3" });
+  assert.deepEqual(await driver.pollJob(id), { job: id, kind: "stepped", state: "running", progress: "step 1 of 3", end_file });
   await job.step();
   assert.equal((await driver.pollJob(id)).progress, "step 2 of 3");
 });
 
-test("read_job returns the job's answer once it is done, and only the state while it runs (#667)", async () => {
+test("read_job returns the job's answer once it is done, and only the state while it runs (#667)", async t => {
   const job = steppedJob();
-  const driver = jobDriver({ stepped: job.work });
-  const { job: id } = await driver.startJob("stepped", { steps: 2 });
+  const driver = jobDriver({ stepped: job.work }, tempHome(t));
+  const { job: id, end_file } = await driver.startJob("stepped", { steps: 2 });
   await job.step();
   const running = await driver.readJob(id);
   assert.equal(running.state, "running");
   assert.equal("result" in running, false, JSON.stringify(running));
   await job.step();
-  assert.deepEqual(await driver.readJob(id), { job: id, kind: "stepped", state: "done", progress: "step 2 of 2", result: { steps: 2 } });
+  assert.deepEqual(await driver.readJob(id), { job: id, kind: "stepped", state: "done", progress: "step 2 of 2", end_file, result: { steps: 2 } });
   assert.equal((await driver.pollJob(id)).state, "done");
 });
 
-test("cancel_job stops the job, and its result says cancelled (#667)", async () => {
+test("cancel_job stops the job, and its result says cancelled (#667)", async t => {
   const job = steppedJob();
-  const driver = jobDriver({ stepped: job.work });
-  const { job: id } = await driver.startJob("stepped", { steps: 3 });
+  const driver = jobDriver({ stepped: job.work }, tempHome(t));
+  const { job: id, end_file } = await driver.startJob("stepped", { steps: 3 });
   await job.step();
   assert.equal((await driver.cancelJob(id)).state, "cancelled");
   await job.step();
   assert.equal(job.seen.stopped, true, "the job saw its signal and stopped");
-  assert.deepEqual(await driver.readJob(id), { job: id, kind: "stepped", state: "cancelled", progress: "step 1 of 3" });
+  assert.deepEqual(await driver.readJob(id), { job: id, kind: "stepped", state: "cancelled", progress: "step 1 of 3", end_file });
 });
 
-test("a cancelled job stays as it was cancelled, even when its work keeps reporting and then answers (#667)", async () => {
+test("a cancelled job stays as it was cancelled, even when its work keeps reporting and then answers (#667)", async t => {
   let release = () => {};
   const driver = jobDriver({
     deaf: async (_args, { progress }) => {
@@ -1188,24 +1172,24 @@ test("a cancelled job stays as it was cancelled, even when its work keeps report
       progress("found a line");
       return "a line";
     },
-  });
-  const { job: id } = await driver.startJob("deaf", {});
+  }, tempHome(t));
+  const { job: id, end_file } = await driver.startJob("deaf", {});
   await driver.cancelJob(id);
   release();
   await new Promise(r => setImmediate(r));
-  assert.deepEqual(await driver.readJob(id), { job: id, kind: "deaf", state: "cancelled", progress: "searching" });
+  assert.deepEqual(await driver.readJob(id), { job: id, kind: "deaf", state: "cancelled", progress: "searching", end_file });
 });
 
-test("cancel_job leaves a job that already ended as it ended (#667)", async () => {
+test("cancel_job leaves a job that already ended as it ended (#667)", async t => {
   const job = steppedJob();
-  const driver = jobDriver({ stepped: job.work });
+  const driver = jobDriver({ stepped: job.work }, tempHome(t));
   const { job: id } = await driver.startJob("stepped", { steps: 1 });
   await job.step();
   assert.equal((await driver.cancelJob(id)).state, "done");
   assert.deepEqual((await driver.readJob(id)).result, { steps: 1 });
 });
 
-test("a job that throws ends failed with its error, not hung, whether it throws at once or later (#667)", async () => {
+test("a job that throws ends failed with its error, not hung, whether it throws at once or later (#667)", async t => {
   const driver = jobDriver({
     later: async () => {
       await new Promise(r => setImmediate(r));
@@ -1215,23 +1199,23 @@ test("a job that throws ends failed with its error, not hung, whether it throws 
     atOnce: () => {
       throw new Error("no clone to set up");
     },
-  });
+  }, tempHome(t));
   const later = await driver.startJob("later", {});
   const atOnce = await driver.startJob("atOnce", {});
   await new Promise(r => setImmediate(r));
-  assert.deepEqual(await driver.readJob(later.job), { job: later.job, kind: "later", state: "failed", progress: null, failure: "the clone is gone" });
-  assert.deepEqual(await driver.readJob(atOnce.job), { job: atOnce.job, kind: "atOnce", state: "failed", progress: null, failure: "no clone to set up" });
+  assert.deepEqual(await driver.readJob(later.job), { job: later.job, kind: "later", state: "failed", progress: null, end_file: later.end_file, failure: "the clone is gone" });
+  assert.deepEqual(await driver.readJob(atOnce.job), { job: atOnce.job, kind: "atOnce", state: "failed", progress: null, end_file: atOnce.end_file, failure: "no clone to set up" });
 });
 
-test("a job kind the server does not run refuses, naming the kinds it does (#667)", async () => {
-  const driver = jobDriver({ stepped: steppedJob().work });
+test("a job kind the server does not run refuses, naming the kinds it does (#667)", async t => {
+  const driver = jobDriver({ stepped: steppedJob().work }, tempHome(t));
   const r = await outcome(driver.startJob("solve", {}));
   assert.equal(r.error, "unknown_job_kind", JSON.stringify(r));
   assert.deepEqual(r.kinds, ["stepped"]);
 });
 
-test("a job id the server does not hold refuses on poll, read and cancel, naming the jobs it does (#667)", async () => {
-  const driver = jobDriver({ stepped: steppedJob().work });
+test("a job id the server does not hold refuses on poll, read and cancel, naming the jobs it does (#667)", async t => {
+  const driver = jobDriver({ stepped: steppedJob().work }, tempHome(t));
   const { job: id } = await driver.startJob("stepped", { steps: 1 });
   for (const call of [(d: Driver) => d.pollJob("stepped-99"), (d: Driver) => d.readJob("stepped-99"), (d: Driver) => d.cancelJob("stepped-99")]) {
     const r = await outcome(call(driver));
@@ -1240,10 +1224,10 @@ test("a job id the server does not hold refuses on poll, read and cancel, naming
   }
 });
 
-test("the plugin keeps the most recent ended jobs and drops the oldest, never a running one (#667)", async () => {
+test("the plugin keeps the most recent ended jobs and drops the oldest, never a running one (#667)", async t => {
   const slow = steppedJob();
   const quick = steppedJob();
-  const driver = jobDriver({ slow: slow.work, quick: quick.work });
+  const driver = jobDriver({ slow: slow.work, quick: quick.work }, tempHome(t));
   const { job: running } = await driver.startJob("slow", { steps: 1 });
   const ended: string[] = [];
   for (let i = 0; i <= KEPT_ENDED; i++) {
@@ -1253,6 +1237,56 @@ test("the plugin keeps the most recent ended jobs and drops the oldest, never a 
   assert.equal((await outcome(driver.readJob(ended[0]))).error, "unknown_job", "the oldest ended job is gone");
   assert.equal((await driver.readJob(ended[1])).state, "done");
   assert.equal((await driver.pollJob(running)).state, "running", "a running job is never dropped");
+});
+
+test("a job the plugin drops takes its end_file with it (#673)", async t => {
+  const quick = steppedJob();
+  const driver = jobDriver({ quick: quick.work }, tempHome(t));
+  const files: string[] = [];
+  for (let i = 0; i <= KEPT_ENDED; i++) {
+    files.push((await driver.startJob("quick", { steps: 1 })).end_file);
+    await quick.step();
+  }
+  assert.equal(existsSync(files[0]), false, "the dropped job's end file is gone");
+  assert.equal(existsSync(files[1]), true, "a kept job's end file stays");
+});
+
+test("a plugin starting on a home clears the end files a day old, and leaves a fresh one another plugin may be waited on for (#673)", async t => {
+  const home = tempHome(t);
+  const quick = steppedJob();
+  const earlier = jobDriver({ quick: quick.work }, home);
+  const old = (await earlier.startJob("quick", { steps: 1 })).end_file;
+  await quick.step();
+  const fresh = (await earlier.startJob("quick", { steps: 1 })).end_file;
+  await quick.step();
+  const twoDaysAgo = new Date(Date.now() - 2 * 24 * 3600_000);
+  utimesSync(old, twoDaysAgo, twoDaysAgo);
+
+  jobDriver({}, home);
+  assert.equal(existsSync(old), false, "a day-old end file is cleared");
+  assert.equal(existsSync(fresh), true, "a fresh end file stays");
+});
+
+test("a job's end_file appears once the job has ended, saying how it ended, and not before (#673)", async t => {
+  const home = tempHome(t);
+  const job = steppedJob();
+  const driver = jobDriver({ stepped: job.work }, home);
+  const started = await driver.startJob("stepped", { steps: 1 });
+  assert.ok(started.end_file.startsWith(path.join(home, "jobs") + path.sep), `kept in the plugin's home: ${started.end_file}`);
+  assert.equal(existsSync(started.end_file), false, "no end file while the job runs");
+  await job.step();
+  assert.deepEqual(JSON.parse(readFileSync(started.end_file, "utf8")), { job: started.job, kind: "stepped", state: "done", progress: "step 1 of 1" });
+
+  const cancelled = await driver.startJob("stepped", { steps: 2 });
+  await driver.cancelJob(cancelled.job);
+  assert.equal(JSON.parse(readFileSync(cancelled.end_file, "utf8")).state, "cancelled");
+});
+
+test("a job that fails leaves an end_file saying it failed (#673)", async t => {
+  const driver = jobDriver({ broken: async () => { throw new Error("the clone is gone"); } }, tempHome(t));
+  const { end_file } = await driver.startJob("broken", {});
+  await new Promise(r => setImmediate(r));
+  assert.equal(JSON.parse(readFileSync(end_file, "utf8")).state, "failed");
 });
 
 test("solving is off until the player turns it on (#666)", async t => {
@@ -1368,7 +1402,7 @@ test("a solve job solves the fight on the tab from its wave-start save, relays i
   assert.deepEqual(input.live, DRAYTON.live);
   assert.deepEqual(input.liveExport, DRAYTON.liveExport);
   assert.equal(input.cloneVersion, PINNED_GAME_VERSION);
-  assert.deepEqual(await driver.pollJob(started.job), { job: started.job, kind: SOLVE_JOB, state: "running", progress: "searched 1,200 of 9,000 turns" });
+  assert.deepEqual(await driver.pollJob(started.job), { job: started.job, kind: SOLVE_JOB, state: "running", progress: "searched 1,200 of 9,000 turns", end_file: started.end_file });
   held.finish();
   await settledJobs();
   assert.deepEqual((await driver.readJob(started.job)).result, answer);
@@ -1413,21 +1447,21 @@ test("a solve that finds no win answers no answer with its reason, as its result
   const answer = { kind: "no_answer", reason: { code: "no_win", beams: [], unreplayed: [], dropped: 0 }, message: "no winning path turned up. The card still coaches." };
   const { held, work } = heldSolve(answer);
   const driver = await solveTab(t, work);
-  const { job } = await driver.startJob(SOLVE_JOB, {});
+  const { job, end_file } = await driver.startJob(SOLVE_JOB, {});
   held.finish();
   await settledJobs();
-  assert.deepEqual(await driver.readJob(job), { job, kind: SOLVE_JOB, state: "done", progress: "searched 1,200 of 9,000 turns", result: answer });
+  assert.deepEqual(await driver.readJob(job), { job, kind: SOLVE_JOB, state: "done", progress: "searched 1,200 of 9,000 turns", end_file, result: answer });
 });
 
 test("a cancelled solve stops its work and reads as cancelled, with no result (#672)", async t => {
   const { held, work } = heldSolve({ kind: "oracle_line", oracleLine: GORDIE_LINE });
   const driver = await solveTab(t, work);
-  const { job } = await driver.startJob(SOLVE_JOB, {});
+  const { job, end_file } = await driver.startJob(SOLVE_JOB, {});
   assert.equal((await driver.cancelJob(job)).state, "cancelled");
   assert.equal(held.signal?.aborted, true, "the solve's work was told to stop");
   held.finish();
   await settledJobs();
-  assert.deepEqual(await driver.readJob(job), { job, kind: SOLVE_JOB, state: "cancelled", progress: "searched 1,200 of 9,000 turns" });
+  assert.deepEqual(await driver.readJob(job), { job, kind: SOLVE_JOB, state: "cancelled", progress: "searched 1,200 of 9,000 turns", end_file });
 });
 
 /** Drayton's fight, `wave` waves on: the run's seed with another wave's battle. */
@@ -1503,4 +1537,103 @@ test("a solve started again once the fight's job has ended starts a fresh one (#
   const again = await driver.startJob(SOLVE_JOB, {});
   assert.notEqual(again.job, first.job);
   assert.equal(again.state, "running");
+});
+
+/** The tab at the decision GORDIE_LINE starts from, unless `at` moves it. */
+const gordieRead = (at: { wave?: number; turn?: number | null } = {}) => (): ScreenRead => {
+  const read = coachRead();
+  return read.ready ? { ...read, wave: at.wave ?? GORDIE_LINE.wave, turn: at.turn === undefined ? GORDIE_LINE.steps[0].turn : at.turn } : read;
+};
+
+/** A tab at the decision GORDIE_LINE starts from, with solving on, the panel taking every oracle line handed into `handed`. */
+async function handTab(t: TestContext, kinds: JobKinds, over: Pick<FakeScreen, "read" | "oracleLine" | "lockHolder"> = {}) {
+  const handed: unknown[] = [];
+  const oracleLine = over.oracleLine ?? (line => { handed.push(line); return { ok: true } as const; });
+  const fake = fakeGame({ read: gordieRead(), menu: () => commandMenu(0), session: draytonRead(), ...over, oracleLine });
+  const driver = new Driver(fake.game, tempHome(t), fake.clock, kinds, "hub");
+  await driver.solving(true);
+  return { driver, handed };
+}
+
+/** `handTab` once its solve job has ended with `answer`. */
+async function solvedTab(t: TestContext, answer: unknown, over: Parameters<typeof handTab>[2] = {}) {
+  const { held, work } = heldSolve(answer);
+  const tab = await handTab(t, { [SOLVE_JOB]: work }, over);
+  const { job } = await tab.driver.startJob(SOLVE_JOB, {});
+  held.finish();
+  await settledJobs();
+  return { ...tab, job };
+}
+
+const SOLVED = { kind: "oracle_line", oracleLine: GORDIE_LINE } as const;
+
+test("hand_oracle_line gives the panel the oracle line a solve job found, at the decision it starts from, without taking the tab (#673)", async t => {
+  const { driver, job, handed } = await solvedTab(t, SOLVED, { lockHolder: 4242 });
+  const r = await outcome(driver.handOracleLine(job, {}));
+  assert.equal(r.status, "ok", JSON.stringify(r));
+  assert.equal(r.held, true);
+  assert.deepEqual(handed, [GORDIE_LINE]);
+});
+
+for (const [what, at] of [
+  ["a later turn", { turn: GORDIE_LINE.steps[0].turn + 1 }],
+  ["another wave", { wave: GORDIE_LINE.wave + 1, turn: 1 }],
+  ["no battle", { turn: null }],
+] as const) {
+  test(`an oracle line is never handed once the fight on the tab has moved past where it starts: ${what} (#673)`, async t => {
+    const { driver, job, handed } = await solvedTab(t, SOLVED, { read: gordieRead(at) });
+    const r = await outcome(driver.handOracleLine(job, {}));
+    assert.equal(r.error, "moved_on", JSON.stringify(r));
+    assert.deepEqual(handed, [], "nothing was handed");
+  });
+}
+
+test("a solve that answered no answer has no oracle line to hand, and the refusal carries its reason (#673)", async t => {
+  const answer = { kind: "no_answer", reason: { code: "double" }, message: "the oracle can't replay a double battle yet. The card still coaches." };
+  const { driver, job, handed } = await solvedTab(t, answer);
+  const r = await refusalOf(driver.handOracleLine(job, {}));
+  assert.equal(r.code, "no_oracle_line", r.message);
+  assert.deepEqual(r.detail.reason, { code: "double" });
+  assert.match(r.message, /can't replay a double battle yet\. The card still coaches\./);
+  assert.deepEqual(handed, []);
+});
+
+test("a solve still running, cancelled or failed has no oracle line to hand, and nothing is handed (#673)", async t => {
+  const { work } = heldSolve(SOLVED);
+  const tab = await handTab(t, { [SOLVE_JOB]: work });
+  const { job } = await tab.driver.startJob(SOLVE_JOB, {});
+  const running = await outcome(tab.driver.handOracleLine(job, {}));
+  assert.equal(running.error, "no_oracle_line", JSON.stringify(running));
+  assert.equal(running.state, "running");
+  await tab.driver.cancelJob(job);
+  assert.equal((await outcome(tab.driver.handOracleLine(job, {}))).state, "cancelled");
+
+  const broken = await handTab(t, { [SOLVE_JOB]: async () => { throw new Error("the clone is gone"); } });
+  const failed = await broken.driver.startJob(SOLVE_JOB, {});
+  await settledJobs();
+  const r = await refusalOf(broken.driver.handOracleLine(failed.job, {}));
+  assert.equal(r.code, "no_oracle_line");
+  assert.match(r.message, /the clone is gone/);
+  assert.deepEqual([...tab.handed, ...broken.handed], []);
+});
+
+test("only a solve job answers with an oracle line: another job, or one the plugin doesn't hold, has none to hand (#673)", async t => {
+  const { driver, handed } = await handTab(t, { [CLONE_JOB]: async () => ({ kind: "clone", gameVersion: PINNED_GAME_VERSION, dir: "/clone" }) });
+  const { job } = await driver.startJob(CLONE_JOB, {});
+  await settledJobs();
+  const r = await outcome(driver.handOracleLine(job, {}));
+  assert.equal(r.error, "no_oracle_line", JSON.stringify(r));
+  assert.equal(r.kind, CLONE_JOB);
+  assert.equal((await outcome(driver.handOracleLine("solve-9", {}))).error, "unknown_job");
+  assert.deepEqual(handed, []);
+});
+
+test("an oracle line the overlay did not take comes back unheld, with the overlay's reason (#670)", async t => {
+  for (const why of ["other-fight", "no-hud"]) {
+    const { driver, job } = await solvedTab(t, SOLVED, { oracleLine: () => ({ ok: false, why }) });
+    const r = await outcome(driver.handOracleLine(job, {}));
+    assert.equal(r.status, "ok", JSON.stringify(r));
+    assert.equal(r.held, false);
+    assert.equal(r.oracle_line_error, why);
+  }
 });

@@ -474,6 +474,193 @@ const offRows = act => act.rows.filter(r => r.startsWith("✗"));
   assert.equal(offTheLineModel(biome).misses[0].came, "388/570");
 }
 
+// Youngster Roland's W5: Charmander Scratches Lillipup out on T3, and benched Bulbasaur levels on that KO into a prompt
+// for Leech Seed over four moves; Patrat comes in and falls on T6. A Roland's mons outlive its scenes, as the game's do,
+// so a prompt answered on one scene is in the moveset the next one reads.
+const ROLAND_MOVES = { SCRATCH: ["Scratch", "NORMAL"], EMBER: ["Ember", "FIRE"], TACKLE: ["Tackle", "NORMAL"], GROWL: ["Growl", "NORMAL"],
+  VINE_WHIP: ["Vine Whip", "GRASS"], SUNNY_DAY: ["Sunny Day", "FIRE"], LEECH_SEED: ["Leech Seed", "GRASS"] };
+// `new pm.constructor(id)` is how the overlay names a move no mon knows yet (game-code.md §17).
+function PokemonMove(id) {
+  const [name, type] = ROLAND_MOVES[Object.keys(MoveId).find(k => MoveId[k] === id)];
+  return { moveId: id, constructor: PokemonMove, getMove: () => ({ id, name, type: PokemonType[type] }) };
+}
+const knowing = (...keys) => keys.map(k => PokemonMove(MoveId[k]));
+const roland = seed => ({ seed,
+  party: [mon("CHARMANDER", "Charmander", 39, { field: true, moves: knowing("SCRATCH", "EMBER") }),
+    mon("BULBASAUR", "Bulbasaur", 45, { moves: knowing("TACKLE", "GROWL", "VINE_WHIP", "SUNNY_DAY") })],
+  foes: [mon("LILLIPUP", "Lillipup", 30, { field: true }), mon("PATRAT", "Patrat", 30)] });
+const NONE = [0, 0, 0, 0, 0, 0, 0];
+const rolandCp = turn => ({
+  ours: [{ slot: 0, species: SpeciesId.CHARMANDER, onField: true, hp: 39 - 3 * Math.min(turn, 5), maxHp: 39, status: 0, statStages: NONE, tera: false },
+    { slot: 1, species: SpeciesId.BULBASAUR, onField: false, hp: 45, maxHp: 45, status: 0, statStages: NONE, tera: false }],
+  foes: [{ slot: 0, species: SpeciesId.LILLIPUP, onField: turn < 3, hp: Math.max(0, 30 - 10 * turn), maxHp: 30, status: 0, statStages: NONE, tera: false },
+    { slot: 1, species: SpeciesId.PATRAT, onField: turn >= 3 && turn < 6, hp: Math.min(30, 60 - 10 * turn), maxHp: 30, status: 0, statStages: NONE, tera: false }],
+});
+const SCRATCH = { kind: "move", move: MoveId.SCRATCH, tera: false };
+const SKIP_LEECH_SEED = { slot: 1, species: SpeciesId.BULBASAUR, move: MoveId.LEECH_SEED, forget: null };
+const OVER_SUNNY_DAY = { ...SKIP_LEECH_SEED, forget: MoveId.SUNNY_DAY };
+const learning = (...learns) => ({ ...SCRATCH, learns });
+// T1 to T6, every turn a Scratch unless `inputs` holds that turn's.
+const rolandLine = (seed, inputs) => ({ seed, wave: 5, gameVersion: "1.12.1.2", receipt: [], luck: [],
+  steps: [1, 2, 3, 4, 5, 6].map(turn => ({ turn, input: inputs[turn] ?? SCRATCH, checkpoint: rolandCp(turn) })) });
+const rolandAt = (r, turn, { phase = { phaseName: "CommandPhase" }, cp = null, cmd = null } = {}) => {
+  if (cp) { live(r.party, cp.ours); live(r.foes, cp.foes); }
+  const [turnCommands, preTurnCommands] = commands(cmd);
+  return guard({ seed: r.seed, currentBattle: { waveIndex: 5, turn, turnCommands, preTurnCommands }, phaseManager: { getCurrentPhase: () => phase },
+    getPlayerParty: () => r.party, getEnemyParty: () => r.foes });
+};
+const PROMPT = { phaseName: "LearnMovePhase", partyMemberIndex: 1, moveId: MoveId.LEECH_SEED };
+// The answer as the game leaves it: Leech Seed in the slot Sunny Day held.
+const learnOverSunnyDay = r => { r.party[1].moveset[3] = PokemonMove(MoveId.LEECH_SEED); };
+
+// ---- An oracle line's step may carry its move prompts' answers, a queued step those alone; one out of shape is still ignored
+{
+  const r = roland("a W5 run, handed");
+  scene = rolandAt(r, 1);
+  assert.equal(hand("a skip on T3", rolandLine(r.seed, { 3: learning(SKIP_LEECH_SEED) })).ok, true);
+  assert.equal(hand("a forget on T3", rolandLine(r.seed, { 3: learning(OVER_SUNNY_DAY) })).ok, true);
+  assert.equal(hand("a switch's", rolandLine(r.seed, { 3: { kind: "switch", to: { slot: 1, species: SpeciesId.BULBASAUR }, learns: [SKIP_LEECH_SEED] } })).ok, true);
+  assert.equal(hand("a queued step's, with no replacement", rolandLine(r.seed, { 3: { kind: "queued", learns: [SKIP_LEECH_SEED] } })).ok, true);
+  const bad = learns => hand("out of shape", rolandLine(r.seed, { 3: { ...SCRATCH, learns } })).why;
+  assert.equal(bad(SKIP_LEECH_SEED), "malformed", "learns is a list");
+  assert.equal(bad([{ ...SKIP_LEECH_SEED, slot: "1" }]), "malformed", "a pick's slot is a number");
+  assert.equal(bad([{ ...SKIP_LEECH_SEED, move: "LEECH_SEED" }]), "malformed", "a pick's move is the game's id");
+  assert.equal(bad([{ ...SKIP_LEECH_SEED, species: undefined }]), "malformed", "a pick names its mon");
+  assert.equal(bad([{ slot: 1, species: SpeciesId.BULBASAUR, move: MoveId.LEECH_SEED }]), "malformed", "a skip's forget is null, never missing");
+  assert.equal(bad([null]), "malformed");
+  assert.equal(hand("a queued step with an empty list", rolandLine(r.seed, { 3: { kind: "queued", learns: [] } })).why, "malformed");
+}
+
+// ---- A move prompt the oracle line answers is named after its turn's call: a skip, or the move it learns over
+{
+  const r = roland("a W5 run, skipping");
+  scene = rolandAt(r, 3, { cp: rolandCp(2) });
+  hand("Roland's W5, Leech Seed skipped", rolandLine(r.seed, { 3: learning(SKIP_LEECH_SEED) }));
+  const { act, strip: shown } = now("W5 T3, Leech Seed skipped", scene);
+  assert.equal(act.summary, "⚔ ~ T3/6 · Charmander Scratch · then Bulbasaur skips Leech Seed");
+  assert.ok(shown.endsWith(act.summary), shown);
+  assert.ok(act.rows.includes("⤵ then Bulbasaur skips Leech Seed at the move prompt"), act.rows.join("\n"));
+  assert.ok(plan("W5 T3, its plan", scene).rows.some(x => /^▸ T3 .*Scratch · Bulbasaur skips Leech Seed → ~ /.test(x)));
+
+  const o = roland("a W5 run, forgetting");
+  scene = rolandAt(o, 3, { cp: rolandCp(2) });
+  hand("Roland's W5, Leech Seed over Sunny Day", rolandLine(o.seed, { 3: learning(OVER_SUNNY_DAY) }));
+  assert.equal(now("W5 T3, Leech Seed over Sunny Day", scene).act.summary, "⚔ ~ T3/6 · Charmander Scratch · then Bulbasaur learns Leech Seed over Sunny Day");
+
+  const q = roland("a W5 run, queued");
+  scene = rolandAt(q, 3, { cp: rolandCp(2) });
+  hand("Roland's W5, a queued T3", rolandLine(q.seed, { 3: { kind: "queued", learns: [SKIP_LEECH_SEED] } }));
+  assert.equal(now("W5 T3, queued", scene).act.summary, "~ T3/6 · no input · then Bulbasaur skips Leech Seed · expect Charmander 30/39 · Patrat 30/30");
+}
+
+const { drawLearn, captionLearn } = globalThis.__hud["96-render-learn"];
+const { readOracleLine } = globalThis.__hud["60-card"];
+// The learn card's own read of the prompt, which says to forget Sunny Day.
+const learnCard = () => ({ kind: "learn", wave: 5, icon: null, name: "Bulbasaur", atk: 9, spa: 11,
+  move: { name: "Leech Seed", type: "Grass", cat: "status", value: null, notes: [] },
+  moves: [["Tackle", "Normal", 40], ["Growl", "Normal", null], ["Vine Whip", "Grass", 45], ["Sunny Day", "Fire", null]]
+    .map(([name, type, value]) => ({ name, type, cat: value ? "physical" : "status", value, notes: [] })),
+  forget: 3, compare: 3, verdict: "Learn → forget Sunny Day", decision: "learn", gain: 5, team: { gains: ["Water"], loses: [], onlyType: null }, blind: null });
+const prompt = (label, s) => {
+  const c = learnCard();
+  readOracleLine(s, c);
+  const drawn = drawLearn(c);
+  const groups = flatGroups(drawn);
+  const shown = flat(strip(c, captionLearn(c), drawn));
+  console.log(`== ${label}`);
+  console.log(`strip | ${shown}`);
+  for (const g of groups) for (const x of g.rows) console.log(`  ${g.id.padEnd(8)}${x}`);
+  return { card: c, groups, strip: shown, act: groups.find(g => g.id === "act") };
+};
+
+// ---- At the move prompt itself the oracle line's answer is the learn card's call, though the turn has moved on
+{
+  const r = roland("a W5 run, at the prompt");
+  scene = rolandAt(r, 3, { cp: rolandCp(2) });
+  hand("Roland's W5, Leech Seed skipped", rolandLine(r.seed, { 3: learning(SKIP_LEECH_SEED) }));
+  const at = prompt("W5 T3's Leech Seed prompt, skipped", rolandAt(r, 3, { phase: PROMPT }));
+  assert.equal(at.act.summary, "⚔ ~ T3/6 · Bulbasaur skips Leech Seed");
+  assert.ok(at.strip.endsWith(at.act.summary), at.strip);
+  assert.equal(cardSummary(at.card).learn, at.act.summary);
+  assert.deepEqual([cardEvent(at.card).verdict, cardEvent(at.card).oracleLine], ["Bulbasaur skips Leech Seed", { state: "on", turn: 3, of: 6 }]);
+  assert.ok(!at.groups.find(g => g.id === "options").rows.some(x => x.startsWith("✗")), "the card's own forget is not the call");
+  assert.ok(!at.groups.some(g => g.id === "audit"), "nor what its own forget would cost the team");
+  // A faint at the turn's end levels after the turn has moved on (game-code.md §21).
+  assert.equal(prompt("W5 T3's prompt, the turn already 4", rolandAt(r, 4, { phase: PROMPT })).act.summary, "⚔ ~ T3/6 · Bulbasaur skips Leech Seed");
+  const other = prompt("W5 T3, a prompt the oracle line has no answer for", rolandAt(r, 3, { phase: { ...PROMPT, moveId: MoveId.EMBER } }));
+  assert.equal(other.act.summary, "Learn → forget Sunny Day");
+  assert.equal(cardEvent(other.card).oracleLine, null);
+
+  const o = roland("a W5 run, forgetting at the prompt");
+  scene = rolandAt(o, 3, { cp: rolandCp(2) });
+  hand("Roland's W5, Leech Seed over Sunny Day", rolandLine(o.seed, { 3: learning(OVER_SUNNY_DAY) }));
+  const forget = prompt("W5 T3's Leech Seed prompt, over Sunny Day", rolandAt(o, 3, { phase: PROMPT }));
+  assert.equal(forget.act.summary, "⚔ ~ T3/6 · Bulbasaur learns Leech Seed over Sunny Day");
+  assert.deepEqual(forget.groups.find(g => g.id === "options").rows.filter(x => x.startsWith("✗")), ["✗ Fire Sunny Day status"]);
+}
+
+// A W5 run handed `inputs` at T1 and played on the oracle line through `to`, its prompt on `at` `answer`ed (or never
+// asked), then scored at the decision after `to`: T4's command, or the rewards screen after T6.
+const rolandPlayed = (seed, inputs, answer, { at = 3, to = 3, asked = true } = {}) => {
+  const r = roland(seed);
+  scene = rolandAt(r, 1);
+  hand(seed, rolandLine(seed, inputs));
+  for (let t = 1; t <= to; t++) {
+    oracleLineSeen(rolandAt(r, t, { phase: { phaseName: "MovePhase" }, cmd: { move: "SCRATCH" } }));
+    if (t === at && asked) oracleLineSeen(rolandAt(r, t, { phase: PROMPT }));
+    if (t === at) answer(r);
+    if (t < to) oracleLineCheck(rolandAt(r, t + 1, { cp: rolandCp(t) }));
+  }
+  const s = rolandAt(r, to + 1, { phase: { phaseName: to === 6 ? "SelectModifierPhase" : "CommandPhase" }, cp: rolandCp(to) });
+  scored = oracleLineCheck(s);
+  console.log(`scored ${scoredText(scored)}`);
+  return s;
+};
+
+// ---- A move prompt answered as the oracle line said scores as a match, and the oracle line leads on
+{
+  rolandPlayed("a W5 run, skipped as said", { 3: learning(SKIP_LEECH_SEED) }, () => {});
+  assert.deepEqual(scored.misses, []);
+  const s = rolandPlayed("a W5 run, forgotten as said", { 3: learning(OVER_SUNNY_DAY) }, learnOverSunnyDay);
+  assert.deepEqual(scored.misses, []);
+  assert.equal(now("W5 T4, Leech Seed learned as said", s).act.summary, "⚔ ~ T4/6 · Charmander Scratch");
+}
+
+// ---- A move prompt answered otherwise leaves the oracle line, and is the player's input rather than a wrong claim
+{
+  const s = rolandPlayed("a W5 run, learned, not skipped", { 3: learning(SKIP_LEECH_SEED) }, learnOverSunnyDay);
+  assert.deepEqual([scored.turn, scored.wrong], [3, false]);
+  const { act } = now("W5 T4, Leech Seed learned where the oracle line skipped it", s);
+  assert.ok(act.summary.startsWith("off the line · ~ "), act.summary);
+  assert.deepEqual(offRows(act), ["✗ T3 Bulbasaur expected skip Leech Seed · came learned Leech Seed"]);
+  rolandPlayed("a W5 run, skipped, not learned", { 3: learning(OVER_SUNNY_DAY) }, () => {});
+  assert.deepEqual([scored.misses.map(m => `${m.expected} · ${m.came}`), scored.wrong], [["Leech Seed over Sunny Day · skipped Leech Seed"], false]);
+  rolandPlayed("a W5 run, Growl forgotten instead", { 3: learning(OVER_SUNNY_DAY) }, r => { r.party[1].moveset[1] = PokemonMove(MoveId.LEECH_SEED); });
+  assert.deepEqual([scored.misses.map(m => `${m.expected} · ${m.came}`), scored.wrong], [["Leech Seed over Sunny Day · kept Sunny Day"], false]);
+}
+
+// ---- A move prompt the game never asked misses on the oracle line's own claim
+{
+  const s = rolandPlayed("a W5 run, never asked", { 3: learning(OVER_SUNNY_DAY) }, () => {}, { asked: false });
+  assert.deepEqual([scored.misses.map(m => `${m.name} ${m.expected} · ${m.came}`), scored.wrong], [["Bulbasaur Leech Seed over Sunny Day · no prompt"], true]);
+  assert.ok(now("W5 T4, never asked", s).act.summary.startsWith("off the line · ! "));
+}
+
+// ---- A pick on the oracle line's last step is no claim: no text names it, the learn card keeps its own call, and no answer scores
+{
+  const r = roland("a W5 run, a pick on the winning turn");
+  scene = rolandAt(r, 6, { cp: rolandCp(5) });
+  const LAST = { 6: learning(SKIP_LEECH_SEED) };
+  hand("Roland's W5, Leech Seed skipped on T6", rolandLine(r.seed, LAST));
+  assert.equal(now("W5 T6, the winning turn", scene).act.summary, "⚔ ~ T6/6 · Charmander Scratch");
+  assert.ok(!plan("W5 T6, its plan", scene).rows.some(x => x.includes("Leech Seed")));
+  const at = prompt("W5 T6's Leech Seed prompt", rolandAt(r, 6, { phase: PROMPT }));
+  assert.deepEqual([at.act.summary, cardEvent(at.card).oracleLine], ["Learn → forget Sunny Day", null]);
+  const s = rolandPlayed("a W5 run, learned on the winning turn", LAST, learnOverSunnyDay, { at: 6, to: 6 });
+  assert.deepEqual([scored.turn, scored.misses], [6, []]);
+  assert.equal(offTheLineModel(s), null);
+}
+
 // ---- Neither a handoff nor a card drawn from it writes to the game
 {
   console.log(`writes to the game: ${writes.length ? writes.join(", ") : "none"}`);

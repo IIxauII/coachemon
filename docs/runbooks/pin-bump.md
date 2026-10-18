@@ -136,8 +136,9 @@ A known fight is two files in `src/solver/fixtures/`, named in `KNOWN_FIGHTS` in
 
 - **`<stem>.json`**: `{ live: { wave, battleSeed }, save, liveExport }`. The driver's `read_session` gives all three at
   the fight's first decision: `battle_wave` and `battle_seed`, `wave_start` and `export`.
-- **`<stem>.win.script.json`**: the inputs played, and `known`: the outcome, and after each turn the HP, status and
-  stat stages live showed, for the mons the line turns on.
+- **`<stem>.win.script.json`**: the inputs played, each naming the faint replacement and the learn picks its turn
+  asked for, and `known`: the outcome, and after each turn the HP, status and stat stages live showed, for the mons the
+  line turns on.
 
 The old fight can't be played again on `<new>`: pokerogue.net offers no session import (only a dev, beta or app build
 does, `src/ui/handlers/menu-ui-handler.ts` in the clone), and the extension reads pokerogue.net alone. So a fight that

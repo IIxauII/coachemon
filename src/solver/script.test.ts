@@ -60,13 +60,30 @@ test("a turn the game plays for us names the faint replacement it asks for as an
   assert.deepEqual(script.inputs, [{ kind: "queued", replacement: { slot: 4, species: "GOLBAT" } }]);
 });
 
+const declines = { slot: 0, species: "BULBASAUR", move: "LEECH_SEED", forget: null } as const;
+const forgetsGunkShot = { ...declines, forget: "GUNK_SHOT" } as const;
+
+test("a step names the learn pick each level-up in its turn asks for, on a turn the game plays for us too (#673)", () => {
+  const inputs = [
+    { kind: "move", move: "SCRATCH", tera: false, learns: [declines] },
+    { kind: "switch", to: { slot: 2, species: "SQUIRTLE" }, learns: [forgetsGunkShot, declines] },
+    { kind: "queued", learns: [declines] },
+    { kind: "queued", replacement: { slot: 2, species: "SQUIRTLE" }, learns: [forgetsGunkShot] },
+  ];
+
+  assert.deepEqual(readScript(JSON.stringify({ inputs })).inputs, inputs);
+});
+
 test("a script with a move, a species or a field the game doesn't have doesn't read, and says where (#660)", () => {
   for (const [bad, where] of [
     [{ inputs: [{ kind: "move", move: "DRAGON_PULS", tera: false }] }, /inputs\[0\]\.move/],
     [{ inputs: [{ kind: "switch", to: { slot: 3, species: "PROBOPAS" } }] }, /inputs\[0\]\.to\.species/],
     [{ inputs: [{ kind: "move", move: "BOUNCE", tera: false, replacment: { slot: 1, species: "SNORLAX" } }] }, /replacment/],
     [{ inputs: [], known: { outcome: "won", after: [{ turn: 1, ours: { RESHIRAMM: { hp: 1 } } }] } }, /RESHIRAMM/],
-    [{ inputs: [{ kind: "queued" }] }, /inputs\[0\]\.replacement/],
+    [{ inputs: [{ kind: "queued" }] }, /names a faint replacement, learn picks or both[\s\S]*inputs\[0\]/],
+    [{ inputs: [{ kind: "move", move: "SCRATCH", tera: false, learns: [] }] }, /inputs\[0\]\.learns/],
+    [{ inputs: [{ kind: "queued", learns: [{ ...declines, forget: "GUNK_SHOTT" }] }] }, /inputs\[0\]\.learns\[0\]\.forget/],
+    [{ inputs: [{ kind: "queued", learns: [{ ...declines, forget: undefined }] }] }, /inputs\[0\]\.learns\[0\]\.forget/],
   ] as const) {
     assert.throws(() => readScript(JSON.stringify(bad)), where);
   }

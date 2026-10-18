@@ -135,3 +135,19 @@ test("a harness answer that strays from the protocol fails the job rather than r
   await assert.rejects(worker.expand("root", [tackle]));
   await worker.close();
 });
+
+test("a child whose turn took learn picks reaches the search with them, on a turn the game plays for us too (#673)", async () => {
+  const learns = [{ slot: 0, species: "BULBASAUR", move: "LEECH_SEED", forget: null }];
+  const children = [
+    { input: { ...tackle, learns }, end: "won", hp: { ours: [1], foes: [0] } },
+    { input: { kind: "queued", learns }, end: "won", hp: { ours: [1], foes: [0] } },
+  ];
+  const { clone } = fakeHarness(() => ({ children, heap }));
+  const worker = await startWorker(clone, save);
+  assert.ok("root" in worker);
+
+  const got = await worker.expand("root", [tackle, null]);
+  await worker.close();
+
+  assert.deepEqual(got, children);
+});
