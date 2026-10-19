@@ -1,8 +1,8 @@
 {
   "pinned": {
-    "gameVersion": "1.12.1.2",
-    "tag": "v1.12.1.2",
-    "sha": "b271d3e63f82059da9bb93b01f69ec33ed7a10a0",
+    "gameVersion": "1.12.1.3",
+    "tag": "v1.12.1.3",
+    "sha": "a6995c571a092e762ea036589bb6f3a8fa4f5dbd",
     "locales": "5cd9ba827721461a5a68edc55cc00b8b8aabd61d",
     "assets": "64b3f47cd586589261fe8cb08c8d540d710bfc1c",
     "pnpm": "10.34.5"
@@ -108,7 +108,7 @@
     "src/battle-scene.ts#BattleScene.checkIsDouble": "e54f716503633aa3",
     "src/battle-scene.ts#BattleScene.currentBattle": "5d582564313b59e4",
     "src/battle-scene.ts#BattleScene.doCheckDoubleOverride": "3cbdad54e3636d4f",
-    "src/battle-scene.ts#BattleScene.doPostBattleCleanup": "053221854db5aed6",
+    "src/battle-scene.ts#BattleScene.doPostBattleCleanup": "e48e5fc8e5c075a9",
     "src/battle-scene.ts#BattleScene.enemyModifiers": "d12f7c9f7d54d234",
     "src/battle-scene.ts#BattleScene.executeWithSeedOffset": "ed25071662cf9ecc",
     "src/battle-scene.ts#BattleScene.field": "516ba70aea64bf28",
@@ -403,7 +403,7 @@
     "src/data/battler-tags.ts#MoveLockTag.lapse": "1564328e8270f775",
     "src/data/battler-tags.ts#MoveRestrictionBattlerTag.isMoveRestricted": "47f4dec4269b9028",
     "src/data/battler-tags.ts#NightmareTag.getDamageHpRatio": "76eb37feb73fcb93",
-    "src/data/battler-tags.ts#SaltCuredTag.getDamageHpRatio": "ffdcfe9a1422597c",
+    "src/data/battler-tags.ts#SaltCuredTag.getDamageHpRatio": "08f0e62fd2f73d31",
     "src/data/battler-tags.ts#SeedTag.lapse": "aff9367ba3021f24",
     "src/data/battler-tags.ts#SeedTag.sourceIndex": "749e6514f40fd82d",
     "src/data/battler-tags.ts#TauntTag.isMoveRestricted": "59eb84d3ceb04881",
@@ -496,7 +496,7 @@
     "src/data/moves/move.ts#HitHealAttr.getHealAmount": "e44f0c0ad1024b25",
     "src/data/moves/move.ts#HitHealAttr.healRatio": "430f0518699f0eca",
     "src/data/moves/move.ts#HitHealAttr.healStat": "709b78cda9bcb8e8",
-    "src/data/moves/move.ts#initMoves": "5cf92bd9f3ff5be0",
+    "src/data/moves/move.ts#initMoves": "3b54eaea96de956e",
     "src/data/moves/move.ts#InstantChargeAttr.condition": "1babaad9968d8551",
     "src/data/moves/move.ts#InstantChargeAttr.constructor": "7921f7d2d73c8e47",
     "src/data/moves/move.ts#MagnitudePowerAttr": "d1df3a69517c8668",
@@ -1565,7 +1565,7 @@
     "src/system/game-data.ts#GameData.eggs": "950a3792f7acd9dd",
     "src/system/game-data.ts#GameData.getDexAttrLuck": "22384115017d6514",
     "src/system/game-data.ts#GameData.getSessionSaveData": "36b71dcd73308670",
-    "src/system/game-data.ts#GameData.getSpeciesDefaultDexAttrProps": "3c4b6b249ff65f7c",
+    "src/system/game-data.ts#GameData.getSpeciesDefaultDexAttrProps": "aa0901f233792b2d",
     "src/system/game-data.ts#GameData.getSpeciesStarterValue": "a505f44fda86708f",
     "src/system/game-data.ts#GameData.getStarterCount": "cb91af5988ebfbc9",
     "src/system/game-data.ts#GameData.initSessionFromData": "503b05508f44dda6",
@@ -1879,7 +1879,7 @@
     "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.isPartyValid": "37c7f115a98f15b1",
     "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.lastStarterId": "fd4c9896b6aa268c",
     "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.movePartyIconsCursor": "b42d90cab0bb5602",
-    "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.openPokemonMenu": "f5492aca002e889c",
+    "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.openPokemonMenu": "ba83b2f4b18149f2",
     "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.partyCursorObj": "bb5048e9aefedf45",
     "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.partyStarterIds": "d2215e575354d8a1",
     "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.partyStarters": "ce1682666764e50d",
@@ -1890,15 +1890,15 @@
     "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.processFilterModeInput": "7c638db415ecbff7",
     "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.processInput": "80b5c31dc0bc4484",
     "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.processPartyIconInput": "4188a0c61ddbbb2d",
-    "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.processRandomCursorInput": "3e4d26ba401683c1",
-    "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.processStartCursorInput": "36a0337a3b08dc6a",
+    "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.processRandomCursorInput": "6117635527fd984b",
+    "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.processStartCursorInput": "0689b6913b9094f4",
     "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.randomCursorObj": "f41a8eb9d4c85c98",
     "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.resetFilters": "13f8abb66d849686",
     "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.scrollCursor": "8aaffdbde1f767e2",
     "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.setCursor": "b3043a477d163c07",
     "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.setFilterMode": "b1a16da94b7d6e62",
     "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.setNoStarter": "986bddc4ab00a87d",
-    "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.setStarter": "67729d0118400205",
+    "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.setStarter": "318958e3fa32ed8e",
     "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.show": "0935b5ade5739c65",
     "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.startCursorObj": "b2a008546062a51d",
     "src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.starterContainers": "74fc8085231b505a",
@@ -2119,6 +2119,6 @@
     "package.json#devDependencies.vitest": "4faf5e50fc20cdfb"
   },
   "recheck": {
-    "gameVersion": "1.12.1.2"
+    "gameVersion": "1.12.1.3"
   }
 }
