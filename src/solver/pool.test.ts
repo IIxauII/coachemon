@@ -16,14 +16,15 @@ type Fake = { n: number; jobs: number; closed: boolean };
 
 /**
  * Workers started by a script: `job` answers a worker's jobs, or "die" for it to die on one; `boot` is the nth start's
- * fate, `null` for a worker that started; `heapMb` is what a worker's jobs leave on its heap; `slowPoll` is the nth
- * start's reason to keep the slow poll.
+ * fate, `null` for a worker that started; `heapMb` is what a worker's jobs leave on its heap; `slowPoll` and
+ * `realClock` are the nth start's reasons to keep the slow poll and real time.
  */
 function fakeWorkers({
   job = (_w: Fake, inputs: readonly Action[]): Child[] | "die" => won(inputs),
   boot = (_n: number): NotStarted | null => null,
   heapMb = (_w: Fake): number | null => null,
   slowPoll = (_n: number): string | null => null,
+  realClock = (_n: number): string | null => null,
 } = {}) {
   const started: Fake[] = [];
   let running = 0;
@@ -38,6 +39,7 @@ function fakeWorkers({
     return {
       root,
       slowPoll: slowPoll(n),
+      realClock: realClock(n),
       async expand(_forkPoint, inputs) {
         running++;
         mostAtOnce = Math.max(mostAtOnce, running);
@@ -207,7 +209,20 @@ test("a pool reports the most heap any of its workers has used (#663)", async ()
   await Promise.all(Array.from({ length: 4 }, () => pool.expand("root", [tackle])));
   await pool.close();
 
-  assert.deepEqual(pool.stats(), { size: 2, died: 0, lastDeath: null, peakHeapMb: 400, heapLimitMb: 864, slowPoll: null });
+  assert.deepEqual(pool.stats(), { size: 2, died: 0, lastDeath: null, peakHeapMb: 400, heapLimitMb: 864, slowPoll: null, realClock: null });
+});
+
+test("a pool whose workers kept real time says why in its stats, a replacement worker's reason included (#782)", async () => {
+  const why = "MockClock no longer ticks on the global setInterval";
+  const real = fakeWorkers({ job: w => (w.n === 0 ? "die" : won([tackle])), realClock: n => (n === 2 ? why : null) });
+  const pool = await startPool(2, real.start, "1.12.0.11");
+  assert.ok("expand" in pool);
+  const before = pool.stats().realClock;
+  await pool.expand("root", [tackle]);
+  await pool.close();
+
+  assert.equal(before, null);
+  assert.equal(pool.stats().realClock, why);
 });
 
 test("a pool whose workers kept the slow poll says why in its stats, and one whose workers all run fast says nothing (#759)", async () => {

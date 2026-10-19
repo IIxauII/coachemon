@@ -3,6 +3,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { connect } from "node:net";
 import { createInterface } from "node:readline";
 import { test } from "node:test";
+import ts from "typescript";
 import type { SessionSave } from "./input.ts";
 import type { Clone, CloneRun } from "./replay.ts";
 import { startWorker, WorkerDied } from "./worker.ts";
@@ -13,14 +14,17 @@ const root = { sig: "root", hp: { ours: [1], foes: [1] }, legal: [tackle], forkP
 
 const HARNESS = readFileSync(new URL("./harness.test.ts.template", import.meta.url), "utf8");
 const FAST_POLL = readFileSync(new URL("./fast-poll.ts.template", import.meta.url), "utf8");
+const FAKE_CLOCK = readFileSync(new URL("./fake-clock.ts.template", import.meta.url), "utf8");
 
 /**
- * Stands in for the harness's serve mode: `answer` replies to each job, or ends the run with what it returns. `poll` is
- * what the fast poll writes before the harness connects, `null` for a run that writes nothing.
+ * Stands in for the harness's serve mode: `answer` replies to each job, or ends the run with what it returns. `poll` and
+ * `clock` are what the fast poll and the fake clock write before the harness connects, `null` for one that writes
+ * nothing.
  */
 function fakeHarness(
   answer: (job: { kind: string; inputs: unknown[] }) => object | { exit: CloneRun },
   poll: object | null = { fast: true },
+  clock: object | null = { fake: true },
 ) {
   const runs: { name: string; source: string; input: string; env?: Record<string, string>; heapMb?: number }[] = [];
   let finished = 0;
@@ -28,6 +32,7 @@ function fakeHarness(
     new Promise<CloneRun>(resolve => {
       runs.push({ name, source, input, env, heapMb });
       if (poll !== null && env?.COACH_POLL_OUT) writeFileSync(env.COACH_POLL_OUT, JSON.stringify(poll));
+      if (clock !== null && env?.COACH_CLOCK_OUT) writeFileSync(env.COACH_CLOCK_OUT, JSON.stringify(clock));
       const socket = connect(Number(env?.COACH_PORT), "127.0.0.1", () => {
         socket.write(`${JSON.stringify({ kind: "root", root })}\n`);
       });
@@ -47,6 +52,25 @@ function fakeHarness(
       socket.on("close", () => resolve({ out: undefined }));
     }).finally(() => finished++);
   return { clone, runs, ended: () => finished };
+}
+
+/** Every name a module's top level declares: its imports' local names, and its variables, functions, classes and types. */
+function topLevelNames(source: string): string[] {
+  const names: string[] = [];
+  for (const s of ts.createSourceFile("joined.ts", source, ts.ScriptTarget.Latest).statements) {
+    if (ts.isImportDeclaration(s)) {
+      const clause = s.importClause;
+      if (clause?.name) names.push(clause.name.text);
+      const bound = clause?.namedBindings;
+      if (bound && ts.isNamespaceImport(bound)) names.push(bound.name.text);
+      if (bound && ts.isNamedImports(bound)) names.push(...bound.elements.map(e => e.name.text));
+    } else if (ts.isVariableStatement(s)) {
+      for (const d of s.declarationList.declarations) if (ts.isIdentifier(d.name)) names.push(d.name.text);
+    } else if ((ts.isFunctionDeclaration(s) || ts.isClassDeclaration(s) || ts.isTypeAliasDeclaration(s)) && s.name) {
+      names.push(s.name.text);
+    }
+  }
+  return names;
 }
 
 const heap = { usedMb: 412, limitMb: 864 };
@@ -85,7 +109,7 @@ test("a warm worker roots a later start of its fight in the harness it runs, han
   assert.equal(runs.length, 1, "no second harness started");
 });
 
-test("a worker's harness is the replay's with the fast poll after it, and the poll's report clears it (#759)", async () => {
+test("a worker's harness is the replay's with the fake clock and the fast poll after it, and their reports clear it (#759, #782)", async () => {
   const { clone, runs } = fakeHarness(job => won(job.inputs));
 
   const worker = await startWorker(clone, save);
@@ -93,9 +117,41 @@ test("a worker's harness is the replay's with the fast poll after it, and the po
   await worker.close();
 
   assert.equal(runs[0].name, "worker");
-  assert.equal(runs[0].source, `${HARNESS}\n${FAST_POLL}`);
+  assert.equal(runs[0].source, `${HARNESS}\n${FAKE_CLOCK}\n${FAST_POLL}`);
   assert.equal(worker.slowPoll, null);
-  assert.equal(existsSync(runs[0].env?.COACH_POLL_OUT ?? ""), false, "the report is removed once read");
+  assert.equal(worker.realClock, null);
+  assert.equal(existsSync(runs[0].env?.COACH_POLL_OUT ?? ""), false, "the poll's report is removed once read");
+  assert.equal(existsSync(runs[0].env?.COACH_CLOCK_OUT ?? ""), false, "the clock's report is removed once read");
+});
+
+test("the harness, the fake clock and the fast poll declare no top-level name twice, as one module (#782)", () => {
+  const names = [HARNESS, FAKE_CLOCK, FAST_POLL].flatMap(source => topLevelNames(source));
+  const twice = names.filter((n, i) => names.indexOf(n) !== i);
+
+  assert.deepEqual(twice, []);
+});
+
+test("a worker whose fake clock stood down still serves, and says why it runs on real time (#782)", async () => {
+  const { clone } = fakeHarness(job => won(job.inputs), { fast: true }, { real: "vi.waitUntil is not the one the fake clock copies" });
+
+  const worker = await startWorker(clone, save);
+  assert.ok("root" in worker);
+  const children = await worker.expand("root", [tackle]);
+  await worker.close();
+
+  assert.equal(children.length, 1);
+  assert.equal(worker.slowPoll, null);
+  assert.equal(worker.realClock, "vi.waitUntil is not the one the fake clock copies");
+});
+
+test("a worker whose fake clock wrote nothing counts as running on real time (#782)", async () => {
+  const { clone } = fakeHarness(job => won(job.inputs), { fast: true }, null);
+
+  const worker = await startWorker(clone, save);
+  assert.ok("root" in worker);
+  await worker.close();
+
+  assert.equal(worker.realClock, "the fake clock never reported");
 });
 
 test("a worker whose fast poll stood down still serves, and says why it polls the slow way (#759)", async () => {

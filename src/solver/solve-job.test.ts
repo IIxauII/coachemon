@@ -13,7 +13,7 @@ import { solveJob } from "./solve-job.ts";
 const drayton = JSON.parse(readFileSync(new URL("./fixtures/drayton-w188.json", import.meta.url), "utf8"));
 const INPUT: SolveInput = { ...drayton, cloneVersion: "1.12.0.11", budget: { expansions: 3000, turns: 40 } };
 const SET_UP: CloneSetup = { kind: "clone", gameVersion: "1.12.0.11", dir: "/home/.coachemon/clone/v1.12.0.11/game" };
-const POOL = { size: 4, died: 0, lastDeath: null, peakHeapMb: null, heapLimitMb: null, slowPoll: null };
+const POOL = { size: 4, died: 0, lastDeath: null, peakHeapMb: null, heapLimitMb: null, slowPoll: null, realClock: null };
 const LINE: SolveResult = { kind: "oracle_line", oracleLine: GORDIE_LINE };
 
 function control() {
@@ -101,6 +101,26 @@ test("a solve job whose workers kept the slow poll says so beside its progress (
     lines.at(-1),
     "searched 1,200 of 9,000 turns, slowly: the search's workers kept the game's own phase poll, as PhaseInterceptor.run is not the one the fast poll copies",
   );
+});
+
+test("a solve job whose workers kept real timers says so beside its progress, after the slow poll when both stood down (#782)", async () => {
+  const { ctl, lines } = control();
+  const realClock = "vi.waitUntil is not the one the fake clock copies";
+  const work = solveJob("/home/.coachemon", {
+    setUp: async () => SET_UP,
+    runIn: recordingClone().runIn,
+    solve: async (_input, { progress }: SolveDeps) => {
+      progress?.({ spent: 1200, budget: 9000, pool: { ...POOL, realClock } });
+      progress?.({ spent: 2400, budget: 9000, pool: { ...POOL, realClock, slowPoll: "PhaseInterceptor.run is not the one the fast poll copies" } });
+      return LINE;
+    },
+  });
+  await work({ input: INPUT }, ctl);
+  assert.deepEqual(lines.slice(-2), [
+    "searched 1,200 of 9,000 turns, slowly: the search's workers waited on real timers, as vi.waitUntil is not the one the fake clock copies",
+    "searched 2,400 of 9,000 turns, slowly: the search's workers kept the game's own phase poll, as PhaseInterceptor.run is not the one the fast " +
+      "poll copies; the search's workers waited on real timers, as vi.waitUntil is not the one the fake clock copies",
+  ]);
 });
 
 test("a cancelled solve job stops each clone run it has going, and starts no more (#672)", async () => {

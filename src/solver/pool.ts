@@ -10,7 +10,8 @@ const TRIES = 3;
 
 /**
  * `peakHeapMb` is the most any worker's job has left on its heap, before collection; `lastDeath`, why one last died;
- * `slowPoll`, why a worker last started on the game's own phase poll (#759).
+ * `slowPoll`, why a worker last started on the game's own phase poll (#759); `realClock`, why one last started with its
+ * timers on real time (#782).
  */
 export type PoolStats = {
   size: number;
@@ -19,9 +20,17 @@ export type PoolStats = {
   peakHeapMb: number | null;
   heapLimitMb: number | null;
   slowPoll: string | null;
+  realClock: string | null;
 };
 
-export const slowPollNote = (why: string) => `the search's workers kept the game's own phase poll, as ${why}`;
+/** Why the search's workers run slower than they could, for a progress line; `null` when they run as fast as they can. */
+export function slowWorkersNote({ slowPoll, realClock }: Pick<PoolStats, "slowPoll" | "realClock">): string | null {
+  const notes = [
+    slowPoll !== null && `the search's workers kept the game's own phase poll, as ${slowPoll}`,
+    realClock !== null && `the search's workers waited on real timers, as ${realClock}`,
+  ].filter(note => note !== false);
+  return notes.length === 0 ? null : notes.join("; ");
+}
 
 /**
  * `signal` is the asking solve's: once it aborts, its jobs still queued end at once, and the pool stays up for the
@@ -70,12 +79,14 @@ export async function startPool(size: number, start: () => Promise<Worker | NotS
   let peakHeapMb: number | null = null;
   let heapLimitMb: number | null = null;
   let slowPoll = workers.findLast(w => w.slowPoll !== null)?.slowPoll ?? null;
+  let realClock = workers.findLast(w => w.realClock !== null)?.realClock ?? null;
 
   const restart = (slot: Slot) => {
     const fresh = start().then(w => {
       if ("root" in w) {
         slot.worker = w;
         slowPoll = w.slowPoll ?? slowPoll;
+        realClock = w.realClock ?? realClock;
       }
       return w;
     });
@@ -155,7 +166,7 @@ export async function startPool(size: number, start: () => Promise<Worker | NotS
         return children;
       }, signal),
     rootAt: (save, at, signal) => ask(worker => worker.rootAt(save, at), signal),
-    stats: () => ({ size, died, lastDeath, peakHeapMb, heapLimitMb, slowPoll }),
+    stats: () => ({ size, died, lastDeath, peakHeapMb, heapLimitMb, slowPoll, realClock }),
     async close() {
       closed = true;
       for (const job of queue.splice(0)) job.fail(closedPool());

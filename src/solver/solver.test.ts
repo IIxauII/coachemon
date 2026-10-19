@@ -88,7 +88,7 @@ function warmLease(answer: Partial<Pick<WorkerPool, "rootAt">> = {}) {
       asked.expand.push({ forkPoint, signal });
       return inputs.map(input => ({ input, end: "lost", hp: { ours: [0], foes: [1] } }));
     },
-    stats: () => ({ size: 2, died: 0, lastDeath: null, peakHeapMb: null, heapLimitMb: null, slowPoll: null }),
+    stats: () => ({ size: 2, died: 0, lastDeath: null, peakHeapMb: null, heapLimitMb: null, slowPoll: null, realClock: null }),
     close: async () => assert.fail("a warm pool is the fight's to close"),
   };
   const lease: Lease = { pool, warm: true, done: async broken => void asked.done.push(broken) };

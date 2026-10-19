@@ -19,6 +19,7 @@ export const HARNESS: Area = {
         "src/data/moves/move.ts#Move.attrs",
       ],
     },
+    { name: "callArgs", kind: "field", at: [], from: "ours", note: "the fake clock's timer records" },
     {
       name: "chance",
       kind: "field",
@@ -37,6 +38,7 @@ export const HARNESS: Area = {
     },
     { name: "disableShinies", kind: "field", at: ["test/helpers/overrides-helper.ts#OverridesHelper.disableShinies"] },
     { name: "doSwitchPokemon", kind: "method", at: ["test/framework/game-manager.ts#GameManager.doSwitchPokemon"] },
+    { name: "due", kind: "field", at: [], from: "ours", note: "the fake clock's timer records" },
     {
       name: "end",
       kind: "field",
@@ -302,6 +304,7 @@ export const HARNESS: Area = {
         "src/data/pokemon-data.ts#PokemonSummonData.turnCount",
       ],
     },
+    { name: "uninstall", kind: "method", at: [], from: "ours", note: "what the fake clock hands back once installed" },
     { name: "updateList", kind: "field", at: [], from: "phaser", note: "Phaser Systems.updateList" },
     {
       name: "useMode",
@@ -382,6 +385,7 @@ export const HARNESS: Area = {
       at: ["test/framework/phase-interceptor.ts#PhaseInterceptor"],
     },
     { name: "#test/helpers/prompt-handler", kind: "import", at: ["test/helpers/prompt-handler.ts#PromptHandler"] },
+    { name: "#test/mocks/mock-clock", kind: "import", at: ["test/mocks/mock-clock.ts#MockClock"] },
     { name: "#ui/party-ui-handler", kind: "import", at: ["src/ui/handlers/party-ui-handler.ts#PartyUiHandler"] },
     { name: "#utils/pokemon-utils", kind: "import", at: ["src/utils/pokemon-utils.ts#canTerastallize"] },
     { name: "BattleEndPhase", kind: "phase", at: ["src/phases/battle-end-phase.ts#BattleEndPhase"] },
