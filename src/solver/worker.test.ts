@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { connect } from "node:net";
 import { createInterface } from "node:readline";
 import { test } from "node:test";
@@ -11,13 +11,23 @@ const save: SessionSave = JSON.parse(readFileSync(new URL("./fixtures/drayton-w1
 const tackle = { kind: "move", move: "TACKLE", tera: false } as const;
 const root = { sig: "root", hp: { ours: [1], foes: [1] }, legal: [tackle], forkPoint: "root" };
 
-/** Stands in for the harness's serve mode: `answer` replies to each job, or ends the run with what it returns. */
-function fakeHarness(answer: (job: { kind: string; inputs: unknown[] }) => object | { exit: CloneRun }) {
-  const runs: { input: string; env?: Record<string, string>; heapMb?: number }[] = [];
+const HARNESS = readFileSync(new URL("./harness.test.ts.template", import.meta.url), "utf8");
+const FAST_POLL = readFileSync(new URL("./fast-poll.ts.template", import.meta.url), "utf8");
+
+/**
+ * Stands in for the harness's serve mode: `answer` replies to each job, or ends the run with what it returns. `poll` is
+ * what the fast poll writes before the harness connects, `null` for a run that writes nothing.
+ */
+function fakeHarness(
+  answer: (job: { kind: string; inputs: unknown[] }) => object | { exit: CloneRun },
+  poll: object | null = { fast: true },
+) {
+  const runs: { name: string; source: string; input: string; env?: Record<string, string>; heapMb?: number }[] = [];
   let finished = 0;
-  const clone: Clone = ({ input, env, heapMb, signal }) =>
+  const clone: Clone = ({ name, source, input, env, heapMb, signal }) =>
     new Promise<CloneRun>(resolve => {
-      runs.push({ input, env, heapMb });
+      runs.push({ name, source, input, env, heapMb });
+      if (poll !== null && env?.COACH_POLL_OUT) writeFileSync(env.COACH_POLL_OUT, JSON.stringify(poll));
       const socket = connect(Number(env?.COACH_PORT), "127.0.0.1", () => {
         socket.write(`${JSON.stringify({ kind: "root", root })}\n`);
       });
@@ -55,6 +65,41 @@ test("a worker hands the harness the save and its port, and comes back with the 
   assert.deepEqual(worker.root, root);
   assert.deepEqual(JSON.parse(runs[0].input), { save, inputs: [] });
   assert.match(runs[0].env?.COACH_PORT ?? "", /^\d+$/);
+});
+
+test("a worker's harness is the replay's with the fast poll after it, and the poll's report clears it (#759)", async () => {
+  const { clone, runs } = fakeHarness(job => won(job.inputs));
+
+  const worker = await startWorker(clone, save);
+  assert.ok("root" in worker);
+  await worker.close();
+
+  assert.equal(runs[0].name, "worker");
+  assert.equal(runs[0].source, `${HARNESS}\n${FAST_POLL}`);
+  assert.equal(worker.slowPoll, null);
+  assert.equal(existsSync(runs[0].env?.COACH_POLL_OUT ?? ""), false, "the report is removed once read");
+});
+
+test("a worker whose fast poll stood down still serves, and says why it polls the slow way (#759)", async () => {
+  const { clone } = fakeHarness(job => won(job.inputs), { slow: "PhaseInterceptor.run is not the one the fast poll copies" });
+
+  const worker = await startWorker(clone, save);
+  assert.ok("root" in worker);
+  const children = await worker.expand("root", [tackle]);
+  await worker.close();
+
+  assert.equal(children.length, 1);
+  assert.equal(worker.slowPoll, "PhaseInterceptor.run is not the one the fast poll copies");
+});
+
+test("a worker whose fast poll wrote nothing counts as polling the slow way (#759)", async () => {
+  const { clone } = fakeHarness(job => won(job.inputs), null);
+
+  const worker = await startWorker(clone, save);
+  assert.ok("root" in worker);
+  await worker.close();
+
+  assert.equal(worker.slowPoll, "the fast poll never reported");
 });
 
 test("a worker started mid-fight hands the harness the fork point it starts at (#664)", async () => {

@@ -12,6 +12,7 @@ import {
   type Script,
   type SolveInput,
   type SolveResult,
+  slowPollNote,
   solve,
 } from "../../src/solver/solver.ts";
 import { findPinnedClone, harnessIn } from "../clone-test/clone-test.ts";
@@ -92,9 +93,9 @@ if (workers !== undefined && !(Number.isInteger(workers) && workers > 0)) exitNo
 let shown = -PROGRESS_EVERY;
 let last: PoolStats | undefined;
 const started = Date.now();
-const poolLine = ({ size, died, lastDeath, peakHeapMb, heapLimitMb }: PoolStats) =>
+const poolLine = ({ size, died, lastDeath, peakHeapMb, heapLimitMb, slowPoll }: PoolStats) =>
   `${size} workers, ${died} died${lastDeath === null ? "" : ` (the last: ${lastDeath})`}, ` +
-  `heap peak ${peakHeapMb ?? "?"} of ${heapLimitMb ?? "?"} MB`;
+  `heap peak ${peakHeapMb ?? "?"} of ${heapLimitMb ?? "?"} MB${slowPoll === null ? "" : `; ${slowPollNote(slowPoll)}`}`;
 let result: SolveResult;
 try {
   result = await solve(

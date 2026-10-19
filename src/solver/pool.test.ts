@@ -15,12 +15,14 @@ type Fake = { n: number; jobs: number; closed: boolean };
 
 /**
  * Workers started by a script: `job` answers a worker's jobs, or "die" for it to die on one; `boot` is the nth start's
- * fate, `null` for a worker that started; `heapMb` is what a worker's jobs leave on its heap.
+ * fate, `null` for a worker that started; `heapMb` is what a worker's jobs leave on its heap; `slowPoll` is the nth
+ * start's reason to keep the slow poll.
  */
 function fakeWorkers({
   job = (_w: Fake, inputs: readonly Action[]): Child[] | "die" => won(inputs),
   boot = (_n: number): NotStarted | null => null,
   heapMb = (_w: Fake): number | null => null,
+  slowPoll = (_n: number): string | null => null,
 } = {}) {
   const started: Fake[] = [];
   let running = 0;
@@ -34,6 +36,7 @@ function fakeWorkers({
     let used: number | null = null;
     return {
       root,
+      slowPoll: slowPoll(n),
       async expand(_forkPoint, inputs) {
         running++;
         mostAtOnce = Math.max(mostAtOnce, running);
@@ -198,5 +201,20 @@ test("a pool reports the most heap any of its workers has used (#663)", async ()
   await Promise.all(Array.from({ length: 4 }, () => pool.expand("root", [tackle])));
   await pool.close();
 
-  assert.deepEqual(pool.stats(), { size: 2, died: 0, lastDeath: null, peakHeapMb: 400, heapLimitMb: 864 });
+  assert.deepEqual(pool.stats(), { size: 2, died: 0, lastDeath: null, peakHeapMb: 400, heapLimitMb: 864, slowPoll: null });
+});
+
+test("a pool whose workers kept the slow poll says why in its stats, and one whose workers all run fast says nothing (#759)", async () => {
+  const slow = fakeWorkers({ slowPoll: n => (n === 0 ? null : "PhaseInterceptor.run is not the one the fast poll copies") });
+  const slowPool = await startPool(2, slow.start, "1.12.0.11");
+  assert.ok("expand" in slowPool);
+  await slowPool.close();
+
+  const fast = fakeWorkers();
+  const fastPool = await startPool(2, fast.start, "1.12.0.11");
+  assert.ok("expand" in fastPool);
+  await fastPool.close();
+
+  assert.equal(slowPool.stats().slowPoll, "PhaseInterceptor.run is not the one the fast poll copies");
+  assert.equal(fastPool.stats().slowPoll, null);
 });

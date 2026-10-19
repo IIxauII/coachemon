@@ -26,7 +26,7 @@ npm run drift:check -- --version <new>
 ```
 
 `reads:check` holds at any version: every game name our code reads (in the page readers, the server files that read
-the page, the HUD scripts and the harness template) is registered in `scripts/game-reads/registry/`. A read with no
+the page, the HUD scripts, the harness template and its fast poll) is registered in `scripts/game-reads/registry/`. A read with no
 entry is **UNREGISTERED**, an entry nothing reads is **STALE**, and an entry that names no game ref (an empty `at`
 with no `from`, or a mirror with an empty `of`) or a mirror id that is not lower-kebab is **INVALID**. It runs inside
 `npm test` too.
@@ -46,6 +46,11 @@ entry whose mode or handler is **MISPLACED**. At the target version it also name
 Re-read each entry and fix what changed: screens in `src/escape-ladder/table.ts`, HUD modules in
 `skills/coachemon/scripts/hud/`, their deps in `scripts/hud-deps.ts`, the reads in `scripts/game-reads/registry/`.
 Run both again until they name only what you have re-read.
+
+`PhaseInterceptor.run` **MOVED** is the search's fast poll (`src/solver/fast-poll.ts.template`, #759): it replaces that
+method with a copy that polls every 1 ms, and only while the method matches the copy's `UPSTREAM_RUN`. Left as it is, a
+solve still answers, but its workers keep the game's own poll, about six times slower, and the solve's progress says
+so. Bring `UPSTREAM_RUN` and the copy up to the new body.
 
 Set the clone up for the harness. The checkout `drift:check` makes has no submodules and no `node_modules`; the stamp
 names whichever step is missing. In a worktree, link the main checkout's `.cache` first (`CLAUDE.md`), or the `assets`
