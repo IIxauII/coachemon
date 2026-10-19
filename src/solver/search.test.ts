@@ -57,6 +57,32 @@ const replaysAll = () => {
   };
 };
 
+/**
+ * A one-worker pool that holds each job until the last one dispatched was let go and the search has done all it would
+ * with it, so the order jobs are dispatched in is the search's choice alone. `dispatched` names each as `from: move`.
+ */
+function held(inner: Pool) {
+  const dispatched: string[] = [];
+  const waiting: (() => void)[] = [];
+  const pool: Pool = {
+    size: 1,
+    expand(forkPoint, inputs) {
+      dispatched.push(`${JSON.parse(forkPoint).join(" ")}: ${inputs.map(named).join(" ")}`);
+      return new Promise(resolve => waiting.push(() => resolve(inner.expand(forkPoint, inputs))));
+    },
+  };
+  const drain = async <T>(searching: Promise<T>): Promise<T> => {
+    let over = false;
+    searching.then(() => (over = true));
+    while (!over) {
+      waiting.shift()?.();
+      await new Promise(resolve => setImmediate(resolve));
+    }
+    return searching;
+  };
+  return { pool, dispatched, drain };
+}
+
 const BUDGET = { expansions: 3000, turns: 40 };
 const NARROW: Beam[] = [
   { width: 1, ours: 0.5 },
@@ -221,6 +247,51 @@ test("each beam stops at a budget of its own, so a beam that spends it leaves th
     ["budget", 6],
   ]);
   assert.equal(expanded.flatMap(e => e.inputs).length, 12);
+});
+
+test("a later beam is dispatched only when no earlier beam has a job queued (#760)", async () => {
+  // Weighing our HP at 1 keeps PECK and wins on the third; at 0.5 it keeps SLAM. Two moves a turn make two jobs a turn.
+  const { root, pool: inner } = tree(["SLAM", "PECK"], {
+    "": { SLAM: [0.5, 0.4], PECK: [0.1, 1] },
+    PECK: { SLAM: [0.15, 0.9], PECK: [0.2, 1] },
+    "PECK PECK": { PECK: "won" },
+  });
+  const { pool, dispatched, drain } = held(inner);
+
+  const result = await drain(search({ root, pool, validate: replaysAll().validate, budget: BUDGET, portfolio: NARROW.toReversed() }));
+
+  assert.deepEqual(result.kind === "found" && result.inputs.map(named), ["PECK", "PECK", "PECK"]);
+  assert.deepEqual(dispatched, [
+    ": SLAM",
+    ": PECK",
+    // Between the first beam's turns, while it has nothing queued, the second fills the worker.
+    ": SLAM",
+    "PECK: SLAM",
+    "PECK: PECK",
+    ": PECK",
+    "PECK PECK: SLAM",
+    "PECK PECK: PECK",
+    // And while the first beam's win replays.
+    "SLAM: SLAM",
+  ]);
+});
+
+test("the first beam spending its budget leaves a later beam searching, and the later beam's win comes back (#760)", async () => {
+  // Weighing our HP at 1 keeps PECK, which never ends; at 0.5 it keeps SLAM, which wins on the second.
+  const { root, pool: inner } = tree(["SLAM", "PECK"], {
+    "": { SLAM: [0.5, 0.4], PECK: [0.1, 1] },
+    PECK: { SLAM: [0.15, 0.9], PECK: [0.2, 1] },
+    SLAM: { SLAM: "won" },
+  });
+  const { pool, dispatched, drain } = held(inner);
+
+  const result = await drain(
+    search({ root, pool, validate: replaysAll().validate, budget: { expansions: 4, turns: 40 }, portfolio: NARROW.toReversed() }),
+  );
+
+  assert.deepEqual(result.kind === "found" && result.inputs.map(named), ["SLAM", "SLAM"]);
+  // The first beam's four, its budget, all go before the second beam's second turn.
+  assert.deepEqual(dispatched, [": SLAM", ": PECK", ": SLAM", "PECK: SLAM", "PECK: PECK", ": PECK", "SLAM: SLAM", "SLAM: PECK"]);
 });
 
 test("progress reports the expansions spent out of the whole budget (#662)", async () => {

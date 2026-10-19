@@ -26,10 +26,13 @@ export type Pool = {
   expand(forkPoint: string, inputs: readonly Action[]): Promise<Child[]>;
 };
 
-// (#655)
+/**
+ * In order of preference: a later beam runs only on workers the earlier ones leave idle (#655). 8@1 goes first as the
+ * one beam that wins Kieran W190 alone; first, it needed 46.5% fewer tries to a first win across the three fights (#760).
+ */
 export const PORTFOLIO: readonly Beam[] = [
-  { width: 8, ours: 0.5 },
   { width: 8, ours: 1 },
+  { width: 8, ours: 0.5 },
   { width: 16, ours: 0.5 },
 ];
 
@@ -55,7 +58,6 @@ type Node = { path: readonly Action[]; at: Position; hist: readonly number[]; sc
 
 type BeamRun = Beam & {
   index: number;
-  dispatched: number;
   spent: number;
   inFlight: number;
   outOfBudget: boolean;
@@ -73,15 +75,15 @@ const foeLost = (hp: Hp) => sum(hp.foes.map(f => 1 - f));
 const played = (path: readonly Action[]) => path.filter((a): a is Input => a !== null);
 
 /**
- * Beams over per-turn decisions, sharing the pool fairly by actions dispatched, until a win replays. For want of a win,
- * "no answer" comes only once every beam has emptied, stalled, reached the turn limit or spent its budget.
+ * Beams over per-turn decisions, the pool serving the earliest in the portfolio with a job queued, until a win replays.
+ * For want of a win, "no answer" comes only once every beam has emptied, stalled, reached the turn limit or spent its
+ * budget.
  */
 export function search({ root, pool, validate, budget, portfolio = PORTFOLIO, progress }: SearchInput): Promise<Found | NoAnswer> {
   return new Promise(resolve => {
     const beams: BeamRun[] = portfolio.map((beam, index) => ({
       ...beam,
       index,
-      dispatched: 0,
       spent: 0,
       inFlight: 0,
       outOfBudget: false,
@@ -108,7 +110,7 @@ export function search({ root, pool, validate, budget, portfolio = PORTFOLIO, pr
 
     const pump = () => {
       while (!over && busy < pool.size && queue.length > 0) {
-        const next = queue.reduce((best, job) => (fairer(job.beam, best.beam) ? job : best));
+        const next = queue.reduce((best, job) => (job.beam.index < best.beam.index ? job : best));
         queue.splice(queue.indexOf(next), 1);
         const { beam, inputs } = next;
         if (beam.spent + beam.inFlight >= budget.expansions) {
@@ -117,7 +119,6 @@ export function search({ root, pool, validate, budget, portfolio = PORTFOLIO, pr
           continue;
         }
         busy++;
-        beam.dispatched += inputs.length;
         beam.inFlight += inputs.length;
         pool.expand(next.forkPoint, inputs).then(
           children => {
@@ -232,5 +233,3 @@ export function search({ root, pool, validate, budget, portfolio = PORTFOLIO, pr
     for (const beam of beams) run(beam).catch(failed);
   });
 }
-
-const fairer = (a: BeamRun, b: BeamRun) => a.dispatched < b.dispatched || (a.dispatched === b.dispatched && a.index < b.index);
