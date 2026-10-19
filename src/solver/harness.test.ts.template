@@ -845,6 +845,15 @@ async function checks(inputs: Input[]) {
   return { straight: straight.map(({ turn, end }) => ({ turn, end })), fork, chain };
 }
 
+/** A later solve in the fight a warm worker serves starts here: loaded as `load` loads the first (#677). */
+async function rootAt(save: any, at?: string) {
+  job.save = save;
+  job.at = at;
+  if (at === undefined) await loadSession(JSON.stringify(save));
+  else await restore(at);
+  return { root: position() };
+}
+
 async function serve(port: number) {
   const socket = connect(port, "127.0.0.1");
   await new Promise<void>((resolve, reject) => socket.once("connect", resolve).once("error", reject));
@@ -854,7 +863,12 @@ async function serve(port: number) {
   for await (const line of createInterface({ input: socket })) {
     const asked = JSON.parse(line);
     try {
-      const answer = asked.kind === "expand" ? await expand(asked.forkPoint, asked.inputs) : await checks(asked.inputs);
+      const answer =
+        asked.kind === "expand"
+          ? await expand(asked.forkPoint, asked.inputs)
+          : asked.kind === "root"
+            ? await rootAt(asked.save, asked.at)
+            : await checks(asked.inputs);
       send({ id: asked.id, ...answer });
     } catch (err) {
       dirty = true;

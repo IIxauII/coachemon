@@ -15,6 +15,7 @@ import type { MenuRead } from "./game/port.ts";
 import { CALL_BUDGET_MS } from "./settle.ts";
 import { CLONE_JOB } from "./solver/clone.ts";
 import { SOLVE_JOB } from "./solver/solve-job.ts";
+import type { MidFightExtras } from "./solver/input.ts";
 
 const money = { money: 1000 };
 
@@ -1568,11 +1569,25 @@ const gordieRead = (at: { wave?: number; turn?: number | null } = {}) => (): Scr
   return read.ready ? { ...read, wave: at.wave ?? GORDIE_LINE.wave, turn: at.turn === undefined ? GORDIE_LINE.steps[0].turn : at.turn } : read;
 };
 
+const GORDIE_T5: { save: Record<string, unknown>; extras: MidFightExtras & { wave: number; battleSeed: string; turn: number } } =
+  readAtPin(new URL("./solver/fixtures/gordie-w180.t5.json", import.meta.url), "gameVersion");
+
+/** Stands in for Gordie's wave-start save, which a solve past the first turn never starts from. */
+const GORDIE_WAVE_START = { ...GORDIE_T5.save, party: [] };
+
+/** The session read in Gordie's fight past its first turn: the export is the augmented export's. */
+const gordieSession = () =>
+  ({ ok: true, wave: GORDIE_T5.extras.wave, battleSeed: GORDIE_T5.extras.battleSeed, waveStart: GORDIE_WAVE_START, export: GORDIE_T5.save }) as const;
+
+/** The live extras read beside `gordieSession`, at `turn`. */
+const gordieExtras = (turn = GORDIE_T5.extras.turn) => () => ({ ok: true, ...GORDIE_T5.extras, turn }) as const;
+
 /** A tab at the decision GORDIE_LINE starts from, with solving on, the panel taking every oracle line handed into `handed`. */
 async function handTab(t: TestContext, kinds: JobKinds, over: Pick<FakeScreen, "read" | "oracleLine" | "lockHolder"> = {}) {
   const handed: unknown[] = [];
   const oracleLine = over.oracleLine ?? (line => { handed.push(line); return { ok: true } as const; });
-  const fake = fakeGame({ read: gordieRead(), menu: () => commandMenu(0), session: draytonRead(), ...over, oracleLine });
+  const at = GORDIE_LINE.steps[0].turn;
+  const fake = fakeGame({ read: gordieRead(), menu: () => commandMenu(0), session: gordieSession, extras: gordieExtras(at), ...over, oracleLine });
   const driver = new Driver(fake.game, tempHome(t), fake.clock, kinds, "hub");
   await driver.solving(true);
   return { driver, handed };
@@ -1659,4 +1674,116 @@ test("an oracle line the overlay did not take comes back unheld, with the overla
     assert.equal(r.held, false);
     assert.equal(r.oracle_line_error, why);
   }
+});
+
+/** A tab at `turn` of Gordie's fight, with solving on and `solve` as the solve job's work. */
+async function midFightTab(t: TestContext, solve: JobWork, at: { turn: number }, extras: FakeScreen["extras"] = () => gordieExtras(at.turn)()) {
+  const fake = fakeGame({ read: () => gordieRead(at)(), menu: () => commandMenu(0), session: gordieSession, extras });
+  const driver = new Driver(fake.game, tempHome(t), fake.clock, { [SOLVE_JOB]: solve }, "hub");
+  await driver.solving(true);
+  return driver;
+}
+
+test("a solve past the fight's first turn starts from the augmented export: the session export and the extras read at that decision (#677)", async t => {
+  const { held, work } = heldSolve(SOLVED);
+  const driver = await midFightTab(t, work, { turn: GORDIE_T5.extras.turn });
+  const started = await driver.startJob(SOLVE_JOB, {});
+  assert.equal(started.state, "running", JSON.stringify(started));
+  const input = held.args?.input as Record<string, unknown>;
+  assert.deepEqual(input.save, GORDIE_T5.save, "the export at the decision, never the wave-start save");
+  const { ok: _ok, ...extras } = gordieExtras()();
+  assert.deepEqual(input.extras, extras);
+  assert.deepEqual(input.liveExport, GORDIE_T5.save);
+  assert.deepEqual(input.live, { wave: GORDIE_T5.extras.wave, battleSeed: GORDIE_T5.extras.battleSeed });
+  held.finish();
+  await settledJobs();
+});
+
+test("a re-solve off the line answers with an oracle line from the turn it was solved at, and the panel holds it (#677)", async t => {
+  const { driver, job, handed } = await solvedTab(t, SOLVED);
+  assert.deepEqual((await driver.readJob(job)).result, SOLVED);
+  const r = await outcome(driver.handOracleLine(job, {}));
+  assert.equal(r.status, "ok", JSON.stringify(r));
+  assert.equal(r.held, true);
+  assert.deepEqual(handed, [GORDIE_LINE], "an oracle line that starts at turn 11, handed at turn 11");
+});
+
+test("a re-solve that finds no win answers no answer with its reason, as its result (#677)", async t => {
+  const answer = { kind: "no_answer", reason: { code: "no_win", beams: [], unreplayed: [], dropped: 0 }, message: "no winning path turned up. The card still coaches." };
+  const { held, work } = heldSolve(answer);
+  const driver = await midFightTab(t, work, { turn: 9 });
+  const { job } = await driver.startJob(SOLVE_JOB, {});
+  held.finish();
+  await settledJobs();
+  const ended = await driver.readJob(job);
+  assert.equal(ended.state, "done");
+  assert.deepEqual(ended.result, answer);
+  assert.equal((await outcome(driver.handOracleLine(job, {}))).error, "no_oracle_line", "nothing to hand: the card carries the fight");
+});
+
+test("a re-solve once the fight has moved on cancels the fight's earlier solve and starts afresh from the new turn (#677)", async t => {
+  const { held, work } = heldSolve(SOLVED);
+  const at = { turn: 5 };
+  const driver = await midFightTab(t, work, at);
+  const first = await driver.startJob(SOLVE_JOB, {});
+  assert.equal((await driver.startJob(SOLVE_JOB, {})).job, first.job, "the same decision hands back its own solve");
+  at.turn = 9;
+  const again = await driver.startJob(SOLVE_JOB, {});
+  assert.notEqual(again.job, first.job);
+  assert.equal((await driver.pollJob(first.job)).state, "cancelled", "a solve from a turn the fight has left");
+  assert.equal(((held.args?.input as { extras: { turn: number } }).extras).turn, 9);
+  held.finish();
+  await settledJobs();
+});
+
+test("a late join whose live extras can't be read answers no answer, starting no job (#677)", async t => {
+  const { held, work } = heldSolve(null);
+  const driver = await midFightTab(t, work, { turn: 5 }, () => ({ ok: false, why: "no-battle" }));
+  const r = await refusalOf(driver.startJob(SOLVE_JOB, {}));
+  assert.equal(r.code, "no_answer", r.message);
+  assert.deepEqual(r.detail.reason, { code: "no_extras", why: "no-battle" });
+  assert.match(r.message, /The card still coaches\./);
+  assert.equal(held.started, 0);
+});
+
+test("a late join whose live extras lack one answers no answer naming it, starting no job (#677)", async t => {
+  const { held, work } = heldSolve(null);
+  const lacking = () => ({ ...gordieExtras(5)(), unread: ["arenaTags"] });
+  const driver = await midFightTab(t, work, { turn: 5 }, lacking);
+  const r = await refusalOf(driver.startJob(SOLVE_JOB, {}));
+  assert.equal(r.code, "no_answer", r.message);
+  assert.deepEqual(r.detail.reason, { code: "missing_extras", extras: ["arenaTags"] });
+  assert.equal(held.started, 0);
+});
+
+test("off the line, a re-solve's oracle line from the turn the game now stands at is handed after the first (#677)", async t => {
+  const at = { turn: GORDIE_LINE.steps[0].turn };
+  const answers = [SOLVED, { kind: "oracle_line", oracleLine: { ...GORDIE_LINE, steps: GORDIE_LINE.steps.filter(st => st.turn >= 13) } }];
+  const work: JobWork = async () => answers.shift();
+  const handed: unknown[] = [];
+  const fake = fakeGame({
+    read: () => gordieRead(at)(),
+    menu: () => commandMenu(0),
+    session: gordieSession,
+    extras: () => gordieExtras(at.turn)(),
+    oracleLine: line => {
+      handed.push(line);
+      return { ok: true };
+    },
+  });
+  const driver = new Driver(fake.game, tempHome(t), fake.clock, { [SOLVE_JOB]: work }, "hub");
+  await driver.solving(true);
+
+  const first = await driver.startJob(SOLVE_JOB, {});
+  await settledJobs();
+  assert.equal((await outcome(driver.handOracleLine(first.job, {}))).held, true);
+  at.turn = 13;
+  const resolve = await driver.startJob(SOLVE_JOB, {});
+  await settledJobs();
+  const r = await outcome(driver.handOracleLine(resolve.job, {}));
+
+  assert.notEqual(resolve.job, first.job);
+  assert.equal(r.held, true, JSON.stringify(r));
+  assert.deepEqual(handed.map(line => (line as typeof GORDIE_LINE).steps[0].turn), [11, 13]);
+  assert.equal((await outcome(driver.handOracleLine(first.job, {}))).error, "moved_on", "the first oracle line holds no longer");
 });

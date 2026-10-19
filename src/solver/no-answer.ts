@@ -74,6 +74,11 @@ export function cause(reason: Reason): string {
         `the live read of the fight lacks ${andJoined(reason.extras)}, without which the oracle can't rebuild the turn ` +
         "the export was taken at."
       );
+    case "no_extras":
+      return (
+        `the live read of the fight failed (${reason.why}), and past its first turn the oracle can't rebuild the turn ` +
+        "without it."
+      );
     case "save_mismatch": {
       const seed = reason.save.battleSeed === undefined ? "" : ` with battle seed ${reason.save.battleSeed}`;
       return (

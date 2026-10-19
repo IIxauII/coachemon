@@ -169,7 +169,7 @@ The panel already shows the decision; the user glances at it mid-battle. Speak o
 - **State the cost before turning it on**, plainly: about 0.6 GB of disk, a one-time setup, and minutes of CPU per fight. Turn it on only once the player says yes to that, and never unasked: off is the coach teaching.
 - It is standing: it stays on across sessions until the player turns it off, so never ask again before a fight. Turn it off whenever they ask.
 - **While it is on, keep its clone set up**: `start_job` with `kind: "clone"` sets it up in the background, and `poll_job`'s progress line is short enough to relay as it is. It ends with the clone, or with "no answer" and its cause (no network, say), which you tell the player as given: the card still coaches. A clone already set up answers at once, so start it again whenever in doubt — once solving is turned on, in a new session, after a no answer.
-- **With it on, at every trainer fight's first command, follow `references/solving.md` from its first step**: the solve, the wait for its end, the oracle line handed to the card, or a no answer and its cause. With it off, the coach teaches, and the card and you carry every fight.
+- **With it on, at every trainer fight's first command, follow `references/solving.md` from its first step**: the solve, the wait for its end, the oracle line handed to the card, or a no answer and its cause. Joining a fight already under way, start it at the first command you see. On `OFF LINE`, re-solve from where the game stands (its step 6). Never ask the player to reload: the card and the plan's principles carry a fight with no oracle line. With it off, the coach teaches, and the card and you carry every fight.
 
 ## Boss-fight plan
 
