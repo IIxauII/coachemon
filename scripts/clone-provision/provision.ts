@@ -3,7 +3,7 @@ import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { checkoutOf, pnpmOf } from "../clone-test/clone-test.ts";
 
-export const GAME_REPO = "https://github.com/pagefaultgames/pokerogue.git";
+const GAME_REPO = "https://github.com/pagefaultgames/pokerogue.git";
 
 export type Run = (what: string, command: string, args: readonly string[], cwd: string) => void;
 

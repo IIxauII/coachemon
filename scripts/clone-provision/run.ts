@@ -1,6 +1,6 @@
 /**
  * Sets up `.cache/pokerogue/v<version>` (the pin by default) for the harness: the clone, its `assets` and `locales`
- * submodules and the game's own pnpm install (pin-bump.md).
+ * submodules and the game's own pnpm install (pin-bump.md §The checks).
  */
 import { parseArgs } from "node:util";
 import reviewed from "../../src/escape-ladder/reviewed.json" with { type: "json" };

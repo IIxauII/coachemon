@@ -23,7 +23,7 @@ const recorder = (packageManager = "pnpm@10.34.5+sha512.abc") => {
       mkdirSync(path.join(dir, "locales"));
       writeFileSync(path.join(dir, "package.json"), JSON.stringify({ packageManager }));
     }
-    if (args.includes("submodule")) for (const sub of args.slice(5)) writeFileSync(path.join(cwd, sub, "x"), "");
+    if (args.includes("submodule")) for (const sub of args.filter(a => a === "assets" || a === "locales")) writeFileSync(path.join(cwd, sub, "x"), "");
     if (args.includes("install")) mkdirSync(path.join(cwd, "node_modules"));
   };
   return { steps, run };

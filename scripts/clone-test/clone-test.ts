@@ -21,7 +21,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const HUD = path.resolve(HERE, "../../skills/coachemon/scripts/hud");
 
 /** The clone pinned to the reviewed game version, or what it lacks and the command that provides it. */
-export const findPinnedClone = (): FoundClone => findClone(checkoutOf(reviewed.pinned.gameVersion));
+export const findPinnedClone = (): FoundClone => findClone(checkoutOf(reviewed.pinned.gameVersion), reviewed.pinned.gameVersion);
 
 type Env = Record<string, string | undefined>;
 
@@ -33,7 +33,7 @@ export const checkoutOf = (version: string, cwd = process.cwd()): string => path
 /** The drift checkout at the suite's version, or what it lacks and the command that provides it. */
 export const findSuiteClone = (env: Env = process.env, cwd = process.cwd()): FoundClone => {
   const version = suiteVersion(env);
-  if (existsSync(checkoutOf(version, cwd))) return findClone(checkoutOf(version, cwd));
+  if (existsSync(checkoutOf(version, cwd))) return findClone(checkoutOf(version, cwd), version);
   return {
     missing: `No clone at ${checkoutOf(version, cwd)}.`,
     how: `npm run clone:provision -- --version ${version}`,
@@ -60,18 +60,22 @@ export const suitePin = (env: Env = process.env, cwd = process.cwd()): ClonePin 
   return pinOf(gameVersion, checkoutOf(gameVersion, cwd));
 };
 
-export const findClone = (clone: string): FoundClone => {
-  const provision = `npm run clone:provision -- --version ${path.basename(clone).replace(/^v/, "")}`;
+/**
+ * `clone`, or what it lacks and the command that provides it. `version` names the drift checkout that `clone` is, which
+ * `clone:provision` sets up; without it `clone` is a checkout given by path (`drift:check --source`), set up by hand.
+ */
+export const findClone = (clone: string, version?: string): FoundClone => {
+  const provision = version && `npm run clone:provision -- --version ${version}`;
   if (!existsSync(clone)) {
     // A worktree's `drift:check` leaves a bare clone, and provisioning it re-fetches the 815 MB `assets` submodule
     // (#296).
     return {
       missing: `No pinned clone at ${clone}.`,
-      how: `${provision}   # in a worktree: ln -s <main-checkout>/.cache .cache`,
+      how: provision ? `${provision}   # in a worktree: ln -s <main-checkout>/.cache .cache` : `check the game out at ${clone}`,
     };
   }
   if (!existsSync(path.join(clone, "node_modules"))) {
-    return { missing: `The clone at ${clone} has no dependencies.`, how: provision };
+    return { missing: `The clone at ${clone} has no dependencies.`, how: provision || `cd ${clone} && pnpm install --frozen-lockfile` };
   }
   // An empty submodule is the quiet failure: every battle a test starts dies in `populateMoveAnim` with no hint of
   // why, and the failure passes for the oracle's answer.
@@ -79,7 +83,7 @@ export const findClone = (clone: string): FoundClone => {
     if (readdirSync(path.join(clone, sub)).length === 0) {
       return {
         missing: `The clone's \`${sub}\` submodule is empty.`,
-        how: provision,
+        how: provision || `cd ${clone} && git submodule update --init --depth 1 ${sub}`,
       };
     }
   }

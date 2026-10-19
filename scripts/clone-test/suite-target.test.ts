@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test, { type TestContext } from "node:test";
 import reviewed from "../../src/escape-ladder/reviewed.json" with { type: "json" };
-import { checkoutOf, findSuiteClone, suitePin, suiteVersion } from "./clone-test.ts";
+import { checkoutOf, findClone, findSuiteClone, suitePin, suiteVersion } from "./clone-test.ts";
 
 const SHA = (c: string) => c.repeat(40);
 
@@ -50,4 +50,14 @@ test("the suite's clone is the drift checkout at its version, and names what it 
   const absent = findSuiteClone({ COACHEMON_GAME_VERSION: "9.2.0" }, cwd);
   assert.ok("missing" in absent);
   assert.match(absent.missing, /v9\.2\.0/);
+});
+
+test("a drift checkout is set up with clone:provision, a checkout given by path by hand", t => {
+  const { dir } = checkout(t, "9.1.0", "pnpm@10.34.5");
+  const drift = findClone(dir, "9.1.0");
+  assert.ok("missing" in drift);
+  assert.equal(drift.how, "npm run clone:provision -- --version 9.1.0");
+  const source = findClone(dir);
+  assert.ok("missing" in source);
+  assert.equal(source.how, `cd ${dir} && pnpm install --frozen-lockfile`);
 });

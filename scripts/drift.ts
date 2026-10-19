@@ -132,7 +132,7 @@ if (args.stamp) {
     process.exit(1);
   }
   const { pnpm } = pin;
-  const inSource = harnessIn(() => findClone(source), pnpm);
+  const inSource = harnessIn(() => findClone(source, args.source ? undefined : version), pnpm);
   console.log();
   const { failed } = await recheck(
     version,
