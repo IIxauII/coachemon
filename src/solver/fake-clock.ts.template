@@ -197,7 +197,7 @@ function fakeClock(): { fake: true; uninstall(): void } | { real: string } {
   };
 
   // vitest's `waitUntil`, polling on the fake clock while its timeout runs in real time: on the fake clock a wait on
-  // something real would time out in a fraction of the real `TEST_TIMEOUT`.
+  // something real would time out in a fraction of the real `TEST_TIMEOUT` (`#test/constants`).
   function waitUntil<T>(callback: () => T | Promise<T>, options: number | { interval?: number; timeout?: number } = {}): Promise<T> {
     const { interval = 50, timeout = 1e3 } = typeof options === "number" ? { timeout: options } : options;
     const timedOut = new Error("Timed out in waitUntil!");
@@ -272,15 +272,15 @@ function fakeClock(): { fake: true; uninstall(): void } | { real: string } {
   return { fake: true, uninstall };
 }
 
-let clockInstalled: ReturnType<typeof fakeClock>;
+let clock: ReturnType<typeof fakeClock>;
 try {
-  clockInstalled = fakeClock();
+  clock = fakeClock();
 } catch (e) {
-  clockInstalled = { real: `the fake clock failed: ${e instanceof Error ? e.message : String(e)}` };
+  clock = { real: `the fake clock failed: ${e instanceof Error ? e.message : String(e)}` };
 }
 try {
-  const report = "real" in clockInstalled ? { real: clockInstalled.real } : { fake: true };
+  const report = "real" in clock ? { real: clock.real } : { fake: true };
   if (process.env.COACH_CLOCK_OUT) writeClockReport(process.env.COACH_CLOCK_OUT, JSON.stringify(report));
 } catch {
-  if ("uninstall" in clockInstalled) clockInstalled.uninstall();
+  if ("uninstall" in clock) clock.uninstall();
 }

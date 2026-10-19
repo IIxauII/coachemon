@@ -154,7 +154,6 @@ clearTimeout(cleared);
 cleared.refresh();
 setTimeout(() => fired.push("kept"), 2);
 await vi.waitUntil(() => fired.length > 0, { interval: 1, timeout: 5_000 });
-await vi.waitUntil(() => true, { interval: 1, timeout: 5_000 });
 emit(fired);
 `);
 

@@ -199,7 +199,6 @@ async function within<T, L>(ms: number, work: Promise<T>, late: () => L): Promis
   }
 }
 
-/** `{ [on]: true }` reads as `null`, `{ [off]: why }` as the why. */
 const reportShape = (on: string, off: string): z.ZodType<string | null, unknown> =>
   z.union([z.object({ [on]: z.literal(true) }).transform(() => null), z.object({ [off]: z.string() }).transform(r => r[off] as string)]);
 const pollReportShape = reportShape("fast", "slow");
