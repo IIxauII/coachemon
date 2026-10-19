@@ -116,12 +116,13 @@ test("closing a pool ends the jobs it is playing, and no worker closed under one
 });
 
 test("a search on a pool whose workers keep dying still finds the win (#663)", async () => {
-  // Both workers die on their first job; the fresh ones don't.
+  // Both workers die on their first job; the fresh ones don't. The discrepancy search sends this one-move root a single
+  // job, so only the beams alone give both workers a first job.
   const fakes = fakeWorkers({ job: (w, inputs) => (w.n < 2 && w.jobs === 1 ? "die" : won(inputs)) });
   const pool = await startPool(2, fakes.start, "1.12.0.11");
   assert.ok("expand" in pool);
 
-  const result = await search({ root: pool.root, pool, validate: async () => replayed, budget: BUDGET });
+  const result = await search({ root: pool.root, pool, validate: async () => replayed, budget: BUDGET, lds: null });
   await pool.close();
 
   assert.equal(result.kind, "found");

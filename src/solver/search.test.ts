@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { noAnswer } from "./no-answer.ts";
 import type { Beam, Input, Outcome, ReplayResult } from "./oracle-line.ts";
-import { type Action, type Child, type Pool, type Position, type Progress, search } from "./search.ts";
+import { type Action, type Child, type Lds, type Pool, type Position, type Progress, search } from "./search.ts";
 
 /** What a move does from a path: our side's HP fraction and the foe's total HP lost so far, or how the fight ends. */
 type Play = (path: readonly string[], move: string) => { foeLost: number; ours: number } | "won" | "lost";
@@ -84,6 +84,7 @@ function held(inner: Pool) {
 }
 
 const BUDGET = { expansions: 3000, turns: 40 };
+const DISCREPANT: Lds = { ours: 1, alternatives: 2, discrepancies: 2, expansions: 3000 };
 const NARROW: Beam[] = [
   { width: 1, ours: 0.5 },
   { width: 1, ours: 1 },
@@ -120,7 +121,7 @@ test("a win that doesn't replay is never returned, and the search goes on to one
     return replayed(inputs.length === 2 ? "lost" : "won");
   };
 
-  const result = await search({ root, pool, validate, budget: BUDGET, portfolio: [{ width: 1, ours: 0.5 }] });
+  const result = await search({ root, pool, validate, budget: BUDGET, lds: null, portfolio: [{ width: 1, ours: 0.5 }] });
 
   assert.deepEqual(result.kind === "found" && result.inputs.map(named), ["TACKLE", "EMBER", "EMBER"]);
   assert.deepEqual(asked[0], ["TACKLE", "TACKLE"]);
@@ -131,7 +132,7 @@ test("a win that hits an illegal step on replay is passed over like one that los
   const validate = async () =>
     noAnswer({ code: "illegal_step", index: 0, turn: 1, why: "isn't offered", tried: move("TACKLE"), legal: [] });
 
-  const result = await search({ root, pool, validate, budget: BUDGET, portfolio: [{ width: 1, ours: 0.5 }] });
+  const result = await search({ root, pool, validate, budget: BUDGET, lds: null, portfolio: [{ width: 1, ours: 0.5 }] });
 
   assert.equal(result.kind, "no_answer");
   assert.equal(result.kind === "no_answer" && result.reason.code, "no_win");
@@ -142,7 +143,7 @@ test("a replay the harness fails on is never a win, and the no answer says why i
   const { root, pool } = tree(["TACKLE"], { "": { TACKLE: "won" } });
   const broken = noAnswer({ code: "harness_failed", why: "the replay timed out after 540 s" });
 
-  const result = await search({ root, pool, validate: async () => broken, budget: BUDGET, portfolio: [NARROW[0]] });
+  const result = await search({ root, pool, validate: async () => broken, budget: BUDGET, lds: null, portfolio: [NARROW[0]] });
 
   assert.equal(result.kind === "no_answer" && result.reason.code, "no_win");
   assert.match(result.kind === "no_answer" ? result.message : "", /the last because the oracle's harness failed: the replay timed out/);
@@ -162,7 +163,7 @@ test("a win found in the turn a beam's budget ran out is still replayed (#662)",
   const { root, pool } = tree(["TACKLE", "GROWL"], { "": { TACKLE: "won", GROWL: [0, 1] } });
   const { asked, validate } = replaysAll();
 
-  const result = await search({ root, pool, validate, budget: { expansions: 1, turns: 40 }, portfolio: [NARROW[0]] });
+  const result = await search({ root, pool, validate, budget: { expansions: 1, turns: 40 }, lds: null, portfolio: [NARROW[0]] });
 
   assert.equal(result.kind, "found");
   assert.deepEqual(asked, [["TACKLE"]]);
@@ -177,7 +178,7 @@ test("one beam emptying is no answer while another still searches, and the other
   });
   const { validate } = replaysAll();
 
-  const result = await search({ root, pool, validate, budget: BUDGET, portfolio: NARROW });
+  const result = await search({ root, pool, validate, budget: BUDGET, lds: null, portfolio: NARROW });
 
   assert.deepEqual(result.kind === "found" && result.inputs.map(named), ["PECK", "PECK", "PECK"]);
 });
@@ -189,7 +190,7 @@ test("no answer comes only once every beam has ended, and says how each one did 
   });
   const { validate } = replaysAll();
 
-  const result = await search({ root, pool, validate, budget: BUDGET, portfolio: NARROW });
+  const result = await search({ root, pool, validate, budget: BUDGET, lds: null, portfolio: NARROW });
 
   assert.equal(result.kind, "no_answer");
   const reason = result.kind === "no_answer" ? result.reason : assert.fail();
@@ -203,7 +204,7 @@ test("no answer comes only once every beam has ended, and says how each one did 
 test("a beam whose foes lose no HP for 6 turns stalls (#662)", async () => {
   const { root, pool } = fight(["SPLASH"], () => ({ foeLost: 0.1, ours: 1 }));
 
-  const result = await search({ root, pool, validate: replaysAll().validate, budget: BUDGET, portfolio: [NARROW[0]] });
+  const result = await search({ root, pool, validate: replaysAll().validate, budget: BUDGET, lds: null, portfolio: [NARROW[0]] });
 
   const reason = result.kind === "no_answer" ? result.reason : assert.fail();
   assert.deepEqual(reason.code === "no_win" && reason.beams.map(b => [b.ended, b.turn]), [["stalled", 7]]);
@@ -217,6 +218,7 @@ test("a beam stops at the turn limit from where the solve starts (#662)", async 
     pool,
     validate: replaysAll().validate,
     budget: { expansions: 3000, turns: 5 },
+    lds: null,
     portfolio: [NARROW[0]],
   });
 
@@ -236,6 +238,7 @@ test("each beam stops at a budget of its own, so a beam that spends it leaves th
     pool,
     validate: replaysAll().validate,
     budget: { expansions: 6, turns: 40 },
+    lds: null,
     portfolio: [
       { width: 1, ours: 0.5 },
       { width: 2, ours: 0.5 },
@@ -259,7 +262,7 @@ test("a later beam is dispatched only when no earlier beam has a job queued (#76
   });
   const { pool, dispatched, drain } = held(inner);
 
-  const result = await drain(search({ root, pool, validate: replaysAll().validate, budget: BUDGET, portfolio: OURS_WEIGHED_FIRST }));
+  const result = await drain(search({ root, pool, validate: replaysAll().validate, budget: BUDGET, lds: null, portfolio: OURS_WEIGHED_FIRST }));
 
   assert.deepEqual(result.kind === "found" && result.inputs.map(named), ["PECK", "PECK", "PECK"]);
   assert.deepEqual(dispatched, [
@@ -287,12 +290,187 @@ test("the first beam spending its budget leaves a later beam searching, and the 
   const { pool, dispatched, drain } = held(inner);
 
   const result = await drain(
-    search({ root, pool, validate: replaysAll().validate, budget: { expansions: 4, turns: 40 }, portfolio: OURS_WEIGHED_FIRST }),
+    search({ root, pool, validate: replaysAll().validate, budget: { expansions: 4, turns: 40 }, lds: null, portfolio: OURS_WEIGHED_FIRST }),
   );
 
   assert.deepEqual(result.kind === "found" && result.inputs.map(named), ["SLAM", "SLAM"]);
   // The first beam's four, its budget, all go before the second beam's second turn.
   assert.deepEqual(dispatched, [": SLAM", ": PECK", ": SLAM", "PECK: SLAM", "PECK: PECK", ": PECK", "SLAM: SLAM", "SLAM: PECK"]);
+});
+
+test("the discrepancy search goes first, following the best-scored child each turn to a win (#761)", async () => {
+  // PECK outscores SLAM at any weight on our HP, and PECK's own SLAM loses.
+  const { root, pool, expanded } = tree(["SLAM", "PECK"], {
+    "": { SLAM: [0.5, 0.4], PECK: [0.6, 1] },
+    PECK: { PECK: [0.7, 1] },
+    "PECK PECK": { PECK: "won" },
+  });
+  const { asked, validate } = replaysAll();
+
+  const result = await search({ root, pool, validate, budget: BUDGET });
+
+  assert.deepEqual(result.kind === "found" && result.inputs.map(named), ["PECK", "PECK", "PECK"]);
+  assert.deepEqual(asked, [["PECK", "PECK", "PECK"]]);
+  assert.deepEqual(
+    expanded.map(e => e.from.join(" ")),
+    ["", "PECK", "PECK PECK"],
+  );
+});
+
+test("where the best-scored child never wins, the discrepancy search's next pass deviates once (#761)", async () => {
+  // PECK scores best at the root and loses on; SLAM, the second best, wins on the next turn.
+  const { root, pool, expanded } = tree(["SLAM", "PECK"], {
+    "": { SLAM: [0.5, 0.4], PECK: [0.1, 1] },
+    SLAM: { SLAM: "won" },
+  });
+  const { asked, validate } = replaysAll();
+
+  const result = await search({ root, pool, validate, budget: BUDGET, lds: DISCREPANT });
+
+  assert.deepEqual(result.kind === "found" && result.inputs.map(named), ["SLAM", "SLAM"]);
+  assert.deepEqual(asked, [["SLAM", "SLAM"]]);
+  // With no turn cache, the second pass plays the first's turns again.
+  assert.deepEqual(
+    expanded.map(e => e.from.join(" ")),
+    ["", "PECK", "", "PECK", "SLAM"],
+  );
+});
+
+test("a discrepancy search that runs out of discrepancies hands over to the beams, and their win comes back (#761)", async () => {
+  // Only the third-best move at the root wins.
+  const { root, pool } = tree(["SLAM", "PECK", "GROWL"], {
+    "": { SLAM: [0.5, 1], PECK: [0.4, 1], GROWL: [0.1, 1] },
+    GROWL: { SLAM: "won" },
+  });
+  const { asked, validate } = replaysAll();
+
+  const result = await search({ root, pool, validate, budget: BUDGET, lds: DISCREPANT, portfolio: [{ width: 8, ours: 1 }] });
+
+  assert.deepEqual(result.kind === "found" && result.inputs.map(named), ["GROWL", "SLAM"]);
+  assert.deepEqual(asked, [["GROWL", "SLAM"]]);
+});
+
+test("a discrepancy search that spends its own budget hands over to the beams with theirs untouched (#761)", async () => {
+  // Every turn takes a little more foe HP, so nothing stalls or ends before a budget does.
+  const { root, pool } = fight(["TACKLE", "EMBER"], (path, name) => ({
+    foeLost: (path.length + 1) / 100,
+    ours: name === "TACKLE" ? 1 : 0.9,
+  }));
+
+  const result = await search({
+    root,
+    pool,
+    validate: replaysAll().validate,
+    budget: { expansions: 6, turns: 40 },
+    lds: { ...DISCREPANT, expansions: 4 },
+    portfolio: [{ width: 1, ours: 0.5 }],
+  });
+
+  const reason = result.kind === "no_answer" ? result.reason : assert.fail();
+  assert.deepEqual(reason.code === "no_win" && [reason.lds, reason.beams.map(b => [b.ended, b.expansions])], [
+    { ended: "budget", discrepancies: 0, expansions: 4 },
+    [["budget", 6]],
+  ]);
+});
+
+test("only the beams say no answer, and it names how the discrepancy search ended before them (#761)", async () => {
+  const { root, pool } = tree(["SLAM", "PECK"], {
+    "": { SLAM: [0.5, 0.4], PECK: [0.1, 1] },
+    PECK: { PECK: [0.2, 1] },
+  });
+
+  const result = await search({ root, pool, validate: replaysAll().validate, budget: BUDGET, lds: DISCREPANT, portfolio: NARROW });
+
+  const answer = result.kind === "no_answer" ? result : assert.fail();
+  // Two moves from each of the root, PECK and PECK PECK at k = 0; and SLAM besides at k = 1 and k = 2.
+  assert.deepEqual(answer.reason.code === "no_win" && [answer.reason.lds, answer.reason.beams.map(b => b.ended)], [
+    { ended: "exhausted", discrepancies: 2, expansions: 6 + 8 + 8 },
+    ["emptied", "emptied"],
+  ]);
+  assert.match(
+    answer.message,
+    /^no winning path turned up: the discrepancy search tried every path within 2 discrepancies, 22 turns played; width 1/,
+  );
+});
+
+test("a win the discrepancy search found that doesn't replay is passed over, and is not replayed again in its next pass (#761)", async () => {
+  // PECK PECK wins at k = 0 but loses on replay; the second pass finds it again, then deviates to SLAM's win.
+  const { root, pool } = tree(["SLAM", "PECK"], {
+    "": { SLAM: [0.5, 0.4], PECK: [0.1, 1] },
+    PECK: { PECK: "won" },
+    SLAM: { SLAM: "won" },
+  });
+  const asked: string[][] = [];
+  const validate = async (inputs: readonly Input[]) => {
+    asked.push(inputs.map(named));
+    return replayed(inputs[0]?.kind === "move" && inputs[0].move === "PECK" ? "lost" : "won");
+  };
+
+  const result = await search({ root, pool, validate, budget: BUDGET, lds: DISCREPANT });
+
+  assert.deepEqual(result.kind === "found" && result.inputs.map(named), ["SLAM", "SLAM"]);
+  assert.deepEqual(asked, [
+    ["PECK", "PECK"],
+    ["SLAM", "SLAM"],
+  ]);
+});
+
+test("a win whose replay the discrepancy search saw fail is never replayed by the beams (#761)", async () => {
+  // PECK PECK wins but loses on replay; with no discrepancy to spend, the beams take over and reach it too.
+  const { root, pool } = tree(["SLAM", "PECK"], {
+    "": { SLAM: [0.5, 0.4], PECK: [0.1, 1] },
+    PECK: { PECK: "won" },
+    SLAM: { SLAM: "won" },
+  });
+  const asked: string[][] = [];
+  const validate = async (inputs: readonly Input[]) => {
+    asked.push(inputs.map(named));
+    return replayed(inputs[0]?.kind === "move" && inputs[0].move === "PECK" ? "lost" : "won");
+  };
+
+  const result = await search({
+    root,
+    pool,
+    validate,
+    budget: BUDGET,
+    lds: { ...DISCREPANT, discrepancies: 0 },
+    portfolio: [{ width: 8, ours: 1 }],
+  });
+
+  assert.deepEqual(result.kind === "found" && result.inputs.map(named), ["SLAM", "SLAM"]);
+  assert.deepEqual(asked, [
+    ["PECK", "PECK"],
+    ["SLAM", "SLAM"],
+  ]);
+});
+
+test("two beams that reach a win while its replay still runs replay it once between them (#761)", async () => {
+  // Both beams reach PECK PECK, the only win, on turn 2; its replay loses, and is still running when the second gets there.
+  const { root, pool } = tree(["SLAM", "PECK"], {
+    "": { SLAM: [0.5, 0.4], PECK: [0.1, 1] },
+    PECK: { PECK: "won" },
+  });
+  const asked: string[][] = [];
+  const validate = async (inputs: readonly Input[]) => {
+    asked.push(inputs.map(named));
+    await new Promise(resolve => setTimeout(resolve, 20));
+    return replayed("lost");
+  };
+
+  const result = await search({
+    root,
+    pool,
+    validate,
+    budget: BUDGET,
+    lds: null,
+    portfolio: [
+      { width: 8, ours: 1 },
+      { width: 8, ours: 0.5 },
+    ],
+  });
+
+  assert.equal(result.kind, "no_answer");
+  assert.deepEqual(asked, [["PECK", "PECK"]]);
 });
 
 test("progress reports the expansions spent out of the whole budget (#662)", async () => {
@@ -303,7 +481,7 @@ test("progress reports the expansions spent out of the whole budget (#662)", asy
   });
   const seen: Progress[] = [];
 
-  await search({ root, pool, validate: replaysAll().validate, budget: BUDGET, portfolio: NARROW, progress: p => seen.push(p) });
+  await search({ root, pool, validate: replaysAll().validate, budget: BUDGET, lds: null, portfolio: NARROW, progress: p => seen.push(p) });
 
   assert.ok(seen.length > 0);
   assert.ok(seen.every(p => p.budget === 2 * BUDGET.expansions));
@@ -313,6 +491,32 @@ test("progress reports the expansions spent out of the whole budget (#662)", asy
   );
   // The SLAM beam's two turns, and the PECK beam's three.
   assert.equal(seen.at(-1)?.spent, 2 * 2 + 3 * 2);
+});
+
+test("progress counts the discrepancy search's budget, then goes on from what it spent (#761)", async () => {
+  const { root, pool } = tree(["SLAM", "PECK"], {
+    "": { SLAM: [0.5, 0.4], PECK: [0.1, 1] },
+    PECK: { PECK: [0.2, 1] },
+    "PECK PECK": { PECK: "won" },
+  });
+  const seen: Progress[] = [];
+
+  await search({
+    root,
+    pool,
+    validate: replaysAll().validate,
+    budget: BUDGET,
+    lds: { ...DISCREPANT, ours: 0.5, discrepancies: 0 },
+    portfolio: NARROW,
+    progress: p => seen.push(p),
+  });
+
+  assert.ok(seen.every(p => p.budget === DISCREPANT.expansions + 2 * BUDGET.expansions));
+  const spent = seen.map(p => p.spent);
+  assert.deepEqual(spent, spent.toSorted((a, b) => a - b));
+  // Weighing our HP at 0.5, the discrepancy search follows SLAM and loses on turn 2; the beams then play their 10.
+  assert.deepEqual(spent.slice(0, 2), [2, 4]);
+  assert.equal(spent.at(-1), 4 + 10);
 });
 
 test("a turn the game plays for us is a step with no input, and stays out of the inputs replayed (#662)", async () => {
