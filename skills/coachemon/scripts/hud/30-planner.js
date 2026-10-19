@@ -239,8 +239,10 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
   // the foe's own pick; null where neither.
   const later = own && ownFrom === 1 ? own
     : moves.some(m => m.pLater != null) ? landing(foe, moves, m => m.pLater ?? m.p, next) : null;
-  const steps = lockedRow ? lockSteps([{ uses: lock.left, turns: 0, p: 1 }], { relock: false, immune }) : null;
+  const lockRule = { relock: false, immune };
+  const steps = lockedRow ? lockSteps([{ s: lockState(lock.left, 0), p: 1 }], lockRule) : null;
   const lockAct = steps ? i => 1 - (steps[i + spent]?.self ?? 0) : null;
+  const lockChain = steps ? i => ({ from: steps[i + spent].at, step: s => lockStep(s, lockRule) }) : null;
   let pKo = 0, first = 0, koFirst = 0, worst = null, likely = null, drained = 0;
   const kos = [], boost = {};
   for (const m of moves) {
@@ -274,8 +276,9 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
     boost: Object.keys(boost).length ? boost : null,
     // HP its drain moves give it back a turn; negative into Liquid Ooze.
     drain: drained,
-    // P(its i-th use from now goes off) as its lock's confusion leaves it; `own` lands from use `ownFrom` on.
-    lockAct, own, ownFrom,
+    // P(its i-th use from now goes off) as its lock's confusion leaves it, and `koCurve`'s `chain` of the lock from
+    // that use on; `own` lands from use `ownFrom` on.
+    lockAct, lockChain, own, ownFrom,
   };
 });
 // The `{ expected, use }` of `t`'s i-th use from now.
@@ -480,12 +483,11 @@ export const foeCurve = (turn, t, me, hp, { dealt = 0, foe = null, mult = null, 
   const ramp = setupRamp(foe, t);
   const useOn = x => (x?.expected > 0 ? x.use ?? [{ d: x.expected, p: 1 }] : [{ d: 0, p: 1 }]);
   // A curve from `start` has no use of this turn's.
-  const lockAct = t?.lockAct, usesBefore = start ? 1 : 0;
-  const acts = lockAct ? i => act(i) * lockAct(i + usesBefore) : act;
+  const usesBefore = start ? 1 : 0;
   return koCurve(turn.mon(me), useOn(threatUse(t, usesBefore)), {
-    hp, start, act: acts, turnEnd: withDrain(course.flat ? course.base : course.at, drain),
+    hp, start, act, turnEnd: withDrain(course.flat ? course.base : course.at, drain), chain: t?.lockChain?.(usesBefore),
     scale: mult || ramp ? i => (mult ? mult(i + 1) : 1) * (ramp ? ramp(i + 1) : 1) : undefined,
-    firstKo: t?.expected > 0 && !start ? threatKoAt(t, hp) * acts(0) : null,
+    firstKo: t?.expected > 0 && !start ? threatKoAt(t, hp) * act(0) * (t.lockAct ? t.lockAct(0) : 1) : null,
     useAt: t?.later || t?.own ? i => useOn(threatUse(t, i + usesBefore)) : null,
   });
 };
@@ -510,49 +512,61 @@ const lockSendIn = (turn, me, foe) => {
   const score = f => turn.sendInScore(f, me) ?? -Infinity;
   return standing.reduce((b, f) => (!b || score(f) > score(b) ? f : b), null);
 };
-// A lock's states: `uses` left in it (0: none running) and its user's confusion `turns` left, each at `p`, merged by
-// the two. Adds `p` to the state's share.
-const addLockState = (states, uses, turns, p) => {
-  const key = `${uses}|${turns}`, s = states.get(key);
-  if (s) s.p += p;
-  else states.set(key, { uses, turns, p });
+// A lock's state: `uses` left in it (0: none running) and its user's confusion `turns` left.
+const lockState = (uses, turns) => ({ uses, turns, key: `${uses}|${turns}` });
+// Adds `p` to state `s`'s share of `states`, a Map of `{ s, p }` by key.
+const addLockState = (states, s, p) => {
+  const x = states.get(s.key);
+  if (x) x.p += p;
+  else states.set(s.key, { s, p });
+};
+// One attempt from lock state `s` (game-code.md §5, §8): `[{ s, p, act, lock }]`, p summing to 1, `act` false on a
+// self-hit and `lock` where the lock move goes off. `relock`: an attempt with no lock running uses the lock move
+// again; else another move. `immune`: a locked use fails on its target.
+const lockStep = (s, { relock = true, immune = false } = {}) => {
+  const out = [];
+  const confusedFor = Math.max(0, s.turns - 1);
+  const hit = confusedFor > 0 ? CONFUSION_SELF_HIT : 0;
+  if (hit) out.push({ s: lockState(0, confusedFor), p: hit, act: false, lock: false });
+  if (!s.uses && !relock) {
+    out.push({ s: lockState(0, confusedFor), p: 1 - hit, act: true, lock: false });
+    return out;
+  }
+  for (const uses of s.uses ? [s.uses] : LOCK_USES) {
+    const share = (1 - hit) / (s.uses ? 1 : LOCK_USES.length), usesAfter = immune ? 0 : uses - 1;
+    const confuses = uses === 1 && !confusedFor;
+    for (const t of confuses ? CONFUSION_TURNS : [confusedFor]) {
+      out.push({ s: lockState(usesAfter, t), p: confuses ? share / CONFUSION_TURNS.length : share, act: true, lock: true });
+    }
+  }
+  return out;
 };
 // Covers `koCurve`'s uses, plus the one a curve from `start` begins after.
 const LOCK_HORIZON = 10;
-// A lock and its confusion over `LOCK_HORIZON` attempts from the states `from` (game-code.md §5, §8). `relock`: an
-// attempt with no lock running uses the lock move again; else another move. `immune`: a locked use fails on its
-// target. Per attempt: P(the lock move goes off) `go`, P(a self-hit) `self`, and `on`, the states after it went off,
-// summing to `go`.
-const lockSteps = (from, { relock = true, immune = false } = {}) => {
+// `lockStep` over `LOCK_HORIZON` attempts from the states `from`, `[{ s, p }]`. Per attempt: the states `at` before
+// it, P(the lock move goes off) `go` and P(a self-hit) `self`.
+const lockSteps = (from, rule = {}) => {
   const steps = [];
-  let at = from;
+  let at = [...from];
   for (let i = 0; i < LOCK_HORIZON; i++) {
-    const next = new Map(), on = new Map();
+    const next = new Map();
     let go = 0, self = 0;
-    for (const { uses: running, turns, p } of at) {
-      const confusedFor = Math.max(0, turns - 1);
-      const hit = confusedFor > 0 ? p * CONFUSION_SELF_HIT : 0;
-      self += hit;
-      if (hit) addLockState(next, 0, confusedFor, hit);
-      if (!running && !relock) { addLockState(next, 0, confusedFor, p - hit); continue; }
-      go += p - hit;
-      for (const uses of running ? [running] : LOCK_USES) {
-        const share = (p - hit) / (running ? 1 : LOCK_USES.length), usesAfter = immune ? 0 : uses - 1;
-        const confuses = uses === 1 && !confusedFor;
-        for (const t of confuses ? CONFUSION_TURNS : [confusedFor]) {
-          const q = confuses ? share / CONFUSION_TURNS.length : share;
-          addLockState(next, usesAfter, t, q);
-          addLockState(on, usesAfter, t, q);
-        }
+    for (const { s, p } of at) {
+      for (const m of lockStep(s, rule)) {
+        const q = p * m.p;
+        if (!m.act) self += q;
+        else if (m.lock) go += q;
+        addLockState(next, m.s, q);
       }
     }
-    steps.push({ go, self, on: [...on.values()] });
+    steps.push({ at, go, self });
     at = [...next.values()];
   }
   return steps;
 };
 // Our lock from its first use, one attempt a turn.
-const OUR_LOCK = lockSteps([{ uses: 0, turns: 0, p: 1 }]);
+const OUR_LOCK = lockSteps([{ s: lockState(0, 0), p: 1 }]);
+const OUR_CHAIN = { from: OUR_LOCK[0].at, step: s => lockStep(s) };
 // What our lock costs the next duel past the knockout. `afterKo`: `addLockState`'s states after the knocking-out use,
 // each at P(that knockout).
 const lockCarry = (turn, me, mine, foe, afterKo) => {
@@ -613,7 +627,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   const bars = bossBarsLeft(foe);
   const trainerBoss = foe.hasTrainer?.() ?? !!turn.facts.trainer;
   let turnsWe = 9, hitsWe = 9, delay = 0, selfSpent = 0, defUp = 1, foeMult = null, foeAfter1 = after?.foe ?? null;
-  let weBy = () => 0, qWe = 0, usesBy = () => 0;
+  let weBy = () => 0, qWe = 0, usesBy = () => 0, downAt = null;
   // An exchange `after` another follows a turn on another move, so this lock starts at its first use.
   const ourLock = mt.lock ? OUR_LOCK : null;
   if (mine?.expected > 0) {
@@ -632,9 +646,10 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     qWe = nowUse ? (mine.pKo ?? 0) * now : 0;
     const curve = koCurve(turn.mon(foe), useOf(mine), {
       scale, turnEnd: heal, cat: mine.cat,
-      act: i => (i === 0 && nowUse ? now : steady * (acts ? acts.act(i + 1) : 1)) * (ourLock?.[i]?.go ?? 1),
-      firstKo: exact && nowUse ? qWe : null, start: after?.foe,
+      act: i => (i === 0 && nowUse ? now : steady * (acts ? acts.act(i + 1) : 1)),
+      firstKo: exact && nowUse ? qWe : null, start: after?.foe, chain: ourLock ? OUR_CHAIN : null,
     });
+    downAt = curve.downAt ?? null;
     const perChunk = curve.perChunk;
     if (!exact && nowUse) qWe = curve.by[0];
     hitsWe = koTurn(curve.by);
@@ -709,9 +724,11 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   const hazard = (F, j) => (F(j - 1) >= 1 ? 1 : Math.max(0, (F(j) - F(j - 1)) / (1 - F(j - 1))));
   let pWe = weFirst, pThey = theyFirst, standing = Math.max(0, 1 - weFirst - theyFirst);
   const afterKo = new Map();
+  // The lock as it stood where use n knocked out.
   const knockedOut = (p, n) => {
-    const s = ourLock && n >= 1 && p > 0 ? ourLock[n - 1] : null;
-    if (s?.go > 0) for (const x of s.on) addLockState(afterKo, x.uses, x.turns, p * x.p / s.go);
+    const at = downAt && n >= 1 && p > 0 ? downAt[n - 1] ?? [] : [];
+    const all = at.reduce((t, x) => t + x.p, 0);
+    if (all > 0) for (const x of at) addLockState(afterKo, x.s, p * x.p / all);
   };
   knockedOut(weFirst, usesBy(1));
   for (let j = 2; j <= 9 && standing > 1e-6; j++) {
