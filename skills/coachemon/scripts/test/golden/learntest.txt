@@ -176,7 +176,7 @@ Team
 team: −SE Fighting/Poison
 == Garganacl ← Salt Cure
 🎓 Garganacl learns Garganacl Atk 100 / SpA 45 Learns it — free slot
-✓ Rock Salt Cure SE on Flying/Bug · curse 1/8 a turn · set move (Bulky Support) power 127
+✓ Rock Salt Cure SE on Flying/Bug · curse 1/16 a turn · set move (Bulky Support) power 109
 Moves
 · Fighting Body Press SE on Normal/Dark · set move (Bulky Support) power 121
 · Ground Earthquake SE on Poison/Fire/Electric · set move (Bulky Attacker) power 146

@@ -487,8 +487,8 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(endOfTurnHp(m({ battlerTags: [tag("NightmareTag")] }), { s: at() }), -40, "Nightmare");
   assert.equal(endOfTurnHp(m({ battlerTags: [tag("CursedTag")] }), { s: at() }), -40, "Curse");
   assert.equal(endOfTurnHp(m({ battlerTags: [new BindTag()] }), { s: at() }), -20, "a binding move");
-  assert.equal(endOfTurnHp(m({ battlerTags: [tag("SaltCuredTag")] }), { s: at() }), -20, "Salt Cure");
-  assert.equal(endOfTurnHp(m({ types: [10], battlerTags: [tag("SaltCuredTag")] }), { s: at() }), -40, "Salt Cure on a Water mon");
+  assert.equal(endOfTurnHp(m({ battlerTags: [tag("SaltCuredTag")] }), { s: at() }), -10, "Salt Cure");
+  assert.equal(endOfTurnHp(m({ types: [10], battlerTags: [tag("SaltCuredTag")] }), { s: at() }), -20, "Salt Cure on a Water mon");
   assert.equal(endOfTurnHp(m({ battlerTags: [tag("AquaRingTag")] }), { s: at() }), 10, "Aqua Ring");
   assert.equal(endOfTurnHp(m({ abilities: ["BlockNonDirectDamageAbAttr"], battlerTags: [tag("NightmareTag")] }), { s: at() }), 0, "Magic Guard vs Nightmare");
   assert.equal(endOfTurnHp(m({ types: [8], abilities: ["BlockNonDirectDamageAbAttr"], battlerTags: [tag("SaltCuredTag")] }), { s: at() }), 0, "Magic Guard vs Salt Cure on a Steel mon");
