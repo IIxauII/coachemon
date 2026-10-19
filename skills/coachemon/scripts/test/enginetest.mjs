@@ -352,12 +352,11 @@ const log = (...a) => console.log(...a);
   assert.equal(plain.turnsWe, 4);
   assert.ok(drop.turnsWe === 9, "Overheat at −2, −4, −6 never gets there");
   assert.ok(lock.cost > 0.1);
-  // Down by turn 4: a 3-use lock lands its first confused use ⅔ of the time, a 2-use one its first two ⅔·¾ (still
-  // confused on the second ¾ of the time), so 7/12; then 95/108, 35/36, 323/324: 370/81 turns (game-code.md §5, §8).
-  // A crit's 3HKO shaves a little off, as it does off Pound's 4.
+  // The lock's uses go off 1, 1, ⅚, 17/24, 7/9, … (game-code.md §5, §8), each taken on its own: down by turn 4 at
+  // ⅚·17/24 = 85/144, 4.5792 turns. A crit's 3HKO shaves a little off, as it does off Pound's 4.
   log(`$ 4 hits expected: Pound ${r2(plain.eTurnsWe)} turns · Outrage ${r2(lock.eTurnsWe)}`);
   assert.equal(lock.turnsWe, 4, "more likely than not down by turn 4");
-  assert.ok(Math.abs(lock.eTurnsWe - 370 / 81) < 0.01, `the lock's confusion (${lock.eTurnsWe})`);
+  assert.ok(Math.abs(lock.eTurnsWe - 4.5792) < 0.01, `the lock's confusion (${lock.eTurnsWe})`);
 }
 
 assert.ok(["Iron Barbs", "Rough Skin", "Moxie", "Magic Guard", "Unaware"].every(a => E.TRAPS.has(a)), "new trap abilities listed");

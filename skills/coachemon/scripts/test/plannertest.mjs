@@ -1352,10 +1352,22 @@ Object.assign(TABLE, {
   console.log(`== a 2HKO lock: Snorlax ${twoSnorlax.toFixed(3)} · Clefable ${twoClefable.toFixed(3)}`);
   assert.ok(Math.abs(twoSnorlax - (0.1 + confused)) < 1e-3, `confused either way (${twoSnorlax})`);
   assert.ok(Math.abs(twoClefable - (0.1 + 0.5 + confused)) < 1e-3, `immune: the carried use is lost, and it was the last (${twoClefable})`);
+
+  // A lock started on a later turn is on its first use: Flygon's last two hits after a Dragon Claw land as surely from
+  // Outrage as from another Dragon Claw.
+  const me = dragonite([["Dragon Claw", "Dragon", 80, "P"], outrage]);
+  const flygon = mon("Flygon", 80, ["Ground", "Dragon"], [250, 100, 100, 100, 100, 100], [["Peck", "Flying", 35, "P"]], true);
+  Object.assign(TABLE, { "Dragonite>Dragon Claw>Flygon": [[100], 1, 1], "Dragonite>Outrage>Flygon": [[100], 1, 1], "Flygon>Peck>Dragonite": [[10], 1, 1] });
+  const { scene: s } = render({ party: [me], foes: [flygon], live: true, switches: () => new Map(), stubOutcome: locks,
+    dist: e => (e === flygon ? [{ name: "Peck", type: "Flying", p: 1, score: 10, targets: [0] }] : []) });
+  const { turn1 } = globalThis.__planner.exchange(s, me, me.moveset[0], flygon);
+  const [claw, lock] = me.moveset.map(pm => globalThis.__planner.exchange(s, me, pm, flygon, { hp: turn1.hp, after: turn1, next: true }).eTurnsWe);
+  assert.ok(Math.abs(lock - claw) < 1e-9, `no confusion before the lock's third use (${lock} vs ${claw})`);
 }
 
-// ---- A foe's lock lands its `left` uses on our switch-in, then it is confused; an immune one ends it (game-code.md §5).
-// Three landed hits fell either switch-in. Confused for 1–4 uses, the foe's uses after its lock go off ⅔, ¾, ⅚, ¹¹⁄₁₂.
+// ---- A foe's lock lands its uses left on our switch-in, then it is confused and picks its own move (game-code.md §5).
+// Three landed hits fell either switch-in. Confused for 1–4 uses, the foe's uses after its lock go off ⅔, ¾, ⅚, ¹¹⁄₁₂,
+// each taken on its own.
 // Skarmory takes Outrage's two left, then waits on one: 3 + ⅓ + 1/12 + 1/72 + 1/864 = 3 + 373/864 turns. Clefable
 // stops the lock on turn 1 and takes the Fire Blast the foe then picks, unconfused while uses were left: 4 turns.
 // Spending its last use on Clefable confuses it from the next use on, three landed then taking 547/144 more turns.
