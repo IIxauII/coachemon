@@ -36,17 +36,21 @@ export const findSuiteClone = (env: Env = process.env, cwd = process.cwd()): Fou
   if (existsSync(checkoutOf(version, cwd))) return findClone(checkoutOf(version, cwd));
   return {
     missing: `No clone at ${checkoutOf(version, cwd)}.`,
-    how: `npm run drift:check -- --version ${version}   # then its submodules and pnpm (pin-bump.md)`,
+    how: `npm run clone:provision -- --version ${version}`,
   };
 };
 
 /** The pin a stamp records for the game checkout at `source`: its commit, its submodules and the pnpm it names. */
 export const pinOf = (gameVersion: string, source: string): ClonePin => {
   const rev = (what: string) => execFileSync("git", ["-C", source, "rev-parse", what], { encoding: "utf8" }).trim();
+  return { gameVersion, sha: rev("HEAD"), locales: rev("HEAD:locales"), assets: rev("HEAD:assets"), pnpm: pnpmOf(source) };
+};
+
+export const pnpmOf = (source: string): string => {
   const packageManager = JSON.parse(readFileSync(path.join(source, "package.json"), "utf8")).packageManager ?? "";
   const pnpm = /^pnpm@([^+]+)/.exec(packageManager)?.[1];
   if (pnpm === undefined) throw new Error(`${source}/package.json names no pnpm packageManager to set a clone up with.`);
-  return { gameVersion, sha: rev("HEAD"), locales: rev("HEAD:locales"), assets: rev("HEAD:assets"), pnpm };
+  return pnpm;
 };
 
 /** The pin a player's clone at the suite's version is set up from: read off its drift checkout until a stamp writes it. */
@@ -57,16 +61,17 @@ export const suitePin = (env: Env = process.env, cwd = process.cwd()): ClonePin 
 };
 
 export const findClone = (clone: string): FoundClone => {
+  const provision = `npm run clone:provision -- --version ${path.basename(clone).replace(/^v/, "")}`;
   if (!existsSync(clone)) {
     // A worktree's `drift:check` leaves a bare clone, and provisioning it re-fetches the 815 MB `assets` submodule
     // (#296).
     return {
       missing: `No pinned clone at ${clone}.`,
-      how: "npm run drift:check   # in a worktree: ln -s <main-checkout>/.cache .cache",
+      how: `${provision}   # in a worktree: ln -s <main-checkout>/.cache .cache`,
     };
   }
   if (!existsSync(path.join(clone, "node_modules"))) {
-    return { missing: `The clone at ${clone} has no dependencies.`, how: `cd ${clone} && pnpm install --frozen-lockfile` };
+    return { missing: `The clone at ${clone} has no dependencies.`, how: provision };
   }
   // An empty submodule is the quiet failure: every battle a test starts dies in `populateMoveAnim` with no hint of
   // why, and the failure passes for the oracle's answer.
@@ -74,7 +79,7 @@ export const findClone = (clone: string): FoundClone => {
     if (readdirSync(path.join(clone, sub)).length === 0) {
       return {
         missing: `The clone's \`${sub}\` submodule is empty.`,
-        how: `cd ${clone} && git submodule update --init --depth 1 ${sub}`,
+        how: provision,
       };
     }
   }

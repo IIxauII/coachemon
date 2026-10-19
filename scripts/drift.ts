@@ -5,7 +5,7 @@
  * only after re-reading every entry it named: stamping is the sign-off, solving's included (pin-bump.md).
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
@@ -14,7 +14,8 @@ import { GLOBAL_DEPS, LADDER } from "../src/escape-ladder/table.ts";
 import type { Entry } from "../src/escape-ladder/types.ts";
 import type { ClonePin } from "../src/solver/clone.ts";
 import { checkForks, type Recheck, replay } from "../src/solver/solver.ts";
-import { checkoutOf, findClone, harnessIn, pinOf } from "./clone-test/clone-test.ts";
+import { cloneGame } from "./clone-provision/provision.ts";
+import { findClone, harnessIn, pinOf } from "./clone-test/clone-test.ts";
 import { addDep, blockers, type DepIndex, type DepSource, drift, type Finding } from "./drift/check.ts";
 import { GameSource } from "./drift/source.ts";
 import { generatedTables, loadRepo } from "./game-reads/check.ts";
@@ -24,7 +25,6 @@ import { generate } from "./gen-enums.ts";
 import { HUD_DEPS } from "./hud-deps.ts";
 import { recheck } from "./recheck/recheck.ts";
 
-const REPO = "https://github.com/pagefaultgames/pokerogue.git";
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const REVIEWED = new URL("../src/escape-ladder/reviewed.json", import.meta.url);
 
@@ -56,16 +56,8 @@ const only = args.only as DepSource | undefined;
 
 const reviewed: Reviewed = JSON.parse(readFileSync(REVIEWED, "utf8"));
 
-function checkout(version: string): string {
-  const dir = checkoutOf(version);
-  if (!existsSync(dir)) {
-    execFileSync("git", ["-c", "advice.detachedHead=false", "clone", "--quiet", "--depth", "1", "--branch", `v${version}`, REPO, dir], { stdio: "inherit" });
-  }
-  return dir;
-}
-
 const version = args.version ?? reviewed.pinned.gameVersion;
-const source = args.source ? path.resolve(args.source) : checkout(version);
+const source = args.source ? path.resolve(args.source) : cloneGame(version);
 const sha = execFileSync("git", ["-C", source, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
 
 const deps: DepIndex = new Map();

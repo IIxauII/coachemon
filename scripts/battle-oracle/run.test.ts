@@ -76,7 +76,7 @@ test("oracle:battle --replay answers no answer naming what the clone lacks when 
 
   assert.match(
     run.stdout,
-    new RegExp(`^no answer: the oracle's clone of game version ${PIN} isn't set up: No pinned clone at .*v${PIN}\\. Set it up with \`npm run drift:check`),
+    new RegExp(`^no answer: the oracle's clone of game version ${PIN} isn't set up: No pinned clone at .*v${PIN}\\. Set it up with \`npm run clone:provision -- --version ${PIN}`),
   );
   assert.equal(run.status, 2);
 });

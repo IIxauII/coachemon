@@ -57,10 +57,11 @@ names whichever step is missing. In a worktree, link the main checkout's `.cache
 submodule is fetched again.
 
 ```sh
-cd .cache/pokerogue/v<new>
-git submodule update --init --depth 1 assets locales
-npx --yes pnpm@<the game's packageManager pnpm> install --frozen-lockfile
+npm run clone:provision -- --version <new>
 ```
+
+It clones the version if absent, fetches the empty `assets` and `locales` submodules and installs with the pnpm the
+game's `package.json` names, skipping each step already done.
 
 ## The suite
 
