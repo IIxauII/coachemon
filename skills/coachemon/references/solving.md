@@ -43,8 +43,9 @@ card and the boss-fight plan's principles carry the fight from where it stands.
        skips Leech Seed` for a `forget` of null, else `T3: Bulbasaur learns Leech Seed over Sunny Day`. Older panels
        leave them off the card, so this line is how the player hears them, and any other answer takes the game off the
        line. The last step's picks are placeholders the search never weighs, so the learn card's own call stands there.
-       On a boss fight, the boss-fight plan takes the oracle line before anything else (`references/boss-plan.md`, step
-       3): the plugin forgets `read_job` when it restarts, and the plan file is the record that outlives it.
+       On a boss fight, the boss-fight plan takes the oracle line before anything else (`references/boss-plan.md`,
+       *Take the oracle line*): the plugin forgets `read_job` when it restarts, and the plan file is the record that
+       outlives it.
      - `moved_on`: the fight left the turn it was solved from before the oracle line came, so the oracle line no
        longer holds. Say so in one line; the card carries the fight.
      - `held: false` with `no-hud`: start the panel and hand it again. With `other-fight` or `malformed`, the panel
@@ -77,5 +78,5 @@ card and the boss-fight plan's principles carry the fight from where it stands.
    while the fight is still on: back to step 1 at its next command, which starts from the augmented export and cancels any solve still
    running from an earlier turn. A miss that came with the fight over needs none: a lost fight, a `T<turn>` past
    `<of>`, or a next command on another wave, whose fight is a new one. On a boss fight, tick the miss into the plan
-   first (`references/boss-plan.md`, step 4). Done when the re-solve has started, its `no_answer` has been relayed, or
+   first (`references/boss-plan.md`, *Tick*). Done when the re-solve has started, its `no_answer` has been relayed, or
    the fight was over.
