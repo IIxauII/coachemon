@@ -42,6 +42,7 @@ export const TEMPLATES: Area = {
     },
     { name: "doKillOpponents", kind: "method", at: ["test/framework/game-manager.ts#GameManager.doKillOpponents"] },
     { name: "doSelectModifier", kind: "method", at: ["test/framework/game-manager.ts#GameManager.doSelectModifier"] },
+    { name: "doSetStatus", kind: "method", at: ["src/field/pokemon.ts#Pokemon.doSetStatus"] },
     { name: "endPhase", kind: "method", at: ["test/framework/game-manager.ts#GameManager.endPhase"] },
     { name: "enemyMoveset", kind: "method", at: ["test/helpers/overrides-helper.ts#OverridesHelper.enemyMoveset"] },
     { name: "enemySpecies", kind: "method", at: ["test/helpers/overrides-helper.ts#OverridesHelper.enemySpecies"] },
