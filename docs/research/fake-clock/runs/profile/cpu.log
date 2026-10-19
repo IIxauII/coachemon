@@ -1,0 +1,5 @@
+13:40:13 cpu poll1 load { 4.83 5.43 5.02 }
+{"mode":"poll1","patch":null,"load1":[4.833984375,4.52783203125],"boot":7.643,"forks":30,"jobs":272,"tries":426,"wall":21.15082654399999,"perTryMs":49.64982756807509,"medianJobMs":46.48016699999789,"maxJobMs":334.9073750000007,"sameAsRecorded":27,"differ":0,"unrecorded":245,"slowJobs":[],"errors":[]}
+13:40:43 cpu fake load { 4.53 5.31 4.98 }
+{"mode":"poll1","patch":"fake-clock.ts","load1":[4.52783203125,4.72412109375],"boot":8.197,"forks":30,"jobs":272,"tries":426,"wall":6.312143954000007,"perTryMs":14.817239328638513,"medianJobMs":14.752833999998984,"maxJobMs":141.2564170000005,"sameAsRecorded":27,"differ":0,"unrecorded":245,"slowJobs":[],"errors":[]}
+13:40:58 done load { 4.72 5.31 4.99 }

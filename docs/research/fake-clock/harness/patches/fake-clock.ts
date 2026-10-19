@@ -14,7 +14,7 @@
 // FAKE_CLOCK_IMPL=vitest uses vitest's own fake timers (`vi.useFakeTimers`) for the same timers, with delays coerced as
 // Node coerces them, driven by the same loop through the installed clock's `next()`.
 // COACH_FAKE_REPORT=<file> gets {fake: true} once installed, or {slow: why}.
-import { appendFileSync as appendFakeStats, writeFileSync as writeFakeReport } from "node:fs";
+import { writeFileSync as writeFakeReport } from "node:fs";
 
 const fakeImpl = process.env.FAKE_CLOCK_IMPL ?? "hand";
 const real = {
@@ -127,8 +127,11 @@ function vitestClock(): Clock {
   const fakeSet = { setTimeout: globalThis.setTimeout, setInterval: globalThis.setInterval };
   // vitest's fake timers take `setInterval(fn)` as an interval of NaN and `setInterval(fn, 0)` as one of 0 ms: the
   // first never fires again, the second fires forever without the clock moving. Node makes both 1 ms.
-  globalThis.setTimeout = ((fn: any, delay?: unknown, ...args: unknown[]) => fakeSet.setTimeout(fn, coerce(delay), ...args)) as any;
-  globalThis.setInterval = ((fn: any, delay?: unknown, ...args: unknown[]) => fakeSet.setInterval(fn, coerce(delay), ...args)) as any;
+  // FAKE_VITEST_RAW=1 leaves them as vitest has them, to show what that does.
+  if (process.env.FAKE_VITEST_RAW !== "1") {
+    globalThis.setTimeout = ((fn: any, delay?: unknown, ...args: unknown[]) => fakeSet.setTimeout(fn, coerce(delay), ...args)) as any;
+    globalThis.setInterval = ((fn: any, delay?: unknown, ...args: unknown[]) => fakeSet.setInterval(fn, coerce(delay), ...args)) as any;
+  }
   const first = () => {
     let best: any = null;
     for (const t of Object.values(sinon.timers ?? {}) as any[]) if (!best || t.callAt < best.callAt) best = t;
@@ -248,8 +251,12 @@ try {
 }
 if (process.env.COACH_FAKE_REPORT) writeFakeReport(process.env.COACH_FAKE_REPORT, JSON.stringify(fakeReport));
 (globalThis as any).__fakeClock = { clock, stats: fakeClockStats, waits: () => fastWaits };
-// FAKE_STATS_OUT=<file>: one line per worker at exit, how many timers the driver fired and how far the clock went.
+// FAKE_STATS_OUT=<file>: each worker keeps <file>.<pid> up to date, every real second, with how many timers the driver
+// fired (in all, and while something waited) and how far the fake clock went. A worker is often stopped with no exit event.
 if (process.env.FAKE_STATS_OUT) {
-  const statsOut = process.env.FAKE_STATS_OUT;
-  process.on("exit", () => appendFakeStats(statsOut, `${JSON.stringify({ ...fakeClockStats, fakeMs: clock.now(), timers: clock.count(), date: new Date().toISOString(), uptimeMs: Math.round(performance.now()) })}\n`));
+  const statsOut = `${process.env.FAKE_STATS_OUT}.${process.pid}`;
+  const writeStats = () =>
+    writeFakeReport(statsOut, JSON.stringify({ ...fakeClockStats, fakeMs: clock.now(), timers: clock.count(), date: new Date().toISOString(), uptimeMs: Math.round(performance.now()) }));
+  real.setInterval(writeStats, 1000).unref();
+  process.on("exit", writeStats);
 }

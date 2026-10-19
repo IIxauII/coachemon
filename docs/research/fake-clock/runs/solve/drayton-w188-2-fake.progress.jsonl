@@ -1,0 +1,17 @@
+{"t":1792409646275,"s":21.154,"spent":17,"budget":12000,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":260,"heapLimitMb":864,"slowPoll":null}}
+{"t":1792409646384,"s":21.263,"spent":30,"budget":12000,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":261,"heapLimitMb":864,"slowPoll":null}}
+{"t":1792409646641,"s":21.52,"spent":59,"budget":12000,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":279,"heapLimitMb":864,"slowPoll":null}}
+{"t":1792409647090,"s":21.969,"spent":104,"budget":12000,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":291,"heapLimitMb":864,"slowPoll":null}}
+{"t":1792409647207,"s":22.086,"spent":117,"budget":12000,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":304,"heapLimitMb":864,"slowPoll":null}}
+{"t":1792409647285,"s":22.164,"spent":126,"budget":12000,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":304,"heapLimitMb":864,"slowPoll":null}}
+{"t":1792409647356,"s":22.235,"spent":135,"budget":12000,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":305,"heapLimitMb":864,"slowPoll":null}}
+{"t":1792409647422,"s":22.301,"spent":144,"budget":12000,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":313,"heapLimitMb":864,"slowPoll":null}}
+{"t":1792409647705,"s":22.584,"spent":181,"budget":12000,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":326,"heapLimitMb":864,"slowPoll":null}}
+{"t":1792409647852,"s":22.731,"spent":198,"budget":12000,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":326,"heapLimitMb":864,"slowPoll":null}}
+{"t":1792409647899,"s":22.778,"spent":206,"budget":12000,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":326,"heapLimitMb":864,"slowPoll":null}}
+{"t":1792409648114,"s":22.993,"spent":226,"budget":12000,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":327,"heapLimitMb":864,"slowPoll":null}}
+{"t":1792409648171,"s":23.05,"spent":233,"budget":12000,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":332,"heapLimitMb":864,"slowPoll":null}}
+{"t":1792409648337,"s":23.216,"spent":248,"budget":12000,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":332,"heapLimitMb":864,"slowPoll":null}}
+{"t":1792409648408,"s":23.287,"spent":255,"budget":12000,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":332,"heapLimitMb":864,"slowPoll":null}}
+{"t":1792409648506,"s":23.385,"spent":266,"budget":12000,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":332,"heapLimitMb":864,"slowPoll":null}}
+{"line":[{"kind":"switch","to":{"slot":3,"species":"PROBOPASS"}},{"kind":"move","move":"EARTH_POWER","tera":false},{"kind":"move","move":"EARTH_POWER","tera":false},{"kind":"switch","to":{"slot":5,"species":"LEAVANNY"}},{"kind":"move","move":"BUG_BITE","tera":true},{"kind":"switch","to":{"slot":2,"species":"RESHIRAM"}},{"kind":"move","move":"DRAGON_PULSE","tera":false},{"kind":"move","move":"FICKLE_BEAM","tera":false},{"kind":"switch","to":{"slot":5,"species":"PROBOPASS"},"replacement":{"slot":1,"species":"SNORLAX"}},{"kind":"switch","to":{"slot":3,"species":"GYARADOS"}},{"kind":"move","move":"HURRICANE","tera":false},{"kind":"move","move":"HURRICANE","tera":false,"replacement":{"slot":2,"species":"LEAVANNY"}},{"kind":"move","move":"POLLEN_PUFF","tera":false},{"kind":"switch","to":{"slot":5,"species":"RESHIRAM"}},{"kind":"move","move":"FICKLE_BEAM","tera":false},{"kind":"move","move":"FICKLE_BEAM","tera":false}]}

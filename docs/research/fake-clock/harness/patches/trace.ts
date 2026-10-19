@@ -8,8 +8,10 @@
 //   Q <phase>/<mode> the prompt handler ran a queued prompt
 //   I <button>/<mode> an input reached the UI (the harness's learn watch and the prompts press through it)
 //   D <site>        a delayed call on the scene's clock fired; <site> is where the game scheduled it
+//   d <site>        the same for a repeating one
 // Every line ends with `@<n>`: how many times the scene's clock had ticked by then. Ticks are timing, not events.
 import { appendFileSync as traceAppend } from "node:fs";
+import { setInterval as traceRealInterval } from "node:timers";
 import { UiMode as TrUiMode } from "#enums/ui-mode";
 import { PhaseInterceptor as TrInterceptor } from "#test/framework/phase-interceptor";
 import { PromptHandler as TrPromptHandler } from "#test/helpers/prompt-handler";
@@ -45,11 +47,13 @@ const mode = (m: number) => TrUiMode[m] ?? String(m);
         (new Error().stack ?? "")
           .split("\n")
           .slice(2)
-          .find(l => l.includes("/src/") && !l.includes("mock-clock")) ?? "?";
+          .find(l => l.includes("/src/") && !l.includes("mock-clock") && !l.includes("game-speed")) ?? "?";
       const site = (/\/src\/([^?)]*)/.exec(frame)?.[1] ?? frame.trim()).replace(/\?.*$/, "");
       const callback = config.callback;
+      // A repeating event (the play-time counter) fires on every tick, so how often it fires is timing: `d`, not `D`.
+      const kind = config.loop || config.repeat ? "d" : "D";
       config = { ...config, callback: function (this: any, ...a: any[]) {
-        ev(`D ${site}`);
+        ev(`${kind} ${site}`);
         return callback.apply(this, a);
       } };
     }
@@ -106,4 +110,6 @@ const mode = (m: number) => TrUiMode[m] ?? String(m);
     return input.call(this, button);
   };
   process.on("exit", flushTrace);
+  // The worker can be stopped without an exit event: the last job's events are flushed on a real timer too.
+  traceRealInterval(flushTrace, 200).unref();
 }

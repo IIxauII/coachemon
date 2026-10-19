@@ -1,0 +1,16 @@
+== none1 vs none2, every event kind but the repeating delayed call (d)
+segments a 122 (jobs use 122), b 122 (jobs use 122)
+
+same 102 of 102
+== none1 vs fake, every event kind but the repeating delayed call (d)
+segments a 122 (jobs use 122), b 121 (jobs use 122)
+
+job 101: 1 vs 0 children
+
+same 101 of 102
+== none1 vs fake50, every event kind but the repeating delayed call (d)
+segments a 122 (jobs use 122), b 121 (jobs use 122)
+
+job 101: 1 vs 0 children
+
+same 101 of 102

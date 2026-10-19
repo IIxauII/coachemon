@@ -1,0 +1,9 @@
+13:41:36 3 x poll1 load { 4.08 5.09 4.93 }
+{"mode":"poll1","patch":null,"load1":[4.08154296875,6.2841796875],"boot":15.49,"forks":10,"jobs":102,"tries":122,"wall":7.950924173000009,"perTryMs":65.17150961475417,"medianJobMs":61.23991599999863,"maxJobMs":414.9335830000018,"sameAsRecorded":9,"differ":0,"unrecorded":93,"slowJobs":[],"errors":[]}
+{"mode":"poll1","patch":null,"load1":[4.08154296875,6.2841796875],"boot":15.541,"forks":10,"jobs":102,"tries":122,"wall":7.917304637999985,"perTryMs":64.89593965573758,"medianJobMs":60.21020800000042,"maxJobMs":420.4739579999987,"sameAsRecorded":9,"differ":0,"unrecorded":93,"slowJobs":[],"errors":[]}
+{"mode":"poll1","patch":null,"load1":[4.08154296875,6.2841796875],"boot":15.549,"forks":10,"jobs":102,"tries":122,"wall":8.00603375000002,"perTryMs":65.62322745901655,"medianJobMs":60.32454200000211,"maxJobMs":417.67004200000156,"sameAsRecorded":9,"differ":0,"unrecorded":93,"slowJobs":[],"errors":[]}
+13:42:00 3 x fake load { 6.28 5.56 5.10 }
+{"mode":"poll1","patch":"fake-clock.ts","load1":[6.2841796875,6.48046875],"boot":10.271,"forks":10,"jobs":102,"tries":122,"wall":2.3375320819999943,"perTryMs":19.16009903278684,"medianJobMs":17.584082999999737,"maxJobMs":142.4487079999999,"sameAsRecorded":9,"differ":0,"unrecorded":93,"slowJobs":[],"errors":[]}
+{"mode":"poll1","patch":"fake-clock.ts","load1":[6.2841796875,6.48046875],"boot":10.288,"forks":10,"jobs":102,"tries":122,"wall":2.3455059979999935,"perTryMs":19.225458999999944,"medianJobMs":17.655209000000468,"maxJobMs":141.90216699999837,"sameAsRecorded":9,"differ":0,"unrecorded":93,"slowJobs":[],"errors":[]}
+{"mode":"poll1","patch":"fake-clock.ts","load1":[6.2841796875,6.48046875],"boot":10.274,"forks":10,"jobs":102,"tries":122,"wall":2.4203528789999873,"perTryMs":19.83895802459006,"medianJobMs":17.94824999999946,"maxJobMs":145.44145899999967,"sameAsRecorded":9,"differ":0,"unrecorded":93,"slowJobs":[],"errors":[]}
+13:42:13 done load { 6.48 5.62 5.13 }

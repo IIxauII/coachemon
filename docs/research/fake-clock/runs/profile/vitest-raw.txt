@@ -1,0 +1,2 @@
+FAKE_CLOCK_IMPL=vitest FAKE_VITEST_RAW=1, 1 fork: the worker never said hello; the worker was stopped at 42 s. Its last counts (2.07 M timers fired, the fake clock never past its start):
+{"fired":2068783,"fastFired":2068782,"realSteps":0,"fakeMs":1792410205770,"timers":5,"date":"2026-10-19T11:44:00.769Z","uptimeMs":41758}

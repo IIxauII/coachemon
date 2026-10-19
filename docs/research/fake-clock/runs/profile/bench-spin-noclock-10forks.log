@@ -1,0 +1,1 @@
+{"mode":"none","patch":"spin.ts","load1":[5.8310546875,3.0703125],"boot":8.443,"forks":10,"jobs":102,"tries":122,"wall":166.804740285,"perTryMs":1367.2519695491803,"medianJobMs":38.44258300000001,"maxJobMs":80104.163709,"sameAsRecorded":9,"differ":0,"unrecorded":93,"vsRef":{"same":93,"differ":[21,43,73,87,88,93,94,95,96]},"slowJobs":[93,94,95,96],"errors":[]}

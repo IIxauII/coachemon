@@ -1,0 +1,86 @@
+profile, from the first job on: 6.5 s sampled, 1.5 s idle, 5.0 s busy
+
+self time by source (share of busy):
+  game: other                                 0.83 s   16.5%
+  i18next (text lookups)                      0.60 s   12.0%
+  game: field (pokemon, arena)                0.41 s    8.1%
+  Phaser (graphics, tweens, timers)           0.40 s    7.9%
+  harness (the coach test file)               0.37 s    7.3%
+  game: data (moves, abilities, tags)         0.36 s    7.2%
+  (garbage collector)                         0.28 s    5.6%
+  test framework                              0.27 s    5.3%
+  game: ui                                    0.26 s    5.3%
+  game: items (modifiers)                     0.21 s    4.3%
+  jsdom                                       0.18 s    3.5%
+  (program)                                   0.16 s    3.2%
+  game: phases                                0.16 s    3.2%
+  game: save/load (system)                    0.15 s    3.1%
+  other dependencies                          0.15 s    3.0%
+  native (JSON, builtins, regexp)             0.08 s    1.6%
+  node internals                              0.07 s    1.4%
+  fake clock (driver, timers, waitUntil)      0.06 s    1.2%
+  vitest                                      0.02 s    0.4%
+
+inclusive time of steps (share of busy; nested steps overlap):
+  initSessionFromData (game-data.ts)          1.02 s   20.2%
+  t (i18next.js)                              0.63 s   12.5%
+  reload                                      0.42 s    8.4%
+  expand                                      0.42 s    8.3%
+  to (phase-interceptor.ts)                   0.37 s    7.5%
+  reloadSession (reload-helper.ts)            0.26 s    5.1%
+  sweep                                       0.26 s    5.1%
+  restore                                     0.25 s    4.9%
+  position                                    0.21 s    4.2%
+  loadSession                                 0.16 s    3.3%
+  forkPoint                                   0.15 s    3.0%
+  parseSessionData (game-data.ts)             0.06 s    1.2%
+  putBack                                     0.05 s    1.1%
+  getSessionSaveData (game-data.ts)           0.05 s    0.9%
+  sig                                         0.04 s    0.7%
+  legal                                       0.02 s    0.3%
+  turn                                        0.01 s    0.1%
+  command                                     0.00 s    0.1%
+  run (chunk-artifact.js)                     0.00 s    0.0%
+  hp                                          0.00 s    0.0%
+
+top 40 functions by self time:
+   29.9%  (idle) (:0)
+    5.6%  (garbage collector) (:0)
+    3.2%  (program) (:0)
+    2.6%  (anon) (battle-scene.ts:2257)
+    1.9%  (anon) (battle-scene.ts:2235)
+    1.8%  forkPoint (coach-worker-43d69cc0.test.ts:902)
+    1.7%  extractFromKey (i18next.js:507)
+    1.6%  MockSprite (mock-sprite.ts:18)
+    1.5%  removeListener (index.js:254)
+    1.4%  translate (i18next.js:531)
+    1.3%  destroy (GameObject.js:874)
+    1.0%  putBack (coach-worker-43d69cc0.test.ts:959)
+    1.0%  looksLikeObjectPath (i18next.js:144)
+    0.9%  parseSessionData (game-data.ts:954)
+    0.8%  get (startVitestModuleRunner.DB-7oCpn.js:320)
+    0.7%  getPath (i18next.js:75)
+    0.7%  formatMoney (common.ts:280)
+    0.7%  getResource (i18next.js:326)
+    0.7%  getAbility (pokemon.ts:1703)
+    0.7%  Sprite (Sprite.js:78)
+    0.6%  getLastOfPath (i18next.js:25)
+    0.6%  updateInfo (battle-info.ts:349)
+    0.6%  hasPassive (pokemon.ts:1829)
+    0.6%  restore (coach-worker-43d69cc0.test.ts:951)
+    0.6%  getTextStyleOptions (text.ts:66)
+    0.6%  send (coach-worker-43d69cc0.test.ts:1212)
+    0.5%  getOrResetRegExp (i18next.js:1185)
+    0.5%  getOwnPropertyDescriptor (module-evaluator.js:95)
+    0.5%  getPokemonById (battle-scene.ts:659)
+    0.5%  sweep (coach-worker-43d69cc0.test.ts:665)
+    0.5%  destroy (mock-sprite.ts:165)
+    0.5%  state (RandomDataGenerator.js:458)
+    0.5%  hash (RandomDataGenerator.js:139)
+    0.5%  applySingleAbAttrs (apply-ab-attrs.ts:7)
+    0.5%  t (i18next.js:2105)
+    0.5%  canApplyAbility (pokemon.ts:1860)
+    0.4%  (anon) (i18next.js:813)
+    0.4%  (anon) (i18next.js:802)
+    0.4%  updateModifiers (modifier.ts:157)
+    0.4%  initSessionFromData (game-data.ts:772)

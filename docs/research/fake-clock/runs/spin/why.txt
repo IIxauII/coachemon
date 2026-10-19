@@ -1,0 +1,26 @@
+
+none2: target prompt expired | faint switch | child | vs none2 | children
+  False | False | on | same | 44
+  False | True  | on | same | 5
+  True  | False | on | same | 52
+  True  | True  | on | same | 20
+
+spin: target prompt expired | faint switch | child | vs none2 | children
+  False | False | dropped (left 1 prompts queued) | DIFFERS | 33
+  False | False | on | same | 44
+  False | True  | dropped (threw Timed out in waitUntil!) | DIFFERS | 15
+  False | True  | on | same | 5
+  True  | False | on | same | 19
+  True  | True  | on | same | 5
+
+fake: target prompt expired | faint switch | child | vs none2 | children
+  False | False | on | same | 44
+  False | True  | on | same | 5
+  True  | False | on | same | 52
+  True  | True  | on | same | 20
+
+fake50: target prompt expired | faint switch | child | vs none2 | children
+  False | False | on | same | 44
+  False | True  | on | same | 5
+  True  | False | on | same | 52
+  True  | True  | on | same | 20

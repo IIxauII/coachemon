@@ -5,7 +5,7 @@
 // usage: [PROF=1] [MODE=none|poll1|patch] [PATCH=<file>[,<file>]] [REF=<jobs.json>] [JOB_MS=<ms>]
 //        node profile.ts <export.json> <tree-dir> <out-dir> <forks>
 import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { loadavg } from "node:os";
 import path from "node:path";
 import { findPinnedClone, testInClone } from "../../../../scripts/clone-test/clone-test.ts";
@@ -19,6 +19,7 @@ import { asPinned } from "./pinned.ts";
 
 const [file, treeDir, outDir, count] = process.argv.slice(2);
 mkdirSync(outDir, { recursive: true });
+rmSync(path.join(outDir, "children.jsonl"), { force: true });
 const prof = process.env.PROF === "1";
 const json = JSON.parse(readFileSync(file, "utf8"));
 const save = asPinned("save" in json ? json : { save: json }).save;
@@ -91,6 +92,8 @@ for (const { handle, legal } of forks) {
     const c = error ? `error:${error}` : canon(children);
     jobs.push({ ms, children: children.length, fork: handle.slice(HANDLE.length), action: JSON.stringify(action), canon: digest(c), ...(error && { error }) });
     if (ms > jobMs) slow.push(i);
+    // Fork points as their hash, so the children can be read and compared later.
+    appendFileSync(path.join(outDir, "children.jsonl"), `${JSON.stringify({ i, c })}\n`);
     const recorded = tree.get(handle, action as never);
     if (!recorded) unrecorded++;
     else if (canon(recorded) === c) same++;

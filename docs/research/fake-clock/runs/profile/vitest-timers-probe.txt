@@ -1,0 +1,10 @@
+setTimeout is node's: true
+setTimeout src: function setTimeout(callback, after, ...args) {
+  validateFunction(callback, 'ca
+window.setTimeout same: true
+rAF: function
+clock on setTimeout: true
+fired from 1792406874699: B@0 C@0 C@0 C@0 C@0 C@0 C@0 C@0 C@0 C@0 C@0 C@0
+timers: [{"id":1000000000000,"callAt":1,"interval":1},{"id":1000000000001,"callAt":null,"interval":null},{"id":1000000000002,"callAt":0,"interval":0},{"id":1000000000003,"callAt":0},{"id":1000000000004,"callAt":1}]
+now: 0
+Date faked: 1

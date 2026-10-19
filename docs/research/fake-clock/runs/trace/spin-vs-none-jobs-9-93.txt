@@ -1,0 +1,71 @@
+segments a 121 (jobs use 122), b 121 (jobs use 122)
+
+job 9 child 0: first difference at event 44 of 110 / 109
+  a: M FIGHT @6707
+     Q CommandPhase/COMMAND @6707
+     M MESSAGE @6708
+     Q CommandPhase/FIGHT @6708
+     S interrupted>idling @6708
+     S idling>running @6708
+     P EnemyCommandPhase @6708
+     S running>idling @6708
+     Q SelectTargetPhase/TARGET_SELECT @6709
+     S idling>running @6709
+     P TurnStartPhase @6709
+     S running>idling @6709
+     S idling>running @6710
+     P MovePhase @6710
+     S running>idling @6710
+     S idling>running @6711
+  b: M FIGHT @597
+     Q CommandPhase/COMMAND @597
+     M MESSAGE @598
+     Q CommandPhase/FIGHT @598
+     S interrupted>idling @598
+     S idling>running @598
+     P EnemyCommandPhase @598
+     S running>idling @598
+     S idling>running @598
+     P TurnStartPhase @598
+     S running>idling @598
+     S idling>running @598
+     P MovePhase @598
+     S running>idling @598
+     S idling>running @599
+     P MessagePhase @599
+
+job 93 child 0: first difference at event 44 of 134 / 111
+  a: M FIGHT @34430
+     Q CommandPhase/COMMAND @34430
+     M MESSAGE @34431
+     Q CommandPhase/FIGHT @34431
+     S interrupted>idling @34431
+     S idling>running @34431
+     P EnemyCommandPhase @34431
+     S running>idling @34431
+     Q SelectTargetPhase/TARGET_SELECT @34432
+     S idling>running @34432
+     P TurnStartPhase @34432
+     S running>idling @34432
+     S idling>running @34433
+     P MovePhase @34433
+     S running>idling @34433
+     S idling>running @34434
+  b: M FIGHT @1981
+     Q CommandPhase/COMMAND @1981
+     M MESSAGE @1982
+     Q CommandPhase/FIGHT @1982
+     S interrupted>idling @1982
+     S idling>running @1982
+     P EnemyCommandPhase @1982
+     S running>idling @1982
+     S idling>running @1982
+     P TurnStartPhase @1982
+     S running>idling @1982
+     S idling>running @1982
+     P MovePhase @1982
+     S running>idling @1982
+     S idling>running @1982
+     P MessagePhase @1982
+
+same 0 of 2

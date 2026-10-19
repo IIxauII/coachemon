@@ -1,0 +1,29 @@
+13:30:05 solve gordie-w180 1 poll1 load { 3.68 3.79 3.78 }
+{"fight":"gordie-w180.json","mode":"poll1","patch":null,"load1":[3.6767578125,5.32421875],"budgetPerBeam":null,"workers":3,"kind":"oracle_line","turns":24,"oursLeft":5,"totalS":50.914,"bootS":23.87,"expansions":349,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":341,"heapLimitMb":864,"slowPoll":null}}
+13:30:56 solve gordie-w180 2 fake load { 5.32 4.27 3.96 }
+{"fight":"gordie-w180.json","mode":"poll1","patch":"fake-clock.ts","load1":[5.32421875,7.7119140625],"budgetPerBeam":null,"workers":3,"kind":"oracle_line","turns":24,"oursLeft":5,"totalS":48.22,"bootS":26.754,"expansions":349,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":352,"heapLimitMb":864,"slowPoll":null}}
+13:31:44 solve gordie-w180 3 fake load { 7.71 5.17 4.31 }
+{"fight":"gordie-w180.json","mode":"poll1","patch":"fake-clock.ts","load1":[7.7119140625,6.88232421875],"budgetPerBeam":null,"workers":3,"kind":"oracle_line","turns":24,"oursLeft":5,"totalS":34.324,"bootS":17.991,"expansions":349,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":368,"heapLimitMb":864,"slowPoll":null}}
+13:32:19 solve gordie-w180 4 poll1 load { 6.88 5.27 4.38 }
+{"fight":"gordie-w180.json","mode":"poll1","patch":null,"load1":[6.88232421875,7.71875],"budgetPerBeam":null,"workers":3,"kind":"oracle_line","turns":24,"oursLeft":5,"totalS":47.578,"bootS":20.031,"expansions":349,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":346,"heapLimitMb":864,"slowPoll":null}}
+13:33:06 solve drayton-w188 1 poll1 load { 7.72 5.76 4.61 }
+{"fight":"drayton-w188.json","mode":"poll1","patch":null,"load1":[7.71875,10.47119140625],"budgetPerBeam":null,"workers":3,"kind":"oracle_line","turns":16,"oursLeft":4,"totalS":37.929,"bootS":17.58,"expansions":266,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":322,"heapLimitMb":864,"slowPoll":null}}
+13:33:44 solve drayton-w188 2 fake load { 10.47 6.84 5.06 }
+{"fight":"drayton-w188.json","mode":"poll1","patch":"fake-clock.ts","load1":[10.47119140625,8.9326171875],"budgetPerBeam":null,"workers":3,"kind":"oracle_line","turns":16,"oursLeft":4,"totalS":35.729,"bootS":21.154,"expansions":266,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":332,"heapLimitMb":864,"slowPoll":null}}
+13:34:20 solve drayton-w188 3 fake load { 8.93 6.88 5.15 }
+{"fight":"drayton-w188.json","mode":"poll1","patch":"fake-clock.ts","load1":[8.9326171875,7.94091796875],"budgetPerBeam":null,"workers":3,"kind":"oracle_line","turns":16,"oursLeft":4,"totalS":29.591,"bootS":16.438,"expansions":266,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":345,"heapLimitMb":864,"slowPoll":null}}
+13:34:50 solve drayton-w188 4 poll1 load { 7.94 6.83 5.19 }
+{"fight":"drayton-w188.json","mode":"poll1","patch":null,"load1":[7.94091796875,6.0458984375],"budgetPerBeam":null,"workers":3,"kind":"oracle_line","turns":16,"oursLeft":4,"totalS":33.901,"bootS":15.876,"expansions":266,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":330,"heapLimitMb":864,"slowPoll":null}}
+13:35:24 solve kieran-w190 1 poll1 load { 6.05 6.51 5.14 }
+{"fight":"kieran-w190.json","mode":"poll1","patch":null,"load1":[6.0458984375,4.92626953125],"budgetPerBeam":null,"workers":3,"kind":"oracle_line","turns":32,"oursLeft":5,"totalS":59.73,"bootS":19.807,"expansions":880,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":350,"heapLimitMb":864,"slowPoll":null}}
+13:36:24 solve kieran-w190 2 fake load { 4.93 6.14 5.10 }
+{"fight":"kieran-w190.json","mode":"poll1","patch":"fake-clock.ts","load1":[4.92626953125,4.58203125],"budgetPerBeam":null,"workers":3,"kind":"oracle_line","turns":32,"oursLeft":5,"totalS":36.001,"bootS":15.795,"expansions":880,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":356,"heapLimitMb":864,"slowPoll":null}}
+13:37:00 solve kieran-w190 3 fake load { 4.58 5.91 5.05 }
+{"fight":"kieran-w190.json","mode":"poll1","patch":"fake-clock.ts","load1":[4.58203125,4.74560546875],"budgetPerBeam":null,"workers":3,"kind":"oracle_line","turns":32,"oursLeft":5,"totalS":37.455,"bootS":16.69,"expansions":880,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":360,"heapLimitMb":864,"slowPoll":null}}
+13:37:38 solve kieran-w190 4 poll1 load { 4.75 5.79 5.04 }
+{"fight":"kieran-w190.json","mode":"poll1","patch":null,"load1":[4.74560546875,4.07861328125],"budgetPerBeam":null,"workers":3,"kind":"oracle_line","turns":32,"oursLeft":5,"totalS":59.255,"bootS":17.241,"expansions":880,"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":354,"heapLimitMb":864,"slowPoll":null}}
+13:38:37 beam fake load { 4.08 5.40 4.95 }
+{"fight":"gordie-w180.json","method":"beam:8:0.5","mode":"poll1","patch":"fake-clock.ts","load1":[4.07861328125,5.484375],"workers":3,"sim":null,"share":false,"budget":3000,"seconds":31.829,"tally":{"requested":1657,"unique":1657,"played":1657,"realJobs":109},"replays":1,"tree":{"forks":1481,"turns":984},"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":362,"heapLimitMb":864,"slowPoll":null},"result":{"kind":"found","turn":14,"inputs":14}}
+13:39:10 beam poll1 load { 5.48 5.66 5.06 }
+{"fight":"gordie-w180.json","method":"beam:8:0.5","mode":"poll1","patch":null,"load1":[5.484375,4.833984375],"workers":3,"sim":null,"share":false,"budget":3000,"seconds":63.362,"tally":{"requested":1657,"unique":1657,"played":1657,"realJobs":109},"replays":1,"tree":{"forks":1481,"turns":984},"pool":{"size":3,"died":0,"lastDeath":null,"peakHeapMb":355,"heapLimitMb":864,"slowPoll":null},"result":{"kind":"found","turn":14,"inputs":14}}
+13:40:13 done load { 4.83 5.43 5.02 }
