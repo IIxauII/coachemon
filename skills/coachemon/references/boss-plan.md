@@ -36,8 +36,9 @@ part follows the game's language.
    the oracle line that outlives the session: write it before anything else. A plan found with the card's `plan`
    group leading with an oracle line (`~ oracle line wins in …`, or `!`) that the file doesn't hold was held by a
    session that ended first: write the oracle line from the `plan` group's rows, and give each step whose After the
-   card doesn't show yet `After: on the card at its turn`. The card carries no receipt and no luck, so *Why trust it*
-   then reads `Receipt and luck: lost with the session that held the oracle line.` Done when *The oracle line* holds
+   card doesn't show yet `After: on the card at its turn`. The card carries no receipt and no luck, so in *Why trust
+   it* the one line `Receipt and luck: lost with the session that held the oracle line.` stands in place of the
+   receipt and the luck, and the rest of the section is written as usual. Done when *The oracle line* holds
    every step and the status line reads `on the line`.
 4. **Tick** on every read after. Done when the file matches the card: the call and what leads next are the card's,
    and the status line names the last check the battle has reached. With `card` null, start the HUD as in step 2.
@@ -59,18 +60,23 @@ part follows the game's language.
      w<wave> · T<turn>/<of>`, or a strip that reads `off the line` means that turn's checkpoint missed. Mark its step
      ✗ and write under it each of Now's ✗ rows as it reads, `Tyranitar expected 512/569 · came 455/569`; once the card
      has moved past them, the journal's checkpoint entry for that turn carries the same `misses`. Then say whose miss
-     it was, from the mark in the strip's `off the line · ~ re-solving…`:
-     - `~`: an input other than the oracle line's was played. The player left the line; the oracle line's claim
-       stands.
-     - `!` (the journal entry's `wrong`): the oracle line's own inputs were played and the game drew otherwise. The
-       oracle line was wrong: mark the call and every checkpoint `!`.
+     it was, from that journal entry's `wrong`. The strip's mark can't tell you: once any oracle line has been wrong
+     this run, every one after it reads `!` there, the player's own misses included.
+     - `wrong: false`: an input other than the oracle line's was played. The player left the line; the oracle line's
+       claim stands.
+     - `wrong: true`: the oracle line's own inputs were played and the game drew otherwise. The oracle line was
+       wrong: mark the call and every checkpoint `!`.
 
-     A miss on a fight already won ends there: the last step ✗ with its miss and whose it was, and the status line
-     `won · attempt <n>`. Otherwise the oracle line is void for the rest of the run, and the card leads again. Move
-     it into *Off the plan* as ticked, under `The oracle line from T<first turn>, off at T<turn>`, with its miss and
-     whose it was. Rewrite the call, *Why trust it* and the phases in their form without the oracle, from the card,
-     as at step 2, and put *Where the card disagrees* back; the status line reads `off the line at T<turn>: <the
-     first ✗ row> · attempt <n>`. A re-solve's oracle line, once held, is step 3 again, and the void one stays where
+     A miss once the fight is over ends the plan there: its step ✗, its miss and whose it was, all from the journal
+     entry, since the card has no `plan` group by then. On a fight already won, the status line reads `won · attempt
+     <n>`. A fight lost while on the line is scored as a miss too, `expected won · came lost`, and the status line
+     reads `lost at T<turn> · attempt <n>`.
+
+     Otherwise the oracle line is void for the rest of the run, and the card leads again. Move it into *Off the
+     plan* as ticked, under `The oracle line from T<first turn>, off at T<turn>`, with its miss and whose it was.
+     Rewrite the call, *Why trust it* and the phases in their form without the oracle, from the card, as at step 2,
+     and put *Where the card disagrees* back; the status line reads `off the line at T<turn>: <the first ✗ row> ·
+     attempt <n>`. A re-solve's oracle line, once held, is step 3 again, and the void one stays where
      it is. A re-solve that answered no answer adds its cause to *Off the plan* in one line.
 
 The file opens with three lines:
@@ -98,8 +104,7 @@ it. Off the line, the call is the card's again.
 
 ## Sections
 
-In this order. Marks as on the card: no mark is exact, `~` replay, `≈`
-estimate, `!` a claim already proved wrong.
+In this order. Marks as on the card: no mark is exact, `~` replay, `≈` estimate, `!` a claim already proved wrong.
 
 ### Without an oracle line
 
@@ -127,11 +132,11 @@ estimate, `!` a claim already proved wrong.
 
 ### With an oracle line
 
-There is no *Where the card disagrees*: while the oracle line leads it is the plan, and the card's own call is neither
-shown nor weighed against it. The section comes back, as without the oracle, once the game leaves the line. Every part
-comes from `result.oracleLine`; name a mon and a move as the game does (`LEAVANNY` is Leavanny, `BUG_BITE` is Bug
-Bite). Its replay claims are `~`, or `!` once an oracle line has been wrong in this run, as the card marks them: a
-re-solve's oracle line after a `!` miss carries `!` too.
+There is no *Where the card disagrees*, section 4, so the numbers below skip it: while the oracle line leads it is the
+plan, and the card's own call is neither shown nor weighed against it. The section comes back, as without the oracle,
+once the game leaves the line. Every part comes from `result.oracleLine`; name a mon and a move as the game does
+(`LEAVANNY` is Leavanny, `BUG_BITE` is Bug Bite). Its replay claims are `~`, or `!` once an oracle line has been wrong
+in this run, as the card marks them: a re-solve's oracle line after a `!` miss carries `!` too.
 
 1. **The call** — `~`. What the oracle line promises, in the card's `plan` group's numbers: `This oracle line wins
    in 9 turns with 4 of 6 left.` The turns count from the oracle line's first step; the mons left are the last
@@ -144,8 +149,7 @@ re-solve's oracle line after a `!` miss carries `!` too.
      the fight's first turn, else from the augmented export at that decision; and every input exactly as written. A
      different move, Tera, switch, faint replacement or learn pick changes that turn's draws and every turn after it.
    - **The luck it rides**: each `luck` entry with its turn, as it reads (`T14 the foe's Tyranitar's Stone Edge
-     misses (20%)`). An
-     empty `luck` is `Rides no luck: no draw it read went its way with less than a sure chance.`
+     misses (20%)`). An empty `luck` is `Rides no luck: no draw it read went its way with less than a sure chance.`
    - **This turn's enemy move and swaps**: the card's turn read, on the turn it reads them (exact). The oracle line
      doesn't name the foe's moves.
 3. **The oracle line** — `~` on each checkpoint. One row per step, in a table: the mark (✓, ▸, ✗ or ·, as step 4
@@ -254,6 +258,7 @@ Gordie's move and swaps this turn: the card's turn read, on the turn it reads th
 | · | 19 | Gyarados Hydro Pump | Coalossal faints: won | Gyarados 423/570 · Coalossal 0/711 |
 
 ## Inputs to get right
+- Wait at T11's decision until the card leads with the oracle line: it holds only from there.
 - T13 and T15, at the faint prompt: Golbat, then Gyarados.
 - T16: ← from Fight to the Tera button, then Hydro Pump.
 
