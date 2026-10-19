@@ -2,7 +2,7 @@
 // `turn.memo`. Against an approximate turn every answer still comes back, labelled `live: false`.
 import { ABILITY_IMMUNE, ABILITY_IMMUNE_FLAG, CONTACT_PUNISH, FIELD_TRAPS, MOVE_TRAPS, SPREAD_TARGETS, STATUS_FRAMES, TYPES, UNGROUNDED, abilitiesOf, effectiveness, hitsUngrounded, iconOf, moveHasFlag, squeezeDist, stage, stat, typesOf, vs } from "./01-core.js";
 import { moveTraits } from "./07-move-traits.js";
-import { koChanceAt, koCurve, koTurn, koTurns, rawMax, useOf } from "./10-damage.js";
+import { addShare, koChanceAt, koCurve, koTurn, koTurns, rawMax, shares, useOf } from "./10-damage.js";
 
 const pmName = pm => pm?.getName?.() ?? pm?.name ?? "";
 const bossBarsLeft = p => (p.isBoss?.() && p.bossSegments > 1 ? Math.max(1, (p.bossSegmentIndex ?? p.bossSegments - 1) + 1) : 1);
@@ -242,6 +242,9 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
   const lockRule = { relock: false, immune };
   const steps = lockedRow ? lockSteps([{ s: lockState(lock.left, 0), p: 1 }], lockRule) : null;
   const lockAct = steps ? i => 1 - (steps[i + spent]?.self ?? 0) : null;
+  // A curve from `start` crosses its HP branches with `from` as if independent, which holds: the earlier use either
+  // ran the lock, never confused, or was confused under every confusion length, and with no relock the state after a
+  // use is the same whether it went off.
   const lockChain = steps ? i => ({ from: steps[i + spent].at, step: s => lockStep(s, lockRule) }) : null;
   let pKo = 0, first = 0, koFirst = 0, worst = null, likely = null, drained = 0;
   const kos = [], boost = {};
@@ -514,12 +517,6 @@ const lockSendIn = (turn, me, foe) => {
 };
 // A lock's state: `uses` left in it (0: none running) and its user's confusion `turns` left.
 const lockState = (uses, turns) => ({ uses, turns, key: `${uses}|${turns}` });
-// Adds `p` to state `s`'s share of `states`, a Map of `{ s, p }` by key.
-const addLockState = (states, s, p) => {
-  const x = states.get(s.key);
-  if (x) x.p += p;
-  else states.set(s.key, { s, p });
-};
 // One attempt from lock state `s` (game-code.md §5, §8): `[{ s, p, act, lock }]`, p summing to 1, `act` false on a
 // self-hit and `lock` where the lock move goes off. `relock`: an attempt with no lock running uses the lock move
 // again; else another move. `immune`: a locked use fails on its target.
@@ -552,11 +549,11 @@ const lockSteps = (from, rule = {}) => {
     const next = new Map();
     let go = 0, self = 0;
     for (const { s, p } of at) {
-      for (const m of lockStep(s, rule)) {
-        const q = p * m.p;
-        if (!m.act) self += q;
-        else if (m.lock) go += q;
-        addLockState(next, m.s, q);
+      for (const to of lockStep(s, rule)) {
+        const q = p * to.p;
+        if (!to.act) self += q;
+        else if (to.lock) go += q;
+        addShare(next, to.s, q);
       }
     }
     steps.push({ at, go, self });
@@ -567,8 +564,8 @@ const lockSteps = (from, rule = {}) => {
 // Our lock from its first use, one attempt a turn.
 const OUR_LOCK = lockSteps([{ s: lockState(0, 0), p: 1 }]);
 const OUR_CHAIN = { from: OUR_LOCK[0].at, step: s => lockStep(s) };
-// What our lock costs the next duel past the knockout. `afterKo`: `addLockState`'s states after the knocking-out use,
-// each at P(that knockout).
+// What our lock costs the next duel past the knockout. `afterKo`: `addShare`'s lock states after the knocking-out
+// use, each at P(that knockout).
 const lockCarry = (turn, me, mine, foe, afterKo) => {
   const sendIn = afterKo.size ? lockSendIn(turn, me, foe) : null;
   const outs = sendIn ? planOutcomes(turn, me, sendIn) : [];
@@ -627,7 +624,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   const bars = bossBarsLeft(foe);
   const trainerBoss = foe.hasTrainer?.() ?? !!turn.facts.trainer;
   let turnsWe = 9, hitsWe = 9, delay = 0, selfSpent = 0, defUp = 1, foeMult = null, foeAfter1 = after?.foe ?? null;
-  let weBy = () => 0, qWe = 0, usesBy = () => 0, downAt = null;
+  let weBy = () => 0, qWe = 0, usesBy = () => 0, downAt = [];
   // An exchange `after` another follows a turn on another move, so this lock starts at its first use.
   const ourLock = mt.lock ? OUR_LOCK : null;
   if (mine?.expected > 0) {
@@ -649,7 +646,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
       act: i => (i === 0 && nowUse ? now : steady * (acts ? acts.act(i + 1) : 1)),
       firstKo: exact && nowUse ? qWe : null, start: after?.foe, chain: ourLock ? OUR_CHAIN : null,
     });
-    downAt = curve.downAt ?? null;
+    downAt = curve.downAt;
     const perChunk = curve.perChunk;
     if (!exact && nowUse) qWe = curve.by[0];
     hitsWe = koTurn(curve.by);
@@ -726,9 +723,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   const afterKo = new Map();
   // The lock as it stood where use n knocked out.
   const knockedOut = (p, n) => {
-    const at = downAt && n >= 1 && p > 0 ? downAt[n - 1] ?? [] : [];
-    const all = at.reduce((t, x) => t + x.p, 0);
-    if (all > 0) for (const x of at) addLockState(afterKo, x.s, p * x.p / all);
+    if (n >= 1) for (const x of shares(downAt[n - 1] ?? [], [])) addShare(afterKo, x.s, p * x.p);
   };
   knockedOut(weFirst, usesBy(1));
   for (let j = 2; j <= 9 && standing > 1e-6; j++) {

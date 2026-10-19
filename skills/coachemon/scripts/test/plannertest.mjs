@@ -1353,9 +1353,8 @@ Object.assign(TABLE, {
   assert.ok(Math.abs(twoSnorlax - (0.1 + confused)) < 1e-3, `confused either way (${twoSnorlax})`);
   assert.ok(Math.abs(twoClefable - (0.1 + 0.5 + confused)) < 1e-3, `immune: the carried use is lost, and it was the last (${twoClefable})`);
 
-  // A 3HKO carries the lock as it stands when the third use lands, not as any use going off then leaves it. Snorlax
-  // then takes 1559/1944 self-hits; Clefable 32/81 lost turns and 56/81 self-hits. The third use here is a self-hit ⅙
-  // of the time.
+  // A 3HKO carries the lock as it stands when the third use lands, not as any use going off then leaves it. The third
+  // use here is a self-hit ⅙ of the time.
   Object.assign(TABLE, { "Dragonite>Outrage>Kingdra": [[200], 1, 2], "Kingdra>Peck>Dragonite": [[10], 1, 1] });
   const threeHits = benchNames => {
     const me = dragonite([outrage]);
