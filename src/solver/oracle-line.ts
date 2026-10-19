@@ -118,6 +118,8 @@ export type Reason =
   | { code: "no_live_export" }
   /** By each one's path in the extension's read. */
   | { code: "missing_extras"; extras: readonly string[] }
+  /** The extension's whole read of the extras failed, past the fight's first turn: `why` is the page's. */
+  | { code: "no_extras"; why: string }
   | { code: "save_mismatch"; save: { wave: number; battleSeed?: string }; live: Battle }
   | { code: "no_clone"; version: string; cause: string }
   | { code: "clone_version"; clone: string; pinned: string }

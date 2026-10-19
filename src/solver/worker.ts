@@ -52,6 +52,8 @@ const checks = z.object({
 
 export type Worker = Pick<Pool, "expand"> & {
   root: Position;
+  /** The position a solve from `save` starts at, `at` its fork point past the first turn: loaded as the boot loads its own (#677). */
+  rootAt(save: SessionSave, at?: string): Promise<Position>;
   /** Why the worker plays on the game's own phase poll; `null` once the fast poll is in (#759). */
   slowPoll: string | null;
   /** The last job's report; `null` before one has finished. */
@@ -85,6 +87,9 @@ export async function startWorker(clone: Clone, save: SessionSave, at?: string):
       const parsed = z.object({ children: z.array(child), heap: heapUse }).parse(answer);
       heap = parsed.heap;
       return parsed.children;
+    },
+    async rootAt(save, at) {
+      return z.object({ root: position }).parse(await running.ask({ kind: "root", save, at }, EXPAND_MS)).root;
     },
     heap: () => heap,
     async check(inputs) {
