@@ -50,9 +50,10 @@ export type Input =
        * Commander ally).
        */
       commands: readonly [FieldCommand | null, FieldCommand | null];
-      /** Each in the order the turn asks; `field` is the slot each one fills. */
+      /** In the order the turn asks; `field` is the slot each one fills. */
       replacements?: readonly FieldReplacement[];
       learns?: readonly LearnPick[];
+      /** In the order asked; `field` is the slot each one fills (CONTEXT.md, `Pivot`). */
       pivots?: readonly FieldReplacement[];
     };
 

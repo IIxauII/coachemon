@@ -46,8 +46,7 @@ const PORT = process.env.COACH_PORT;
 // `GameManager`'s constructor swaps the prototype's for a max roll (#632).
 const realRand = BattleScene.prototype.randBattleSeedInt;
 
-// Commander's animations read a sprite frame the headless game never draws, and throw. They play nothing but the
-// sprites, so they are skipped, as upstream's own Commander test skips every battle animation (game-code.md §35, #792).
+// Commander's animations read a sprite frame the headless game never draws, and throw (game-code.md §35, #792).
 const realAnim = BattleScene.prototype.triggerPokemonBattleAnim;
 BattleScene.prototype.triggerPokemonBattleAnim = function (this: BattleScene, pokemon, type, ...rest) {
   if (type === PokemonAnimType.COMMANDER_APPLY || type === PokemonAnimType.COMMANDER_REMOVE) return true;
@@ -150,7 +149,7 @@ const commanding = (p: any): boolean => double() && p.getAlly()?.getTag(BattlerT
 
 /**
  * By field slot: whether the turn asks that slot for a command, which one on the field playing no queued move and
- * commanding no ally is. An ally after a Ball or a Run is asked nothing too, but no input throws one or runs.
+ * commanding no ally is.
  */
 const fieldAsked = (): boolean[] =>
   scene().getPlayerField().map((p: any) => p.isActive(true) && !queuedRuns(p) && !commanding(p));

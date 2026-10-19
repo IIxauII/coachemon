@@ -138,7 +138,11 @@ async function expandPruned(
   const { legal } = node.at;
   const options = ([0, 1] as const).map(f => new Set(legal.map(a => slotKey(a, f))));
   if (options.some(o => o.has(null) || o.size <= paired)) return play(legal);
-  const fixed = [slotKey(legal[0], 0), slotKey(legal[0], 1)];
+  // A command the fixed one can't pair with, as two Teras can't, would go unscored and never be paired.
+  const fixed = ([0, 1] as const).map(f =>
+    [...options[f]].find(key => legal.filter(a => slotKey(a, f) === key).length === options[1 - f].size),
+  );
+  if (fixed.some(key => key === undefined)) return play(legal);
   const probe = legal.filter(a => slotKey(a, 0) === fixed[0] || slotKey(a, 1) === fixed[1]);
   const first = await play(probe);
   const best = ([0, 1] as const).map(f => {

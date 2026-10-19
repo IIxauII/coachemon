@@ -89,7 +89,7 @@ const shaped = line => typeof line?.seed === "string" && Number.isInteger(line.w
 const pressed = input => (input?.kind === "queued" || (input?.kind === "double" && !input.commands.some(Boolean)) ? null : input);
 // A faint's replacements in the order the turn asks them, each with the field slot it fills.
 const sentOf = input => (input?.kind === "double" ? input.replacements ?? [] : input?.replacement ? [{ ...input.replacement, field: 0 }] : []);
-// The same of a turn's pivots (CONTEXT.md, `Pivot`).
+// A turn's pivots in the order it asks them, each with the field slot it fills (CONTEXT.md, `Pivot`).
 const pivotsOf = input => (input?.kind === "double" ? input.pivots ?? [] : (input?.pivots ?? []).map(p => ({ ...p, field: 0 })));
 
 // @only 98-watch, tests: holdOracleLine

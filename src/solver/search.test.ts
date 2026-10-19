@@ -613,10 +613,13 @@ test("a worker that fails ends the solve in no answer naming it (#662)", async (
   assert.match(result.kind === "no_answer" ? result.message : "", /the worker exited/);
 });
 
-/** A double whose two field slots' moves each take their own share of the foe's HP; every turn's position is its own. */
-function pairs(slot0: Record<string, number>, slot1: Record<string, number>, win?: [string, string]) {
+/**
+ * A double whose two field slots' moves each take their own share of the foe's HP; every turn's position is its own.
+ * `apart` names the pairs the game refuses, as it does two Teras.
+ */
+function pairs(slot0: Record<string, number>, slot1: Record<string, number>, win?: [string, string], apart: string[] = []) {
   const pair = (a: string, b: string): Input => ({ kind: "double", commands: [move(a) as FieldMove, move(b) as FieldMove] });
-  const legal = Object.keys(slot0).flatMap(a => Object.keys(slot1).map(b => pair(a, b)));
+  const legal = Object.keys(slot0).flatMap(a => Object.keys(slot1).flatMap(b => (apart.includes(`${a}+${b}`) ? [] : [pair(a, b)])));
   const names = (action: Action) =>
     action?.kind === "double" ? action.commands.map(c => (c?.kind === "move" ? c.move : "-")).join("+") : "?";
   const played: string[] = [];
@@ -662,4 +665,15 @@ test("a double whose slots each have no more than the pairing's share plays ever
   const won = pairs({ A1: 0.01, A2: 0.02, A3: 0.03, A4: 0.04 }, { B1: 0.01, B2: 0.02, B3: 0.03, B4: 0.04 }, ["A1", "B1"]);
   const result = await search({ root: won.root, pool: won.pool, validate: replaysAll().validate, budget: ONE_TURN, lds: null, portfolio: ONE_BEAM, paired: 1 });
   assert.equal(result.kind, "found");
+});
+
+test("a double's fixed command is one that pairs with every command of the other slot, so none goes unscored (#792)", async () => {
+  const slot0 = { A1: 0.01, A2: 0.02, A3: 0.03, A4: 0.04 };
+  const slot1 = { B1: 0.01, B2: 0.02, B3: 0.03, B4: 0.09 };
+  const { root, pool, played } = pairs(slot0, slot1, undefined, ["A1+B4"]);
+
+  await search({ root, pool, validate: replaysAll().validate, budget: ONE_TURN, lds: null, portfolio: ONE_BEAM, paired: 3 });
+
+  const fromRoot = played.filter(p => p.startsWith("root: ")).map(p => p.slice(6));
+  assert.ok(fromRoot.includes("A4+B4"), "the best pair is played, though the first legal command can't pair with B4");
 });
