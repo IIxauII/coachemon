@@ -24,11 +24,11 @@ const phaseOf = s => tryDo(() => s.phaseManager.getCurrentPhase());
 const frontOf = s => tryDo(() => s.getPlayerParty().find(p => p?.isOnField?.()).species.speciesId);
 // A field slot is its party slot, on either side (game-code.md §7, §34).
 const fieldOf = party => [0, 1].map(f => (tryDo(() => party[f].isOnField(), false) ? party[f].species.speciesId : null));
-// The field slot a faint's party screen fills: field 0 when one able mon is left to send (game-code.md §34).
+// The field slot a faint's party screen fills (game-code.md §34).
 const replacingField = s => {
   const ph = phaseOf(s);
-  const one = tryDo(() => s.currentBattle.getBattlerCount() > 1 && s.getPokemonAllowedInBattle().length <= 1, false);
-  return one ? 0 : ph?.fieldIndex ?? 0;
+  const fieldZero = tryDo(() => s.currentBattle.getBattlerCount() > 1 && s.getPokemonAllowedInBattle().length <= 1, false);
+  return fieldZero ? 0 : ph?.fieldIndex ?? 0;
 };
 const liveField = s => ({ ours: fieldOf(tryDo(() => s.getPlayerParty(), [])), foes: fieldOf(tryDo(() => s.getEnemyParty(), [])) });
 // At a faint's replacement the battle's turn has already moved on (game-code.md §9, §21), and the oracle line picks

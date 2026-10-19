@@ -3244,7 +3244,7 @@ second form faints (`faint-phase.ts:236-239`, `VictoryPhase` at `:184`).
 count (`src/phases/switch-phase.ts:75`). A faint queues its `SwitchPhase` with `doReturn` false
 (`src/phases/faint-phase.ts:181`); a switch-out move of ours and Emergency Exit queue theirs modal too, with `doReturn`
 true (`src/data/moves/move.ts:7289-7296`, `src/data/abilities/ab-attrs.ts:5776-5783`). In a double with at most one
-able mon left, the party screen fills field 0 whatever the phase's own `fieldIndex` says (`src/phases/switch-phase.ts:64-67`).
+able mon in the party, on the field or off, the party screen fills field 0 whatever the phase's own `fieldIndex` says (`src/phases/switch-phase.ts:64-67`).
 
 **A double's turn.** `TurnInitPhase` queues a `CommandPhase` for each of our active field slots, in field order, then the
 foes' `EnemyCommandPhase`s (`src/phases/turn-init-phase.ts:59-73`). A move with more than one target in
