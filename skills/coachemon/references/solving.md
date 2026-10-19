@@ -43,6 +43,8 @@ card and the boss-fight plan's principles carry the fight from where it stands.
        skips Leech Seed` for a `forget` of null, else `T3: Bulbasaur learns Leech Seed over Sunny Day`. Older panels
        leave them off the card, so this line is how the player hears them, and any other answer takes the game off the
        line. The last step's picks are placeholders the search never weighs, so the learn card's own call stands there.
+       On a boss fight, the boss-fight plan takes the oracle line before anything else (`references/boss-plan.md`, step
+       3): the plugin forgets `read_job` when it restarts, and the plan file is the record that outlives it.
      - `moved_on`: the fight left the turn it was solved from before the oracle line came, so the oracle line no
        longer holds. Say so in one line; the card carries the fight.
      - `held: false` with `no-hud`: start the panel and hand it again. With `other-fight` or `malformed`, the panel
@@ -67,11 +69,13 @@ card and the boss-fight plan's principles carry the fight from where it stands.
    Its message names the cause and ends "The card still coaches.": relay it as given, in one line. A cause that holds
    for the whole run or session (a Daily, the game version, the hub) is said once, at the first fight it stops. A
    re-solve's no answer leaves the card's turn line and fight plan, and the boss-fight plan's principles, to carry the
-   rest of the fight: say that. Done when the player has heard the cause once.
+   rest of the fight: say that. On a boss fight, add a re-solve's no answer to the plan's *Off the plan* in one line.
+   Done when the player has heard the cause once.
 6. **Off the line**: the watch feed's `OFF LINE w<wave> · T<turn>/<of>` line, or a `read_card` whose `oracle_line`
    reads `{ state: "off" }`, means a checkpoint missed at that turn. The oracle line is void for the rest of the run,
    and the card's own turn line and fight plan lead again. Re-solve from where the game now stands, once per miss and
    while the fight is still on: back to step 1 at its next command, which starts from the augmented export and cancels any solve still
    running from an earlier turn. A miss that came with the fight over needs none: a lost fight, a `T<turn>` past
-   `<of>`, or a next command on another wave, whose fight is a new one. Done when the re-solve has started, its
-   `no_answer` has been relayed, or the fight was over.
+   `<of>`, or a next command on another wave, whose fight is a new one. On a boss fight, tick the miss into the plan
+   first (`references/boss-plan.md`, step 4). Done when the re-solve has started, its `no_answer` has been relayed, or
+   the fight was over.
