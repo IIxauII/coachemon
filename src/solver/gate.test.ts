@@ -13,29 +13,42 @@ const t5: { save: SessionSave; extras: MidFightExtras } = JSON.parse(
 const doubleDrayton = { ...drayton, trainer: { trainerType: drayton.trainer!.trainerType, variant: TrainerVariant.DOUBLE } };
 
 const ask = (
-  input: { save?: SessionSave; extras?: MidFightExtras },
+  { liveVersion, ...input }: { save?: SessionSave; extras?: MidFightExtras; liveVersion?: string },
   recheck: Recheck | null = { gameVersion: PIN },
-) => refuse({ save: drayton, cloneVersion: PIN, ...input }, recheck);
+) =>
+  refuse(
+    { save: drayton, cloneVersion: PIN, liveExport: liveVersion === undefined ? undefined : { ...drayton, gameVersion: liveVersion }, ...input },
+    recheck,
+  );
 
 test("a wave-start save at the clone's re-checked version passes the gate (#659)", () => {
   assert.equal(ask({}), null);
 });
 
 test("a save from a newer game gets no answer naming the live version and the version solving waits on (#659)", () => {
-  const result = ask({ save: { ...drayton, gameVersion: "1.12.1.0" } });
+  const result = ask({ save: { ...drayton, gameVersion: "1.12.1.0" }, liveVersion: "1.12.1.0" });
 
-  assert.deepEqual(result?.reason, { code: "version_mismatch", live: "1.12.1.0", clone: PIN });
+  assert.deepEqual(result?.reason, { code: "version_mismatch", save: "1.12.1.0", live: "1.12.1.0", clone: PIN });
   assert.match(result.message, /live game is 1\.12\.1\.0/);
   assert.match(result.message, /runs on 1\.12\.0\.11/);
   assert.match(result.message, /waits on a Coachemon release pinned to 1\.12\.1\.0/);
 });
 
 test("a save from an older game than the clone's waits on the game catching up, not on a release (#659)", () => {
-  const result = ask({ save: { ...drayton, gameVersion: "1.12.0.9" } });
+  const result = ask({ save: { ...drayton, gameVersion: "1.12.0.9" }, liveVersion: "1.12.0.9" });
 
-  assert.deepEqual(result?.reason, { code: "version_mismatch", live: "1.12.0.9", clone: PIN });
+  assert.deepEqual(result?.reason, { code: "version_mismatch", save: "1.12.0.9", live: "1.12.0.9", clone: PIN });
   assert.match(result.message, /live game is 1\.12\.0\.9/);
   assert.match(result.message, /waits on the game serving 1\.12\.0\.11/);
+});
+
+test("a continued run's save from before the game updated to the clone's version is named as the save, cleared by the next wave (#763)", () => {
+  const result = ask({ save: { ...drayton, gameVersion: "1.12.0.9" }, liveVersion: PIN });
+
+  assert.deepEqual(result?.reason, { code: "version_mismatch", save: "1.12.0.9", live: PIN, clone: PIN });
+  assert.doesNotMatch(result.message, /live game is/);
+  assert.match(result.message, /this fight's save was written by 1\.12\.0\.9, before the game updated to 1\.12\.0\.11/);
+  assert.match(result.message, /solving picks up from the next wave's save/);
 });
 
 test("a known fight's save from an older game passes the gate when the re-check carries it to the clone's version (#703)", () => {
@@ -48,7 +61,18 @@ test("a known fight's save from an older game passes the gate when the re-check 
 test("a carried save from a newer game than the clone's still gets no answer: no game migrates a save backwards (#703)", () => {
   const result = refuse({ save: drayton, cloneVersion: "1.12.0.9" }, { gameVersion: "1.12.0.9" }, { carried: true });
 
-  assert.deepEqual(result?.reason, { code: "version_mismatch", live: PIN, clone: "1.12.0.9" });
+  assert.deepEqual(result?.reason, { code: "version_mismatch", save: PIN, live: null, clone: "1.12.0.9" });
+});
+
+test("a save on another version with no live game read, as the dev's oracle runs it, is named as the save (#763)", () => {
+  const newer = ask({ save: { ...drayton, gameVersion: "1.12.1.0" } });
+  assert.deepEqual(newer?.reason, { code: "version_mismatch", save: "1.12.1.0", live: null, clone: PIN });
+  assert.doesNotMatch(newer.message, /live game/);
+  assert.match(newer.message, /this fight's save is from game version 1\.12\.1\.0, but solving runs on 1\.12\.0\.11 only/);
+  assert.match(newer.message, /waits on a Coachemon release pinned to 1\.12\.1\.0/);
+
+  const older = ask({ save: { ...drayton, gameVersion: "1.12.0.9" } });
+  assert.match(older!.message, /waits on a save from 1\.12\.0\.11/);
 });
 
 test("a player's save from an older game carries when the live game already serves the clone's version (#764)", () => {

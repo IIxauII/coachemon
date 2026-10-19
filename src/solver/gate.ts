@@ -21,13 +21,16 @@ const olderThan = (version: string, than: string) => version.localeCompare(than,
  * what read the fight's own refusals, so it goes ahead of them.
  */
 export function refuse(
-  { save, extras, cloneVersion }: Pick<SolveInput, "save" | "extras" | "cloneVersion">,
+  { save, extras, liveExport, cloneVersion }: Pick<SolveInput, "save" | "extras" | "liveExport" | "cloneVersion">,
   recheck: Recheck | null,
   { carried = false }: Carry = {},
 ): NoAnswer | null {
   if (save.gameMode === GameModes.DAILY) return noAnswer({ code: "daily" });
   if (save.gameVersion !== cloneVersion && !(carried && olderThan(save.gameVersion, cloneVersion))) {
-    return noAnswer({ code: "version_mismatch", live: save.gameVersion, clone: cloneVersion });
+    // The save's version is the game that wrote it, not the one the tab serves: a continued run's predates an update
+    // until its next wave, and only the export carries the live one (#763, game-code.md §29, §31).
+    const live = liveExport?.gameVersion ?? null;
+    return noAnswer({ code: "version_mismatch", save: save.gameVersion, live, clone: cloneVersion });
   }
   if (save.battleType === BattleType.MYSTERY_ENCOUNTER || (save.mysteryEncounterType ?? -1) !== -1) {
     return noAnswer({ code: "mystery_encounter" });

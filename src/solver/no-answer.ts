@@ -14,6 +14,8 @@ const firstFew = (all: readonly string[]) =>
 
 export const andJoined = (all: readonly string[]) => (all.length > 1 ? `${all.slice(0, -1).join(", ")} and ${all.at(-1)}` : all.join(""));
 
+const newer = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true }) > 0;
+
 export const noAnswer = (reason: Reason): NoAnswer => ({
   kind: "no_answer",
   reason,
@@ -39,11 +41,16 @@ export function cause(reason: Reason): string {
     case "daily":
       return "a Daily's seed is shared by every player, so solving is never offered there.";
     case "version_mismatch": {
-      const waitsOn =
-        reason.live.localeCompare(reason.clone, undefined, { numeric: true }) > 0
-          ? `a Coachemon release pinned to ${reason.live}`
-          : `the game serving ${reason.clone}`;
-      return `the live game is ${reason.live}, but solving runs on ${reason.clone} only, and waits on ${waitsOn}.`;
+      const { save, live, clone } = reason;
+      if (live === clone && newer(clone, save)) {
+        return `this fight's save was written by ${save}, before the game updated to ${clone}; solving picks up from the next wave's save.`;
+      }
+      if (live !== null && live !== clone) {
+        const waitsOn = newer(live, clone) ? `a Coachemon release pinned to ${live}` : `the game serving ${clone}`;
+        return `the live game is ${live}, but solving runs on ${clone} only, and waits on ${waitsOn}.`;
+      }
+      const waitsOn = newer(save, clone) ? `a Coachemon release pinned to ${save}` : `a save from ${clone}`;
+      return `this fight's save is from game version ${save}, but solving runs on ${clone} only, and waits on ${waitsOn}.`;
     }
     case "not_rechecked":
       return (
