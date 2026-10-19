@@ -987,6 +987,7 @@ async function checks(inputs: Input[]) {
       input = inputs[next] ?? null;
       if (input === null) break;
       if (isQueued(input)) throw new Error(`input ${next + 1} is for a turn the game plays for us, but turn ${at} asks for one`);
+      if (!legal().some(o => same(o, input as Input))) throw new Error(`input ${next + 1} isn't offered on turn ${at}`);
       next++;
       forks.push(forkPoint());
       end = await turn(input);
