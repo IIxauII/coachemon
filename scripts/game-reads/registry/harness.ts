@@ -382,6 +382,7 @@ export const HARNESS: Area = {
       at: ["test/framework/phase-interceptor.ts#PhaseInterceptor"],
     },
     { name: "#test/helpers/prompt-handler", kind: "import", at: ["test/helpers/prompt-handler.ts#PromptHandler"] },
+    { name: "#test/mocks/mock-clock", kind: "import", at: ["test/mocks/mock-clock.ts#MockClock"] },
     { name: "#ui/party-ui-handler", kind: "import", at: ["src/ui/handlers/party-ui-handler.ts#PartyUiHandler"] },
     { name: "#utils/pokemon-utils", kind: "import", at: ["src/utils/pokemon-utils.ts#canTerastallize"] },
     { name: "BattleEndPhase", kind: "phase", at: ["src/phases/battle-end-phase.ts#BattleEndPhase"] },

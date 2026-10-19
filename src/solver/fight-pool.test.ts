@@ -19,7 +19,7 @@ function pools() {
       root: { sig: "root", hp: { ours: [1], foes: [1] }, legal: [], forkPoint: "root" },
       expand: async () => [],
       rootAt: async () => assert.fail("the holder roots nothing"),
-      stats: () => ({ size: 2, died: 0, lastDeath: null, peakHeapMb: null, heapLimitMb: null, slowPoll: null }),
+      stats: () => ({ size: 2, died: 0, lastDeath: null, peakHeapMb: null, heapLimitMb: null, slowPoll: null, realClock: null }),
       async close() {
         fake.closed = true;
       },

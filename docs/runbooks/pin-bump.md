@@ -26,7 +26,7 @@ npm run drift:check -- --version <new>
 ```
 
 `reads:check` holds at any version: every game name our code reads (in the page readers, the server files that read
-the page, the HUD scripts, the harness template and its fast poll) is registered in `scripts/game-reads/registry/`. A read with no
+the page, the HUD scripts, the harness template, its fake clock and its fast poll) is registered in `scripts/game-reads/registry/`. A read with no
 entry is **UNREGISTERED**, an entry nothing reads is **STALE**, and an entry that names no game ref (an empty `at`
 with no `from`, or a mirror with an empty `of`) or a mirror id that is not lower-kebab is **INVALID**. It runs inside
 `npm test` too.
@@ -51,6 +51,14 @@ Run both again until they name only what you have re-read.
 method with a copy that polls every 1 ms, and only while the method matches the copy's `UPSTREAM_RUN`. Left as it is, a
 solve still answers, but its workers keep the game's own poll, about six times slower, and the solve's progress says
 so. Bring `UPSTREAM_RUN` and the copy up to the new body.
+
+`PhaseInterceptor.run` or `.to`, `MockClock` or `PromptHandler` **MOVED** can also stop the search's fake clock
+(`src/solver/fake-clock.ts.template`, #782). At load it checks that `run` and `to` still wait through `vi.waitUntil`,
+that `MockClock` and `PromptHandler` still make their intervals with the global `setInterval`, and that `vi.waitUntil`
+is still vitest's own, which it copies as `UPSTREAM_WAIT_UNTIL`. The drift check doesn't hash vitest, so when the
+clone's vitest version moves, compare the copy with `waitUntil` in its `node_modules/vitest/dist/chunks/test.*.js`. A
+failed check leaves a solve answering, but its workers wait on real timers, about four times slower per try, and the
+solve's progress says so, as `npm run oracle:battle`'s last line does.
 
 Set the clone up for the harness. The checkout `drift:check` makes has no submodules and no `node_modules`; the stamp
 names whichever step is missing. In a worktree, link the main checkout's `.cache` first (`CLAUDE.md`), or the `assets`

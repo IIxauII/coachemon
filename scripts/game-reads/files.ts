@@ -14,7 +14,7 @@ export function scannedFiles(root: string): Record<AreaName, string[]> {
     page: listed(root, "src/page", product),
     server: ["src/driver.ts", "src/screen.ts", "src/slots.ts", "src/call-outcome.ts", "src/stuck/hang.ts", "src/game/save.ts", "src/solver/replay.ts"],
     hud: [...listed(root, "skills/coachemon/scripts/hud", f => f.endsWith(".js")), "skills/coachemon/scripts/probe.js"],
-    harness: ["src/solver/harness.test.ts.template", "src/solver/fast-poll.ts.template"],
+    harness: ["src/solver/harness.test.ts.template", "src/solver/fake-clock.ts.template", "src/solver/fast-poll.ts.template"],
     templates: ["scripts/clone-smoke/smoke.test.ts.template", "scripts/encounter-oracle/oracle.test.ts.template", "scripts/preview-stability/stability.test.ts.template"],
   };
 }
@@ -35,6 +35,6 @@ export function ownFiles(root: string): string[] {
   };
   walk("src");
   walk("skills/coachemon/scripts");
-  out.push("src/solver/harness.test.ts.template", ...scannedFiles(root).templates);
+  out.push("src/solver/harness.test.ts.template", "src/solver/fake-clock.ts.template", ...scannedFiles(root).templates);
   return out.sort();
 }
