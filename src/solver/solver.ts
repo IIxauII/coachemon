@@ -68,7 +68,7 @@ export async function solve(
 export type CheckResult = { kind: "checked"; checks: Checks } | NoAnswer;
 
 export async function checkForks(
-  given: Pick<SolveInput, "save" | "extras" | "cloneVersion">,
+  given: Pick<SolveInput, "save" | "extras" | "liveExport" | "cloneVersion">,
   inputs: readonly Input[],
   clone: Clone,
   carry: Carry = {},

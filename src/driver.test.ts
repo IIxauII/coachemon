@@ -1417,6 +1417,12 @@ for (const [what, read, code, said] of [
     "version_mismatch",
     /live game is 1\.12\.1\.0/,
   ],
+  [
+    "a continued run whose older save meets a live game on another version",
+    draytonRead({ ...DRAYTON.save, gameVersion: "1.12.0.9" }, { ...DRAYTON.liveExport, ...OFF_PIN }),
+    "version_mismatch",
+    /live game is 1\.12\.1\.0/,
+  ],
 ] as const) {
   test(`a solve in ${what} refuses at once with its reason, before any job starts (#672)`, async t => {
     const { held, work } = heldSolve(null);
