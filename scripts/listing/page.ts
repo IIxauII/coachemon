@@ -30,9 +30,7 @@ export const gameFonts = (): Face[] => {
   const dir = fontsDir();
   if (!existsSync(dir)) {
     throw new Error(
-      `No game fonts at ${dir}.\n\n` +
-        `  npm run drift:check    # clones .cache/pokerogue/v${GAME_VERSION}\n` +
-        `  cd .cache/pokerogue/v${GAME_VERSION} && git submodule update --init --depth 1 assets\n`,
+      `No game fonts at ${dir}.\n\n  npm run clone:provision -- --version ${GAME_VERSION}\n`,
     );
   }
   return Object.entries(FONT_FILES).map(([family, file]) => ({
