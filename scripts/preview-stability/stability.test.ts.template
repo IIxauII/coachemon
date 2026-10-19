@@ -9,6 +9,7 @@ import { BattlerIndex } from "#enums/battler-index";
 import { Button } from "#enums/buttons";
 import { MoveId } from "#enums/move-id";
 import { SpeciesId } from "#enums/species-id";
+import { StatusEffect } from "#enums/status-effect";
 import { UiMode } from "#enums/ui-mode";
 import { GameManager } from "#test/framework/game-manager";
 import { runSelectMysteryEncounterOption } from "#test/utils/encounter-test-utils";
@@ -107,10 +108,12 @@ async function clear(game: GameManager) {
   forgetPrompts(game);
   const b = game.scene.currentBattle;
   const field = game.scene.getEnemyField();
-  // The bench first, or a trainer sends its next member out.
+  // The bench first, or a trainer sends its next member out. Zero HP alone left a mystery encounter's trainer battle
+  // open, and the walk timed out on it (#766, game-code.md §13).
   for (const p of b.enemyParty) {
     if (!field.includes(p)) {
       p.hp = 0;
+      p.doSetStatus(StatusEffect.FAINT);
     }
   }
   // A faint only plays out through a turn, and a turn needs our commands. The foes are down before it starts, so
