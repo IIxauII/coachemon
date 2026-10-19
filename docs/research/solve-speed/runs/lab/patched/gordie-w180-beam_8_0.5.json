@@ -1,0 +1,231 @@
+{
+ "fight": "gordie-w180.json",
+ "method": "beam:8:0.5",
+ "patch": "poll1.ts",
+ "workers": 3,
+ "sim": null,
+ "share": false,
+ "budget": 3000,
+ "seconds": 59.137,
+ "tally": {
+  "requested": 1657,
+  "unique": 1657,
+  "played": 1657,
+  "realJobs": 109
+ },
+ "replays": 1,
+ "tree": {
+  "forks": 1481,
+  "turns": 984
+ },
+ "pool": {
+  "size": 3,
+  "died": 0,
+  "lastDeath": null,
+  "peakHeapMb": 343,
+  "heapLimitMb": 864
+ },
+ "result": {
+  "kind": "found",
+  "beam": 0,
+  "turn": 14,
+  "path": [
+   {
+    "kind": "move",
+    "move": "BLUE_FLARE",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 5,
+     "species": "PROBOPASS"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "POWER_GEM",
+    "tera": true
+   },
+   {
+    "kind": "move",
+    "move": "POWER_GEM",
+    "tera": false
+   },
+   {
+    "kind": "switch",
+    "to": {
+     "slot": 5,
+     "species": "RESHIRAM"
+    }
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "DRAGON_PULSE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "BLUE_FLARE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "DRAGON_PULSE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "HYPER_VOICE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "BLUE_FLARE",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "FICKLE_BEAM",
+    "tera": false
+   },
+   {
+    "kind": "move",
+    "move": "BLUE_FLARE",
+    "tera": false
+   }
+  ],
+  "spent": 1657,
+  "beams": [
+   {
+    "width": 8,
+    "ours": 0.5,
+    "spent": 1657,
+    "layers": [
+     {
+      "turn": 1,
+      "spentAfter": 13,
+      "kept": 13,
+      "children": 13,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 2,
+      "spentAfter": 133,
+      "kept": 98,
+      "children": 120,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 3,
+      "spentAfter": 221,
+      "kept": 88,
+      "children": 88,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 4,
+      "spentAfter": 301,
+      "kept": 80,
+      "children": 80,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 5,
+      "spentAfter": 521,
+      "kept": 85,
+      "children": 220,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 6,
+      "spentAfter": 593,
+      "kept": 71,
+      "children": 72,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 7,
+      "spentAfter": 665,
+      "kept": 72,
+      "children": 72,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 8,
+      "spentAfter": 769,
+      "kept": 102,
+      "children": 104,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 9,
+      "spentAfter": 945,
+      "kept": 146,
+      "children": 176,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 10,
+      "spentAfter": 1031,
+      "kept": 81,
+      "children": 86,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 11,
+      "spentAfter": 1263,
+      "kept": 232,
+      "children": 232,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 12,
+      "spentAfter": 1443,
+      "kept": 180,
+      "children": 180,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 13,
+      "spentAfter": 1578,
+      "kept": 132,
+      "children": 135,
+      "wins": 0,
+      "stalled": 0
+     },
+     {
+      "turn": 14,
+      "spentAfter": 1657,
+      "kept": 58,
+      "children": 79,
+      "wins": 21,
+      "stalled": 0
+     }
+    ]
+   }
+  ]
+ }
+}

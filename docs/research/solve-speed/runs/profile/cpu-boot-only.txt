@@ -1,0 +1,86 @@
+profile: 11.0 s sampled, 7.2 s idle, 3.7 s busy
+
+self time by source (share of busy):
+  native (JSON, builtins, regexp)             1.02 s   27.4%
+  node internals                              0.84 s   22.5%
+  game: ui                                    0.56 s   15.1%
+  jsdom                                       0.39 s   10.4%
+  other dependencies                          0.35 s    9.3%
+  (garbage collector)                         0.22 s    6.0%
+  i18next (text lookups)                      0.09 s    2.5%
+  game: data (moves, abilities, tags)         0.08 s    2.1%
+  game: other                                 0.06 s    1.7%
+  Phaser (graphics, tweens, timers)           0.03 s    0.9%
+  (program)                                   0.02 s    0.5%
+  test framework                              0.02 s    0.5%
+  vitest                                      0.01 s    0.2%
+  game: field (pokemon, arena)                0.01 s    0.2%
+  game: save/load (system)                    0.01 s    0.2%
+  other                                       0.01 s    0.1%
+  game: items (modifiers)                     0.00 s    0.1%
+  harness (the coach test file)               0.00 s    0.1%
+  game: phases                                0.00 s    0.1%
+
+inclusive time of steps (share of busy; nested steps overlap):
+  run (module_job)                            1.43 s   38.3%
+  run (chunk-artifact.js)                     0.09 s    2.3%
+  t (i18next.js)                              0.08 s    2.2%
+  run (RequestHandler.mjs)                    0.08 s    2.2%
+  initSessionFromData (game-data.ts)          0.01 s    0.3%
+  run (phase-interceptor.ts)                  0.01 s    0.3%
+  to (phase-interceptor.ts)                   0.01 s    0.3%
+  waitUntil (test.DNmyFkvJ.js)                0.00 s    0.1%
+  reloadSession (reload-helper.ts)            0.00 s    0.1%
+  reload                                      0.00 s    0.1%
+  run (base.BE3cXZj3.js)                      0.00 s    0.0%
+  position                                    0.00 s    0.0%
+  startBattle (classic-mode-helper.ts)        0.00 s    0.0%
+  getSessionSaveData (game-data.ts)           0.00 s    0.0%
+  run (init.d4hAcNdp.js)                      0.00 s    0.0%
+  t (spector.bundle.js)                       0.00 s    0.0%
+  parseSessionData (game-data.ts)             0.00 s    0.0%
+  legal                                       0.00 s    0.0%
+  forkPoint                                   0.00 s    0.0%
+  sweep                                       0.00 s    0.0%
+
+top 40 functions by self time:
+  193.5%  (idle) (:0)
+   20.7%  readFileUtf8 (:0)
+   14.1%  (anon) (test-dialogue-ui-handler.ts:13)
+    6.0%  (garbage collector) (:0)
+    5.7%  _runInlinedModule (module-evaluator.js:163)
+    5.7%  Script (node:vm:86)
+    5.1%  wrapSafe (loader:1846)
+    2.0%  read (:0)
+    1.8%  internalModuleStat (:0)
+    1.2%  json (HttpResponse.mjs:51)
+    1.0%  compileSourceTextModule (utils:338)
+    0.9%  exports.installInterfaces (interfaces.js:254)
+    0.6%  realpathSync (node:fs:3332)
+    0.6%  SpeciesDataRegistry (species-data-registry.ts:38)
+    0.5%  readFileSync (node:fs:605)
+    0.5%  (program) (:0)
+    0.5%  lstat (:0)
+    0.5%  resolveColorValue (color.js:2269)
+    0.5%  runMicrotasks (:0)
+    0.4%  compileForInternalLoader (realm:407)
+    0.4%  (anon) (loader:784)
+    0.4%  formatMoney (common.ts:278)
+    0.4%  parse (:0)
+    0.3%  n (spector.bundle.js:1)
+    0.3%  normalizeString (node:path:92)
+    0.3%  writeH1 (undici:7974)
+    0.3%  parseChannelMessages (serialization:32)
+    0.3%  extractFromKey (i18next.js:507)
+    0.3%  (anon) (loader:1341)
+    0.3%  isColor (util.js:124)
+    0.3%  (anon) (module-runner.js:942)
+    0.3%  open (:0)
+    0.2%  looksLikeObjectPath (i18next.js:144)
+    0.2%  translate (i18next.js:531)
+    0.2%  cachedRequest (module-runner.js:1156)
+    0.2%  request (module-runner.js:1215)
+    0.2%  fetchModule (startVitestModuleRunner.CCBQZ9DQ.js:666)
+    0.2%  __require (undici:5)
+    0.2%  stat (loader:272)
+    0.2%  channel.onread (child_process:638)

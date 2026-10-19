@@ -1,0 +1,93 @@
+profile: 59.2 s sampled, 53.0 s idle, 6.2 s busy
+
+self time by source (share of busy):
+  native (JSON, builtins, regexp)             0.84 s   13.6%
+  game: other                                 0.71 s   11.5%
+  game: ui                                    0.62 s    9.9%
+  i18next (text lookups)                      0.57 s    9.2%
+  node internals                              0.52 s    8.5%
+  jsdom                                       0.41 s    6.6%
+  other dependencies                          0.33 s    5.4%
+  game: field (pokemon, arena)                0.33 s    5.3%
+  Phaser (graphics, tweens, timers)           0.32 s    5.1%
+  game: data (moves, abilities, tags)         0.32 s    5.1%
+  (garbage collector)                         0.28 s    4.5%
+  test framework                              0.24 s    3.8%
+  harness (the coach test file)               0.24 s    3.8%
+  game: items (modifiers)                     0.18 s    2.9%
+  game: save/load (system)                    0.12 s    2.0%
+  game: phases                                0.09 s    1.5%
+  (program)                                   0.05 s    0.8%
+  vitest                                      0.03 s    0.4%
+  other                                       0.00 s    0.0%
+
+inclusive time of steps (share of busy; nested steps overlap):
+  run (phase-interceptor.ts)                  1.30 s   20.9%
+  run (module_job)                            1.05 s   17.0%
+  initSessionFromData (game-data.ts)          0.80 s   13.0%
+  t (i18next.js)                              0.59 s    9.5%
+  reload                                      0.38 s    6.2%
+  to (phase-interceptor.ts)                   0.34 s    5.4%
+  expand                                      0.33 s    5.3%
+  sweep                                       0.26 s    4.2%
+  waitUntil (test.DNmyFkvJ.js)                0.22 s    3.5%
+  reloadSession (reload-helper.ts)            0.19 s    3.1%
+  position                                    0.18 s    2.9%
+  restore                                     0.18 s    2.9%
+  forkPoint                                   0.13 s    2.2%
+  loadSession                                 0.12 s    2.0%
+  parseSessionData (game-data.ts)             0.05 s    0.8%
+  getSessionSaveData (game-data.ts)           0.05 s    0.8%
+  putBack                                     0.04 s    0.6%
+  run (RequestHandler.mjs)                    0.04 s    0.6%
+  turn                                        0.03 s    0.5%
+  sig                                         0.02 s    0.4%
+  legal                                       0.02 s    0.3%
+  run (chunk-artifact.js)                     0.01 s    0.1%
+  command                                     0.00 s    0.1%
+  hp                                          0.00 s    0.0%
+  strayPrompts                                0.00 s    0.0%
+  run (base.B6Opl8PE.js)                      0.00 s    0.0%
+  run (init.k9zZ9sLh.js)                      0.00 s    0.0%
+
+top 40 functions by self time:
+  854.5%  (idle) (:0)
+    7.2%  readFileUtf8 (:0)
+    6.5%  (anon) (test-dialogue-ui-handler.ts:13)
+    4.5%  (garbage collector) (:0)
+    3.8%  internalModuleStat (:0)
+    2.2%  _runInlinedModule (module-evaluator.js:163)
+    2.1%  wrapSafe (loader:1846)
+    2.0%  Script (node:vm:86)
+    2.0%  (anon) (battle-scene.ts:2253)
+    1.4%  (anon) (battle-scene.ts:2231)
+    1.4%  removeListener (index.js:254)
+    1.2%  extractFromKey (i18next.js:507)
+    1.2%  forkPoint (coach-worker-b192e9e4.test.ts:536)
+    1.2%  MockSprite (mock-sprite.ts:18)
+    1.1%  translate (i18next.js:531)
+    0.9%  waitUntil (test.DNmyFkvJ.js:3407)
+    0.8%  get (startVitestModuleRunner.DB-7oCpn.js:320)
+    0.8%  looksLikeObjectPath (i18next.js:144)
+    0.8%  (program) (:0)
+    0.8%  destroy (GameObject.js:874)
+    0.6%  read (:0)
+    0.6%  parseSessionData (game-data.ts:954)
+    0.6%  compileSourceTextModule (utils:338)
+    0.6%  putBack (coach-worker-b192e9e4.test.ts:590)
+    0.5%  formatMoney (common.ts:280)
+    0.5%  Sprite (Sprite.js:78)
+    0.5%  destroy (AnimationState.js:1970)
+    0.5%  calculateStats (pokemon.ts:1192)
+    0.5%  getResource (i18next.js:326)
+    0.4%  getLastOfPath (i18next.js:25)
+    0.4%  updateInfo (battle-info.ts:349)
+    0.4%  getAbility (pokemon.ts:1703)
+    0.4%  t (i18next.js:2105)
+    0.4%  (anon) (i18next.js:813)
+    0.4%  runMicrotasks (:0)
+    0.4%  applyModifiers (battle-scene.ts:2230)
+    0.4%  (anon) (i18next.js:147)
+    0.4%  (anon) (battle-scene.ts:2304)
+    0.4%  getRegExp (i18next.js:128)
+    0.4%  getOrResetRegExp (i18next.js:1185)
