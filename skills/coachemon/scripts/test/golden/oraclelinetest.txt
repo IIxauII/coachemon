@@ -348,6 +348,8 @@ scored T3/6 miss ! Bulbasaur Leech Seed over Sunny Day · no prompt
 strip | trainer off the line · ! re-solving… · Golbat Venoshock → Tyranitar · 3 hits
     ✗ T3 Bulbasaur expected Leech Seed over Sunny Day · came no prompt
     ⚔ Golbat Poison Venoshock → Tyranitar 3 hits
+a W5 run, Charmander never falls        held
+scored T3/6 miss ! Charmander benched 0/39 · in front 30/39; Bulbasaur in front · benched
 Roland's W5, Leech Seed skipped on T6   held
 == W5 T6, the winning turn
 strip | trainer ⚔ ~ T6/6 · Charmander Scratch
@@ -421,6 +423,12 @@ strip | trainer ⚔ ~ T4/5 · send Blissey for Rayquaza · then send Snorlax for
 == W200 T4's second faint prompt
 strip | trainer ⚔ ~ T4/5 · send Snorlax for Zacian
     ⚔ send Snorlax for Zacian → ~ Blissey 600/600 · Zacian 250/350 · Eternatus 900/2400
+a W200 run, Zacian down unplanned       held
+== W200 T4, a faint prompt for Zacian's slot
+strip | trainer ⚔ ~ T4/5 · Zacian Behemoth Blade · then send Blissey for Rayquaza
+    ⚔ T4 Zacian Steel Behemoth Blade → ~ Blissey 600/600 · Zacian 250/350 · Eternatus 900/2400
+    ⤵ then send Blissey for Rayquaza at the faint prompt
+a W200 run, both down, copied           held
 Eternatus's W200, to score              held
 scored T1/5 match
 scored T2/5 match
