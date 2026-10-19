@@ -24,7 +24,7 @@ export type PoolStats = {
 };
 
 /** Why the search's workers run slower than they could, for a progress line; `null` when they run as fast as they can. */
-export function slowWorkers({ slowPoll, realClock }: Pick<PoolStats, "slowPoll" | "realClock">): string | null {
+export function slowWorkersNote({ slowPoll, realClock }: Pick<PoolStats, "slowPoll" | "realClock">): string | null {
   const notes = [
     slowPoll !== null && `the search's workers kept the game's own phase poll, as ${slowPoll}`,
     realClock !== null && `the search's workers waited on real timers, as ${realClock}`,

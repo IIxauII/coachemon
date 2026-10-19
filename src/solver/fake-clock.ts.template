@@ -11,7 +11,7 @@ import { MockClock } from "#test/mocks/mock-clock";
 import { vi as clockVi } from "vitest";
 
 // vitest 4.1.11's `waitUntil` (vitest/dist/chunks/test.*.js), which the fake one copies. The drift check doesn't hash
-// vitest: the check at load is all that guards the copy (pin-bump.md).
+// vitest: the check at load is all that guards the copy (pin-bump.md, "The checks").
 const UPSTREAM_WAIT_UNTIL = `function waitUntil(callback, options = {}) {
   const { setTimeout, setInterval, clearTimeout, clearInterval } = getSafeTimers();
   const { interval = 50, timeout = 1e3 } = typeof options === "number" ? { timeout: options } : options;
@@ -58,9 +58,7 @@ const UPSTREAM_WAIT_UNTIL = `function waitUntil(callback, options = {}) {
   });
 }`;
 
-type ClockReport = { fake: true } | { real: string };
-
-function fakeClock(): ClockReport {
+function fakeClock(): { fake: true; uninstall(): void } | { real: string } {
   const bare = (code: string) => code.replace(/\s+/g, "");
   if (bare(String(clockVi.waitUntil)) !== bare(UPSTREAM_WAIT_UNTIL)) return { real: "vi.waitUntil is not the one the fake clock copies" };
   const interceptor = ClockedInterceptor.prototype as any;
@@ -81,7 +79,7 @@ function fakeClock(): ClockReport {
     waitUntil: clockVi.waitUntil,
   };
   const MAX_DELAY = 2 ** 31 - 1;
-  // As Node: a delay outside [1, 2^31 − 1], or not a number, is 1 ms.
+  // As Node does.
   const coerce = (delay: unknown) => {
     const d = Number(delay);
     return d >= 1 && d <= MAX_DELAY ? d : 1;
@@ -89,6 +87,8 @@ function fakeClock(): ClockReport {
 
   type Timer = { fn: (...args: unknown[]) => void; callArgs: unknown[]; delay: number; repeat: boolean; due: number; seq: number; ref: boolean };
   const timers = new Map<number, Timer>();
+  // A cleared timer stays cleared: Node's `refresh` doesn't bring one back.
+  const cleared = new WeakSet<Timer>();
   let now = 0;
   let seq = 0;
   let ids = 0;
@@ -112,13 +112,14 @@ function fakeClock(): ClockReport {
       return this.timer.ref;
     }
     refresh() {
+      if (cleared.has(this.timer)) return this;
       this.timer.due = now + this.timer.delay;
       this.timer.seq = ++seq;
       timers.set(this.id, this.timer);
       return this;
     }
     close() {
-      timers.delete(this.id);
+      clear(this);
       return this;
     }
     [Symbol.toPrimitive]() {
@@ -134,12 +135,17 @@ function fakeClock(): ClockReport {
     return new Timeout(ids, timer);
   };
   const clear = (handle: unknown) => {
-    if (handle instanceof Timeout) timers.delete(handle.id);
-    else if ((typeof handle === "number" || typeof handle === "string") && timers.has(Number(handle))) timers.delete(Number(handle));
-    else if (handle != null) real.clearTimeout(handle as any);
+    const byId = typeof handle === "number" || typeof handle === "string";
+    const id = handle instanceof Timeout ? handle.id : byId ? Number(handle) : NaN;
+    const timer = handle instanceof Timeout ? handle.timer : timers.get(id);
+    if (timer !== undefined) {
+      timers.delete(id);
+      cleared.add(timer);
+    } else if (handle != null) real.clearTimeout(handle as any);
   };
   // Node's order for timers of one duration: the first due, then the first scheduled, an interval going back in line
-  // after its own callback.
+  // after its own callback. Node drains each duration's due timers together, so a tie across durations can fire in
+  // another order.
   const first = () => {
     let best: [number, Timer] | null = null;
     for (const entry of timers) {
@@ -191,7 +197,7 @@ function fakeClock(): ClockReport {
   };
 
   // vitest's `waitUntil`, polling on the fake clock while its timeout runs in real time: on the fake clock a wait on
-  // something real would time out in a fraction of the real 20 s.
+  // something real would time out in a fraction of the real `TEST_TIMEOUT`.
   function waitUntil<T>(callback: () => T | Promise<T>, options: number | { interval?: number; timeout?: number } = {}): Promise<T> {
     const { interval = 50, timeout = 1e3 } = typeof options === "number" ? { timeout: options } : options;
     const timedOut = new Error("Timed out in waitUntil!");
@@ -260,22 +266,21 @@ function fakeClock(): ClockReport {
     (clockVi as any).waitUntil = waitUntil;
   } catch (e) {
     uninstall();
-    return { real: `the fake clock failed: ${e instanceof Error ? e.message : String(e)}` };
+    throw e;
   }
   void drive();
-  if (process.env.COACH_CLOCK_OUT) {
-    try {
-      writeClockReport(process.env.COACH_CLOCK_OUT, JSON.stringify({ fake: true }));
-    } catch {
-      uninstall();
-    }
-  }
-  return { fake: true };
+  return { fake: true, uninstall };
 }
 
-const clockReport = fakeClock();
-if ("real" in clockReport && process.env.COACH_CLOCK_OUT) {
-  try {
-    writeClockReport(process.env.COACH_CLOCK_OUT, JSON.stringify(clockReport));
-  } catch {}
+let clockInstalled: ReturnType<typeof fakeClock>;
+try {
+  clockInstalled = fakeClock();
+} catch (e) {
+  clockInstalled = { real: `the fake clock failed: ${e instanceof Error ? e.message : String(e)}` };
+}
+try {
+  const report = "real" in clockInstalled ? { real: clockInstalled.real } : { fake: true };
+  if (process.env.COACH_CLOCK_OUT) writeClockReport(process.env.COACH_CLOCK_OUT, JSON.stringify(report));
+} catch {
+  if ("uninstall" in clockInstalled) clockInstalled.uninstall();
 }

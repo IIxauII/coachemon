@@ -12,7 +12,7 @@ import {
   type Script,
   type SolveInput,
   type SolveResult,
-  slowWorkers,
+  slowWorkersNote,
   solve,
 } from "../../src/solver/solver.ts";
 import { findPinnedClone, harnessIn } from "../clone-test/clone-test.ts";
@@ -95,7 +95,7 @@ let last: PoolStats | undefined;
 const started = Date.now();
 const poolLine = (stats: PoolStats) => {
   const { size, died, lastDeath, peakHeapMb, heapLimitMb } = stats;
-  const slow = slowWorkers(stats);
+  const slow = slowWorkersNote(stats);
   return (
     `${size} workers, ${died} died${lastDeath === null ? "" : ` (the last: ${lastDeath})`}, ` +
     `heap peak ${peakHeapMb ?? "?"} of ${heapLimitMb ?? "?"} MB${slow === null ? "" : `; ${slow}`}`

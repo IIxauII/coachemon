@@ -199,8 +199,11 @@ async function within<T, L>(ms: number, work: Promise<T>, late: () => L): Promis
   }
 }
 
-const pollReportShape = z.union([z.object({ fast: z.literal(true) }).transform(() => null), z.object({ slow: z.string() }).transform(r => r.slow)]);
-const clockReportShape = z.union([z.object({ fake: z.literal(true) }).transform(() => null), z.object({ real: z.string() }).transform(r => r.real)]);
+/** `{ [on]: true }` reads as `null`, `{ [off]: why }` as the why. */
+const reportShape = (on: string, off: string): z.ZodType<string | null, unknown> =>
+  z.union([z.object({ [on]: z.literal(true) }).transform(() => null), z.object({ [off]: z.string() }).transform(r => r[off] as string)]);
+const pollReportShape = reportShape("fast", "slow");
+const clockReportShape = reportShape("fake", "real");
 
 /** The harness writes the fast poll's and the fake clock's reports before it says hello: `null`, or why one stood down. */
 function takeReport(file: string, shape: z.ZodType<string | null, unknown>, what: string): string | null {

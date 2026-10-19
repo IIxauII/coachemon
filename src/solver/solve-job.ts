@@ -3,7 +3,7 @@ import { type CloneSetup, setUpClone } from "./clone.ts";
 import type { FightPool } from "./fight-pool.ts";
 import type { Clone } from "./replay.ts";
 import { harnessIn } from "./run-in-clone.ts";
-import { slowWorkers, solve, type SolveDeps, type SolveInput, type SolveResult } from "./solver.ts";
+import { slowWorkersNote, solve, type SolveDeps, type SolveInput, type SolveResult } from "./solver.ts";
 
 export const SOLVE_JOB = "solve";
 
@@ -34,7 +34,7 @@ export const solveJob =
       ...(fights && { pools: start => fights.take(fight, () => start(clone)) }),
       progress: ({ spent, budget, pool }) => {
         const searched = `searched ${spent.toLocaleString("en")} of ${budget.toLocaleString("en")} turns`;
-        const slow = slowWorkers(pool);
+        const slow = slowWorkersNote(pool);
         ctl.progress(slow === null ? searched : `${searched}, slowly: ${slow}`);
       },
     });

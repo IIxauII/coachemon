@@ -52,7 +52,7 @@ async function withClock(body: string, stubs: Partial<typeof STUBS> = {}, env: R
   try {
     const all = { ...STUBS, ...stubs };
     writeFileSync(path.join(dir, "fake-clock.ts"), TEMPLATE);
-    writeFileSync(path.join(dir, "vitest.mjs"), all.vitest);
+    writeFileSync(path.join(dir, "vitest.mjs"), `${all.vitest}\nexport const original = vi.waitUntil;`);
     writeFileSync(path.join(dir, "interceptor.mjs"), all.interceptor);
     writeFileSync(path.join(dir, "mock-clock.mjs"), all.mockClock);
     writeFileSync(path.join(dir, "prompt-handler.mjs"), all.promptHandler);
@@ -108,17 +108,16 @@ await vi.waitUntil(() => fired.length >= after + 4, { interval: 1, timeout: 5_00
 emit(fired.slice(0, after + 4));
 `);
 
-  // Without a delay, with 0 and below 1, a timer is 1 ms, as in Node; one cleared fires no more.
   assert.deepEqual(out, ["a", "b", "c", "d", "e", "a", "b", "e", "a", "b", "e", "b", "e", "b", "e"]);
 });
 
 test("a worker on the fake clock reads the real date while its clock runs ahead (#782)", async () => {
   const { out } = await withClock(`
-const date = Date.now();
+const date = new Date();
 let fired = false;
 setTimeout(() => (fired = true), 5_000);
 await vi.waitUntil(() => fired, { interval: 1, timeout: 5_000 });
-emit({ dateMoved: Date.now() - date });
+emit({ dateMoved: new Date().getTime() - date.getTime() });
 `);
 
   assert.ok(out.dateMoved < 1_000, `the date moved ${out.dateMoved} ms`);
@@ -147,8 +146,24 @@ setTimeout(() => emit({ realMs: performance.now() - start }), 200);
   assert.ok(out.realMs >= 190, `fired after ${out.realMs} real ms`);
 });
 
+test("a cleared timer stays cleared, refreshed or not, as in Node (#782)", async () => {
+  const { out } = await withClock(`
+const fired = [];
+const cleared = setTimeout(() => fired.push("cleared"), 1);
+clearTimeout(cleared);
+cleared.refresh();
+setTimeout(() => fired.push("kept"), 2);
+await vi.waitUntil(() => fired.length > 0, { interval: 1, timeout: 5_000 });
+await vi.waitUntil(() => true, { interval: 1, timeout: 5_000 });
+emit(fired);
+`);
+
+  assert.deepEqual(out, ["kept"]);
+});
+
 const GLOBAL_TIMERS = `import { setTimeout as nodeTimeout } from "node:timers";
-emit({ timersReal: setTimeout === nodeTimeout });`;
+const { original } = await import("vitest");
+emit({ timersReal: setTimeout === nodeTimeout, waitUntilKept: vi.waitUntil === original });`;
 
 for (const [what, stubs, why] of [
   [
@@ -160,6 +175,11 @@ for (const [what, stubs, why] of [
     "a PhaseInterceptor.to that waits some other way",
     { interceptor: STUBS.interceptor.replace("async to(target) { await vi.waitUntil", "async to(target) { await this.until") },
     "PhaseInterceptor.to no longer waits through vi.waitUntil",
+  ],
+  [
+    "a PhaseInterceptor whose run can't be read",
+    { interceptor: STUBS.interceptor.replace("async run(phase) {", 'get run() { throw new Error("no run here"); }\n  async ran(phase) {') },
+    "the fake clock failed: no run here",
   ],
   [
     "a MockClock that ticks on an imported setInterval",
@@ -176,12 +196,12 @@ for (const [what, stubs, why] of [
     const { out, report } = await withClock(GLOBAL_TIMERS, stubs);
 
     assert.deepEqual(report, { real: why });
-    assert.deepEqual(out, { timersReal: true });
+    assert.deepEqual(out, { timersReal: true, waitUntilKept: true });
   });
 }
 
 test("a fake clock that can't write its report takes itself back out (#782)", async () => {
   const { out } = await withClock(GLOBAL_TIMERS, {}, { COACH_CLOCK_OUT: "/nonexistent/coach-clock.json" });
 
-  assert.deepEqual(out, { timersReal: true });
+  assert.deepEqual(out, { timersReal: true, waitUntilKept: true });
 });

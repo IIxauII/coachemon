@@ -35,6 +35,6 @@ export function ownFiles(root: string): string[] {
   };
   walk("src");
   walk("skills/coachemon/scripts");
-  out.push("src/solver/harness.test.ts.template", "src/solver/fake-clock.ts.template", ...scannedFiles(root).templates);
+  out.push("src/solver/harness.test.ts.template", ...scannedFiles(root).templates);
   return out.sort();
 }
