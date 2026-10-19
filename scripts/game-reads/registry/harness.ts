@@ -124,6 +124,7 @@ export const HARNESS: Area = {
         "src/modifier/modifier-type.ts#SpeciesStatBoosterModifierTypeGenerator.items",
       ],
     },
+    { name: "logPhase", kind: "method", at: ["test/framework/phase-interceptor.ts#PhaseInterceptor.logPhase"] },
     { name: "moveId", kind: "field", at: ["src/data/moves/pokemon-move.ts#PokemonMove.moveId"] },
     { name: "normalizeIVs", kind: "field", at: ["test/helpers/overrides-helper.ts#OverridesHelper.normalizeIVs"] },
     {
@@ -193,6 +194,12 @@ export const HARNESS: Area = {
     { name: "removeEvent", kind: "method", at: [], from: "phaser", note: "Phaser Clock (scene.time)" },
     { name: "restoreAllMocks", kind: "method", at: [], from: "vitest" },
     { name: "rng", kind: "field", at: ["test/framework/game-manager.ts#GameManager.rng"] },
+    {
+      name: "run",
+      kind: "method",
+      at: ["test/framework/phase-interceptor.ts#PhaseInterceptor.run"],
+      note: "the fast poll replaces it, and copies it (src/solver/fast-poll.ts.template)",
+    },
     { name: "runIf", kind: "method", at: [], from: "vitest" },
     { name: "runInterval", kind: "field", at: ["test/helpers/prompt-handler.ts#PromptHandler.runInterval"] },
     { name: "selectWithTera", kind: "method", at: ["test/helpers/move-helper.ts#MoveHelper.selectWithTera"] },
@@ -257,6 +264,7 @@ export const HARNESS: Area = {
         "test/helpers/daily-mode-helper.ts#DailyModeHelper.startBattle",
       ],
     },
+    { name: "state", kind: "field", at: ["test/framework/phase-interceptor.ts#PhaseInterceptor.state"] },
     {
       name: "summon",
       kind: "method",
@@ -371,7 +379,13 @@ export const HARNESS: Area = {
       kind: "import",
       at: ["src/system/version-migration/version-converter.ts#applySessionVersionMigration"],
     },
+    { name: "#test/constants", kind: "import", at: ["test/constants.ts#TEST_TIMEOUT"] },
     { name: "#test/framework/game-manager", kind: "import", at: ["test/framework/game-manager.ts#GameManager"] },
+    {
+      name: "#test/framework/phase-interceptor",
+      kind: "import",
+      at: ["test/framework/phase-interceptor.ts#PhaseInterceptor"],
+    },
     { name: "#test/helpers/prompt-handler", kind: "import", at: ["test/helpers/prompt-handler.ts#PromptHandler"] },
     { name: "#ui/party-ui-handler", kind: "import", at: ["src/ui/handlers/party-ui-handler.ts#PartyUiHandler"] },
     { name: "#utils/pokemon-utils", kind: "import", at: ["src/utils/pokemon-utils.ts#canTerastallize"] },

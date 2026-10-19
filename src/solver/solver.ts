@@ -14,7 +14,7 @@ export type * from "./input.ts";
 export type * from "./oracle-line.ts";
 export { type Clone, type CloneRun, replay } from "./replay.ts";
 export { type Known, readScript, type Script } from "./script.ts";
-export type { PoolStats } from "./pool.ts";
+export { keptSlowPoll, type PoolStats } from "./pool.ts";
 
 export type Progress = Spent & { pool: PoolStats };
 export type { Checks, Miss } from "./worker.ts";

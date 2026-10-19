@@ -11,7 +11,7 @@ import { solveJob } from "./solve-job.ts";
 const drayton = JSON.parse(readFileSync(new URL("./fixtures/drayton-w188.json", import.meta.url), "utf8"));
 const INPUT: SolveInput = { ...drayton, cloneVersion: "1.12.0.11", budget: { expansions: 3000, turns: 40 } };
 const SET_UP: CloneSetup = { kind: "clone", gameVersion: "1.12.0.11", dir: "/home/.coachemon/clone/v1.12.0.11/game" };
-const POOL = { size: 4, died: 0, lastDeath: null, peakHeapMb: null, heapLimitMb: null };
+const POOL = { size: 4, died: 0, lastDeath: null, peakHeapMb: null, heapLimitMb: null, slowPoll: null };
 const LINE: SolveResult = { kind: "oracle_line", oracleLine: GORDIE_LINE };
 
 function control() {
@@ -82,6 +82,23 @@ test("a solve job's progress is how far the search has gone of its budget, once 
     "searched 0 of 9,000 turns",
     "searched 1,200 of 9,000 turns",
   ]);
+});
+
+test("a solve job whose workers kept the slow poll says so beside its progress (#759)", async () => {
+  const { ctl, lines } = control();
+  const work = solveJob("/home/.coachemon", {
+    setUp: async () => SET_UP,
+    runIn: recordingClone().runIn,
+    solve: async (_input, { progress }: SolveDeps) => {
+      progress?.({ spent: 1200, budget: 9000, pool: { ...POOL, slowPoll: "PhaseInterceptor.run is not the one the fast poll copies" } });
+      return LINE;
+    },
+  });
+  await work({ input: INPUT }, ctl);
+  assert.equal(
+    lines.at(-1),
+    "searched 1,200 of 9,000 turns, slowly: the search's workers kept the game's 50 ms phase poll, as PhaseInterceptor.run is not the one the fast poll copies",
+  );
 });
 
 test("a cancelled solve job stops each clone run it has going, and starts no more (#672)", async () => {
