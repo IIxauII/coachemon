@@ -280,7 +280,7 @@ export class Driver {
     const refused = gate(input);
     if (refused) throw noAnswerRefusal(refused);
     // The live battle's wave: a save of another wave still comes back, and its solve answers save_mismatch (#636). A
-    // solve from a later turn replaces the one running (CONTEXT.md, `Oracle line`).
+    // solve from another decision cancels the one running, whose line could no longer lead (CONTEXT.md, `Oracle line`).
     const start = `${input.save.seed}/${input.live.wave}/${from}`;
     const last = this.#solve;
     if (last && this.#jobs.running(last.job)) {
@@ -292,7 +292,6 @@ export class Driver {
     return started;
   }
 
-  /** Past the fight's first turn, from the augmented export (CONTEXT.md, `Augmented export`). */
   async #fightToSolve(ctx: CallContext): Promise<{ input: SolveInput & Required<Pick<SolveInput, "live">>; from: number }> {
     let atDecision = null as FightRead | null;
     const read = await this.#read("start_job", ctx, async ready => {
@@ -318,6 +317,7 @@ export class Driver {
       if (session.waveStart === null) throw noAnswerRefusal(noAnswer({ code: "no_wave_start" }));
       return { input: { save: session.waveStart as SessionSave, ...base }, from: 1 };
     }
+    // Past the fight's first turn, from the augmented export (CONTEXT.md, `Augmented export`).
     if (!extras.ok) throw noAnswerRefusal(noAnswer({ code: "no_extras", why: extras.why }));
     const { ok: _ok, ...liveExtras } = extras;
     return { input: { save: session.export as SessionSave, extras: liveExtras, ...base }, from: turn };

@@ -16,8 +16,8 @@ card and the boss-fight plan's principles carry the fight from where it stands.
 ## Steps
 
 1. **Start** at the first command of a trainer fight you see: its first, or, on a late join, the turn you joined on,
-   which the watch's first line shows when it starts mid-fight. A `read_card` whose `oracle_line` reads
-   `{ state: "on" }` means the panel already leads with an oracle line for this fight, from an earlier session: leave
+   which the watch's first line shows when the watch starts mid-fight. A `read_card` whose `oracle_line` reads
+   `{ state: "on" }` means the card already leads with an oracle line for this fight, from an earlier session: leave
    it and skip the solve. Call `start_job` with `kind: "solve"` and no `args`: it reads the fight off the tab itself, at
    the decision it stands at, and the oracle line it finds starts at that turn. A `no_answer` refusal goes to step 5;
    `not_settled` or `no_battle` means the fight wasn't read, so start it again at the next command. Done when you hold
@@ -70,8 +70,8 @@ card and the boss-fight plan's principles carry the fight from where it stands.
    rest of the fight: say that. Done when the player has heard the cause once.
 6. **Off the line**: the watch feed's `OFF LINE w<wave> · T<turn>/<of>` line, or a `read_card` whose `oracle_line`
    reads `{ state: "off" }`, means a checkpoint missed at that turn. The oracle line is void for the rest of the run,
-   and the card's own turn line and fight plan lead again. Re-solve from where the game now stands, while the fight is
-   still on: back to step 1 at its next command, which starts from the augmented export and cancels any solve still
+   and the card's own turn line and fight plan lead again. Re-solve from where the game now stands, once per miss and
+   while the fight is still on: back to step 1 at its next command, which starts from the augmented export and cancels any solve still
    running from an earlier turn. A miss that came with the fight over needs none: a lost fight, a `T<turn>` past
    `<of>`, or a next command on another wave, whose fight is a new one. Done when the re-solve has started, its
    `no_answer` has been relayed, or the fight was over.

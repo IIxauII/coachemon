@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import type { Clock } from "../driver.ts";
 import type { PredicateRead } from "../game/port.ts";
 import { type Fight, fightEnded, FightPool } from "./fight-pool.ts";
 import type { WorkerPool } from "./pool.ts";
@@ -131,7 +130,7 @@ test("a pool that never started is not kept: the fight's next solve tries again 
 function tab(reads: readonly Partial<Extract<PredicateRead, { ready: true }>>[] | ((n: number) => PredicateRead)) {
   let t = 0;
   let n = 0;
-  const clock: Clock = { now: () => t, sleep: async ms => void (t += ms) };
+  const clock: Parameters<typeof fightEnded>[1] = { now: () => t, sleep: async ms => void (t += ms) };
   const read = async (): Promise<PredicateRead> => {
     const i = n++;
     if (typeof reads === "function") return reads(i);
