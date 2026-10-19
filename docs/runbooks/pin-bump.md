@@ -98,8 +98,8 @@ The stamp refuses while any MISSING, MISPLACED, ADDED, SHIFTED or UNREGISTERED r
 `package.json` names no pnpm. Then
 it runs the **harness re-check** in that clone:
 
-1. It replays the three known fights from their wave-start saves (`src/solver/fixtures/`): Gordie W180, Drayton W188
-   and Kieran W190. Each replay passes the replay protocol and must reproduce every fact live recorded on its line,
+1. It replays the four known fights from their wave-start saves (`src/solver/fixtures/`): Gordie W180, Drayton W188,
+   Kieran W190 and Eternatus W200, the one double (#788). Each replay passes the replay protocol and must reproduce every fact live recorded on its line,
    down to the win.
 2. Then it runs the fork check and the chained-restore check on each line (#662).
 

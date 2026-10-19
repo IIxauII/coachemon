@@ -59,7 +59,7 @@ const fakes = ({
   };
 };
 
-test("the re-check replays the three known fights at the stamped version, then checks each, and passes (#665)", async () => {
+test("the re-check replays the known fights at the stamped version, then checks each, and passes (#665, #788)", async () => {
   const { calls, deps } = fakes();
 
   const run = await recheck(VERSION, deps);
@@ -67,10 +67,12 @@ test("the re-check replays the three known fights at the stamped version, then c
   assert.deepEqual(run.failed, []);
   assert.deepEqual(
     calls.map(c => `${c.kind} ${c.wave}`),
-    ["replay 180", "replay 188", "replay 190", "check 180", "check 188", "check 190"],
+    ["replay 180", "replay 188", "replay 190", "replay 200", "check 180", "check 188", "check 190", "check 200"],
   );
   for (const call of calls) assert.equal(call.given.cloneVersion, VERSION);
-  for (const call of calls) assert.deepEqual(call.carry, { carried: false }, "the fights were recorded on this version");
+  for (const call of calls) {
+    assert.deepEqual(call.carry, { carried: call.wave === 200 }, "all but Eternatus W200 were recorded on this version");
+  }
   for (const call of calls.filter(c => c.kind === "replay")) {
     assert.ok(call.given.live && call.given.liveExport, "a replay needs the live battle and its export");
     assert.equal(call.script?.known?.outcome, "won", "a known line is held to every fact live recorded");
@@ -128,7 +130,7 @@ test("at a newer game version the re-check carries each known fight's save to it
   const run = await recheck("1.12.1.1", deps);
 
   assert.deepEqual(run.failed, []);
-  assert.equal(calls.length, 6);
+  assert.equal(calls.length, 8);
   for (const call of calls) assert.deepEqual(call.carry, { carried: true });
   for (const call of calls) assert.equal(call.given.cloneVersion, "1.12.1.1");
   assert.match(run.text, /carrying the 1\.12\.0\.11 saves of Gordie W180, Drayton W188 and Kieran W190 to 1\.12\.1\.1/);

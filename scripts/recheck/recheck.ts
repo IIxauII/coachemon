@@ -17,6 +17,7 @@ const KNOWN_FIGHTS = [
   { stem: "gordie-w180", name: "Gordie W180" },
   { stem: "drayton-w188", name: "Drayton W188" },
   { stem: "kieran-w190", name: "Kieran W190" },
+  { stem: "eternatus-w200", name: "Eternatus W200" },
 ];
 
 const FIXTURES = new URL("../../src/solver/fixtures/", import.meta.url);
