@@ -6,3 +6,6 @@ extension/.wxt/
 .review-receipts/
 .DS_Store
 .env
+.rig/runs/
+docs/research/.next-fight/
+__pycache__/
