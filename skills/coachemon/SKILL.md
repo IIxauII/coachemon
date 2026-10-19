@@ -173,7 +173,7 @@ The panel already shows the decision; the user glances at it mid-battle. Speak o
 
 ## Boss-fight plan
 
-Boss fight — the battle read's `planFile` is set — means keeping its **boss-fight plan**, the fight's record that outlives the session, whether or not the user asked for a plan. On every read of one, follow `references/boss-plan.md` from its first step.
+Boss fight — the battle read's `planFile` is set — means keeping its **boss-fight plan**, the fight's record that outlives the session, whether or not the user asked for a plan. On every read of one, follow `references/boss-plan.md` from its first step. With solving on, an **oracle line** the card holds becomes the plan, and the plan is ticked as its checkpoints pass.
 
 ## Rules learned the hard way
 
