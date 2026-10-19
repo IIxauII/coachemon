@@ -99,8 +99,8 @@ The stamp refuses while any MISSING, MISPLACED, ADDED, SHIFTED or UNREGISTERED r
 it runs the **harness re-check** in that clone:
 
 1. It replays the four known fights from their wave-start saves (`src/solver/fixtures/`): Gordie W180, Drayton W188,
-   Kieran W190 and Eternatus W200, the one double (#788). Each replay passes the replay protocol and must reproduce every fact live recorded on its line,
-   down to the win.
+   Kieran W190 and Eternatus W200, the one that turns double (#788). Each replay passes the replay protocol and must
+   reproduce every fact live recorded on its line, down to the win.
 2. Then it runs the fork check and the chained-restore check on each line (#662).
 
 A known fight recorded on an older version than `<new>` is **carried** to it (#703). The clone loads the old save
@@ -151,14 +151,15 @@ A known fight is two files in `src/solver/fixtures/`, named in `KNOWN_FIGHTS` in
 - **`<stem>.json`**: `{ live: { wave, battleSeed }, save, liveExport }`. The driver's `read_session` gives all three at
   the fight's first decision: `battle_wave` and `battle_seed`, `wave_start` and `export`.
 - **`<stem>.win.script.json`**: the inputs played, each naming the faint replacement and the learn picks its turn
-  asked for, and `known`: the outcome, and after each turn the HP, status and stat stages live showed, for the mons the
-  line turns on.
+  asked for, and `known`: the outcome, and after each turn what live showed (HP, status, stat stages, who is in front,
+  Tera, boss bars) for the mons the line turns on.
 
 The old fight can't be played again on `<new>`: pokerogue.net offers no session import (only a dev, beta or app build
 does, `src/ui/handlers/menu-ui-handler.ts` in the clone), and the extension reads pokerogue.net alone. So a fight that
 no longer carries is replaced by a new one, played live on pokerogue.net once it serves `<new>`:
 
-1. Reach a single trainer fight: not a Daily, a double or a Mystery Encounter, which the solver refuses.
+1. Reach a fight like the one it replaces: a single trainer fight, or the classic final boss for Eternatus W200. Not a
+   Daily, a fight double from its first turn or a Mystery Encounter, which the solver refuses.
 2. At the first decision, before any input, call `read_session`, and write `<stem>.json` from it.
 3. Play it to a win. After each turn, write down what live shows for the mons the line turns on.
 4. Write `<stem>.win.script.json`, and name the fight in `KNOWN_FIGHTS` in place of the one it replaces.
