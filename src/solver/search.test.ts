@@ -88,6 +88,7 @@ const NARROW: Beam[] = [
   { width: 1, ours: 0.5 },
   { width: 1, ours: 1 },
 ];
+const OURS_WEIGHED_FIRST = NARROW.toReversed();
 
 test("a solve stops at the first win that replays, and expands nothing after it (#662)", async () => {
   const { root, pool, expanded } = tree(["TACKLE", "GROWL"], {
@@ -258,7 +259,7 @@ test("a later beam is dispatched only when no earlier beam has a job queued (#76
   });
   const { pool, dispatched, drain } = held(inner);
 
-  const result = await drain(search({ root, pool, validate: replaysAll().validate, budget: BUDGET, portfolio: NARROW.toReversed() }));
+  const result = await drain(search({ root, pool, validate: replaysAll().validate, budget: BUDGET, portfolio: OURS_WEIGHED_FIRST }));
 
   assert.deepEqual(result.kind === "found" && result.inputs.map(named), ["PECK", "PECK", "PECK"]);
   assert.deepEqual(dispatched, [
@@ -286,7 +287,7 @@ test("the first beam spending its budget leaves a later beam searching, and the 
   const { pool, dispatched, drain } = held(inner);
 
   const result = await drain(
-    search({ root, pool, validate: replaysAll().validate, budget: { expansions: 4, turns: 40 }, portfolio: NARROW.toReversed() }),
+    search({ root, pool, validate: replaysAll().validate, budget: { expansions: 4, turns: 40 }, portfolio: OURS_WEIGHED_FIRST }),
   );
 
   assert.deepEqual(result.kind === "found" && result.inputs.map(named), ["SLAM", "SLAM"]);

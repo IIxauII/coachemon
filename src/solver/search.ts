@@ -26,10 +26,7 @@ export type Pool = {
   expand(forkPoint: string, inputs: readonly Action[]): Promise<Child[]>;
 };
 
-/**
- * In order of preference: a later beam runs only on workers the earlier ones leave idle (#655). 8@1 goes first as the
- * one beam that wins Kieran W190 alone; first, it needed 46.5% fewer tries to a first win across the three fights (#760).
- */
+// (#655) In order of preference: a later beam runs only on workers the earlier ones leave idle (#760).
 export const PORTFOLIO: readonly Beam[] = [
   { width: 8, ours: 1 },
   { width: 8, ours: 0.5 },
