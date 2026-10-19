@@ -370,4 +370,93 @@ strip | 🎓 Bulbasaur learns Bulbasaur Atk 9 / SpA 11 Learn → forget Sunny Da
   audit   team: +SE Water
 a W5 run, learned on the winning turn   held
 scored T6/6 match
+Eternatus's W200, singles then a double held
+a double asking a replacement alone     held
+out of shape                            malformed
+out of shape                            malformed
+out of shape                            malformed
+out of shape                            malformed
+out of shape                            malformed
+out of shape                            malformed
+out of shape                            malformed
+out of shape                            malformed
+Eternatus's W200                        held
+== W200 T1, the line into Eternamax
+Plan | ~ oracle line wins in 5 turns · 3 of 4 left
+    ▸ T1 Rayquaza Flying Dragon Ascent → ~ Rayquaza 300/400 · Eternatus 400/1600
+    · T2 Rayquaza Flying Dragon Ascent
+    · T3 Rayquaza Flying Dragon Ascent → Eternatus ; Zacian Tera Steel + Steel Behemoth Blade
+    · T4 Zacian Steel Behemoth Blade · send Blissey for Rayquaza
+    · T5 Blissey Fighting Seismic Toss ; Zacian Steel Behemoth Blade
+== W200 T3, the first double
+strip | trainer ⚔ ~ T3/5 · Rayquaza Dragon Ascent → Eternatus ; Zacian Tera Steel + Behemoth Blade
+    ⚔ T3 Rayquaza Flying Dragon Ascent → Eternatus ; Zacian Tera Steel + Steel Behemoth Blade → ~ Rayquaza 200/400 · Zacian 300/350 · Eternatus 1500/2400
+    · Tera: ← from Fight to the Tera button
+== W200 T4, Rayquaza asked nothing
+strip | trainer ⚔ ~ T4/5 · Zacian Behemoth Blade · then send Blissey for Rayquaza
+    ⚔ T4 Zacian Steel Behemoth Blade → ~ Blissey 600/600 · Zacian 250/350 · Eternatus 900/2400
+    ⤵ then send Blissey for Rayquaza at the faint prompt
+== W200 T4's faint, the turn already 5
+strip | trainer ⚔ ~ T4/5 · send Blissey for Rayquaza
+    ⚔ send Blissey for Rayquaza → ~ Blissey 600/600 · Zacian 250/350 · Eternatus 900/2400
+== W200 T5, Blissey in Rayquaza's slot
+strip | trainer ⚔ ~ T5/5 · Blissey Seismic Toss ; Zacian Behemoth Blade
+    ⚔ T5 Blissey Fighting Seismic Toss ; Zacian Steel Behemoth Blade → ~ Blissey 500/600 · Zacian 250/350
+from T3, handed on T3                   held
+== handed on T3, at T3
+Plan | ~ oracle line wins in 3 turns · 3 of 4 left
+    ▸ T3 Rayquaza Flying Dragon Ascent → Eternatus ; Zacian Tera Steel + Steel Behemoth Blade → ~ Rayquaza 200/400 · Zacian 300/350 · Eternatus 1500/2400
+    · T4 Zacian Steel Behemoth Blade · send Blissey for Rayquaza
+    · T5 Blissey Fighting Seismic Toss ; Zacian Steel Behemoth Blade
+T4 fells Rayquaza and Zacian            held
+== W200 T4, both to fall
+strip | trainer ⚔ ~ T4/5 · Zacian Behemoth Blade · then send Blissey for Rayquaza · then send Snorlax for Zacian
+    ⚔ T4 Zacian Steel Behemoth Blade → ~ Blissey 600/600 · Zacian 250/350 · Eternatus 900/2400
+    ⤵ then send Blissey for Rayquaza at the faint prompt
+    ⤵ then send Snorlax for Zacian at the faint prompt
+== W200 T4's first faint prompt
+strip | trainer ⚔ ~ T4/5 · send Blissey for Rayquaza · then send Snorlax for Zacian
+    ⚔ send Blissey for Rayquaza → ~ Blissey 600/600 · Zacian 250/350 · Eternatus 900/2400
+    ⤵ then send Snorlax for Zacian at the faint prompt
+== W200 T4's second faint prompt
+strip | trainer ⚔ ~ T4/5 · send Snorlax for Zacian
+    ⚔ send Snorlax for Zacian → ~ Blissey 600/600 · Zacian 250/350 · Eternatus 900/2400
+Eternatus's W200, to score              held
+scored T1/5 match
+scored T2/5 match
+scored T3/5 match
+scored T4/5 match
+== W200 T5, every checkpoint matched
+Plan | ~ oracle line wins in 5 turns · 3 of 4 left
+    ✓ T1 Rayquaza Flying Dragon Ascent → ~ Rayquaza 300/400 · Eternatus 400/1600
+    ✓ T2 Rayquaza Flying Dragon Ascent → ~ Rayquaza 250/400 · Zacian 350/350 · Eternatus 2400/2400
+    ✓ T3 Rayquaza Flying Dragon Ascent → Eternatus ; Zacian Tera Steel + Steel Behemoth Blade → ~ Rayquaza 200/400 · Zacian 300/350 · Eternatus 1500/2400
+    ✓ T4 Zacian Steel Behemoth Blade · send Blissey for Rayquaza → ~ Blissey 600/600 · Zacian 250/350 · Eternatus 900/2400
+    ▸ T5 Blissey Fighting Seismic Toss ; Zacian Steel Behemoth Blade → ~ Blissey 500/600 · Zacian 250/350
+Zacian's Close Combat                   held
+scored T3/5 miss Eternatus 1500/2400 · 1700/2400
+== W200 T4, Zacian's Close Combat
+strip | trainer off the line · ~ re-solving… · Golbat Venoshock → Tyranitar · 3 hits
+    ✗ T3 Eternatus expected 1500/2400 · came 1700/2400
+    ⚔ Golbat Poison Venoshock → Tyranitar 3 hits
+Zacian's Behemoth Blade without Tera    held
+scored T3/5 miss Eternatus 1500/2400 · 1700/2400
+== W200 T4, Zacian's Behemoth Blade without Tera
+strip | trainer off the line · ~ re-solving… · Golbat Venoshock → Tyranitar · 3 hits
+    ✗ T3 Eternatus expected 1500/2400 · came 1700/2400
+    ⚔ Golbat Poison Venoshock → Tyranitar 3 hits
+Dragon Ascent into Zacian               held
+scored T3/5 miss Eternatus 1500/2400 · 1700/2400
+== W200 T4, Dragon Ascent into Zacian
+strip | trainer off the line · ~ re-solving… · Golbat Venoshock → Tyranitar · 3 hits
+    ✗ T3 Eternatus expected 1500/2400 · came 1700/2400
+    ⚔ Golbat Poison Venoshock → Tyranitar 3 hits
+both pressed as said                    held
+scored T3/5 miss ! Eternatus 1500/2400 · 1700/2400
+== W200 T4, both pressed as said
+strip | trainer off the line · ! re-solving… · Golbat Venoshock → Tyranitar · 3 hits
+    ✗ T3 Eternatus expected 1500/2400 · came 1700/2400
+    ⚔ Golbat Poison Venoshock → Tyranitar 3 hits
+a W200 run, Snorlax sent                held
+scored T4/5 miss Blissey in front · benched; Snorlax benched · in front
 writes to the game: none
