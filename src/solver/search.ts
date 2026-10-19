@@ -126,8 +126,7 @@ function scored(children: readonly Expanded[], ours: number, trail: Trail) {
 
 /**
  * The win, or the environment gone, either of which ends the search; null where it didn't replay, wasn't run, or was
- * sent to replay before, by any stage or beam. A path counts as tried once its replay is queued, so a beam reaching it
- * mid-replay passes it by: a verdict that neither refuses it nor ends the search would lose it (#761).
+ * sent to replay before, by any stage or beam.
  */
 async function replayed(
   path: readonly Action[],
@@ -137,6 +136,7 @@ async function replayed(
   const inputs = played(path);
   const key = JSON.stringify(path);
   if (trail.tried.has(key)) return null;
+  // Before the await: a second beam reaching it mid-replay must pass it by (#761).
   trail.tried.add(key);
   const verdict = await validate(inputs);
   if (verdict === null) return null;
