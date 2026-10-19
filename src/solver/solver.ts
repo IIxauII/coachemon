@@ -1,7 +1,7 @@
 import { availableParallelism } from "node:os";
 import reviewed from "../escape-ladder/reviewed.json" with { type: "json" };
 import { augmentedExport } from "./extras.ts";
-import { type Carry, refuse } from "./gate.ts";
+import { type Carry, carryOf, refuse } from "./gate.ts";
 import type { Budget, Recheck, SolveInput } from "./input.ts";
 import { noAnswer } from "./no-answer.ts";
 import type { Input, NoAnswer, SolveResult } from "./oracle-line.ts";
@@ -24,7 +24,8 @@ export const DEFAULT_BUDGET: Budget = { expansions: 3000, turns: 40 };
 const RECHECK: Recheck | null = "recheck" in reviewed ? (reviewed.recheck as Recheck) : null;
 
 /** The refusal gate `solve` opens with. */
-export const gate = (input: Pick<SolveInput, "save" | "extras" | "cloneVersion">): NoAnswer | null => refuse(input, RECHECK);
+export const gate = (input: Pick<SolveInput, "save" | "extras" | "liveExport" | "cloneVersion">): NoAnswer | null =>
+  refuse(input, RECHECK, carryOf(input));
 
 export type SolveDeps = {
   clone: Clone;
@@ -39,9 +40,10 @@ export async function solve(
   input: SolveInput,
   { clone, progress, unchecked = false, workers = poolSize(availableParallelism()) }: SolveDeps,
 ): Promise<SolveResult> {
-  const refused = refuse(input, unchecked ? passed(input.cloneVersion) : RECHECK);
+  const carry = carryOf(input);
+  const refused = refuse(input, unchecked ? passed(input.cloneVersion) : RECHECK, carry);
   if (refused) return refused;
-  const loaded = await replay(input, { inputs: [] }, clone);
+  const loaded = await replay(input, { inputs: [] }, clone, carry);
   if (loaded.kind === "no_answer") return loaded;
 
   const at = augmentedExport(input)?.forkPoint;
@@ -50,7 +52,7 @@ export async function solve(
     const searched = await search({
       root: pool.root,
       pool,
-      validate: inputs => replay(input, { inputs: [...inputs] }, clone),
+      validate: inputs => replay(input, { inputs: [...inputs] }, clone, carry),
       budget: input.budget,
       progress: spent => progress?.({ ...spent, pool: pool.stats() }),
     });
