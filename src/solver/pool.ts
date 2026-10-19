@@ -30,7 +30,7 @@ export const slowPollNote = (why: string) => `the search's workers kept the game
 export type WorkerPool = Omit<Pool, "expand"> & {
   root: Position;
   expand(forkPoint: string, inputs: readonly Action[], signal?: AbortSignal): Promise<Child[]>;
-  /** The position a solve from `save` starts at, `at` its fork point past the first turn, rooted on one of the workers. */
+  /** `Worker.rootAt`, on whichever worker is free. */
   rootAt(save: SessionSave, at?: string, signal?: AbortSignal): Promise<Position>;
   stats(): PoolStats;
   close(): Promise<void>;
@@ -40,6 +40,8 @@ type Job = { play: (worker: Worker) => Promise<void>; signal: AbortSignal | unde
 
 /** `null` is a worker to start before its next job: one that died, or never started. */
 type Slot = { worker: Worker | null; busy: boolean };
+
+export const isPool = (p: WorkerPool | NotStarted): p is WorkerPool => "expand" in p;
 
 const closedPool = () => new Error("the pool closed");
 const cancelledSolve = () => new Error("the solve was cancelled");

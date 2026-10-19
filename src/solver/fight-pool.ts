@@ -1,6 +1,5 @@
-import type { Clock } from "../driver.ts";
 import type { PredicateRead } from "../game/port.ts";
-import type { WorkerPool } from "./pool.ts";
+import { isPool, type WorkerPool } from "./pool.ts";
 import type { NotStarted } from "./worker.ts";
 
 /** A trainer fight, by the run's seed and the live battle's wave. */
@@ -14,7 +13,6 @@ export type Lease = { pool: WorkerPool; warm: boolean; done(broken: boolean): Pr
 
 type Held = { fight: Fight; pool: Promise<WorkerPool | NotStarted> };
 
-const isPool = (p: WorkerPool | NotStarted): p is WorkerPool => "expand" in p;
 const same = (a: Fight, b: Fight) => a.seed === b.seed && a.wave === b.wave;
 
 /**
@@ -35,7 +33,7 @@ export class FightPool {
     if (this.#held === null || !same(this.#held.fight, fight)) {
       const last = this.#held;
       // Held before anything is awaited, so a second solve of the fight waits on this pool rather than starting one.
-      const held: Held = { fight, pool: (last ? closed(last) : Promise.resolve()).then(start) };
+      const held: Held = { fight, pool: (last ? close(last) : Promise.resolve()).then(start) };
       this.#held = held;
       warm = false;
       void this.#ended(fight).then(() => this.#drop(held), () => this.#drop(held));
@@ -49,34 +47,31 @@ export class FightPool {
     return { pool, warm, done: broken => (broken ? this.#drop(held) : Promise.resolve()) };
   }
 
-  /** Closes the pool held, whichever fight it is for. */
-  async release(): Promise<void> {
-    if (this.#held) await this.#drop(this.#held);
-  }
-
   async #drop(held: Held): Promise<void> {
     if (this.#held !== held) return;
     this.#held = null;
-    await closed(held);
+    await close(held);
   }
 }
 
-async function closed(held: Held): Promise<void> {
+async function close(held: Held): Promise<void> {
   const pool = await held.pool;
   if (isPool(pool)) await pool.close();
 }
 
-/** How often a warm pool's fight is looked at. */
 export const FIGHT_LOOK_MS = 30_000;
 
-/** How long a tab out of reach keeps its fight's pool warm. */
 export const FIGHT_UNREAD_MS = 600_000;
 
 /**
- * Settles once the tab has left `fight`: its wave is behind it, no battle is on, or it has been out of reach for
- * `FIGHT_UNREAD_MS`. The read carries no seed, so a new run at the same wave reads as the same fight.
+ * The read carries no seed, so a new run at the same wave reads as the same fight until its solve, for another seed,
+ * takes the pool.
  */
-export async function fightEnded(game: { read(): Promise<PredicateRead> }, clock: Clock, fight: Fight): Promise<void> {
+export async function fightEnded(
+  game: { read(): Promise<PredicateRead> },
+  clock: { now(): number; sleep(ms: number): Promise<void> },
+  fight: Fight,
+): Promise<void> {
   let unreadSince: number | null = null;
   for (;;) {
     await clock.sleep(FIGHT_LOOK_MS);

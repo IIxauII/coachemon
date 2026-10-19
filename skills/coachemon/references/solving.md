@@ -15,11 +15,13 @@ card and the boss-fight plan's principles carry the fight from where it stands.
 
 ## Steps
 
-1. **Start** at the first command of a trainer fight you see: its first, or the turn you joined on when the session
-   starts mid-fight (a late join). Call `start_job` with `kind: "solve"` and no `args`: it reads the fight off the tab
-   itself, at the decision it stands at, and the oracle line it finds starts at that turn. A `no_answer` refusal goes
-   to step 5; `not_settled` or `no_battle` means the fight wasn't read, so start it again at the next command. Done
-   when you hold the job's `job` and `end_file`, or a `no_answer`.
+1. **Start** at the first command of a trainer fight you see: its first, or, on a late join, the turn you joined on,
+   which the watch's first line shows when it starts mid-fight. A `read_card` whose `oracle_line` reads
+   `{ state: "on" }` means the panel already leads with an oracle line for this fight, from an earlier session: leave
+   it and skip the solve. Call `start_job` with `kind: "solve"` and no `args`: it reads the fight off the tab itself, at
+   the decision it stands at, and the oracle line it finds starts at that turn. A `no_answer` refusal goes to step 5;
+   `not_settled` or `no_battle` means the fight wasn't read, so start it again at the next command. Done when you hold
+   the job's `job` and `end_file`, or a `no_answer`.
 2. **Wait on its end**: arm a `Monitor` on
    `n=0; until [ -e <end_file> ]; do sleep 10; n=$((n+1)); [ $((n % 30)) -ne 0 ] || echo "still solving"; done; cat <end_file>`,
    with `timeout_ms` 1800000, armed again while `poll_job` still reads `running` when it expires. A `poll_job` that
@@ -30,8 +32,8 @@ card and the boss-fight plan's principles carry the fight from where it stands.
    forty on a laptop; and the oracle line plays from this turn, so it takes the card over only while the fight still
    stands here. They choose: wait at this command for it, or play on with the card, which coaches with its own call
    meanwhile. For a re-solve, one line is enough: off the line at turn N, the card leads, and a new oracle line is
-   being solved from this turn. Then, on each `still solving` line and whenever the player asks, relay `poll_job`'s progress line
-   as it is, in one line. Done when the player has the two lines.
+   being solved from this turn. Then, on each `still solving` line and whenever the player asks, relay `poll_job`'s
+   progress line as it is, in one line. Done when the player has the two lines.
 4. **When the end file appears**, `read_job` the job and act on how it ended:
    - **An oracle line** (`result.kind` is `oracle_line`): call `hand_oracle_line` with the job's id at once.
      - `held: true`: tell the player in one line that the card now leads with the oracle line, as its `plan` group
@@ -42,8 +44,7 @@ card and the boss-fight plan's principles carry the fight from where it stands.
        leave them off the card, so this line is how the player hears them, and any other answer takes the game off the
        line. The last step's picks are placeholders the search never weighs, so the learn card's own call stands there.
      - `moved_on`: the fight left the turn it was solved from before the oracle line came, so the oracle line no
-       longer holds. Say so in one line; the card carries the fight. Don't solve again unless the player asks: each
-       solve takes minutes, and a fight played on outruns it.
+       longer holds. Say so in one line; the card carries the fight.
      - `held: false` with `no-hud`: start the panel and hand it again. With `other-fight` or `malformed`, the panel
        can't use it: say so in one line; the card carries the fight.
    - **No answer** (`result.kind` is `no_answer`): step 5, with its `message`.
@@ -66,10 +67,11 @@ card and the boss-fight plan's principles carry the fight from where it stands.
    Its message names the cause and ends "The card still coaches.": relay it as given, in one line. A cause that holds
    for the whole run or session (a Daily, the game version, the hub) is said once, at the first fight it stops. A
    re-solve's no answer leaves the card's turn line and fight plan, and the boss-fight plan's principles, to carry the
-   rest of the fight: say that, and never suggest a reload or a retry instead. Done when the player has heard the
-   cause once.
+   rest of the fight: say that. Done when the player has heard the cause once.
 6. **Off the line**: the watch feed's `OFF LINE w<wave> · T<turn>/<of>` line, or a `read_card` whose `oracle_line`
    reads `{ state: "off" }`, means a checkpoint missed at that turn. The oracle line is void for the rest of the run,
-   and the card's own turn line and fight plan lead again. Re-solve from where the game now stands: back to step 1 at
-   the next command, which starts from the augmented export and cancels any solve still running from an earlier
-   turn. Done when the re-solve has started, or its `no_answer` has been relayed.
+   and the card's own turn line and fight plan lead again. Re-solve from where the game now stands, while the fight is
+   still on: back to step 1 at its next command, which starts from the augmented export and cancels any solve still
+   running from an earlier turn. A miss that came with the fight over needs none: a lost fight, a `T<turn>` past
+   `<of>`, or a next command on another wave, whose fight is a new one. Done when the re-solve has started, its
+   `no_answer` has been relayed, or the fight was over.

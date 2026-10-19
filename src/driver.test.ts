@@ -1755,3 +1755,35 @@ test("a late join whose live extras lack one answers no answer naming it, starti
   assert.deepEqual(r.detail.reason, { code: "missing_extras", extras: ["arenaTags"] });
   assert.equal(held.started, 0);
 });
+
+test("off the line, a re-solve's oracle line from the turn the game now stands at is handed after the first (#677)", async t => {
+  const at = { turn: GORDIE_LINE.steps[0].turn };
+  const answers = [SOLVED, { kind: "oracle_line", oracleLine: { ...GORDIE_LINE, steps: GORDIE_LINE.steps.filter(st => st.turn >= 13) } }];
+  const work: JobWork = async () => answers.shift();
+  const handed: unknown[] = [];
+  const fake = fakeGame({
+    read: () => gordieRead(at)(),
+    menu: () => commandMenu(0),
+    session: gordieSession,
+    extras: () => gordieExtras(at.turn)(),
+    oracleLine: line => {
+      handed.push(line);
+      return { ok: true };
+    },
+  });
+  const driver = new Driver(fake.game, tempHome(t), fake.clock, { [SOLVE_JOB]: work }, "hub");
+  await driver.solving(true);
+
+  const first = await driver.startJob(SOLVE_JOB, {});
+  await settledJobs();
+  assert.equal((await outcome(driver.handOracleLine(first.job, {}))).held, true);
+  at.turn = 13;
+  const resolve = await driver.startJob(SOLVE_JOB, {});
+  await settledJobs();
+  const r = await outcome(driver.handOracleLine(resolve.job, {}));
+
+  assert.notEqual(resolve.job, first.job);
+  assert.equal(r.held, true, JSON.stringify(r));
+  assert.deepEqual(handed.map(line => (line as typeof GORDIE_LINE).steps[0].turn), [11, 13]);
+  assert.equal((await outcome(driver.handOracleLine(first.job, {}))).error, "moved_on", "the first oracle line holds no longer");
+});

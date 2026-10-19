@@ -5,9 +5,9 @@ import { type Carry, carryOf, refuse } from "./gate.ts";
 import type { Budget, Recheck, SolveInput } from "./input.ts";
 import type { Lease } from "./fight-pool.ts";
 import { noAnswer, Unanswered } from "./no-answer.ts";
-import type { Input, NoAnswer, SolveResult } from "./oracle-line.ts";
+import type { Input, NoAnswer, Reason, SolveResult } from "./oracle-line.ts";
 import { type Clone, replay } from "./replay.ts";
-import { type PoolStats, poolSize, startPool, type WorkerPool } from "./pool.ts";
+import { isPool, type PoolStats, poolSize, startPool, type WorkerPool } from "./pool.ts";
 import { search, type Progress as Spent } from "./search.ts";
 import { type Checks, type NotStarted, startWorker, type Worker } from "./worker.ts";
 
@@ -44,8 +44,7 @@ export type SolveDeps = {
   signal?: AbortSignal;
 };
 
-/** The no answers that say the pool itself has failed, so a warm one is not kept for the fight's next solve. */
-const BROKE_THE_POOL: ReadonlySet<string> = new Set(["no_clone", "workers_died", "harness_failed"]);
+const BROKE_THE_POOL: ReadonlySet<Reason["code"]> = new Set(["no_clone", "workers_died", "harness_failed"]);
 
 export async function solve(
   input: SolveInput,
@@ -68,7 +67,6 @@ export async function solve(
     return answer;
   };
   try {
-    // A warm pool's root is an earlier solve's start, so this one roots its own on one of the workers.
     const root = warm ? await pool.rootAt(input.save, at, signal) : pool.root;
     const searched = await search({
       root,
@@ -90,10 +88,9 @@ export async function solve(
   }
 }
 
-/** The default: a pool started for the one solve, on the solve's own clone, and closed after it. */
 async function ownPool(starting: Promise<WorkerPool | NotStarted>): Promise<Lease | NotStarted> {
   const started = await starting;
-  if (!("expand" in started)) return started;
+  if (!isPool(started)) return started;
   return { pool: started, warm: false, done: () => started.close() };
 }
 
