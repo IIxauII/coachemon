@@ -2,7 +2,7 @@ import { BattleType, GameModes, TrainerVariant } from "../enums/generated.ts";
 import { MODIFIER_CLASSES, MODIFIER_TYPE_IDS } from "../enums/modifiers.ts";
 import { readExtras } from "./extras.ts";
 import type { Recheck, SolveInput } from "./input.ts";
-import { noAnswer } from "./no-answer.ts";
+import { newerVersion, noAnswer } from "./no-answer.ts";
 import type { NoAnswer } from "./oracle-line.ts";
 
 /** `carried` lets a save from an older game through, which the game's own load migrates (#703). */
@@ -10,10 +10,8 @@ export type Carry = { carried?: boolean };
 
 /** The live export's `gameVersion` is the live game's own: the game stamps an export with it (#764). */
 export const carryOf = ({ save, liveExport, cloneVersion }: Pick<SolveInput, "save" | "liveExport" | "cloneVersion">): Carry => ({
-  carried: olderThan(save.gameVersion, cloneVersion) && liveExport?.gameVersion === cloneVersion,
+  carried: newerVersion(cloneVersion, save.gameVersion) && liveExport?.gameVersion === cloneVersion,
 });
-
-const olderThan = (version: string, than: string) => version.localeCompare(than, undefined, { numeric: true }) < 0;
 
 /**
  * The fights no oracle line can be trusted in, read off the input alone, before any clone runs. A refusal that waits on
@@ -26,9 +24,8 @@ export function refuse(
   { carried = false }: Carry = {},
 ): NoAnswer | null {
   if (save.gameMode === GameModes.DAILY) return noAnswer({ code: "daily" });
-  if (save.gameVersion !== cloneVersion && !(carried && olderThan(save.gameVersion, cloneVersion))) {
-    // The save's version is the game that wrote it, not the one the tab serves: a continued run's predates an update
-    // until its next wave, and only the export carries the live one (#763, game-code.md §29, §31).
+  if (save.gameVersion !== cloneVersion && !(carried && newerVersion(cloneVersion, save.gameVersion))) {
+    // The save's version is the game that wrote it; only the export carries the tab's (#763, game-code.md §29, §31).
     const live = liveExport?.gameVersion ?? null;
     return noAnswer({ code: "version_mismatch", save: save.gameVersion, live, clone: cloneVersion });
   }

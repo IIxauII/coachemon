@@ -46,8 +46,9 @@ it. The solve is a plugin **job**, run through the MCP tools named below, whatev
    can be won: the card and its fight plan carry the fight from there, and the player plays on. It comes two ways:
    - **At once, from `start_job`, with no job started**, for a fight solving can't take: a Daily, whose seed every
      player shares; a live game version other than the one solving is pinned to, or one its harness hasn't been
-     re-checked on; a continued run's fight whose save the game wrote before it updated; a Mystery Encounter battle; a double; Safeguard up mid-fight; an item the clone would drop on load;
-     or a plugin reading the game over CDP rather than the hub.
+     re-checked on; a continued run's fight whose save the game wrote before it updated; a Mystery Encounter battle; a
+     double; Safeguard up mid-fight; an item the clone would drop on load; or a plugin reading the game over CDP rather
+     than the hub.
    - **As a finished solve's answer**, when no search found a win that replayed from the save, or the harness couldn't
      load the fight as the game has it.
 
