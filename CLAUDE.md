@@ -8,9 +8,13 @@ An MCP server that lets Claude play PokéRogue. See `README.md` for what it is a
 
 GitHub issues on the private repo `IIxauII/coachemon`, driven through the `gh` CLI. See `docs/agents/issue-tracker.md`.
 
-### Domain
+### Triage labels
 
-Single-context. The glossary is `CONTEXT.md` at the repo root; ADRs, when there are any, go in `docs/adr/`.
+The five default triage labels, each named after its role: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context. The glossary is `CONTEXT.md` at the repo root (not `GLOSSARY.md`); ADRs are in `docs/adr/`. See `docs/agents/domain.md`.
 
 ### Comments
 
