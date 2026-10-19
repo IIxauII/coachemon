@@ -1,6 +1,6 @@
 // Appended to the harness for the search's workers alone: the replay runs the harness without it, so every win found on
 // the fast poll is still played on the unpatched game (#759). Its report reaches COACH_POLL_OUT before the harness
-// serves its first job.
+// serves its first job; a report it can't write puts the game's own `run` back, so a missing one means the slow poll.
 // Aliased: this file joins the harness's module, which imports `vi` and `writeFileSync` under those names itself.
 import { writeFileSync as writePollReport } from "node:fs";
 import { inspect as inspectThrown } from "node:util";
@@ -47,6 +47,7 @@ function fastPoll(): PollReport {
   return { fast: true };
 }
 
+const gameRun = (PhaseInterceptor.prototype as any).run;
 let pollReport: PollReport;
 try {
   pollReport = fastPoll();
@@ -55,4 +56,6 @@ try {
 }
 try {
   if (process.env.COACH_POLL_OUT) writePollReport(process.env.COACH_POLL_OUT, JSON.stringify(pollReport));
-} catch {}
+} catch {
+  (PhaseInterceptor.prototype as any).run = gameRun;
+}
