@@ -1,4 +1,5 @@
 import { noAnswer, Unanswered } from "./no-answer.ts";
+import type { SessionSave } from "./input.ts";
 import type { Action, Child, Pool, Position } from "./search.ts";
 import { type NotStarted, type Worker, WorkerDied } from "./worker.ts";
 
@@ -22,14 +23,26 @@ export type PoolStats = {
 
 export const slowPollNote = (why: string) => `the search's workers kept the game's own phase poll, as ${why}`;
 
-export type WorkerPool = Pool & { root: Position; stats(): PoolStats; close(): Promise<void> };
+/**
+ * `signal` is the asking solve's: once it aborts, its jobs still queued end at once, and the pool stays up for the
+ * fight's next solve (#677).
+ */
+export type WorkerPool = Omit<Pool, "expand"> & {
+  root: Position;
+  expand(forkPoint: string, inputs: readonly Action[], signal?: AbortSignal): Promise<Child[]>;
+  /** The position a solve from `save` starts at, `at` its fork point past the first turn, rooted on one of the workers. */
+  rootAt(save: SessionSave, at?: string, signal?: AbortSignal): Promise<Position>;
+  stats(): PoolStats;
+  close(): Promise<void>;
+};
 
-type Job = { forkPoint: string; inputs: readonly Action[]; died: number; done: (c: Child[]) => void; fail: (e: unknown) => void };
+type Job = { play: (worker: Worker) => Promise<void>; signal: AbortSignal | undefined; died: number; fail: (e: unknown) => void };
 
 /** `null` is a worker to start before its next job: one that died, or never started. */
 type Slot = { worker: Worker | null; busy: boolean };
 
 const closedPool = () => new Error("the pool closed");
+const cancelledSolve = () => new Error("the solve was cancelled");
 
 /**
  * `size` workers, started together, each playing one job at a time. A worker that dies is replaced, and its job goes
@@ -78,13 +91,7 @@ export async function startPool(size: number, start: () => Promise<Worker | NotS
         if (closed) return job.fail(closedPool());
         worker = fresh;
       }
-      const children = await worker.expand(job.forkPoint, job.inputs);
-      const heap = worker.heap();
-      if (heap) {
-        peakHeapMb = Math.max(peakHeapMb ?? 0, heap.usedMb);
-        heapLimitMb = heap.limitMb;
-      }
-      job.done(children);
+      await job.play(worker);
     } catch (e) {
       // Closing ends the jobs still playing: no worker died of it, and none is left to play them again.
       if (closed) return job.fail(closedPool());
@@ -97,6 +104,27 @@ export async function startPool(size: number, start: () => Promise<Worker | NotS
       queue.unshift(job);
     }
   };
+
+  // One listener a solve, however many jobs it asks for.
+  const watched = new WeakSet<AbortSignal>();
+  const dropCancelled = (signal: AbortSignal) => {
+    for (const job of queue.filter(j => j.signal === signal)) {
+      queue.splice(queue.indexOf(job), 1);
+      job.fail(cancelledSolve());
+    }
+  };
+
+  const ask = <T>(play: (worker: Worker) => Promise<T>, signal?: AbortSignal) =>
+    new Promise<T>((done, fail) => {
+      if (closed) return fail(closedPool());
+      if (signal?.aborted) return fail(cancelledSolve());
+      if (signal && !watched.has(signal)) {
+        watched.add(signal);
+        signal.addEventListener("abort", () => dropCancelled(signal), { once: true });
+      }
+      queue.push({ play: async worker => done(await play(worker)), signal, died: 0, fail });
+      pump();
+    });
 
   const pump = () => {
     for (const slot of slots) {
@@ -114,12 +142,17 @@ export async function startPool(size: number, start: () => Promise<Worker | NotS
   return {
     size,
     root: workers[0].root,
-    expand: (forkPoint, inputs) =>
-      new Promise((done, fail) => {
-        if (closed) return fail(closedPool());
-        queue.push({ forkPoint, inputs, died: 0, done, fail });
-        pump();
-      }),
+    expand: (forkPoint, inputs, signal) =>
+      ask(async worker => {
+        const children = await worker.expand(forkPoint, inputs);
+        const heap = worker.heap();
+        if (heap) {
+          peakHeapMb = Math.max(peakHeapMb ?? 0, heap.usedMb);
+          heapLimitMb = heap.limitMb;
+        }
+        return children;
+      }, signal),
+    rootAt: (save, at, signal) => ask(worker => worker.rootAt(save, at), signal),
     stats: () => ({ size, died, lastDeath, peakHeapMb, heapLimitMb, slowPoll }),
     async close() {
       closed = true;

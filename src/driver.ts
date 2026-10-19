@@ -16,7 +16,7 @@ import { HubLink, hubPort, usesHub } from "./hub/link.ts";
 import { Jobs, type JobKinds, type JobView } from "./jobs.ts";
 import { PLUGIN_VERSION } from "./plugin-version.ts";
 import type { CommandName } from "./protocol/commands.ts";
-import { MOVED, type Act, type CursorTarget, type GamePort, type MenuOption, type MenuRead, type Ready, type SnapshotDetail } from "./game/port.ts";
+import { MOVED, type Act, type CursorTarget, type ExtrasRead, type Failed, type GamePort, type MenuOption, type MenuRead, type Ready, type SessionRead, type SnapshotDetail } from "./game/port.ts";
 import { matchLabel, normalizeLabel, optionAnswersTo } from "./labels.ts";
 import { planSelect, step, type Plan, type Walk } from "./menu-family.ts";
 import { isSettingsMode, modeName } from "./screen.ts";
@@ -26,6 +26,7 @@ import { isOverwriteConfirm, planSlot, slotLabel } from "./slots.ts";
 import { CALL_BUDGET_MS, settle, type SettleResult } from "./settle.ts";
 import { DEFAULT_BUDGET, gate, type NoAnswer, type OracleLine, type SessionSave, type SolveInput, type SolveResult } from "./solver/solver.ts";
 import { noAnswer } from "./solver/no-answer.ts";
+import { fightEnded, FightPool } from "./solver/fight-pool.ts";
 import { SOLVE_JOB, solveJob } from "./solver/solve-job.ts";
 import type { Choice } from "./stuck/detector.ts";
 
@@ -70,6 +71,8 @@ export type Clock = { now: () => number; sleep: (ms: number) => Promise<void> };
 
 const REAL_CLOCK: Clock = { now: Date.now, sleep: ms => new Promise(r => setTimeout(r, ms)) };
 
+const LOOK_CLOCK: Clock = { now: Date.now, sleep: ms => new Promise(r => setTimeout(r, ms).unref()) };
+
 const ARROWS = new Set(["UP", "DOWN", "LEFT", "RIGHT"]);
 
 /** Where the server never acts (v1-tool-surface.md §6.5). */
@@ -91,6 +94,8 @@ const TOOL_COMMANDS = {
   read_starters: ["probe", "menu", "starters"],
   read_session: ["probe", "menu", "session"],
   read_extras: ["probe", "menu", "extras"],
+  // A solve past the fight's first turn reads the extras too, and an extension without that read answers no answer.
+  start_job: ["probe", "menu", "session"],
   hand_oracle_line: ["probe", "menu", "oracle.line"],
   press: ["probe", "press"],
   select_option: ["probe", "menu", "press"],
@@ -105,6 +110,9 @@ const noAnswerRefusal = ({ reason, message }: NoAnswer) => new Refusal("no_answe
 
 export type Transport = "hub" | "cdp";
 
+/** A fight read at its decision for a solve: `extras` only past its first turn. */
+type FightRead = { turn: number; session: SessionRead | Failed; extras: ExtrasRead | Failed | null };
+
 /** Modes where an acting tool's own press legitimately leads to `LoginPhase` (Save & Quit, Log Out). */
 const MENU_MODES = new Set<number>([UiMode.MENU, UiMode.MENU_OPTION_SELECT]);
 
@@ -115,8 +123,8 @@ export class Driver {
   readonly #jobs: Jobs;
   readonly #home: string;
   readonly #transport: Transport;
-  /** The last solve started, by the run's seed and the live battle's wave. */
-  #solve: { fight: string; job: string } | null = null;
+  /** The last solve started, by the run's seed, the live battle's wave and the turn it starts from. */
+  #solve: { start: string; job: string } | null = null;
 
   constructor(game: GamePort, home: string, clock: Clock = REAL_CLOCK, jobKinds: JobKinds = {}, transport: Transport = "cdp") {
     this.#game = game;
@@ -129,13 +137,15 @@ export class Driver {
 
   /** CDP unless `COACHEMON_TRANSPORT=hub` opts into the hub (extension-distribution.md §12.1). */
   static create(home: string = coachemonHome()): Driver {
-    const jobKinds = { [CLONE_JOB]: cloneJob(home), [SOLVE_JOB]: solveJob(home) };
     if (usesHub()) {
       const hub = new HubLink({ port: hubPort(), version: PLUGIN_VERSION });
-      return new Driver(new LinkGame(hub, hub), home, REAL_CLOCK, jobKinds, "hub");
+      const game = new LinkGame(hub, hub);
+      // The tab is looked at only while a fight's pool is warm, and that look never holds the server open.
+      const fights = new FightPool(fight => fightEnded(game, LOOK_CLOCK, fight));
+      return new Driver(game, home, REAL_CLOCK, { [CLONE_JOB]: cloneJob(home), [SOLVE_JOB]: solveJob(home, undefined, fights) }, "hub");
     }
     const link = new CdpLink(new CdpSession({ home }), driverLock(home));
-    return new Driver(new LinkGame(link, link), home, REAL_CLOCK, jobKinds);
+    return new Driver(new LinkGame(link, link), home, REAL_CLOCK, { [CLONE_JOB]: cloneJob(home), [SOLVE_JOB]: solveJob(home) });
   }
 
   /** The plugin's own setting, so it answers with nothing able to reach the game (extension-distribution.md §12.2). */
@@ -265,38 +275,54 @@ export class Driver {
 
   async #startSolve(ctx: CallContext): Promise<JobView> {
     if (this.#transport !== "hub") throw noAnswerRefusal(noAnswer({ code: "needs_hub" }));
-    const input = await this.#fightToSolve(ctx);
+    const { input, from } = await this.#fightToSolve(ctx);
     const refused = gate(input);
     if (refused) throw noAnswerRefusal(refused);
-    // The live battle's wave: a save of another wave still comes back, and its solve answers save_mismatch (#636).
-    const fight = `${input.save.seed}/${input.live.wave}`;
+    // The live battle's wave: a save of another wave still comes back, and its solve answers save_mismatch (#636). A
+    // solve from a turn the fight has since left is void, so a re-solve replaces it (#677).
+    const start = `${input.save.seed}/${input.live.wave}/${from}`;
     const last = this.#solve;
     if (last && this.#jobs.running(last.job)) {
-      if (last.fight === fight) return this.#jobs.poll(last.job);
+      if (last.start === start) return this.#jobs.poll(last.job);
       this.#jobs.cancel(last.job);
     }
     const started = this.#jobs.start(SOLVE_JOB, { input });
-    this.#solve = { fight, job: started.job };
+    this.#solve = { start, job: started.job };
     return started;
   }
 
-  /** The fight on the tab, read at its decision, as a solve from its first turn takes it. */
-  async #fightToSolve(ctx: CallContext): Promise<SolveInput & Required<Pick<SolveInput, "live">>> {
-    const read = await this.readSession(ctx);
-    if (read.status !== "ok") {
+  /**
+   * The fight on the tab, read at its decision: on its first turn from the wave-start save, and past it, for a re-solve
+   * or a coach that joined late, from the augmented export (#677). `from` is the turn the solve starts at.
+   */
+  async #fightToSolve(ctx: CallContext): Promise<{ input: SolveInput & Required<Pick<SolveInput, "live">>; from: number }> {
+    let fight = null as FightRead | null;
+    const read = await this.#read("start_job", ctx, async ready => {
+      const session = await this.#game.session();
+      const turn = ready.turn ?? 1;
+      // At the same decision as the export, which the extras complete.
+      const extras = session.ok && turn > 1 ? await this.#game.extras() : null;
+      fight = { turn, session, extras };
+      return { menu: await this.#game.menu(), fields: {} };
+    });
+    if (read.status !== "ok" || fight === null) {
       throw new Refusal("not_settled", "The game didn't settle, so the fight wasn't read and no solve started: start it again at the decision.", { status: read.status });
     }
-    if (read.session_error !== undefined) {
-      throw new Refusal("no_battle", "No battle could be read on the tab, so there is no fight to solve.", { why: read.session_error });
-    }
-    if (read.wave_start === null) throw noAnswerRefusal(noAnswer({ code: "no_wave_start" }));
-    return {
-      save: read.wave_start as SessionSave,
-      live: { wave: read.battle_wave as number, battleSeed: read.battle_seed as string },
-      liveExport: read.export as SessionSave,
+    const { turn, session, extras } = fight;
+    if (!session.ok) throw new Refusal("no_battle", "No battle could be read on the tab, so there is no fight to solve.", { why: session.why });
+    const base = {
+      live: { wave: session.wave as number, battleSeed: session.battleSeed as string },
+      liveExport: session.export as SessionSave,
       cloneVersion: PINNED_GAME_VERSION,
       budget: DEFAULT_BUDGET,
     };
+    if (extras === null) {
+      if (session.waveStart === null) throw noAnswerRefusal(noAnswer({ code: "no_wave_start" }));
+      return { input: { save: session.waveStart as SessionSave, ...base }, from: 1 };
+    }
+    if (!extras.ok) throw noAnswerRefusal(noAnswer({ code: "no_extras", why: extras.why }));
+    const { ok: _ok, ...live } = extras;
+    return { input: { save: session.export as SessionSave, extras: live, ...base }, from: turn };
   }
 
   async pollJob(id: string): Promise<JobView> {

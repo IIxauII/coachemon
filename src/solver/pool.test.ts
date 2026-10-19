@@ -3,6 +3,7 @@ import { test } from "node:test";
 import type { Input, ReplayResult } from "./oracle-line.ts";
 import { poolSize, startPool } from "./pool.ts";
 import { type Action, type Child, type Position, search } from "./search.ts";
+import type { SessionSave } from "./input.ts";
 import { type NotStarted, type Worker, WorkerDied } from "./worker.ts";
 
 const tackle: Input = { kind: "move", move: "TACKLE", tera: false };
@@ -47,6 +48,10 @@ function fakeWorkers({
         if (answer === "die") throw new WorkerDied("the worker stopped, writing nothing");
         used = heapMb(fake);
         return answer;
+      },
+      async rootAt(_save, at) {
+        fake.jobs++;
+        return { ...root, sig: at ?? "wave start", forkPoint: at ?? "wave start" };
       },
       heap: () => (used === null ? null : { usedMb: used, limitMb: 864 }),
       check: async () => assert.fail("no check in a pool"),
@@ -218,4 +223,78 @@ test("a pool whose workers kept the slow poll says why in its stats, and one who
 
   assert.equal(slowPool.stats().slowPoll, "PhaseInterceptor.run is not the one the fast poll copies");
   assert.equal(fastPool.stats().slowPoll, null);
+});
+
+const SAVE = { seed: "s33d", waveIndex: 180 } as unknown as SessionSave;
+
+test("a cancelled solve's jobs still queued end at once, and its pool's workers stay up for the fight's next solve (#677)", async () => {
+  const fakes = fakeWorkers();
+  const pool = await startPool(1, fakes.start, "1.12.0.11");
+  assert.ok("expand" in pool);
+
+  const solve = new AbortController();
+  const playing = pool.expand("root", [tackle], solve.signal);
+  const queued = [pool.expand("root", [tackle], solve.signal), pool.expand("root", [tackle], solve.signal)];
+  solve.abort();
+  const ended = await Promise.allSettled(queued);
+  const next = await pool.expand("root", [tackle], new AbortController().signal);
+
+  assert.deepEqual(
+    ended.map(s => s.status === "rejected" && (s.reason as Error).message),
+    ["the solve was cancelled", "the solve was cancelled"],
+  );
+  assert.deepEqual(await playing, won([tackle]), "the job a worker was playing ends as played");
+  assert.deepEqual(next, won([tackle]));
+  assert.equal(fakes.started[0].jobs, 2, "the cancelled solve's queued jobs never reached the worker");
+  assert.equal(fakes.started.length, 1);
+  assert.equal(fakes.started[0].closed, false);
+  await pool.close();
+});
+
+test("a job asked under a solve already cancelled never reaches a worker (#677)", async () => {
+  const fakes = fakeWorkers();
+  const pool = await startPool(1, fakes.start, "1.12.0.11");
+  assert.ok("expand" in pool);
+  const cancelled = AbortSignal.abort();
+
+  await assert.rejects(pool.expand("root", [tackle], cancelled), /the solve was cancelled/);
+  await assert.rejects(pool.rootAt(SAVE, "t9", cancelled), /the solve was cancelled/);
+  assert.equal(fakes.started[0].jobs, 0);
+  await pool.close();
+});
+
+test("a warm pool roots a solve from a later turn on one of the workers it has, starting none (#677)", async () => {
+  const fakes = fakeWorkers();
+  const pool = await startPool(2, fakes.start, "1.12.0.11");
+  assert.ok("expand" in pool);
+
+  const later = await pool.rootAt(SAVE, "t9");
+  const fromStart = await pool.rootAt(SAVE);
+
+  assert.equal(later.forkPoint, "t9");
+  assert.equal(fromStart.forkPoint, "wave start");
+  assert.equal(fakes.started.length, 2);
+  await pool.close();
+});
+
+test("a worker that dies rooting a solve is replaced, and the root comes from the fresh one (#677)", async () => {
+  const fakes = fakeWorkers();
+  let deaths = 0;
+  const start = async () => {
+    const w = await fakes.start();
+    if (!("root" in w) || deaths > 0) return w;
+    return {
+      ...w,
+      rootAt: async () => {
+        deaths++;
+        throw new WorkerDied("the worker stopped, writing nothing");
+      },
+    };
+  };
+  const pool = await startPool(1, start, "1.12.0.11");
+  assert.ok("expand" in pool);
+
+  assert.equal((await pool.rootAt(SAVE, "t9")).forkPoint, "t9");
+  assert.equal(pool.stats().died, 1);
+  await pool.close();
 });

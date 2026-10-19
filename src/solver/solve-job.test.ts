@@ -4,7 +4,9 @@ import { test } from "node:test";
 import type { JobControl } from "../jobs.ts";
 import { GORDIE_LINE } from "../game/fixtures/oracle-line.ts";
 import type { CloneSetup } from "./clone.ts";
+import { FightPool } from "./fight-pool.ts";
 import { noAnswer } from "./no-answer.ts";
+import type { WorkerPool } from "./pool.ts";
 import type { Clone, CloneRun, Progress, SolveDeps, SolveInput, SolveResult } from "./solver.ts";
 import { solveJob } from "./solve-job.ts";
 
@@ -119,4 +121,74 @@ test("a cancelled solve job stops each clone run it has going, and starts no mor
   assert.equal(runs.length, 1, "no run started once cancelled");
   assert.equal(runs[0].signal?.aborted, true, "the run going when the job was cancelled was told to stop");
   assert.ok(after && "missing" in after, JSON.stringify(after));
+});
+
+/** A pool that stands for the workers it started, one run on `clone`. */
+const startedOn = async (clone: Clone): Promise<WorkerPool> => {
+  await clone({ name: "worker", source: "", input: "" });
+  return {
+    size: 1,
+    root: { sig: "root", hp: { ours: [1], foes: [1] }, legal: [], forkPoint: "root" },
+    expand: async () => [],
+    rootAt: async () => assert.fail("not rooted here"),
+    stats: () => POOL,
+    close: async () => {},
+  };
+};
+
+test("a fight's solve jobs share the pool kept warm for it, its workers out of reach of any one job's cancel (#677)", async () => {
+  const { runs, runIn } = recordingClone();
+  const leases: { warm: boolean; pool: unknown }[] = [];
+  const signals: (AbortSignal | undefined)[] = [];
+  const holder = new FightPool(() => new Promise(() => {}));
+  const work = solveJob(
+    "/home/.coachemon",
+    {
+      setUp: async () => SET_UP,
+      runIn,
+      solve: async (_input, { pools, signal }) => {
+        signals.push(signal);
+        const lease = await pools!(startedOn);
+        assert.ok("pool" in lease);
+        leases.push(lease);
+        await lease.done(false);
+        return LINE;
+      },
+    },
+    holder,
+  );
+  const first = control();
+  await work({ input: INPUT }, first.ctl);
+  first.cancel();
+  const later = control();
+  await work({ input: { ...INPUT, extras: {} } }, later.ctl);
+
+  assert.deepEqual(leases.map(l => l.warm), [false, true]);
+  assert.equal(leases[1].pool, leases[0].pool, "the re-solve took the pool the fight's first solve started");
+  assert.deepEqual(signals, [first.ctl.signal, later.ctl.signal], "each solve's own signal, for its own jobs");
+  assert.equal(runs.length, 1, "one pool's workers");
+  assert.equal(runs[0].signal, undefined, "a warm pool's workers are the fight's, never stopped by one job's cancel");
+});
+
+test("a solve job for another fight takes a pool of its own (#677)", async () => {
+  const { runIn } = recordingClone();
+  const warm: boolean[] = [];
+  const holder = new FightPool(() => new Promise(() => {}));
+  const work = solveJob(
+    "/home/.coachemon",
+    {
+      setUp: async () => SET_UP,
+      runIn,
+      solve: async (_input, { pools }) => {
+        const lease = await pools!(startedOn);
+        assert.ok("pool" in lease);
+        warm.push(lease.warm);
+        return LINE;
+      },
+    },
+    holder,
+  );
+  await work({ input: INPUT }, control().ctl);
+  await work({ input: { ...INPUT, live: { ...INPUT.live!, wave: INPUT.live!.wave + 1 } } }, control().ctl);
+  assert.deepEqual(warm, [false, false]);
 });

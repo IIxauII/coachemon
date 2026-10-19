@@ -67,6 +67,24 @@ test("a worker hands the harness the save and its port, and comes back with the 
   assert.match(runs[0].env?.COACH_PORT ?? "", /^\d+$/);
 });
 
+test("a warm worker roots a later start of its fight in the harness it runs, handing it the save and the fork point (#677)", async () => {
+  const asked: Record<string, unknown>[] = [];
+  const later = { ...root, sig: "t9", forkPoint: "t9" };
+  const { clone, runs } = fakeHarness(job => {
+    asked.push(job);
+    return job.kind === "root" ? { root: later } : won(job.inputs);
+  });
+
+  const worker = await startWorker(clone, save);
+  assert.ok("root" in worker);
+  const rooted = await worker.rootAt(save, "t9");
+  await worker.close();
+
+  assert.deepEqual(rooted, later);
+  assert.deepEqual(asked.map(({ kind, save: s, at }) => ({ kind, save: s, at })), [{ kind: "root", save, at: "t9" }]);
+  assert.equal(runs.length, 1, "no second harness started");
+});
+
 test("a worker's harness is the replay's with the fast poll after it, and the poll's report clears it (#759)", async () => {
   const { clone, runs } = fakeHarness(job => won(job.inputs));
 

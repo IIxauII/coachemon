@@ -1,5 +1,6 @@
 import type { JobControl, JobWork } from "../jobs.ts";
 import { type CloneSetup, setUpClone } from "./clone.ts";
+import type { FightPool } from "./fight-pool.ts";
 import type { Clone } from "./replay.ts";
 import { harnessIn } from "./run-in-clone.ts";
 import { slowPollNote, solve, type SolveDeps, type SolveInput, type SolveResult } from "./solver.ts";
@@ -14,15 +15,23 @@ export type SolveJobDeps = {
 
 const PLAYERS: SolveJobDeps = { setUp: setUpClone, runIn: dir => harnessIn(() => ({ clone: dir })), solve };
 
-/** `args.input` is the fight the Driver read at its decision, already through the refusal gate. */
+/**
+ * `args.input` is the fight the Driver read at its decision, already through the refusal gate. With `fights`, every solve
+ * of one fight plays on the pool it keeps warm, whose workers no one job's cancel stops (#677).
+ */
 export const solveJob =
-  (home: string, deps: SolveJobDeps = PLAYERS): JobWork =>
+  (home: string, deps: SolveJobDeps = PLAYERS, fights?: FightPool): JobWork =>
   async (args, ctl) => {
     const setUp = await deps.setUp(home, ctl);
     if (setUp.kind !== "clone") return setUp;
     ctl.progress("loading the fight in the clone and starting the search's workers");
-    return deps.solve(args.input as SolveInput, {
-      clone: stoppedBy(ctl.signal, deps.runIn(setUp.dir)),
+    const input = args.input as SolveInput;
+    const clone = deps.runIn(setUp.dir);
+    const fight = { seed: input.save.seed, wave: input.live?.wave ?? input.save.waveIndex };
+    return deps.solve(input, {
+      clone: stoppedBy(ctl.signal, clone),
+      signal: ctl.signal,
+      ...(fights && { pools: start => fights.take(fight, () => start(clone)) }),
       progress: ({ spent, budget, pool }) => {
         const searched = `searched ${spent.toLocaleString("en")} of ${budget.toLocaleString("en")} turns`;
         ctl.progress(pool.slowPoll === null ? searched : `${searched}, slowly: ${slowPollNote(pool.slowPoll)}`);
