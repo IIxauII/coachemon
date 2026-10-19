@@ -6,7 +6,7 @@ An MCP server that lets Claude play PokéRogue. See `README.md` for what it is a
 
 ### Issue tracker
 
-GitHub issues on the private repo `IIxauII/coachemon`, driven through the `gh` CLI. See `docs/agents/issue-tracker.md`.
+GitHub issues on the public repo `IIxauII/coachemon`, driven through the `gh` CLI. See `docs/agents/issue-tracker.md`. Every pushed branch, `research/*` included, is world-readable: keep personal details, account names and session ids out of it.
 
 ### Triage labels
 

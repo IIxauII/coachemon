@@ -1,6 +1,6 @@
 # Issue tracker: GitHub
 
-Issues and specs for this repo live as GitHub issues on the private repo `IIxauII/coachemon`. Use the `gh` CLI for all operations.
+Issues and specs for this repo live as GitHub issues on the public repo `IIxauII/coachemon`. Use the `gh` CLI for all operations.
 
 Research findings are committed on unmerged `research/*` branches and linked from the ticket that commissioned them.
 
