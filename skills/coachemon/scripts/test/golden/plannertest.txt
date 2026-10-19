@@ -347,5 +347,7 @@ Fight plan likely lost
 ✗ Metagross 100% · sacrifice to Buzzwole so Mamoswine comes in free
 ⚠ likely lost: the plan runs out with 1 foe standing — maximise damage
 == a knockout carries the lock: alone 0.100 · Snorlax 0.990 · Clefable 1.545 · Skarmory 2.115
+== a 2HKO lock: Snorlax 0.990 · Clefable 1.490
 == a foe's lock on our switch-in: Skarmory 3.4630 · Clefable 4.0000 · its last use 4.8333
+== switched into a foe's lock: Skarmory 3.7593 · Clefable 3.0000 · its last use 3.8333
 ok

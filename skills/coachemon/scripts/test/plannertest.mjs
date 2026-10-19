@@ -1303,6 +1303,7 @@ Object.assign(TABLE, {
 // lost a third of the time and hits Dragonite for ((2·80/5 + 2)·40/50 + 2)·0.925 = 27.01 of its 400.
 Object.assign(TABLE, {
   "Dragonite>Outrage>Gyarados": [[400], 1, 2], "Dragonite>Dragon Claw>Gyarados": [[200], 1, 2],
+  "Dragonite>Outrage>Altaria": [[200], 1, 2], "Altaria>Peck>Dragonite": [[10], 1, 1],
   "Dragonite>Outrage>Snorlax": [[100], 1, 1], "Dragonite>Outrage>Clefable": [[0], 1, 0],
   "Dragonite>Outrage>Skarmory": [[100], 1, 0.5], "Dragonite>Fire Punch>Skarmory": [[400], 1, 2],
   "Gyarados>Waterfall>Dragonite": [[20], 1, 0.5],
@@ -1338,12 +1339,28 @@ Object.assign(TABLE, {
   };
   assert.match(pick([]), /Outrage/, "the 1HKO, with nobody to carry onto");
   assert.match(pick(["Clefable"]), /Dragon Claw/, "two hits, rather than a lock that carries into an immune Clefable");
+
+  // A 2HKO: a 2-use lock runs down on the knockout and confuses into the next duel, a 3-use one carries one use.
+  const twoHits = benchNames => {
+    const me = dragonite([outrage]);
+    const foes = [mon("Altaria", 80, ["Dragon", "Flying"], [250, 100, 100, 100, 100, 100], [["Peck", "Flying", 35, "P"]], true), ...benchNames.map(bench)];
+    const { scene: s } = render({ party: [me], foes, live: true, switches: () => new Map(), stubOutcome: locks,
+      dist: e => (e === foes[0] ? [{ name: "Peck", type: "Flying", p: 1, score: 10, targets: [0] }] : []) });
+    return globalThis.__planner.exchange(s, me, me.moveset[0], foes[0]).cost;
+  };
+  const twoSnorlax = twoHits(["Snorlax"]), twoClefable = twoHits(["Clefable"]);
+  console.log(`== a 2HKO lock: Snorlax ${twoSnorlax.toFixed(3)} · Clefable ${twoClefable.toFixed(3)}`);
+  assert.ok(Math.abs(twoSnorlax - (0.1 + confused)) < 1e-3, `confused either way (${twoSnorlax})`);
+  assert.ok(Math.abs(twoClefable - (0.1 + 0.5 + confused)) < 1e-3, `immune: the carried use is lost, and it was the last (${twoClefable})`);
 }
 
 // ---- A foe's lock lands its `left` uses on our switch-in, then it is confused; an immune one ends it (game-code.md §5).
 // Three landed hits fell either switch-in. Skarmory takes Outrage's two left, then the foe lands each of the 2.5
 // confused uses ⅔ of the time: 3·⅔ + 4·⅔·⅓ + 5·⅚·⅑ + 6·⅙·⅑ = 3.46296 turns. Clefable stops the lock on turn 1 and
-// takes the Fire Blast the foe then picks, unconfused while uses were left: 4 turns.
+// takes the Fire Blast the foe then picks, unconfused while uses were left: 4 turns. Spending its last use on Clefable
+// confuses it from the next use on, ⅔, ⅔, ⅚: (3·20 + 4·24 + 5·9 + 6·1)/54 = 207/54 more turns.
+// Switched in by choice, the entry hit was a locked use already: Clefable faces the Fire Blast at once, and Skarmory's
+// one use left gives (3·24 + 4·20 + 5·9 + 6·1)/54 = 203/54.
 Object.assign(TABLE, {
   "Salamence>Outrage>Skarmory": [[100], 1, 0.5], "Salamence>Outrage>Clefable": [[0], 1, 0],
   "Salamence>Fire Blast>Skarmory": [[100], 1, 2], "Salamence>Fire Blast>Clefable": [[100], 1, 2],
@@ -1351,20 +1368,25 @@ Object.assign(TABLE, {
 });
 {
   const benched = name => mon(name, 80, ["Normal"], [250, 100, 100, 100, 100, 50], [["Tackle", "Normal", 40, "P"]], false);
-  const turnsFor = (name, left) => {
+  const turnsFor = (name, left, entered = false) => {
     const me = benched(name);
     const salamence = mon("Salamence", 80, ["Dragon", "Flying"], [9999, 200, 100, 100, 100, 100],
       [["Outrage", "Dragon", 120, "P", 0, { target: 7, id: 200 }], ["Fire Blast", "Fire", 110, "S", 0, { id: 126 }]], true, undefined,
       { getTag: t => (t === "FRENZY" ? { turnCount: left } : null), getMoveQueue: () => [{ move: 200, targets: [0], useMode: 2 }] });
     const replay = (_e, _target, opts) => [{ name: opts?.afterLock ? "Fire Blast" : "Outrage", type: "Dragon", p: 1 }];
     const { scene: s } = render({ party: [benched("Dragonite"), me], foes: [salamence], live: true, switches: () => new Map(), replay });
-    return globalThis.__planner.exchange(s, me, me.moveset[0], salamence, { next: true }).eTurnsThey;
+    return globalThis.__planner.exchange(s, me, me.moveset[0], salamence, { next: true, entered }).eTurnsThey;
   };
   const skarmory = turnsFor("Skarmory", 2), clefable = turnsFor("Clefable", 2), lastUse = turnsFor("Clefable", 1);
   console.log(`== a foe's lock on our switch-in: Skarmory ${skarmory.toFixed(4)} · Clefable ${clefable.toFixed(4)} · its last use ${lastUse.toFixed(4)}`);
   assert.ok(Math.abs(skarmory - 3.46296) < 1e-4, `two locked uses, then a confused foe (${skarmory})`);
   assert.ok(Math.abs(clefable - 4) < 1e-9, `immune: the lock ends, and the foe picks again (${clefable})`);
-  assert.ok(lastUse > 4 && lastUse < 9, `its last use spent on Clefable still confuses it (${lastUse})`);
+  assert.ok(Math.abs(lastUse - (1 + 207 / 54)) < 1e-4, `its last use spent on Clefable still confuses it (${lastUse})`);
+  const inSkarmory = turnsFor("Skarmory", 2, true), inClefable = turnsFor("Clefable", 2, true), inLast = turnsFor("Clefable", 1, true);
+  console.log(`== switched into a foe's lock: Skarmory ${inSkarmory.toFixed(4)} · Clefable ${inClefable.toFixed(4)} · its last use ${inLast.toFixed(4)}`);
+  assert.ok(Math.abs(inSkarmory - 203 / 54) < 1e-4, `the entry hit spent one of the two (${inSkarmory})`);
+  assert.ok(Math.abs(inClefable - 3) < 1e-9, `the entry hit ended the lock (${inClefable})`);
+  assert.ok(Math.abs(inLast - 207 / 54) < 1e-4, `the entry hit was its last use: confused at once (${inLast})`);
 }
 
 // ---- The one gate: with no exact enemy answer, the card, the fight plan and the catch advice stop together (#183)
