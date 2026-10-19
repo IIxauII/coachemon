@@ -1,5 +1,5 @@
 import { describeInput } from "./describe.ts";
-import type { BeamEnd, HygieneRule, NoAnswer, Reason } from "./oracle-line.ts";
+import type { BeamEnd, HygieneRule, LdsEnd, NoAnswer, Reason } from "./oracle-line.ts";
 
 const BROKE: Record<HygieneRule, string> = {
   max_rolls: "rolled every battle draw at its maximum",
@@ -111,9 +111,18 @@ export function cause(reason: Reason): string {
         n === 0 ? "" : ` ${n} win${n === 1 ? "" : "s"} it found didn't replay, the last because ${reason.unreplayed.at(-1)}`;
       const dropped =
         reason.dropped === 0 ? "" : ` ${reason.dropped} turn${reason.dropped === 1 ? "" : "s"} the harness couldn't play were dropped.`;
-      return `no winning path turned up: ${reason.beams.map(beamEnd).join("; ")}.${unreplayed}${dropped}`;
+      const stages = [...(reason.lds ? [ldsEnd(reason.lds)] : []), ...reason.beams.map(beamEnd)];
+      return `no winning path turned up: ${stages.join("; ")}.${unreplayed}${dropped}`;
     }
   }
+}
+
+function ldsEnd({ ended, discrepancies, expansions }: LdsEnd): string {
+  const played = `${expansions.toLocaleString("en")} turns played`;
+  const most = `${discrepancies} discrepanc${discrepancies === 1 ? "y" : "ies"}`;
+  return ended === "budget"
+    ? `the discrepancy search ran out of its budget, ${played}, at ${most}`
+    : `the discrepancy search tried every path within ${most}, ${played}`;
 }
 
 function beamEnd({ width, ours, ended, turn, expansions }: BeamEnd): string {
