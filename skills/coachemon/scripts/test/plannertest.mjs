@@ -1355,12 +1355,12 @@ Object.assign(TABLE, {
 }
 
 // ---- A foe's lock lands its `left` uses on our switch-in, then it is confused; an immune one ends it (game-code.md §5).
-// Three landed hits fell either switch-in. Skarmory takes Outrage's two left, then the foe lands each of the 2.5
-// confused uses ⅔ of the time: 3·⅔ + 4·⅔·⅓ + 5·⅚·⅑ + 6·⅙·⅑ = 3.46296 turns. Clefable stops the lock on turn 1 and
-// takes the Fire Blast the foe then picks, unconfused while uses were left: 4 turns. Spending its last use on Clefable
-// confuses it from the next use on, ⅔, ⅔, ⅚: (3·20 + 4·24 + 5·9 + 6·1)/54 = 207/54 more turns.
+// Three landed hits fell either switch-in. Confused for 1–4 uses, the foe's uses after its lock go off ⅔, ¾, ⅚, ¹¹⁄₁₂.
+// Skarmory takes Outrage's two left, then waits on one: 3 + ⅓ + 1/12 + 1/72 + 1/864 = 3 + 373/864 turns. Clefable
+// stops the lock on turn 1 and takes the Fire Blast the foe then picks, unconfused while uses were left: 4 turns.
+// Spending its last use on Clefable confuses it from the next use on, three landed then taking 547/144 more turns.
 // Switched in by choice, the entry hit was a locked use already: Clefable faces the Fire Blast at once, and Skarmory's
-// one use left gives (3·24 + 4·20 + 5·9 + 6·1)/54 = 203/54.
+// one use left leaves two to land, 3179/864.
 Object.assign(TABLE, {
   "Salamence>Outrage>Skarmory": [[100], 1, 0.5], "Salamence>Outrage>Clefable": [[0], 1, 0],
   "Salamence>Fire Blast>Skarmory": [[100], 1, 2], "Salamence>Fire Blast>Clefable": [[100], 1, 2],
@@ -1382,22 +1382,21 @@ Object.assign(TABLE, {
   };
   const skarmory = turnsFor("Skarmory", 2), clefable = turnsFor("Clefable", 2), lastUse = turnsFor("Clefable", 1);
   console.log(`== a foe's lock on our switch-in: Skarmory ${skarmory.toFixed(4)} · Clefable ${clefable.toFixed(4)} · its last use ${lastUse.toFixed(4)}`);
-  assert.ok(Math.abs(skarmory - 3.46296) < 1e-4, `two locked uses, then a confused foe (${skarmory})`);
+  assert.ok(Math.abs(skarmory - (3 + 373 / 864)) < 1e-9, `two locked uses, then a confused foe (${skarmory})`);
   assert.ok(Math.abs(clefable - 4) < 1e-9, `immune: the lock ends, and the foe picks again (${clefable})`);
-  assert.ok(Math.abs(lastUse - (1 + 207 / 54)) < 1e-4, `its last use spent on Clefable still confuses it (${lastUse})`);
+  assert.ok(Math.abs(lastUse - (1 + 547 / 144)) < 1e-9, `its last use spent on Clefable still confuses it (${lastUse})`);
   const inSkarmory = turnsFor("Skarmory", 2, true), inClefable = turnsFor("Clefable", 2, true), inLast = turnsFor("Clefable", 1, true);
   console.log(`== switched into a foe's lock: Skarmory ${inSkarmory.toFixed(4)} · Clefable ${inClefable.toFixed(4)} · its last use ${inLast.toFixed(4)}`);
-  assert.ok(Math.abs(inSkarmory - 203 / 54) < 1e-4, `the entry hit spent one of the two (${inSkarmory})`);
+  assert.ok(Math.abs(inSkarmory - 3179 / 864) < 1e-9, `the entry hit spent one of the two (${inSkarmory})`);
   assert.ok(Math.abs(inClefable - 3) < 1e-9, `the entry hit ended the lock (${inClefable})`);
-  assert.ok(Math.abs(inLast - 207 / 54) < 1e-4, `the entry hit was its last use: confused at once (${inLast})`);
+  assert.ok(Math.abs(inLast - 547 / 144) < 1e-9, `the entry hit was its last use: confused at once (${inLast})`);
 
-  // Outrage takes five or six uses to fell Bronzong; the Fire Blast the foe picks itself takes one. After two Outrages
-  // it goes off ⅔, ⅔, ⅚: 3 + ⅓ + ⅑ + 1/54 = 3 + 25/54 turns. Steelix, switched into the lock's last use, meets it at
-  // once: 1 + 25/54.
+  // Outrage takes five or six uses to fell Bronzong; the Fire Blast the foe picks itself takes one, after two Outrages:
+  // 3 + 373/864 turns. Steelix, switched into the lock's last use, meets it at once: 1 + 373/864.
   const bronzong = turnsFor("Bronzong", 2), steelix = turnsFor("Steelix", 1, true);
   console.log(`== a foe's own pick once its lock runs down: Bronzong ${bronzong.toFixed(4)} · Steelix ${steelix.toFixed(4)}`);
-  assert.ok(Math.abs(bronzong - (3 + 25 / 54)) < 1e-4, `two Outrages, then the foe's Fire Blast (${bronzong})`);
-  assert.ok(Math.abs(steelix - (1 + 25 / 54)) < 1e-4, `the entry hit ran it down: Fire Blast from the first use (${steelix})`);
+  assert.ok(Math.abs(bronzong - (3 + 373 / 864)) < 1e-9, `two Outrages, then the foe's Fire Blast (${bronzong})`);
+  assert.ok(Math.abs(steelix - (1 + 373 / 864)) < 1e-9, `the entry hit ran it down: Fire Blast from the first use (${steelix})`);
 }
 
 // ---- The one gate: with no exact enemy answer, the card, the fight plan and the catch advice stop together (#183)

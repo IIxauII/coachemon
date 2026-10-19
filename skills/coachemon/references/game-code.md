@@ -603,7 +603,10 @@ result was SUCCESS, queues the next use as `IGNORE_PP`, re-rolling a `RANDOM_NEA
 (`battler-tags.ts:1640-1647`, `:1663-1669`). When no foe stands to re-roll onto, as after the use knocked out the
 last one, the next use keeps the last target, so the lock carries onto whatever is sent into that slot. A miss, no
 effect or failure ends the lock and deals no damage;
-confusion (`randBattleSeedIntRange(2, 5)` turns) comes only once the count has run down to 0 (`:1690-1692`). Crash damage is
+confusion (`randBattleSeedIntRange(2, 5)` turns) comes only once the count has run down to 0 (`:1690-1692`). A confused
+self-hit cancels the use (`:1281-1293`), and a cancelled use still reaches the lock's `AFTER_MOVE` lapse as a FAIL
+(`src/phases/move-phase.ts:167-169`, `:902-907`), so it ends the lock; confusion already on is not renewed
+(`Pokemon.addTag` only overlaps an existing tag, `src/field/pokemon.ts:4258-4263`). Crash damage is
 `crashDamageFunc` (`move.ts:6424-6438`), on the Jump Kick moves. `RecoilAttr(useHp = false, damageRatio = 0.25,
 unblockable = false)` (`move.ts:2211`) takes `damageRatio` of the user's max HP when `useHp` is set, else of
 `turnData.totalDamageDealt` (`:2250`); Chloroblast is `RecoilAttr(true, 0.5)` (`:12232-12233`). A move's `chance` is a
