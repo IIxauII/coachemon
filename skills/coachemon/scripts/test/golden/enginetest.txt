@@ -27,6 +27,6 @@ F foe underground: faster Strike 2 turns (KO first 1), Earthquake 1, slower Stri
 $ foe 220 HP: Steel Beam 2 turns cost 1 · Flash Cannon 2 turns · pick Flash Cannon
 $ foe 120 HP: Steel Beam 1 turns cost 0.5 · Flash Cannon 2 turns · pick Steel Beam
 $ benefit: Steel Beam -32 drawback=true · Flash Cannon 24 drawback=false
-$ 4 hits needed: Pound 4 turns · Outrage 5 (cost 0.15) · Overheat 9
-$ 6 hits needed: Pound 5.98 turns expected · Outrage 7.23
+$ 4 hits needed: Pound 4 turns · Outrage 4 (cost 0.12) · Overheat 9
+$ 4 hits expected: Pound 4 turns · Outrage 4.56
 engine: ok

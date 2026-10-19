@@ -116,6 +116,20 @@ const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
   assert.ok(ai.replay(normal, bench).every(r => r.name !== "#99"), "a normal queued move must be in the moveset");
 }
 
+// ---- `afterLock` replays the pick a lock's end leaves, its queued use set aside.
+{
+  const moves = [{ id: 1, name: "A", target: -10 }, { id: 4, name: "D", category: 2, moveTarget: 0, user: 30 }];
+  const bench = mkMon({ id: "bench", player: true, fieldIndex: null, hp: 100, dmg: { e: { 1: 60 } } });
+  const queue = [{ move: 1, useMode: 2, targets: [0] }];
+  const locked = mkMon({ id: "e", player: false, fieldIndex: 0, moves, queue });
+  const ai = setup({ player: [foe(), bench], enemy: [locked] });
+  assert.deepEqual(ai.replay(locked, bench).map(r => [r.name, r.p]), [["A", 1]], "the queued use");
+  const after = ai.replay(locked, bench, { afterLock: true });
+  near(pOf(after, "D"), 0.83, "setup first, as with nothing queued");
+  near(pOf(after, "A"), 0.17, "attack after");
+  assert.deepEqual(locked.getMoveQueue(), queue, "the queue is left as it was");
+}
+
 // ---- The replay's KO filter hides the target's ally's ability only until it has been revealed this wave.
 {
   // It used to hide it always (#178).

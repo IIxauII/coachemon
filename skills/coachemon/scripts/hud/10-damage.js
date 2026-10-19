@@ -253,56 +253,86 @@ const land = (f, b, d, out, luck = true) => {
 };
 const KO_USES = 9;
 const KO_LEVELS = 4;
+const NO_CHAIN = [{ s: null, p: 1 }];
+const NO_STEP = [{ s: null, p: 1, act: true }];
+const inChain = (b, s) => { b.s = s; return b; };
+// `m`: a Map of `{ s, p }` by `s.key`.
+export const addShare = (m, s, p) => {
+  if (!(p > 0)) return;
+  const c = m.get(s?.key);
+  if (c) c.p += p;
+  else m.set(s?.key, { s, p });
+};
+export const shares = (list, fallback) => {
+  const t = list.reduce((sum, c) => sum + c.p, 0);
+  return t > 0 ? list.map(c => ({ s: c.s, p: c.p / t })) : fallback;
+};
 // `by[n − 1]`: P(the target is down by the end of use n). `rec` is `turn.mon(target)`; `use` is `useOf`'s.
 // `scale(i, broken)`: the damage factor on use i (0-based) with `broken` bars gone; `act(i)`: the chance use i happens
 // at all. `turnEnd`: the signed HP change after each use survived, or a function of the use count. `cat` ("physical"
 // or "special"): a wild boss's defence rises as its bars break. `firstKo`: this turn's exact odds for use 1, when the
-// caller has them. `useLater`: the `use` of every use after the first, where it differs. `start`: branches from an
-// earlier turn, p summing to 1. `after1`: the branches standing after use 1, p summing to 1. `perChunk`: the uses each
-// bar takes before it more likely than not breaks.
-export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 1, act = () => 1, turnEnd = 0, firstKo = null, cat = null, useLater = null } = {}) => {
+// caller has them. `useAt(i)`: the `use` of use i (from 1) where it differs from `use`. `start`: branches from an
+// earlier turn, p summing to 1. `chain`: a Markov chain stepped once a use, `{ from, step }`: `from` its states
+// `[{ s, p }]`, p summing to 1, and `step(s)` its transitions `[{ s, p, act }]`, p summing to 1, the use going off only on
+// an `act` one; a state `s` is an object keyed by `s.key`. `after1`: the branches standing after use 1, p summing to
+// 1. `perChunk`: the uses each bar takes before it more likely than not breaks. `downAt[n − 1]`: the chain's states
+// `[{ s, p }]` of what went down on use n, empty without a `chain`.
+export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 1, act = () => 1, turnEnd = 0, firstKo = null, cat = null, useAt = null, chain = null } = {}) => {
   const f = rec.facts;
   const init = stateOf(f, hp ?? f.hp, bar);
   const bars = init.bar + 1;
   const guard = cat && bars > 1 && rec.bars ? rec.bars(cat === "special" ? Stat.SPDEF : Stat.DEF, bars) : null;
   const pointsOf = u => u.map(x => ({ d: x.d, p: x.p, n: x.d > 0 ? Math.max(1, Math.round(x.n ?? 1)) : 0 }));
-  const first = pointsOf(use), rest = useLater ? pointsOf(useLater) : first;
-  let states = start?.length
+  const first = pointsOf(use);
+  const from = chain?.from ?? NO_CHAIN;
+  const stepOf = chain ? chain.step : () => NO_STEP;
+  let states = (start?.length
     ? start.map(x => branch(x.hp, x.bar ?? init.bar, !!x.revived, x.tok ?? 0, x.p))
-    : [branch(init.hp, init.bar, false, 0, 1)];
-  const by = [];
+    : [branch(init.hp, init.bar, false, 0, 1)]).flatMap(b => from.map(c => inChain(branch(b.hp, b.bar, b.revived, b.tok, b.p * c.p), c.s)));
+  const by = [], downAt = [];
   const brokeAt = Array(bars).fill(KO_USES);
   let down = 0, after1 = [];
   for (let i = 0; i < KO_USES; i++) {
-    const points = i ? rest : first;
+    const points = i && useAt ? pointsOf(useAt(i)) : first;
     const a = Math.max(0, Math.min(1, act(i)));
     const factors = [];
     const factor = broken => (factors[broken] ??= scale(i, broken) * (guard ? guard[Math.min(broken, bars - 1)] : 1));
     const hit = [];
-    let fell = 0;
+    let fell = 0, fellTo = chain ? new Map() : null;
+    const wentOff = i === 0 ? new Map() : null;
     for (const st of states) {
-      if (a < 1) hit.push(branch(st.hp, st.bar, st.revived, st.tok, st.p * (1 - a)));
-      for (const x of points) {
-        const q = st.p * a * x.p;
-        if (!(q > 0)) continue;
-        let branches = [branch(st.hp, st.bar, st.revived, st.tok, q)];
-        for (let k = 0; k < x.n; k++) {
-          const next = [];
-          for (const b of branches) {
-            if (b.stop) next.push(b);
-            else fell += land(f, b, x.d / x.n * factor(init.bar - b.bar), next);
+      for (const to of stepOf(st.s)) {
+        const go = to.act ? a : 0, p = st.p * to.p;
+        if (go < 1) hit.push(inChain(branch(st.hp, st.bar, st.revived, st.tok, p * (1 - go)), to.s));
+        if (wentOff && go > 0) addShare(wentOff, to.s, p * go);
+        for (const x of points) {
+          const q = p * go * x.p;
+          if (!(q > 0)) continue;
+          let branches = [branch(st.hp, st.bar, st.revived, st.tok, q)];
+          for (let k = 0; k < x.n; k++) {
+            const next = [];
+            for (const b of branches) {
+              if (b.stop) next.push(b);
+              else {
+                const gone = land(f, b, x.d / x.n * factor(init.bar - b.bar), next);
+                fell += gone;
+                if (fellTo) addShare(fellTo, to.s, gone);
+              }
+            }
+            branches = next;
           }
-          branches = next;
+          for (const b of branches) { b.stop = false; hit.push(inChain(b, to.s)); }
         }
-        for (const b of branches) { b.stop = false; hit.push(b); }
       }
     }
     if (i === 0 && firstKo != null && !start) {
       const standing = hit.reduce((t, x) => t + x.p, 0);
       const k = Math.min(1, firstKo);
+      const offs = shares([...wentOff.values()], from);
       if (standing > 0) for (const x of hit) x.p *= (1 - k) / standing;
-      else if (k < 1) hit.push(branch(1, init.bar, false, 0, 1 - k));
+      else if (k < 1) for (const c of offs) hit.push(inChain(branch(1, init.bar, false, 0, (1 - k) * c.p), c.s));
       fell = k;
+      if (fellTo) fellTo = new Map(offs.map(c => [c.s?.key, { s: c.s, p: k * c.p }]));
     }
     down += fell;
     const h = typeof turnEnd === "function" ? turnEnd(i + 1) : turnEnd;
@@ -312,15 +342,18 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
       if (h > 0) b.hp = Math.min(f.maxHp, b.hp + h);
       else if (h < 0) {
         const out = [];
-        down += land(f, b, -h, out, false);
+        const gone = land(f, b, -h, out, false);
+        down += gone;
+        if (fellTo) addShare(fellTo, b.s, gone);
         if (!out.length) continue;
-        b = out[0];
+        b = inChain(out[0], b.s);
       }
-      const key = `${b.bar}|${b.revived}|${b.tok}`;
+      const key = chain ? `${b.bar}|${b.revived}|${b.tok}|${b.s.key}` : `${b.bar}|${b.revived}|${b.tok}`;
       if (!groups.has(key)) groups.set(key, { b, pts: [] });
       groups.get(key).pts.push({ d: b.hp, p: b.p });
     }
-    states = [...groups.values()].flatMap(({ b, pts }) => squeezeDist(pts, KO_LEVELS).filter(x => x.p > 1e-9).map(x => branch(x.d, b.bar, b.revived, b.tok, x.p)));
+    states = [...groups.values()].flatMap(({ b, pts }) => squeezeDist(pts, KO_LEVELS).filter(x => x.p > 1e-9).map(x => inChain(branch(x.d, b.bar, b.revived, b.tok, x.p), b.s)));
+    downAt.push(fellTo ? [...fellTo.values()].filter(x => x.p > 0) : []);
     if (i === 0) {
       const p = states.reduce((t, x) => t + x.p, 0);
       after1 = p > 0 ? states.map(x => ({ hp: x.hp, bar: x.bar, revived: x.revived, tok: x.tok, p: x.p / p })) : [];
@@ -333,7 +366,7 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
     }
   }
   const perChunk = brokeAt.map((n, k) => Math.max(0, n - (k ? brokeAt[k - 1] : 0)));
-  return { by, after1, perChunk };
+  return { by, after1, perChunk, downAt };
 };
 
 const abAttrs = (p, name) => (ability(p, name)

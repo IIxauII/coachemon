@@ -350,15 +350,14 @@ const log = (...a) => console.log(...a);
   const [lock, drop, plain] = user.moveset.map(pm => E.exchange(user, pm, w));
   log(`$ 4 hits needed: Pound ${plain.turnsWe} turns · Outrage ${lock.turnsWe} (cost ${r2(lock.cost)}) · Overheat ${drop.turnsWe}`);
   assert.equal(plain.turnsWe, 4);
-  assert.equal(lock.turnsWe, 5);
   assert.ok(drop.turnsWe === 9, "Overheat at −2, −4, −6 never gets there");
   assert.ok(lock.cost > 0.1);
-  // Six hits outlast the lock-in's confusion: 2.5 confused uses, half a turn each (game-code.md §5, §8).
-  const tall = mon("Blissey", { player: false, hp: 540, spe: 10, moves: [move(2, "Pound", 5)] });
-  setup([user], [tall]);
-  const [longLock, , longPlain] = user.moveset.map(pm => E.exchange(user, pm, tall));
-  log(`$ 6 hits needed: Pound ${r2(longPlain.eTurnsWe)} turns expected · Outrage ${r2(longLock.eTurnsWe)}`);
-  assert.ok(Math.abs(longLock.eTurnsWe - longPlain.eTurnsWe - 1.25) < 1e-9, `the lock's confusion (${longLock.eTurnsWe - longPlain.eTurnsWe})`);
+  // A 3-use lock is confused on use 4, a 2-use one on use 3 and, for a confusion of 3–5, use 4 (game-code.md §5, §8):
+  // down by turn 4 at ½·⅔ + ½·⅔·¾ = 7/12, then 95/108, 35/36, 323/324, so 370/81 turns. A crit's 3HKO shaves a little
+  // off, as it does off Pound's 4.
+  log(`$ 4 hits expected: Pound ${r2(plain.eTurnsWe)} turns · Outrage ${r2(lock.eTurnsWe)}`);
+  assert.equal(lock.turnsWe, 4, "more likely than not down by turn 4");
+  assert.ok(lock.eTurnsWe <= 370 / 81 && lock.eTurnsWe > 370 / 81 - 0.01, `the lock's confusion (${lock.eTurnsWe})`);
 }
 
 assert.ok(["Iron Barbs", "Rough Skin", "Moxie", "Magic Guard", "Unaware"].every(a => E.TRAPS.has(a)), "new trap abilities listed");
