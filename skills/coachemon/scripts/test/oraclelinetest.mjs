@@ -723,9 +723,11 @@ const eternaAt = (seed, turn, { cp = ETERNA_CP[turn - 1], phase = { phaseName: "
     : { command: Command.FIGHT, move: { move: MoveId[c.move], targets: c.targets ?? [BattlerIndex.ENEMY] } });
   const turnCommands = Object.fromEntries(cmds.map((c, f) => [f, c && command(c)]));
   const preTurnCommands = Object.fromEntries(cmds.map((c, f) => [f, c && { command: c.tera ? Command.TERA : command(c).command }]));
-  const party = [...cp.ours].sort((a, b) => a.slot - b.slot).map(build), foes = cp.foes.map(build);
-  return guard({ seed, currentBattle: { waveIndex: 200, turn, turnCommands, preTurnCommands }, phaseManager: { getCurrentPhase: () => phase },
-    getPlayerParty: () => party, getEnemyParty: () => foes });
+  const ours = [...cp.ours].sort((a, b) => a.slot - b.slot), party = ours.map(build), foes = cp.foes.map(build);
+  // The double starts on T3, Eternamax's first turn.
+  const getBattlerCount = () => (turn > 2 ? 2 : 1), getPokemonAllowedInBattle = () => party.filter((_, i) => ours[i].hp > 0);
+  return guard({ seed, currentBattle: { waveIndex: 200, turn, turnCommands, preTurnCommands, getBattlerCount },
+    phaseManager: { getCurrentPhase: () => phase }, getPlayerParty: () => party, getEnemyParty: () => foes, getPokemonAllowedInBattle });
 };
 const eternaPlay = (seed, turn, cmds) => oracleLineSeen(eternaAt(seed, turn, { phase: { phaseName: "MovePhase" }, cmds }));
 const eternaDecide = (seed, turn, cp) => { const s = eternaAt(seed, turn, { cp }); scored = oracleLineCheck(s); console.log(`scored ${scoredText(scored)}`); return s; };
@@ -797,6 +799,16 @@ const FAINT = field => ({ phaseName: "SwitchPhase", isModal: true, doReturn: fal
   const s = eternaAt(seed, 5, { cp: ETERNA_CP[3], phase: FAINT(1) });
   assert.equal(oracleLineModel(s).sending, null);
   assert.equal(now("W200 T4, a faint prompt for Zacian's slot", s).act.summary, "⚔ ~ T4/5 · Zacian Behemoth Blade · then send Blissey for Rayquaza");
+}
+
+// ---- With one able mon left after both field slots fall, either slot's faint prompt fills field 0, as the game's does
+{
+  const seed = "a W200 run, one left";
+  scene = eternaAt(seed, 4);
+  hand(seed, eternaLine(seed));
+  const cp = eternaTweak(3, cp => { for (const m of cp.ours) if (m.species !== SpeciesId.BLISSEY) m.hp = 0; });
+  assert.equal(now("W200 T4, Zacian's slot's faint prompt with Blissey the last", eternaAt(seed, 5, { cp, phase: FAINT(1) })).act.summary,
+    "⚔ ~ T4/5 · send Blissey for Rayquaza");
 }
 
 // ---- A copied oracle line model still finds the replacements left to come after this faint prompt's

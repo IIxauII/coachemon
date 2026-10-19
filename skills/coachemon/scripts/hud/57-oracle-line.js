@@ -22,8 +22,14 @@ const leading = s => (held && !held.off && sameFight(s, held.line) ? held : null
 const markOf = line => (wrongSeed === line.seed ? "!" : "~");
 const phaseOf = s => tryDo(() => s.phaseManager.getCurrentPhase());
 const frontOf = s => tryDo(() => s.getPlayerParty().find(p => p?.isOnField?.()).species.speciesId);
-// A field slot is its party slot, on either side (game-code.md §7).
+// A field slot is its party slot, on either side (game-code.md §7, §34).
 const fieldOf = party => [0, 1].map(f => (tryDo(() => party[f].isOnField(), false) ? party[f].species.speciesId : null));
+// The field slot a faint's party screen fills: field 0 when one able mon is left to send (game-code.md §34).
+const replacingField = s => {
+  const ph = phaseOf(s);
+  const one = tryDo(() => s.currentBattle.getBattlerCount() > 1 && s.getPokemonAllowedInBattle().length <= 1, false);
+  return one ? 0 : ph?.fieldIndex ?? 0;
+};
 const liveField = s => ({ ours: fieldOf(tryDo(() => s.getPlayerParty(), [])), foes: fieldOf(tryDo(() => s.getEnemyParty(), [])) });
 // At a faint's replacement the battle's turn has already moved on (game-code.md §9, §21), and the oracle line picks
 // that replacement inside the step whose turn it was.
@@ -294,7 +300,7 @@ export const oracleLineModel = s => {
     mark: markOf(line),
     faintPick,
     // The replacement this faint prompt asks for: the one for its field slot, and none where the line names none.
-    sending: faintPick ? sends.find(x => x.field === (phaseOf(s)?.fieldIndex ?? 0)) ?? null : null,
+    sending: faintPick ? sends.find(x => x.field === replacingField(s)) ?? null : null,
     learning: prompt ? steps[line.steps.indexOf(prompt.st)].learns[picksOf(line, prompt.st).indexOf(prompt.pick)] : null,
     last: last.turn,
     turns: last.turn - line.steps[0].turn + 1,

@@ -531,6 +531,7 @@ export const HUD: Area = {
       kind: "method",
       at: ["src/modifier/modifier.ts#LapsingPersistentModifier.getBattleCount"],
     },
+    { name: "getBattlerCount", kind: "method", at: ["src/battle.ts#Battle.getBattlerCount"] },
     {
       name: "getBattlerIndex",
       kind: "method",
@@ -640,6 +641,11 @@ export const HUD: Area = {
       name: "getPartyMemberMatchupScores",
       kind: "method",
       at: ["src/field/trainer.ts#Trainer.getPartyMemberMatchupScores"],
+    },
+    {
+      name: "getPokemonAllowedInBattle",
+      kind: "method",
+      at: ["src/battle-scene.ts#BattleScene.getPokemonAllowedInBattle"],
     },
     {
       name: "getPrevolution",

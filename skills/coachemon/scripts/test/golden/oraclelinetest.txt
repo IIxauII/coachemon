@@ -428,6 +428,10 @@ a W200 run, Zacian down unplanned       held
 strip | trainer ⚔ ~ T4/5 · Zacian Behemoth Blade · then send Blissey for Rayquaza
     ⚔ T4 Zacian Steel Behemoth Blade → ~ Blissey 600/600 · Zacian 250/350 · Eternatus 900/2400
     ⤵ then send Blissey for Rayquaza at the faint prompt
+a W200 run, one left                    held
+== W200 T4, Zacian's slot's faint prompt with Blissey the last
+strip | trainer ⚔ ~ T4/5 · send Blissey for Rayquaza
+    ⚔ send Blissey for Rayquaza → ~ Blissey 600/600 · Zacian 250/350 · Eternatus 900/2400
 a W200 run, both down, copied           held
 Eternatus's W200, to score              held
 scored T1/5 match
