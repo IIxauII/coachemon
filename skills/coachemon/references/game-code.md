@@ -1529,6 +1529,15 @@ unshifts `SelectModifierPhase(0, undefined, settings)`: `fillRemaining: false` i
 items, **pick one**; `fillRemaining: true` tops it up to the normal count with ordinary rolls
 (`src/phases/select-modifier-phase.ts:384`).
 
+**Winning.** In an encounter's battle, each foe's `VictoryPhase` hands off to `handleMysteryEncounterVictory`
+(`src/phases/victory-phase.ts:37`, `encounter-phase-utils.ts:824`), which ends the battle only once no foe is left. In a
+`TRAINER_BATTLE` that means `isFainted(true)` for every enemy (`:846`): zero HP **and** the FAINT status
+(`src/field/pokemon.ts:570`), which a trainer's mon gets only from `FaintPhase` (`src/phases/faint-phase.ts:218`), so
+zeroing HP alone leaves the battle open. An ordinary trainer battle's `VictoryPhase` asks `isFainted()`, HP alone
+(`victory-phase.ts:46`). A `WILD_BATTLE` or `BOSS_BATTLE` encounter asks only that no foe `isOnField()`. It returns
+before any of this for a `continuousEncounter` (Safari Zone) or for the exp-only `VictoryPhase` an encounter catch
+queues (`encounter-phase-utils.ts:836`, `src/data/mystery-encounters/utils/encounter-pokemon-utils.ts:673`).
+
 **The twelve common encounters** (tier weight 66, `src/enums/mystery-encounter-tier.ts:6`, less 6 per common already
 seen, `src/battle-scene.ts:3545`; Field Trip is common too but commented out,
 `src/data/mystery-encounters/mystery-encounter-biomes.ts:145`). All are gated to waves 10–180
