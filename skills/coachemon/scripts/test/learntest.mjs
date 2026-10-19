@@ -490,16 +490,16 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
 
   const bare = judge(BARE), blind = judge(SALT_CURE);
   assert.ok(blind.value > bare.value, `the curse counts on top of the hit (${blind.value} vs ${bare.value})`);
-  assert.ok(blind.notes.includes("curse 1/8 a turn"), `${blind.notes}`);
+  assert.ok(blind.notes.includes("curse 1/16 a turn"), `${blind.notes}`);
   const curse = x => x.value - bare.value;
-  assert.equal(judge(SALT_CURE, at50(foe("Snorlax", ["Normal"]), foe("Machamp", ["Fighting"]))).value, blind.value, "a roster taking the 1/8 changes nothing");
-  // A Water or Steel type takes 1/4 a turn (game-code.md §21). ±1: the card rounds.
+  assert.equal(judge(SALT_CURE, at50(foe("Snorlax", ["Normal"]), foe("Machamp", ["Fighting"]))).value, blind.value, "a roster taking the 1/16 changes nothing");
+  // The Water or Steel rate: game-code.md §21. ±1: the card rounds.
   const doubled = judge(SALT_CURE, at50(foe("Vaporeon", ["Water"]), foe("Skarmory", ["Steel","Flying"])));
   assert.ok(Math.abs(curse(doubled) - 2 * curse(blind)) <= 1, `twice the curse (${curse(doubled)} vs ${curse(blind)})`);
-  assert.ok(doubled.notes.includes("curse 1/4 a turn at W50"), `${doubled.notes}`);
+  assert.ok(doubled.notes.includes("curse 1/8 a turn at W50"), `${doubled.notes}`);
   const half = judge(SALT_CURE, at50(foe("Vaporeon", ["Water"]), foe("Snorlax", ["Normal"])));
   assert.ok(Math.abs(curse(half) - 1.5 * curse(blind)) <= 1, `half the roster doubled (${curse(half)})`);
-  assert.ok(half.notes.includes("curse 1/4 on 1 of 2 at W50"), `${half.notes}`);
+  assert.ok(half.notes.includes("curse 1/8 on 1 of 2 at W50"), `${half.notes}`);
   const unsure = judge(SALT_CURE, { ...at50(foe("Vaporeon", ["Water"])), exact: false });
   assert.ok(curse(unsure) > curse(blind) && curse(unsure) < curse(doubled), "a roster the preview isn't sure of moves the score half as far");
 

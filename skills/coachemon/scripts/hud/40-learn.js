@@ -306,14 +306,14 @@ const CURSE_TWICE = SALT_DOUBLED.map(t => TYPES[t]);
 const curseOf = (pk, tr, roster) => {
   if (!tr.tags.some(x => x.tag === "SALT_CURED" && !(x.self || x.side))) return null;
   if (abilitiesOf(pk).includes("Sheer Force")) return { value: 0, notes: ["no curse with Sheer Force"] };
-  const value = STATUS_VALUE[StatusEffect.POISON];
-  if (!roster) return { value, notes: ["curse 1/8 a turn"] };
+  const value = STATUS_VALUE[StatusEffect.POISON] / 2;
+  if (!roster) return { value, notes: ["curse 1/16 a turn"] };
   const { foes, wave } = roster;
   const hurts = f => ![f.ability, f.passive].includes("Magic Guard") && !foeAbilities(pk, f).includes("Shield Dust");
   const twice = f => hurts(f) && (f.types ?? []).some(t => CURSE_TWICE.includes(t));
   const hurtCount = foes.filter(hurts).length, twiceCount = foes.filter(twice).length, all = foes.length;
-  const rate = !twiceCount ? "curse 1/8 a turn"
-    : twiceCount === all ? `curse 1/4 a turn at W${wave}` : `curse 1/4 on ${twiceCount} of ${all} at W${wave}`;
+  const rate = !twiceCount ? "curse 1/16 a turn"
+    : twiceCount === all ? `curse 1/8 a turn at W${wave}` : `curse 1/8 on ${twiceCount} of ${all} at W${wave}`;
   const notes = !hurtCount ? [`curse can't hurt at W${wave}`]
     : [rate, ...(hurtCount < all ? [`curse hurts ${hurtCount} of ${all} at W${wave}`] : [])];
   return { value: value * unsure(roster, shareOf(foes, hurts) + shareOf(foes, twice)), notes };

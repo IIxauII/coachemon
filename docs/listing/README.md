@@ -29,12 +29,11 @@ it *is* the change.
 **Prerequisite: a provisioned pinned clone.** The shots declare the game's own two faces, read out of
 `.cache/pokerogue/v<pin>/assets/fonts` — a fixture page carries none of the game's font rules and would otherwise draw
 the panel in a face nobody plays with (§3, [#349 §12](https://github.com/IIxauII/coachemon/issues/349)). The files are
-rendered into the page and never committed or redistributed. `drift:check` clones the pin; the fonts live in its
-`assets` submodule, which that clone alone does not fill in.
+rendered into the page and never committed or redistributed. The fonts live in the clone's `assets` submodule, which
+`clone:provision` fills in.
 
 ```sh
-npm run drift:check             # clones .cache/pokerogue/v<pin>
-cd .cache/pokerogue/v<pin> && git submodule update --init --depth 1 assets
+npm run clone:provision         # sets .cache/pokerogue/v<pin> up, assets included
 npm run listing:render          # the screenshots (needs Chrome installed)
 ```
 

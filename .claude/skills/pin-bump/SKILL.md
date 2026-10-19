@@ -16,8 +16,9 @@ latest release: `gh release view -R pagefaultgames/pokerogue --json tagName`.
 1. `git fetch origin`, then enter a worktree off `origin/master` (EnterWorktree, name `pin-bump-v<new>`).
 2. Link the main checkout's `node_modules` and `.cache` into it exactly as `CLAUDE.md` §Worktrees says.
 3. `npm run drift:check -- --version <new>` clones `.cache/pokerogue/v<new>`. Its report is step 2's input; keep it.
-4. Provision that clone for the harness: submodules and pnpm, per the runbook's setup block. A clone that already has
-   `node_modules` and non-empty `assets`/`locales` is done.
+4. `npm run clone:provision -- --version <new>` sets that clone up for the harness: its submodules and the game's pnpm
+   install, skipping what is already there. Run it, not git in the clone: a worktree session's git guard refuses git
+   aimed at the shared `.cache`.
 5. `.cache/pokerogue/v<pin>` must exist too, for the diff: `npm run drift:check` at the pin clones it if absent.
 
 Done when both checkouts exist and `v<new>` has `node_modules`, `assets` and `locales`.

@@ -441,7 +441,7 @@ const endOfTurnSteps = (env, p, { tookSuperEffective = false, hp = p.hp, dealt =
     if (guard) continue;
     if (isA(t, "SeedTag") || isA(t, "DamagingTrapTag")) chip(frac(max, 8));
     else if (isA(t, "NightmareTag") || isA(t, "CursedTag")) chip(frac(max, 4));
-    else if (isA(t, "SaltCuredTag")) chip(frac(max, types.some(x => SALT_DOUBLED.includes(x)) ? 4 : 8));
+    else if (isA(t, "SaltCuredTag")) chip(frac(max, types.some(x => SALT_DOUBLED.includes(x)) ? 8 : 16));
   }
   // The seeder's payout reads the seeded mon's HP as it stands, so a seed that this turn's chip would fell first
   // still pays here.
