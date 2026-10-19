@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ArenaTagSide } from "../enums/generated.ts";
+import { ArenaTagSide, GameModes, SpeciesId } from "../enums/generated.ts";
 import type { Battle, MidFightExtras, SessionSave, SolveInput } from "./input.ts";
 
 const mon = z.object({
@@ -21,6 +21,7 @@ const extras = z.object({
   wave: z.int(),
   battleSeed: z.string(),
   turn: z.int(),
+  double: z.boolean().optional(),
   rndState: z.string(),
   battleSeedState: z.string().nullable(),
   enemySwitchCounter: z.int(),
@@ -64,6 +65,7 @@ export function readExtras(save: SessionSave, given: MidFightExtras): MidFightRe
   const missing = new Set(parsed.success ? [] : parsed.error.issues.map(issue => issue.path.join(".")));
   const raw = given as Partial<Record<keyof CheckedExtras, unknown>>;
   for (const path of Array.isArray(raw.unread) ? raw.unread : []) missing.add(String(path));
+  if (raw.double === undefined && secondStage(save)) missing.add("double");
   for (const [side, saved] of [
     ["foes", save.enemyParty],
     ["party", save.party],
@@ -90,6 +92,14 @@ export function readExtras(save: SessionSave, given: MidFightExtras): MidFightRe
   return { kind: "read", read, live: { wave: read.wave, battleSeed: read.battleSeed }, forkPoint: forkPoint(save, read) };
 }
 
+/**
+ * The classic final boss past its first form: the one double a solve reaches, which a reloaded tab plays single, so only
+ * the live read tells which (#788, game-code.md §34).
+ */
+const secondStage = (save: SessionSave) =>
+  save.gameMode === GameModes.CLASSIC &&
+  (save.enemyParty as { species?: number; formIndex?: number }[]).some(m => m.species === SpeciesId.ETERNATUS && (m.formIndex ?? 0) > 0);
+
 /** In the shape `forkPoint()` in `harness.test.ts.template` writes. */
 function forkPoint(save: SessionSave, read: CheckedExtras): string {
   const ours = save.party as SavedMon[];
@@ -99,6 +109,7 @@ function forkPoint(save: SessionSave, read: CheckedExtras): string {
     Object.fromEntries(mons.map(m => [m.id, value(m)]));
   return JSON.stringify({
     session: JSON.stringify(save),
+    ...(read.double !== undefined && { double: read.double }),
     turn: read.turn,
     rng: read.rndState,
     battleSeedState: read.battleSeedState,

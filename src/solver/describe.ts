@@ -1,4 +1,4 @@
-import type { Input, LearnPick, PartySlot } from "./oracle-line.ts";
+import type { FieldCommand, Input, LearnPick, PartySlot } from "./oracle-line.ts";
 
 export const title = (key: string) =>
   key
@@ -14,8 +14,22 @@ const mon = ({ slot, species }: PartySlot) => `${title(species)} (slot ${slot})`
 const learned = ({ move, forget, ...at }: LearnPick) =>
   forget === null ? `${mon(at)} declines ${title(move)}` : `${mon(at)} forgets ${title(forget)} for ${title(move)}`;
 
-/** In the order the turn asks: the command, each learn pick, then the faint replacement. */
-export function describeInput(input: Input): string {
+const commanded = (c: FieldCommand) => {
+  if (c.kind === "switch") return `switch → ${mon(c.to)}`;
+  const target = c.target ? ` → ${c.target.side === "foes" ? "foe" : "our"} field ${c.target.field}` : "";
+  return `${c.tera ? "Tera + " : ""}${title(c.move)}${target}`;
+};
+
+/**
+ * In the order the turn asks: the command, each learn pick, then the faint replacement. `field` is who stands in each
+ * field slot as the turn starts, where the caller knows it: a double's commands name their mon by it.
+ */
+export function describeInput(input: Input, field: readonly (PartySlot | undefined)[] = []): string {
+  if (input.kind === "double") {
+    const acts = input.commands.flatMap((c, i) => (c ? [`${field[i] ? title(field[i].species) : `field ${i}`}: ${commanded(c)}`] : []));
+    const replacements = (input.replacements ?? []).map(r => `replacement ${mon(r)} into field ${r.field}`);
+    return [acts.length > 0 ? acts.join(" · ") : "played for us", ...(input.learns ?? []).map(learned), ...replacements].join(", ");
+  }
   const act =
     input.kind === "move" ? `${input.tera ? "Tera + " : ""}${title(input.move)}`
     : input.kind === "switch" ? `switch → ${mon(input.to)}`

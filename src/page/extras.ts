@@ -21,6 +21,8 @@ export type ExtrasResult =
       wave: number | null;
       battleSeed: string | null;
       turn: number | null;
+      /** Absent from an extension older than #788. */
+      double?: boolean | null;
       rndState: string | null;
       battleSeedState: string | null;
       enemySwitchCounter: number | null;
@@ -73,6 +75,8 @@ export function extras(L: Located, _args: Record<string, never>): ExtrasResult {
     wave: read("wave", () => b.waveIndex),
     battleSeed: read("battleSeed", () => b.battleSeed),
     turn: read("turn", () => b.turn),
+    // A reload loads the final boss's second stage single, so the save can't tell (game-code.md §34).
+    double: read("double", () => b.double === true),
     rndState: read("rndState", () => (globalThis as any).Phaser.Math.RND.state()),
     battleSeedState: read("battleSeedState", () => b.battleSeedState),
     enemySwitchCounter: read("enemySwitchCounter", () => b.enemySwitchCounter),
