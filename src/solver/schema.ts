@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { MoveId, SpeciesId, Stat, StatusEffect } from "../enums/generated.ts";
-import type { Checkpoint, Command, Input, LearnPick, MonState, Outcome, PartySlot } from "./oracle-line.ts";
+import type { Checkpoint, FieldCommand, Input, LearnPick, MonState, Outcome, PartySlot } from "./oracle-line.ts";
 
 const keyOf = <T extends object>(table: T, what: string) =>
   z.custom<keyof T & string>(v => typeof v === "string" && Object.hasOwn(table, v), `not a ${what}`);
@@ -29,7 +29,7 @@ const command = z.discriminatedUnion("kind", [
     target: z.strictObject({ side: z.enum(["foes", "ours"]), field }).optional(),
   }),
   z.strictObject({ kind: z.literal("switch"), to: partySlot }),
-]) satisfies z.ZodType<Command>;
+]) satisfies z.ZodType<FieldCommand>;
 
 const double = z
   .strictObject({

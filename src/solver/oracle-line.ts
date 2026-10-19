@@ -46,7 +46,7 @@ export type Input =
   | {
       kind: "double";
       /** By field slot. null: that slot is asked for nothing this turn (empty, or playing a queued move). */
-      commands: readonly [Command | null, Command | null];
+      commands: readonly [FieldCommand | null, FieldCommand | null];
       /** In the order the turn asks; `field` is the slot each one fills. */
       replacements?: readonly FieldReplacement[];
       learns?: readonly LearnPick[];
@@ -61,7 +61,7 @@ type Asked = {
 };
 
 /** One field slot's command in a double battle. */
-export type Command =
+export type FieldCommand =
   | { kind: "move"; move: keyof typeof MoveId; tera: boolean; target?: Target }
   | { kind: "switch"; to: PartySlot };
 

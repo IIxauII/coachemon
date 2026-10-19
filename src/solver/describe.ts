@@ -1,4 +1,4 @@
-import type { Command, Input, LearnPick, PartySlot } from "./oracle-line.ts";
+import type { FieldCommand, Input, LearnPick, PartySlot } from "./oracle-line.ts";
 
 export const title = (key: string) =>
   key
@@ -14,7 +14,7 @@ const mon = ({ slot, species }: PartySlot) => `${title(species)} (slot ${slot})`
 const learned = ({ move, forget, ...at }: LearnPick) =>
   forget === null ? `${mon(at)} declines ${title(move)}` : `${mon(at)} forgets ${title(forget)} for ${title(move)}`;
 
-const commanded = (c: Command) => {
+const commanded = (c: FieldCommand) => {
   if (c.kind === "switch") return `switch → ${mon(c.to)}`;
   const target = c.target ? ` → ${c.target.side === "foes" ? "foe" : "our"} field ${c.target.field}` : "";
   return `${c.tera ? "Tera + " : ""}${title(c.move)}${target}`;
