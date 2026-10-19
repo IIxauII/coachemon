@@ -194,12 +194,7 @@ export const HARNESS: Area = {
     { name: "removeEvent", kind: "method", at: [], from: "phaser", note: "Phaser Clock (scene.time)" },
     { name: "restoreAllMocks", kind: "method", at: [], from: "vitest" },
     { name: "rng", kind: "field", at: ["test/framework/game-manager.ts#GameManager.rng"] },
-    {
-      name: "run",
-      kind: "method",
-      at: ["test/framework/phase-interceptor.ts#PhaseInterceptor.run"],
-      note: "the fast poll replaces it, and copies it (src/solver/fast-poll.ts.template)",
-    },
+    { name: "run", kind: "method", at: ["test/framework/phase-interceptor.ts#PhaseInterceptor.run"] },
     { name: "runIf", kind: "method", at: [], from: "vitest" },
     { name: "runInterval", kind: "field", at: ["test/helpers/prompt-handler.ts#PromptHandler.runInterval"] },
     { name: "selectWithTera", kind: "method", at: ["test/helpers/move-helper.ts#MoveHelper.selectWithTera"] },
@@ -393,5 +388,11 @@ export const HARNESS: Area = {
     { name: "CommandPhase", kind: "phase", at: ["src/phases/command-phase.ts#CommandPhase"] },
     { name: "SwitchPhase", kind: "phase", at: ["src/phases/switch-phase.ts#SwitchPhase"] },
     { name: "TurnEndPhase", kind: "phase", at: ["src/phases/turn-end-phase.ts#TurnEndPhase"] },
+  ],
+  mirrors: [
+    {
+      ours: "src/solver/fast-poll.ts.template#phase-interceptor-run",
+      of: ["test/framework/phase-interceptor.ts#PhaseInterceptor.run"],
+    },
   ],
 };

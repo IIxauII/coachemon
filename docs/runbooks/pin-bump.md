@@ -49,7 +49,7 @@ Run both again until they name only what you have re-read.
 
 `PhaseInterceptor.run` **MOVED** is the search's fast poll (`src/solver/fast-poll.ts.template`, #759): it replaces that
 method with a copy that polls every 1 ms, and only while the method matches the copy's `UPSTREAM_RUN`. Left as it is, a
-solve still answers, but its workers keep the game's 50 ms poll, about six times slower, and the solve's progress says
+solve still answers, but its workers keep the game's own poll, about six times slower, and the solve's progress says
 so. Bring `UPSTREAM_RUN` and the copy up to the new body.
 
 Set the clone up for the harness. The checkout `drift:check` makes has no submodules and no `node_modules`; the stamp

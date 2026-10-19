@@ -1,6 +1,7 @@
 // Appended to the harness for the search's workers alone: the replay runs the harness without it, so every win found on
-// the fast poll is still played on the unpatched game (#759). It writes `{ "fast": true }`, or `{ "slow": <why> }` with
-// the game's own poll left in place, to COACH_POLL_OUT before the harness serves its first job.
+// the fast poll is still played on the unpatched game (#759). Its report reaches COACH_POLL_OUT before the harness
+// serves its first job.
+// Aliased: this file joins the harness's module, which imports `vi` and `writeFileSync` under those names itself.
 import { writeFileSync as writePollReport } from "node:fs";
 import { inspect as inspectThrown } from "node:util";
 import { TEST_TIMEOUT } from "#test/constants";
@@ -9,8 +10,8 @@ import { vi as pollVi } from "vitest";
 
 const FAST_POLL_MS = 1;
 
-// What the pinned game's `PhaseInterceptor.run` is at runtime, compared without whitespace or vite's import aliases. A
-// game that changes it leaves the 50 ms poll in place until this copy and the patch below are brought up to date.
+// Bring the patched `run` below up to date with this copy, or the fast poll runs an old body (pin-bump.md).
+// @mirrors phase-interceptor-run
 const UPSTREAM_RUN = `async run(currentPhase) {
   try {
     this.state = "running";
@@ -24,7 +25,9 @@ const UPSTREAM_RUN = `async run(currentPhase) {
 
 const comparable = (code: string) => code.replace(/__vite_ssr_import_\d+__\./g, "").replace(/\s+/g, "");
 
-function fastPoll(): { fast: true } | { slow: string } {
+type PollReport = { fast: true } | { slow: string };
+
+function fastPoll(): PollReport {
   const proto = PhaseInterceptor.prototype as any;
   if (comparable(String(proto.run)) !== comparable(UPSTREAM_RUN)) {
     return { slow: "PhaseInterceptor.run is not the one the fast poll copies" };
@@ -44,10 +47,12 @@ function fastPoll(): { fast: true } | { slow: string } {
   return { fast: true };
 }
 
-let pollReport: { fast: true } | { slow: string };
+let pollReport: PollReport;
 try {
   pollReport = fastPoll();
 } catch (e) {
   pollReport = { slow: `the fast poll failed: ${e instanceof Error ? e.message : String(e)}` };
 }
-if (process.env.COACH_POLL_OUT) writePollReport(process.env.COACH_POLL_OUT, JSON.stringify(pollReport));
+try {
+  if (process.env.COACH_POLL_OUT) writePollReport(process.env.COACH_POLL_OUT, JSON.stringify(pollReport));
+} catch {}

@@ -5,7 +5,6 @@ import { PINNED_GAME_VERSION } from "../../src/escape-ladder/lookup.ts";
 import {
   checkForks,
   DEFAULT_BUDGET,
-  keptSlowPoll,
   type PoolStats,
   type ReplayResult,
   readScript,
@@ -13,6 +12,7 @@ import {
   type Script,
   type SolveInput,
   type SolveResult,
+  slowPollNote,
   solve,
 } from "../../src/solver/solver.ts";
 import { findPinnedClone, harnessIn } from "../clone-test/clone-test.ts";
@@ -95,7 +95,7 @@ let last: PoolStats | undefined;
 const started = Date.now();
 const poolLine = ({ size, died, lastDeath, peakHeapMb, heapLimitMb, slowPoll }: PoolStats) =>
   `${size} workers, ${died} died${lastDeath === null ? "" : ` (the last: ${lastDeath})`}, ` +
-  `heap peak ${peakHeapMb ?? "?"} of ${heapLimitMb ?? "?"} MB${slowPoll === null ? "" : `; ${keptSlowPoll(slowPoll)}`}`;
+  `heap peak ${peakHeapMb ?? "?"} of ${heapLimitMb ?? "?"} MB${slowPoll === null ? "" : `; ${slowPollNote(slowPoll)}`}`;
 let result: SolveResult;
 try {
   result = await solve(

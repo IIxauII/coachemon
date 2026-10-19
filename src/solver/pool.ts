@@ -20,7 +20,7 @@ export type PoolStats = {
   slowPoll: string | null;
 };
 
-export const keptSlowPoll = (why: string) => `the search's workers kept the game's 50 ms phase poll, as ${why}`;
+export const slowPollNote = (why: string) => `the search's workers kept the game's own phase poll, as ${why}`;
 
 export type WorkerPool = Pool & { root: Position; stats(): PoolStats; close(): Promise<void> };
 

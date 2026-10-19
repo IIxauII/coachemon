@@ -97,7 +97,7 @@ test("a solve job whose workers kept the slow poll says so beside its progress (
   await work({ input: INPUT }, ctl);
   assert.equal(
     lines.at(-1),
-    "searched 1,200 of 9,000 turns, slowly: the search's workers kept the game's 50 ms phase poll, as PhaseInterceptor.run is not the one the fast poll copies",
+    "searched 1,200 of 9,000 turns, slowly: the search's workers kept the game's own phase poll, as PhaseInterceptor.run is not the one the fast poll copies",
   );
 });
 

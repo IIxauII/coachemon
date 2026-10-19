@@ -52,7 +52,7 @@ const checks = z.object({
 
 export type Worker = Pick<Pool, "expand"> & {
   root: Position;
-  /** Why the worker plays on the game's own 50 ms phase poll; `null` once the fast poll is in (#759). */
+  /** Why the worker plays on the game's own phase poll; `null` once the fast poll is in (#759). */
   slowPoll: string | null;
   /** The last job's report; `null` before one has finished. */
   heap(): HeapUse | null;
@@ -186,7 +186,7 @@ async function within<T, L>(ms: number, work: Promise<T>, late: () => L): Promis
 
 const pollReportShape = z.union([z.object({ fast: z.literal(true) }), z.object({ slow: z.string() })]);
 
-/** Reads the fast poll's report, which the harness writes before it says hello, and removes it. */
+/** The harness writes the fast poll's report before it says hello. */
 function takeSlowPoll(file: string): string | null {
   let report;
   try {
