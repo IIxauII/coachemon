@@ -229,14 +229,17 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
   const lockedRow = lock && moves.find(m => m.name === lock.name);
   const immune = !turn.facts.double && !!lockedRow?.o && !(lockedRow.o.expected > 0);
   const spent = entered && lockedRow ? 1 : 0;
-  const unlocked = immune && live ? replayMoves(turn, foe, me, outs, { afterLock: true }) : null;
-  if (unlocked && spent) moves = unlocked;
+  // The foe's use, from now, its own pick takes over on (game-code.md §5).
+  const ownFrom = lockedRow ? (immune ? 1 : lock.left) - spent : null;
+  const ownMoves = ownFrom != null && live ? replayMoves(turn, foe, me, outs, { afterLock: true }) : null;
+  if (ownMoves && ownFrom <= 0) moves = ownMoves;
   const { expected, use } = landing(foe, moves, m => m.p, next);
-  // `later`: each use after this one, where a re-drawn target (`likelyMoves`) lands on `me` otherwise; null where not.
-  const later = unlocked ? landing(foe, unlocked, m => m.p, next)
+  const own = ownMoves && ownFrom > 0 ? landing(foe, ownMoves, m => m.p, next) : null;
+  // `later`: the uses after this one, where a re-drawn target (`likelyMoves`) lands on `me` otherwise or the next is
+  // the foe's own pick; null where neither. `threatUse` reads the two.
+  const later = own && ownFrom === 1 ? own
     : moves.some(m => m.pLater != null) ? landing(foe, moves, m => m.pLater ?? m.p, next) : null;
-  // The foe's use, from now, its lock's confusion starts on (game-code.md §5).
-  const confusedFrom = !lockedRow ? null : !immune ? lock.left - spent : lock.left === 1 ? 1 - spent : null;
+  const confusedFrom = !lockedRow ? null : !immune || lock.left === 1 ? ownFrom : null;
   const lockAct = confusedFrom == null ? null
     : i => (i < confusedFrom ? 1 : 1 - Math.max(0, Math.min(1, confusedFrom + LOCK_CONFUSED - i)) * CONFUSION_SELF_HIT);
   let pKo = 0, first = 0, koFirst = 0, worst = null, likely = null, drained = 0;
@@ -272,10 +275,12 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
     boost: Object.keys(boost).length ? boost : null,
     // HP its drain moves give it back a turn; negative into Liquid Ooze.
     drain: drained,
-    // P(its i-th use from now goes off) as its lock's confusion leaves it.
-    lockAct,
+    // P(its i-th use from now goes off) as its lock's confusion leaves it; `own` lands from use `ownFrom` on.
+    lockAct, own, ownFrom,
   };
 });
+// The `{ expected, use }` of `t`'s i-th use from now.
+const threatUse = (t, i) => (t?.own && i >= t.ownFrom ? t.own : i && t?.later ? t.later : t);
 
 // The stat stages `p` gains a KO (game-code.md §18): { up: { [stat 1–5]: stages }, ability, any }, `any` when every
 // faint counts and not only its own KOs. Speed is in `up` for the note; the damage factors leave it out.
@@ -475,14 +480,14 @@ export const foeCurve = (turn, t, me, hp, { dealt = 0, foe = null, mult = null, 
   const course = turnEndCourse(turn, me, foe, t ? hitsOn(t) : -1, dealt);
   const ramp = setupRamp(foe, t);
   const useOn = x => (x?.expected > 0 ? x.use ?? [{ d: x.expected, p: 1 }] : [{ d: 0, p: 1 }]);
-  // A curve from `start` has no use of this turn's, so `later` prices all of it.
-  const later = t?.later ?? null;
+  // A curve from `start` has no use of this turn's.
   const lockAct = t?.lockAct, usesBefore = start ? 1 : 0;
-  return koCurve(turn.mon(me), useOn(start && later ? later : t), {
-    hp, start, act: lockAct ? i => act(i) * lockAct(i + usesBefore) : act, turnEnd: withDrain(course.flat ? course.base : course.at, drain),
+  const acts = lockAct ? i => act(i) * lockAct(i + usesBefore) : act;
+  return koCurve(turn.mon(me), useOn(threatUse(t, usesBefore)), {
+    hp, start, act: acts, turnEnd: withDrain(course.flat ? course.base : course.at, drain),
     scale: mult || ramp ? i => (mult ? mult(i + 1) : 1) * (ramp ? ramp(i + 1) : 1) : undefined,
-    firstKo: t?.expected > 0 && !start ? threatKoAt(t, hp) * act(0) : null,
-    useLater: later && !start ? useOn(later) : null,
+    firstKo: t?.expected > 0 && !start ? threatKoAt(t, hp) * acts(0) : null,
+    useAt: t?.later || t?.own ? i => useOn(threatUse(t, i + usesBefore)) : null,
   });
 };
 const foeTurns = (turn, t, me, hp, opts = {}) => koTurns(foeCurve(turn, t, me, hp, opts).by);
@@ -689,10 +694,10 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   const expTurns = F => Math.min(9, 1 + Array.from({ length: 8 }, (_, j) => 1 - F(j + 1)).reduce((t, x) => t + x, 0));
   const taken = turnsWe >= 9 ? turnsThey : Math.max(0, turnsWe - pLast - lag);
   const boosted = foeMult && taken > 0 ? Array.from({ length: Math.ceil(taken) }, (_, i) => foeMult(i + 1)).reduce((sum, x) => sum + x, 0) / Math.ceil(taken) : 1;
-  // An exchange `after` another has no turn of this one's, so `later` prices all of it.
-  const later = tThey?.later ?? null;
-  const hitsTaken = !later ? (tThey?.expected ?? 0) * defUp * boosted * taken
-    : ((after ? later : tThey).expected * Math.min(1, taken) + later.expected * Math.max(0, taken - 1)) * defUp * boosted;
+  // An exchange `after` another has no turn of this one's.
+  const usesBefore = after ? 1 : 0;
+  const hitsTaken = !tThey ? 0 : Array.from({ length: Math.ceil(taken) }, (_, i) => threatUse(tThey, i + usesBefore).expected * Math.min(1, taken - i))
+    .reduce((sum, x) => sum + x, 0) * defUp * boosted;
   const hpLeft = Math.max(0, Math.min(maxHp, hp - hitsTaken - selfSpent + ourDrain * Math.min(taken, turnsWe))) * (1 - selfKo);
   return {
     pWeKoFirst: Math.min(1, Math.round(pWe * 1e9) / 1e9), pTheyKoFirst: Math.min(1, Math.round(pThey * 1e9) / 1e9),

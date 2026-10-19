@@ -350,4 +350,5 @@ Fight plan likely lost
 == a 2HKO lock: Snorlax 0.990 · Clefable 1.490
 == a foe's lock on our switch-in: Skarmory 3.4630 · Clefable 4.0000 · its last use 4.8333
 == switched into a foe's lock: Skarmory 3.7593 · Clefable 3.0000 · its last use 3.8333
+== a foe's own pick once its lock runs down: Bronzong 3.4630 · Steelix 1.4630
 ok

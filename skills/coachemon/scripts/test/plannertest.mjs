@@ -1365,6 +1365,9 @@ Object.assign(TABLE, {
   "Salamence>Outrage>Skarmory": [[100], 1, 0.5], "Salamence>Outrage>Clefable": [[0], 1, 0],
   "Salamence>Fire Blast>Skarmory": [[100], 1, 2], "Salamence>Fire Blast>Clefable": [[100], 1, 2],
   "Skarmory>Tackle>Salamence": [[1], 1, 1], "Clefable>Tackle>Salamence": [[1], 1, 1],
+  "Salamence>Outrage>Bronzong": [[50], 1, 0.5], "Salamence>Fire Blast>Bronzong": [[999], 1, 2],
+  "Salamence>Outrage>Steelix": [[50], 1, 0.5], "Salamence>Fire Blast>Steelix": [[999], 1, 2],
+  "Bronzong>Tackle>Salamence": [[1], 1, 1], "Steelix>Tackle>Salamence": [[1], 1, 1],
 });
 {
   const benched = name => mon(name, 80, ["Normal"], [250, 100, 100, 100, 100, 50], [["Tackle", "Normal", 40, "P"]], false);
@@ -1387,6 +1390,14 @@ Object.assign(TABLE, {
   assert.ok(Math.abs(inSkarmory - 203 / 54) < 1e-4, `the entry hit spent one of the two (${inSkarmory})`);
   assert.ok(Math.abs(inClefable - 3) < 1e-9, `the entry hit ended the lock (${inClefable})`);
   assert.ok(Math.abs(inLast - 207 / 54) < 1e-4, `the entry hit was its last use: confused at once (${inLast})`);
+
+  // Outrage takes five or six uses to fell Bronzong; the Fire Blast the foe picks itself takes one. After two Outrages
+  // it goes off ⅔, ⅔, ⅚: 3 + ⅓ + ⅑ + 1/54 = 3 + 25/54 turns. Steelix, switched into the lock's last use, meets it at
+  // once: 1 + 25/54.
+  const bronzong = turnsFor("Bronzong", 2), steelix = turnsFor("Steelix", 1, true);
+  console.log(`== a foe's own pick once its lock runs down: Bronzong ${bronzong.toFixed(4)} · Steelix ${steelix.toFixed(4)}`);
+  assert.ok(Math.abs(bronzong - (3 + 25 / 54)) < 1e-4, `two Outrages, then the foe's Fire Blast (${bronzong})`);
+  assert.ok(Math.abs(steelix - (1 + 25 / 54)) < 1e-4, `the entry hit ran it down: Fire Blast from the first use (${steelix})`);
 }
 
 // ---- The one gate: with no exact enemy answer, the card, the fight plan and the catch advice stop together (#183)

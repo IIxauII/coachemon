@@ -257,16 +257,16 @@ const KO_LEVELS = 4;
 // `scale(i, broken)`: the damage factor on use i (0-based) with `broken` bars gone; `act(i)`: the chance use i happens
 // at all. `turnEnd`: the signed HP change after each use survived, or a function of the use count. `cat` ("physical"
 // or "special"): a wild boss's defence rises as its bars break. `firstKo`: this turn's exact odds for use 1, when the
-// caller has them. `useLater`: the `use` of every use after the first, where it differs. `start`: branches from an
+// caller has them. `useAt(i)`: the `use` of use i (from 1) where it differs from `use`. `start`: branches from an
 // earlier turn, p summing to 1. `after1`: the branches standing after use 1, p summing to 1. `perChunk`: the uses each
 // bar takes before it more likely than not breaks.
-export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 1, act = () => 1, turnEnd = 0, firstKo = null, cat = null, useLater = null } = {}) => {
+export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 1, act = () => 1, turnEnd = 0, firstKo = null, cat = null, useAt = null } = {}) => {
   const f = rec.facts;
   const init = stateOf(f, hp ?? f.hp, bar);
   const bars = init.bar + 1;
   const guard = cat && bars > 1 && rec.bars ? rec.bars(cat === "special" ? Stat.SPDEF : Stat.DEF, bars) : null;
   const pointsOf = u => u.map(x => ({ d: x.d, p: x.p, n: x.d > 0 ? Math.max(1, Math.round(x.n ?? 1)) : 0 }));
-  const first = pointsOf(use), rest = useLater ? pointsOf(useLater) : first;
+  const first = pointsOf(use);
   let states = start?.length
     ? start.map(x => branch(x.hp, x.bar ?? init.bar, !!x.revived, x.tok ?? 0, x.p))
     : [branch(init.hp, init.bar, false, 0, 1)];
@@ -274,7 +274,7 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
   const brokeAt = Array(bars).fill(KO_USES);
   let down = 0, after1 = [];
   for (let i = 0; i < KO_USES; i++) {
-    const points = i ? rest : first;
+    const points = i && useAt ? pointsOf(useAt(i)) : first;
     const a = Math.max(0, Math.min(1, act(i)));
     const factors = [];
     const factor = broken => (factors[broken] ??= scale(i, broken) * (guard ? guard[Math.min(broken, bars - 1)] : 1));
