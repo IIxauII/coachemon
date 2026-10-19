@@ -444,6 +444,35 @@ test("a win whose replay the discrepancy search saw fail is never replayed by th
   ]);
 });
 
+test("two beams that reach a win while its replay still runs replay it once between them (#761)", async () => {
+  // Both beams reach PECK PECK, the only win, on turn 2; its replay loses, and is still running when the second gets there.
+  const { root, pool } = tree(["SLAM", "PECK"], {
+    "": { SLAM: [0.5, 0.4], PECK: [0.1, 1] },
+    PECK: { PECK: "won" },
+  });
+  const asked: string[][] = [];
+  const validate = async (inputs: readonly Input[]) => {
+    asked.push(inputs.map(named));
+    await new Promise(resolve => setTimeout(resolve, 20));
+    return replayed("lost");
+  };
+
+  const result = await search({
+    root,
+    pool,
+    validate,
+    budget: BUDGET,
+    lds: null,
+    portfolio: [
+      { width: 8, ours: 1 },
+      { width: 8, ours: 0.5 },
+    ],
+  });
+
+  assert.equal(result.kind, "no_answer");
+  assert.deepEqual(asked, [["PECK", "PECK"]]);
+});
+
 test("progress reports the expansions spent out of the whole budget (#662)", async () => {
   const { root, pool } = tree(["SLAM", "PECK"], {
     "": { SLAM: [0.5, 0.4], PECK: [0.1, 1] },

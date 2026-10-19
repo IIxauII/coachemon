@@ -69,8 +69,8 @@ type Node = { path: readonly Action[]; at: Position; hist: readonly number[]; sc
 
 type Expanded = { node: Node; child: Child };
 
-/** What every stage of one search adds to its "no answer", and the paths whose replay it has already refused. */
-type Trail = { unreplayed: string[]; dropped: number; refused: Set<string> };
+/** What every stage of one search adds to its "no answer", and the paths it has already sent to replay. */
+type Trail = { unreplayed: string[]; dropped: number; tried: Set<string> };
 
 type StageInput = { root: Position; pool: Pool; validate: Validate; trail: Trail; progress: (spent: number) => void };
 
@@ -126,7 +126,8 @@ function scored(children: readonly Expanded[], ours: number, trail: Trail) {
 
 /**
  * The win, or the environment gone, either of which ends the search; null where it didn't replay, wasn't run, or was
- * refused before, in this stage or an earlier one.
+ * sent to replay before, by any stage or beam. A path counts as tried once its replay is queued, so a beam reaching it
+ * mid-replay passes it by: a verdict that neither refuses it nor ends the search would lose it (#761).
  */
 async function replayed(
   path: readonly Action[],
@@ -135,12 +136,12 @@ async function replayed(
 ): Promise<Found | NoAnswer | null> {
   const inputs = played(path);
   const key = JSON.stringify(path);
-  if (trail.refused.has(key)) return null;
+  if (trail.tried.has(key)) return null;
+  trail.tried.add(key);
   const verdict = await validate(inputs);
   if (verdict === null) return null;
   if (verdict.kind === "replayed" && verdict.replay.outcome === "won") return { kind: "found", inputs, replay: verdict.replay };
   if (verdict.kind === "no_answer" && ENVIRONMENT_GONE.has(verdict.reason.code)) return verdict;
-  trail.refused.add(key);
   if (verdict.kind === "no_answer") trail.unreplayed.push(cause(verdict.reason));
   else trail.unreplayed.push(verdict.replay.outcome === "lost" ? "it lost on replay." : "its inputs ran out with the fight still on.");
   return null;
@@ -160,7 +161,7 @@ export async function search({
   portfolio = PORTFOLIO,
   progress,
 }: SearchInput): Promise<Found | NoAnswer> {
-  const trail: Trail = { unreplayed: [], dropped: 0, refused: new Set() };
+  const trail: Trail = { unreplayed: [], dropped: 0, tried: new Set() };
   const total = (lds?.expansions ?? 0) + budget.expansions * portfolio.length;
   let ldsSpent = 0;
   let ldsEnd: LdsEnd | null = null;
