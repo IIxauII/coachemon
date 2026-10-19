@@ -55,7 +55,7 @@ test("a carried save from a newer game than the clone's still gets no answer: no
   assert.deepEqual(result?.reason, { code: "version_mismatch", save: PIN, live: null, clone: "1.12.0.9" });
 });
 
-test("a save on another version with no live game read, as the dev's oracle runs it, is named as the save (#763)", () => {
+test("a save on another version with no live export is named as the save (#763)", () => {
   const newer = ask({ save: { ...drayton, gameVersion: "1.12.1.0" } });
   assert.deepEqual(newer?.reason, { code: "version_mismatch", save: "1.12.1.0", live: null, clone: PIN });
   assert.doesNotMatch(newer.message, /live game/);
@@ -64,6 +64,14 @@ test("a save on another version with no live game read, as the dev's oracle runs
 
   const older = ask({ save: { ...drayton, gameVersion: "1.12.0.9" } });
   assert.match(older!.message, /waits on a save from 1\.12\.0\.11/);
+});
+
+test("an uncarried older save with the live game on the clone's version is named as the save, not the live game (#763)", () => {
+  const result = ask({ save: { ...drayton, gameVersion: "1.12.0.9" }, liveVersion: PIN });
+
+  assert.deepEqual(result?.reason, { code: "version_mismatch", save: "1.12.0.9", live: PIN, clone: PIN });
+  assert.doesNotMatch(result.message, /live game/);
+  assert.match(result.message, /this fight's save is from game version 1\.12\.0\.9, .*waits on a save from 1\.12\.0\.11/);
 });
 
 test("a player's save from an older game carries when the live game already serves the clone's version (#764)", () => {

@@ -107,6 +107,7 @@ export type Reason =
   /** No stored save carries the run's seed (game-code.md §29). */
   | { code: "no_wave_start" }
   | { code: "daily" }
+  /** `live` is null where no live export came with the save. */
   | { code: "version_mismatch"; save: string; live: string | null; clone: string }
   | { code: "not_rechecked"; version: string }
   | { code: "mystery_encounter" }

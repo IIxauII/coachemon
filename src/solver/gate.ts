@@ -25,7 +25,7 @@ export function refuse(
 ): NoAnswer | null {
   if (save.gameMode === GameModes.DAILY) return noAnswer({ code: "daily" });
   if (save.gameVersion !== cloneVersion && !(carried && newerVersion(cloneVersion, save.gameVersion))) {
-    // The save's version is the game that wrote it; only the export carries the tab's (#763, game-code.md §29, §31).
+    // The save's version is the game that wrote it, not the tab's (#763, game-code.md §29, §31).
     const live = liveExport?.gameVersion ?? null;
     return noAnswer({ code: "version_mismatch", save: save.gameVersion, live, clone: cloneVersion });
   }
