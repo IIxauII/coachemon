@@ -28,7 +28,7 @@ jobs:
 
       # `--ignore-scripts` at every root install site: Claude Code installs the plugin the same way,
       # and the plugin is not a workspace, so WXT never lands in a player's cache (§5.1). (The release toolchain stays
-      # out for a different reason — semantic-release is not a devDependency, `release.yml`.)
+      # out for a different reason — it has its own lockfile in `.github/release-tools`, `release.yml`.)
       - run: npm ci --ignore-scripts
 
       - run: npm run typecheck
