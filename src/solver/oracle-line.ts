@@ -129,11 +129,17 @@ export type Reason =
   | { code: "harness_failed"; why: string }
   /** `died` counts every worker that died in the solve; `why` is the last one's cause. */
   | { code: "workers_died"; died: number; why: string }
-  /** `unreplayed` says why each win found failed replay; `dropped` counts the turns the harness couldn't play. */
-  | { code: "no_win"; beams: readonly BeamEnd[]; unreplayed: readonly string[]; dropped: number };
+  /**
+   * `lds`, how the discrepancy search ended before the beams ran, is null where none ran; `unreplayed` says why each win
+   * found failed replay; `dropped` counts the turns the harness couldn't play.
+   */
+  | { code: "no_win"; lds: LdsEnd | null; beams: readonly BeamEnd[]; unreplayed: readonly string[]; dropped: number };
 
 /** `ours` weighs our side's HP beside the foes' HP lost. */
 export type Beam = { width: number; ours: number };
+
+/** `exhausted`: every path within its most discrepancies ended without a win. `discrepancies` is the most it reached. */
+export type LdsEnd = { ended: "budget" | "exhausted"; discrepancies: number; expansions: number };
 
 /** `turn` counts from where the solve started. */
 export type BeamEnd = Beam & { ended: "emptied" | "stalled" | "turns" | "budget"; turn: number; expansions: number };
