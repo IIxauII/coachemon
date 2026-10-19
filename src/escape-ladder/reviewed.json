@@ -2091,6 +2091,7 @@
     "test/helpers/reload-helper.ts#ReloadHelper.reloadSession": "4ca56fd9ff35db2d",
     "test/helpers/reload-helper.ts#ReloadHelper.sessionData": "29e0227ed7b25f01",
     "test/helpers/settings-helper.ts#SettingsHelper.battleStyle": "f097b889cac7c9dd",
+    "test/mocks/mock-clock.ts#MockClock": "91e0b9b4e878e1a1",
     "test/mocks/mock-console/mock-console.ts#MockConsole.console": "ac03ba9a6348ddad",
     "test/mocks/mock-console/mock-console.ts#MockConsole.info": "0c0a50bc807d737d",
     "test/mocks/mock-console/mock-console.ts#MockConsole.profile": "83d3b450806aea1d",

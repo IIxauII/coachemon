@@ -1,0 +1,286 @@
+// Appended to the harness for the search's workers alone, ahead of the fast poll: the replay runs without it, so every
+// win found on the fake clock is still played on the unpatched game (#782). `Date`, `performance`, `setImmediate`,
+// `queueMicrotask` and `process.nextTick` stay real: the game reads the real date, and the driver needs the real ones
+// to tell that the process is idle. Its report reaches COACH_CLOCK_OUT before the harness serves its first job; a
+// report it can't write takes the clock back out, so a missing one means real time.
+// Aliased: this file joins the harness's module, which imports these names itself, and so does the fast poll.
+import { writeFileSync as writeClockReport } from "node:fs";
+import { PhaseInterceptor as ClockedInterceptor } from "#test/framework/phase-interceptor";
+import { PromptHandler as ClockedPrompts } from "#test/helpers/prompt-handler";
+import { MockClock } from "#test/mocks/mock-clock";
+import { vi as clockVi } from "vitest";
+
+// vitest 4.1.11's `waitUntil` (vitest/dist/chunks/test.*.js), which the fake one copies. The drift check doesn't hash
+// vitest: the check at load is all that guards the copy (pin-bump.md, "The checks").
+const UPSTREAM_WAIT_UNTIL = `function waitUntil(callback, options = {}) {
+  const { setTimeout, setInterval, clearTimeout, clearInterval } = getSafeTimers();
+  const { interval = 50, timeout = 1e3 } = typeof options === "number" ? { timeout: options } : options;
+  const STACK_TRACE_ERROR = /* @__PURE__ */ new Error("STACK_TRACE_ERROR");
+  return new Promise((resolve, reject) => {
+    let promiseStatus = "idle";
+    let timeoutId;
+    let intervalId;
+    const onReject = (error) => {
+      if (intervalId) clearInterval(intervalId);
+      if (!error) error = copyStackTrace$1(/* @__PURE__ */ new Error("Timed out in waitUntil!"), STACK_TRACE_ERROR);
+      reject(error);
+    };
+    const onResolve = (result) => {
+      if (!result) return;
+      if (timeoutId) clearTimeout(timeoutId);
+      if (intervalId) clearInterval(intervalId);
+      resolve(result);
+      return true;
+    };
+    const checkCallback = () => {
+      if (vi.isFakeTimers()) vi.advanceTimersByTime(interval);
+      if (promiseStatus === "pending") return;
+      try {
+        const result = callback();
+        if (result !== null && typeof result === "object" && typeof result.then === "function") {
+          const thenable = result;
+          promiseStatus = "pending";
+          thenable.then((resolvedValue) => {
+            promiseStatus = "resolved";
+            onResolve(resolvedValue);
+          }, (rejectedValue) => {
+            promiseStatus = "rejected";
+            onReject(rejectedValue);
+          });
+        } else return onResolve(result);
+      } catch (error) {
+        onReject(error);
+      }
+    };
+    if (checkCallback() === true) return;
+    timeoutId = setTimeout(onReject, timeout);
+    intervalId = setInterval(checkCallback, interval);
+  });
+}`;
+
+function fakeClock(): { fake: true; uninstall(): void } | { real: string } {
+  const bare = (code: string) => code.replace(/\s+/g, "");
+  if (bare(String(clockVi.waitUntil)) !== bare(UPSTREAM_WAIT_UNTIL)) return { real: "vi.waitUntil is not the one the fake clock copies" };
+  const interceptor = ClockedInterceptor.prototype as any;
+  for (const method of ["run", "to"]) {
+    if (!/\bvi\.waitUntil\(/.test(String(interceptor[method]))) return { real: `PhaseInterceptor.${method} no longer waits through vi.waitUntil` };
+  }
+  // A timer made through an import of `node:timers` would stay real beside the fake ones.
+  const globalInterval = (code: string) => /(?<![\w$.])setInterval\(/.test(code) && !/\.setInterval\b/.test(code);
+  if (!globalInterval(String(MockClock))) return { real: "MockClock no longer ticks on the global setInterval" };
+  if (!globalInterval(String(ClockedPrompts))) return { real: "PromptHandler no longer checks its prompts on the global setInterval" };
+
+  const real = {
+    setTimeout: globalThis.setTimeout,
+    setInterval: globalThis.setInterval,
+    clearTimeout: globalThis.clearTimeout,
+    clearInterval: globalThis.clearInterval,
+    setImmediate: globalThis.setImmediate,
+    waitUntil: clockVi.waitUntil,
+  };
+  const MAX_DELAY = 2 ** 31 - 1;
+  // As Node does.
+  const coerce = (delay: unknown) => {
+    const d = Number(delay);
+    return d >= 1 && d <= MAX_DELAY ? d : 1;
+  };
+
+  type Timer = { fn: (...args: unknown[]) => void; callArgs: unknown[]; delay: number; repeat: boolean; due: number; seq: number; ref: boolean };
+  const timers = new Map<number, Timer>();
+  // A cleared timer stays cleared: Node's `refresh` doesn't bring one back.
+  const cleared = new WeakSet<Timer>();
+  let now = 0;
+  let seq = 0;
+  let ids = 0;
+
+  class Timeout {
+    id: number;
+    timer: Timer;
+    constructor(id: number, timer: Timer) {
+      this.id = id;
+      this.timer = timer;
+    }
+    ref() {
+      this.timer.ref = true;
+      return this;
+    }
+    unref() {
+      this.timer.ref = false;
+      return this;
+    }
+    hasRef() {
+      return this.timer.ref;
+    }
+    refresh() {
+      if (cleared.has(this.timer)) return this;
+      this.timer.due = now + this.timer.delay;
+      this.timer.seq = ++seq;
+      timers.set(this.id, this.timer);
+      return this;
+    }
+    close() {
+      clear(this);
+      return this;
+    }
+    [Symbol.toPrimitive]() {
+      return this.id;
+    }
+  }
+
+  const add = (fn: unknown, delay: unknown, args: unknown[], repeat: boolean) => {
+    if (typeof fn !== "function") throw new TypeError('The "callback" argument must be of type function');
+    const d = coerce(delay);
+    const timer: Timer = { fn: fn as Timer["fn"], callArgs: args, delay: d, repeat, due: now + d, seq: ++seq, ref: true };
+    timers.set(++ids, timer);
+    return new Timeout(ids, timer);
+  };
+  const clear = (handle: unknown) => {
+    const byId = typeof handle === "number" || typeof handle === "string";
+    const id = handle instanceof Timeout ? handle.id : byId ? Number(handle) : NaN;
+    const timer = handle instanceof Timeout ? handle.timer : timers.get(id);
+    if (timer !== undefined) {
+      timers.delete(id);
+      cleared.add(timer);
+    } else if (handle != null) real.clearTimeout(handle as any);
+  };
+  // Node's order for timers of one duration: the first due, then the first scheduled, an interval going back in line
+  // after its own callback. Node drains each duration's due timers together, so a tie across durations can fire in
+  // another order.
+  const first = () => {
+    let best: [number, Timer] | null = null;
+    for (const entry of timers) {
+      const t = entry[1];
+      if (!best || t.due < best[1].due || (t.due === best[1].due && t.seq < best[1].seq)) best = entry;
+    }
+    return best;
+  };
+  const fire = ([id, t]: [number, Timer]) => {
+    now = Math.max(now, t.due);
+    if (!t.repeat) timers.delete(id);
+    try {
+      t.fn(...t.callArgs);
+    } finally {
+      if (t.repeat && timers.get(id) === t) {
+        t.due = now + t.delay;
+        t.seq = ++seq;
+      }
+    }
+  };
+
+  let waits = 0;
+  let stopped = false;
+  const idle = () => new Promise<void>(resolve => real.setImmediate(resolve));
+  // Held open only while a fake timer would hold the process open.
+  const realMs = () =>
+    new Promise<void>(resolve => {
+      const wake = real.setTimeout(resolve, 1);
+      if (![...timers.values()].some(t => t.ref)) wake.unref();
+    });
+  const drive = async () => {
+    let offset = performance.now() - now;
+    while (!stopped) {
+      await idle();
+      const next = first();
+      if (next === null || (waits === 0 && next[1].due > performance.now() - offset)) {
+        await realMs();
+        continue;
+      }
+      try {
+        fire(next);
+      } catch (e) {
+        real.setImmediate(() => {
+          throw e;
+        });
+      }
+      if (waits > 0) offset = performance.now() - now;
+    }
+  };
+
+  // vitest's `waitUntil`, polling on the fake clock while its timeout runs in real time: on the fake clock a wait on
+  // something real would time out in a fraction of the real `TEST_TIMEOUT` (`#test/constants`).
+  function waitUntil<T>(callback: () => T | Promise<T>, options: number | { interval?: number; timeout?: number } = {}): Promise<T> {
+    const { interval = 50, timeout = 1e3 } = typeof options === "number" ? { timeout: options } : options;
+    const timedOut = new Error("Timed out in waitUntil!");
+    waits++;
+    let settled = false;
+    return new Promise<T>((resolve, reject) => {
+      let promiseStatus = "idle";
+      let timeoutId: ReturnType<typeof real.setTimeout> | undefined;
+      let intervalId: unknown;
+      const settle = () => {
+        if (settled) return false;
+        settled = true;
+        waits--;
+        if (intervalId) clear(intervalId);
+        if (timeoutId) real.clearTimeout(timeoutId);
+        return true;
+      };
+      const onReject = (error?: unknown) => {
+        if (settle()) reject(error ?? timedOut);
+      };
+      const onResolve = (result: T) => {
+        if (!result) return;
+        if (settle()) resolve(result);
+        return true;
+      };
+      const checkCallback = () => {
+        if (promiseStatus === "pending") return;
+        try {
+          const result = callback();
+          if (result !== null && typeof result === "object" && typeof (result as any).then === "function") {
+            promiseStatus = "pending";
+            (result as Promise<T>).then(
+              value => {
+                promiseStatus = "resolved";
+                onResolve(value);
+              },
+              error => {
+                promiseStatus = "rejected";
+                onReject(error);
+              },
+            );
+          } else return onResolve(result as T);
+        } catch (error) {
+          onReject(error);
+        }
+      };
+      if (checkCallback() === true) return;
+      timeoutId = real.setTimeout(() => onReject(), timeout);
+      timeoutId.unref();
+      intervalId = add(checkCallback, interval, [], true);
+    });
+  }
+
+  const uninstall = () => {
+    stopped = true;
+    Object.assign(globalThis, { setTimeout: real.setTimeout, setInterval: real.setInterval, clearTimeout: real.clearTimeout, clearInterval: real.clearInterval });
+    (clockVi as any).waitUntil = real.waitUntil;
+  };
+  try {
+    Object.assign(globalThis, {
+      setTimeout: (fn: unknown, delay?: unknown, ...args: unknown[]) => add(fn, delay, args, false),
+      setInterval: (fn: unknown, delay?: unknown, ...args: unknown[]) => add(fn, delay, args, true),
+      clearTimeout: clear,
+      clearInterval: clear,
+    });
+    (clockVi as any).waitUntil = waitUntil;
+  } catch (e) {
+    uninstall();
+    throw e;
+  }
+  void drive();
+  return { fake: true, uninstall };
+}
+
+let clock: ReturnType<typeof fakeClock>;
+try {
+  clock = fakeClock();
+} catch (e) {
+  clock = { real: `the fake clock failed: ${e instanceof Error ? e.message : String(e)}` };
+}
+try {
+  const report = "real" in clock ? { real: clock.real } : { fake: true };
+  if (process.env.COACH_CLOCK_OUT) writeClockReport(process.env.COACH_CLOCK_OUT, JSON.stringify(report));
+} catch {
+  if ("uninstall" in clock) clock.uninstall();
+}
