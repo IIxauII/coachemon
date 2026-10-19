@@ -10,10 +10,13 @@ import { activeOverrides, defaultOverrides } from "#app/overrides";
 import { ConfusedTag } from "#data/battler-tags";
 import { allMoves } from "#data/data-lists";
 import { PokemonSummonData } from "#data/pokemon-data";
+import { BattlerIndex } from "#enums/battler-index";
 import { Button } from "#enums/buttons";
 import { Command } from "#enums/command";
+import { FieldPosition } from "#enums/field-position";
 import { HitCheckResult } from "#enums/hit-check-result";
 import { MoveId } from "#enums/move-id";
+import { MoveTarget } from "#enums/move-target";
 import { isIgnorePP, isVirtual, MoveUseMode } from "#enums/move-use-mode";
 import { SpeciesId } from "#enums/species-id";
 import { Stat } from "#enums/stat";
@@ -23,6 +26,7 @@ import { applySessionVersionMigration } from "#system/version-converter";
 import { Pokemon } from "#field/pokemon";
 import { BypassSpeedChanceModifier, FlinchChanceModifier, SurviveDamageModifier } from "#modifiers/modifier";
 import { Move, MoveEffectAttr } from "#moves/move";
+import { getMoveTargets } from "#moves/move-utils";
 import type { CommandPhase } from "#phases/command-phase";
 import { MoveEffectPhase } from "#phases/move-effect-phase";
 import { MovePhase } from "#phases/move-phase";
@@ -50,9 +54,13 @@ type PartySlot = { slot: number; species: string };
 /** `forget` null declines the move. */
 type LearnPick = PartySlot & { move: string; forget: string | null };
 type Asked = { replacement?: PartySlot; learns?: LearnPick[] };
+type Target = { side: "foes" | "ours"; field: number };
+type FieldCommand = { kind: "move"; move: string; tera: boolean; target?: Target } | { kind: "switch"; to: PartySlot };
+type Replacement = PartySlot & { field: number };
 type Input =
   | (({ kind: "move"; move: string; tera: boolean } | { kind: "switch"; to: PartySlot }) & Asked)
-  | ({ kind: "queued" } & Asked);
+  | ({ kind: "queued" } & Asked)
+  | { kind: "double"; commands: (FieldCommand | null)[]; replacements?: Replacement[]; learns?: LearnPick[] };
 type Turn = "won" | "lost" | "on" | { illegal: string };
 
 /**
@@ -117,16 +125,44 @@ function queuedRuns(active: any): boolean {
   return next !== undefined && (next.move === MoveId.NONE || isVirtual(next.useMode) || moveset.some(m => m.moveId === next.move));
 }
 
-function legal(): Input[] {
-  const active = scene().getPlayerField()[0];
+const double = (): boolean => scene().currentBattle.double;
+
+/** By field slot: whether the turn asks that slot for a command, which one on the field playing no queued move is. */
+const fieldAsked = (): boolean[] => scene().getPlayerField().map((p: any) => p.isActive(true) && !queuedRuns(p));
+
+const asksCommand = () => fieldAsked().some(Boolean);
+
+/**
+ * The battler indices a single-target move makes us choose between, empty where the game picks (game-code.md §25). A
+ * random target is drawn from the battle stream as it is asked, so it is never asked here.
+ */
+function choices(active: any, move: MoveId): number[] {
+  if (allMoves[move].moveTarget === MoveTarget.RANDOM_NEAR_ENEMY) return [];
+  const { targets, multiple } = getMoveTargets(active, move);
+  return targets.length > 1 && !multiple ? targets : [];
+}
+
+/** A target is named only where there is a choice of foes, and ours only where no foe is a choice (#788). */
+function targetsOf(active: any, move: string): (Target | undefined)[] {
+  if (!double()) return [undefined];
+  const all = choices(active, MoveId[move as keyof typeof MoveId]);
+  const foes = all.filter(t => t >= BattlerIndex.ENEMY);
+  const offered = foes.length > 0 ? foes : all;
+  if (foes.length === 1 || offered.length === 0) return [undefined];
+  return offered.map(t => (t >= BattlerIndex.ENEMY ? { side: "foes", field: t - BattlerIndex.ENEMY } : { side: "ours", field: t }));
+}
+
+function commandsOf(active: any): FieldCommand[] {
   const usable = active.getMoveset().filter((m: any) => m.isUsable(active, false, true)[0]);
   // With nothing usable, the fight command plays Struggle (`CommandPhase.handleFightCommand`).
   const moves: string[] = usable.length > 0 ? usable.map((m: any) => MoveId[m.moveId]) : ["STRUGGLE"];
   const tera = canTerastallize(active);
-  const out: Input[] = moves.flatMap(move => [
-    { kind: "move" as const, move, tera: false },
-    ...(tera ? [{ kind: "move" as const, move, tera: true }] : []),
-  ]);
+  const out: FieldCommand[] = moves.flatMap(move =>
+    targetsOf(active, move).flatMap(target => [
+      { kind: "move" as const, move, tera: false, ...(target && { target }) },
+      ...(tera ? [{ kind: "move" as const, move, tera: true, ...(target && { target }) }] : []),
+    ]),
+  );
   if (!active.isTrapped()) {
     scene()
       .getPlayerParty()
@@ -137,10 +173,42 @@ function legal(): Input[] {
   return out;
 }
 
+/** In a double, one command per field slot asked, never both switching to one mon nor both terastallizing (#788). */
+function legal(): Input[] {
+  const field = scene().getPlayerField();
+  if (!double()) return commandsOf(field[0]);
+  const [first, second] = fieldAsked().map((ask, i) => (ask ? commandsOf(field[i]) : [null]));
+  const out: Input[] = [];
+  for (const a of first) {
+    for (const b of second ?? [null]) {
+      if (a?.kind === "switch" && b?.kind === "switch" && a.to.slot === b.to.slot) continue;
+      if (a?.kind === "move" && b?.kind === "move" && a.tera && b.tera) continue;
+      out.push({ kind: "double", commands: [a, b] });
+    }
+  }
+  return out;
+}
+
+const sameCommand = (a: FieldCommand | null, b: FieldCommand | null): boolean =>
+  a === null || b === null
+    ? a === b
+    : a.kind === "move"
+      ? b.kind === "move" && a.move === b.move && a.tera === b.tera && a.target?.side === b.target?.side && a.target?.field === b.target?.field
+      : b.kind === "switch" && a.to.slot === b.to.slot && a.to.species === b.to.species;
+
 const same = (a: Input, b: Input) =>
-  a.kind === "move"
-    ? b.kind === "move" && a.move === b.move && a.tera === b.tera
-    : a.kind === "switch" && b.kind === "switch" && a.to.slot === b.to.slot && a.to.species === b.to.species;
+  a.kind === "double"
+    ? b.kind === "double" && sameCommand(a.commands[0], b.commands[0]) && sameCommand(a.commands[1] ?? null, b.commands[1] ?? null)
+    : a.kind === "move"
+      ? b.kind === "move" && a.move === b.move && a.tera === b.tera
+      : a.kind === "switch" && b.kind === "switch" && a.to.slot === b.to.slot && a.to.species === b.to.species;
+
+/** A turn the game plays for us, with no command of ours in it. */
+const isQueued = (input: Input | null | undefined): input is Input =>
+  input?.kind === "queued" || (input?.kind === "double" && input.commands.every(c => c === null));
+
+const replacementsOf = (input: Input | null): (PartySlot | Replacement)[] =>
+  input === null ? [] : input.kind === "double" ? (input.replacements ?? []) : input.replacement ? [input.replacement] : [];
 
 // A prompt left queued for a decision the game never asks for is taken by the next one, and every later input lands a
 // turn late (#632).
@@ -151,11 +219,23 @@ function strayPrompts(): number {
   return stray;
 }
 
+/** Queued in field order: each prompt goes to the next command screen the game shows (#788). */
 function command(input: Input | null) {
   if (input === null || input.kind === "queued") return;
+  if (input.kind === "double") return input.commands.forEach((c, field) => c && issue(c, field));
+  issue(input, 0);
+}
+
+function issue(input: FieldCommand, field: number) {
   if (input.kind === "switch") return game.doSwitchPokemon(input.to.slot);
   const move = MoveId[input.move as keyof typeof MoveId];
-  if (move !== MoveId.STRUGGLE) return input.tera ? game.move.selectWithTera(move) : game.move.select(move);
+  if (move !== MoveId.STRUGGLE) {
+    if (!double()) return input.tera ? game.move.selectWithTera(move) : game.move.select(move);
+    const { target } = input;
+    const named = target && (target.side === "foes" ? BattlerIndex.ENEMY + target.field : target.field);
+    const at = named ?? choices(scene().getPlayerField()[field], move).find(t => t >= BattlerIndex.ENEMY);
+    return input.tera ? game.move.selectWithTera(move, field, at) : game.move.select(move, field, at);
+  }
   // The move helper refuses a move with no PP left, so this sends what the menu would.
   game.onNextPrompt("CommandPhase", UiMode.COMMAND, () => {
     scene().ui.setMode(UiMode.FIGHT, (scene().phaseManager.getCurrentPhase() as CommandPhase).getFieldIndex());
@@ -221,9 +301,47 @@ function learning(pick: (asked: Learning, i: number) => LearnPick | undefined) {
   return { picked, illegal: () => illegal, stop: () => clearInterval(watch) };
 }
 
+/** A faint replacement the turn asks for: the field slot it fills, and those the party can send in. */
+type Replacing = { field: number; offered: PartySlot[] };
+
+/**
+ * Answers each faint replacement as the party screen opens for it, as upstream's own party-select helper does: in a
+ * double one turn can ask two, one per field slot (#788). A pick missing or not fitting sends the first offered, so the
+ * turn can end, and is the turn's illegal step.
+ */
+function replacing(choose: (asked: Replacing, i: number) => PartySlot | Replacement | undefined) {
+  const asked: Replacing[] = [];
+  let illegal: string | undefined;
+  let answered: unknown;
+  const watch = setInterval(() => {
+    const phase: any = scene().phaseManager.getCurrentPhase();
+    const ui = scene().ui;
+    if (!phase?.is("SwitchPhase") || !phase.isModal || answered === phase) return;
+    if (ui.mode !== UiMode.PARTY || !ui.getHandler()?.active) return;
+    answered = phase;
+    const handler = ui.getHandler() as PartyUiHandler;
+    const field: number = (handler as any).fieldIndex;
+    const offered = scene()
+      .getPlayerParty()
+      .flatMap((p: any, slot: number) => (!p.isFainted() && !p.isOnField() ? [{ slot, species: species(p) }] : []));
+    let chosen = choose({ field, offered }, asked.length);
+    asked.push({ field, offered });
+    if (chosen === undefined) illegal ??= "leaves a faint replacement to pick, and names none";
+    else if (!offered.some(o => o.slot === chosen?.slot && o.species === chosen.species)) {
+      illegal ??= "names a faint replacement the party can't send in";
+    } else if ("field" in chosen && chosen.field !== field) {
+      illegal ??= `names a faint replacement for field ${chosen.field}, where the turn asks one for field ${field}`;
+    }
+    if (illegal !== undefined) chosen = offered[0];
+    handler.setCursor((chosen as PartySlot).slot);
+    handler.processInput(Button.ACTION);
+    handler.processInput(Button.ACTION);
+  }, 1);
+  return { asked, illegal: () => illegal, stop: () => clearInterval(watch) };
+}
+
 type Asks = {
-  /** From those the party can send in. */
-  choose?: (offered: PartySlot[]) => PartySlot | undefined;
+  choose?: (asked: Replacing, i: number) => PartySlot | Replacement | undefined;
   pick?: (asked: Learning, i: number) => LearnPick | undefined;
   /** The input the turn is held to: a turn the game plays for us takes one only once it asks for something (#702). */
   holds?: () => Input | null;
@@ -231,29 +349,40 @@ type Asks = {
 
 /**
  * One turn, to the next decision or to the battle's end. By default what the turn asks for is what the input names: its
- * faint replacement, and its learn picks in the order asked.
+ * faint replacements and its learn picks, each in the order asked.
  */
 async function turn(input: Input | null, asks: Asks = {}): Promise<Turn> {
   const {
-    choose = () => input?.replacement,
+    choose = (_: Replacing, i: number) => replacementsOf(input)[i],
     pick = (_: Learning, i: number) => input?.learns?.[i],
     holds = () => input,
   } = asks;
   command(input);
   const learns = learning(pick);
+  const swaps = replacing(choose);
   let ended: Turn;
   try {
-    ended = await toNextDecision(choose, holds);
+    ended = await toNextDecision();
   } finally {
     learns.stop();
+    swaps.stop();
   }
-  const illegal = learns.illegal();
+  const illegal = learns.illegal() ?? swaps.illegal();
   if (illegal !== undefined) return { illegal };
   if ((holds()?.learns?.length ?? 0) > learns.picked.length) return { illegal: "names a learn pick no level-up asked for" };
+  const named = replacementsOf(holds()).length;
+  if (named > swaps.asked.length) {
+    return {
+      illegal:
+        swaps.asked.length === 0
+          ? `names a faint replacement, but nothing of ours fainted`
+          : `names ${named} faint replacements, but the turn asked for ${swaps.asked.length}`,
+    };
+  }
   return ended;
 }
 
-async function toNextDecision(choose: NonNullable<Asks["choose"]>, holds: NonNullable<Asks["holds"]>): Promise<Turn> {
+async function toNextDecision(): Promise<Turn> {
   const interceptor: any = game.phaseInterceptor;
   // A wipe never reaches TurnEndPhase; the interceptor reads its target afresh on every pass (#632).
   const watch = setInterval(() => {
@@ -273,42 +402,22 @@ async function toNextDecision(choose: NonNullable<Asks["choose"]>, holds: NonNul
     return "won";
   }
   await game.phaseInterceptor.to("TurnEndPhase");
-  const party: any[] = scene().getPlayerParty();
-  const fainted = scene().getPlayerField()[0]?.isFainted() ?? false;
-  if (!fainted && holds()?.replacement !== undefined) {
-    return { illegal: "names a faint replacement, but nothing of ours fainted" };
-  }
-  if (fainted) {
-    const offered = party.flatMap((p, slot) => (!p.isFainted() && !p.isOnField() ? [{ slot, species: species(p) }] : []));
-    const replacement = choose(offered);
-    if (replacement === undefined) return { illegal: "leaves a faint replacement to pick, and names none" };
-    if (!offered.some(o => o.slot === replacement.slot && o.species === replacement.species)) {
-      return { illegal: `names a faint replacement the party can't send in` };
-    }
-    // Registered once the faint has happened: up front, it blocks the command prompts queued behind it (#632).
-    game.onNextPrompt("SwitchPhase", UiMode.PARTY, () => {
-      const handler = scene().ui.getHandler() as PartyUiHandler;
-      handler.setCursor(replacement.slot);
-      handler.processInput(Button.ACTION);
-      handler.processInput(Button.ACTION);
-    });
-  }
   await game.phaseInterceptor.to("CommandPhase");
   return "on";
 }
 
 /**
- * A turn the game plays for us takes the next input only when that is a `queued` one and the turn asks for something,
- * our lead's faint replacement or a learn pick: a rampage can play more than one such turn, and the ask can fall on any
+ * A turn the game plays for us takes the next input only when that is one with no command and the turn asks for
+ * something, a faint replacement or a learn pick: a rampage can play more than one such turn, and the ask can fall on any
  * of them (#702, #673).
  */
 async function queuedTurn(inputs: Input[], next: number): Promise<{ input: Input | null; ended: Turn }> {
-  const queued = inputs[next]?.kind === "queued" ? inputs[next] : null;
+  const queued = isQueued(inputs[next]) ? inputs[next] : null;
   let taken = false;
   const ended = await turn(null, {
-    choose: () => {
+    choose: (_, i) => {
       taken = queued !== null;
-      return queued?.replacement;
+      return replacementsOf(queued)[i];
     },
     pick: (_, i) => {
       taken = queued !== null;
@@ -564,7 +673,7 @@ async function play() {
     const at = scene().currentBattle.turn;
     let input: Input | null;
     let ended: Turn;
-    if (queuedRuns(scene().getPlayerField()[0])) {
+    if (!asksCommand()) {
       draws = [];
       ({ input, ended } = await queuedTurn(job.inputs, next));
       if (input) next++;
@@ -597,6 +706,7 @@ function forkPoint(): string {
   const all: any[] = [...s.getPlayerParty(), ...s.getEnemyParty()];
   return JSON.stringify({
     session: JSON.stringify(s.gameData.getSessionSaveData()),
+    double: battle.double,
     turn: battle.turn,
     rng: Phaser.Math.RND.state(),
     battleSeedState: battle.battleSeedState,
@@ -645,6 +755,9 @@ async function restore(at: string) {
 function putBack(fork: any) {
   const s = scene();
   const battle = s.currentBattle;
+  // An augmented export's fork point has no `double`, and the final boss's second stage is the one double a solve
+  // reaches (#788).
+  if (fork.double ?? (battle.isClassicFinalBoss && s.getEnemyParty().some((p: any) => p.formIndex > 0))) toDouble();
   const all: any[] = [...s.getPlayerParty(), ...s.getEnemyParty()];
   battle.turn = fork.turn;
   battle.battleSeedState = fork.battleSeedState;
@@ -675,8 +788,11 @@ function putBack(fork: any) {
       p.status.sleepTurnsRemaining = status.sleep;
     }
   }
+  // A load gives the classic final boss its first stage's bars again, whatever the save holds (game-code.md §34).
+  const bars = new Map(enemyParty.map((m: any) => [m.id, m.bossSegments]));
   for (const p of s.getEnemyParty()) {
     p.initialTeamIndex = fork.teamIndex[p.id];
+    if (p.bossSegments) p.bossSegments = bars.get(p.id) || p.bossSegments;
     if (p.bossSegments) p.bossSegmentIndex = fork.bossIndex[p.id];
   }
   // Ours too, though the save keeps it: the reload's summon fires entry abilities again, and a foe's Intimidate took a
@@ -688,10 +804,35 @@ function putBack(fork: any) {
   for (const p of all) Object.assign(p.summonData, fork.temp[p.id]);
 }
 
+/**
+ * A reload loads a double with one foe as a single (game-code.md §28), with our second mon off the field and no command
+ * asked of it. Put on the field without a summon, which would apply its entry abilities a second time (#662, #788).
+ */
+function toDouble() {
+  const s = scene();
+  s.currentBattle.double = true;
+  const [lead, partner] = s.getPlayerParty();
+  if (!partner?.isAllowedInBattle() || partner.isOnField()) return;
+  s.add.existing(partner);
+  s.field.add(partner);
+  partner.setVisible(true);
+  lead.setFieldPosition(FieldPosition.LEFT, 0);
+  partner.setFieldPosition(FieldPosition.RIGHT, 0);
+  // Where the turn's start queues it, ahead of the foe's command: unshifted, it would run ahead of the target screen our
+  // lead's command unshifts, and that screen's prompt would expire unanswered (#788).
+  const levels: any[][] = s.phaseManager.phaseQueue.levels;
+  const level = levels.find(l => l.some(p => p.is("EnemyCommandPhase")));
+  if (level === undefined) throw new Error("the reload queued no foe's command to put our second one ahead of");
+  level.splice(level.findIndex(p => p.is("EnemyCommandPhase")), 0, s.phaseManager.create("CommandPhase", 1));
+}
+
 const hp = () => {
   const s = scene();
   const share = (p: any) => (p.isFainted() ? 0 : p.hp / p.getMaxHp());
-  return { ours: s.getPlayerParty().map(share), foes: s.getEnemyParty().map(share) };
+  // The classic final boss comes back at full HP in its second form (game-code.md §34), so it counts as two lives, the
+  // first form's above the second's: crossing into the second stage is progress to the search, not a heal (#788).
+  const foe = (p: any) => (s.currentBattle.isClassicFinalBoss ? (share(p) + (p.formIndex === 0 ? 1 : 0)) / 2 : share(p));
+  return { ours: s.getPlayerParty().map(share), foes: s.getEnemyParty().map(foe) };
 };
 
 /** Leaves the draws out: of two paths it merges, the search keeps one's draws and drops the other's (#655). */
@@ -700,6 +841,7 @@ function sig(): string {
   const pokemon = (p: any) =>
     [
       p.species.speciesId,
+      p.formIndex,
       p.level,
       p.exp,
       s.currentBattle.playerParticipantIds.has(p.id) ? 1 : 0,
@@ -718,6 +860,7 @@ function sig(): string {
     ].join(":");
   return [
     s.currentBattle.turn,
+    s.currentBattle.double ? 1 : 0,
     s.arena.playerTerasUsed,
     s.currentBattle.enemySwitchCounter,
     s.arena.weather?.weatherType ?? 0,
@@ -732,12 +875,21 @@ function sig(): string {
 const position = () => ({
   sig: sig(),
   hp: hp(),
-  legal: queuedRuns(scene().getPlayerField()[0]) ? [null] : legal(),
+  legal: asksCommand() ? legal() : [null],
   forkPoint: forkPoint(),
 });
 
-/** As its turn played it: the command, then what the turn asked for, a `queued` input on a turn with no command. */
-function naming(input: Input | null, learns: LearnPick[], replacement?: PartySlot): Input | null {
+/**
+ * As its turn played it: the command, then what the turn asked for, a `queued` input on a turn with no command. A turn
+ * that started double names it all in a `double` input (#788).
+ */
+function naming(input: Input | null, learns: LearnPick[], replacements: Replacement[], wasDouble: boolean): Input | null {
+  if (input?.kind === "double" || (wasDouble && (input === null || input.kind === "queued"))) {
+    const commands = input?.kind === "double" ? input.commands : [null, null];
+    if (commands.every(c => c === null) && learns.length === 0 && replacements.length === 0) return null;
+    return { kind: "double", commands, ...(learns.length > 0 && { learns }), ...(replacements.length > 0 && { replacements }) };
+  }
+  const replacement = replacements[0] && { slot: replacements[0].slot, species: replacements[0].species };
   const asked: Asked = { ...(learns.length > 0 && { learns }), ...(replacement !== undefined && { replacement }) };
   if (input !== null && input.kind !== "queued") {
     const { learns: _learns, replacement: _replacement, ...played } = input;
@@ -752,15 +904,17 @@ async function expand(at: string, inputs: (Input | null)[]) {
   while (queue.length > 0) {
     const input = queue.shift() as Input | null;
     await restore(at);
+    const wasDouble = double();
     const named = input?.learns ?? [];
+    const namedSwaps = replacementsOf(input);
     const asked: Learning[] = [];
-    let offered: PartySlot[] = [];
+    const swaps: Replacing[] = [];
     let ended: Turn;
     try {
       ended = await turn(input, {
-        choose: all => {
-          offered = all;
-          return input?.replacement ?? all[0];
+        choose: (replacing, i) => {
+          swaps.push(replacing);
+          return namedSwaps[i] ?? replacing.offered[0];
         },
         pick: (prompt, i) => {
           asked.push(prompt);
@@ -772,17 +926,24 @@ async function expand(at: string, inputs: (Input | null)[]) {
       ended = { illegal: `threw ${err instanceof Error ? err.message : String(err)}`.split("\n")[0] };
     }
     const learns = asked.map((prompt, i) => named[i] ?? declined(prompt));
-    const played = naming(input, learns, offered.length > 0 ? (input?.replacement ?? offered[0]) : undefined);
+    const replacements = swaps.map(({ field, offered }, i) => {
+      const { slot, species } = namedSwaps[i] ?? offered[0];
+      return { slot, species, field };
+    });
+    const played = naming(input, learns, replacements, wasDouble);
     // Each pick the input left open is a sibling of its own, the picks before it as played and what follows it open. A
     // won or lost turn's picks change nothing after it.
     if (ended !== "won" && ended !== "lost") {
       for (let i = named.length; i < asked.length; i++) {
         for (const forget of asked[i].knows) {
-          queue.push(naming(input, [...learns.slice(0, i), { ...declined(asked[i]), forget }]));
+          queue.push(naming(input, [...learns.slice(0, i), { ...declined(asked[i]), forget }], [], wasDouble));
         }
       }
     }
-    if (input?.replacement === undefined) queue.push(...offered.slice(1).map(other => naming(input, learns, other)));
+    for (let i = namedSwaps.length; i < swaps.length; i++) {
+      const { field, offered } = swaps[i];
+      queue.push(...offered.slice(1).map(other => naming(input, learns, [...replacements.slice(0, i), { ...other, field }], wasDouble)));
+    }
     const stray = strayPrompts();
     if (ended === "lost") dirty = true;
     if (typeof ended === "object") children.push({ input: played, end: "dropped", why: ended.illegal });
@@ -807,14 +968,14 @@ async function checks(inputs: Input[]) {
     const at = scene().currentBattle.turn;
     let input: Input | null;
     let end: Turn;
-    if (queuedRuns(scene().getPlayerField()[0])) {
+    if (!asksCommand()) {
       forks.push(forkPoint());
       ({ input, ended: end } = await queuedTurn(inputs, next));
       if (input) next++;
     } else {
       input = inputs[next] ?? null;
       if (input === null) break;
-      if (input.kind === "queued") throw new Error(`input ${next + 1} is for a turn the game plays for us, but turn ${at} asks for one`);
+      if (isQueued(input)) throw new Error(`input ${next + 1} is for a turn the game plays for us, but turn ${at} asks for one`);
       next++;
       forks.push(forkPoint());
       end = await turn(input);

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { MonState, OracleLine, Replay } from "../../src/solver/oracle-line.ts";
 import type { Played } from "../../src/solver/worker.ts";
+import { describeInput } from "../../src/solver/describe.ts";
 import { printChecks, printOracleLine, printReplay } from "./print.ts";
 
 const mon = (species: MonState["species"], hp: number, extra: Partial<MonState> = {}): MonState => ({
@@ -131,4 +132,31 @@ test("a step prints each learn pick its turn took, after the input and before th
 
   assert.equal(lines[1], "T6  Scratch, Bulbasaur (slot 1) forgets Gunk Shot for Leech Seed");
   assert.equal(lines[4], "T7  played for us, Bulbasaur (slot 1) declines Leech Seed, replacement Squirtle (slot 2)");
+});
+
+test("a double step names each field slot's mon from the turn before, then its learn picks and each replacement's field (#788)", () => {
+  const field = [mon("PROBOPASS", 209, { onField: true }), mon("SNORLAX", 830, { slot: 1, onField: true }), mon("RESHIRAM", 662, { slot: 2 })];
+  const pulse = { kind: "move", move: "EARTH_POWER", tera: false } as const;
+  const steps = [
+    { ...won.steps[0], checkpoint: { ...won.steps[0].checkpoint, ours: field } },
+    {
+      ...won.steps[1],
+      input: {
+        kind: "double",
+        commands: [{ ...pulse, target: { side: "foes", field: 1 } }, { kind: "switch", to: { slot: 2, species: "RESHIRAM" } }],
+        replacements: [{ slot: 2, species: "RESHIRAM", field: 1 }],
+      },
+    },
+    { ...won.steps[1], input: { kind: "double", commands: [null, null], learns: [{ slot: 0, species: "PROBOPASS", move: "POWER_GEM", forget: null }] } },
+  ] as const;
+  const lines = printReplay({ ...won, steps }).split("\n");
+
+  assert.equal(lines[4], "T7  Probopass: Earth Power → foe field 1 · Snorlax: switch → Reshiram (slot 2), replacement Reshiram (slot 2) into field 1");
+  assert.equal(lines[7], "T7  played for us, Probopass (slot 0) declines Power Gem");
+});
+
+test("a double input with no turn before it to name its mons names their field slots (#788)", () => {
+  const input = { kind: "double", commands: [null, { kind: "move", move: "TWISTER", tera: true }] } as const;
+
+  assert.equal(describeInput(input), "field 1: Tera + Twister");
 });

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { MoveId, SpeciesId, Stat, StatusEffect } from "../enums/generated.ts";
-import type { Checkpoint, Input, LearnPick, MonState, Outcome, PartySlot } from "./oracle-line.ts";
+import type { Checkpoint, Command, Input, LearnPick, MonState, Outcome, PartySlot } from "./oracle-line.ts";
 
 const keyOf = <T extends object>(table: T, what: string) =>
   z.custom<keyof T & string>(v => typeof v === "string" && Object.hasOwn(table, v), `not a ${what}`);
@@ -16,7 +16,35 @@ const learnPick = z.strictObject({
   forget: keyOf(MoveId, "move").nullable(),
 }) satisfies z.ZodType<LearnPick>;
 
-const asked = { replacement: partySlot.optional(), learns: z.array(learnPick).min(1).readonly().optional() };
+const learns = z.array(learnPick).min(1).readonly().optional();
+const asked = { replacement: partySlot.optional(), learns };
+
+const field = z.union([z.literal(0), z.literal(1)]);
+
+const command = z.discriminatedUnion("kind", [
+  z.strictObject({
+    kind: z.literal("move"),
+    move: keyOf(MoveId, "move"),
+    tera: z.boolean(),
+    target: z.strictObject({ side: z.enum(["foes", "ours"]), field }).optional(),
+  }),
+  z.strictObject({ kind: z.literal("switch"), to: partySlot }),
+]) satisfies z.ZodType<Command>;
+
+const double = z
+  .strictObject({
+    kind: z.literal("double"),
+    commands: z.tuple([command.nullable(), command.nullable()]).readonly(),
+    replacements: z.array(z.strictObject({ ...partySlot.shape, field })).min(1).readonly().optional(),
+    learns,
+  })
+  .refine(d => d.commands.some(c => c !== null) || d.replacements !== undefined || d.learns !== undefined, {
+    message: "a double turn names a command, a faint replacement or a learn pick",
+  })
+  .refine(
+    ({ commands: [a, b] }) => a?.kind !== "switch" || b?.kind !== "switch" || a.to.slot !== b.to.slot,
+    { message: "both field slots switch to the same party slot" },
+  );
 
 export const input = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("move"), move: keyOf(MoveId, "move"), tera: z.boolean(), ...asked }),
@@ -26,6 +54,7 @@ export const input = z.discriminatedUnion("kind", [
     .refine(q => q.replacement !== undefined || q.learns !== undefined, {
       message: "a turn the game plays for us names a faint replacement, learn picks or both",
     }),
+  double,
 ]) satisfies z.ZodType<Input>;
 
 export const monFacts = z.strictObject({

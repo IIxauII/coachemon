@@ -96,7 +96,7 @@ export function cause(reason: Reason): string {
       if (reason.index === null || reason.tried === null) {
         return `turn ${reason.turn}, which has no input of its own, ${reason.why}.`;
       }
-      const offered = reason.legal.length > 0 ? `; the game offers ${reason.legal.map(describeInput).join(", ")}` : "";
+      const offered = reason.legal.length > 0 ? `; the game offers ${reason.legal.map(i => describeInput(i)).join(", ")}` : "";
       return `input ${reason.index + 1}, ${describeInput(reason.tried)}, ${reason.why} at turn ${reason.turn}${offered}.`;
     }
     case "scene_mismatch":

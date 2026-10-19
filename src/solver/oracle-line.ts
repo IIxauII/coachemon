@@ -41,7 +41,16 @@ export type Input =
    * A turn the game plays for us that asks for a faint replacement, a learn pick or both, and names at least one: one
    * that asks for neither is a step with no input (#702, #673).
    */
-  | ({ kind: "queued" } & Asked);
+  | ({ kind: "queued" } & Asked)
+  /** Every turn that starts with the battle double, as the final boss's second stage is (#788). */
+  | {
+      kind: "double";
+      /** By field slot. null: that slot is asked for nothing this turn (empty, or playing a queued move). */
+      commands: readonly [Command | null, Command | null];
+      /** In the order the turn asks; `field` is the slot each one fills. */
+      replacements?: readonly FieldReplacement[];
+      learns?: readonly LearnPick[];
+    };
 
 /** What this step's turn asks for after its command, each picked inside the step. */
 type Asked = {
@@ -50,6 +59,16 @@ type Asked = {
   /** Absent where the turn asks for none (#673). */
   learns?: readonly LearnPick[];
 };
+
+/** One field slot's command in a double battle. */
+export type Command =
+  | { kind: "move"; move: keyof typeof MoveId; tera: boolean; target?: Target }
+  | { kind: "switch"; to: PartySlot };
+
+/** A single-target move's target where it has a choice; absent where it has none (one foe on the field). */
+export type Target = { side: "foes" | "ours"; field: 0 | 1 };
+
+export type FieldReplacement = PartySlot & { field: 0 | 1 };
 
 export type PartySlot = { slot: number; species: keyof typeof SpeciesId };
 
