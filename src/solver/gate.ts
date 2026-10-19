@@ -5,8 +5,15 @@ import type { Recheck, SolveInput } from "./input.ts";
 import { noAnswer } from "./no-answer.ts";
 import type { NoAnswer } from "./oracle-line.ts";
 
-/** `carried` lets a save from an older game through, for the pin bump's re-check alone: never a player's solve (#703). */
+/** `carried` lets a save from an older game through, migrated by the game's own load as it loads it (#703). */
 export type Carry = { carried?: boolean };
+
+/** A player's save carries when an older game wrote it and the live export, stamped by the live game, is on the clone's version (#764). */
+export const carryOf = ({ save, liveExport, cloneVersion }: Pick<SolveInput, "save" | "liveExport" | "cloneVersion">): Carry => ({
+  carried: olderThan(save.gameVersion, cloneVersion) && liveExport?.gameVersion === cloneVersion,
+});
+
+const olderThan = (version: string, than: string) => version.localeCompare(than, undefined, { numeric: true }) < 0;
 
 /**
  * The fights no oracle line can be trusted in, read off the input alone, before any clone runs. A refusal that waits on
@@ -19,8 +26,7 @@ export function refuse(
   { carried = false }: Carry = {},
 ): NoAnswer | null {
   if (save.gameMode === GameModes.DAILY) return noAnswer({ code: "daily" });
-  const older = save.gameVersion.localeCompare(cloneVersion, undefined, { numeric: true }) < 0;
-  if (save.gameVersion !== cloneVersion && !(carried && older)) {
+  if (save.gameVersion !== cloneVersion && !(carried && olderThan(save.gameVersion, cloneVersion))) {
     return noAnswer({ code: "version_mismatch", live: save.gameVersion, clone: cloneVersion });
   }
   if (save.battleType === BattleType.MYSTERY_ENCOUNTER || (save.mysteryEncounterType ?? -1) !== -1) {

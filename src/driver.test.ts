@@ -1354,8 +1354,8 @@ const DRAYTON: { save: Record<string, unknown>; live: { wave: number; battleSeed
   readAtPin(new URL("./solver/fixtures/drayton-w188.json", import.meta.url), "gameVersion");
 
 /** The session read at Drayton's first decision, with `save` standing in for its wave-start save. */
-const draytonRead = (save: Record<string, unknown> = DRAYTON.save) => () =>
-  ({ ok: true, wave: DRAYTON.live.wave, battleSeed: DRAYTON.live.battleSeed, waveStart: save, export: DRAYTON.liveExport }) as const;
+const draytonRead = (save: Record<string, unknown> = DRAYTON.save, liveExport = DRAYTON.liveExport) => () =>
+  ({ ok: true, wave: DRAYTON.live.wave, battleSeed: DRAYTON.live.battleSeed, waveStart: save, export: liveExport }) as const;
 
 /** A tab at a fight's decision, on the hub unless said otherwise, with solving on and `solve` as the solve job's work. */
 async function solveTab(t: TestContext, solve: JobWork, over: { session?: FakeScreen["session"]; transport?: "hub" | "cdp"; solving?: boolean } = {}) {
@@ -1408,13 +1408,19 @@ test("a solve job solves the fight on the tab from its wave-start save, relays i
   assert.deepEqual((await driver.readJob(started.job)).result, answer);
 });
 
-for (const [what, save, code, said] of [
-  ["a Daily", { ...DRAYTON.save, gameMode: GameModes.DAILY }, "daily", /Daily's seed is shared/],
-  ["a live game on another version", { ...DRAYTON.save, gameVersion: "1.12.1.0" }, "version_mismatch", /live game is 1\.12\.1\.0/],
+const OTHER = { gameVersion: "1.12.1.0" };
+for (const [what, read, code, said] of [
+  ["a Daily", draytonRead({ ...DRAYTON.save, gameMode: GameModes.DAILY }), "daily", /Daily's seed is shared/],
+  [
+    "a live game on another version",
+    draytonRead({ ...DRAYTON.save, ...OTHER }, { ...DRAYTON.liveExport, ...OTHER }),
+    "version_mismatch",
+    /live game is 1\.12\.1\.0/,
+  ],
 ] as const) {
   test(`a solve in ${what} refuses at once with its reason, before any job starts (#672)`, async t => {
     const { held, work } = heldSolve(null);
-    const driver = await solveTab(t, work, { session: draytonRead(save) });
+    const driver = await solveTab(t, work, { session: read });
     const r = await refusalOf(driver.startJob(SOLVE_JOB, {}));
     assert.equal(r.code, "no_answer", r.message);
     assert.equal((r.detail.reason as { code: string }).code, code);
@@ -1422,6 +1428,17 @@ for (const [what, save, code, said] of [
     assert.equal(held.started, 0, "no job was started");
   });
 }
+
+test("a solve of a run continued after the game updated to the pin starts its job from the older wave-start save (#764)", async t => {
+  const { held, work } = heldSolve(null);
+  const older = { ...DRAYTON.save, gameVersion: "1.12.0.11" };
+  const driver = await solveTab(t, work, { session: draytonRead(older) });
+  const started = await driver.startJob(SOLVE_JOB, {});
+  assert.equal(started.state, "running", JSON.stringify(started));
+  assert.deepEqual((held.args?.input as Record<string, unknown>).save, older);
+  held.finish();
+  await settledJobs();
+});
 
 test("a solve over CDP answers that it needs the hub, without reading the game or starting a job (#672)", async t => {
   const { held, work } = heldSolve(null);

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { ArenaTagSide, BattleType, GameModes, MysteryEncounterType, TrainerVariant } from "../enums/generated.ts";
-import { refuse } from "./gate.ts";
+import { carryOf, refuse } from "./gate.ts";
 import type { MidFightExtras, Recheck, SessionSave } from "./input.ts";
 
 const PIN = "1.12.0.11";
@@ -49,6 +49,27 @@ test("a carried save from a newer game than the clone's still gets no answer: no
   const result = refuse({ save: drayton, cloneVersion: "1.12.0.9" }, { gameVersion: "1.12.0.9" }, { carried: true });
 
   assert.deepEqual(result?.reason, { code: "version_mismatch", live: PIN, clone: "1.12.0.9" });
+});
+
+test("a player's save from an older game carries when the live game already serves the clone's version (#764)", () => {
+  const save = { ...drayton, gameVersion: "1.12.0.9" };
+  const carry = carryOf({ save, liveExport: drayton, cloneVersion: PIN });
+
+  assert.deepEqual(carry, { carried: true });
+  assert.equal(refuse({ save, cloneVersion: PIN }, { gameVersion: PIN }, carry), null);
+});
+
+test("a player's save never carries while the live game isn't on the clone's version, or from a newer game (#764)", () => {
+  const older = { ...drayton, gameVersion: "1.12.0.9" };
+  for (const input of [
+    { save: older, cloneVersion: PIN },
+    { save: older, liveExport: older, cloneVersion: PIN },
+    { save: older, liveExport: { ...drayton, gameVersion: "1.12.1.0" }, cloneVersion: PIN },
+    { save: drayton, liveExport: older, cloneVersion: "1.12.0.9" },
+    { save: drayton, liveExport: drayton, cloneVersion: PIN },
+  ]) {
+    assert.deepEqual(carryOf(input), { carried: false }, `${input.save.gameVersion} on ${input.liveExport?.gameVersion}`);
+  }
 });
 
 test("a Daily gets no answer, never one that waits on a release: solving is not offered there at all (#659)", () => {
