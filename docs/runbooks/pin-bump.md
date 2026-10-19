@@ -158,8 +158,8 @@ The old fight can't be played again on `<new>`: pokerogue.net offers no session 
 does, `src/ui/handlers/menu-ui-handler.ts` in the clone), and the extension reads pokerogue.net alone. So a fight that
 no longer carries is replaced by a new one, played live on pokerogue.net once it serves `<new>`:
 
-1. Reach a fight like the one it replaces: a single trainer fight, or the classic final boss for Eternatus W200. Not a
-   Daily, a fight double from its first turn or a Mystery Encounter, which the solver refuses.
+1. Reach a fight like the one it replaces: a single trainer fight, a trainer double, or the classic final boss for
+   Eternatus W200. Not a Daily or a Mystery Encounter, which the solver refuses.
 2. At the first decision, before any input, call `read_session`, and write `<stem>.json` from it.
 3. Play it to a win. After each turn, write down what live shows for the mons the line turns on.
 4. Write `<stem>.win.script.json`, and name the fight in `KNOWN_FIGHTS` in place of the one it replaces.

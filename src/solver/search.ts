@@ -45,6 +45,9 @@ export const LDS: Lds = { ours: 1, alternatives: 2, discrepancies: 2, expansions
 
 const STALL_TURNS = 6;
 
+// (#792)
+export const PAIRED = 3;
+
 /** Expansions, each one turn played from a fork point, against the discrepancy search's and every beam's together. */
 export type Progress = { spent: number; budget: number };
 
@@ -62,6 +65,8 @@ export type SearchInput = {
   /** null runs the beams alone. */
   lds?: Lds | null;
   portfolio?: readonly Beam[];
+  /** How many of each field slot's own commands a double pairs up with the other's (`expandPruned`). */
+  paired?: number;
   progress?: (progress: Progress) => void;
 };
 
@@ -72,7 +77,14 @@ type Expanded = { node: Node; child: Child };
 /** What every stage of one search adds to its "no answer", and the paths it has already sent to replay. */
 type Trail = { unreplayed: string[]; dropped: number; tried: Set<string> };
 
-type StageInput = { root: Position; pool: Pool; validate: Validate; trail: Trail; progress: (spent: number) => void };
+type StageInput = {
+  root: Position;
+  pool: Pool;
+  validate: Validate;
+  trail: Trail;
+  paired: number;
+  progress: (spent: number) => void;
+};
 
 type Stage<End> = Found | NoAnswer | { kind: "ended"; end: End };
 
@@ -93,6 +105,11 @@ class OutOfBudget extends Error {}
 const ENVIRONMENT_GONE = new Set<Reason["code"]>(["no_clone", "clone_version"]);
 
 const sum = (xs: readonly number[]) => xs.reduce((a, b) => a + b, 0);
+const parts = <T>(xs: readonly T[], size: number): T[][] => {
+  const out: T[][] = [];
+  for (let i = 0; i < xs.length; i += size) out.push(xs.slice(i, i + size));
+  return out;
+};
 const foeLost = (hp: Hp) => sum(hp.foes.map(f => 1 - f));
 const played = (path: readonly Action[]) => path.filter((a): a is Input => a !== null);
 
@@ -100,6 +117,46 @@ const failure = (e: unknown): NoAnswer =>
   e instanceof Unanswered
     ? e.answer
     : noAnswer({ code: "harness_failed", why: `the search's worker failed: ${e instanceof Error ? e.message : String(e)}` });
+
+const worth = (hp: Hp, ours: number) => foeLost(hp) + ours * sum(hp.ours);
+
+/** Of a double's two field slots' commands, which one the action names; a single's and a queued turn's name none. */
+const slotKey = (action: Action, field: 0 | 1): string | null =>
+  action?.kind === "double" ? JSON.stringify(action.commands[field]) : null;
+
+/**
+ * A double's actions are every pairing of its two field slots' commands. Where both slots have more than `paired` to
+ * choose from, each slot's commands are first played beside one fixed command of the other's, and only the `paired`
+ * best of each are paired up (#792). Every turn played is a child, the first round's included.
+ */
+async function expandPruned(
+  node: Node,
+  play: (inputs: readonly Action[]) => Promise<Expanded[]>,
+  ours: number,
+  paired: number,
+): Promise<Expanded[]> {
+  const { legal } = node.at;
+  const options = ([0, 1] as const).map(f => new Set(legal.map(a => slotKey(a, f))));
+  if (options.some(o => o.has(null) || o.size <= paired)) return play(legal);
+  const fixed = [slotKey(legal[0], 0), slotKey(legal[0], 1)];
+  const probe = legal.filter(a => slotKey(a, 0) === fixed[0] || slotKey(a, 1) === fixed[1]);
+  const first = await play(probe);
+  const best = ([0, 1] as const).map(f => {
+    const other = (1 - f) as 0 | 1;
+    const value = new Map<string, number>();
+    for (const { child } of first) {
+      if (slotKey(child.input, other) !== fixed[other]) continue;
+      const key = slotKey(child.input, f) as string;
+      const v = child.end === "won" ? Infinity : child.end === "on" ? worth(child.at.hp, ours) : -Infinity;
+      value.set(key, Math.max(value.get(key) ?? -Infinity, v));
+    }
+    return new Set([...value].sort((a, b) => b[1] - a[1]).slice(0, paired).map(([key]) => key));
+  });
+  const rest = legal.filter(
+    a => !probe.includes(a) && best[0].has(slotKey(a, 0) as string) && best[1].has(slotKey(a, 1) as string),
+  );
+  return rest.length > 0 ? [...first, ...(await play(rest))] : first;
+}
 
 function scored(children: readonly Expanded[], ours: number, trail: Trail) {
   const wins: { path: Action[]; oursLeft: number }[] = [];
@@ -116,7 +173,7 @@ function scored(children: readonly Expanded[], ours: number, trail: Trail) {
       stalled++;
       continue;
     }
-    const score = lost + ours * sum(child.at.hp.ours);
+    const score = worth(child.at.hp, ours);
     const same = kept.get(child.at.sig);
     if (same === undefined || score > same.score) kept.set(child.at.sig, { path, at: child.at, hist, score });
   }
@@ -159,6 +216,7 @@ export async function search({
   budget,
   lds = LDS,
   portfolio = PORTFOLIO,
+  paired = PAIRED,
   progress,
 }: SearchInput): Promise<Found | NoAnswer> {
   const trail: Trail = { unreplayed: [], dropped: 0, tried: new Set() };
@@ -172,6 +230,7 @@ export async function search({
         pool,
         validate,
         trail,
+        paired,
         progress: spent => {
           ldsSpent = Math.min(spent, lds.expansions);
           progress?.({ spent: ldsSpent, budget: total });
@@ -184,7 +243,7 @@ export async function search({
     ldsEnd = ldsResult.end;
   }
   const beamResult = await beams(
-    { root, pool, validate, trail, progress: spent => progress?.({ spent: ldsSpent + spent, budget: total }) },
+    { root, pool, validate, trail, paired, progress: spent => progress?.({ spent: ldsSpent + spent, budget: total }) },
     budget,
     portfolio,
   );
@@ -194,22 +253,21 @@ export async function search({
 
 /** One position expanded at a time, its actions spread over the pool. */
 async function discrepancySearch(
-  { root, pool, validate, trail, progress }: StageInput,
+  { root, pool, validate, trail, paired, progress }: StageInput,
   lds: Lds,
   turns: number,
 ): Promise<Stage<LdsEnd>> {
   let spent = 0;
   let k = 0;
 
-  const expand = async (node: Node): Promise<Expanded[]> => {
-    const chunk = Math.max(1, Math.ceil(node.at.legal.length / pool.size));
-    const parts: Action[][] = [];
-    for (let i = 0; i < node.at.legal.length; i += chunk) parts.push(node.at.legal.slice(i, i + chunk));
-    const children = (await Promise.all(parts.map(part => pool.expand(node.at.forkPoint, part)))).flat();
+  const play = async (node: Node, inputs: readonly Action[]): Promise<Expanded[]> => {
+    const chunk = Math.max(1, Math.ceil(inputs.length / pool.size));
+    const children = (await Promise.all(parts(inputs, chunk).map(part => pool.expand(node.at.forkPoint, part)))).flat();
     spent += children.length;
     progress(spent);
     return children.map(child => ({ node, child }));
   };
+  const expand = (node: Node) => expandPruned(node, inputs => play(node, inputs), lds.ours, paired);
 
   /** `seen` holds the most discrepancies any visit this pass had left at each sig. */
   const dive = async (node: Node, left: number, seen: Map<string, number>): Promise<Found | NoAnswer | null> => {
@@ -243,7 +301,7 @@ async function discrepancySearch(
 
 /** The pool serves the earliest beam in the portfolio with a job queued. */
 function beams(
-  { root, pool, validate, trail, progress }: StageInput,
+  { root, pool, validate, trail, paired, progress }: StageInput,
   budget: Budget,
   portfolio: readonly Beam[],
 ): Promise<Stage<BeamEnd[]>> {
@@ -308,12 +366,11 @@ function beams(
 
     const layer = async (beam: BeamRun, nodes: readonly Node[]) => {
       const chunk = Math.max(1, Math.ceil(sum(nodes.map(n => n.at.legal.length)) / (2 * pool.size)));
-      const jobs = nodes.flatMap(node => {
-        const parts: Action[][] = [];
-        for (let i = 0; i < node.at.legal.length; i += chunk) parts.push(node.at.legal.slice(i, i + chunk));
-        return parts.map(async part => (await expand(beam, node.at.forkPoint, part)).map(child => ({ node, child })));
-      });
-      return (await Promise.all(jobs)).flat();
+      const play = async (node: Node, inputs: readonly Action[]) => {
+        const jobs = parts(inputs, chunk).map(async part => (await expand(beam, node.at.forkPoint, part)).map(child => ({ node, child })));
+        return (await Promise.all(jobs)).flat();
+      };
+      return (await Promise.all(nodes.map(node => expandPruned(node, inputs => play(node, inputs), beam.ours, paired)))).flat();
     };
 
     /** One at a time, so a solve never runs more than one replay beside its pool. */

@@ -83,7 +83,7 @@ is not offered there.
   - a version mismatch, or a version whose harness test hasn't replayed a known fight;
   - an item dropped on load;
   - a Mystery Encounter battle;
-  - a double, until doubles are supported;
+  - a double, until doubles are supported (lifted by #792);
   - Safeguard up mid-fight;
   - a Daily run.
 - **An oracle line claims replay at most, never exact.** The player's own inputs sit between the claim and every later

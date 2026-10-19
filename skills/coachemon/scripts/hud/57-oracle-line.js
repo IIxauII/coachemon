@@ -73,12 +73,14 @@ const fieldShaped = f => f === 0 || f === 1;
 const commandShaped = c => c === null || (isObject(c) && (c.kind === "switch" ? isObject(c.to)
   : c.kind === "move" && Number.isInteger(c.move)
     && (c.target === undefined || (isObject(c.target) && ["foes", "ours"].includes(c.target.side) && fieldShaped(c.target.field)))));
-// A double that asks nothing of either slot names a replacement or a pick, as a queued step does.
+const fieldPicksShaped = list => list === undefined || (Array.isArray(list) && list.every(r => isObject(r) && fieldShaped(r.field)));
+// A double that asks nothing of either slot names a replacement, a pick or a pivot, as a queued step does.
 const doubleShaped = i => Array.isArray(i.commands) && i.commands.length === 2 && i.commands.every(commandShaped) && i.replacement === undefined
-  && (i.replacements === undefined || (Array.isArray(i.replacements) && i.replacements.every(r => isObject(r) && fieldShaped(r.field))))
-  && (i.commands.some(Boolean) || i.replacements?.length > 0 || i.learns?.length > 0);
+  && fieldPicksShaped(i.replacements) && fieldPicksShaped(i.pivots)
+  && (i.commands.some(Boolean) || i.replacements?.length > 0 || i.learns?.length > 0 || i.pivots?.length > 0);
 const inputShaped = i => i === null || (isObject(i) && (i.kind !== "switch" || isObject(i.to))
-  && (i.kind !== "queued" || isObject(i.replacement) || i.learns?.length > 0) && (i.kind !== "double" || doubleShaped(i))
+  && (i.kind !== "queued" || isObject(i.replacement) || i.learns?.length > 0 || i.pivots?.length > 0) && (i.kind !== "double" || doubleShaped(i))
+  && (i.pivots === undefined || (Array.isArray(i.pivots) && i.pivots.every(isObject)))
   && (i.replacement === undefined || isObject(i.replacement)) && (i.learns === undefined || (Array.isArray(i.learns) && i.learns.every(pickShaped))));
 const shaped = line => typeof line?.seed === "string" && Number.isInteger(line.wave) && Array.isArray(line.steps) && line.steps.length > 0
   && line.steps.every((st, i) => Number.isInteger(st?.turn) && st.turn >= 1 && (i === 0 || st.turn > line.steps[i - 1].turn)
@@ -87,6 +89,8 @@ const shaped = line => typeof line?.seed === "string" && Number.isInteger(line.w
 const pressed = input => (input?.kind === "queued" || (input?.kind === "double" && !input.commands.some(Boolean)) ? null : input);
 // A faint's replacements in the order the turn asks them, each with the field slot it fills.
 const sentOf = input => (input?.kind === "double" ? input.replacements ?? [] : input?.replacement ? [{ ...input.replacement, field: 0 }] : []);
+// The same of a turn's pivots (CONTEXT.md, `Pivot`).
+const pivotsOf = input => (input?.kind === "double" ? input.pivots ?? [] : (input?.pivots ?? []).map(p => ({ ...p, field: 0 })));
 
 // @only 98-watch, tests: holdOracleLine
 export const holdOracleLine = (s, line) => {
@@ -115,10 +119,13 @@ const matchesLine = (st, played) => {
   if (input.kind === "double") return input.commands.every((c, f) => !c || commandMatches(c, played?.[f]));
   return commandMatches(input, played?.[0]);
 };
-// Only a faint asks for a replacement: with the mover still in front, none was picked.
+// Only a faint asks for a replacement: with the mover still in front, none was picked. A pivot's pick shows in who is in
+// front once the turn is over.
 const pickedOther = (s, h, i) => {
-  const front = liveField(s).ours;
-  return sentOf(h.line.steps[i].input).some(r => front[r.field] !== outOf(h, i, r.field) && front[r.field] !== r.species);
+  const front = liveField(s).ours, st = h.line.steps[i];
+  const fieldDiffers = () => [0, 1].some(f => (st.checkpoint.ours.find(m => m.onField && m.slot === f)?.species ?? null) !== front[f]);
+  return sentOf(st.input).some(r => front[r.field] !== outOf(h, i, r.field) && front[r.field] !== r.species)
+    || (pivotsOf(st.input).length > 0 && fieldDiffers());
 };
 // Steps `from` exclusive to `i` inclusive are behind us now, and `misses` came of them.
 const miss = (h, from, i, misses, picked) => {
@@ -285,11 +292,19 @@ export const oracleLineModel = s => {
       const out = double ? outOf(h, i, r.field) : null;
       return { ...named(ours(r), r.species), field: r.field, for: out == null ? null : named(ours({ species: out }), out) };
     });
+    // Each pivot takes out whoever the one before it in that field sent in.
+    const pivotedOut = new Map();
+    const pivots = pivotsOf(st.input).map(r => {
+      const out = pivotedOut.get(r.field) ?? (double ? outOf(h, i, r.field) : input?.kind === "switch" ? input.to.species : moverOf(h, i));
+      pivotedOut.set(r.field, r.species);
+      return { ...named(ours(r), r.species), field: r.field, for: out == null ? null : named(ours({ species: out }), out) };
+    });
     return {
       turn: st.turn,
       at: st.turn < turn ? "done" : st.turn === turn ? "now" : "later",
       act,
       learns: picksOf(line, st).map(p => pickOf(party, ours(p), p)),
+      pivots,
       sends,
       after: [...inFront(st.checkpoint.ours, ours), ...inFront(st.checkpoint.foes, theirs)],
     };
@@ -340,7 +355,7 @@ export const oracleStepSummary = m => {
   if (m.learning) return `⚔ ${at} · ${pickText(m.learning)}`;
   const sends = sendsToCome(m, st).map(x => `then ${sendWords(x)}`);
   if (m.sending) return [`⚔ ${at}`, sendWords(m.sending), ...sends].join(" · ");
-  const then = [...st.learns.map(p => `then ${pickText(p)}`), ...sends];
+  const then = [...st.pivots.map(x => `then ${sendWords(x)}`), ...st.learns.map(p => `then ${pickText(p)}`), ...sends];
   if (!st.act) return [at, "no input", ...then, `expect ${expectText(st.after)}`].filter(Boolean).join(" · ");
   return [`⚔ ${at}`, actText(st.act), ...then].filter(Boolean).join(" · ");
 };

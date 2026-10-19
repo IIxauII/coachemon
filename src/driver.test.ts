@@ -1627,12 +1627,12 @@ for (const [what, at] of [
 }
 
 test("a solve that answered no answer has no oracle line to hand, and the refusal carries its reason (#673)", async t => {
-  const answer = { kind: "no_answer", reason: { code: "double" }, message: "the oracle can't replay a double battle yet. The card still coaches." };
+  const answer = { kind: "no_answer", reason: { code: "mystery_encounter" }, message: "the oracle can't replay a Mystery Encounter battle yet. The card still coaches." };
   const { driver, job, handed } = await solvedTab(t, answer);
   const r = await refusalOf(driver.handOracleLine(job, {}));
   assert.equal(r.code, "no_oracle_line", r.message);
-  assert.deepEqual(r.detail.reason, { code: "double" });
-  assert.match(r.message, /can't replay a double battle yet\. The card still coaches\./);
+  assert.deepEqual(r.detail.reason, { code: "mystery_encounter" });
+  assert.match(r.message, /can't replay a Mystery Encounter battle yet\. The card still coaches\./);
   assert.deepEqual(handed, []);
 });
 

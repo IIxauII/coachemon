@@ -89,15 +89,29 @@ test("a double turn reads a command per field slot, its faint replacements by th
 test("a double turn that names nothing, sends both field slots to one party slot or terastallizes both doesn't read (#788)", () => {
   const toSnorlax = { kind: "switch", to: { slot: 3, species: "SNORLAX" } };
   for (const [bad, why] of [
-    [{ kind: "double", commands: [null, null] }, /names a command, a faint replacement or a learn pick/],
+    [{ kind: "double", commands: [null, null] }, /names a command, a faint replacement, a learn pick or a pivot/],
     [{ kind: "double", commands: [toSnorlax, toSnorlax] }, /both field slots switch to the same party slot/],
     [{ kind: "double", commands: [{ ...pulse, tera: true }, { ...pulse, tera: true }] }, /both field slots terastallize/],
     [{ kind: "double", commands: [pulse] }, /inputs\[0\]\.commands/],
     [{ kind: "double", commands: [{ ...pulse, target: { side: "foes", field: 2 } }, null] }, /inputs\[0\]\.commands\[0\]\.target\.field/],
     [{ kind: "double", commands: [pulse, null], replacements: [{ slot: 5, species: "GYARADOS" }] }, /inputs\[0\]\.replacements\[0\]\.field/],
+    [{ kind: "double", commands: [pulse, null], pivots: [{ slot: 5, species: "GYARADOS" }] }, /inputs\[0\]\.pivots\[0\]\.field/],
   ] as const) {
     assert.throws(() => readScript(JSON.stringify({ inputs: [bad] })), why);
   }
+});
+
+test("a turn names the mon each pivot sends in, by field slot in a double, and a turn the game plays for us may name a pivot alone (#792)", () => {
+  const uTurn = { kind: "move", move: "U_TURN", tera: false };
+  const inputs = [
+    { ...uTurn, pivots: [{ slot: 3, species: "SNORLAX" }] },
+    { kind: "queued", pivots: [{ slot: 4, species: "GOLBAT" }] },
+    { kind: "double", commands: [uTurn, pulse], pivots: [{ slot: 2, species: "GOLBAT", field: 0 }] },
+    { kind: "double", commands: [null, null], pivots: [{ slot: 2, species: "GOLBAT", field: 1 }] },
+  ];
+
+  assert.deepEqual(readScript(JSON.stringify({ inputs })).inputs, inputs);
+  assert.throws(() => readScript(JSON.stringify({ inputs: [{ ...uTurn, pivots: [] }] })), /inputs\[0\]\.pivots/);
 });
 
 test("a script with a move, a species or a field the game doesn't have doesn't read, and says where (#660)", () => {
@@ -106,7 +120,7 @@ test("a script with a move, a species or a field the game doesn't have doesn't r
     [{ inputs: [{ kind: "switch", to: { slot: 3, species: "PROBOPAS" } }] }, /inputs\[0\]\.to\.species/],
     [{ inputs: [{ kind: "move", move: "BOUNCE", tera: false, replacment: { slot: 1, species: "SNORLAX" } }] }, /replacment/],
     [{ inputs: [], known: { outcome: "won", after: [{ turn: 1, ours: { RESHIRAMM: { hp: 1 } } }] } }, /RESHIRAMM/],
-    [{ inputs: [{ kind: "queued" }] }, /names a faint replacement, learn picks or both[\s\S]*inputs\[0\]/],
+    [{ inputs: [{ kind: "queued" }] }, /names a faint replacement, a learn pick or a pivot[\s\S]*inputs\[0\]/],
     [{ inputs: [{ kind: "move", move: "SCRATCH", tera: false, learns: [] }] }, /inputs\[0\]\.learns/],
     [{ inputs: [{ kind: "queued", learns: [{ ...declines, forget: "GUNK_SHOTT" }] }] }, /inputs\[0\]\.learns\[0\]\.forget/],
     [{ inputs: [{ kind: "queued", learns: [{ ...declines, forget: undefined }] }] }, /inputs\[0\]\.learns\[0\]\.forget/],

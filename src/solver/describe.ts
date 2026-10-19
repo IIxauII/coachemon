@@ -21,19 +21,20 @@ const commanded = (c: FieldCommand) => {
 };
 
 /**
- * In the order the turn asks: the command, each learn pick, then the faint replacement. `field` is who stands in each
- * field slot as the turn starts, where the caller knows it: a double's commands name their mon by it.
+ * The command, each pivot, each learn pick, then the faint replacements. `field` is who stands in each field slot as the
+ * turn starts, where the caller knows it: a double's commands name their mon by it.
  */
 export function describeInput(input: Input, field: readonly (PartySlot | undefined)[] = []): string {
   if (input.kind === "double") {
     const acts = input.commands.flatMap((c, i) => (c ? [`${field[i] ? title(field[i].species) : `field ${i}`}: ${commanded(c)}`] : []));
     const replacements = (input.replacements ?? []).map(r => `replacement ${mon(r)} into field ${r.field}`);
-    return [acts.length > 0 ? acts.join(" · ") : "played for us", ...(input.learns ?? []).map(learned), ...replacements].join(", ");
+    const pivots = (input.pivots ?? []).map(p => `pivot ${mon(p)} into field ${p.field}`);
+    return [acts.length > 0 ? acts.join(" · ") : "played for us", ...pivots, ...(input.learns ?? []).map(learned), ...replacements].join(", ");
   }
   const act =
     input.kind === "move" ? `${input.tera ? "Tera + " : ""}${title(input.move)}`
     : input.kind === "switch" ? `switch → ${mon(input.to)}`
     : "played for us";
   const replacement = input.replacement ? [`replacement ${mon(input.replacement)}`] : [];
-  return [act, ...(input.learns ?? []).map(learned), ...replacement].join(", ");
+  return [act, ...(input.pivots ?? []).map(p => `pivot ${mon(p)}`), ...(input.learns ?? []).map(learned), ...replacement].join(", ");
 }

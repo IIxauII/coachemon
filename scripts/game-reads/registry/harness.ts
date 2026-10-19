@@ -60,7 +60,19 @@ export const HARNESS: Area = {
     { name: "fieldUI", kind: "field", at: ["src/battle-scene.ts#BattleScene.fieldUI"] },
     { name: "Game", kind: "locator", at: [], from: "phaser", note: "new Phaser.Game for the headless harness" },
     { name: "getCurrentPhase", kind: "locator", at: ["src/phase-manager.ts#PhaseManager.getCurrentPhase"] },
+    { name: "COMMANDED", kind: "enum-member", at: ["src/enums/battler-tag-type.ts#BattlerTagType.COMMANDED"] },
+    {
+      name: "COMMANDER_APPLY",
+      kind: "enum-member",
+      at: ["src/enums/pokemon-anim-type.ts#PokemonAnimType.COMMANDER_APPLY"],
+    },
+    {
+      name: "COMMANDER_REMOVE",
+      kind: "enum-member",
+      at: ["src/enums/pokemon-anim-type.ts#PokemonAnimType.COMMANDER_REMOVE"],
+    },
     { name: "getEnemyField", kind: "method", at: ["src/battle-scene.ts#BattleScene.getEnemyField"] },
+    { name: "getSourcePokemon", kind: "method", at: ["src/data/battler-tags.ts#BattlerTag.getSourcePokemon"] },
     {
       name: "getEnemyParty",
       kind: "field",
@@ -90,6 +102,7 @@ export const HARNESS: Area = {
     },
     { name: "handleCommand", kind: "method", at: ["src/phases/command-phase.ts#CommandPhase.handleCommand"] },
     { name: "HEADLESS", kind: "constant", at: [], from: "phaser" },
+    { name: "hideInfo", kind: "method", at: ["src/field/pokemon.ts#Pokemon.hideInfo"] },
     { name: "HIT", kind: "enum-member", at: ["src/enums/battler-tag-lapse-type.ts#BattlerTagLapseType.HIT"] },
     {
       name: "iconAnimHandler",
@@ -128,6 +141,12 @@ export const HARNESS: Area = {
       ],
     },
     { name: "logPhase", kind: "method", at: ["test/framework/phase-interceptor.ts#PhaseInterceptor.logPhase"] },
+    {
+      name: "maxDuration",
+      kind: "field",
+      at: ["src/data/weather.ts#Weather.maxDuration", "src/data/terrain.ts#Terrain.maxDuration"],
+      note: "read off the session save's arena",
+    },
     { name: "moveId", kind: "field", at: ["src/data/moves/pokemon-move.ts#PokemonMove.moveId"] },
     { name: "normalizeIVs", kind: "field", at: ["test/helpers/overrides-helper.ts#OverridesHelper.normalizeIVs"] },
     {
@@ -297,6 +316,12 @@ export const HARNESS: Area = {
     { name: "textInterceptor", kind: "field", at: ["test/framework/game-manager.ts#GameManager.textInterceptor"] },
     { name: "textures", kind: "field", at: ["test/mocks/mock-texture-manager.ts#MockTextureManager.textures"] },
     { name: "time", kind: "method", at: ["test/mocks/mock-console/mock-console.ts#MockConsole.time"] },
+    {
+      name: "turnsLeft",
+      kind: "field",
+      at: ["src/data/weather.ts#Weather.turnsLeft", "src/data/terrain.ts#Terrain.turnsLeft"],
+      note: "read off the session save's arena",
+    },
     { name: "to", kind: "method", at: ["test/framework/phase-interceptor.ts#PhaseInterceptor.to"] },
     {
       name: "turnCount",
@@ -340,6 +365,9 @@ export const HARNESS: Area = {
     { name: "#data/battler-tags", kind: "import", at: ["src/data/battler-tags.ts#ConfusedTag"] },
     { name: "#data/data-lists", kind: "import", at: ["src/data/data-lists.ts#allMoves"] },
     { name: "#data/pokemon-data", kind: "import", at: ["src/data/pokemon-data.ts#PokemonSummonData"] },
+    { name: "#data/terrain", kind: "import", at: ["src/data/terrain.ts#Terrain"] },
+    { name: "#data/weather", kind: "import", at: ["src/data/weather.ts#Weather"] },
+    { name: "#enums/battler-tag-type", kind: "import", at: ["src/enums/battler-tag-type.ts#BattlerTagType"] },
     { name: "#enums/buttons", kind: "import", at: ["src/enums/buttons.ts#Button"] },
     { name: "#enums/command", kind: "import", at: ["src/enums/command.ts#Command"] },
     { name: "#enums/field-position", kind: "import", at: ["src/enums/field-position.ts#FieldPosition"] },
@@ -355,6 +383,7 @@ export const HARNESS: Area = {
         "src/enums/move-use-mode.ts#MoveUseMode",
       ],
     },
+    { name: "#enums/pokemon-anim-type", kind: "import", at: ["src/enums/pokemon-anim-type.ts#PokemonAnimType"] },
     { name: "#enums/species-id", kind: "import", at: ["src/enums/species-id.ts#SpeciesId"] },
     { name: "#enums/stat", kind: "import", at: ["src/enums/stat.ts#Stat"] },
     { name: "#enums/status-effect", kind: "import", at: ["src/enums/status-effect.ts#StatusEffect"] },

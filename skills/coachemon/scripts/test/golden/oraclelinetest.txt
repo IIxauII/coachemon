@@ -471,4 +471,31 @@ strip | trainer off the line · ! re-solving… · Golbat Venoshock → Tyranita
     ⚔ Golbat Poison Venoshock → Tyranitar 3 hits
 a W200 run, Snorlax sent                held
 scored T4/5 miss Blissey in front · benched; Snorlax benched · in front
+T1 pivots to Blissey                    held
+== W200 T1, Rayquaza pivoting out
+strip | trainer ⚔ ~ T1/5 · Rayquaza Dragon Ascent · then send Blissey for Rayquaza
+    ⚔ T1 Rayquaza Flying Dragon Ascent → ~ Rayquaza 300/400 · Eternatus 400/1600
+    ⤵ then send Blissey for Rayquaza at the switch-out prompt
+T3's Zacian pivots to Snorlax           held
+== W200 T3, Zacian pivoting out
+strip | trainer ⚔ ~ T3/5 · Rayquaza Dragon Ascent ; Zacian Behemoth Blade · then send Snorlax for Zacian
+    ⚔ T3 Rayquaza Flying Dragon Ascent ; Zacian Steel Behemoth Blade → ~ Rayquaza 200/400 · Zacian 300/350 · Eternatus 1500/2400
+    ⤵ then send Snorlax for Zacian at the switch-out prompt
+out of shape                            malformed
+out of shape                            malformed
+a queued turn's pivot alone             held
+Plasma Grunts' W62                      held
+== W62 T1
+strip | trainer ⚔ ~ T1/3 · Rayquaza Dragon Ascent → Garbodor ; Zacian Behemoth Blade → Liepard
+    ⚔ T1 Rayquaza Flying Dragon Ascent → Garbodor ; Zacian Steel Behemoth Blade → Liepard → ~ Rayquaza 380/400 · Zacian 350/350 · Liepard 120/300 · Scraggy 280/280
+== W62 T2, Scraggy in Garbodor's slot
+strip | trainer ⚔ ~ T2/3 · Rayquaza Dragon Ascent → Scraggy ; Zacian Close Combat → Liepard · then send Blissey for Zacian
+    ⚔ T2 Rayquaza Flying Dragon Ascent → Scraggy ; Zacian Fighting Close Combat → Liepard → ~ Rayquaza 360/400 · Blissey 600/600 · Liepard 20/300 · Scraggy 80/280
+    ⤵ then send Blissey for Zacian at the switch-out prompt
+== W62 T3, Blissey in Zacian's slot
+strip | trainer ⚔ ~ T3/3 · Rayquaza Dragon Ascent ; Blissey Seismic Toss → Scraggy
+    ⚔ T3 Rayquaza Flying Dragon Ascent ; Blissey Fighting Seismic Toss → Scraggy → ~ Rayquaza 360/400 · Blissey 600/600
+Plasma Grunts' W62, to score            held
+scored T1/3 match
+scored T2/3 miss Blissey in front · benched; Snorlax benched · in front
 writes to the game: none
