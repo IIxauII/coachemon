@@ -15,7 +15,7 @@ globalThis.setInterval = () => 0;
 globalThis.clearInterval = () => {};
 globalThis.localStorage = { getItem: () => null, setItem() {} };
 eval(bundle("hud", { expose: true }));
-const { offTheLineModel, oracleLineCheck, oracleLineModel, oracleLineSeen } = globalThis.__hud["57-oracle-line"];
+const { offTheLineModel, oracleLineCheck, oracleLineModel, oracleLineNow, oracleLineSeen, oracleStepSummary, sendsToCome } = globalThis.__hud["57-oracle-line"];
 const { cardSummary } = globalThis.__hud["60-card"];
 const { flatGroups } = globalThis.__hud["90-render"];
 const { drawBattle } = globalThis.__hud["96-render-battle"];
@@ -646,6 +646,23 @@ const rolandPlayed = (seed, inputs, answer, { at = 3, to = 3, asked = true } = {
   assert.ok(now("W5 T4, never asked", s).act.summary.startsWith("off the line · ! "));
 }
 
+// ---- A replacement the oracle line names for a faint that never came is its own miss: the mover is still in front
+{
+  const seed = "a W5 run, Charmander never falls";
+  const r = roland(seed);
+  const line = rolandLine(seed, { 3: { ...SCRATCH, replacement: { slot: 1, species: SpeciesId.BULBASAUR } } });
+  const [charmander, bulbasaur] = rolandCp(3).ours;
+  line.steps[2].checkpoint = { ...rolandCp(3), ours: [{ ...charmander, hp: 0, onField: false }, { ...bulbasaur, onField: true }] };
+  scene = rolandAt(r, 1);
+  hand(seed, line);
+  for (let t = 1; t <= 3; t++) {
+    oracleLineSeen(rolandAt(r, t, { phase: { phaseName: "MovePhase" }, cmd: { move: "SCRATCH" } }));
+    scored = oracleLineCheck(rolandAt(r, t + 1, { cp: rolandCp(t) }));
+  }
+  console.log(`scored ${scoredText(scored)}`);
+  assert.deepEqual([scored.turn, scored.wrong], [3, true]);
+}
+
 // ---- A pick on the oracle line's last step is no claim: no text names it, the learn card keeps its own call, and no answer scores
 {
   const r = roland("a W5 run, a pick on the winning turn");
@@ -770,6 +787,27 @@ const FAINT = field => ({ phaseName: "SwitchPhase", isModal: true, doReturn: fal
   assert.ok(first.rows.some(r => r.startsWith("⤵ then send Snorlax for Zacian at the faint prompt")), first.rows.join("\n"));
   assert.equal(now("W200 T4's second faint prompt", eternaAt(seed, 5, { cp: ETERNA_CP[3], phase: FAINT(1) })).act.summary,
     "⚔ ~ T4/5 · send Snorlax for Zacian");
+}
+
+// ---- A faint prompt for a field slot the oracle line names no replacement for has no pick, though another slot's has one
+{
+  const seed = "a W200 run, Zacian down unplanned";
+  scene = eternaAt(seed, 4);
+  hand(seed, eternaLine(seed));
+  const s = eternaAt(seed, 5, { cp: ETERNA_CP[3], phase: FAINT(1) });
+  assert.equal(oracleLineModel(s).sending, null);
+  assert.equal(now("W200 T4, a faint prompt for Zacian's slot", s).act.summary, "⚔ ~ T4/5 · Zacian Behemoth Blade · then send Blissey for Rayquaza");
+}
+
+// ---- A copied oracle line model still finds the replacements left to come after this faint prompt's
+{
+  const seed = "a W200 run, both down, copied";
+  scene = eternaAt(seed, 4);
+  hand(seed, eternaLine(seed, { 4: double([null, BLADE], { replacements: [{ slot: 2, species: SpeciesId.BLISSEY, field: 0 },
+    { slot: 3, species: SpeciesId.SNORLAX, field: 1 }] }) }));
+  const m = structuredClone(oracleLineModel(eternaAt(seed, 5, { cp: ETERNA_CP[3], phase: FAINT(0) })));
+  assert.deepEqual(sendsToCome(m, oracleLineNow(m)).map(x => x.name), ["Snorlax"]);
+  assert.equal(oracleStepSummary(m), "⚔ ~ T4/5 · send Blissey for Rayquaza · then send Snorlax for Zacian");
 }
 
 // ---- Both field slots pressed as the oracle line said match through the double, Eternamax's fresh bars included

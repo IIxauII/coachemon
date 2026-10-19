@@ -111,15 +111,8 @@ const matchesLine = (st, played) => {
 };
 // Only a faint asks for a replacement: with the mover still in front, none was picked.
 const pickedOther = (s, h, i) => {
-  const input = h.line.steps[i].input;
-  if (input?.kind === "double") {
-    const front = liveField(s).ours;
-    return sentOf(input).some(r => front[r.field] !== outOf(h, i, r.field) && front[r.field] !== r.species);
-  }
-  const want = input?.replacement?.species;
-  if (want == null) return false;
-  const front = frontOf(s);
-  return front !== moverOf(h, i) && front !== want;
+  const front = liveField(s).ours;
+  return sentOf(h.line.steps[i].input).some(r => front[r.field] !== outOf(h, i, r.field) && front[r.field] !== r.species);
 };
 // Steps `from` exclusive to `i` inclusive are behind us now, and `misses` came of them.
 const miss = (h, from, i, misses, picked) => {
@@ -300,8 +293,8 @@ export const oracleLineModel = s => {
     id: h.id,
     mark: markOf(line),
     faintPick,
-    // The replacement this faint prompt asks for: the one for its field slot.
-    sending: faintPick && sends.length ? sends.find(x => x.field === phaseOf(s)?.fieldIndex) ?? sends[0] : null,
+    // The replacement this faint prompt asks for: the one for its field slot, and none where the line names none.
+    sending: faintPick ? sends.find(x => x.field === (phaseOf(s)?.fieldIndex ?? 0)) ?? null : null,
     learning: prompt ? steps[line.steps.indexOf(prompt.st)].learns[picksOf(line, prompt.st).indexOf(prompt.pick)] : null,
     last: last.turn,
     turns: last.turn - line.steps[0].turn + 1,
@@ -329,7 +322,7 @@ const actText = a => (a.kind === "double" ? a.slots.map(actText).join(" ; ")
   : [a.by?.name, ...(a.tera ? [`Tera ${a.tera.type ?? ""}`.trim(), "+"] : []), a.move, a.target ? `→ ${a.target.name}` : null].filter(Boolean).join(" "));
 const sendWords = x => `send ${x.name}${x.for ? ` for ${x.for.name}` : ""}`;
 // The replacements a faint prompt leaves to come, or every one before it.
-export const sendsToCome = (m, st) => (m.sending ? st.sends.slice(st.sends.indexOf(m.sending) + 1) : st.sends);
+export const sendsToCome = (m, st) => (m.sending ? st.sends.slice(st.sends.findIndex(x => x.field === m.sending.field) + 1) : st.sends);
 
 export const pickWords = p => (p.forget ? `learns ${p.move} over ${p.forget}` : `skips ${p.move}`);
 const pickText = p => `${p.name} ${pickWords(p)}`;
