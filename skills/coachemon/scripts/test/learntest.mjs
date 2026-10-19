@@ -493,7 +493,7 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.ok(blind.notes.includes("curse 1/16 a turn"), `${blind.notes}`);
   const curse = x => x.value - bare.value;
   assert.equal(judge(SALT_CURE, at50(foe("Snorlax", ["Normal"]), foe("Machamp", ["Fighting"]))).value, blind.value, "a roster taking the 1/16 changes nothing");
-  // A Water or Steel type takes 1/8 a turn (game-code.md §21). ±1: the card rounds.
+  // The Water or Steel rate: game-code.md §21. ±1: the card rounds.
   const doubled = judge(SALT_CURE, at50(foe("Vaporeon", ["Water"]), foe("Skarmory", ["Steel","Flying"])));
   assert.ok(Math.abs(curse(doubled) - 2 * curse(blind)) <= 1, `twice the curse (${curse(doubled)} vs ${curse(blind)})`);
   assert.ok(doubled.notes.includes("curse 1/8 a turn at W50"), `${doubled.notes}`);
