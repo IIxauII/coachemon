@@ -2,7 +2,7 @@
 // every job's children kept, so two runs over the same forks compare job by job, not only where the tree has the job.
 // One shipped worker (`src/solver/worker.ts`) expands fixed fork points of a recorded tree, every legal action of each,
 // one action per job.
-// usage: [PROF=1] [MODE=none|poll1|patch] [PATCH=<file>[,<file>]] [REF=<jobs.json>] [JOB_MS=<ms>]
+// usage: [PROF=1] [MODE=none|poll1] [PATCH=<file>[,<file>]] [REF=<jobs.json>] [JOB_MS=<ms>]
 //        node profile.ts <export.json> <tree-dir> <out-dir> <forks>
 import { createHash } from "node:crypto";
 import { appendFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -14,15 +14,14 @@ import type { Clone } from "../../../../src/solver/replay.ts";
 import type { Child } from "../../../../src/solver/search.ts";
 import { startWorker } from "../../../../src/solver/worker.ts";
 import { HANDLE, normalHash, Tree } from "../../solve-speed/harness/lab/tree.ts";
-import { forMode, mode } from "./mode.ts";
-import { asPinned } from "./pinned.ts";
+import { forMode, mode, patchNames } from "./mode.ts";
+import { readFight } from "./pinned.ts";
 
 const [file, treeDir, outDir, count] = process.argv.slice(2);
 mkdirSync(outDir, { recursive: true });
 rmSync(path.join(outDir, "children.jsonl"), { force: true });
 const prof = process.env.PROF === "1";
-const json = JSON.parse(readFileSync(file, "utf8"));
-const save = asPinned("save" in json ? json : { save: json }).save;
+const save = readFight(file).save;
 const found = findPinnedClone();
 if (!("clone" in found)) throw new Error(found.missing);
 const inner: Clone = ({ name, source, input, env, heapMb, signal }) =>
@@ -111,7 +110,7 @@ const wall = jobs.reduce((a, j) => a + j.ms, 0) / 1000;
 const sorted = jobs.map(j => j.ms).sort((a, b) => a - b);
 const summary = {
   mode: mode(),
-  patch: process.env.PATCH ? process.env.PATCH.split(",").map(p => path.basename(p)).join(",") : null,
+  patch: patchNames(),
   load1,
   boot,
   forks: forks.length,

@@ -1,13 +1,20 @@
 """Where a worker's time goes, from a V8 .cpuprofile: self time by source, the harness steps' inclusive time, and the
-heaviest functions.  usage: python3 -I prof.py <file.cpuprofile> [top=40]
+heaviest functions.  usage: python3 -I prof.py <file.cpuprofile> [top=40] [--patch-lines <from>-<to>]
 A copy of solve-speed's prof.py that leaves out the worker's boot (every sample before the first one inside the
-harness's `expand`) and gives the fake clock's own functions (patches/fake-clock.ts) a source of their own."""
+harness's `expand`). `--patch-lines` names the lines of the test file the fake clock was spliced into (cpu.sh works them
+out); code there counts as the fake clock's, not the harness's."""
 import json
 import sys
 from collections import Counter, defaultdict
 
-prof = json.load(open(sys.argv[1]))
-top = int(sys.argv[2]) if len(sys.argv) > 2 else 40
+argv = sys.argv[1:]
+patch_lines = (0, -1)
+if "--patch-lines" in argv:
+    i = argv.index("--patch-lines")
+    patch_lines = tuple(int(x) for x in argv[i + 1].split("-"))
+    del argv[i : i + 2]
+prof = json.load(open(argv[0]))
+top = int(argv[1]) if len(argv) > 1 else 40
 nodes = {n["id"]: n for n in prof["nodes"]}
 parent = {}
 for n in prof["nodes"]:
@@ -15,16 +22,13 @@ for n in prof["nodes"]:
         parent[c] = n["id"]
 
 
-FAKE = {"drive", "fakeWaitUntil", "next", "firstTimer", "add", "clear", "checkCallback", "idle", "realMs", "coerce", "settle",
-        "onResolve", "onReject", "first", "now", "count"}
-
-
 def source(cf):
     url, fn = cf.get("url", ""), cf["functionName"]
     if fn in ("(idle)", "(garbage collector)", "(program)", "(root)"):
         return fn
     if "coach-worker" in url:
-        return "fake clock (driver, timers, waitUntil)" if fn in FAKE else "harness (the coach test file)"
+        in_patch = patch_lines[0] <= cf.get("lineNumber", -1) + 1 <= patch_lines[1]
+        return "fake clock (driver, timers, waitUntil)" if in_patch else "harness (the coach test file)"
     for key, name in [
         ("i18next", "i18next (text lookups)"),
         ("/phaser/", "Phaser (graphics, tweens, timers)"),

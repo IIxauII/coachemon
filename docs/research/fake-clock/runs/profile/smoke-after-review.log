@@ -1,0 +1,5 @@
+13:58:51 none load { 5.19 4.15 4.29 }
+{"mode":"none","patch":null,"load1":[5.19287109375,4.6220703125],"boot":9.43,"forks":10,"jobs":102,"tries":122,"wall":52.618910331999984,"perTryMs":431.3025437049179,"medianJobMs":394.5092500000028,"maxJobMs":3265.308167000001,"sameAsRecorded":9,"differ":0,"unrecorded":93,"slowJobs":[],"errors":[]}
+13:59:54 fake load { 4.62 4.28 4.34 }
+{"mode":"poll1","patch":"fake-clock.ts","load1":[4.6220703125,4.60595703125],"boot":6.697,"forks":10,"jobs":102,"tries":122,"wall":1.3212770830000053,"perTryMs":10.830140024590209,"medianJobMs":10.324625000000196,"maxJobMs":70.05354199999965,"sameAsRecorded":9,"differ":0,"unrecorded":93,"vsRef":{"same":102,"differ":[]},"slowJobs":[],"errors":[]}
+14:00:02 done load { 4.61 4.28 4.34 }

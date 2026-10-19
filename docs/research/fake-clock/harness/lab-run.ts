@@ -19,8 +19,8 @@ import { beams, type Verdict } from "../../solve-speed/harness/lab/beam.ts";
 import { bestFirst, lds } from "../../solve-speed/harness/lab/methods.ts";
 import { LabPool } from "../../solve-speed/harness/lab/pool.ts";
 import { Tree } from "../../solve-speed/harness/lab/tree.ts";
-import { forMode, mode } from "./mode.ts";
-import { asPinned } from "./pinned.ts";
+import { forMode, mode, patchNames } from "./mode.ts";
+import { readFight } from "./pinned.ts";
 
 const { values } = parseArgs({
   options: {
@@ -40,11 +40,9 @@ const treeDir = values.tree as string;
 const method = values.method as string;
 const workers = Number(values.workers);
 const budget = Number(values.budget);
-const json = JSON.parse(readFileSync(fight, "utf8"));
-const exported = asPinned("save" in json ? json : { save: json });
+const exported = readFight(fight);
 const input = { ...exported, cloneVersion: PINNED_GAME_VERSION };
 const inClone = harnessIn(findPinnedClone);
-// MODE and PATCH pick the search's workers' source (mode.ts); replays run the harness untouched.
 const clone = forMode(inClone);
 const tree = new Tree(treeDir);
 const t0 = Date.now();
@@ -142,7 +140,7 @@ const summary = {
   fight: path.basename(fight),
   method,
   mode: mode(),
-  patch: process.env.PATCH ? process.env.PATCH.split(",").map(p => path.basename(p)).join(",") : null,
+  patch: patchNames(),
   load1: [load1Start, loadavg()[0]],
   workers,
   sim: values.sim ?? null,

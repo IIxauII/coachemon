@@ -1,0 +1,10 @@
+== spin (traced run) against unpatched (trace/none2)
+bench jobs: 102, same 65, differ 37: [9, 10, 11, 12, 13, 14, 16, 22, 24, 30, 37, 38, 39, 41, 42, 43, 44, 50, 52, 53, 55, 56, 57, 63, 65, 66, 74, 76, 78, 79, 85, 87, 88, 93, 94, 95, 96]
+differing children, as the run returned them:
+    33  dropped (left 1 prompts queued)
+    15  dropped (threw Timed out in waitUntil!)
+== spin without COACH_CLOCK against unpatched (trace/none2)
+bench jobs: 102, same 93, differ 9: [21, 43, 73, 87, 88, 93, 94, 95, 96]
+differing children, as the run returned them:
+     8  dropped (threw Timed out in waitUntil!)
+     5  dropped (left 1 prompts queued)

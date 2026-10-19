@@ -5,6 +5,7 @@
 // PATCH=<file>[,<file>] is spliced in at the vitest import of either (the fake clock, spin.ts, a tracer). MODE defaults
 // to none. Replays are never touched.
 import { readFileSync } from "node:fs";
+import path from "node:path";
 import type { Clone } from "../../../../src/solver/replay.ts";
 
 const ANCHOR = 'import { beforeAll, describe, it, vi } from "vitest";\n';
@@ -18,12 +19,15 @@ export const mode = (): Mode => {
   return m;
 };
 
+const patchFiles = () => (process.env.PATCH ?? "").split(",").filter(Boolean);
+
 export const patchText = () =>
-  (process.env.PATCH ?? "")
-    .split(",")
-    .filter(Boolean)
+  patchFiles()
     .map(f => readFileSync(f, "utf8"))
     .join("\n");
+
+/** The patches' file names, for a run's summary; null with none. */
+export const patchNames = () => (patchFiles().length > 0 ? patchFiles().map(f => path.basename(f)).join(",") : null);
 
 /** The worker's source under `m`, from the shipped worker's. */
 export function workerSource(shipped: string, m: Mode, patch: string): string {

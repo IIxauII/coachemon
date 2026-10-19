@@ -2,20 +2,19 @@
 // fight, as a player's plugin runs it (the discrepancy search, then the portfolio, the budget, the replay), with every
 // progress event timed. The replay that validates a win always runs the harness untouched. Prints one JSON summary line.
 // usage: [BUDGET=<expansions per beam>] [MODE=none|poll1] [PATCH=<file>] node solve.ts <export.json> <clone-dir> <progress.jsonl> [workers]
-import { appendFileSync, readFileSync } from "node:fs";
+import { appendFileSync } from "node:fs";
 import { availableParallelism, loadavg } from "node:os";
 import { findClone, harnessIn } from "../../../../scripts/clone-test/clone-test.ts";
 import { PINNED_GAME_VERSION } from "../../../../src/escape-ladder/lookup.ts";
 import { poolSize } from "../../../../src/solver/pool.ts";
 import type { Clone } from "../../../../src/solver/replay.ts";
 import { DEFAULT_BUDGET, solve } from "../../../../src/solver/solver.ts";
-import { forMode, mode } from "./mode.ts";
-import { asPinned } from "./pinned.ts";
+import { forMode, mode, patchNames } from "./mode.ts";
+import { readFight } from "./pinned.ts";
 
 const [file, cloneDir, progressOut, workersArg] = process.argv.slice(2);
 const clone: Clone = forMode(harnessIn(() => findClone(cloneDir)));
-const json = JSON.parse(readFileSync(file, "utf8"));
-const exported = asPinned("save" in json ? json : { save: json });
+const exported = readFight(file);
 const workers = workersArg ? Number(workersArg) : poolSize(availableParallelism());
 const load1 = [loadavg()[0]];
 const started = Date.now();
@@ -47,7 +46,7 @@ console.log(
   JSON.stringify({
     fight: file.split("/").at(-1),
     mode: mode(),
-    patch: process.env.PATCH ? process.env.PATCH.split(",").map(p => p.split("/").at(-1)).join(",") : null,
+    patch: patchNames(),
     load1: [...load1, loadavg()[0]],
     budgetPerBeam: process.env.BUDGET ?? null,
     workers,

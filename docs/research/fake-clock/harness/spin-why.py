@@ -12,9 +12,8 @@ import os
 import sys
 from collections import Counter
 
-here = os.path.dirname(os.path.abspath(__file__))
-src = open(os.path.join(here, "trace-diff.py")).read().split("args = [a")[0]
-exec(src)  # segments(), by_job()
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from trace_diff import by_job  # noqa: E402
 
 d, ref, runs = sys.argv[1], sys.argv[2], sys.argv[3:]
 
