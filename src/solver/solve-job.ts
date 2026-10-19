@@ -2,7 +2,7 @@ import type { JobControl, JobWork } from "../jobs.ts";
 import { type CloneSetup, setUpClone } from "./clone.ts";
 import type { Clone } from "./replay.ts";
 import { harnessIn } from "./run-in-clone.ts";
-import { solve, type SolveDeps, type SolveInput, type SolveResult } from "./solver.ts";
+import { slowPollNote, solve, type SolveDeps, type SolveInput, type SolveResult } from "./solver.ts";
 
 export const SOLVE_JOB = "solve";
 
@@ -23,7 +23,10 @@ export const solveJob =
     ctl.progress("loading the fight in the clone and starting the search's workers");
     return deps.solve(args.input as SolveInput, {
       clone: stoppedBy(ctl.signal, deps.runIn(setUp.dir)),
-      progress: ({ spent, budget }) => ctl.progress(`searched ${spent.toLocaleString("en")} of ${budget.toLocaleString("en")} turns`),
+      progress: ({ spent, budget, pool }) => {
+        const searched = `searched ${spent.toLocaleString("en")} of ${budget.toLocaleString("en")} turns`;
+        ctl.progress(pool.slowPoll === null ? searched : `${searched}, slowly: ${slowPollNote(pool.slowPoll)}`);
+      },
     });
   };
 

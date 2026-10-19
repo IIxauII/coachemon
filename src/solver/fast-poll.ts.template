@@ -1,0 +1,61 @@
+// Appended to the harness for the search's workers alone: the replay runs the harness without it, so every win found on
+// the fast poll is still played on the unpatched game (#759). Its report reaches COACH_POLL_OUT before the harness
+// serves its first job; a report it can't write puts the game's own `run` back, so a missing one means the slow poll.
+// Aliased: this file joins the harness's module, which imports `vi` and `writeFileSync` under those names itself.
+import { writeFileSync as writePollReport } from "node:fs";
+import { inspect as inspectThrown } from "node:util";
+import { TEST_TIMEOUT } from "#test/constants";
+import { PhaseInterceptor } from "#test/framework/phase-interceptor";
+import { vi as pollVi } from "vitest";
+
+const FAST_POLL_MS = 1;
+
+// Bring the patched `run` below up to date with this copy, or the fast poll runs an old body (pin-bump.md).
+// @mirrors phase-interceptor-run
+const UPSTREAM_RUN = `async run(currentPhase) {
+  try {
+    this.state = "running";
+    this.logPhase(currentPhase.phaseName);
+    currentPhase.start();
+    await vi.waitUntil(() => this.state !== "running", { interval: 50, timeout: TEST_TIMEOUT });
+  } catch (error) {
+    throw error instanceof Error ? error : new Error(\`Unknown error occurred while running phase \${currentPhase.phaseName}!\\nError: \${inspect(error)}\`);
+  }
+}`;
+
+const comparable = (code: string) => code.replace(/__vite_ssr_import_\d+__\./g, "").replace(/\s+/g, "");
+
+type PollReport = { fast: true } | { slow: string };
+
+function fastPoll(): PollReport {
+  const proto = PhaseInterceptor.prototype as any;
+  if (comparable(String(proto.run)) !== comparable(UPSTREAM_RUN)) {
+    return { slow: "PhaseInterceptor.run is not the one the fast poll copies" };
+  }
+  proto.run = async function (this: any, currentPhase: any): Promise<void> {
+    try {
+      this.state = "running";
+      this.logPhase(currentPhase.phaseName);
+      currentPhase.start();
+      await pollVi.waitUntil(() => this.state !== "running", { interval: FAST_POLL_MS, timeout: TEST_TIMEOUT });
+    } catch (error) {
+      throw error instanceof Error
+        ? error
+        : new Error(`Unknown error occurred while running phase ${currentPhase.phaseName}!\nError: ${inspectThrown(error)}`);
+    }
+  };
+  return { fast: true };
+}
+
+const gameRun = (PhaseInterceptor.prototype as any).run;
+let pollReport: PollReport;
+try {
+  pollReport = fastPoll();
+} catch (e) {
+  pollReport = { slow: `the fast poll failed: ${e instanceof Error ? e.message : String(e)}` };
+}
+try {
+  if (process.env.COACH_POLL_OUT) writePollReport(process.env.COACH_POLL_OUT, JSON.stringify(pollReport));
+} catch {
+  (PhaseInterceptor.prototype as any).run = gameRun;
+}

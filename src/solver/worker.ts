@@ -1,5 +1,8 @@
-import { readFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
+import { readFileSync, rmSync } from "node:fs";
 import { createServer, type Socket } from "node:net";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { createInterface } from "node:readline";
 import { setTimeout as sleep } from "node:timers/promises";
 import { z } from "zod";
@@ -49,6 +52,8 @@ const checks = z.object({
 
 export type Worker = Pick<Pool, "expand"> & {
   root: Position;
+  /** Why the worker plays on the game's own phase poll; `null` once the fast poll is in (#759). */
+  slowPoll: string | null;
   /** The last job's report; `null` before one has finished. */
   heap(): HeapUse | null;
   check(inputs: readonly Input[]): Promise<Checks>;
@@ -74,6 +79,7 @@ export async function startWorker(clone: Clone, save: SessionSave, at?: string):
   let heap: HeapUse | null = null;
   return {
     root: running.root,
+    slowPoll: running.slowPoll,
     async expand(forkPoint, inputs): Promise<Child[]> {
       const answer = await running.ask({ kind: "expand", forkPoint, inputs }, EXPAND_MS);
       const parsed = z.object({ children: z.array(child), heap: heapUse }).parse(answer);
@@ -88,20 +94,22 @@ export async function startWorker(clone: Clone, save: SessionSave, at?: string):
   };
 }
 
-type Running = { root: Position; ask(message: object, ms: number): Promise<unknown>; close(): Promise<void> };
+type Running = { root: Position; slowPoll: string | null; ask(message: object, ms: number): Promise<unknown>; close(): Promise<void> };
 
 async function spawn(clone: Clone, save: SessionSave, at?: string): Promise<Running | NotStarted> {
   const server = createServer();
   await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
   const { port } = server.address() as { port: number };
   const connected = new Promise<Socket>(resolve => server.once("connection", resolve));
-  const source = readFileSync(new URL("./harness.test.ts.template", import.meta.url), "utf8");
+  const harness = readFileSync(new URL("./harness.test.ts.template", import.meta.url), "utf8");
+  const fastPoll = readFileSync(new URL("./fast-poll.ts.template", import.meta.url), "utf8");
+  const pollReport = path.join(tmpdir(), `coach-poll-${randomUUID()}.json`);
   const kill = new AbortController();
   const run = clone({
     name: "worker",
-    source,
+    source: `${harness}\n${fastPoll}`,
     input: JSON.stringify(harnessJob(save, [], at)),
-    env: { COACH_PORT: String(port) },
+    env: { COACH_PORT: String(port), COACH_POLL_OUT: pollReport },
     heapMb: HEAP_MB,
     signal: kill.signal,
   });
@@ -120,6 +128,7 @@ async function spawn(clone: Clone, save: SessionSave, at?: string): Promise<Runn
     if ("failed" in socket) kill.abort();
     await run;
     server.close();
+    rmSync(pollReport, { force: true });
     return socket;
   }
   const stopped = (why: NotStarted) => new WorkerDied("missing" in why ? why.missing : why.failed);
@@ -142,12 +151,14 @@ async function spawn(clone: Clone, save: SessionSave, at?: string): Promise<Runn
     await stop();
     socket.destroy();
     server.close();
+    rmSync(pollReport, { force: true });
     return { failed: e instanceof Error ? e.message : String(e) };
   }
 
   let id = 0;
   return {
     root: hello.root,
+    slowPoll: takeSlowPoll(pollReport),
     async ask(message, ms) {
       socket.write(`${JSON.stringify({ ...message, id: ++id })}\n`);
       const answer = await next(ms, "answer");
@@ -171,6 +182,22 @@ async function within<T, L>(ms: number, work: Promise<T>, late: () => L): Promis
   } finally {
     timer.abort();
   }
+}
+
+const pollReportShape = z.union([z.object({ fast: z.literal(true) }), z.object({ slow: z.string() })]);
+
+/** The harness writes the fast poll's report before it says hello. */
+function takeSlowPoll(file: string): string | null {
+  let report;
+  try {
+    report = pollReportShape.safeParse(JSON.parse(readFileSync(file, "utf8")));
+  } catch {
+    return "the fast poll never reported";
+  } finally {
+    rmSync(file, { force: true });
+  }
+  if (!report.success) return "the fast poll's report doesn't read";
+  return "slow" in report.data ? report.data.slow : null;
 }
 
 function whyStopped(out: string | undefined): string {

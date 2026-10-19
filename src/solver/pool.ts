@@ -7,14 +7,20 @@ export const poolSize = (cores: number) => Math.max(1, Math.min(cores - 2, 6));
 
 const TRIES = 3;
 
-/** `peakHeapMb` is the most any worker's job has left on its heap, before collection; `lastDeath`, why one last died. */
+/**
+ * `peakHeapMb` is the most any worker's job has left on its heap, before collection; `lastDeath`, why one last died;
+ * `slowPoll`, why a worker last started on the game's own phase poll (#759).
+ */
 export type PoolStats = {
   size: number;
   died: number;
   lastDeath: string | null;
   peakHeapMb: number | null;
   heapLimitMb: number | null;
+  slowPoll: string | null;
 };
+
+export const slowPollNote = (why: string) => `the search's workers kept the game's own phase poll, as ${why}`;
 
 export type WorkerPool = Pool & { root: Position; stats(): PoolStats; close(): Promise<void> };
 
@@ -48,10 +54,14 @@ export async function startPool(size: number, start: () => Promise<Worker | NotS
   let closed = false;
   let peakHeapMb: number | null = null;
   let heapLimitMb: number | null = null;
+  let slowPoll = workers.findLast(w => w.slowPoll !== null)?.slowPoll ?? null;
 
   const restart = (slot: Slot) => {
     const fresh = start().then(w => {
-      if ("root" in w) slot.worker = w;
+      if ("root" in w) {
+        slot.worker = w;
+        slowPoll = w.slowPoll ?? slowPoll;
+      }
       return w;
     });
     starting.add(fresh);
@@ -110,7 +120,7 @@ export async function startPool(size: number, start: () => Promise<Worker | NotS
         queue.push({ forkPoint, inputs, died: 0, done, fail });
         pump();
       }),
-    stats: () => ({ size, died, lastDeath, peakHeapMb, heapLimitMb }),
+    stats: () => ({ size, died, lastDeath, peakHeapMb, heapLimitMb, slowPoll }),
     async close() {
       closed = true;
       for (const job of queue.splice(0)) job.fail(closedPool());
