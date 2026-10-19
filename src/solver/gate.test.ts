@@ -42,15 +42,6 @@ test("a save from an older game than the clone's waits on the game catching up, 
   assert.match(result.message, /waits on the game serving 1\.12\.0\.11/);
 });
 
-test("a continued run's save from before the game updated to the clone's version is named as the save, cleared by the next wave (#763)", () => {
-  const result = ask({ save: { ...drayton, gameVersion: "1.12.0.9" }, liveVersion: PIN });
-
-  assert.deepEqual(result?.reason, { code: "version_mismatch", save: "1.12.0.9", live: PIN, clone: PIN });
-  assert.doesNotMatch(result.message, /live game is/);
-  assert.match(result.message, /this fight's save was written by 1\.12\.0\.9, before the game updated to 1\.12\.0\.11/);
-  assert.match(result.message, /solving picks up from the next wave's save/);
-});
-
 test("a known fight's save from an older game passes the gate when the re-check carries it to the clone's version (#703)", () => {
   const save = { ...drayton, gameVersion: "1.12.0.9" };
 

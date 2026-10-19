@@ -42,9 +42,6 @@ export function cause(reason: Reason): string {
       return "a Daily's seed is shared by every player, so solving is never offered there.";
     case "version_mismatch": {
       const { save, live, clone } = reason;
-      if (live === clone && newerVersion(clone, save)) {
-        return `this fight's save was written by ${save}, before the game updated to ${clone}; solving picks up from the next wave's save.`;
-      }
       if (live !== null && live !== clone) {
         const waitsOn = newerVersion(live, clone) ? `a Coachemon release pinned to ${live}` : `the game serving ${clone}`;
         return `the live game is ${live}, but solving runs on ${clone} only, and waits on ${waitsOn}.`;
