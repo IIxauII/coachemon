@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { noAnswer } from "./no-answer.ts";
 import type { Beam, Input, Outcome, ReplayResult } from "./oracle-line.ts";
-import { type Action, type Child, LDS, type Pool, type Position, type Progress, search } from "./search.ts";
+import { type Action, type Child, type Lds, type Pool, type Position, type Progress, search } from "./search.ts";
 
 /** What a move does from a path: our side's HP fraction and the foe's total HP lost so far, or how the fight ends. */
 type Play = (path: readonly string[], move: string) => { foeLost: number; ours: number } | "won" | "lost";
@@ -84,6 +84,7 @@ function held(inner: Pool) {
 }
 
 const BUDGET = { expansions: 3000, turns: 40 };
+const DISCREPANT: Lds = { ours: 1, alternatives: 2, discrepancies: 2, expansions: 3000 };
 const NARROW: Beam[] = [
   { width: 1, ours: 0.5 },
   { width: 1, ours: 1 },
@@ -217,7 +218,8 @@ test("a beam stops at the turn limit from where the solve starts (#662)", async 
     pool,
     validate: replaysAll().validate,
     budget: { expansions: 3000, turns: 5 },
-    lds: null, portfolio: [NARROW[0]],
+    lds: null,
+    portfolio: [NARROW[0]],
   });
 
   const reason = result.kind === "no_answer" ? result.reason : assert.fail();
@@ -236,7 +238,8 @@ test("each beam stops at a budget of its own, so a beam that spends it leaves th
     pool,
     validate: replaysAll().validate,
     budget: { expansions: 6, turns: 40 },
-    lds: null, portfolio: [
+    lds: null,
+    portfolio: [
       { width: 1, ours: 0.5 },
       { width: 2, ours: 0.5 },
     ],
@@ -296,10 +299,10 @@ test("the first beam spending its budget leaves a later beam searching, and the 
 });
 
 test("the discrepancy search goes first, following the best-scored child each turn to a win (#761)", async () => {
-  // Weighing our HP at 1 scores PECK 1.1 against SLAM's 0.9, and PECK's own SLAM loses.
+  // PECK outscores SLAM at any weight on our HP, and PECK's own SLAM loses.
   const { root, pool, expanded } = tree(["SLAM", "PECK"], {
-    "": { SLAM: [0.5, 0.4], PECK: [0.1, 1] },
-    PECK: { PECK: [0.2, 1] },
+    "": { SLAM: [0.5, 0.4], PECK: [0.6, 1] },
+    PECK: { PECK: [0.7, 1] },
     "PECK PECK": { PECK: "won" },
   });
   const { asked, validate } = replaysAll();
@@ -322,7 +325,7 @@ test("where the best-scored child never wins, the discrepancy search's next pass
   });
   const { asked, validate } = replaysAll();
 
-  const result = await search({ root, pool, validate, budget: BUDGET });
+  const result = await search({ root, pool, validate, budget: BUDGET, lds: DISCREPANT });
 
   assert.deepEqual(result.kind === "found" && result.inputs.map(named), ["SLAM", "SLAM"]);
   assert.deepEqual(asked, [["SLAM", "SLAM"]]);
@@ -334,14 +337,14 @@ test("where the best-scored child never wins, the discrepancy search's next pass
 });
 
 test("a discrepancy search that runs out of discrepancies hands over to the beams, and their win comes back (#761)", async () => {
-  // Only the third-best move at the root wins, and the discrepancy search follows the best two.
+  // Only the third-best move at the root wins.
   const { root, pool } = tree(["SLAM", "PECK", "GROWL"], {
     "": { SLAM: [0.5, 1], PECK: [0.4, 1], GROWL: [0.1, 1] },
     GROWL: { SLAM: "won" },
   });
   const { asked, validate } = replaysAll();
 
-  const result = await search({ root, pool, validate, budget: BUDGET, portfolio: [{ width: 8, ours: 1 }] });
+  const result = await search({ root, pool, validate, budget: BUDGET, lds: DISCREPANT, portfolio: [{ width: 8, ours: 1 }] });
 
   assert.deepEqual(result.kind === "found" && result.inputs.map(named), ["GROWL", "SLAM"]);
   assert.deepEqual(asked, [["GROWL", "SLAM"]]);
@@ -359,7 +362,7 @@ test("a discrepancy search that spends its own budget hands over to the beams wi
     pool,
     validate: replaysAll().validate,
     budget: { expansions: 6, turns: 40 },
-    lds: { ...LDS, expansions: 4 },
+    lds: { ...DISCREPANT, expansions: 4 },
     portfolio: [{ width: 1, ours: 0.5 }],
   });
 
@@ -376,7 +379,7 @@ test("only the beams say no answer, and it names how the discrepancy search ende
     PECK: { PECK: [0.2, 1] },
   });
 
-  const result = await search({ root, pool, validate: replaysAll().validate, budget: BUDGET, portfolio: NARROW });
+  const result = await search({ root, pool, validate: replaysAll().validate, budget: BUDGET, lds: DISCREPANT, portfolio: NARROW });
 
   const answer = result.kind === "no_answer" ? result : assert.fail();
   // Two moves from each of the root, PECK and PECK PECK at k = 0; and SLAM besides at k = 1 and k = 2.
@@ -403,7 +406,36 @@ test("a win the discrepancy search found that doesn't replay is passed over, and
     return replayed(inputs[0]?.kind === "move" && inputs[0].move === "PECK" ? "lost" : "won");
   };
 
-  const result = await search({ root, pool, validate, budget: BUDGET });
+  const result = await search({ root, pool, validate, budget: BUDGET, lds: DISCREPANT });
+
+  assert.deepEqual(result.kind === "found" && result.inputs.map(named), ["SLAM", "SLAM"]);
+  assert.deepEqual(asked, [
+    ["PECK", "PECK"],
+    ["SLAM", "SLAM"],
+  ]);
+});
+
+test("a win whose replay the discrepancy search saw fail is never replayed by the beams (#761)", async () => {
+  // PECK PECK wins but loses on replay; with no discrepancy to spend, the beams take over and reach it too.
+  const { root, pool } = tree(["SLAM", "PECK"], {
+    "": { SLAM: [0.5, 0.4], PECK: [0.1, 1] },
+    PECK: { PECK: "won" },
+    SLAM: { SLAM: "won" },
+  });
+  const asked: string[][] = [];
+  const validate = async (inputs: readonly Input[]) => {
+    asked.push(inputs.map(named));
+    return replayed(inputs[0]?.kind === "move" && inputs[0].move === "PECK" ? "lost" : "won");
+  };
+
+  const result = await search({
+    root,
+    pool,
+    validate,
+    budget: BUDGET,
+    lds: { ...DISCREPANT, discrepancies: 0 },
+    portfolio: [{ width: 8, ours: 1 }],
+  });
 
   assert.deepEqual(result.kind === "found" && result.inputs.map(named), ["SLAM", "SLAM"]);
   assert.deepEqual(asked, [
@@ -445,12 +477,12 @@ test("progress counts the discrepancy search's budget, then goes on from what it
     pool,
     validate: replaysAll().validate,
     budget: BUDGET,
-    lds: { ...LDS, ours: 0.5, discrepancies: 0 },
+    lds: { ...DISCREPANT, ours: 0.5, discrepancies: 0 },
     portfolio: NARROW,
     progress: p => seen.push(p),
   });
 
-  assert.ok(seen.every(p => p.budget === LDS.expansions + 2 * BUDGET.expansions));
+  assert.ok(seen.every(p => p.budget === DISCREPANT.expansions + 2 * BUDGET.expansions));
   const spent = seen.map(p => p.spent);
   assert.deepEqual(spent, spent.toSorted((a, b) => a - b));
   // Weighing our HP at 0.5, the discrepancy search follows SLAM and loses on turn 2; the beams then play their 10.

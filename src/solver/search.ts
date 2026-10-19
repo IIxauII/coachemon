@@ -34,14 +34,14 @@ export const PORTFOLIO: readonly Beam[] = [
 ];
 
 /**
- * Limited discrepancy search: pass k follows the best-scored child every turn except on paths whose deviations add up
- * to at most k, the r-th best child costing r. `alternatives` is how many of the best it ever follows, `discrepancies`
- * the last k, and `expansions` its own budget, ahead of the beams'.
+ * Limited discrepancy search (Harvey & Ginsberg 1995), the r-th best child costing r discrepancies. `alternatives` is
+ * how many of the best children it ever follows, `discrepancies` the most it allows, and `expansions` its own budget,
+ * ahead of the beams'.
  */
 export type Lds = { ours: number; alternatives: number; discrepancies: number; expansions: number };
 
 // (#761)
-export const LDS: Lds = { ours: 1, alternatives: 2, discrepancies: 2, expansions: 1000 };
+export const LDS: Lds = { ours: 1, alternatives: 2, discrepancies: 2, expansions: 3000 };
 
 const STALL_TURNS = 6;
 
@@ -50,11 +50,13 @@ export type Progress = { spent: number; budget: number };
 
 export type Found = { kind: "found"; inputs: readonly Input[]; replay: Replay };
 
+type Validate = (inputs: readonly Input[]) => Promise<ReplayResult>;
+
 export type SearchInput = {
   root: Position;
   pool: Pool;
   /** The validation protocol, run on a win's inputs. */
-  validate: (inputs: readonly Input[]) => Promise<ReplayResult>;
+  validate: Validate;
   /** Each beam's own; its turn limit is the discrepancy search's too. */
   budget: Budget;
   /** null runs the beams alone. */
@@ -67,8 +69,10 @@ type Node = { path: readonly Action[]; at: Position; hist: readonly number[]; sc
 
 type Expanded = { node: Node; child: Child };
 
-/** What every stage of one search adds to its "no answer". */
-type Trail = { unreplayed: string[]; dropped: number };
+/** What every stage of one search adds to its "no answer", and the paths whose replay it has already refused. */
+type Trail = { unreplayed: string[]; dropped: number; refused: Set<string> };
+
+type StageInput = { root: Position; pool: Pool; validate: Validate; trail: Trail; progress: (spent: number) => void };
 
 type Stage<End> = Found | NoAnswer | { kind: "ended"; end: End };
 
@@ -97,7 +101,6 @@ const failure = (e: unknown): NoAnswer =>
     ? e.answer
     : noAnswer({ code: "harness_failed", why: `the search's worker failed: ${e instanceof Error ? e.message : String(e)}` });
 
-/** A turn's children: its wins, most of our HP left first, and the best-scored position per sig, best first. */
 function scored(children: readonly Expanded[], ours: number, trail: Trail) {
   const wins: { path: Action[]; oursLeft: number }[] = [];
   const kept = new Map<string, Node>();
@@ -121,22 +124,25 @@ function scored(children: readonly Expanded[], ours: number, trail: Trail) {
   return { wins, next: [...kept.values()].sort((a, b) => b.score - a.score), stalled };
 }
 
-/** The win, or the environment gone, either of which ends the search; null where it didn't replay, or wasn't run. */
+/**
+ * The win, or the environment gone, either of which ends the search; null where it didn't replay, wasn't run, or was
+ * refused before, in this stage or an earlier one.
+ */
 async function replayed(
   path: readonly Action[],
   validate: (inputs: readonly Input[]) => Promise<ReplayResult | null>,
   trail: Trail,
 ): Promise<Found | NoAnswer | null> {
   const inputs = played(path);
+  const key = JSON.stringify(path);
+  if (trail.refused.has(key)) return null;
   const verdict = await validate(inputs);
   if (verdict === null) return null;
-  if (verdict.kind === "replayed") {
-    if (verdict.replay.outcome === "won") return { kind: "found", inputs, replay: verdict.replay };
-    trail.unreplayed.push(verdict.replay.outcome === "lost" ? "it lost on replay." : "its inputs ran out with the fight still on.");
-    return null;
-  }
-  if (ENVIRONMENT_GONE.has(verdict.reason.code)) return verdict;
-  trail.unreplayed.push(cause(verdict.reason));
+  if (verdict.kind === "replayed" && verdict.replay.outcome === "won") return { kind: "found", inputs, replay: verdict.replay };
+  if (verdict.kind === "no_answer" && ENVIRONMENT_GONE.has(verdict.reason.code)) return verdict;
+  trail.refused.add(key);
+  if (verdict.kind === "no_answer") trail.unreplayed.push(cause(verdict.reason));
+  else trail.unreplayed.push(verdict.replay.outcome === "lost" ? "it lost on replay." : "its inputs ran out with the fight still on.");
   return null;
 }
 
@@ -154,36 +160,45 @@ export async function search({
   portfolio = PORTFOLIO,
   progress,
 }: SearchInput): Promise<Found | NoAnswer> {
-  const trail: Trail = { unreplayed: [], dropped: 0 };
-  const whole = (lds?.expansions ?? 0) + budget.expansions * portfolio.length;
-  let ahead = 0;
+  const trail: Trail = { unreplayed: [], dropped: 0, refused: new Set() };
+  const total = (lds?.expansions ?? 0) + budget.expansions * portfolio.length;
+  let ldsSpent = 0;
   let ldsEnd: LdsEnd | null = null;
   if (lds) {
-    const first = await discrepancies(root, pool, validate, budget.turns, lds, trail, spent => {
-      ahead = Math.min(spent, lds.expansions);
-      progress?.({ spent: ahead, budget: whole });
-    });
-    if (first.kind !== "ended") return first;
-    ldsEnd = first.end;
+    const ldsResult = await discrepancySearch(
+      {
+        root,
+        pool,
+        validate,
+        trail,
+        progress: spent => {
+          ldsSpent = Math.min(spent, lds.expansions);
+          progress?.({ spent: ldsSpent, budget: total });
+        },
+      },
+      lds,
+      budget.turns,
+    );
+    if (ldsResult.kind !== "ended") return ldsResult;
+    ldsEnd = ldsResult.end;
   }
-  const then = await beams(root, pool, validate, budget, portfolio, trail, spent => progress?.({ spent: ahead + spent, budget: whole }));
-  if (then.kind !== "ended") return then;
-  return noAnswer({ code: "no_win", lds: ldsEnd, beams: then.end, unreplayed: trail.unreplayed, dropped: trail.dropped });
+  const beamResult = await beams(
+    { root, pool, validate, trail, progress: spent => progress?.({ spent: ldsSpent + spent, budget: total }) },
+    budget,
+    portfolio,
+  );
+  if (beamResult.kind !== "ended") return beamResult;
+  return noAnswer({ code: "no_win", lds: ldsEnd, beams: beamResult.end, unreplayed: trail.unreplayed, dropped: trail.dropped });
 }
 
 /** One position expanded at a time, its actions spread over the pool. */
-async function discrepancies(
-  root: Position,
-  pool: Pool,
-  validate: (inputs: readonly Input[]) => Promise<ReplayResult>,
-  turns: number,
+async function discrepancySearch(
+  { root, pool, validate, trail, progress }: StageInput,
   lds: Lds,
-  trail: Trail,
-  progress: (spent: number) => void,
+  turns: number,
 ): Promise<Stage<LdsEnd>> {
   let spent = 0;
   let k = 0;
-  const tried = new Set<string>();
 
   const expand = async (node: Node): Promise<Expanded[]> => {
     const chunk = Math.max(1, Math.ceil(node.at.legal.length / pool.size));
@@ -203,9 +218,6 @@ async function discrepancies(
     seen.set(node.at.sig, left);
     const { wins, next } = scored(await expand(node), lds.ours, trail);
     for (const win of wins) {
-      const key = JSON.stringify(win.path);
-      if (tried.has(key)) continue;
-      tried.add(key);
       const ended = await replayed(win.path, validate, trail);
       if (ended) return ended;
     }
@@ -230,13 +242,9 @@ async function discrepancies(
 
 /** The pool serves the earliest beam in the portfolio with a job queued. */
 function beams(
-  root: Position,
-  pool: Pool,
-  validate: (inputs: readonly Input[]) => Promise<ReplayResult>,
+  { root, pool, validate, trail, progress }: StageInput,
   budget: Budget,
   portfolio: readonly Beam[],
-  trail: Trail,
-  progress: (spent: number) => void,
 ): Promise<Stage<BeamEnd[]>> {
   return new Promise(resolve => {
     const runs: BeamRun[] = portfolio.map((beam, index) => ({
