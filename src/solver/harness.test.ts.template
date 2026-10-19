@@ -199,9 +199,7 @@ const sameCommand = (a: FieldCommand | null, b: FieldCommand | null): boolean =>
 const same = (a: Input, b: Input) =>
   a.kind === "double"
     ? b.kind === "double" && sameCommand(a.commands[0], b.commands[0]) && sameCommand(a.commands[1] ?? null, b.commands[1] ?? null)
-    : a.kind === "move"
-      ? b.kind === "move" && a.move === b.move && a.tera === b.tera
-      : a.kind === "switch" && b.kind === "switch" && a.to.slot === b.to.slot && a.to.species === b.to.species;
+    : a.kind !== "queued" && b.kind !== "queued" && b.kind !== "double" && sameCommand(a, b);
 
 /** A turn the game plays for us, with no command of ours in it. */
 const isQueued = (input: Input | null | undefined): input is Input =>
@@ -307,7 +305,8 @@ type Replacing = { field: number; offered: PartySlot[] };
 /**
  * Answers each faint replacement as the party screen opens for it, as upstream's own party-select helper does: in a
  * double one turn can ask two, one per field slot (#788). A pick missing or not fitting sends the first offered, so the
- * turn can end, and is the turn's illegal step.
+ * turn can end, and is the turn's illegal step. A switch-out move's screen sends the first offered too, and is always
+ * the illegal step: no input names its pick.
  */
 function replacing(choose: (asked: Replacing, i: number) => PartySlot | Replacement | undefined) {
   const asked: Replacing[] = [];
@@ -324,6 +323,16 @@ function replacing(choose: (asked: Replacing, i: number) => PartySlot | Replacem
     const offered = scene()
       .getPlayerParty()
       .flatMap((p: any, slot: number) => (!p.isFainted() && !p.isOnField() ? [{ slot, species: species(p) }] : []));
+    // A faint's screen is the one that returns no mon to its ball: a U-turn's or an Emergency Exit's does (game-code.md
+    // §34).
+    if (phase.doReturn) {
+      illegal ??= "plays a switch-out move, whose pick no input names";
+      if (offered.length === 0) return;
+      handler.setCursor(offered[0].slot);
+      handler.processInput(Button.ACTION);
+      handler.processInput(Button.ACTION);
+      return;
+    }
     let chosen = choose({ field, offered }, asked.length);
     asked.push({ field, offered });
     if (chosen === undefined) illegal ??= "leaves a faint replacement to pick, and names none";
@@ -755,9 +764,9 @@ async function restore(at: string) {
 function putBack(fork: any) {
   const s = scene();
   const battle = s.currentBattle;
-  // An augmented export's fork point has no `double`, and the final boss's second stage is the one double a solve
-  // reaches (#788).
-  if (fork.double ?? (battle.isClassicFinalBoss && s.getEnemyParty().some((p: any) => p.formIndex > 0))) toDouble();
+  // From the live battle on an augmented export's: a tab reloaded mid-fight is single where the fight it left was not
+  // (game-code.md §34).
+  if (fork.double) toDouble();
   const all: any[] = [...s.getPlayerParty(), ...s.getEnemyParty()];
   battle.turn = fork.turn;
   battle.battleSeedState = fork.battleSeedState;
@@ -811,6 +820,8 @@ function putBack(fork: any) {
 function toDouble() {
   const s = scene();
   s.currentBattle.double = true;
+  // Party slot 1 is who stood in field slot 1: the summon swaps its mon into that slot (game-code.md §34). One that can't
+  // fight there means none stood.
   const [lead, partner] = s.getPlayerParty();
   if (!partner?.isAllowedInBattle() || partner.isOnField()) return;
   s.add.existing(partner);

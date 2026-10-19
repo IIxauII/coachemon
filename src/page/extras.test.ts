@@ -69,7 +69,7 @@ test("a mid-fight read carries every extra the save lacks or a reload resets, wh
   const r = send("extras", {});
   assert.deepEqual(JSON.parse(JSON.stringify(r)), r, "nothing in it is lost to the relay's JSON");
   assert.deepEqual(r, {
-    ok: true, wave: 180, battleSeed: "s33d", turn: 5, rndState: "!rnd,1,0.25,0.5,0.75", battleSeedState: null,
+    ok: true, wave: 180, battleSeed: "s33d", turn: 5, double: false, rndState: "!rnd,1,0.25,0.5,0.75", battleSeedState: null,
     enemySwitchCounter: 1, lastMove: 450, enemyFaints: 1, playerFaintsHistory: [], enemyFaintsHistory: [{ id: 79, turn: 3 }],
     arenaTags: [{ tagType: "SAFEGUARD", side: ArenaTagSide.ENEMY }, { tagType: "STEALTH_ROCK", side: ArenaTagSide.PLAYER }],
     foes: [

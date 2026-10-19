@@ -86,11 +86,12 @@ test("a double turn reads a command per field slot, its faint replacements by th
   assert.deepEqual(readScript(JSON.stringify({ inputs })).inputs, inputs);
 });
 
-test("a double turn that names nothing, or sends both field slots to one party slot, doesn't read (#788)", () => {
+test("a double turn that names nothing, sends both field slots to one party slot or terastallizes both doesn't read (#788)", () => {
   const toSnorlax = { kind: "switch", to: { slot: 3, species: "SNORLAX" } };
   for (const [bad, why] of [
     [{ kind: "double", commands: [null, null] }, /names a command, a faint replacement or a learn pick/],
     [{ kind: "double", commands: [toSnorlax, toSnorlax] }, /both field slots switch to the same party slot/],
+    [{ kind: "double", commands: [{ ...pulse, tera: true }, { ...pulse, tera: true }] }, /both field slots terastallize/],
     [{ kind: "double", commands: [pulse] }, /inputs\[0\]\.commands/],
     [{ kind: "double", commands: [{ ...pulse, target: { side: "foes", field: 2 } }, null] }, /inputs\[0\]\.commands\[0\]\.target\.field/],
     [{ kind: "double", commands: [pulse, null], replacements: [{ slot: 5, species: "GYARADOS" }] }, /inputs\[0\]\.replacements\[0\]\.field/],

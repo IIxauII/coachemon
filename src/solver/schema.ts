@@ -44,7 +44,11 @@ const double = z
   .refine(
     ({ commands: [a, b] }) => a?.kind !== "switch" || b?.kind !== "switch" || a.to.slot !== b.to.slot,
     { message: "both field slots switch to the same party slot" },
-  );
+  )
+  // One Tera a battle (game-code.md §34).
+  .refine(({ commands: [a, b] }) => !(a?.kind === "move" && a.tera && b?.kind === "move" && b.tera), {
+    message: "both field slots terastallize",
+  });
 
 export const input = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("move"), move: keyOf(MoveId, "move"), tera: z.boolean(), ...asked }),

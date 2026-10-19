@@ -3241,14 +3241,17 @@ second form faints (`faint-phase.ts:236-239`, `VictoryPhase` at `:184`).
 **Field slots.** Our field is the front of the party: `getPlayerField` is `party.slice(0, double ? 2 : 1)`
 (`src/battle-scene.ts:731-736`), and a switch-in takes the switched-out mon's party slot
 (`src/phases/switch-summon-phase.ts:190-191`). A faint switch's party screen sends only a slot at or past the battler
-count (`src/phases/switch-phase.ts:75`).
+count (`src/phases/switch-phase.ts:75`). A faint queues its `SwitchPhase` with `doReturn` false
+(`src/phases/faint-phase.ts:181`); a switch-out move of ours and Emergency Exit queue theirs modal too, with `doReturn`
+true (`src/data/moves/move.ts:7289-7296`, `src/data/abilities/ab-attrs.ts:5776-5783`).
 
 **A double's turn.** `TurnInitPhase` queues a `CommandPhase` for each of our active field slots, in field order, then the
 foes' `EnemyCommandPhase`s (`src/phases/turn-init-phase.ts:59-73`). A move with more than one target in
 `getMoveTargets` unshifts `SelectTargetPhase` ahead of the next command (`command-phase.ts:300-314`): a single-target
 move to pick one, unless its user is charging with a queued move, and a spread move to confirm. A `NEAR_OTHER` or
 `OTHER` move's set holds the foes and our partner (`src/data/moves/move-utils.ts:79-85`), so it asks though only one
-foe stands.
+foe stands. Tera is one a battle (`MAX_TERAS_PER_ARENA`, `src/constants.ts:120`), and field slot 1's command screen
+offers it only while slot 0's command is no Tera (`src/ui/handlers/command-ui-handler.ts:193-201`).
 
 **A reload.** The save keeps `bossSegments` (`src/system/pokemon-data.ts:137`), but `EncounterPhase` calls `setBoss()` on
 Eternatus at the classic final boss even on a load (`src/phases/encounter-phase.ts:157-164`), which gives it the
