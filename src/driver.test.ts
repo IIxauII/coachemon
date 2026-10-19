@@ -1408,12 +1408,12 @@ test("a solve job solves the fight on the tab from its wave-start save, relays i
   assert.deepEqual((await driver.readJob(started.job)).result, answer);
 });
 
-const OTHER = { gameVersion: "1.12.1.0" };
+const OFF_PIN = { gameVersion: "1.12.1.0" };
 for (const [what, read, code, said] of [
   ["a Daily", draytonRead({ ...DRAYTON.save, gameMode: GameModes.DAILY }), "daily", /Daily's seed is shared/],
   [
     "a live game on another version",
-    draytonRead({ ...DRAYTON.save, ...OTHER }, { ...DRAYTON.liveExport, ...OTHER }),
+    draytonRead({ ...DRAYTON.save, ...OFF_PIN }, { ...DRAYTON.liveExport, ...OFF_PIN }),
     "version_mismatch",
     /live game is 1\.12\.1\.0/,
   ],

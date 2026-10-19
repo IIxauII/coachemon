@@ -5,10 +5,10 @@ import type { Recheck, SolveInput } from "./input.ts";
 import { noAnswer } from "./no-answer.ts";
 import type { NoAnswer } from "./oracle-line.ts";
 
-/** `carried` lets a save from an older game through, migrated by the game's own load as it loads it (#703). */
+/** `carried` lets a save from an older game through, which the game's own load migrates (#703). */
 export type Carry = { carried?: boolean };
 
-/** A player's save carries when an older game wrote it and the live export, stamped by the live game, is on the clone's version (#764). */
+/** The live export's `gameVersion` is the live game's own: the game stamps an export with it (#764). */
 export const carryOf = ({ save, liveExport, cloneVersion }: Pick<SolveInput, "save" | "liveExport" | "cloneVersion">): Carry => ({
   carried: olderThan(save.gameVersion, cloneVersion) && liveExport?.gameVersion === cloneVersion,
 });

@@ -290,11 +290,10 @@ Distinct from the save the game writes at the start of a wave, which a solve fro
 The PokéRogue release the live tab serves, as the game itself reports it. An **oracle** runs exactly one game version,
 and it refuses a save from any other, because the game would load it under the wrong rules without a word. What holds
 an oracle to its version is the test harness having replayed a known fight on it, not the clone. A save from an older
-game is **carried** to the oracle's version through the game's own migration, as the live game carries it, in two
-places only: the re-check, which carries known fights recorded on the last version, and a player's solve of a run
-continued after the game updated to the oracle's version, whose wave-start save the game rewrites only at the next
-wave. Either way the loaded scene is held to the live export, migrated the same way. A save from a newer game, or one
-while the live game serves another version, is never carried.
+game is **carried** to the oracle's version through the game's own migration, as the live game carries it: a known
+fight's in that re-check, and a player's once the live game serves the oracle's version, since the game rewrites a
+continued run's wave-start save only at the next wave. The loaded scene is held to the live export, migrated the same
+way. A save from a newer game is never carried.
 
 Distinct from a **build id**, which is which build of the extension a tab runs.
 
