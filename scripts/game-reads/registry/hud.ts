@@ -1966,6 +1966,14 @@ export const HUD: Area = {
       ],
     },
     {
+      ours: "skills/coachemon/scripts/hud/30-planner.js#lock-uses",
+      of: [
+        "src/data/moves/move.ts#initMoves",
+        "src/data/battler-tags.ts#MoveLockTag.lapse",
+        "src/data/battler-tags.ts#MoveLockTag.getNextTargets",
+      ],
+    },
+    {
       ours: "skills/coachemon/scripts/hud/30-planner.js#confusion-hit",
       of: [
         "src/data/battler-tags.ts#ConfusedTag.lapse",

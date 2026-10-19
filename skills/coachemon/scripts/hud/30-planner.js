@@ -128,13 +128,8 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
     }
   }
   if (live && outs.some(o => o.live)) {
-    const rows = turn.replayAI(foe, me);
-    if (rows?.length) {
-      return rows.map(d => {
-        const o = outs.find(x => x.name === d.name) ?? null;
-        return { o, name: d.name, type: o?.type ?? d.type, p: d.p };
-      });
-    }
+    const rows = replayed(turn, foe, me, outs);
+    if (rows) return rows;
   }
   const pool = outs.filter(o => o.expected > 0).sort((a, b) => b.expected - a.expected);
   if (!pool.length) return [];
@@ -154,6 +149,21 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
     reach *= 1 - stop;
     return { o, name: o.name, type: o.type, p };
   });
+};
+
+const replayed = (turn, foe, me, outs, opts) => {
+  const rows = turn.replayAI(foe, me, opts);
+  return rows?.length ? rows.map(d => {
+    const o = outs.find(x => x.name === d.name) ?? null;
+    return { o, name: d.name, type: o?.type ?? d.type, p: d.p };
+  }) : null;
+};
+
+// A foe's lock still running: `left` uses, its queued one included (game-code.md §5).
+const lockOf = foe => {
+  const tag = foe.getTag?.("FRENZY"), q = foe.getMoveQueue?.()?.[0];
+  const pm = tag && q ? foe.moveset?.find(m => m?.moveId === q.move) : null;
+  return pm ? { name: pm.getName(), left: Math.max(1, tag.turnCount ?? 1) } : null;
 };
 
 // P(`p` gets to use `mv` this turn, or next turn with `next`): sleep, freeze, paralysis and confusion as game-code.md
@@ -214,7 +224,21 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false } = {}) =>
   const live = turn.live && outs.some(o => o.live);
   const { expected, use } = landing(foe, moves, m => m.p, next);
   // `later`: each use after this one, where a re-drawn target (`likelyMoves`) lands on `me` otherwise; null where not.
-  const later = moves.some(m => m.pLater != null) ? landing(foe, moves, m => m.pLater ?? m.p, next) : null;
+  let later = moves.some(m => m.pLater != null) ? landing(foe, moves, m => m.pLater ?? m.p, next) : null;
+  // A locked use into an immune `me` ends the lock (game-code.md §5): the uses after it are the foe's own pick. In a
+  // double the use may land on our other slot and the lock go on, so only a single counts it ended.
+  const lock = lockOf(foe);
+  const lockedRow = lock && moves.find(m => m.name === lock.name);
+  const immune = !turn.facts.double && !!lockedRow?.o && !(lockedRow.o.expected > 0);
+  if (immune && live) {
+    const rows = replayed(turn, foe, me, outs, { afterLock: true });
+    if (rows) later = landing(foe, rows, m => m.p, next);
+  }
+  // The use the foe's confusion starts on, when the lock runs down on `me`; the last use spent on an immune `me` runs
+  // it down too.
+  const confusedFrom = !lockedRow ? null : !immune ? lock.left : lock.left === 1 ? 1 : null;
+  const lockAct = confusedFrom == null ? null
+    : i => (i < confusedFrom ? 1 : 1 - Math.max(0, Math.min(1, confusedFrom + LOCK_CONFUSED - i)) / 3);
   let pKo = 0, first = 0, koFirst = 0, worst = null, likely = null, drained = 0;
   const kos = [], boost = {};
   for (const m of moves) {
@@ -248,6 +272,8 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false } = {}) =>
     boost: Object.keys(boost).length ? boost : null,
     // HP its drain moves give it back a turn; negative into Liquid Ooze.
     drain: drained,
+    // P(its i-th use from now goes off) as its lock's confusion leaves it.
+    lockAct,
   };
 });
 
@@ -451,8 +477,9 @@ export const foeCurve = (turn, t, me, hp, { dealt = 0, foe = null, mult = null, 
   const useOn = x => (x?.expected > 0 ? x.use ?? [{ d: x.expected, p: 1 }] : [{ d: 0, p: 1 }]);
   // A curve from `start` has no use of this turn's, so `later` prices all of it.
   const later = t?.later ?? null;
+  const lockAct = t?.lockAct, from = start ? 1 : 0;
   return koCurve(turn.mon(me), useOn(start && later ? later : t), {
-    hp, start, act, turnEnd: withDrain(course.flat ? course.base : course.at, drain),
+    hp, start, act: lockAct ? i => act(i) * lockAct(i + from) : act, turnEnd: withDrain(course.flat ? course.base : course.at, drain),
     scale: mult || ramp ? i => (mult ? mult(i + 1) : 1) * (ramp ? ramp(i + 1) : 1) : undefined,
     firstKo: t?.expected > 0 && !start ? threatKoAt(t, hp) * act(0) : null,
     useLater: later && !start ? useOn(later) : null,
@@ -463,6 +490,37 @@ const foeTurns = (turn, t, me, hp, opts = {}) => koTurns(foeCurve(turn, t, me, h
 // Confused uses after a lock-in (game-code.md §5, §8).
 // @mirrors lock-confusion
 const LOCK_CONFUSED = (2 + 5) / 2 - 1;
+// @mirrors lock-uses
+const LOCK_USES = [2, 3];
+// Confusion's self-hit at its mean roll (game-code.md §8).
+// @mirrors confusion-hit
+const confusionHit = p => ((2 * p.level / 5 + 2) * 40 * stat(p, Stat.ATK) / stat(p, Stat.DEF) / 50 + 2) * 0.925;
+
+// The foe a lock that knocks out `foe` carries onto: the trainer's send-in, while no other foe stands to re-roll onto
+// (game-code.md §5, §7).
+const lockHeir = (turn, me, foe) => {
+  if (!turn.facts.trainer) return null;
+  const left = (turn.facts.foes ?? []).filter(f => f && f !== foe && f.hp > 0);
+  if (left.some(f => f.isOnField?.())) return null;
+  const score = f => turn.sendInScore(f, me) ?? -Infinity;
+  return left.reduce((b, f) => (!b || score(f) > score(b) ? f : b), null);
+};
+// What a lock's uses past the knockout cost the next duel. `kos`: [P(the lock knocks out on its n-th use), n].
+const lockCarry = (turn, me, mine, foe, kos) => {
+  const left = [];
+  for (const [p, n] of kos) for (const u of LOCK_USES) if (n >= 1 && u > n) left[u - n] = (left[u - n] ?? 0) + p / LOCK_USES.length;
+  const pCarry = left.reduce((t, p) => t + (p ?? 0), 0);
+  const heir = pCarry > 0 ? lockHeir(turn, me, foe) : null;
+  const outs = heir ? planOutcomes(turn, me, heir) : [];
+  const o = outs.find(x => x.name === mine.name);
+  if (!o) return 0;
+  const confused = LOCK_CONFUSED / 3 * (1 + confusionHit(me) / (me.getMaxHp?.() ?? me.hp));
+  // The count runs down before the failure ends the lock, so a last use into an immune foe still confuses (game-code.md §5).
+  if (!(o.expected > 0)) return pCarry + (left[1] ?? 0) * confused;
+  const best = Math.max(...outs.map(x => x.expected ?? 0));
+  const forced = left.reduce((t, p, r) => t + r * (p ?? 0), 0);
+  return pCarry * confused + forced * (1 - Math.min(1, o.expected / best));
+};
 
 // One-on-one from now: `me` repeats `pm` into `foe` while `foe` answers with its likely moves. Turn 1 is exact; later
 // turns race the two `koCurve`s. Options: `hp` (ours after an incoming hit); `after` (an earlier exchange's `turn1`,
@@ -509,7 +567,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   const bars = bossBarsLeft(foe);
   const trainerBoss = foe.hasTrainer?.() ?? !!turn.facts.trainer;
   let turnsWe = 9, hitsWe = 9, delay = 0, selfSpent = 0, defUp = 1, foeMult = null, foeAfter1 = after?.foe ?? null;
-  let weBy = () => 0, qWe = 0, confusion = 0;
+  let weBy = () => 0, qWe = 0, confusion = 0, usesAt = () => 0;
   if (mine?.expected > 0) {
     const atkStat = mine.cat === "special" ? Stat.SPATK : Stat.ATK;
     const drop = mt.drops?.[atkStat] ?? 0;
@@ -543,6 +601,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
       return Math.min(9, mt.once ? Math.min(1, n) : n);
     };
     weBy = j => (usesBy(j) ? curve.by[usesBy(j) - 1] : 0);
+    usesAt = usesBy;
     if (nowUse) foeAfter1 = curve.after1;
     // A wild boss's boosts as our hits break its bars (game-code.md §8): on the breaking turn its hit is boosted only
     // if we moved first.
@@ -558,10 +617,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
         return breaks.includes(j) ? pF * factor(before + 1) + (1 - pF) * factor(before) : factor(before);
       };
     }
-    // Confusion's self-hit at its mean roll (game-code.md §8).
-    // @mirrors confusion-hit
-    const confusionHit = confusedHits && ((2 * me.level / 5 + 2) * 40 * stat(me, Stat.ATK) / stat(me, Stat.DEF) / 50 + 2) * 0.925;
-    selfSpent = (mine.self ?? 0) * Math.min(hitsWe, turnsWe) + confusedHits * 1.5 * confusionHit / 3;
+    selfSpent = (mine.self ?? 0) * Math.min(hitsWe, turnsWe) + (confusedHits && confusedHits * 1.5 * confusionHit(me) / 3);
     const soften = st => (mt.drops?.[st] ? stage(me.summonData?.statStages?.[st - 1] ?? 0) / stage(Math.max(-6, (me.summonData?.statStages?.[st - 1] ?? 0) + mt.drops[st])) : 1);
     if (hitsWe > 1 && (mt.drops?.[Stat.DEF] || mt.drops?.[Stat.SPDEF])) defUp = 1 + ((soften(Stat.DEF) + soften(Stat.SPDEF)) / 2 - 1) * (hitsWe - 1) / hitsWe;
   }
@@ -606,9 +662,13 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   // After turn 1 the two sides' KO hazards are taken as independent; on a turn both would KO, the order decides.
   const hazard = (F, j) => (F(j - 1) >= 1 ? 1 : Math.max(0, (F(j) - F(j - 1)) / (1 - F(j - 1))));
   let pWe = weFirst, pThey = theyFirst, standing = Math.max(0, 1 - weFirst - theyFirst);
+  // [P(we knock out on turn j), our uses by then].
+  const kos = [[weFirst, usesAt(1)]];
   for (let j = 2; j <= 9 && standing > 1e-6; j++) {
     const a = hazard(weBy, j), b = hazard(theyBy, j);
-    pWe += standing * a * (1 - b + b * pLast);
+    const ko = standing * a * (1 - b + b * pLast);
+    pWe += ko;
+    kos.push([ko, usesAt(j)]);
     pThey += standing * b * (1 - a + a * (1 - pLast));
     standing *= (1 - a) * (1 - b);
   }
@@ -626,7 +686,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     expectedHpLeft: Math.round(hpLeft),
     turnsWe, turnsThey, pFirst, hitsWe,
     eTurnsWe: Math.min(9, expTurns(weBy) + confusion), eTurnsThey: expTurns(theyBy),
-    cost: Math.min(1, (selfSpent + selfKo * Math.max(0, hp - selfSpent)) / maxHp) + (mt.lock ? 0.1 : 0),
+    cost: Math.min(1, (selfSpent + selfKo * Math.max(0, hp - selfSpent)) / maxHp) + (mt.lock ? 0.1 + lockCarry(turn, me, mine, foe, kos) : 0),
     turn1: (() => {
       // The curve front-loaded every use's self-cost, and turn 1 has only paid one.
       const me1 = freeThey || !theirs ? [{ hp, p: 1 }]

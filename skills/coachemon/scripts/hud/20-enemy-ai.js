@@ -212,9 +212,9 @@ const aiDistribution = (env, e) => {
   }
   return finish(rows);
 };
-// `getNextMove` replayed against `target`, which need not be on the field (game-code.md §6). `hp`: its HP by then.
-// Rows as `sceneDistribution`'s, without targets.
-export const sceneReplayAI = (env, e, target, { hp = target.hp, bi = target.isOnField?.() ? target.getBattlerIndex() : BattlerIndex.PLAYER } = {}) =>
+// `getNextMove` replayed against `target`, which need not be on the field (game-code.md §6). `hp`: its HP by then;
+// `afterLock`: the pick once its lock has ended, the queue unread. Rows as `sceneDistribution`'s, without targets.
+export const sceneReplayAI = (env, e, target, { hp = target.hp, bi = target.isOnField?.() ? target.getBattlerIndex() : BattlerIndex.PLAYER, afterLock = false } = {}) =>
   keepTurnData([...env.field, target], () => forcedRng(env.s, () => {
     const moveset = movesetOf(e);
     const rows = new Map();
@@ -230,7 +230,7 @@ export const sceneReplayAI = (env, e, target, { hp = target.hp, bi = target.isOn
       rows.get(k).p += p;
     };
     const done = () => [...rows.values()].filter(r => r.p > 1e-12).sort((a, b) => b.p - a.p);
-    for (const q of e.getMoveQueue()) {
+    for (const q of afterLock ? [] : e.getMoveQueue()) {
       const pm = moveset.find(m => m.moveId === q.move);
       if (q.useMode >= MoveUseMode.INDIRECT) { add(pm ?? null, 1, null, q.move); return done(); }
       if (pm && usableFor(pm, e, q.useMode >= MoveUseMode.IGNORE_PP)) { add(pm, 1); return done(); }
