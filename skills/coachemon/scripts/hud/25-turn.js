@@ -313,7 +313,7 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
       const out = env.foes.filter(p => p.isOnField?.());
       return (out.length ? out : env.foes).slice(0, env.double ? 2 : 1);
     }),
-    replayAI: (foe, target, opts = {}) => memo("replay", `${foe.id}|${target.id}|${opts.hp ?? ""}|${opts.bi ?? ""}`,
+    replayAI: (foe, target, opts = {}) => memo("replay", `${foe.id}|${target.id}|${opts.hp ?? ""}|${opts.bi ?? ""}|${opts.afterLock ? 1 : ""}`,
       () => (live ? tryDo(() => asAi(() => sceneReplayAI(env, foe, target, opts)), null) : null)),
     sendInScore: (f, me) => memo("sendIn", `${f.id}|${me.id}`, () => (live ? tryDo(() => asAi(() => sceneSendInScore(env, f, me)), null) : null)),
     // Step 7's score for a move of ours (game-code.md §6), as one number; 0 without game code, so nothing is nudged.
