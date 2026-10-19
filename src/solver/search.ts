@@ -5,7 +5,7 @@ import type { Beam, BeamEnd, Input, LdsEnd, NoAnswer, Reason, Replay, ReplayResu
 /** `null` is a turn the game plays for us, such as a two-turn move's second: it takes no input. */
 export type Action = Input | null;
 
-/** Each mon's HP as a fraction of its max, 0 once fainted. */
+/** Each mon's HP as a fraction of its max, 0 once fainted; the classic final boss's spans both its stages (#788). */
 export type Hp = { ours: readonly number[]; foes: readonly number[] };
 
 /** A decision the search can fork from. Two positions with one `sig` are one to the search. */

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import { GameModes, SpeciesId } from "../enums/generated.ts";
 import { readExtras } from "./extras.ts";
 import type { MidFightExtras, SessionSave } from "./input.ts";
 
@@ -77,4 +78,24 @@ test("a foe the read gives no id is missing its id, not its slot as well (#664)"
 
 test("a read that names its own field unread is missing that field though it came back with a value (#664)", () => {
   assert.deepEqual(missing({ ...t5.extras, unread: ["foes.2.waveData"] }), ["foes.2.waveData"]);
+});
+
+test("the live battle's double rides into the fork point, and a read from before it was read leaves it out (#788)", () => {
+  const fork = (extras: unknown) => {
+    const result = read(extras);
+    return result.kind === "read" ? JSON.parse(result.forkPoint) : assert.fail("read every extra");
+  };
+
+  assert.equal(fork({ ...t5.extras, double: true }).double, true);
+  assert.equal(fork({ ...t5.extras, double: false }).double, false);
+  assert.equal("double" in fork(t5.extras), false);
+});
+
+test("the final boss's second stage read without the live double misses it: a reloaded tab plays it single (#788)", () => {
+  const save = structuredClone(t5.save);
+  Object.assign(save.enemyParty[0] as object, { species: SpeciesId.ETERNATUS, formIndex: 1 });
+  const result = readExtras({ ...save, gameMode: GameModes.CLASSIC }, t5.extras);
+
+  assert.deepEqual(result.kind === "missing" && result.extras, ["double"]);
+  assert.equal(readExtras({ ...save, gameMode: GameModes.CLASSIC }, { ...t5.extras, double: false }).kind, "read");
 });

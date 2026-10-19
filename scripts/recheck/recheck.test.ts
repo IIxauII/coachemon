@@ -6,7 +6,13 @@ import type { Input, ReplayResult } from "../../src/solver/oracle-line.ts";
 import type { CheckResult, Checks, Script } from "../../src/solver/solver.ts";
 import { type Given, recheck } from "./recheck.ts";
 
+/** Gordie, Drayton and Kieran were recorded on it. */
 const VERSION = "1.12.0.11";
+/** Eternatus W200 was recorded on it. */
+const PIN = "1.12.1.3";
+/** Newer than every known fight's save. */
+const NEWER = "1.12.2.0";
+const ETERNATUS = 200;
 
 const replayed = (turns: number): ReplayResult => ({
   kind: "replayed",
@@ -59,22 +65,26 @@ const fakes = ({
   };
 };
 
-test("the re-check replays the three known fights at the stamped version, then checks each, and passes (#665)", async () => {
+test("the re-check replays the known fights at the stamped version, then checks each, and passes (#665, #788)", async () => {
   const { calls, deps } = fakes();
 
-  const run = await recheck(VERSION, deps);
+  const run = await recheck(PIN, deps);
 
   assert.deepEqual(run.failed, []);
   assert.deepEqual(
     calls.map(c => `${c.kind} ${c.wave}`),
-    ["replay 180", "replay 188", "replay 190", "check 180", "check 188", "check 190"],
+    ["replay 180", "replay 188", "replay 190", "replay 200", "check 180", "check 188", "check 190", "check 200"],
   );
-  for (const call of calls) assert.equal(call.given.cloneVersion, VERSION);
-  for (const call of calls) assert.deepEqual(call.carry, { carried: false }, "the fights were recorded on this version");
+  for (const call of calls) assert.equal(call.given.cloneVersion, PIN);
+  for (const call of calls) {
+    assert.deepEqual(call.carry, { carried: call.wave !== ETERNATUS }, "only Eternatus W200 was recorded on this version");
+  }
   for (const call of calls.filter(c => c.kind === "replay")) {
     assert.ok(call.given.live && call.given.liveExport, "a replay needs the live battle and its export");
     assert.equal(call.script?.known?.outcome, "won", "a known line is held to every fact live recorded");
   }
+  assert.match(run.text, /carrying the 1\.12\.0\.11 saves of Gordie W180, Drayton W188 and Kieran W190 to 1\.12\.1\.3/);
+  assert.doesNotMatch(run.text, /saves of Eternatus W200/);
   assert.match(run.text, /Gordie W180: replayed, won in 19 turns/);
   assert.match(run.text, /Kieran W190\n\s+straight: 31 turns[^\n]*\n\s+fork check: 30 of 30 restores/);
 });
@@ -125,25 +135,26 @@ test("checks whose straight run doesn't win as live did fail the re-check, thoug
 test("at a newer game version the re-check carries each known fight's save to it, and passes (#703)", async () => {
   const { calls, deps } = fakes();
 
-  const run = await recheck("1.12.1.1", deps);
+  const run = await recheck(NEWER, deps);
 
   assert.deepEqual(run.failed, []);
-  assert.equal(calls.length, 6);
+  assert.equal(calls.length, 8);
   for (const call of calls) assert.deepEqual(call.carry, { carried: true });
-  for (const call of calls) assert.equal(call.given.cloneVersion, "1.12.1.1");
-  assert.match(run.text, /carrying the 1\.12\.0\.11 saves of Gordie W180, Drayton W188 and Kieran W190 to 1\.12\.1\.1/);
+  for (const call of calls) assert.equal(call.given.cloneVersion, NEWER);
+  assert.match(run.text, /carrying the 1\.12\.0\.11 saves of Gordie W180, Drayton W188 and Kieran W190 to 1\.12\.2\.0/);
+  assert.match(run.text, /carrying the 1\.12\.1\.3 saves of Eternatus W200 to 1\.12\.2\.0/);
 });
 
 test("a carried fight that doesn't replay ends the re-check naming it to record again on the new version, and where how is (#703)", async () => {
   const missedTurn = noAnswer({ code: "known_turn_missed", misses: ["turn 3: our Reshiram hp 120, live 118"] });
   const { deps } = fakes({ replays: { 180: missedTurn, 190: missedTurn } });
 
-  const run = await recheck("1.12.1.1", deps);
+  const run = await recheck(NEWER, deps);
 
   assert.deepEqual(run.failed, ["Gordie W180 didn't replay", "Kieran W190 didn't replay"]);
   assert.match(
     run.text,
-    /Gordie W180 and Kieran W190 were recorded on 1\.12\.0\.11\. Where 1\.12\.1\.1 changed the fights, record others in their place on 1\.12\.1\.1: "Record a known fight again" in docs\/runbooks\/pin-bump\.md\.$/,
+    /Gordie W180 and Kieran W190 were recorded on 1\.12\.0\.11\. Where 1\.12\.2\.0 changed the fights, record others in their place on 1\.12\.2\.0: "Record a known fight again" in docs\/runbooks\/pin-bump\.md\.$/,
   );
 });
 
@@ -151,7 +162,7 @@ test("a carried fight whose harness failed asks for no new recording: a new figh
   const broke = noAnswer({ code: "harness_failed", why: "TypeError: Cannot read properties of undefined (reading 'sprites')" });
   const { deps } = fakes({ replays: { 180: broke, 188: broke, 190: broke } });
 
-  const run = await recheck("1.12.1.1", deps);
+  const run = await recheck(NEWER, deps);
 
   assert.equal(run.failed.length, 3);
   assert.doesNotMatch(run.text, /in (its|their) place/);

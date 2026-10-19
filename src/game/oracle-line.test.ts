@@ -49,3 +49,26 @@ test("a step's learn picks reach the page as the game's own ids, a declined one'
   });
   assert.deepEqual(queued.input, { kind: "queued", learns: [airSlash] });
 });
+
+test("a double step reaches the page with each command's move and switch, and each replacement, as the game's own ids (#788)", () => {
+  const input = {
+    kind: "double",
+    commands: [{ kind: "move", move: "EARTH_POWER", tera: false, target: { side: "foes", field: 0 } }, { kind: "switch", to: { slot: 3, species: "SNORLAX" } }],
+    replacements: [{ slot: 5, species: "GYARADOS", field: 1 }],
+    learns: [{ slot: 0, species: "PROBOPASS", move: "POWER_GEM", forget: null }],
+  } as const;
+  const line = { ...GORDIE_LINE, steps: [{ ...GORDIE_LINE.steps[0], input }, { ...GORDIE_LINE.steps[1], input: { kind: "double", commands: [null, null], replacements: [input.replacements[0]] } as const }] };
+
+  const [both, queued] = pageOracleLine(line).steps;
+
+  assert.deepEqual(both.input, {
+    kind: "double",
+    commands: [
+      { kind: "move", move: MoveId.EARTH_POWER, tera: false, target: { side: "foes", field: 0 } },
+      { kind: "switch", to: { slot: 3, species: SpeciesId.SNORLAX } },
+    ],
+    replacements: [{ slot: 5, species: SpeciesId.GYARADOS, field: 1 }],
+    learns: [{ slot: 0, species: SpeciesId.PROBOPASS, move: MoveId.POWER_GEM, forget: null }],
+  });
+  assert.deepEqual(queued.input, { kind: "double", commands: [null, null], replacements: [{ slot: 5, species: SpeciesId.GYARADOS, field: 1 }] });
+});

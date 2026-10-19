@@ -1,6 +1,6 @@
 import { MoveId, SpeciesId, StatusEffect } from "../enums/generated.ts";
 import type { PageOracleLine } from "../page/oracle-line.ts";
-import type { Input, LearnPick, MonState, OracleLine, PartySlot } from "../solver/solver.ts";
+import type { FieldCommand, Input, LearnPick, MonState, OracleLine, PartySlot } from "../solver/solver.ts";
 
 type PageStep = PageOracleLine["steps"][number];
 
@@ -15,7 +15,19 @@ const pick = (l: LearnPick) => ({
   forget: l.forget === null ? null : MoveId[l.forget],
 });
 
+const command = (c: FieldCommand | null) =>
+  c === null ? null : c.kind === "move" ? { ...c, move: MoveId[c.move] } : { ...c, to: slot(c.to) };
+
 function input(i: Input): NonNullable<PageStep["input"]> {
+  if (i.kind === "double") {
+    const { replacements, learns, commands } = i;
+    return {
+      kind: "double",
+      commands: [command(commands[0]), command(commands[1])],
+      ...(replacements !== undefined && { replacements: replacements.map(r => ({ ...r, species: SpeciesId[r.species] })) }),
+      ...(learns !== undefined && { learns: learns.map(pick) }),
+    };
+  }
   const { replacement, learns, ...rest } = i;
   const ids =
     rest.kind === "move" ? { ...rest, move: MoveId[rest.move] }

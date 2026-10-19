@@ -47,6 +47,7 @@ export const HARNESS: Area = {
       note: "our Played/report objects; HUD decision.end is ours too",
     },
     { name: "enemyFaintsHistory", kind: "field", at: ["src/battle.ts#Battle.enemyFaintsHistory"] },
+    { name: "existing", kind: "method", at: [], from: "phaser", note: "Phaser GameObjectFactory (scene.add)" },
     {
       name: "field",
       kind: "field",
@@ -158,6 +159,7 @@ export const HARNESS: Area = {
       note: "the session save JSON; HUD reads are ours",
     },
     { name: "phaseInterceptor", kind: "field", at: ["test/framework/game-manager.ts#GameManager.phaseInterceptor"] },
+    { name: "phaseQueue", kind: "field", at: ["src/phase-manager.ts#PhaseManager.phaseQueue"] },
     { name: "playerFaintsHistory", kind: "field", at: ["src/battle.ts#Battle.playerFaintsHistory"] },
     { name: "playerParticipantIds", kind: "field", at: ["src/battle.ts#Battle.playerParticipantIds"] },
     {
@@ -209,6 +211,7 @@ export const HARNESS: Area = {
       ],
     },
     { name: "sessionData", kind: "field", at: ["test/helpers/reload-helper.ts#ReloadHelper.sessionData"] },
+    { name: "setFieldPosition", kind: "method", at: ["src/field/pokemon.ts#Pokemon.setFieldPosition"] },
     { name: "setMode", kind: "method", at: ["src/ui/ui.ts#UI.setMode"] },
     {
       name: "shiny",
@@ -339,8 +342,10 @@ export const HARNESS: Area = {
     { name: "#data/pokemon-data", kind: "import", at: ["src/data/pokemon-data.ts#PokemonSummonData"] },
     { name: "#enums/buttons", kind: "import", at: ["src/enums/buttons.ts#Button"] },
     { name: "#enums/command", kind: "import", at: ["src/enums/command.ts#Command"] },
+    { name: "#enums/field-position", kind: "import", at: ["src/enums/field-position.ts#FieldPosition"] },
     { name: "#enums/hit-check-result", kind: "import", at: ["src/enums/hit-check-result.ts#HitCheckResult"] },
     { name: "#enums/move-id", kind: "import", at: ["src/enums/move-id.ts#MoveId"] },
+    { name: "#enums/move-target", kind: "import", at: ["src/enums/move-target.ts#MoveTarget"] },
     {
       name: "#enums/move-use-mode",
       kind: "import",
@@ -369,6 +374,7 @@ export const HARNESS: Area = {
       kind: "import",
       at: ["src/data/moves/move.ts#Move", "src/data/moves/move.ts#MoveEffectAttr"],
     },
+    { name: "#moves/move-utils", kind: "import", at: ["src/data/moves/move-utils.ts#getMoveTargets"] },
     { name: "#phases/command-phase", kind: "import", at: ["src/phases/command-phase.ts#CommandPhase"] },
     { name: "#phases/move-effect-phase", kind: "import", at: ["src/phases/move-effect-phase.ts#MoveEffectPhase"] },
     { name: "#phases/move-phase", kind: "import", at: ["src/phases/move-phase.ts#MovePhase"] },
@@ -390,6 +396,7 @@ export const HARNESS: Area = {
     { name: "#utils/pokemon-utils", kind: "import", at: ["src/utils/pokemon-utils.ts#canTerastallize"] },
     { name: "BattleEndPhase", kind: "phase", at: ["src/phases/battle-end-phase.ts#BattleEndPhase"] },
     { name: "CommandPhase", kind: "phase", at: ["src/phases/command-phase.ts#CommandPhase"] },
+    { name: "EnemyCommandPhase", kind: "phase", at: ["src/phases/enemy-command-phase.ts#EnemyCommandPhase"] },
     { name: "SwitchPhase", kind: "phase", at: ["src/phases/switch-phase.ts#SwitchPhase"] },
     { name: "TurnEndPhase", kind: "phase", at: ["src/phases/turn-end-phase.ts#TurnEndPhase"] },
   ],

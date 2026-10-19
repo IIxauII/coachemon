@@ -14,9 +14,12 @@ const mon = (m: MonState) =>
     .filter(Boolean)
     .join(" ");
 
+// Our field slots are the party's first two (game-code.md §34).
+const fieldBefore = (steps: readonly Step[], i: number) => steps[i - 1]?.checkpoint.ours.slice(0, 2).map(m => (m.onField ? m : undefined));
+
 const turns = (steps: readonly Step[]) =>
-  steps.flatMap(({ turn, input, checkpoint }) => [
-    `T${turn}`.padEnd(4) + (input === null ? "(no input)" : describeInput(input)),
+  steps.flatMap(({ turn, input, checkpoint }, i) => [
+    `T${turn}`.padEnd(4) + (input === null ? "(no input)" : describeInput(input, fieldBefore(steps, i))),
     `    ours  ${checkpoint.ours.map(mon).join(" · ")}`,
     `    foes  ${checkpoint.foes.map(mon).join(" · ")}`,
   ]);

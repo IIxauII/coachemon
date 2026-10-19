@@ -49,6 +49,7 @@ what was only observed on a tab) is in §22, not in the sections.
 | The wave-start save and the session export | §29 |
 | The session save, and what a reload resets mid-fight | §30 |
 | The randomizer challenges: what they rewrite, and which calls see it | §33 |
+| The classic final boss's second stage and the double it turns into | §34 |
 | HUD API built on the above | Recommended API for the HUD |
 
 ---
@@ -3214,3 +3215,47 @@ value 2 also lifts the move requirement off move evolutions.
   egg-hatch modes: the starter grid's ability and passive names are not the ones the run hands out. The raw fields
   (`ability1`, `ability2`, `abilityHidden`) see neither hook.
 - `STARTER_COST` moves seven species' costs (`src/data/challenge.ts:1707-1733`, §23).
+
+## 34. The classic final boss's second stage, and the double it turns into
+
+Read at the pinned tag (`v1.12.1.3`), for the solver's harness (`src/solver/harness.test.ts.template`, #788).
+
+**Where the first stage ends.** At form 0 the classic final boss never faints. A hit can't break into its last bar:
+§3's minimum segment index of 1 stops it on that bar's top (`src/field/pokemon.ts:7165-7173`, `:7194-7200`), and once
+on the last bar the `hp − 1` clamp keeps 1 HP (`:7175-7177`). A faint that gets through anyway is cancelled, `hp` raised
+by one, and a `DamageAnimPhase` queued (`FaintPhase.handleFinalBossFaint`, `src/phases/faint-phase.ts:232-245`). `DamageAnimPhase.end` and
+`PostTurnStatusEffectPhase.end` call `BattleScene.initFinalBossPhaseTwo` in place of their own end on the classic final
+boss (`src/phases/damage-anim-phase.ts:97-103`, `src/phases/post-turn-status-effect-phase.ts:64-70`), which goes on
+only for a boss enemy at form 0 down to its last bar, `bossSegmentIndex` below 1 (`src/battle-scene.ts:3269-3273`).
+
+**The change.** After its dialogue, `initFinalBossPhaseTwo` gives the boss an untransferable Mini Black Hole as an enemy
+item, a new moveset, and its form change (`:3275-3284`). The form change's `QuietFormChangePhase.end` queues a heal to full,
+status and PP included, clears its tags, sets `bossSegments` to 5 and `bossSegmentIndex` to 4, and cancels its move
+still to come that turn (`src/phases/quiet-form-change-phase.ts:208-224`). Then `currentBattle.double` is set (`src/battle-scene.ts:3285`). With
+more than one of ours allowed in battle, `ToggleDoublePositionPhase` is queued, and `SummonPhase` and `PostSummonPhase`
+for field slot 1 when the second such mon is not already on the field (`:3286-3293`). `SummonPhase` sends party slot 1,
+or, where that one can't fight, swaps in the first after it that can (`src/phases/summon-phase.ts:40-64`). So the
+second stage is our two against the one foe, and no command is asked for the summon. The battle is won only when the
+second form faints (`faint-phase.ts:236-239`, `VictoryPhase` at `:184`).
+
+**Field slots.** Our field is the front of the party: `getPlayerField` is `party.slice(0, double ? 2 : 1)`
+(`src/battle-scene.ts:731-736`), and a switch-in takes the switched-out mon's party slot
+(`src/phases/switch-summon-phase.ts:190-191`). A faint switch's party screen sends only a slot at or past the battler
+count (`src/phases/switch-phase.ts:75`). A faint queues its `SwitchPhase` with `doReturn` false
+(`src/phases/faint-phase.ts:181`); a switch-out move of ours and Emergency Exit queue theirs modal too, with `doReturn`
+true (`src/data/moves/move.ts:7289-7296`, `src/data/abilities/ab-attrs.ts:5776-5783`). In a double with at most one
+able mon in the party, on the field or off, the party screen fills field 0 whatever the phase's own `fieldIndex` says (`src/phases/switch-phase.ts:64-67`).
+
+**A double's turn.** `TurnInitPhase` queues a `CommandPhase` for each of our active field slots, in field order, then the
+foes' `EnemyCommandPhase`s (`src/phases/turn-init-phase.ts:59-73`). A move with more than one target in
+`getMoveTargets` unshifts `SelectTargetPhase` ahead of the next command (`command-phase.ts:300-314`): a single-target
+move to pick one, unless its user is charging with a queued move, and a spread move to confirm. A `NEAR_OTHER` or
+`OTHER` move's set holds the foes and our partner (`src/data/moves/move-utils.ts:79-85`), so it asks though only one
+foe stands. Tera is one a battle (`MAX_TERAS_PER_ARENA`, `src/constants.ts:120`), and field slot 1's command screen
+offers it only while slot 0's command is no Tera (`src/ui/handlers/command-ui-handler.ts:193-201`).
+
+**A reload.** The save keeps `bossSegments` (`src/system/pokemon-data.ts:137`), but `EncounterPhase` calls `setBoss()` on
+Eternatus at the classic final boss even on a load (`src/phases/encounter-phase.ts:157-164`), which gives it the
+encounter's bar count, `getEncounterBossSegments` (`src/battle-scene.ts:1944-1986`), even in its second form, and puts
+the bar index back at the top of them (`src/field/pokemon.ts:6697-6708`). Its saved `hp` is kept. A second-stage save also loads single
+(§28).
