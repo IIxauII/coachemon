@@ -37,6 +37,8 @@ jobs:
           cache: npm
 
       - run: npm ci --ignore-scripts
+      - run: npm ci --ignore-scripts
+        working-directory: .github/release-tools
 
       # Nothing is generated or fetched in this job: the suite below tests the exact tree the release commits (#258),
       # and `prepareCmd` writes only the three version files, after it. That property matters because the
@@ -71,7 +73,7 @@ jobs:
       #
       # A file rather than an agent, because `SSH_AUTH_SOCK` is environment and no environment survives between steps —
       # each `run:` is a fresh shell, so an agent started here would be gone by the time the release pushes. A config
-      # file is re-read by every `ssh` the job starts, the one inside the `npx` child included, because `$HOME` is the
+      # file is re-read by every `ssh` the job starts, the one inside semantic-release included, because `$HOME` is the
       # same. `IdentitiesOnly` stops ssh offering a runner-provided identity ahead of the key. The modes are set rather
       # than left to the runner's umask: ssh ignores a group-writable config *and carries on without it*. Written whole
       # with `>`, not appended — ssh honours the first matching directive, so a pre-existing entry would win.
@@ -104,16 +106,14 @@ jobs:
       # fails — so an ssh url that works is never swapped out. Unset, it would read `origin` from the checkout, which
       # is https; `package.json` carries no `repository` field that would override that. The token stays regardless:
       # `@semantic-release/github` needs it for the release, the notes and the PR comments, none of which are a push.
+      #
+      # The `.github/release-tools` lockfile's semantic-release, never `npx`: that would resolve its newest release and
+      # whole dependency tree at release time, inside the one job that holds the key past the ruleset and pushes the
+      # `plugin` branch every player installs.
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: >
-          npx --yes
-          -p semantic-release@25
-          -p @semantic-release/exec@7
-          -p @semantic-release/git@11
-          semantic-release
-          --repository-url git@github.com:${{ github.repository }}.git
+        run: .github/release-tools/node_modules/.bin/semantic-release --repository-url git@github.com:${{ github.repository }}.git
 
       # The marketplace installs from the `plugin` branch, so a release this step did not publish is one no player can
       # install (extension-distribution.md §14.7). The runner has no git identity, and `commit-tree` refuses to run
@@ -136,6 +136,9 @@ jobs:
   release-extension:
     needs: release
     runs-on: ubuntu-latest
+    # The store keys are secrets of this environment, not the repository, so a workflow file on any other ref never
+    # sees them: the environment admits `master` alone.
+    environment: release
     steps:
       - uses: actions/checkout@v4
         with:
@@ -156,6 +159,8 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm ci
         working-directory: extension
+      - run: npm ci --ignore-scripts
+        working-directory: .github/release-tools
 
       # `stamp-extension.ts` builds and zips in `prepare`; `submit-extension.ts` submits in `publish`, and does nothing
       # at all while the version is 0.x (§14.1). Neither runs unless the commit filter found a release to make.
@@ -172,8 +177,4 @@ jobs:
           # AMO's extension id is the gecko id, which `submit-extension.ts` reads off the built manifest (§5.3).
           FIREFOX_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
           FIREFOX_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
-        run: >
-          npx --yes
-          -p semantic-release@25
-          -p @semantic-release/exec@7
-          semantic-release
+        run: ../.github/release-tools/node_modules/.bin/semantic-release

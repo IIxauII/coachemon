@@ -785,7 +785,9 @@ From [Release channel, versioning, and how fixes reach users](https://github.com
 ### 14.3 Job order in `release.yml`
 
 1. **`release`** (today's job): typecheck, test, the plugin's semantic-release. It may push a `chore(release)` commit and a `v*` tag. Then it publishes the plugin copy to the `plugin` branch (§14.7).
-2. **`release-extension`**, `needs: release`: check out `master` fresh with `fetch-depth: 0`, so it builds on top of the plugin's release commit when there is one and ships that commit's randbats; Node 24; `npm ci --ignore-scripts` at the root; `npm ci` in `extension/`; `npx -p semantic-release@25 -p @semantic-release/exec@7 semantic-release` in `extension/`.
+2. **`release-extension`**, `needs: release`: check out `master` fresh with `fetch-depth: 0`, so it builds on top of the plugin's release commit when there is one and ships that commit's randbats; Node 24; `npm ci --ignore-scripts` at the root; `npm ci` in `extension/`; `npm ci --ignore-scripts` in `.github/release-tools/`; that folder's `semantic-release` run from `extension/`. The job is in the `release` environment, which holds the store secrets (§14.4).
+
+Both jobs run semantic-release and its plugins from `.github/release-tools/`, a manifest and lockfile only these two jobs install, never `npx`: a fresh resolve at release time would put whatever npm serves that day inside jobs holding the deploy key and the store keys. Not root `devDependencies`, which every CI job and contributor install would carry.
 
 Both jobs sit in the existing `release` concurrency group, so two pushes never interleave.
 
@@ -794,7 +796,7 @@ Both jobs sit in the existing `release` concurrency group, so two pushes never i
 - **Every `extension-v*` release after 1.0.0 auto-submits to both CWS and AMO**, in `publishCmd`. 1.0.0 is the listings' first package, uploaded by hand. 0.x never submits.
 - **Tool:** `wxt submit` (publish-browser-extension 5 or later), which speaks **Chrome Web Store API v2**; v1 stops being supported on 2026-10-15 **[doc]**.
 - **Chrome review pending:** cancel the pending submission through the API, then upload and submit the newest. A burst of HUD releases restarts Chrome's review each time; accepted. **Confirmed** by the release ticket: `POST /v2/{name}:cancelSubmission` "can be used to cancel the review of a pending submission" **[doc]**, and `publish-browser-extension` calls it behind `--chrome-cancel-pending` when `fetchStatus` reports `PENDING_REVIEW`.
-- **Secrets** (picked here, corrected by the release ticket), mapped by the job onto the tool's environment names: `CWS_EXTENSION_ID`, `CWS_PUBLISHER_ID`, `CWS_SERVICE_ACCOUNT_EMAIL`, `CWS_SERVICE_ACCOUNT_PRIVATE_KEY`, `AMO_JWT_ISSUER`, `AMO_JWT_SECRET`. **API v2 authenticates as a GCP service account**, so the client id, client secret and refresh token this section first listed are v1.1's and are not used. AMO's extension id is the gecko id (§5.3), read off the built Firefox manifest rather than configured twice.
+- **Secrets** (picked here, corrected by the release ticket), mapped by the job onto the tool's environment names: `CWS_EXTENSION_ID`, `CWS_PUBLISHER_ID`, `CWS_SERVICE_ACCOUNT_EMAIL`, `CWS_SERVICE_ACCOUNT_PRIVATE_KEY`, `AMO_JWT_ISSUER`, `AMO_JWT_SECRET`. They are secrets of the `release` environment, which admits `master` alone, and not repository secrets, which a workflow on any ref can read. **API v2 authenticates as a GCP service account**, so the client id, client secret and refresh token this section first listed are v1.1's and are not used. AMO's extension id is the gecko id (§5.3), read off the built Firefox manifest rather than configured twice.
 - **A failed submission fails the job** after the tag and GitHub Release exist. The dev resubmits by hand; nothing retries.
 
 ### 14.5 How fixes reach players
