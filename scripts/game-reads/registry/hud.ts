@@ -1242,6 +1242,7 @@ export const HUD: Area = {
       from: "ours",
       note: "WEB API: Long Animation Frames (PerformanceLongAnimationFrameTiming)",
     },
+    { name: "replacements", kind: "field", at: [], from: "ours", note: "our oracle line's double step (input.replacements)" },
     {
       name: "requiredMoney",
       kind: "field",

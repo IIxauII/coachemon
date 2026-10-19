@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
-import { Command, MoveId, PokemonType, SpeciesId } from "../../../../src/enums/generated.ts";
+import { BattlerIndex, Command, MoveId, PokemonType, SpeciesId } from "../../../../src/enums/generated.ts";
 import { GORDIE_LINE, GORDIE_SEED } from "../../../../src/game/fixtures/oracle-line.ts";
 import { pageOracleLine } from "../../../../src/game/oracle-line.ts";
 import { guard, writes } from "./game-writes.mjs";
@@ -659,6 +659,174 @@ const rolandPlayed = (seed, inputs, answer, { at = 3, to = 3, asked = true } = {
   const s = rolandPlayed("a W5 run, learned on the winning turn", LAST, learnOverSunnyDay, { at: 6, to: 6 });
   assert.deepEqual([scored.turn, scored.misses], [6, []]);
   assert.equal(offTheLineModel(s), null);
+}
+
+// Eternatus's W200 (#788): Rayquaza alone until Eternatus's last bar breaks on T2, then Eternamax, back at full HP behind
+// five bars, against Rayquaza and Zacian. Rayquaza falls on T4 and Blissey takes its field slot; Snorlax stays benched.
+const ETERNA = { RAYQUAZA: ["Rayquaza", ["DRAGON_ASCENT"], "FLYING"], ZACIAN: ["Zacian", ["BEHEMOTH_BLADE", "CLOSE_COMBAT"], "STEEL"],
+  BLISSEY: ["Blissey", ["SEISMIC_TOSS"]], SNORLAX: ["Snorlax", []], ETERNATUS: ["Eternatus", []] };
+const ETERNA_MOVES = { DRAGON_ASCENT: ["Dragon Ascent", "FLYING"], BEHEMOTH_BLADE: ["Behemoth Blade", "STEEL"],
+  CLOSE_COMBAT: ["Close Combat", "FIGHTING"], SEISMIC_TOSS: ["Seismic Toss", "FIGHTING"] };
+const keyOf = id => Object.keys(SpeciesId).find(k => SpeciesId[k] === id);
+const state = (key, slot, onField, hp, maxHp, more = {}) => ({ slot, species: SpeciesId[key], onField, hp, maxHp, status: 0, statStages: NONE, tera: false, ...more });
+const eternaCp = (ours, eterna) => ({ ours, foes: [state("ETERNATUS", 0, eterna.bossBars > 0, ...eterna.hp, { bossBars: eterna.bossBars })] });
+const bench = (b = 600, s = 500) => [state("BLISSEY", 2, false, b, 600), state("SNORLAX", 3, false, s, 500)];
+const ETERNA_CP = {
+  0: eternaCp([state("RAYQUAZA", 0, true, 400, 400), state("ZACIAN", 1, false, 350, 350), ...bench()], { hp: [1600, 1600], bossBars: 2 }),
+  1: eternaCp([state("RAYQUAZA", 0, true, 300, 400), state("ZACIAN", 1, false, 350, 350), ...bench()], { hp: [400, 1600], bossBars: 1 }),
+  2: eternaCp([state("RAYQUAZA", 0, true, 250, 400), state("ZACIAN", 1, true, 350, 350), ...bench()], { hp: [2400, 2400], bossBars: 5 }),
+  3: eternaCp([state("RAYQUAZA", 0, true, 200, 400), state("ZACIAN", 1, true, 300, 350, { tera: true }), ...bench()], { hp: [1500, 2400], bossBars: 3 }),
+  4: eternaCp([state("BLISSEY", 0, true, 600, 600), state("ZACIAN", 1, true, 250, 350, { tera: true }), state("RAYQUAZA", 2, false, 0, 400),
+    state("SNORLAX", 3, false, 500, 500)], { hp: [900, 2400], bossBars: 2 }),
+  5: eternaCp([state("BLISSEY", 0, true, 500, 600), state("ZACIAN", 1, true, 250, 350, { tera: true }), state("RAYQUAZA", 2, false, 0, 400),
+    state("SNORLAX", 3, false, 500, 500)], { hp: [0, 2400], bossBars: 0 }),
+};
+const ASCENT = { kind: "move", move: MoveId.DRAGON_ASCENT, tera: false };
+const BLADE = { kind: "move", move: MoveId.BEHEMOTH_BLADE, tera: false };
+const double = (commands, more = {}) => ({ kind: "double", commands, ...more });
+const ETERNA_INPUTS = {
+  1: ASCENT,
+  2: ASCENT,
+  3: double([{ ...ASCENT, target: { side: "foes", field: 0 } }, { ...BLADE, tera: true }]),
+  4: double([null, BLADE], { replacements: [{ slot: 2, species: SpeciesId.BLISSEY, field: 0 }] }),
+  5: double([{ kind: "move", move: MoveId.SEISMIC_TOSS, tera: false }, BLADE]),
+};
+const eternaLine = (seed, inputs = {}) => ({ seed, wave: 200, gameVersion: "1.12.1.3", receipt: [], luck: [],
+  steps: [1, 2, 3, 4, 5].map(turn => ({ turn, input: turn in inputs ? inputs[turn] : ETERNA_INPUTS[turn], checkpoint: ETERNA_CP[turn] })) });
+// The game on `turn`, standing as `cp` (by default the checkpoint before it): a field slot is its party slot.
+// `cmds`: each field slot's committed command, `{ move, tera, targets }` or `{ switchTo }`.
+const eternaAt = (seed, turn, { cp = ETERNA_CP[turn - 1], phase = { phaseName: "CommandPhase" }, cmds = [] } = {}) => {
+  const build = m => {
+    const [name, moves = [], tera] = ETERNA[keyOf(m.species)];
+    const p = mon(keyOf(m.species), name, m.hp, { field: m.onField, moves: moves.map(k => move(k, ...ETERNA_MOVES[k])), tera });
+    return Object.assign(p, { isTerastallized: m.tera }, m.bossBars === undefined ? {}
+      : { isBoss: () => true, isFainted: () => m.hp <= 0, bossSegmentIndex: m.bossBars - 1 });
+  };
+  const command = c => (c.switchTo !== undefined ? { command: Command.POKEMON, cursor: c.switchTo }
+    : { command: Command.FIGHT, move: { move: MoveId[c.move], targets: c.targets ?? [BattlerIndex.ENEMY] } });
+  const turnCommands = Object.fromEntries(cmds.map((c, f) => [f, c && command(c)]));
+  const preTurnCommands = Object.fromEntries(cmds.map((c, f) => [f, c && { command: c.tera ? Command.TERA : command(c).command }]));
+  const party = [...cp.ours].sort((a, b) => a.slot - b.slot).map(build), foes = cp.foes.map(build);
+  return guard({ seed, currentBattle: { waveIndex: 200, turn, turnCommands, preTurnCommands }, phaseManager: { getCurrentPhase: () => phase },
+    getPlayerParty: () => party, getEnemyParty: () => foes });
+};
+const eternaPlay = (seed, turn, cmds) => oracleLineSeen(eternaAt(seed, turn, { phase: { phaseName: "MovePhase" }, cmds }));
+const eternaDecide = (seed, turn, cp) => { const s = eternaAt(seed, turn, { cp }); scored = oracleLineCheck(s); console.log(`scored ${scoredText(scored)}`); return s; };
+const eternaTweak = (turn, tweak) => { const cp = structuredClone(ETERNA_CP[turn]); tweak(cp); return cp; };
+const AS_SAID = { 3: [{ move: "DRAGON_ASCENT", targets: [BattlerIndex.ENEMY] }, { move: "BEHEMOTH_BLADE", tera: true }] };
+const FAINT = field => ({ phaseName: "SwitchPhase", isModal: true, doReturn: false, fieldIndex: field });
+
+// ---- A double's step holds both field slots' commands, each slot's own null, and its replacements by field slot; one out of shape is ignored
+{
+  const seed = "a W200 run, handed";
+  scene = eternaAt(seed, 1);
+  assert.equal(hand("Eternatus's W200, singles then a double", eternaLine(seed)).ok, true);
+  assert.equal(hand("a double asking a replacement alone", eternaLine(seed, { 4: double([null, null], { replacements: [{ slot: 2, species: SpeciesId.BLISSEY, field: 0 }] }) })).ok, true);
+  const bad = input => hand("out of shape", eternaLine(seed, { 3: input })).why;
+  assert.equal(bad(double([ASCENT])), "malformed", "a command for each field slot");
+  assert.equal(bad(double([{ ...ASCENT, move: "DRAGON_ASCENT" }, null])), "malformed", "a command's move is the game's id");
+  assert.equal(bad(double([{ kind: "run" }, null])), "malformed", "a command is a move or a switch");
+  assert.equal(bad(double([{ ...ASCENT, target: { side: "foes", field: 2 } }, null])), "malformed", "a target is a field slot");
+  assert.equal(bad(double([{ ...ASCENT, target: { side: "theirs", field: 0 } }, null])), "malformed", "a target's side is foes or ours");
+  assert.equal(bad(double([null, BLADE], { replacements: [{ slot: 2, species: SpeciesId.BLISSEY }] })), "malformed", "a replacement names its field slot");
+  assert.equal(bad(double([null, BLADE], { replacement: { slot: 2, species: SpeciesId.BLISSEY } })), "malformed", "a double's replacements are a list");
+  assert.equal(bad(double([null, null])), "malformed", "a double that asks nothing is a step with no input");
+  assert.equal(oracleLineModel(scene).steps.length, 5, "the held oracle line is the last one held whole");
+}
+
+// ---- A double's step names each field slot's mover, its Tera, its target and its replacement, and only a slot the step asks
+{
+  const seed = "a W200 run, drawn";
+  scene = eternaAt(seed, 1);
+  hand("Eternatus's W200", eternaLine(seed));
+  const { rows } = plan("W200 T1, the line into Eternamax", scene);
+  assert.equal(marks(rows), "▸····");
+  const { act: t3 } = now("W200 T3, the first double", eternaAt(seed, 3));
+  assert.equal(t3.summary, "⚔ ~ T3/5 · Rayquaza Dragon Ascent → Eternatus ; Zacian Tera Steel + Behemoth Blade");
+  assert.ok(t3.rows.some(r => r.includes("← from Fight to the Tera button")), t3.rows.join("\n"));
+  const { act: t4 } = now("W200 T4, Rayquaza asked nothing", eternaAt(seed, 4));
+  assert.equal(t4.summary, "⚔ ~ T4/5 · Zacian Behemoth Blade · then send Blissey for Rayquaza");
+  const { act: pick, card: c } = now("W200 T4's faint, the turn already 5", eternaAt(seed, 5, { cp: ETERNA_CP[3], phase: FAINT(0) }));
+  assert.equal(pick.summary, "⚔ ~ T4/5 · send Blissey for Rayquaza");
+  assert.deepEqual(cardEvent(c).oracleLine, { state: "on", turn: 4, of: 5 });
+  assert.equal(now("W200 T5, Blissey in Rayquaza's slot", eternaAt(seed, 5)).act.summary, "⚔ ~ T5/5 · Blissey Seismic Toss ; Zacian Behemoth Blade");
+
+  const late = "a W200 run, solved from T3";
+  scene = eternaAt(late, 3);
+  hand("from T3, handed on T3", { ...eternaLine(late), steps: eternaLine(late).steps.slice(2) });
+  assert.match(plan("handed on T3, at T3", scene).rows[0], /^▸ T3 Rayquaza .* ; Zacian /, "the game names the first double's movers");
+}
+
+// ---- Two faints in a double ask a replacement for each field slot, and each faint prompt's call is its own slot's
+{
+  const seed = "a W200 run, both down";
+  const both = double([null, BLADE], { replacements: [{ slot: 2, species: SpeciesId.BLISSEY, field: 0 }, { slot: 3, species: SpeciesId.SNORLAX, field: 1 }] });
+  scene = eternaAt(seed, 4);
+  hand("T4 fells Rayquaza and Zacian", eternaLine(seed, { 4: both }));
+  assert.equal(now("W200 T4, both to fall", scene).act.summary,
+    "⚔ ~ T4/5 · Zacian Behemoth Blade · then send Blissey for Rayquaza · then send Snorlax for Zacian");
+  const first = now("W200 T4's first faint prompt", eternaAt(seed, 5, { cp: ETERNA_CP[3], phase: FAINT(0) })).act;
+  assert.equal(first.summary, "⚔ ~ T4/5 · send Blissey for Rayquaza · then send Snorlax for Zacian");
+  assert.ok(first.rows.some(r => r.startsWith("⤵ then send Snorlax for Zacian at the faint prompt")), first.rows.join("\n"));
+  assert.equal(now("W200 T4's second faint prompt", eternaAt(seed, 5, { cp: ETERNA_CP[3], phase: FAINT(1) })).act.summary,
+    "⚔ ~ T4/5 · send Snorlax for Zacian");
+}
+
+// ---- Both field slots pressed as the oracle line said match through the double, Eternamax's fresh bars included
+{
+  const seed = "a W200 run, on the line";
+  scene = eternaAt(seed, 1);
+  hand("Eternatus's W200, to score", eternaLine(seed));
+  eternaPlay(seed, 1, [{ move: "DRAGON_ASCENT" }]);
+  eternaDecide(seed, 2, ETERNA_CP[1]);
+  eternaPlay(seed, 2, [{ move: "DRAGON_ASCENT" }]);
+  eternaDecide(seed, 3, ETERNA_CP[2]);
+  assert.deepEqual([scored.turn, scored.misses], [2, []], "Eternamax at full HP behind five bars is the claim, not a miss");
+  eternaPlay(seed, 3, AS_SAID[3]);
+  eternaDecide(seed, 4, ETERNA_CP[3]);
+  assert.deepEqual([scored.turn, scored.misses], [3, []]);
+  // Rayquaza's slot asks nothing on T4, so whatever it plays is no miss.
+  eternaPlay(seed, 4, [{ move: "DRAGON_ASCENT" }, { move: "BEHEMOTH_BLADE" }]);
+  const s = eternaDecide(seed, 5, ETERNA_CP[4]);
+  assert.deepEqual([scored.turn, scored.misses], [4, []]);
+  assert.equal(marks(plan("W200 T5, every checkpoint matched", s).rows), "✓✓✓✓▸");
+}
+
+// ---- One field slot pressed otherwise leaves the oracle line as the player's input; both as said, drawn otherwise, is the oracle line's own miss
+{
+  const missed = (seed, cmds) => {
+    scene = eternaAt(seed, 3);
+    hand(seed, eternaLine(seed));
+    eternaPlay(seed, 3, cmds);
+    const s = eternaDecide(seed, 4, eternaTweak(3, cp => { cp.foes[0].hp = 1700; }));
+    return now(`W200 T4, ${seed}`, s).act;
+  };
+  const other = missed("Zacian's Close Combat", [AS_SAID[3][0], { move: "CLOSE_COMBAT", tera: true }]);
+  assert.equal(scored.wrong, false);
+  assert.ok(other.summary.startsWith("off the line · ~ "), other.summary);
+  assert.deepEqual(offRows(other), ["✗ T3 Eternatus expected 1500/2400 · came 1700/2400"]);
+  missed("Zacian's Behemoth Blade without Tera", [AS_SAID[3][0], { move: "BEHEMOTH_BLADE" }]);
+  assert.equal(scored.wrong, false, "Tera is part of the slot's command");
+  missed("Dragon Ascent into Zacian", [{ move: "DRAGON_ASCENT", targets: [BattlerIndex.PLAYER_2] }, AS_SAID[3][1]]);
+  assert.equal(scored.wrong, false, "a target the step names is part of its command");
+  const drawn = missed("both pressed as said", AS_SAID[3]);
+  assert.equal(scored.wrong, true);
+  assert.ok(drawn.summary.startsWith("off the line · ! "), drawn.summary);
+}
+
+// ---- A replacement other than the oracle line's, sent into its field slot, is the player's input
+{
+  const seed = "a W200 run, Snorlax sent";
+  scene = eternaAt(seed, 4);
+  hand(seed, eternaLine(seed));
+  eternaPlay(seed, 4, [null, { move: "BEHEMOTH_BLADE" }]);
+  eternaDecide(seed, 5, eternaTweak(4, cp => {
+    Object.assign(cp.ours[0], { slot: 3, onField: false });
+    Object.assign(cp.ours[3], { slot: 0, onField: true });
+  }));
+  assert.equal(scored.wrong, false);
+  assert.deepEqual(scored.misses.map(m => `${m.name} ${m.expected} · ${m.came}`),
+    ["Blissey in front · benched", "Snorlax benched · in front"]);
 }
 
 // ---- Neither a handoff nor a card drawn from it writes to the game
