@@ -2086,7 +2086,12 @@ the prompt's closures until `forgetMoveProcess` opens the summary screen in `LEA
 (`src/field/pokemon.ts:1882`); `setMove` writes the new move into both (`:2016-2018`). The phase stays current after
 the move is taken: `learnMove` calls `setMove` before its "learned" message and ends only once that message is
 dismissed (`src/phases/learn-move-phase.ts:211-229`). A decline likewise ends only after its "did not learn" message
-(`:156-157`, `:166-167`). With four, it asks in `UiMode.CONFIRM` whether to forget one (`:78-100`). Yes opens the summary screen in
+(`:156-157`, `:166-167`), and nothing the overlay can read marks that message as a decline (#808). The phase writes
+no field after `start`; leaving a prompt clears its handler (`src/ui/ui.ts:534-535`,
+`src/ui/handlers/base-option-select-ui-handler.ts:544-558`, `src/ui/handlers/summary-ui-handler.ts:1474-1477`); and
+the message text is typed out a character at a time and localized (`src/ui/handlers/message-ui-handler.ts:198-206`).
+So `learnAsked` reads the declined learn as still pending for that one message, while `detect`'s `input` is already
+false in `MESSAGE` mode. With four, it asks in `UiMode.CONFIRM` whether to forget one (`:78-100`). Yes opens the summary screen in
 `SummaryUiMode.LEARN_MOVE`, whose cursor picks the move to forget, 0 to 3 in moveset order, the new move taking that
 slot (`:113-136`, `:211`); cursor 4 is the new move itself, and declines (`:122-125`). No declines too (`:94-97`). A
 decline asks once more, in a second `CONFIRM`, whether to stop teaching the move, but only under the
