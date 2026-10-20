@@ -249,6 +249,16 @@ test("a save whose side holds no items, written null by a load, replays (#821)",
   assert.equal(result.kind, "replayed");
 });
 
+test("a side a save writes null is still held to the items the load reports there (#821)", async () => {
+  const report = clean();
+  report.hygiene.items.foes = {};
+  const { result } = await ask(report, { save: { ...drayton.save, modifiers: null, enemyModifiers: null } });
+  const why = reason(result).reason;
+
+  assert.equal(why.code, "load_hygiene");
+  assert.match(JSON.stringify(why), /item_totals/);
+});
+
 test("a play time or timestamp below the top of the export is compared like any other field (#661)", async () => {
   const report = clean();
   report.scene.arena.timestamp = 1;

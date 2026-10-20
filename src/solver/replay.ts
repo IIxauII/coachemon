@@ -209,7 +209,7 @@ function loadHygiene(hygiene: Hygiene, save: Pick<SolveInput["save"], "modifiers
   return off.length > 0 ? broke("item_totals", off.join(", ")) : null;
 }
 
-function tally(items: readonly SavedItem[] | null): Record<string, number> {
+function tally(items: readonly SavedItem[] | null | undefined): Record<string, number> {
   const out: Record<string, number> = {};
   for (const { typeId, stackCount } of items ?? []) out[typeId] = (out[typeId] ?? 0) + stackCount;
   return out;
