@@ -9,6 +9,7 @@ import { actionOrder, afterSteals, attemptsLost, hitsOn, koBoost, koBoostText, k
 const TP_BEAM = 24;
 const TP_TURNS = 15;
 const TP_BRANCHES = 4;
+const TP_EARLY = 0.01;
 
 const tpSpread = use => {
   const mean = (use ?? []).reduce((t, x) => t + x.d * x.p, 0);
@@ -379,7 +380,7 @@ const tpValue = (T, st, end) => {
   });
   st.oh.forEach((hp, mi) => { v += 25 * hp / T.ourMax[mi]; });
   if (st.fh.every(hp => hp < 1)) v += 100;
-  return v;
+  return v + (st.result === "win" || st.result === "stall" ? 0 : st.early ?? 0);
 };
 
 // `reserve`: `[{ mi, fi }]`, our `mi` kept off every foe but `fi` while anyone else can still fight. `pin`:
@@ -388,7 +389,8 @@ const tpSearch = (T, start, reserve, pin = null) => {
   let beam = [start];
   const done = [];
   const slots = T.slots ?? 1;
-  for (let depth = 0; beam.length && depth <= start.oh.length + start.fh.length + 1; depth++) {
+  const horizon = start.oh.length + start.fh.length + 2;
+  for (let depth = 0; depth < horizon && beam.length; depth++) {
     const next = new Map();
     for (const st of beam) {
       const fi = st.fcur ?? tpNextFoe(T, st);
@@ -412,17 +414,27 @@ const tpSearch = (T, start, reserve, pin = null) => {
           c.act = end.mh >= 1 ? mi : rest[0] ?? null;
           c.fcur = end.fh >= 1 ? fi : null;
           c.result = c.fh.every(hp => hp < 1) ? "win" : c.oh.every(hp => hp < 1) ? "loss" : end.mh >= 1 && end.fh >= 1 ? "stall" : null;
+          // Every ordering of a lost line deals the same and leaves nobody standing, so without this tie-break the
+          // beam spent the members that never act ahead of the one that does (#651).
+          c.early = (st.early ?? 0) + TP_EARLY * (horizon - depth) * Math.max(0, st.fh[fi] - end.fh) / T.foeStart[fi];
           return c;
         };
-        // Only the likelier ending goes on, but the value weighs every ending by its chance.
+        // Only the likelier ending goes on, so `val` banks every ending the line drops: valued by its last step's
+        // endings alone, a line that ends on a gamble forgot the earlier step's win (#651).
         const c = child(r);
         c.steps = [...st.steps, { mi, fi, entry, hp: r.mh, foeFrom: st.fh[fi], foeHp: r.fh, turns: r.turns, odds: r.fh < 1 ? r.pWin : r.mh < 1 ? r.pLoss : r.pStall }];
-        c.val = [["win", r.pWin], ["loss", r.pLoss], ["stall", r.pStall]].reduce((v, [k, p]) => {
+        const norm = Math.max(1e-9, (r.ends.win ? r.pWin : 0) + (r.ends.loss ? r.pLoss : 0) + (r.ends.stall ? r.pStall : 0));
+        let banked = st.banked ?? 0, kept = 0;
+        for (const [k, p] of [["win", r.pWin], ["loss", r.pLoss], ["stall", r.pStall]]) {
           const e = r.ends[k];
-          if (!e || !(p > 0)) return v;
-          const x = e.mh === r.mh && e.fh === r.fh ? c : child(e);
-          return v + p * tpValue(T, x, !!x.result);
-        }, 0) / Math.max(1e-9, (r.ends.win ? r.pWin : 0) + (r.ends.loss ? r.pLoss : 0) + (r.ends.stall ? r.pStall : 0));
+          if (!e || !(p > 0)) continue;
+          if (e.mh === r.mh && e.fh === r.fh) { kept += p / norm; continue; }
+          const x = child(e);
+          banked += (st.mass ?? 1) * p / norm * tpValue(T, x, !!x.result);
+        }
+        c.banked = banked;
+        c.mass = (st.mass ?? 1) * kept;
+        c.val = banked + c.mass * tpValue(T, c, !!c.result);
         if (c.result) { done.push(c); continue; }
         const sig = [c.cur.join("-"), c.act, c.fcur, ...c.oh.map(Math.round), ...c.fh.map(Math.round), ...c.ok, ...c.fk].join(",");
         if (!next.has(sig) || next.get(sig).val < c.val) next.set(sig, c);
