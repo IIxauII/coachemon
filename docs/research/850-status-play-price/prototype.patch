@@ -1,0 +1,205 @@
+diff --git a/skills/coachemon/scripts/hud/30-planner.js b/skills/coachemon/scripts/hud/30-planner.js
+index efedd960..a033e456 100644
+--- a/skills/coachemon/scripts/hud/30-planner.js
++++ b/skills/coachemon/scripts/hud/30-planner.js
+@@ -934,6 +934,11 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
+   // delayed move has none yet, those with the foe moving first on the turn it would have its first (#650).
+   const unused = j => (usesBy(j - 1) >= 1 ? 0 : usesBy(j) >= 1 ? 1 - pLast : 1);
+   let never = theyFirst - (usesBy(1) >= 1 ? pFField * (1 - qWe) * qThey : 0);
++  // #850: the share of the foe's HP still standing when we fall, weighted by the chance we fall there, from the
++  // expected damage of the uses landed by then.
++  const per = Math.max(0, mine?.expected ?? 0), foeHp = Math.max(1, (after?.foe ? after.foe.reduce((t, b) => t + b.p * b.hp, 0) : foe.hp));
++  const leftAt = n => Math.max(0, 1 - n * per / foeHp);
++  let left = never * leftAt(0) + (theyFirst - never) * leftAt(usesBy(1));
+   const afterKo = new Map();
+   // The lock as it stood where use n knocked out.
+   const knockedOut = (p, n) => {
+@@ -947,6 +952,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
+     knockedOut(ko, usesBy(j));
+     pThey += standing * b * (1 - a + a * (1 - pLast));
+     never += standing * b * unused(j);
++    left += standing * b * (1 - a + a * (1 - pLast)) * leftAt(usesBy(j - 1) + pLast * (usesBy(j) - usesBy(j - 1)));
+     standing *= (1 - a) * (1 - b);
+   }
+   // Expected turns, for scoring; `turnsWe` / `turnsThey` are the likely ones the panel shows.
+@@ -972,11 +978,16 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
+   };
+   const hpLeft = Math.max(0, Math.min(maxHp, stealing && taken > 0 ? stepped()
+     : hp - hitsTaken() - selfSpent + drainTotal(ourDrain, Math.min(taken, turnsWe)))) * (1 - selfKo);
++  // #850 `hp`: the share of our max HP the duel leaves us against the foe's hits alone — what we spend on our own
++  // move is `cost`'s already.
++  const hpKept = Math.max(0, Math.min(maxHp, hp - hitsTaken() + drainTotal(ourDrain, Math.min(taken, turnsWe)))) / maxHp;
+   return {
+     pWeKoFirst: Math.min(1, Math.round(pWe * 1e9) / 1e9), pTheyKoFirst: Math.min(1, Math.round(pThey * 1e9) / 1e9),
+     expectedHpLeft: Math.round(hpLeft),
+     turnsWe, turnsThey, pFirst, hitsWe, stole: eats ? lands(1) : 0,
+     pNeverUsed: Math.min(1, Math.round(never * 1e9) / 1e9),
++    foeLeft: Math.min(1, Math.round(left * 1e9) / 1e9),
++    hpKept,
+     eTurnsWe: expTurns(weBy), eTurnsThey: expTurns(theyBy),
+     cost: Math.min(1, (selfSpent + selfKo * Math.max(0, hp - selfSpent)) / maxHp) + (mt.lock ? 0.1 + lockCarry(turn, me, mine, foe, afterKo) : 0),
+     turn1: (() => {
+@@ -1078,10 +1089,22 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
+     // The foe's whole bar left to the rest of the team, for the share of the time our mon falls before landing a hit:
+     // every scorer below pays it, or the one that skips it wins a lost race (#650).
+     const unlanded = never => never * FOE_BAR;
++    // #850: what falling short leaves, and the race's edge with our mon lost priced at `P850.loss` turns.
++    const short = x => (P850.left ? x.foeLeft : x.pNeverUsed) * FOE_BAR;
++    // `scope` "singles": a double prices our HP and our mon lost through the joint's `danger` already.
++    const priced = P850.scope === "all" || slots === 1;
++    const LOSS = priced ? P850.loss : 1, HPT = priced ? P850.hp : 0;
++    const edgeOf = (we, they) => we - LOSS * they;
++    // #850 `hp`: the HP the duel costs the mon that fights it, from its HP before any entry hit, at `P850.hp` turns a
++    // whole bar: the same between one mon's options as crediting what it keeps, and fair to a switch, whose mon
++    // leaving takes its HP to the bench.
++    const before = Math.min(1, me.hp / (me.getMaxHp?.() || me.hp || 1));
++    const spentHp = kept => HPT * (before - kept);
+     const one = (o, fi) => {
+       const x = trade(o, active[fi]);
+       const turns = x.turnsWe + lost;
+-      const score = lasts - x.eTurnsWe - unlanded(x.pNeverUsed) - lost + (x.pWeKoFirst - x.pTheyKoFirst) - (x.cost ?? 0) - cost(o) - feed(active[fi]) * x.pTheyKoFirst;
++      const score = lasts - x.eTurnsWe - short(x) - lost + edgeOf(x.pWeKoFirst, x.pTheyKoFirst) - (x.cost ?? 0) - cost(o) - feed(active[fi]) * x.pTheyKoFirst - spentHp(x.hpKept);
++      p850trace({ me: me.name, move: o.name, kind: "attack", score, lasts, eTurns: x.eTurnsWe, short: short(x), we: x.pWeKoFirst, they: x.pTheyKoFirst, hpLeft: x.expectedHpLeft, kept: x.hpKept, cost: (x.cost ?? 0) + cost(o) });
+       return { me, move: o, target: fi, turns, hits: x.turnsWe, score, hp, trade: x };
+     };
+     // The redirect (CONTEXT.md, `Spare hit`; game-code.md §18): `redirScore` is what the hit is worth on the survivor,
+@@ -1110,16 +1133,17 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
+       // `stole`: turn 1 already ate a berry off it, so a follow-up that steals again draws from what is left (#646).
+       const value = y => {
+         const x2 = exchange(turn, me, y.pm, f, { hp: t1.hp, after: t1, outcome: y, next: true, field: worst, stole: x.trade?.stole ?? 0 });
+-        return { y, x2, v: x2.eTurnsThey - x2.eTurnsWe + x2.pWeKoFirst - x2.pTheyKoFirst - (x2.cost ?? 0) };
++        return { y, x2, v: x2.eTurnsThey - x2.eTurnsWe + edgeOf(x2.pWeKoFirst, x2.pTheyKoFirst) - (x2.cost ?? 0) };
+       };
+       const tried = cands.map(value);
+       const best = tried.reduce((b, t) => (!b || t.v > b.v ? t : b), null);
+       if (!best || best.y === o) return x;
+       const scoreOf = ({ x2 }) => {
+         const eTurns = 1 + (1 - t1.we) * x2.eTurnsWe;
+-        const edge = t1.we + standing * x2.pWeKoFirst - (t1.they + standing * x2.pTheyKoFirst);
++        const edge = edgeOf(t1.we + standing * x2.pWeKoFirst, t1.they + standing * x2.pTheyKoFirst);
+         const spent = Math.min(1, (o.self ?? 0) / (me.getMaxHp?.() || hp)) + (x2.cost ?? 0);
+-        return lasts - eTurns - unlanded(x.trade.pNeverUsed) - lost + edge - spent - cost(o) - feed(f) * (t1.they + standing * x2.pTheyKoFirst);
++        return lasts - eTurns - short(x.trade) - lost + edge - spent - cost(o) - feed(f) * (t1.they + standing * x2.pTheyKoFirst)
++          - spentHp(t1.we * x.trade.hpKept + standing * x2.hpKept);
+       };
+       const score = scoreOf(best);
+       const { y, x2 } = best;
+@@ -1138,8 +1162,8 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
+       const each = xs.map(x => x?.turnsWe ?? 9);
+       const hits = Math.max(...hit.map(({ x }) => x.turnsWe));
+       if (hits + lost >= 9) return null;
+-      const edge = Math.min(...xs.flatMap((x, i) => (x ? [x.pWeKoFirst - x.pTheyKoFirst - (x.cost ?? 0) - feed(active[i]) * x.pTheyKoFirst] : [])));
+-      const slow = Math.max(...hit.map(({ x }) => x.eTurnsWe + unlanded(x.pNeverUsed)));
++      const edge = Math.min(...xs.flatMap((x, i) => (x ? [edgeOf(x.pWeKoFirst, x.pTheyKoFirst) - (x.cost ?? 0) - feed(active[i]) * x.pTheyKoFirst] : [])));
++      const slow = Math.max(...hit.map(({ x }) => x.eTurnsWe + short(x) + spentHp(x.hpKept)));
+       const rep = hit[0].o;
+       const both0 = hit.length > 1 ? { ...rep, benefit: Math.max(...hit.map(({ o }) => o.benefit ?? 0)) } : rep;
+       return { me, move: rep, target: "both", turns: hits + lost, hits, each,
+@@ -1200,7 +1224,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
+         let best = null;
+         for (const y of cands.length ? cands : [null]) {
+           const x2 = exchange(t2, me, y?.pm ?? null, f, { hp: t1p.hp, after: t1p, outcome: y, next: true, foeAct: patches && play.foeAct ? play.foeAct(pF) : null });
+-          const v = x2.eTurnsThey - x2.eTurnsWe + x2.pWeKoFirst - x2.pTheyKoFirst - (x2.cost ?? 0);
++          const v = x2.eTurnsThey - x2.eTurnsWe + edgeOf(x2.pWeKoFirst, x2.pTheyKoFirst) - (x2.cost ?? 0);
+           if (!best || v > best.v) best = { y, x2, v };
+         }
+         return best;
+@@ -1210,15 +1234,27 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
+       const missed = landed && w < 1 ? follow(null) : null;
+       if (!landed || (w < 1 && !missed)) return null;
+       const mix = k => w * landed.x2[k] + (missed ? (1 - w) * missed.x2[k] : 0);
+-      const eTurns = 1 + mix("eTurnsWe") + unlanded(they + standing * mix("pNeverUsed"));
+-      const edge = standing * (mix("pWeKoFirst") - mix("pTheyKoFirst")) - they - feed(f) * (they + standing * mix("pTheyKoFirst"));
++      const eTurns = 1 + mix("eTurnsWe") + FOE_BAR * (they + standing * mix(P850.left ? "foeLeft" : "pNeverUsed"));
++      const edge = standing * edgeOf(mix("pWeKoFirst"), mix("pTheyKoFirst")) - LOSS * they - feed(f) * (they + standing * mix("pTheyKoFirst"));
++      // #850 `stall`: the margin read off the state the play leaves — a turn spent, then how long we last from there —
++      // rather than off the state before it, which charged the turn as a whole foe hit whatever the play did to it.
++      const lastsFrom = patches => {
++        const t2 = patches ? turn.assuming(patches) : turn;
++        const from = t1p.me.filter(b => b.hp > 0);
++        const tt = threatFrom(t2, f, me, null, { next: true });
++        return Math.min(9, 1 + foeTurns(t2, tt, me, t1p.hp, { foe: f, start: from.length ? from : null, ...(patches && play.foeAct ? { act: play.foeAct(pF) } : {}) }));
++      };
++      const lastsPlay = !P850.stall ? lasts : w * lastsFrom(play.patches ?? null) + (missed ? (1 - w) * lastsFrom(null) : 0);
+       const spent = (play.hpCost ?? 0) / maxHp + mix("cost");
+       const bonus = ((play.kind === "hazard" ? play.value : 0) + (play.gain ?? 0)) * works;
+       const nudge = turn.benefit(me, f, mv) * AI_POINT;
+       const hits = Math.min(9, 1 + landed.x2.turnsWe);
++      const score = lastsPlay - eTurns - lost + edge - spent + start.keep + bonus + nudge - STATUS_COST - spentHp(standing * Math.min(1, mix("hpKept") + (play.hpCost ?? 0) / maxHp));
++      p850trace({ me: me.name, move: info.name, kind: play.kind, score, lasts: lastsPlay, eTurns: 1 + mix("eTurnsWe"), short: FOE_BAR * (they + standing * mix(P850.left ? "foeLeft" : "pNeverUsed")),
++        we: standing * mix("pWeKoFirst"), they: they + standing * mix("pTheyKoFirst"), hpLeft: Math.round(mix("expectedHpLeft")), kept: standing * mix("hpKept"), cost: spent, then: landed.y?.name });
+       return {
+         me, move: { name: info.name, type: info.type, cat: "status", pm, expected: 0, notes: [] }, target: fi, self: !!play.self,
+-        turns: hits + lost, hits, score: lasts - eTurns - lost + edge - spent + start.keep + bonus + nudge - STATUS_COST, hp, then: landed.y && (planOutcomes(turn, me, f).find(z => z.name === landed.y.name) ?? landed.y),
++        turns: hits + lost, hits, score, hp, then: landed.y && (planOutcomes(turn, me, f).find(z => z.name === landed.y.name) ?? landed.y),
+         effect: start.effect,
+       };
+     };
+@@ -1249,6 +1285,12 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
+         try {
+           const play = statusPlay(turn, me, f, info);
+           if (!play) return null;
++          // #850 `dprotect` "own": a double's Protect is priced on the slot's own duel, like a single's play, and joins
++          // the field as a pick that lands no hit, rather than as a field-wide hypothesis (#262).
++          if (slots === 2 && play.kind === "protect" && P850.dprotect === "own") {
++            const x = playOption(info, play, fi);
++            return x && { ...x, ownDuel: true };
++          }
+           return slots === 1 ? playOption(info, play, fi) : playCandidate(info, play, fi);
+         } catch { return null; }
+       }).filter(Boolean);
+@@ -1302,6 +1344,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
+       const cands = [], seen = new Set();
+       active.forEach((f, fi) => {
+         for (const x of plays(fi)) {
++          if (x.ownDuel) { out.push(x); continue; }
+           const k = x.self ? `self|${x.move.name}` : `${fi}|${x.move.name}`;
+           if (seen.has(k)) continue;
+           seen.add(k);
+@@ -1469,7 +1512,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
+   const joint = (picks, payers, mons = picks.map(p => p.me), hyp = null) => {
+     const turn = turnOf(hyp);
+     // A status play lands no hit: `statusField` prices it (#262).
+-    const acting = picks.filter(p => p.move && !p.play && !payers.includes(p.me));
++    const acting = picks.filter(p => p.move && !p.play && !p.ownDuel && !payers.includes(p.me));
+     const foes = active.map(() => ({ pKo: 0, pBefore: 0, redirect: 0, hitters: 0 }));
+     active.forEach((X, xi) => {
+       const hitters = acting.map(p => {
+@@ -1797,7 +1840,17 @@ const PLAN_CAP = 3;
+ const PLAN_NOTE = 0.25;
+ const PLAN_FAIL = 1;
+ const DOOMED = 0.8;
+-const STATUS_COST = 0.2;
++// #850 prototype switches: `protect` offers Protect as a play, `stall` reads a play's margin off the state it leaves,
++// `loss` prices P(they KO first) in turns, `left` charges the foe's bar left when we fall, `sc` is STATUS_COST.
++const P850 = (() => {
++  const base = { protect: false, stall: false, loss: 1, left: false, sc: 0.2, hp: 0, scope: "singles" };
++  try { return { ...base, ...JSON.parse(globalThis.process?.env?.P850 || "{}"), ...(globalThis.__p850 ?? {}) }; } catch { return base; }
++})();
++const p850trace = row => {
++  if (Array.isArray(globalThis.__p850trace)) globalThis.__p850trace.push(row);
++  if (P850.trace) console.log(`TRACE ${row.me} ${row.move} score ${row.score.toFixed(2)} lasts ${row.lasts.toFixed(2)} eT ${row.eTurns.toFixed(2)} short ${row.short.toFixed(2)} we ${row.we.toFixed(2)} they ${row.they.toFixed(2)} kept ${(row.kept ?? 0).toFixed(2)} cost ${(row.cost ?? 0).toFixed(2)}`);
++};
++const STATUS_COST = P850.sc;
+ // Each costs the field search a hypothesis both slots are re-scored on: raising it spends the render budget (#262).
+ const STATUS_CANDS = 2;
+ // Turns of ours a whole HP bar of a mon still to come is worth.
+@@ -1814,6 +1867,18 @@ export const statusPlay = (turn, me, f, info) => {
+   const mv = info.pm.getMove?.();
+   if (!mv || info.blocked) return null;
+   const t = moveTraits(mv, me, { target: f });
++  if (P850.protect && t.protect) {
++    // Protect's streak (game-code.md §14): a second in a row mostly fails, so it is not offered.
++    const last = me.getLastXMoves?.(1)?.[0];
++    if (last && last.result === MoveResult.SUCCESS && me.moveset.some(pm => pm?.moveId === last.move && moveTraits(pm.getMove()).protect)) return null;
++    const lock = lockOf(f);
++    // In a double it blocks only what is aimed at this slot: offered only on a foe's locked use queued here.
++    if (turn.facts.double) {
++      const q = f.getMoveQueue?.()?.[0];
++      if (!lock || !q?.targets?.includes(me.getBattlerIndex?.())) return null;
++    }
++    return { kind: "protect", self: true, patches: null, skip0: 1, foeAct: null, note: lock ? `blocks ${lock.name}${lock.left === 1 ? "'s last use" : ""}` : "blocks this turn's hit" };
++  }
+   if (t.inflicts.some(x => x.self)) return null;
+   const up = turn.mon(me).setup(mv);
+   if (up) {
