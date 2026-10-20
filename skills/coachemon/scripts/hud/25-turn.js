@@ -270,8 +270,8 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
     if (!m.has(k)) m.set(k, fn());
     return m.get(k);
   };
-  // Every game call below goes through one of these. This turn's `EnemyCommandPhase` reads, the switch check and the
-  // move pick, come before any Tera (game-code.md §7).
+  // Every game call below goes through `asDamage`, the patches on. This turn's `EnemyCommandPhase` reads, the switch
+  // check and the move pick, come before any Tera (`asCommand`; game-code.md §7).
   const asDamage = fn => (patches.length ? withPatches(patches, fn) : fn());
   const asCommand = fn => beforeTera(() => asDamage(fn));
   const refused = (atk, def) => memo("refused", `${atk.id}|${def.id}`,
@@ -288,6 +288,12 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
       () => (live ? asDamage(() => sceneStatusMoves(env, atk, def)) : [])),
     stopped: (atk, def) => refused(atk, def).stopped,
     failing: (atk, def) => refused(atk, def).failing,
+    // Those of `failing` that `atk`'s own predicted Tera brings on.
+    teraFailing: (atk, def) => memo("teraFailing", `${atk.id}|${def.id}`, () => {
+      if (!live || !teraSaved.has(atk)) return [];
+      const before = preTera([atk], () => asDamage(() => sceneRefused(env, atk, def).failing));
+      return refused(atk, def).failing.filter(n => !before.includes(n));
+    }),
     // Answered live or not, since it decides nothing. Not memoised: callers ask about made-up HP, statuses and item
     // stacks on `Object.create` clones.
     turnEndHp: (p, opts = {}) => { guard(); return asDamage(() => sceneTurnEndHp(env, p, opts)); },
@@ -324,9 +330,12 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
       const out = env.foes.filter(p => p.isOnField?.());
       return (out.length ? out : env.foes).slice(0, env.double ? 2 : 1);
     }),
-    // `preTera`: a pick the foe makes before its own predicted Tera.
-    replayAI: (foe, target, opts = {}) => memo("replay", `${foe.id}|${target.id}|${opts.hp ?? ""}|${opts.bi ?? ""}|${opts.afterLock ? 1 : ""}|${opts.preTera ? 1 : ""}`,
-      () => (live ? tryDo(() => preTera(opts.preTera ? [foe] : [], () => asDamage(() => sceneReplayAI(env, foe, target, opts))), null) : null)),
+    // `preTera`: "command", this turn's pick, made before every predicted Tera; "entry", a benched foe's first, before its own.
+    replayAI: (foe, target, opts = {}) => {
+      const off = opts.preTera === "command" ? [...teraSaved.keys()] : opts.preTera === "entry" ? [foe].filter(e => teraSaved.has(e)) : [];
+      return memo("replay", `${foe.id}|${target.id}|${opts.hp ?? ""}|${opts.bi ?? ""}|${opts.afterLock ? 1 : ""}|${off.map(e => e.id).join(",")}`,
+        () => (live ? tryDo(() => preTera(off, () => asDamage(() => sceneReplayAI(env, foe, target, opts))), null) : null));
+    },
     sendInScore: (f, me) => memo("sendIn", `${f.id}|${me.id}`, () => (live ? tryDo(() => turn.atEntry([f], () => asDamage(() => sceneSendInScore(env, f, me))), null) : null)),
     // A benched foe the trainer Teras at its first FIGHT command on the field, not on entry (game-code.md §7).
     teraLater: foe => !!shared.teraLater?.has(foe),
@@ -365,16 +374,13 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
 const turnKeyOf = (env, facts) => [facts.wave, facts.turn, facts.enemySwitchCounter, facts.decision,
   ...[...env.playerParty, ...env.foes].map(p => p && `${p.id}:${p.hp}:${p.bossSegmentIndex ?? ""}:${p.isOnField?.() ? 1 : 0}:${p.isTerastallized ? 1 : 0}`)].join("|");
 
-// `now`: the foes on the field that Tera this turn, less any the trainer withdraws (`teraNow`). `later`: the bench
-// mons it Teras at their first FIGHT command once sent in (game-code.md §7). Only `shouldTera` reads `instantTeras`
-// right: it names team indexes, which a switch pulls apart from the party slots (#648).
+// `now`: the foes on the field that Tera this turn (`teraNow`). `later`: every other mon the trainer Teras, at its
+// first FIGHT command once sent in, one it withdraws this turn included (game-code.md §7). Only `shouldTera` reads
+// `instantTeras` right: it names team indexes, which a switch pulls apart from the party slots (#648).
 const predictedTeras = (env, turn) => {
   if (!env.trainer?.shouldTera) return { now: [], later: [] };
-  const active = turn.activeFoes();
-  return {
-    now: active.filter(e => tryDo(() => turn.teraNow(e), false)),
-    later: env.foes.filter(e => e && e.hp > 0 && !active.includes(e) && tryDo(() => env.trainer.shouldTera(e), false)),
-  };
+  const now = turn.activeFoes().filter(e => tryDo(() => turn.teraNow(e), false));
+  return { now, later: env.foes.filter(e => e && e.hp > 0 && !now.includes(e) && tryDo(() => env.trainer.shouldTera(e), false)) };
 };
 
 // The turn is dead once `fn` returns. `estimate` never asks the game, decision or not.

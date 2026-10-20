@@ -20,7 +20,7 @@ const isA = (x, name) => {
   const ability = (p, attr) => { try { return !!p.hasAbilityWithAttr?.(attr); } catch { return false; } };
   const items = p => { try { return p.getHeldItems?.() ?? []; } catch { return []; } };
   const stack = (p, name) => items(p).filter(m => m.constructor.name === name).reduce((t, m) => t + (m.getStackCount?.() ?? m.stackCount ?? 1), 0);
-// One gate for `sceneUsable` and `sceneStopped`, so the pool and the reason it shrank can never disagree. A condition
+// One gate for `sceneUsable` and `sceneRefused`, so the pool and the reason it shrank can never disagree. A condition
 // can draw battle RNG, hence `forcedRng` (game-code.md §6).
 const selectable = (env, p, def, pm) => {
   if (typeof pm.isUsable === "function") {

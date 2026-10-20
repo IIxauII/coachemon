@@ -120,7 +120,7 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
     const dist = turn.enemyAction(foe, { ranges }).moves;
     if (dist?.length) {
       const idx = me.isOnField?.() ? me.getBattlerIndex?.() : null;
-      return withFails(turn, foe, me, dist.map(d => {
+      return withFails(turn, foe, me, true, dist.map(d => {
         const o = outs.find(x => x.name === d.name) ?? null;
         // The share that lands on `me`; a bench mon coming in takes an average slot's.
         const ts = d.targetDist?.length ? d.targetDist : d.targets ?? [];
@@ -138,8 +138,9 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
     }
   }
   if (live && outs.some(o => o.live)) {
-    // This turn's pick, and a benched foe's first, come before its predicted Tera (game-code.md §7).
-    const rows = replayMoves(turn, foe, me, outs, { preTera: (!next && !!foe.isOnField?.()) || turn.teraLater(foe) });
+    // This turn's pick comes before every predicted Tera, and a benched foe's first before its own (game-code.md §7).
+    const now = !next && !!foe.isOnField?.();
+    const rows = replayMoves(turn, foe, me, outs, { preTera: now ? "command" : turn.teraLater(foe) ? "entry" : null }, now);
     if (rows) return rows;
   }
   const pool = outs.filter(o => o.expected > 0).sort((a, b) => b.expected - a.expected);
@@ -162,18 +163,20 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
   });
 };
 
-const replayMoves = (turn, foe, me, outs, opts) => {
+const replayMoves = (turn, foe, me, outs, opts, now = false) => {
   const rows = turn.replayAI(foe, me, opts);
-  return rows?.length ? withFails(turn, foe, me, rows.map(d => {
+  return rows?.length ? withFails(turn, foe, me, now, rows.map(d => {
     const o = outs.find(x => x.name === d.name) ?? null;
     return { o, name: d.name, type: o?.type ?? d.type, p: d.p };
   })) : null;
 };
 // A damaging move the AI names with no outcome behind it goes off and fails: the AI skips the move's own condition
-// (game-code.md §6), and a Tera can turn it against the user (#648).
-const withFails = (turn, foe, me, rows) => {
+// (game-code.md §6), and a Tera can turn it against the user (#648). Only this turn's pick (`now`) is judged on the
+// state now; a later one only on what the foe's Tera does, which lasts.
+const withFails = (turn, foe, me, now, rows) => {
   let failing = null;
-  return rows.map(r => (!r.o && (failing ??= turn.failing(foe, me)).includes(r.name) ? { ...r, fails: true } : r));
+  const fails = name => (failing ??= now ? turn.failing(foe, me) : turn.teraFailing(foe, me)).includes(name);
+  return rows.map(r => (!r.o && fails(r.name) ? { ...r, fails: true } : r));
 };
 
 // A foe's lock still running: `left` uses, its queued one included (game-code.md §5).
@@ -705,13 +708,14 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     delay = actDelay(me) + (mine.semi && pF >= 0.5 ? 1 : 0);
     const nowUse = !mt.charge && delay === 0;
     const first = nowUse && entry ? entry : mine;
+    const rest = first !== mine ? useOf(mine) : null;
     qWe = nowUse ? (first.pKo ?? 0) * now : 0;
     const curve = koCurve(turn.mon(foe), useOf(first), {
       scale, turnEnd: heal, beforeBerry: course.pre + (t?.drain ?? 0), cat: mine.cat,
       se: unnervedBy(turn, foe, me) ? null : i => (((i ? mine : first).e ?? 1) >= 2 ? 1 : 0),
       act: i => (i === 0 && nowUse ? now : steady * (acts ? acts.act(i + 1) : 1)),
       firstKo: exact && nowUse ? qWe : null, start: after?.foe, chain: ourLock ? OUR_CHAIN : null,
-      useAt: first !== mine ? () => useOf(mine) : null,
+      useAt: rest && (() => rest),
     });
     downAt = curve.downAt;
     const perChunk = curve.perChunk;
