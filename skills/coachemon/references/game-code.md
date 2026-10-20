@@ -2756,7 +2756,21 @@ picked by seed (offset `pokemon.id`), freed instead. The hook runs on copies `ge
 switch is the starter's, `this.passive`, copied at run start (`hasPassive`, `:2361`). So an evolution fights with its
 own passive and hidden ability, not the ones the grid shows: at 1.12.1.1, 126 of 394 evolved final forms carry another
 form-0 passive than their starter (Abra Comatose → Alakazam Magician) and 94 another hidden ability (Magikarp Rattled →
-Gyarados Moxie). The registry (`SpeciesDataRegistry`, found by the chunk scan, §10) gives every
+Gyarados Moxie).
+
+**What an unlock is, read off the tables** (#848). An `allAbilities` entry's `attrs` are attribute instances, known by
+class name (§22). Six passives carry only ally-only classes (name holds `Ally`/`Allied`) or out-of-battle ones
+(`MoneyAbAttr`, `PostBattleLootAbAttr`, `RunSuccessAbAttr`, `DoubleBattleChanceAbAttr`): Run Away, Pickup, Honey
+Gather, Friend Guard, Power Spot and Hospitality (`src/data/abilities/init-abilities.ts:451`, `:463`, `:823`, `:918`,
+`:1744`, `:2115`), so in a single battle they do nothing. A weather setter's `PostSummonWeatherChangeAbAttr.weatherType`
+and a terrain setter's `PostSummonTerrainChangeAbAttr.terrainType` (`src/data/abilities/ab-attrs.ts:2576`, `:2602`)
+name the field: sun and rain ×1.5 to Fire and Water and ×0.5 to the other (`src/data/weather.ts:252`), harsh sun and
+heavy rain stop the other outright (`:77`), sand ×1.5 a Rock type's SpD and snow an Ice type's Def
+(`Pokemon.getEffectiveStat`, `src/field/pokemon.ts:1532-1541`), and Electric, Grassy and Psychic Terrain ×1.3 their
+type (`src/field/arena.ts:503`) for a grounded user only (`src/data/moves/move.ts:1180`). An `allMoves` entry has
+`type`, `category` and `power`, and its self-boosting stages come from `moveTraits` (§14).
+
+The registry (`SpeciesDataRegistry`, found by the chunk scan, §10) gives every
 species: `getSpecies(id)`, `getAllStarters()` (`src/data/species-data-registry.ts:293`) and `getEvolutions(id)`
 (`:331`: `level`, `item`, `condition`); on the handler a species is only on the visible containers. Ability and move
 names need `allAbilities` / `allMoves` (`src/data/data-lists.ts:8-9`) and egg-move ids `speciesEggMoves`

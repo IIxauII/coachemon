@@ -2658,6 +2658,31 @@ export const HUD: Area = {
         "src/system/game-data.ts#GameData.getDexAttrLuck",
       ],
     },
+    {
+      // The ally-only classes are the ones the name match catches at the pin: a new one passes the classifier unlisted.
+      ours: "skills/coachemon/scripts/hud/51-starters.js#inert-passive-attrs",
+      of: [
+        "src/data/abilities/ab-attrs.ts#MoneyAbAttr",
+        "src/data/abilities/ab-attrs.ts#PostBattleLootAbAttr",
+        "src/data/abilities/ab-attrs.ts#RunSuccessAbAttr",
+        "src/data/abilities/ab-attrs.ts#DoubleBattleChanceAbAttr",
+        "src/data/abilities/ab-attrs.ts#AlliedFieldDamageReductionAbAttr",
+        "src/data/abilities/ab-attrs.ts#AllyMoveCategoryPowerBoostAbAttr",
+        "src/data/abilities/ab-attrs.ts#PostSummonAllyHealAbAttr",
+      ],
+    },
+    {
+      ours: "skills/coachemon/scripts/hud/51-starters.js#setter-boosts",
+      of: [
+        "src/data/abilities/ab-attrs.ts#PostSummonWeatherChangeAbAttr",
+        "src/data/abilities/ab-attrs.ts#PostSummonTerrainChangeAbAttr",
+        "src/data/weather.ts#getWeatherMultiplierForMove",
+        "src/data/weather.ts#Weather.isMoveWeatherCancelled",
+        "src/field/pokemon.ts#Pokemon.getEffectiveStat",
+        "src/field/arena.ts#Arena.getTerrainPowerMultiplier",
+        "src/data/moves/move.ts#Move.calculateBattlePower",
+      ],
+    },
     { ours: "skills/coachemon/scripts/probe.js#cats", of: ["src/enums/move-category.ts#MoveCategory"] },
     { ours: "skills/coachemon/scripts/probe.js#stats", of: ["src/enums/stat.ts#Stat"] },
   ],

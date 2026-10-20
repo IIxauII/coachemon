@@ -1,10 +1,11 @@
 // Which starters this account should take within the point budget: whole teams from what it has unlocked, each pick
 // with its reasons. Every game call here is a pure read, so none runs in `sandbox` (game-code.md §23).
-import { TYPES, vs } from "./01-core.js";
+import { ABILITY_IMMUNE, TYPES, vs } from "./01-core.js";
 import { challengeOn, challengeValue } from "./03-calendar.js";
 import { gameTables } from "./04-game-tables.js";
 import { RANDBATS } from "./05-randbats.js";
 import { finalBstOf, formOf } from "./08-party.js";
+import { boostsText, isDamaging, isFixed, ownBoosts, statFit, weakFitNote } from "./40-learn.js";
 
 const MAX_PARTY = 6;
 const WEIGHTS = [1, 0.8, 0.55, 0.35, 0.2, 0.1];
@@ -37,6 +38,73 @@ const rolesOf = names => {
 };
 
 const typeNames = sp => [sp?.type1, sp?.type2].map(t => TYPES[t]).filter((t, i, a) => t && a.indexOf(t) === i);
+
+const effectiveness = (atk, types, inverse) => types.reduce((m, d) => {
+  const x = vs(atk, d);
+  return m * (inverse ? (x === 0 || x === 0.5 ? 2 : x === 2 ? 0.5 : 1) : x);
+}, 1);
+
+const eggMoveFacts = (mv, sp) => {
+  if (!mv || mv.category == null) return null;
+  if (!isDamaging(mv)) {
+    const boosts = tryDo(() => ownBoosts(mv), []);
+    return boosts.length ? `setup ${boostsText(boosts)}` : "status";
+  }
+  const type = TYPES[mv.type];
+  const facts = [`${mv.power > 0 ? `${mv.power} ` : ""}${type} ${mv.category === MoveCategory.PHYSICAL ? "physical" : "special"}`];
+  if (isFixed(mv)) return facts[0];
+  if (typeNames(sp).includes(type)) facts.push("STAB");
+  const [, atk, , spa] = sp.baseStats ?? [];
+  const weak = atk && spa ? weakFitNote(mv, statFit(mv, atk, spa)) : null;
+  if (weak) facts.push(weak);
+  return facts.join(" · ");
+};
+
+// (game-code.md §23, §22)
+// @mirrors inert-passive-attrs
+const OUT_OF_BATTLE = new Set(["MoneyAbAttr", "PostBattleLootAbAttr", "RunSuccessAbAttr", "DoubleBattleChanceAbAttr"]);
+const ALLY_ONLY = /Ally|Allied/;
+// (game-code.md §23)
+// @mirrors setter-boosts
+const WEATHERS = {
+  [WeatherType.SUNNY]: { name: "sun", up: "Fire", down: "Water", downText: "weakens" },
+  [WeatherType.HARSH_SUN]: { name: "harsh sun", up: "Fire", down: "Water", downText: "stops" },
+  [WeatherType.RAIN]: { name: "rain", up: "Water", down: "Fire", downText: "weakens" },
+  [WeatherType.HEAVY_RAIN]: { name: "heavy rain", up: "Water", down: "Fire", downText: "stops" },
+  [WeatherType.SANDSTORM]: { name: "sand", statType: "Rock", stat: "SpD" },
+  [WeatherType.SNOW]: { name: "snow", statType: "Ice", stat: "Def" },
+  [WeatherType.HAIL]: { name: "hail" },
+  [WeatherType.STRONG_WINDS]: { name: "strong winds" },
+};
+const TERRAINS = {
+  [TerrainType.ELECTRIC]: { name: "Electric Terrain", up: "Electric", grounded: true },
+  [TerrainType.GRASSY]: { name: "Grassy Terrain", up: "Grass", grounded: true },
+  [TerrainType.PSYCHIC]: { name: "Psychic Terrain", up: "Psychic", grounded: true },
+  [TerrainType.MISTY]: { name: "Misty Terrain" },
+};
+const setterText = (field, types) => {
+  if (!field) return null;
+  const parts = [];
+  const reaches = !field.grounded || !types.includes("Flying");
+  if (field.up && reaches && types.includes(field.up)) parts.push(`${field.name} boosts its ${field.up}`);
+  if (field.down && types.includes(field.down)) parts.push(`${field.name} ${field.downText} its ${field.down}`);
+  if (field.stat && types.includes(field.statType)) parts.push(`${field.name} boosts its ${field.stat}`);
+  return parts.length ? parts.join(", ") : `sets ${field.name}`;
+};
+
+const passiveFacts = (ab, types, inverse) => {
+  const attrs = ab?.attrs ?? [];
+  const names = attrs.map(a => a?.constructor?.name ?? "");
+  if (names.length && names.every(n => OUT_OF_BATTLE.has(n) || ALLY_ONLY.test(n))) {
+    return { inert: true, text: names.some(n => ALLY_ONLY.test(n)) ? "ally-only, nothing in singles" : "out of battle only" };
+  }
+  const immune = ABILITY_IMMUNE[ab?.name];
+  if (immune) return { text: `immune to ${immune}${effectiveness(immune, types, inverse) >= 2 ? ", its weakness" : ""}` };
+  const attrOf = name => attrs.find(a => a?.constructor?.name === name);
+  const text = setterText(WEATHERS[attrOf("PostSummonWeatherChangeAbAttr")?.weatherType], types)
+    ?? setterText(TERRAINS[attrOf("PostSummonTerrainChangeAbAttr")?.terrainType], types);
+  return text ? { text } : null;
+};
 
 // (game-code.md §23)
 // @mirrors ability-randomizer
@@ -128,30 +196,36 @@ const speciesValue = (s, sp, ctx, formIndex = 0, starter = null) => {
   else if (line.evo?.level > 36) why.push({ w: -4, text: `evolves at L${line.evo.level}` });
   if (line.moveFinal) why.push({ w: -1.5, text: `${line.moveFinal.name} needs a move it likely won't learn` });
 
-  const abilityName = aid => tryDo(() => ctx.tables.abilities[aid].name, null);
+  const finalSp = finalForm ?? form;
+  const finalTypes = typeNames(finalSp);
+  const abilityOf = aid => tryDo(() => ctx.tables.abilities[aid]);
   // The grid shows the starter's passive and hidden ability, not the final form's (game-code.md §23).
   const fought = (starterAid, finalAid) => {
     const aid = finalForm ? finalAid : starterAid;
-    const name = abilityName(aid);
-    return name && aid !== starterAid ? `${name}${finalName}` : name;
+    const name = abilityOf(aid)?.name ?? null;
+    return { aid, name: name && aid !== starterAid ? `${name}${finalName}` : name };
   };
   const passiveOn = starter ? !!starter.passive : ((st.passiveAttr ?? 0) & Passive.UNLOCKED) !== 0;
   const own = ctx.rerolled.passive ? null : fought(tryDo(() => sp.getPassiveAbility(formIndex)), tryDo(() => finalForm.getPassiveAbility(0)));
+  const facts = own?.name ? passiveFacts(abilityOf(own.aid), finalTypes, ctx.inverse) : null;
+  // `named`: the cursor line shows it whatever its weight.
   const passive = ctx.rerolled.passive ? { w: 4, text: "random passive", offText: "random passive is off" }
-    : { w: 8, text: own ? `passive ${own}` : "passive", offText: `${own ?? "passive"} is off` };
-  if (passiveOn) why.push({ w: passive.w, text: passive.text });
+    : { w: facts?.inert ? 1 : 8, text: own?.name ? `passive ${own.name}${facts ? ` · ${facts.text}` : ""}` : "passive",
+      offText: `${own?.name ?? "passive"} is off`, named: !!facts?.inert };
+  if (passiveOn) why.push({ w: passive.w, text: passive.text, named: passive.named });
   else if (starter && ((st.passiveAttr ?? 0) & Passive.UNLOCKED)) why.push({ w: -3 * passive.w / 8, text: passive.offText });
   const hiddenOn = starter ? starter.abilityIndex === 2 : ((st.abilityAttr ?? 0) & AbilityAttr.ABILITY_HIDDEN) !== 0;
-  const hidden = (finalForm ?? form).abilityHidden;
+  const hidden = finalSp.abilityHidden;
   if (hiddenOn && hidden && !ctx.rerolled.ability(hidden)) {
-    const name = fought(form.abilityHidden, finalForm?.abilityHidden);
+    const { name } = fought(form.abilityHidden, finalForm?.abilityHidden);
     why.push({ w: 3, text: name ? `hidden ${name}` : "hidden ability" });
   }
   const eggs = st.eggMoves ?? 0;
-  const moveName = i => tryDo(() => ctx.tables.moves[ctx.tables.eggMoves[id][i]].name, null);
+  const eggMove = i => tryDo(() => ctx.tables.moves[ctx.tables.eggMoves[id][i]]);
   if (eggs & 8) {
-    const name = moveName(3);
-    why.push({ w: 6, text: name ? `rare egg move ${name}` : "rare egg move" });
+    const mv = eggMove(3);
+    const moveFacts = mv?.name ? eggMoveFacts(mv, finalSp) : null;
+    why.push({ w: 6, text: mv?.name ? `rare egg move ${mv.name}${moveFacts ? ` (${moveFacts})` : ""}` : "rare egg move" });
   }
   const common = [0, 1, 2].filter(i => eggs & (1 << i)).length;
   if (common) why.push({ w: 1.5 * common, text: `${common} egg move${common > 1 ? "s" : ""}`, quiet: true });
@@ -164,7 +238,6 @@ const speciesValue = (s, sp, ctx, formIndex = 0, starter = null) => {
   const luck = ctx.fresh ? 0 : caught & 64n ? 3 : caught & 32n ? 2 : caught & 2n ? 1 : 0;
   if (luck) why.push({ w: 1.5 * luck, text: `luck +${luck}` });
 
-  const finalSp = finalForm ?? form;
   // A randbats role is a moveset's, which the Moveset Randomizer rerolls (#721).
   const roles = ctx.movesetRandomizer ? [] : rolesOf([(finalForm ?? sp).name, sp.name]);
   const [, atk, def, spa, spd] = finalSp.baseStats ?? sp.baseStats ?? [];
@@ -172,13 +245,8 @@ const speciesValue = (s, sp, ctx, formIndex = 0, starter = null) => {
     : Math.max(atk ?? 0, spa ?? 0) >= 1.1 * Math.max(def ?? 0, spd ?? 0) ? "carry" : null;
   const value = why.reduce((t, r) => t + r.w, 0);
   why.sort((a, b) => Math.abs(b.w) - Math.abs(a.w));
-  return { id, sp, name: sp.name, value, final: line.final, role, roles, types: typeNames(finalSp), why };
+  return { id, sp, name: sp.name, value, final: line.final, role, roles, types: finalTypes, why };
 };
-
-const effectiveness = (atk, types, inverse) => types.reduce((m, d) => {
-  const x = vs(atk, d);
-  return m * (inverse ? (x === 0 || x === 0.5 ? 2 : x === 2 ? 0.5 : 1) : x);
-}, 1);
 
 const teamScore = (members, ctx) => {
   const vals = members.map(m => m.value).sort((a, b) => b - a);
@@ -367,8 +435,9 @@ const viewed = (h, m) => {
   if (!hit) return null;
   const inPick = m.proposals.find(t => t.members.some(x => x.id === id))?.label ?? null;
   const { v, rank } = hit;
+  const top = v.why.filter(r => Math.abs(r.w) >= 1.5).slice(0, 3);
   return { name: v.name, icon: v.icon, cost: v.cost, value: Math.round(v.value), rank, of: m.values.size, inPick,
-    why: v.why.filter(r => Math.abs(r.w) >= 1.5).slice(0, 3).map(r => (r.w < 0 ? `but ${r.text}` : r.text)) };
+    why: [...top, ...v.why.filter(r => r.named && !top.includes(r))].map(r => (r.w < 0 ? `but ${r.text}` : r.text)) };
 };
 
 export const ptsText = x => `${Math.round(x * 100) / 100}`;
