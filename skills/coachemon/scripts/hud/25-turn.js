@@ -362,15 +362,15 @@ const turnKeyOf = (env, facts) => [facts.wave, facts.turn, facts.enemySwitchCoun
 // battle, so a bench mon it says yes to is priced at its Tera type from its entry on, and the fight plan and its row
 // see the typing it will actually fight at (#648).
 const instantTeraFoes = (env, turn) => {
-  if (!env.trainer?.shouldTera) return [];
   const active = turn.activeFoes();
   return env.foes.filter(e => e && e.hp > 0 && !active.includes(e) && tryDo(() => env.trainer.shouldTera(e), false));
 };
 
-const predictedTeras = (env, turn) => [
-  ...(env.trainer?.shouldTera ? turn.activeFoes().filter(e => tryDo(() => turn.teraNow(e), false)) : []),
-  ...instantTeraFoes(env, turn),
-];
+// An active foe goes through `teraNow`, which also drops one the trainer withdraws this turn: it never gets there.
+const predictedTeras = (env, turn) => {
+  if (!env.trainer?.shouldTera) return [];
+  return [...turn.activeFoes().filter(e => tryDo(() => turn.teraNow(e), false)), ...instantTeraFoes(env, turn)];
+};
 
 // The turn is dead once `fn` returns. `estimate` never asks the game, decision or not.
 export const readTurn = (s, fn, { estimate = false } = {}) => {
