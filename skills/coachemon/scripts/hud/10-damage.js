@@ -105,6 +105,7 @@ export const targetFacts = (env, t, ignoreAbility = false) => {
     // Reviver Seed (game-code.md §8).
     revive: stack(t, "PokemonInstantReviveModifier") ? Math.max(1, Math.floor(maxHp / 2)) : 0,
     enigma: enigmaOf(env, t),
+    unnerve: ability(t, "PreventBerryUseAbAttr"),
   };
 };
 // `EnemyPokemon.damage` before any survival (game-code.md §3): [damage, bar after].
@@ -291,12 +292,22 @@ export const shares = (list, fallback) => {
 // 1. `perChunk`: the uses each bar takes before it more likely than not breaks. `downAt[n − 1]`: the chain's states
 // `[{ s, p }]` of what went down on use n, empty without a `chain`. `se`: the target eats an Enigma Berry
 // (`facts.enigma`) after a landed use, at this share of it — a point's own `se` where it carries one; null eats none.
-// The berry heals ahead of `turnEnd`, and each branch, `after1`'s and `start`'s included, carries the berries it has
-// `left`.
-export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 1, act = () => 1, turnEnd = 0, firstKo = null, cat = null, useAt = null, chain = null, se = null } = {}) => {
+// The berry heals between `beforeBerry`, the part of `turnEnd` the game runs ahead of it, and the rest, and each branch,
+// `after1`'s and `start`'s included, carries the berries it has `left`.
+export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 1, act = () => 1, turnEnd = 0, beforeBerry = 0, firstKo = null, cat = null, useAt = null, chain = null, se = null } = {}) => {
   const f = rec.facts;
   const berry = se != null && f.enigma?.heal > 0 ? f.enigma : null;
   const held = f.enigma?.left ?? 0;
+  const seAt = i => (typeof se === "function" ? se(i) : se);
+  // The share `fed` of `b` eats a berry at this turn's end.
+  const pushFed = (out, b, s, fed) => {
+    if (fed > 0 && b.left > 0) {
+      if (fed < 1) out.push(inChain(branch(b.hp, b.bar, b.revived, b.tok, b.p * (1 - fed), false, b.left), s));
+      b.p *= fed;
+      b.fed = true;
+    }
+    out.push(inChain(b, s));
+  };
   const init = stateOf(f, hp ?? f.hp, bar);
   const bars = init.bar + 1;
   const guard = cat && bars > 1 && rec.bars ? rec.bars(cat === "special" ? Stat.SPDEF : Stat.DEF, bars) : null;
@@ -339,15 +350,10 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
             }
             branches = next;
           }
-          const fed = berry && x.d > 0 ? x.se ?? (typeof se === "function" ? se(i) : se) : 0;
+          const fed = berry && x.d > 0 ? x.se ?? seAt(i) : 0;
           for (const b of branches) {
             b.stop = false;
-            if (fed > 0 && b.left > 0) {
-              if (fed < 1) hit.push(inChain(branch(b.hp, b.bar, b.revived, b.tok, b.p * (1 - fed), false, b.left), to.s));
-              b.p *= fed;
-              b.fed = true;
-            }
-            hit.push(inChain(b, to.s));
+            pushFed(hit, b, to.s, fed);
           }
         }
       }
@@ -357,27 +363,40 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
       const k = Math.min(1, firstKo);
       const offs = shares([...wentOff.values()], from);
       if (standing > 0) for (const x of hit) x.p *= (1 - k) / standing;
-      else if (k < 1) for (const c of offs) hit.push(inChain(branch(1, init.bar, false, false, (1 - k) * c.p, false, held), c.s));
+      else if (k < 1) {
+        // They survived a use that landed.
+        const landed = points.filter(x => x.d > 0), mass = landed.reduce((t, x) => t + x.p, 0);
+        const fed = berry && mass > 0 ? landed.reduce((t, x) => t + x.p * (x.se ?? seAt(0)), 0) / mass : 0;
+        for (const c of offs) pushFed(hit, branch(1, init.bar, false, false, (1 - k) * c.p, false, held), c.s, fed);
+      }
       fell = k;
       if (fellTo) fellTo = new Map(offs.map(c => [c.s?.key, { s: c.s, p: k * c.p }]));
     }
     down += fell;
     const h = typeof turnEnd === "function" ? turnEnd(i + 1) : turnEnd;
+    const h0 = typeof beforeBerry === "function" ? beforeBerry(i + 1) : beforeBerry;
+    // `b` after a signed turn-end change, null where the chip fells it.
+    const endStep = (b, d) => {
+      if (d > 0) b.hp = Math.min(f.maxHp, b.hp + d);
+      else if (d < 0) {
+        const out = [];
+        const gone = land(f, b, -d, out, false);
+        down += gone;
+        if (fellTo) addShare(fellTo, b.s, gone);
+        return out.length ? inChain(out[0], b.s) : null;
+      }
+      return b;
+    };
     const groups = new Map();
     for (let b of hit) {
       if (b.fed) {
+        b = endStep(b, h0);
+        if (!b) continue;
         b.hp = Math.min(f.maxHp, b.hp + berry.heal);
         b.left--;
-      }
-      if (h > 0) b.hp = Math.min(f.maxHp, b.hp + h);
-      else if (h < 0) {
-        const out = [];
-        const gone = land(f, b, -h, out, false);
-        down += gone;
-        if (fellTo) addShare(fellTo, b.s, gone);
-        if (!out.length) continue;
-        b = inChain(out[0], b.s);
-      }
+        b = endStep(b, h - h0);
+      } else b = endStep(b, h);
+      if (!b) continue;
       const key = `${b.bar}|${b.revived}|${b.tok}|${b.left}${chain ? `|${b.s.key}` : ""}`;
       if (!groups.has(key)) groups.set(key, { b, pts: [] });
       groups.get(key).pts.push({ d: b.hp, p: b.p });
@@ -415,11 +434,12 @@ const opponentsOf = (env, p) => {
 const tagsOf = p => { try { return p.summonData?.tags ?? []; } catch { return []; } };
 const berryQuarter = p => Math.max(1, Math.floor(p.getMaxHp() / 4)) * (ability(p, "DoubleBerryEffectAbAttr") ? 2 : 1);
 const unnerved = (env, p) => opponentsOf(env, p).some(q => ability(q, "PreventBerryUseAbAttr"));
-// One Enigma Berry's heal before the max-HP cap, and how many `p` holds; null where none would heal (game-code.md §3).
+// One Enigma Berry's heal before the max-HP cap, and how many `p` holds; null under Heal Block. An opposing Unnerve is
+// the reader's to ask, since it turns on who faces `p` (game-code.md §3).
 const enigmaOf = (env, p) => {
   const left = items(p).filter(m => m.constructor.name === "BerryModifier" && m.berryType === BerryType.ENIGMA)
     .reduce((t, m) => t + (m.getStackCount?.() ?? m.stackCount ?? 1), 0);
-  if (!left || p.getTag?.("HEAL_BLOCK") || unnerved(env, p)) return null;
+  if (!left || p.getTag?.("HEAL_BLOCK")) return null;
   return { heal: Math.floor(berryQuarter(p) * healingCharm(env, p)), left };
 };
 // In the game's own phase order (game-code.md §21).
@@ -458,6 +478,7 @@ const endOfTurnSteps = (env, p, { hp = p.hp, dealt = 0 } = {}) => {
   if (!guard) for (const a of abAttrs(p, "PostWeatherLapseDamageAbAttr")) if (inWeather(a)) chip(frac(max, 16 / (a.damageFactor ?? 2)));
   for (const a of abAttrs(p, "PostWeatherLapseHealAbAttr")) if (inWeather(a)) queued(frac(max, 16 / (a.healFactor ?? 1)));
 
+  steps.berries = steps.length;
   // `getHpRatio` rounds to a whole percent, so Sitrus wants hp/max < 0.495 (game-code.md §21).
   if (cur > 0 && !unnerved(env, p) && Math.round((cur / max) * 100) / 100 < 0.5
     && items(p).some(m => m.constructor.name === "BerryModifier" && m.berryType === BerryType.SITRUS)) queued(berryQuarter(p));
@@ -513,12 +534,14 @@ const applyTurnEnd = (steps, hp, max) => {
   return cur;
 };
 // Signed, with no boss bars in the way, and no Enigma Berry: that is `koCurve`'s. `hp`: the HP it will have by then;
-// `dealt`: this turn's damage dealt, for Shell Bell. Reads fields and item and ability attributes only.
+// `dealt`: this turn's damage dealt, for Shell Bell; `beforeBerries`: only the part ahead of the BerryPhase. Reads fields
+// and item and ability attributes only.
 // @only 25-turn, tests: sceneTurnEndHp
 export const sceneTurnEndHp = (env, p, opts = {}) => {
   const hp = opts.hp ?? p.hp;
   if (hp <= 0) return 0;
-  return applyTurnEnd(endOfTurnSteps(env, p, opts), hp, p.getMaxHp()) - hp;
+  const steps = endOfTurnSteps(env, p, opts);
+  return applyTurnEnd(opts.beforeBerries ? steps.slice(0, steps.berries ?? 0) : steps, hp, p.getMaxHp()) - hp;
 };
 
 // @mirrors result-mult

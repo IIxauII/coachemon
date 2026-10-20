@@ -51,7 +51,7 @@ const TABLE = {
   "Charizard>Flamethrower>Lycanroc": [[60], 1, 0.5], "Blastoise>Wave Crash>Lycanroc": [[220], 1, 2],
   "Lycanroc>Stone Edge>Charizard": [[500], 0.8, 4], "Lycanroc>Stone Edge>Blastoise": [[150], 0.8, 1],
   "Weavile>Knock Off>Morpeko": [[60], 1, 0.5], "Weavile>Knock Off>Scrafty": [[40], 1, 0.25], "Weavile>Knock Off>Metagross": [[140], 1, 2],
-  "Weavile>Fire Fang>Metagross": [[12], 1, 2],
+  "Weavile>Fire Fang>Metagross": [[12], 1, 2], "Weavile>Fire Punch>Metagross": [[2], 0.5, 2],
 };
 const outcome = outcomeFrom(TABLE);
 
@@ -1542,11 +1542,12 @@ Object.assign(TABLE, {
   const [, weavile] = foes;
   const { scene: s } = render({ party, foes, live: true, switches: () => new Map() });
   const { sceneTurnEndHp } = globalThis.__hud["10-damage"];
-  globalThis.__stub.heal = (p, o) => sceneTurnEndHp({ field: [] }, p, o);
+  let env = { field: [] };
+  globalThis.__stub.heal = (p, o) => sceneTurnEndHp(env, p, o);
   const held = (name, fields = {}, n = 1) => Object.assign(new ({ [name]: class {} })[name](), { getStackCount: () => n }, fields);
   const enigma = (n = 1) => held("BerryModifier", { berryType: 2 }, n);
   const leftovers = held("TurnHealModifier");
-  const fireFang = mon("Weavile", 84, ["Dark", "Ice"], [300, 250, 100, 60, 110, 299], [["Fire Fang", "Fire", 65, "P"]], false).moveset[0];
+  const [fireFang, firePunch] = mon("Weavile", 84, ["Dark", "Ice"], [300, 250, 100, 60, 110, 299], [["Fire Fang", "Fire", 65, "P"], ["Fire Punch", "Fire", 75, "P"]], false).moveset;
   const { exchange } = globalThis.__planner;
   // The threat a pairing faces is memoised by id, so every mon here gets its own.
   let n = 0;
@@ -1619,6 +1620,32 @@ Object.assign(TABLE, {
   const next = (k, t1) => run(as(metagross, k ? [enigma(k)] : []), knockOff([]), { hp: t1.turn1.hp, after: t1.turn1, next: true });
   assert.equal(fed(next(1, one), next(0, one)), 0, "a line's second exchange finds the berry its first ate gone");
   assert.equal(fed(next(2, two), next(0, two)), 62, "and the second of two still there");
+
+  const low = run(as(metagross, [enigma()], { hp: 100 }), weavileWith([[fireFang, 1]]));
+  console.log(`Fire Fang ×2 into us at 100, Enigma: ${ourSide(low)}`);
+  assert.ok(low.turn1.me.every(b => b.hp >= 150), "a heal bigger than the hit that fed it lifts us past where we started");
+  env = { field: [], weather: 4 };
+  const hail = run(as(metagross, [enigma()]), weavileWith([[fireFang, 1]]));
+  env = { field: [] };
+  console.log(`Fire Fang ×2 into us at full in hail, Enigma: ${ourSide(hail)}`);
+  assert.deepEqual([...new Set(hail.turn1.me.map(b => Math.round(b.hp)))], [250], "hail chips 15 before the berry, which heals back to full");
+  // Knock Off always lands and Fire Punch half the time, each picked half the time; on the field, so the pick is the
+  // stub's.
+  const punch = items => run(as(metagross, items, { hp: 150 }), weavileWith([[KNOCK, 0.5], [firePunch, 0.5]], [], { isOnField: () => true }));
+  const punched = fed(punch([enigma()]), punch([]));
+  console.log(`Fire Punch at 50% beside Knock Off: the berry pays ${punched}`);
+  assert.equal(punched, 46.5, "62 on the three quarters of uses that land: a super-effective miss feeds nothing");
+  // Exact odds that it survives a use the curve calls a sure KO (a Sturdy holder): it survives the hit, so it eats.
+  const gyarados = as(foes[0], [enigma()]);
+  dists.set(gyarados.id, [{ name: "Waterfall", type: "Water", p: 1, score: 10, targets: [0] }]);
+  const wheel = as(morpeko, []);
+  const sturdy = { ...s.outcomes(wheel, gyarados).find(o => o.name === "Aura Wheel"), pKo: 0 };
+  const survived = run(wheel, gyarados, { outcome: sturdy });
+  console.log(`Aura Wheel ×4 into a Gyarados that survives at 1, Enigma: ${foeSide(survived)}`);
+  assert.deepEqual(survived.turn1.foe.map(b => Math.round(b.hp)), [63], "1 HP and a quarter of 250");
+  // Metagross comes in with Unnerve: the mon on the field now, Morpeko, has none.
+  const unnerve = run(as(metagross, [], { hasAbilityWithAttr: a => a === "PreventBerryUseAbAttr" }), knockOff([enigma()]));
+  assert.deepEqual(onBar(unnerve), [150], `the attacker's Unnerve keeps the berry uneaten: ${foeSide(unnerve)}`);
   delete globalThis.__stub.heal;
 }
 

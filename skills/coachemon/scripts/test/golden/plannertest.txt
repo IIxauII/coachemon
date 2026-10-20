@@ -379,4 +379,8 @@ Fire Fang ×2 into a poisoned us at full, Enigma: 219 HP (81%) · 219 HP (6%) ·
 Knock Off at 40%, Triple Axel at 60%: the berry pays 24.8
 Knock Off at 60%, Triple Axel at 40%: the berry pays 37.2
 Knock Off until we fall, expected turns: no berry 2.191 · one 3.000 · two 3.070
+Fire Fang ×2 into us at 100, Enigma: 150 HP (6%) · 151 HP (50%) · 152 HP (38%) · 152 HP (6%)
+Fire Fang ×2 into us at full in hail, Enigma: 250 HP (81%) · 250 HP (6%) · 250 HP (6%) · 250 HP (6%)
+Fire Punch at 50% beside Knock Off: the berry pays 46.5
+Aura Wheel ×4 into a Gyarados that survives at 1, Enigma: 63 HP bar 0 (100%)
 ok
