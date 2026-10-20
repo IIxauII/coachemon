@@ -1,11 +1,10 @@
 // The boss Weavile outspeeds and KOs all four of ours.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
-import { fakeTurn } from "./fake-turn.mjs";
 import { benchMatchupScore, onGame } from "./game-proto.mjs";
+import { cat, mon as fakeMon, outcomeFrom, TY } from "./fake-mon.mjs";
+import { fakeTurn } from "./fake-turn.mjs";
 
-const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
-const cat = { P: 0, S: 1, X: 2 };
 // moves: [name, type, power, cat, target=3, priority=0]
 const mon = (name, lv, types, ability, [hp, atk, def, spa, spd, spe], moves, field, curHp, boss = 0, next) => onGame({
   next, id: name, getMoveQueue: () => [], isTrapped: () => false, trainerSlot: 0, species: { legendary: false },
@@ -295,47 +294,20 @@ assert.equal(plan.approxDoubles, false);
 // the free entry Breloom's fall buys still goes to the member that acts, and the two that cannot are kept for the
 // sacrifices after it.
 {
-  // 07-move-traits' shape; nothing here carries a trait.
-  const TRAITS = { charge: false, semiCharge: false, recharge: false, interrupt: false, needsAttack: false, once: false,
-    lock: false, noRepeat: false, recoil: null, halfSac: false, crash: false, selfKo: null, drops: {}, removesType: false };
-  // "attacker>move>defender": [max damage, effectiveness]. One hit, always lands, 16 rolls at 85–100 %.
+  // "attacker>move>defender": [[max damage], accuracy, effectiveness].
   const W145 = {
-    "Breloom>Drain Punch>Rayquaza": [40, 0.5], "Rayquaza>Outrage>Breloom": [339, 1],
-    "Tentacruel>Surf>Rayquaza": [60, 0.5], "Rayquaza>Outrage>Tentacruel": [431, 1],
-    "Crawdaunt>Crabhammer>Rayquaza": [80, 0.5], "Rayquaza>Outrage>Crawdaunt": [346, 1],
-    "Raichu>Thunderbolt>Rayquaza": [150, 1], "Rayquaza>Outrage>Raichu": [437, 1],
+    "Breloom>Drain Punch>Rayquaza": [[40], 1, 0.5], "Rayquaza>Outrage>Breloom": [[339], 1, 1],
+    "Tentacruel>Surf>Rayquaza": [[60], 1, 0.5], "Rayquaza>Outrage>Tentacruel": [[431], 1, 1],
+    "Crawdaunt>Crabhammer>Rayquaza": [[80], 1, 0.5], "Rayquaza>Outrage>Crawdaunt": [[346], 1, 1],
+    "Raichu>Thunderbolt>Rayquaza": [[150], 1, 1], "Rayquaza>Outrage>Raichu": [[437], 1, 1],
     // Ivy's bench: a Pidgeot two of ours KO one-on-one, so it is neither the win condition nor held for by anyone.
-    "Breloom>Drain Punch>Pidgeot": [40, 0.5], "Pidgeot>Air Slash>Breloom": [120, 4],
-    "Tentacruel>Surf>Pidgeot": [70, 1], "Pidgeot>Air Slash>Tentacruel": [60, 1],
-    "Crawdaunt>Crabhammer>Pidgeot": [240, 1], "Pidgeot>Air Slash>Crawdaunt": [60, 1],
-    "Raichu>Thunderbolt>Pidgeot": [240, 2], "Pidgeot>Air Slash>Raichu": [60, 1],
+    "Breloom>Drain Punch>Pidgeot": [[40], 1, 0.5], "Pidgeot>Air Slash>Breloom": [[120], 1, 4],
+    "Tentacruel>Surf>Pidgeot": [[70], 1, 1], "Pidgeot>Air Slash>Tentacruel": [[60], 1, 1],
+    "Crawdaunt>Crabhammer>Pidgeot": [[240], 1, 1], "Pidgeot>Air Slash>Crawdaunt": [[60], 1, 1],
+    "Raichu>Thunderbolt>Pidgeot": [[240], 1, 2], "Pidgeot>Air Slash>Raichu": [[60], 1, 1],
   };
-  const stub = (atk, def, pm) => {
-    const row = W145[`${atk.name}>${pm.getName()}>${def.name}`];
-    if (!row) return null;
-    const [max, e] = row;
-    const mv = pm.getMove();
-    let expected = 0, pKo = 0, uncapped = 0;
-    for (let r = 0; r < 16; r++) {
-      const d = Math.floor(max * (85 + r) / 100);
-      uncapped += d / 16;
-      expected += Math.min(d, def.hp) / 16;
-      if (d >= def.hp) pKo += 1 / 16;
-    }
-    return { name: pm.getName(), type: TY[mv.type], cat: mv.category ? "special" : "physical", e, priority: 0,
-      spread: false, acc: 1, dist: [{ n: 1, p: 1 }], perHit: [{ max, min: Math.floor(max * 0.85) }],
-      expected, uncapped, max: Math.min(max, def.hp), pKo, traits: { ...TRAITS }, costs: [], notes: [] };
-  };
-  const w145 = (name, types, [hp, atk, def, spa, spd, spe], moves, field, curHp) => ({
-    id: name, getMoveQueue: () => [], isTrapped: () => false, trainerSlot: 0, species: { legendary: false },
-    name, level: 80, hp: curHp ?? hp, getMaxHp: () => hp, getTypes: () => types.map(t => TY.indexOf(t)),
-    getAbility: () => ({ name: "x" }), hasPassive: () => false, getStat: i => [hp, atk, def, spa, spd, spe][i],
-    summonData: { statStages: [0,0,0,0,0,0,0], types: [] }, isOnField: () => field, isBoss: () => false,
-    getIconAtlasKey: () => "k", getIconId: () => 1, status: null, getBattlerIndex: () => (field ? 0 : -1),
-    getHeldItems: () => [],
-    moveset: moves.map(([n, ty, p, c], i) => ({ moveId: i + 1, getName: () => n, getMovePp: () => 10, ppUsed: 0,
-      getMove: () => ({ id: i + 1, name: n, type: TY.indexOf(ty), power: p, category: cat[c], moveTarget: 3, priority: 0, accuracy: 100, attrs: [] }) })),
-  });
+  const stub = outcomeFrom(W145);
+  const w145 = (name, ...rest) => fakeMon(name, 80, ...rest);
   const planFor = withPidgeot => {
     const party = [
       w145("Breloom", ["Grass","Fighting"], [240,230,120,100,120,130], [["Drain Punch","Fighting",75,"P"]], true, 93),
