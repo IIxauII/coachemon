@@ -352,6 +352,43 @@ Fight plan likely lost
 == a foe's lock on our switch-in: Skarmory 3.4383 · Clefable 4.0000 · its last use 4.8086
 == switched into a foe's lock: Skarmory 3.6975 · Clefable 3.0000 · its last use 3.8086
 == a foe's own pick once its lock runs down: Bronzong 3.4383 · Steelix 1.4383
+== bug bite eats a berry
+Sitrus x1, Pound instead   turnsWe 4 · our HP 146 · P(steal) 0
+Sitrus x1                  turnsWe 3 · our HP 264 · P(steal) 1
+we eat: Sitrus 100 · at 350/400 50 · beside a Lum 50 · a Sitrus x2 beside a Lum 50 · beside a Liechi 50
+Sitrus x1 + Lum x1         turnsWe 3 · our HP 264 · P(steal) 1
+Sitrus x2 + Lum x1         turnsWe 3 · our HP 289 · P(steal) 1
+Sitrus x1 + Liechi x1      turnsWe 3 · our HP 264 · P(steal) 1
+nothing held               turnsWe 3 · our HP 164 · P(steal) 0
+Sitrus x1, Sticky Hold     turnsWe 4 · our HP 146 · P(steal) 0
+Sitrus x1, behind a sub    turnsWe 4 · our HP 146 · P(steal) 0
+Sitrus x1, one already ate turnsWe 3 · our HP 164 · P(steal) 1
+…and Pound follows it      turnsWe 3 · our HP 164 · P(steal) 0
+Sitrus x2                  turnsWe 3 · our HP 364 · P(steal) 1
+Sitrus x2, one already ate turnsWe 3 · our HP 264 · P(steal) 1
+depth 2: the follow-up leaves us 264 HP (364 if turn 1's steal were forgotten)
+our Enigma fed beside the steal: they need 4 into Bug Bite, 3 into Pound
+Sitrus x1                  turn end: none gone 70 · one gone 0 · two gone 0
+Sitrus x2                  turn end: none gone 70 · one gone 70 · two gone 0
+Sitrus x1 + Lum x1         turn end: none gone 70 · one gone 35 · two gone 0
+Sitrus x2 + Lum x1         turn end: none gone 70 · one gone 70 · two gone 52.5
+Sitrus x1 + Liechi x1      turn end: none gone 70 · one gone 35 · two gone 0
+draw: Sitrus x1            types 0 · supply 1 · lost -70 · eaten 70
+draw: Sitrus x2            types 0 · supply 2 · lost 0 · eaten 70
+draw: Sitrus + Liechi      types 0,3 · supply 2 · lost -35 · eaten 35
+named: Sitrus of a x2      types 0 · supply 2 · lost 0 · eaten 70
+named: Liechi beside it    types 3 · supply 2 · lost 0 · eaten 0
+named: a Lum it lacks      nothing to lose
+draws: Sitrus x1 + Lum x2     35 · 17.5 · 17.5 · 0
+we eat from full HP, Sitrus x2: 18 over a Heal Blocked thief
+we eat from full HP, Sitrus x1: moving first 0 · moving second 18
+two Sitrus from full HP over a long fight: 328/400 after 6 turns
+eaten: plain 70 · Ripen 140 · Heal Block 0 · Cheek Pouch 163, off a Lum 93
+reach: sticky false,true,false · sub false,true,false
+== gordie w180 t7: Leavanny into the incoming Carracosta
+as plain damage: Leaf Storm (Leaf Storm: we need 3, they need 2 (2.393), P(steal) 0 · Bug Bite: we need 6, they need 2 (2.393), P(steal) 0)
+with the steal:  Leaf Storm (Leaf Storm: we need 3, they need 2 (2.393), P(steal) 0 · Bug Bite: we need 6, they need 3 (3.126), P(steal) 1)
+the ⚔ call does not flip: still Leaf Storm
 == a lost race: only what lands counts (#650)
 ⚔ Dragonite ⚠ Dragon ×2 100% {Rayquaza's Outrage: ~100% of current HP} Normal Extreme Speed → Rayquaza 3 hits
 ⤵ Dragonite falls this turn › Raichu in free

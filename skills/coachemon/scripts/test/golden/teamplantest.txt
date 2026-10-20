@@ -13,6 +13,10 @@ Fight plan likely lost
 ⚠ likely lost: nobody KOs Weavile 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Blastoise
 == easy trainer
 winnable · Charizard
+== a bug bite pairing's foe heal profile
+it keeps {"base":0,"pre":0,"sitrus":100,"enigma":0,"enigmas":0} · after the steal {"base":0,"pre":0,"sitrus":0,"enigma":0,"enigmas":0}
+== a bug bite switch-in's entry turn
+switch: won in 2 · free: won in 1
 == thieves and tokens
 KO · 60% left
 == mirror at a speed tie
