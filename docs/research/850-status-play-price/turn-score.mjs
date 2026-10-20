@@ -1,12 +1,5 @@
-// `node docs/research/850-status-play-price/turn-score.mjs [--terms] [--double] [config…]`: #749's stubbed singles
-// turns (Salamence locked into Outrage, our lead with Ice Beam and Protect), and three with no lock, run through the
-// planner's own `fieldPlan` with `prototype.patch` applied (`git apply docs/research/850-status-play-price/prototype.patch`
-// from the repo root). Each config is a set of the patch's `P850` switches, by name from `CONFIGS` or as JSON; every row
-// prints what the card picks, and with `--terms` the terms one() and `playOption` scored each option on. `--double`
-// runs the same turns in a double.
-//
-// The harness is #749's `turn-score.mjs` (itself plannertest.mjs's, cut down), but nothing is re-derived by hand: the
-// planner scores both options, Protect through `statusPlay` like any other play.
+// `turn-score.mjs [--terms] [--double] [config…]`: #749's lock turns through `fieldPlan` under `prototype.patch`'s
+// `P850` switches (a `CONFIGS` name or JSON); prints the card's pick and, with `--terms`, each option's scored terms.
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 

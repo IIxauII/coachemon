@@ -7,7 +7,9 @@ Desk research and prototype for #850, split from #749. Repo refs are to `origin/
   Applied with every switch off, every golden is byte-identical to master. `git apply` it from the repo root first.
 - `850-status-play-price/turn-score.mjs`: #749's stubbed turns (Salamence locked into Outrage, our lead with Ice Beam
   and Protect), plus three with no lock, run through the planner's own `fieldPlan`. Nothing is re-derived by hand:
-  Protect is scored by `playOption` like any other status play. `results.md` is its output.
+  Protect is scored by `playOption` like any other status play. `results.md` is its output, from
+  `turn-score.mjs today stall left hp loss4 hp+loss2 hp+loss4 "hp+loss4, STATUS_COST 0"`, then `--terms today hp+loss4`,
+  then `--double today "own duel" '{"protect":true,"dprotect":"own","hp":1,"loss":4,"scope":"all"}'`.
 - `850-status-play-price/blast.mjs`: every HUD golden test under a set of switches. `--soft` logs failed assertions
   and runs on, so one flip doesn't hide the rest.
 
@@ -97,7 +99,7 @@ is about a turn, and the number already exists in the planner.
 The planner already prices our HP in turns in two places:
 
 - `cost` charges what a move spends of our HP at 1 turn per whole bar (`:981`).
-- A double's `danger` (`:1453`) charges a foe's hit at its share of our bar, plus 0.5 per likely knockout, through the
+- A double's `danger` (`:1444`) charges a foe's hit at its share of our bar, plus 0.5 per likely knockout, through the
   joint value.
 
 **Proposal:** in singles, charge **the HP a duel costs the mon fighting it, at 1 turn a whole bar**, measured from its
@@ -204,15 +206,16 @@ the play needs the same.
 **Doubles: not yet.** `supportFor`'s one Protect case (the partner knocks that foe out first) never applies to these
 turns, so the card attacks into case 3's sure knockout. Offering Protect as a play was measured both ways:
 
-- **Through #262's field hypothesis** (`playCandidate` → `statusField`): picked in 2, 4, 5 and 7, all wrong. The
-  hypothesis cancels the foe's attempt for the whole field and re-scores the slot's attack on that state. In case 4 the
+- **Through #262's field hypothesis** (`playCandidate` → `statusField`): picked in every lock case but 6, so wrongly in
+  2, 4, 5 and 7. The hypothesis cancels the foe's attempt for the whole field and re-scores the slot's attack on that state. In case 4 the
   lead's Ice Beam goes from 3.88 to 6.38, because `lasts` loses Outrage's hit and the turn-1 Ice Beam still lands. The
   −1 turn doesn't offset it. This is the `stall` flaw from §1, and it already applies to sleep and paralysis in a
   double.
-- **On the slot's own duel** (`dprotect: "own"`: `playOption`, joined to the field as a pick that lands no hit): case 3
-  only at today's prices. With HP and loss priced in doubles it is picked in 1, 3, 8 and 9, but also in 4 and 5. There,
-  #236's redirect charges the attack plan about 3 turns: once the lead fells Salamence, the partner's Thunderbolt is
-  scored as a whole race against Snorlax.
+- **On the slot's own duel** (`dprotect: "own"`: `playOption`, joined to the field as a pick that lands no hit): picked
+  in 3, 4, 5 and 9 at today's prices, and in 1, 3, 4, 5, 8 and 9 with HP and loss priced in doubles too. So 4 and 5 are
+  wrong either way. There, #236's redirect charges the attack plan about 3 turns: once the lead's Ice Beam fells
+  Salamence first, the partner's Thunderbolt is scored as a whole race against Snorlax (−3.28 against +2.62), and a
+  plan that puts the knockout off a turn dodges that charge.
 
 Both failures come from existing doubles machinery, not from Protect. They are the follow-up's to fix.
 
@@ -224,6 +227,49 @@ Both failures come from existing doubles machinery, not from Protect. They are t
 2. **Protect as a priced status play in singles.** Blocked by 1: without it, Protect is picked in 3 and 9 only.
 3. **Research: a status play in a double**, the over-credit in #262's field hypothesis and the redirect charge (§6),
    ending with Protect in a double as a priced play. Until then, a double does not offer Protect as a play.
+
+### Acceptance criteria
+
+**1. Turn score: our mon lost and the HP a duel costs (singles)**
+
+- In a single battle, every scorer that prices a race (`one()`, `deeper` and its follow-up value, `playOption` and its
+  `follow`) charges P(they KO first) at `MON_LOST` turns. `MON_LOST` is one constant shared with `ALLY_KO_COST` (4),
+  not a second 4. P(we KO first) stays at 1.
+- The same scorers charge the HP the duel costs the mon fighting it at 1 turn a whole bar. It is measured from the mon's
+  HP before any entry hit, against the foe's hits net of our drain, and does not count again what `cost` already
+  charges (recoil, a play's `hpCost`).
+- A double is unchanged: the per-slot scores and `both()` keep today's terms, and every doubles golden is identical.
+- Golden diffs are limited to #90's "A close call it tips" (it now switches to Crobat; rewrite that assertion per the
+  owner's decision) and the scores printed in #647's Lum table. Every pick there is unchanged.
+- CONTEXT.md's **Turn score** entry states the two prices with their units. "Mon lost" gets a glossary line or a
+  `/domain-modeling` note.
+- The code comments cite (#850) and state contracts only (`docs/agents/comments.md`). The prototype's rationale
+  comments and its dead `unlanded` are not copied.
+
+**2. Protect as a priced status play (singles)**
+
+- `statusPlay` returns a play for a move with `ProtectAttr` in a single battle: self, no patches, this turn's hit
+  cancelled (`skip0` 1), shown as `Protect · blocks <move>'s last use` on a lock's last use and `Protect · blocks
+  <move>` otherwise. Wording is the owner's to settle; #749 §5 proposed `— <foe> still ends confused`.
+- It is not offered after a successful Protect, Quick Guard or Wide Guard last turn (the game's streak,
+  `ProtectAttr.getCondition`). It is not offered where the foe's move this turn ignores Protect (`IGNORE_PROTECT`, or
+  contact from an Unseen Fist user). It is not offered in a double (ticket 3).
+- Plannertest scenes for #749's cases: Protect picked in 1, 3, 8 and 9. Attack in 2, 4, 5, 6 and 7, in 3 after a
+  Protect that held, and with no lock running (10–12).
+- The Protect slot carries no threat tag for the hit it blocks (`slotThreat`'s `guarded`, as #650 did for
+  `supportFor`'s Protect).
+- The #74 status-play scenarios and #647's Lum picks are unchanged.
+
+**3. Research: a status play in a double**
+
+- Measure the over-credit in #262's field hypothesis (a slot's `lasts` re-read with the foe's attempt cancelled
+  field-wide, while its attack still lands this turn). Cover sleep and paralysis, which use the same hypothesis, as
+  well as Protect.
+- Measure #236's redirect charge on a plan whose knockout comes first.
+- Decide whether a double's per-slot scores take the singles prices from ticket 1, given `danger` already prices our HP
+  and losses through the joint value.
+- End with Protect as a priced play in a double on this doc's scene (picked in 1, 3, 8 and 9; not in 2, 4–7), and say
+  how `supportFor`'s Protect fits with it.
 
 Out of scope by owner decision (#749 → #850): a rule-based Protect gated on the lock's last use.
 

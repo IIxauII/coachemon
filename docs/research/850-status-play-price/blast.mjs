@@ -20,15 +20,17 @@ const assert = new Proxy(strictAssert, {
   get: (t, k) => (typeof t[k] === "function" ? (...a) => { try { return t[k](...a); } catch (e) { console.log("ASSERT FAIL: " + e.message.split("\\n")[0]); } } : t[k]),
 });`;
 const tests = readdirSync(dir).filter(f => f.endsWith("test.mjs") && (!only.length || only.some(o => f.startsWith(o)))).sort();
-const scratch = mkdtempSync(path.join(process.env.CLAUDE_JOB_DIR ? path.join(process.env.CLAUDE_JOB_DIR, "tmp") : tmpdir(), "blast-"));
+const scratch = mkdtempSync(path.join(tmpdir(), "blast-"));
 for (const f of tests) {
   let file = path.join(dir, f);
   if (soft) {
     file = path.join(dir, `.soft-${f}`);
     writeFileSync(file, readFileSync(path.join(dir, f), "utf8").replace('import assert from "node:assert/strict";', SOFT));
   }
-  const r = spawnSync(process.execPath, ["--no-warnings", file], { encoding: "utf8", env: { ...process.env, P850: cfg } });
-  if (soft) rmSync(file);
+  // The soft copy sits in the tracked test directory, so it goes whatever the run does.
+  let r;
+  try { r = spawnSync(process.execPath, ["--no-warnings", file], { encoding: "utf8", env: { ...process.env, P850: cfg } }); }
+  finally { if (soft) rmSync(file, { force: true }); }
   const out = r.stdout.split("\n").filter(l => !/localstorage/i.test(l)).join("\n");
   const golden = readFileSync(path.join(dir, "golden", f.replace(".mjs", ".txt")), "utf8");
   const failed = r.status !== 0 ? (r.stderr.match(/AssertionError[^\n]*\n(?:[^\n]*\n){0,1}/)?.[0] ?? r.stderr.split("\n").slice(0, 3).join("\n")) : null;
