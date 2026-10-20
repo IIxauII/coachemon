@@ -617,7 +617,7 @@ export const paralysed = me => {
 // attempt a status we gave it leaves standing); `field` and `fieldAct(i)` (in a double, the foe whose hits price the
 // race when that isn't the target, #320). `cost`: our max HP the move spends, plus a little for a lock-in.
 // `turn1`: P(we KO first), P(they do), and the HP branches each side stands on if neither does, each summing to 1.
-// `pActs`: the chance our mon gets this move off at all before it falls (#650).
+// `pNeverUsed`: the chance our mon falls before this move goes off at all (#650).
 export const exchange = (turn, me, pm, foe, opts = {}) => {
   const hp = opts.hp ?? me.hp;
   const after = opts.after ?? null;
@@ -766,8 +766,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     const ko = standing * a * (1 - b + b * pLast);
     pWe += ko;
     knockedOut(ko, usesBy(j));
-    const down = standing * b * (1 - a + a * (1 - pLast));
-    pThey += down;
+    pThey += standing * b * (1 - a + a * (1 - pLast));
     never += standing * b * unused(j);
     standing *= (1 - a) * (1 - b);
   }
@@ -785,7 +784,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     pWeKoFirst: Math.min(1, Math.round(pWe * 1e9) / 1e9), pTheyKoFirst: Math.min(1, Math.round(pThey * 1e9) / 1e9),
     expectedHpLeft: Math.round(hpLeft),
     turnsWe, turnsThey, pFirst, hitsWe,
-    pActs: Math.max(0, 1 - Math.round(never * 1e9) / 1e9),
+    pNeverUsed: Math.min(1, Math.round(never * 1e9) / 1e9),
     eTurnsWe: expTurns(weBy), eTurnsThey: expTurns(theyBy),
     cost: Math.min(1, (selfSpent + selfKo * Math.max(0, hp - selfSpent)) / maxHp) + (mt.lock ? 0.1 + lockCarry(turn, me, mine, foe, afterKo) : 0),
     turn1: (() => {
@@ -890,7 +889,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     const one = (o, fi) => {
       const x = trade(o, active[fi]);
       const turns = x.turnsWe + lost;
-      const score = lasts - x.eTurnsWe - unlanded(1 - x.pActs) - lost + (x.pWeKoFirst - x.pTheyKoFirst) - (x.cost ?? 0) - cost(o) - feed(active[fi]) * x.pTheyKoFirst;
+      const score = lasts - x.eTurnsWe - unlanded(x.pNeverUsed) - lost + (x.pWeKoFirst - x.pTheyKoFirst) - (x.cost ?? 0) - cost(o) - feed(active[fi]) * x.pTheyKoFirst;
       return { me, move: o, target: fi, turns, hits: x.turnsWe, score, hp, trade: x };
     };
     // The redirect (CONTEXT.md, `Spare hit`; game-code.md §18): `redirScore` is what the hit is worth on the survivor,
@@ -927,7 +926,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
         const eTurns = 1 + (1 - t1.we) * x2.eTurnsWe;
         const edge = t1.we + standing * x2.pWeKoFirst - (t1.they + standing * x2.pTheyKoFirst);
         const spent = Math.min(1, (o.self ?? 0) / (me.getMaxHp?.() || hp)) + (x2.cost ?? 0);
-        return lasts - eTurns - unlanded(1 - x.trade.pActs) - lost + edge - spent - cost(o) - feed(f) * (t1.they + standing * x2.pTheyKoFirst);
+        return lasts - eTurns - unlanded(x.trade.pNeverUsed) - lost + edge - spent - cost(o) - feed(f) * (t1.they + standing * x2.pTheyKoFirst);
       };
       const score = scoreOf(best);
       const { y, x2 } = best;
@@ -947,7 +946,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const hits = Math.max(...hit.map(({ x }) => x.turnsWe));
       if (hits + lost >= 9) return null;
       const edge = Math.min(...xs.flatMap((x, i) => (x ? [x.pWeKoFirst - x.pTheyKoFirst - (x.cost ?? 0) - feed(active[i]) * x.pTheyKoFirst] : [])));
-      const slow = Math.max(...hit.map(({ x }) => x.eTurnsWe + unlanded(1 - x.pActs)));
+      const slow = Math.max(...hit.map(({ x }) => x.eTurnsWe + unlanded(x.pNeverUsed)));
       const rep = hit[0].o;
       const both0 = hit.length > 1 ? { ...rep, benefit: Math.max(...hit.map(({ o }) => o.benefit ?? 0)) } : rep;
       return { me, move: rep, target: "both", turns: hits + lost, hits, each,
@@ -1017,7 +1016,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const missed = landed && w < 1 ? follow(null) : null;
       if (!landed || (w < 1 && !missed)) return null;
       const mix = k => w * landed.x2[k] + (missed ? (1 - w) * missed.x2[k] : 0);
-      const eTurns = 1 + mix("eTurnsWe") + unlanded(they + standing * (1 - mix("pActs")));
+      const eTurns = 1 + mix("eTurnsWe") + unlanded(they + standing * mix("pNeverUsed"));
       const edge = standing * (mix("pWeKoFirst") - mix("pTheyKoFirst")) - they - feed(f) * (they + standing * mix("pTheyKoFirst"));
       const spent = (play.hpCost ?? 0) / maxHp + mix("cost");
       const bonus = play.kind === "hazard" ? play.value * works : 0;
@@ -1025,7 +1024,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const hits = Math.min(9, 1 + landed.x2.turnsWe);
       return {
         me, move: { name: info.name, type: info.type, cat: "status", pm, expected: 0, notes: [] }, target: fi, self: !!play.self,
-        turns: hits + lost, hits, score: lasts - eTurns - lost + edge - spent + start.keep + bonus + nudge - STATUS_COST, hp, then: landed.y,
+        turns: hits + lost, hits, score: lasts - eTurns - lost + edge - spent + start.keep + bonus + nudge - STATUS_COST, hp, then: landed.y && (planOutcomes(turn, me, f).find(z => z.name === landed.y.name) ?? landed.y),
         effect: start.effect,
       };
     };

@@ -36,7 +36,7 @@ const tpOurMove = (turn, me, f, them = null) => {
   // slower that moves first takes the same number of hits getting there, so order is part of what a move costs.
   const spared = o => {
     if (!them) return 0;
-    const p = (o.priority ?? 0) === 0 && Number.isFinite(them.first) ? them.first : tpFoeFirst(turn, me, f, o, them);
+    const p = tpOrder(turn, me, f, o, them);
     return Number.isFinite(p) ? 1 - p : 0;
   };
   if (turn.live) {
@@ -104,11 +104,11 @@ const tpFoeFirst = (turn, me, f, ours, theirs) => {
   return b > a ? 1 : b < a ? 0 : 0.5;
 };
 
-// `firstBy[mi][fi][move]`: the order a move of ours gets that is not the pairing's own pick, which `first` already
-// holds. A plan step pinned to the card's ⚔ line runs that line's move, and a priority move lands before a foe that
-// outspeeds the pick (#650). Two moves at the same priority get the same order, so only a move out of the pick's
-// bracket is asked again — on most pairings that is no question at all. Built here and not on demand: the searches read
-// these tables and never the live game.
+// A priority-0 move's order is the pairing's own, so the table and the pick read one answer.
+const tpOrder = (turn, me, f, o, them) => ((o?.priority ?? 0) === 0 && Number.isFinite(them.first) ? them.first : tpFoeFirst(turn, me, f, o, them));
+
+// `firstBy[mi][fi][move]`: the order a move of ours out of the pairing's own pick's priority bracket gets, for a plan
+// step pinned to that move (#650).
 const tpFirstBy = (turn, me, f, own, them) => {
   const by = {};
   for (const o of turn.outcomes(me, f)) {
@@ -142,7 +142,7 @@ export const tpTables = (turn, party, foes, double = false, facing = null) => {
   // The foe's side first: which move of ours is worth using against it turns on the order it would get (#650).
   const theirs = foes.map(f => party.map(me => tpTheirMove(turn, f, me)));
   const ours = party.map((me, mi) => foes.map((f, fi) => tpOurMove(turn, me, f, theirs[fi][mi])));
-  const first = party.map((me, mi) => foes.map((f, fi) => tpFoeFirst(turn, me, f, ours[mi][fi], theirs[fi][mi])));
+  const first = party.map((me, mi) => foes.map((f, fi) => tpOrder(turn, me, f, ours[mi][fi], theirs[fi][mi])));
   const wear = tpWear(turn, party, foes, ours, faced);
   return {
     ours, theirs, first,
@@ -180,7 +180,7 @@ const tpWear = (turn, party, foes, ours, faced = () => true) => {
   const paraOrder = party.map((me, mi) => (tok[mi]?.para ? foes.map((f, fi) => {
     const clone = paralysed(me);
     const them = tpTheirMove(turn, f, clone);
-    return { first: tpFoeFirst(turn, clone, f, ours[mi][fi], them), by: faced(f) ? tpFirstBy(turn, clone, f, ours[mi][fi], them) : {} };
+    return { first: tpOrder(turn, clone, f, ours[mi][fi], them), by: faced(f) ? tpFirstBy(turn, clone, f, ours[mi][fi], them) : {} };
   }) : null));
   const firstPara = paraOrder.map(row => row && row.map(x => x.first));
   const firstParaBy = paraOrder.map(row => row && row.map(x => x.by));
