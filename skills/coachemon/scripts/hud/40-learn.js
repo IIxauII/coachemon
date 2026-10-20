@@ -13,7 +13,7 @@ export const learnMoveById = (party, id) => {
 
 const attrsOf = (mv, name) => (mv.attrs || []).filter(a => a.constructor?.name === name);
 export const isDamaging = mv => !!mv && mv.category !== MoveCategory.STATUS && (mv.power > 0 || mv.power === -1);
-const unimplemented = mv => / \(N\)$/.test(mv.name ?? "");
+export const unimplemented = mv => / \(N\)$/.test(mv.name ?? "");
 
 // The base power that deals about as much at this level, with even Atk and Def and no STAB (game-code.md §1).
 // @mirrors fixed-power
@@ -97,7 +97,7 @@ const setupOf = (pk, mv, current) => {
   for (const a of boosts) for (const i of a.stats) value += weight(i) * a.stages;
   const boostsMain = boosts.some(a => a.stats.some(i => main.has(i)));
   const hasSetup = current.some(o => o !== mv && o.category === MoveCategory.STATUS
-    && ownBoosts(o).some(a => a.stats.some(i => main.has(i))));
+    && ownBoosts(o, pk).some(a => a.stats.some(i => main.has(i))));
   if (!boostsMain) value *= 0.5;
   if (hasSetup) value *= 0.3;
   return { value: Math.round(value), text: boostsText(boosts), fits: boostsMain && !hasSetup };
@@ -406,11 +406,15 @@ const VARIABLE_TYPE = ["FormChangeItemTypeAttr", "TechnoBlastTypeAttr", "AuraWhe
   "CombinedPledgeTypeAttr"];
 // @mirrors sun-abilities
 const SUN_ABILITIES = new Set(["Drought", "Desolate Land", "Orichalcum Pulse"]);
+// "user" for a move that takes its user's type, "varies" for one whose type the card can't pin down, else null.
+export const typeShape = mv => (attrsOf(mv, "MatchUserTypeAttr").length ? "user"
+  : VARIABLE_TYPE.some(n => attrsOf(mv, n).length) ? "varies" : null);
 const effectiveType = (pk, mv) => {
   const base = TYPES[mv.type];
   const ab = abilitiesOf(pk);
-  if (attrsOf(mv, "MatchUserTypeAttr").length) return { type: typesOf(pk)[0] ?? base, note: "user's type" };
-  if (VARIABLE_TYPE.some(n => attrsOf(mv, n).length)) return { type: base, variable: true, note: "type varies" };
+  const shape = typeShape(mv);
+  if (shape === "user") return { type: typesOf(pk)[0] ?? base, note: "user's type" };
+  if (shape === "varies") return { type: base, variable: true, note: "type varies" };
   const ate = ab.find(a => ATE[a]);
   if (ate && base === "Normal") return { type: ATE[ate], boost: 1.2, note: ate };
   if (ab.includes("Normalize")) return { type: "Normal", boost: 1.2, note: "Normalize" };

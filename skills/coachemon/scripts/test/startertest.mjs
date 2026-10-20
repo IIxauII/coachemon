@@ -115,6 +115,11 @@ const tables = {
     104: move("Bouncy Bubble", "Water", MoveCategory.SPECIAL, 60),
     105: move("Ice Beam", "Ice", MoveCategory.SPECIAL, 90),
     106: move("Encore", "Normal", MoveCategory.STATUS, -1),
+    107: move("Seismic Toss", "Fighting", MoveCategory.PHYSICAL, -1, MoveTarget.NEAR_OTHER, [attr("LevelDamageAttr")]),
+    108: move("Techno Blast", "Normal", MoveCategory.SPECIAL, 120, MoveTarget.NEAR_OTHER, [attr("TechnoBlastTypeAttr")]),
+    109: move("Gyro Ball", "Steel", MoveCategory.PHYSICAL, -1, MoveTarget.NEAR_OTHER, [attr("GyroBallPowerAttr")]),
+    // The game marks a move it has not implemented with this suffix on its name.
+    110: move("Bitter Malice (N)", "Ghost", MoveCategory.SPECIAL, 75),
   }),
   eggMoves: { 129: [102, 102, 102, 101], 19: [103, 103, 103, 103], 86: [102, 102, 102, 104], 56: [102, 102, 102, 105], 312: [102, 102, 102, 106] },
 };
@@ -162,8 +167,9 @@ const freshStart = {
 // `getSpeciesDefaultDexAttrProps`' form (game-code.md §23).
 const defaultForm = caught => { for (let i = 0; i < 32; i++) if (caught & (128n << BigInt(i))) return i; return 0; };
 // `forms`: a saved form preference per species id.
-// `unlocks`: starter data laid over the account's, by species id.
-const mount = ({ limit = 10, chosen = [], valid = STARTERS, challenges = [], withTables = true, looking = null, onGrid = true, picking = true, forms = {}, unlocks = {} }) => {
+// `unlocks`: starter data laid over the account's, by species id. `rare`: a rare egg move id in place of the table's,
+// by species id.
+const mount = ({ limit = 10, chosen = [], valid = STARTERS, challenges = [], withTables = true, looking = null, onGrid = true, picking = true, forms = {}, unlocks = {}, rare = {} }) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const { dexData, starterData } = account();
@@ -202,7 +208,9 @@ const mount = ({ limit = 10, chosen = [], valid = STARTERS, challenges = [], wit
   // Under node the chunk scan finds no tables: hand them over and draw again, or the card stays the first tick's
   // estimate.
   if (withTables) {
-    globalThis.__hud["04-game-tables"].setGameTables(tables);
+    const eggMoves = { ...tables.eggMoves };
+    for (const [id, move] of Object.entries(rare)) eggMoves[id] = [...(eggMoves[id] ?? [102, 102, 102]).slice(0, 3), move];
+    globalThis.__hud["04-game-tables"].setGameTables({ ...tables, eggMoves });
     globalThis.__hud["98-watch"].rebuild();
   }
   return { el, handler, model: globalThis.__coachHud.last(), summary: globalThis.__coachHud.summary() };
@@ -405,6 +413,19 @@ const alone = (id, opts) => ({ challenges: [{ id: 11, value: 0 }], valid: [id], 
   assert.ok(mankey.includes("rare egg move Ice Beam (90 Ice special · weak SpA)"), mankey.join(" · "));
 }
 
+// ---- Fixed damage, a power or type the move works out in battle, and an unimplemented move each say so.
+{
+  const rare = (id, move) => mount(alone(id, { rare: { [id]: move }, unlocks: { [id]: { eggMoves: 8 } } })).model.viewing.why;
+  const toss = rare(MANKEY, 107);
+  assert.ok(toss.includes("rare egg move Seismic Toss (Fighting physical · fixed damage)"), toss.join(" · "));
+  const techno = rare(SEEL, 108);
+  assert.ok(techno.includes("rare egg move Techno Blast (120 special · type varies)"), techno.join(" · "));
+  const gyro = rare(BRONZOR, 109);
+  assert.ok(gyro.includes("rare egg move Gyro Ball (Steel physical · power varies · STAB)"), gyro.join(" · "));
+  const malice = rare(SEEL, 110);
+  assert.ok(malice.includes("rare egg move Bitter Malice (not implemented)"), malice.join(" · "));
+}
+
 // ---- Any other status move is named as one.
 {
   const why = mount(alone(MINUN)).model.viewing.why;
@@ -418,7 +439,7 @@ const alone = (id, opts) => ({ challenges: [{ id: 11, value: 0 }], valid: [id], 
   const off = mount(alone(MINUN, { unlocks: { [MINUN]: { passiveAttr: 0 } } })).model.viewing.value;
   assert.equal(m.viewing.value - off, 1);
   const zig = mount(alone(ZIGZAGOON)).model.viewing;
-  assert.ok(zig.why.includes("passive Pickup · out of battle only"), zig.why.join(" · "));
+  assert.ok(zig.why.includes("passive Pickup · no effect on a fight"), zig.why.join(" · "));
   const zigOff = mount(alone(ZIGZAGOON, { unlocks: { [ZIGZAGOON]: { passiveAttr: 0 } } })).model.viewing.value;
   assert.equal(zig.value - zigOff, 1);
   const bronzor = mount(alone(BRONZOR)).model.viewing.value;

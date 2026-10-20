@@ -2659,7 +2659,7 @@ export const HUD: Area = {
       ],
     },
     {
-      // The ally-only classes are the ones the name match catches at the pin: a new one passes the classifier unlisted.
+      // The ally-only classes are every one the name match catches at the pin: a new one passes the classifier unlisted.
       ours: "skills/coachemon/scripts/hud/51-starters.js#inert-passive-attrs",
       of: [
         "src/data/abilities/ab-attrs.ts#MoneyAbAttr",
@@ -2668,7 +2668,11 @@ export const HUD: Area = {
         "src/data/abilities/ab-attrs.ts#DoubleBattleChanceAbAttr",
         "src/data/abilities/ab-attrs.ts#AlliedFieldDamageReductionAbAttr",
         "src/data/abilities/ab-attrs.ts#AllyMoveCategoryPowerBoostAbAttr",
+        "src/data/abilities/ab-attrs.ts#AllyStatMultiplierAbAttr",
+        "src/data/abilities/ab-attrs.ts#CopyFaintedAllyAbilityAbAttr",
         "src/data/abilities/ab-attrs.ts#PostSummonAllyHealAbAttr",
+        "src/data/abilities/ab-attrs.ts#PostSummonClearAllyStatStagesAbAttr",
+        "src/data/abilities/ab-attrs.ts#PostSummonCopyAllyStatsAbAttr",
       ],
     },
     {

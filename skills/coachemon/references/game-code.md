@@ -2759,10 +2759,12 @@ form-0 passive than their starter (Abra Comatose → Alakazam Magician) and 94 a
 Gyarados Moxie).
 
 **What an unlock is, read off the tables** (#848). An `allAbilities` entry's `attrs` are attribute instances, known by
-class name (§22). Six passives carry only ally-only classes (name holds `Ally`/`Allied`) or out-of-battle ones
-(`MoneyAbAttr`, `PostBattleLootAbAttr`, `RunSuccessAbAttr`, `DoubleBattleChanceAbAttr`): Run Away, Pickup, Honey
-Gather, Friend Guard, Power Spot and Hospitality (`src/data/abilities/init-abilities.ts:451`, `:463`, `:823`, `:918`,
-`:1744`, `:2115`), so in a single battle they do nothing. A weather setter's `PostSummonWeatherChangeAbAttr.weatherType`
+class name (§22). Seven passives carry only attributes that act on an ally or outside the fight, so in a single battle
+they do nothing to it: Run Away (`RunSuccessAbAttr`, a sure escape from a wild battle), Pickup
+(`PostBattleLootAbAttr`), Honey Gather (`MoneyAbAttr`), Friend Guard (`AlliedFieldDamageReductionAbAttr`), Power Spot
+(`AllyMoveCategoryPowerBoostAbAttr`), Hospitality (`PostSummonAllyHealAbAttr`) and Costar
+(`PostSummonCopyAllyStatsAbAttr`, a Pikachu form's passive, `src/data/balance/species/generation-01.ts:2604`)
+(`src/data/abilities/init-abilities.ts:451`, `:463`, `:823`, `:918`, `:1744`, `:2115`, `:2078`). A weather setter's `PostSummonWeatherChangeAbAttr.weatherType`
 and a terrain setter's `PostSummonTerrainChangeAbAttr.terrainType` (`src/data/abilities/ab-attrs.ts:2576`, `:2602`)
 name the field: sun and rain ×1.5 to Fire and Water and ×0.5 to the other (`src/data/weather.ts:252`), harsh sun and
 heavy rain stop the other outright (`:77`), sand ×1.5 a Rock type's SpD and snow an Ice type's Def

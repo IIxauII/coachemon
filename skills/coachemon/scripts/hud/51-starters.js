@@ -5,7 +5,7 @@ import { challengeOn, challengeValue } from "./03-calendar.js";
 import { gameTables } from "./04-game-tables.js";
 import { RANDBATS } from "./05-randbats.js";
 import { finalBstOf, formOf } from "./08-party.js";
-import { boostsText, isDamaging, isFixed, ownBoosts, statFit, weakFitNote } from "./40-learn.js";
+import { boostsText, isDamaging, isFixed, ownBoosts, statFit, typeShape, unimplemented, weakFitNote } from "./40-learn.js";
 
 const MAX_PARTY = 6;
 const WEIGHTS = [1, 0.8, 0.55, 0.35, 0.2, 0.1];
@@ -44,16 +44,25 @@ const effectiveness = (atk, types, inverse) => types.reduce((m, d) => {
   return m * (inverse ? (x === 0 || x === 0.5 ? 2 : x === 2 ? 0.5 : 1) : x);
 }, 1);
 
+const boostsMemo = new WeakMap();
+const boostsOf = mv => {
+  if (!boostsMemo.has(mv)) boostsMemo.set(mv, tryDo(() => ownBoosts(mv), []));
+  return boostsMemo.get(mv);
+};
 const eggMoveFacts = (mv, sp) => {
   if (!mv || mv.category == null) return null;
+  if (unimplemented(mv)) return "not implemented";
   if (!isDamaging(mv)) {
-    const boosts = tryDo(() => ownBoosts(mv), []);
+    const boosts = boostsOf(mv);
     return boosts.length ? `setup ${boostsText(boosts)}` : "status";
   }
-  const type = TYPES[mv.type];
-  const facts = [`${mv.power > 0 ? `${mv.power} ` : ""}${type} ${mv.category === MoveCategory.PHYSICAL ? "physical" : "special"}`];
-  if (isFixed(mv)) return facts[0];
-  if (typeNames(sp).includes(type)) facts.push("STAB");
+  const shape = typeShape(mv);
+  const type = shape ? null : TYPES[mv.type];
+  const facts = [[mv.power > 0 ? mv.power : null, type, mv.category === MoveCategory.PHYSICAL ? "physical" : "special"].filter(Boolean).join(" ")];
+  if (isFixed(mv)) return [...facts, "fixed damage"].join(" · ");
+  if (!(mv.power > 0)) facts.push("power varies");
+  if (shape) facts.push(shape === "user" ? "user's type" : "type varies");
+  if (shape === "user" || typeNames(sp).includes(type)) facts.push("STAB");
   const [, atk, , spa] = sp.baseStats ?? [];
   const weak = atk && spa ? weakFitNote(mv, statFit(mv, atk, spa)) : null;
   if (weak) facts.push(weak);
@@ -96,7 +105,7 @@ const passiveFacts = (ab, types, inverse) => {
   const attrs = ab?.attrs ?? [];
   const names = attrs.map(a => a?.constructor?.name ?? "");
   if (names.length && names.every(n => OUT_OF_BATTLE.has(n) || ALLY_ONLY.test(n))) {
-    return { inert: true, text: names.some(n => ALLY_ONLY.test(n)) ? "ally-only, nothing in singles" : "out of battle only" };
+    return { inert: true, text: names.some(n => ALLY_ONLY.test(n)) ? "ally-only, nothing in singles" : "no effect on a fight" };
   }
   const immune = ABILITY_IMMUNE[ab?.name];
   if (immune) return { text: `immune to ${immune}${effectiveness(immune, types, inverse) >= 2 ? ", its weakness" : ""}` };
@@ -225,7 +234,8 @@ const speciesValue = (s, sp, ctx, formIndex = 0, starter = null) => {
   if (eggs & 8) {
     const mv = eggMove(3);
     const moveFacts = mv?.name ? eggMoveFacts(mv, finalSp) : null;
-    why.push({ w: 6, text: mv?.name ? `rare egg move ${mv.name}${moveFacts ? ` (${moveFacts})` : ""}` : "rare egg move" });
+    const name = mv?.name?.replace(/ \(N\)$/, "");
+    why.push({ w: 6, text: name ? `rare egg move ${name}${moveFacts ? ` (${moveFacts})` : ""}` : "rare egg move" });
   }
   const common = [0, 1, 2].filter(i => eggs & (1 << i)).length;
   if (common) why.push({ w: 1.5 * common, text: `${common} egg move${common > 1 ? "s" : ""}`, quiet: true });
