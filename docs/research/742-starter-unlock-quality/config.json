@@ -1,0 +1,13 @@
+{
+ "phase": "all",
+ "level": 50,
+ "eggCap": 2,
+ "accounts": 200,
+ "profiles": {
+  "fixture": { "fixture": true },
+  "early": { "seed": 11, "caught": 0.25, "passive": 0.05, "rare": 0.03, "common": 0.15, "hidden": 0.1 },
+  "mid": { "seed": 22, "caught": 0.55, "passive": 0.3, "rare": 0.15, "common": 0.45, "hidden": 0.3 },
+  "late": { "seed": 33, "caught": 0.9, "passive": 0.75, "rare": 0.55, "common": 0.8, "hidden": 0.6 },
+  "complete": { "seed": 44, "caught": 1, "passive": 1, "rare": 1, "common": 1, "hidden": 1 }
+ }
+}

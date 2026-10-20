@@ -1,0 +1,251 @@
+// #742: every starter's egg moves judged by the learn card on its final form, its final form's passive sorted by
+// attribute kind, and the starter card replayed under flat and derived weights on synthetic accounts.
+// Copied into the pinned clone's test/tests by run.mjs, removed after.
+import { readFileSync, writeFileSync } from "node:fs";
+import { timedEventManager } from "#app/global-event-manager";
+import { speciesDataRegistry } from "#app/global-species-data-registry";
+import { speciesEggMoves } from "#balance/egg-moves";
+import { allAbilities, allMoves } from "#data/data-lists";
+import { MoveId } from "#enums/move-id";
+import { SpeciesId } from "#enums/species-id";
+import { GameManager } from "#test/framework/game-manager";
+import Phaser from "phaser";
+import { beforeAll, describe, it } from "vitest";
+
+const g = globalThis as any;
+const IN = JSON.parse(readFileSync(process.env.COACH_IN as string, "utf8"));
+const LEVEL: number = IN.level ?? 50;
+const out: Record<string, unknown> = {};
+// Read once the game has set them: both are live bindings that start undefined.
+let reg: any;
+const tables = () => ({ species: speciesDataRegistry, events: timedEventManager, abilities: allAbilities, moves: allMoves, eggMoves: speciesEggMoves });
+
+const loadHud = () => {
+  if (g.__hud) return g.__hud;
+  g.window = globalThis;
+  (0, eval)(readFileSync(process.env.COACH_BUNDLE as string, "utf8"));
+  g.__hud["04-game-tables"].setGameTables(tables());
+  return g.__hud;
+};
+
+// mulberry32
+const rngOf = (seed: number) => () => {
+  seed = (seed + 0x6d2b79f5) | 0;
+  let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
+const median = (xs: number[]) => { const s = [...xs].sort((a, b) => a - b); return s.length ? s[Math.floor(s.length / 2)] : 0; };
+
+describe("#742", () => {
+  let phaserGame: Phaser.Game;
+  beforeAll(() => { phaserGame = new Phaser.Game({ type: Phaser.HEADLESS }); });
+
+  it("scores and replays", async () => {
+    new GameManager(phaserGame);
+    reg = speciesDataRegistry;
+    const hud = loadHud();
+    const core = hud["01-core"], learn = hud["40-learn"], value = hud["12-value"], comb = hud["09-combatant"], st = hud["51-starters"];
+    const TYPES: string[] = core.TYPES;
+    const CAT = ["physical", "special", "status"];
+    const ids: number[] = reg.getAllStarters();
+    const moveName = (id: number) => allMoves[id]?.name ?? `#${id}`;
+    const abilityName = (id: number) => allAbilities[id]?.name ?? `#${id}`;
+
+    // ---- The adapter: the line's final form as the learn card's `pk`, at LEVEL, with the stand-in's moveset (the last
+    // four level-up moves at that level), its first ability and no passive.
+    const finalOf = (sp: any) => st.lineOf(sp, reg, 0).finalSp ?? sp;
+    const standIn = (F: any, level = LEVEL) => comb.combatantOf({ species: F, level, moves: value.learnsetMoves(F, 0, level), passive: null });
+    const judge = (pk: any, moveId: number) => {
+      const mv: any = allMoves[moveId];
+      const a = learn.learnAdvice(pk, mv, { double: 0, party: [pk] });
+      const alone = learn.moveScore(pk, mv, [], 0, { party: [pk] });
+      return {
+        id: moveId, name: mv.name, type: TYPES[mv.type], cat: CAT[mv.category], power: mv.power, acc: mv.accuracy,
+        alone: alone.value, kind: a.kind, learn: a.learn, gain: a.kind === "status" || a.kind === "only-status" ? null : Math.round(a.gain),
+        against: a.against, incoming: a.plan.incoming.value, notes: a.plan.incoming.notes, setup: a.setup ? { text: a.setup.text, fits: a.setup.fits } : null,
+      };
+    };
+
+    const rows: any[] = [];
+    for (const id of ids) {
+      const sp = reg.getSpecies(id);
+      const F = finalOf(sp);
+      const pk = standIn(F);
+      const eggs: number[] = (speciesEggMoves as any)[id] ?? [];
+      const passiveId = reg.getPassive(F.speciesId, 0);
+      const ab: any = allAbilities[passiveId];
+      rows.push({
+        id, name: sp.name, cost: reg.getStarterCost(id), final: F.name, finalId: F.speciesId, bst: F.baseTotal,
+        types: [F.type1, F.type2].filter((t: any) => t != null && t >= 0).map((t: number) => TYPES[t]),
+        atk: pk?.getStat(1), spa: pk?.getStat(3), standIn: (pk?.moveset ?? []).map((m: any) => m.getName()),
+        eggs: pk ? eggs.map(m => judge(pk, m)) : [],
+        passive: { id: passiveId, name: ab?.name, attrs: (ab?.attrs ?? []).map((a: any) => a.constructor?.name), starterPassive: abilityName(reg.getPassive(id, 0)) },
+      });
+    }
+    out.starters = rows;
+
+    // ---- The nine rare-slot changes of 1.12.1.0 (#725, PR #740), old and new on the same stand-in.
+    const pairs: [number, number, number][] = [
+      [SpeciesId.MILCERY, MoveId.GEOMANCY, MoveId.SPARKLY_SWIRL],
+      [SpeciesId.SEWADDLE, MoveId.VICTORY_DANCE, MoveId.BITTER_BLADE],
+      [SpeciesId.SEEL, MoveId.STEAM_ERUPTION, MoveId.BOUNCY_BUBBLE],
+      [SpeciesId.MANAPHY, MoveId.ORIGIN_PULSE, MoveId.WILDBOLT_STORM],
+      [SpeciesId.LATIAS, MoveId.MYSTICAL_POWER, MoveId.SPARKLY_SWIRL],
+      [SpeciesId.GREAT_TUSK, MoveId.SHIFT_GEAR, MoveId.COLLISION_COURSE],
+      [SpeciesId.ZANGOOSE, MoveId.TIDY_UP, MoveId.EXTREME_SPEED],
+      [SpeciesId.CORSOLA, MoveId.SALT_CURE, MoveId.STRENGTH_SAP],
+      [SpeciesId.DONDOZO, MoveId.SALT_CURE, MoveId.SOFT_BOILED],
+    ];
+    out.patch = pairs.map(([id, before, after]) => {
+      const F = finalOf(reg.getSpecies(id));
+      const pk = standIn(F);
+      return { starter: reg.getSpecies(id).name, final: F.name, standIn: pk.moveset.map((m: any) => m.getName()),
+        before: judge(pk, before), after: judge(pk, after), now: (speciesEggMoves as any)[id]?.[3] === after };
+    });
+
+    // ---- Level sensitivity: the same judgement at L30 and L80.
+    out.levels = ids.flatMap(id => {
+      const egg = (speciesEggMoves as any)[id]?.[3];
+      if (egg == null) return [];
+      const F = finalOf(reg.getSpecies(id));
+      return [{ id, at: Object.fromEntries([30, 50, 80].map(l => { const pk = standIn(F, l); return [l, pk ? judge(pk, egg).gain : null]; })) }];
+    });
+
+    if (IN.phase === "score") { writeFileSync(process.env.COACH_OUT as string, JSON.stringify(out)); return; }
+
+    // ---- Derived weights, from config.json's rules.
+    const byId = new Map(rows.map(r => [r.id, r]));
+    const rareGains = rows.map(r => r.eggs[3]?.gain).filter((x: any) => typeof x === "number");
+    const scale = Math.max(1, median(rareGains.filter((x: number) => x > 0)));
+    const eggW = (id: number) => {
+      const gain = byId.get(id)?.eggs[3]?.gain;
+      if (typeof gain !== "number") return 6;
+      return 6 * Math.max(0, Math.min(IN.eggCap ?? 2, gain / scale));
+    };
+    // Passive signals read off the attribute classes alone (README, question 2). Everything else stays 8.
+    const NO_BATTLE = new Set(["MoneyAbAttr", "PostBattleLootAbAttr", "RunSuccessAbAttr", "DoubleBattleChanceAbAttr"]);
+    const allyOnly = (a: string) => /Ally|Allied/.test(a);
+    const WEATHER_TYPE: Record<number, string> = { 1: "Fire", 8: "Fire", 2: "Water", 7: "Water", 3: "Rock", 4: "Ice", 5: "Ice" };
+    const TERRAIN_TYPE: Record<number, string> = { 2: "Electric", 3: "Grass", 4: "Psychic" };
+    const eff = (atk: string, types: string[]) => types.reduce((m, d) => m * core.vs(atk, d), 1);
+    const passiveSignal = (r: any) => {
+      const ab: any = allAbilities[r.passive.id];
+      const attrs: any[] = ab?.attrs ?? [];
+      const names = attrs.map(a => a.constructor?.name);
+      if (!names.length) return { kind: "none", w: 8 };
+      if (names.every(n => NO_BATTLE.has(n) || allyOnly(n))) return { kind: names.some(allyOnly) ? "ally-only" : "no battle effect", w: 1 };
+      const immune = attrs.find(a => a.immuneType != null && a.immuneType >= 0)?.immuneType;
+      const immuneType = immune != null ? TYPES[immune] : names.includes("UngroundedAbAttr") ? "Ground" : null;
+      if (immuneType) {
+        const e = eff(immuneType, r.types);
+        return { kind: "immunity", type: immuneType, w: e >= 2 ? 12 : e <= 0.5 ? 5 : 8 };
+      }
+      const weather = attrs.find(a => a.constructor?.name === "PostSummonWeatherChangeAbAttr")?.weatherType;
+      const terrain = attrs.find(a => a.constructor?.name === "PostSummonTerrainChangeAbAttr")?.terrainType;
+      const boosted = weather != null ? WEATHER_TYPE[weather] : terrain != null ? TERRAIN_TYPE[terrain] : undefined;
+      if (weather != null || terrain != null) return { kind: weather != null ? "weather" : "terrain", type: boosted ?? null, w: boosted && r.types.includes(boosted) ? 11 : 6 };
+      return { kind: "other", w: 8 };
+    };
+    const signals = new Map(rows.map(r => [r.id, passiveSignal(r)]));
+    const passiveW = (id: number) => signals.get(id)?.w ?? 8;
+    const eggDamagingW = (id: number) => (byId.get(id)?.eggs[3]?.cat === "status" ? 6 : eggW(id));
+    out.weights = { scale, egg: Object.fromEntries(rows.map(r => [r.id, +eggW(r.id).toFixed(2)])),
+      passive: Object.fromEntries(rows.map(r => [r.id, signals.get(r.id)])) };
+    // Same distribution, no information: the derived egg weights handed to starters at random.
+    const shuffled = (() => {
+      const vals = rows.map(r => eggW(r.id)), rnd = rngOf(742);
+      for (let i = vals.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [vals[i], vals[j]] = [vals[j], vals[i]]; }
+      return new Map(rows.map((r, i) => [r.id, vals[i]]));
+    })();
+    const WEIGHTINGS: Record<string, any> = {
+      flat: null,
+      egg: { egg: eggW },
+      eggDamaging: { egg: eggDamagingW },
+      passive: { passive: passiveW },
+      passiveInert: { passive: (id: number) => (signals.get(id)?.w === 1 ? 1 : 8) },
+      both: { egg: eggW, passive: passiveW },
+      shuffledEgg: { egg: (id: number) => shuffled.get(id) ?? 6 },
+    };
+
+    // ---- Synthetic accounts: every starter caught with p `caught`, each unlock with its own p. No real account.
+    // startertest.mjs's account on the real species: every fixture starter caught but Mew; Magikarp has its passive,
+    // rare and one common egg move, Rattata perfect IVs, Squirtle a variant-3 shiny, Gible its passive and hidden
+    // ability, Froakie its hidden ability. Pikachu's Pokérus is left out: the replay hands none.
+    const fixtureAccount = () => {
+      const dexData: any = {}, starterData: any = {};
+      for (const id of ids) {
+        dexData[id] = { caughtAttr: 0n, ivs: [0, 0, 0, 0, 0, 0] };
+        starterData[id] = { abilityAttr: 1, passiveAttr: 0, eggMoves: 0, valueReduction: 0 };
+      }
+      for (const id of [1, 4, 7, 16, 19, 25, 129, 147, 298, 443, 656]) dexData[id] = { caughtAttr: 1n | 4n | 16n | 128n, ivs: [10, 10, 10, 10, 10, 10] };
+      starterData[129] = { ...starterData[129], passiveAttr: 3, eggMoves: 8 | 1 };
+      dexData[19].ivs = [31, 31, 31, 31, 31, 31];
+      dexData[7].caughtAttr |= 2n | 64n;
+      starterData[443] = { ...starterData[443], passiveAttr: 1, abilityAttr: 1 | 4 };
+      starterData[656] = { ...starterData[656], abilityAttr: 1 | 4 };
+      return { dexData, starterData };
+    };
+    const accountOf = (p: any, rnd: () => number) => {
+      if (p.fixture) return fixtureAccount();
+      const dexData: any = {}, starterData: any = {};
+      for (const id of ids) {
+        const caught = rnd() < p.caught;
+        const ivTop = p.ivTop ?? 31;
+        dexData[id] = { caughtAttr: caught ? 1n | 4n | 16n : 0n, ivs: Array.from({ length: 6 }, () => Math.floor(rnd() * (ivTop + 1))) };
+        let eggs = 0;
+        for (let i = 0; i < 3; i++) if (rnd() < p.common) eggs |= 1 << i;
+        if (rnd() < p.rare) eggs |= 8;
+        starterData[id] = { abilityAttr: 1 | (rnd() < p.hidden ? 4 : 0), passiveAttr: rnd() < p.passive ? 3 : 0, eggMoves: eggs, valueReduction: 0 };
+      }
+      return { dexData, starterData };
+    };
+    const cardFor = (acct: any) => {
+      const h: any = {
+        starterSelectCallback: () => {}, valueLimitLabel: { text: "0/10" }, partyStarterIds: [], partyStarters: [],
+        filteredStarterIds: ids, starterContainers: [], pokerusSpeciesIds: [], lastStarterId: null, cursorObj: { visible: false },
+        getStarterDexAttrPropsFromPreferences: () => ({ formIndex: 0 }),
+      };
+      const s: any = {
+        ui: { handlers: { 10: h } }, phaseManager: { getCurrentPhase: () => ({ phaseName: "SelectStarterPhase" }) },
+        gameData: { ...acct, getSpeciesStarterValue: (id: number) => reg.getStarterCost(id) },
+        gameMode: { challenges: [], modeId: 0 },
+      };
+      return st.starterModel(s, h);
+    };
+    const teams = (m: any) => m.picks.map((t: any) => `${t.label}:${t.members.map((x: any) => x.name).sort().join("+")}`);
+    const best = (m: any) => (m.picks[0]?.members ?? []).map((x: any) => x.name).sort();
+
+    const sims: any = {};
+    const examples: any[] = [];
+    const profiles = IN.profiles as Record<string, any>;
+    for (const [pname, p] of Object.entries(profiles)) {
+      const rnd = rngOf(p.seed ?? 1);
+      const tally: any = Object.fromEntries(Object.keys(WEIGHTINGS).filter(k => k !== "flat").map(k => [k, { best: 0, any: 0, swapped: 0 }]));
+      const n = p.fixture ? 1 : IN.accounts;
+      for (let a = 0; a < n; a++) {
+        const acct = accountOf(p, rnd);
+        g.__w742 = null;
+        const flat = cardFor(acct);
+        for (const [wname, w] of Object.entries(WEIGHTINGS)) {
+          if (!w) continue;
+          g.__w742 = w;
+          const m = cardFor(acct);
+          const bf = best(flat), bm = best(m);
+          const changedBest = bf.join() !== bm.join();
+          const changedAny = teams(flat).join("|") !== teams(m).join("|");
+          if (changedBest) tally[wname].best++;
+          if (changedAny) tally[wname].any++;
+          tally[wname].swapped += bm.filter((x: string) => !bf.includes(x)).length;
+          if (changedBest && wname === "both" && examples.length < 12) examples.push({ profile: pname, flat: teams(flat), derived: teams(m) });
+        }
+      }
+      g.__w742 = null;
+      sims[pname] = { accounts: n, ...Object.fromEntries(Object.entries(tally).map(([k, v]: any) => [k, { ...v, swappedPerAccount: +(v.swapped / n).toFixed(2) }])) };
+      console.log(`742: ${pname} ${JSON.stringify(sims[pname])}`);
+    }
+    out.sims = sims;
+    out.examples = examples;
+    writeFileSync(process.env.COACH_OUT as string, JSON.stringify(out));
+  }, 1_800_000);
+});

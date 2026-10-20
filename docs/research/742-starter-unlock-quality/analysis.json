@@ -1,0 +1,295 @@
+{
+ "rare": {
+  "total": 571,
+  "status": 146,
+  "damaging": 425,
+  "unscorable": 12,
+  "skipped": 34,
+  "skippedStatus": 25,
+  "medianGain": {
+   "all": 74,
+   "status": 35,
+   "damaging": 89
+  },
+  "gainQuantiles": {
+   "p10": 13,
+   "p25": 40,
+   "p50": 74,
+   "p75": 106,
+   "p90": 140
+  },
+  "derivedWeight": {
+   "zero": 27,
+   "capped": 29,
+   "p10": 1.14,
+   "median": 5.7,
+   "p90": 10.48
+  },
+  "scale": 79
+ },
+ "levelSpearman": {
+  "n": 559,
+  "l30_l50": 0.65,
+  "l50_l80": 0.67
+ },
+ "passives": {
+  "starters": 572,
+  "distinctPassives": 156,
+  "distinctAttrClasses": 112,
+  "movedOffFlat": 88
+ },
+ "sims": {
+  "fixture": {
+   "accounts": 1,
+   "egg": {
+    "best": 1,
+    "any": 1,
+    "swapped": 2,
+    "swappedPerAccount": 2
+   },
+   "eggDamaging": {
+    "best": 1,
+    "any": 1,
+    "swapped": 2,
+    "swappedPerAccount": 2
+   },
+   "passive": {
+    "best": 0,
+    "any": 0,
+    "swapped": 0,
+    "swappedPerAccount": 0
+   },
+   "passiveInert": {
+    "best": 0,
+    "any": 0,
+    "swapped": 0,
+    "swappedPerAccount": 0
+   },
+   "both": {
+    "best": 1,
+    "any": 1,
+    "swapped": 2,
+    "swappedPerAccount": 2
+   },
+   "shuffledEgg": {
+    "best": 1,
+    "any": 1,
+    "swapped": 2,
+    "swappedPerAccount": 2
+   }
+  },
+  "early": {
+   "accounts": 200,
+   "egg": {
+    "best": 27,
+    "any": 68,
+    "swapped": 49,
+    "swappedPerAccount": 0.24
+   },
+   "eggDamaging": {
+    "best": 21,
+    "any": 54,
+    "swapped": 39,
+    "swappedPerAccount": 0.2
+   },
+   "passive": {
+    "best": 10,
+    "any": 31,
+    "swapped": 20,
+    "swappedPerAccount": 0.1
+   },
+   "passiveInert": {
+    "best": 0,
+    "any": 1,
+    "swapped": 0,
+    "swappedPerAccount": 0
+   },
+   "both": {
+    "best": 34,
+    "any": 81,
+    "swapped": 64,
+    "swappedPerAccount": 0.32
+   },
+   "shuffledEgg": {
+    "best": 24,
+    "any": 59,
+    "swapped": 45,
+    "swappedPerAccount": 0.23
+   }
+  },
+  "mid": {
+   "accounts": 200,
+   "egg": {
+    "best": 102,
+    "any": 157,
+    "swapped": 186,
+    "swappedPerAccount": 0.93
+   },
+   "eggDamaging": {
+    "best": 75,
+    "any": 137,
+    "swapped": 142,
+    "swappedPerAccount": 0.71
+   },
+   "passive": {
+    "best": 55,
+    "any": 112,
+    "swapped": 92,
+    "swappedPerAccount": 0.46
+   },
+   "passiveInert": {
+    "best": 4,
+    "any": 15,
+    "swapped": 5,
+    "swappedPerAccount": 0.03
+   },
+   "both": {
+    "best": 107,
+    "any": 171,
+    "swapped": 196,
+    "swappedPerAccount": 0.98
+   },
+   "shuffledEgg": {
+    "best": 96,
+    "any": 155,
+    "swapped": 188,
+    "swappedPerAccount": 0.94
+   }
+  },
+  "late": {
+   "accounts": 200,
+   "egg": {
+    "best": 161,
+    "any": 193,
+    "swapped": 365,
+    "swappedPerAccount": 1.82
+   },
+   "eggDamaging": {
+    "best": 152,
+    "any": 186,
+    "swapped": 325,
+    "swappedPerAccount": 1.63
+   },
+   "passive": {
+    "best": 106,
+    "any": 154,
+    "swapped": 200,
+    "swappedPerAccount": 1
+   },
+   "passiveInert": {
+    "best": 16,
+    "any": 25,
+    "swapped": 29,
+    "swappedPerAccount": 0.14
+   },
+   "both": {
+    "best": 165,
+    "any": 195,
+    "swapped": 358,
+    "swappedPerAccount": 1.79
+   },
+   "shuffledEgg": {
+    "best": 175,
+    "any": 197,
+    "swapped": 402,
+    "swappedPerAccount": 2.01
+   }
+  },
+  "complete": {
+   "accounts": 200,
+   "egg": {
+    "best": 194,
+    "any": 200,
+    "swapped": 409,
+    "swappedPerAccount": 2.04
+   },
+   "eggDamaging": {
+    "best": 179,
+    "any": 195,
+    "swapped": 343,
+    "swappedPerAccount": 1.72
+   },
+   "passive": {
+    "best": 138,
+    "any": 182,
+    "swapped": 330,
+    "swappedPerAccount": 1.65
+   },
+   "passiveInert": {
+    "best": 5,
+    "any": 7,
+    "swapped": 16,
+    "swappedPerAccount": 0.08
+   },
+   "both": {
+    "best": 193,
+    "any": 200,
+    "swapped": 512,
+    "swappedPerAccount": 2.56
+   },
+   "shuffledEgg": {
+    "best": 199,
+    "any": 200,
+    "swapped": 482,
+    "swappedPerAccount": 2.41
+   }
+  }
+ },
+ "history": {
+  "releases": 46,
+  "withRare": 6,
+  "withStarterPassive": 8,
+  "rare": {
+   "mean": 2.52,
+   "median": 0,
+   "max": 73
+  },
+  "starterPassive": {
+   "mean": 1.33,
+   "median": 0,
+   "max": 34
+  },
+  "byLine": {
+   "1.10": {
+    "releases": 7,
+    "eggStartersChanged": 1,
+    "rareSlotChanged": 1,
+    "passiveSpeciesChanged": 1,
+    "passiveFormsChanged": 1,
+    "starterPassiveSpeciesChanged": 1,
+    "abAttrClassesAdded": 1,
+    "abAttrClassesRemoved": 0
+   },
+   "1.11": {
+    "releases": 23,
+    "eggStartersChanged": 76,
+    "rareSlotChanged": 32,
+    "passiveSpeciesChanged": 42,
+    "passiveFormsChanged": 52,
+    "starterPassiveSpeciesChanged": 20,
+    "abAttrClassesAdded": 6,
+    "abAttrClassesRemoved": 6
+   },
+   "1.12.0": {
+    "releases": 12,
+    "eggStartersChanged": 145,
+    "rareSlotChanged": 74,
+    "passiveSpeciesChanged": 68,
+    "passiveFormsChanged": 137,
+    "starterPassiveSpeciesChanged": 36,
+    "abAttrClassesAdded": 3,
+    "abAttrClassesRemoved": 2
+   },
+   "1.12.1": {
+    "releases": 4,
+    "eggStartersChanged": 21,
+    "rareSlotChanged": 9,
+    "passiveSpeciesChanged": 5,
+    "passiveFormsChanged": 10,
+    "starterPassiveSpeciesChanged": 4,
+    "abAttrClassesAdded": 2,
+    "abAttrClassesRemoved": 1
+   }
+  }
+ }
+}

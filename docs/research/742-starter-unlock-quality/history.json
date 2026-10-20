@@ -1,0 +1,3089 @@
+{
+  "summary": {
+    "tags": [
+      "1.10.0",
+      "v1.10.1",
+      "v1.10.2",
+      "v1.10.3",
+      "v1.10.4",
+      "v1.10.5",
+      "v1.10.6",
+      "v1.10.7",
+      "v1.11.0",
+      "v1.11.1",
+      "v1.11.2",
+      "v1.11.3",
+      "v1.11.4",
+      "v1.11.5",
+      "v1.11.6",
+      "v1.11.7",
+      "v1.11.8",
+      "v1.11.9",
+      "v1.11.10",
+      "v1.11.11",
+      "v1.11.12",
+      "v1.11.13",
+      "v1.11.14",
+      "v1.11.15",
+      "v1.11.16",
+      "v1.11.17",
+      "v1.11.18",
+      "v1.11.19",
+      "v1.11.20",
+      "v1.11.21",
+      "v1.11.22",
+      "v1.12.0.0",
+      "v1.12.0.1",
+      "v1.12.0.2",
+      "v1.12.0.3",
+      "v1.12.0.4",
+      "v1.12.0.5",
+      "v1.12.0.6",
+      "v1.12.0.7",
+      "v1.12.0.8",
+      "v1.12.0.9",
+      "v1.12.0.10",
+      "v1.12.0.11",
+      "v1.12.1.0",
+      "v1.12.1.1",
+      "v1.12.1.2",
+      "v1.12.1.3"
+    ],
+    "releasesCovered": 46,
+    "releasesWithEggMoveChange": 8,
+    "releasesWithRareSlotChange": 6,
+    "releasesWithPassiveChange": 9,
+    "releasesWithStarterPassiveChange": 8,
+    "releasesWithAbAttrClassChange": 9,
+    "rareSlotChangesPerRelease": {
+      "mean": 2.52,
+      "median": 0,
+      "max": 73
+    },
+    "eggStartersChangedPerRelease": {
+      "mean": 5.28,
+      "median": 0,
+      "max": 141
+    },
+    "passiveSpeciesChangedPerRelease": {
+      "mean": 2.52,
+      "median": 0,
+      "max": 64
+    },
+    "passiveFormsChangedPerRelease": {
+      "mean": 4.35,
+      "median": 0,
+      "max": 132
+    },
+    "starterPassiveSpeciesChangedPerRelease": {
+      "mean": 1.33,
+      "median": 0,
+      "max": 34
+    },
+    "totalsByLine": {
+      "1.10": {
+        "releases": 7,
+        "eggStartersChanged": 1,
+        "rareSlotChanged": 1,
+        "passiveSpeciesChanged": 1,
+        "passiveFormsChanged": 1,
+        "starterPassiveSpeciesChanged": 1,
+        "abAttrClassesAdded": 1,
+        "abAttrClassesRemoved": 0
+      },
+      "1.11": {
+        "releases": 23,
+        "eggStartersChanged": 76,
+        "rareSlotChanged": 32,
+        "passiveSpeciesChanged": 42,
+        "passiveFormsChanged": 52,
+        "starterPassiveSpeciesChanged": 20,
+        "abAttrClassesAdded": 6,
+        "abAttrClassesRemoved": 6
+      },
+      "1.12.0": {
+        "releases": 12,
+        "eggStartersChanged": 145,
+        "rareSlotChanged": 74,
+        "passiveSpeciesChanged": 68,
+        "passiveFormsChanged": 137,
+        "starterPassiveSpeciesChanged": 36,
+        "abAttrClassesAdded": 3,
+        "abAttrClassesRemoved": 2
+      },
+      "1.12.1": {
+        "releases": 4,
+        "eggStartersChanged": 21,
+        "rareSlotChanged": 9,
+        "passiveSpeciesChanged": 5,
+        "passiveFormsChanged": 10,
+        "starterPassiveSpeciesChanged": 4,
+        "abAttrClassesAdded": 2,
+        "abAttrClassesRemoved": 1
+      }
+    },
+    "counts": {
+      "1.10.0": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 226,
+        "abilitiesParsed": 311
+      },
+      "v1.10.1": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 226,
+        "abilitiesParsed": 311
+      },
+      "v1.10.2": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 226,
+        "abilitiesParsed": 311
+      },
+      "v1.10.3": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 226,
+        "abilitiesParsed": 311
+      },
+      "v1.10.4": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 226,
+        "abilitiesParsed": 311
+      },
+      "v1.10.5": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 226,
+        "abilitiesParsed": 311
+      },
+      "v1.10.6": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 226,
+        "abilitiesParsed": 311
+      },
+      "v1.10.7": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 227,
+        "abilitiesParsed": 311
+      },
+      "v1.11.0": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 227,
+        "abilitiesParsed": 311
+      },
+      "v1.11.1": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 227,
+        "abilitiesParsed": 311
+      },
+      "v1.11.2": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 228,
+        "abilitiesParsed": 311
+      },
+      "v1.11.3": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 228,
+        "abilitiesParsed": 311
+      },
+      "v1.11.4": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 227,
+        "abilitiesParsed": 311
+      },
+      "v1.11.5": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 227,
+        "abilitiesParsed": 311
+      },
+      "v1.11.6": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 227,
+        "abilitiesParsed": 311
+      },
+      "v1.11.7": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 225,
+        "abilitiesParsed": 311
+      },
+      "v1.11.8": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 225,
+        "abilitiesParsed": 311
+      },
+      "v1.11.9": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 225,
+        "abilitiesParsed": 311
+      },
+      "v1.11.10": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 225,
+        "abilitiesParsed": 311
+      },
+      "v1.11.11": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 225,
+        "abilitiesParsed": 311
+      },
+      "v1.11.12": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 225,
+        "abilitiesParsed": 311
+      },
+      "v1.11.13": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 225,
+        "abilitiesParsed": 311
+      },
+      "v1.11.14": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 225,
+        "abilitiesParsed": 311
+      },
+      "v1.11.15": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 227,
+        "abilitiesParsed": 311
+      },
+      "v1.11.16": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 227,
+        "abilitiesParsed": 311
+      },
+      "v1.11.17": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 227,
+        "abilitiesParsed": 311
+      },
+      "v1.11.18": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 227,
+        "abilitiesParsed": 311
+      },
+      "v1.11.19": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 227,
+        "abilitiesParsed": 311
+      },
+      "v1.11.20": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 227,
+        "abilitiesParsed": 311
+      },
+      "v1.11.21": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 227,
+        "abilitiesParsed": 311
+      },
+      "v1.11.22": {
+        "eggMoveStarters": 569,
+        "passiveSpecies": 1082,
+        "abAttrClasses": 227,
+        "abilitiesParsed": 311
+      },
+      "v1.12.0.0": {
+        "eggMoveStarters": 571,
+        "passiveSpecies": 1084,
+        "abAttrClasses": 228,
+        "abilitiesParsed": 319
+      },
+      "v1.12.0.1": {
+        "eggMoveStarters": 571,
+        "passiveSpecies": 1084,
+        "abAttrClasses": 228,
+        "abilitiesParsed": 319
+      },
+      "v1.12.0.2": {
+        "eggMoveStarters": 571,
+        "passiveSpecies": 1084,
+        "abAttrClasses": 228,
+        "abilitiesParsed": 319
+      },
+      "v1.12.0.3": {
+        "eggMoveStarters": 571,
+        "passiveSpecies": 1084,
+        "abAttrClasses": 228,
+        "abilitiesParsed": 319
+      },
+      "v1.12.0.4": {
+        "eggMoveStarters": 571,
+        "passiveSpecies": 1084,
+        "abAttrClasses": 228,
+        "abilitiesParsed": 319
+      },
+      "v1.12.0.5": {
+        "eggMoveStarters": 571,
+        "passiveSpecies": 1084,
+        "abAttrClasses": 228,
+        "abilitiesParsed": 319
+      },
+      "v1.12.0.6": {
+        "eggMoveStarters": 571,
+        "passiveSpecies": 1084,
+        "abAttrClasses": 228,
+        "abilitiesParsed": 319
+      },
+      "v1.12.0.7": {
+        "eggMoveStarters": 571,
+        "passiveSpecies": 1084,
+        "abAttrClasses": 228,
+        "abilitiesParsed": 319
+      },
+      "v1.12.0.8": {
+        "eggMoveStarters": 571,
+        "passiveSpecies": 1084,
+        "abAttrClasses": 228,
+        "abilitiesParsed": 319
+      },
+      "v1.12.0.9": {
+        "eggMoveStarters": 571,
+        "passiveSpecies": 1084,
+        "abAttrClasses": 228,
+        "abilitiesParsed": 319
+      },
+      "v1.12.0.10": {
+        "eggMoveStarters": 571,
+        "passiveSpecies": 1084,
+        "abAttrClasses": 228,
+        "abilitiesParsed": 319
+      },
+      "v1.12.0.11": {
+        "eggMoveStarters": 571,
+        "passiveSpecies": 1084,
+        "abAttrClasses": 228,
+        "abilitiesParsed": 319
+      },
+      "v1.12.1.0": {
+        "eggMoveStarters": 571,
+        "passiveSpecies": 1084,
+        "abAttrClasses": 229,
+        "abilitiesParsed": 320
+      },
+      "v1.12.1.1": {
+        "eggMoveStarters": 571,
+        "passiveSpecies": 1084,
+        "abAttrClasses": 229,
+        "abilitiesParsed": 320
+      },
+      "v1.12.1.2": {
+        "eggMoveStarters": 571,
+        "passiveSpecies": 1084,
+        "abAttrClasses": 229,
+        "abilitiesParsed": 320
+      },
+      "v1.12.1.3": {
+        "eggMoveStarters": 571,
+        "passiveSpecies": 1084,
+        "abAttrClasses": 229,
+        "abilitiesParsed": 320
+      }
+    },
+    "watchedAttrPresence": {
+      "AlliedFieldDamageReductionAbAttr": {
+        "presentAt": "47/47",
+        "firstSeen": "1.10.0",
+        "lastSeen": "v1.12.1.3",
+        "absentAt": []
+      },
+      "AllyMoveCategoryPowerBoostAbAttr": {
+        "presentAt": "47/47",
+        "firstSeen": "1.10.0",
+        "lastSeen": "v1.12.1.3",
+        "absentAt": []
+      },
+      "PostSummonWeatherChangeAbAttr": {
+        "presentAt": "47/47",
+        "firstSeen": "1.10.0",
+        "lastSeen": "v1.12.1.3",
+        "absentAt": []
+      },
+      "PostSummonTerrainChangeAbAttr": {
+        "presentAt": "47/47",
+        "firstSeen": "1.10.0",
+        "lastSeen": "v1.12.1.3",
+        "absentAt": []
+      },
+      "TypeImmunityAbAttr": {
+        "presentAt": "47/47",
+        "firstSeen": "1.10.0",
+        "lastSeen": "v1.12.1.3",
+        "absentAt": []
+      },
+      "TypeImmunityHealAbAttr": {
+        "presentAt": "47/47",
+        "firstSeen": "1.10.0",
+        "lastSeen": "v1.12.1.3",
+        "absentAt": []
+      },
+      "RunSuccessAbAttr": {
+        "presentAt": "47/47",
+        "firstSeen": "1.10.0",
+        "lastSeen": "v1.12.1.3",
+        "absentAt": []
+      },
+      "StatMultiplierAbAttr": {
+        "presentAt": "47/47",
+        "firstSeen": "1.10.0",
+        "lastSeen": "v1.12.1.3",
+        "absentAt": []
+      },
+      "UngroundedAbAttr": {
+        "presentAt": "4/47",
+        "firstSeen": "v1.12.1.0",
+        "lastSeen": "v1.12.1.3",
+        "absentAt": [
+          "1.10.0",
+          "v1.10.1",
+          "v1.10.2",
+          "v1.10.3",
+          "v1.10.4",
+          "v1.10.5",
+          "v1.10.6",
+          "v1.10.7",
+          "v1.11.0",
+          "v1.11.1",
+          "v1.11.2",
+          "v1.11.3",
+          "v1.11.4",
+          "v1.11.5",
+          "v1.11.6",
+          "v1.11.7",
+          "v1.11.8",
+          "v1.11.9",
+          "v1.11.10",
+          "v1.11.11",
+          "v1.11.12",
+          "v1.11.13",
+          "v1.11.14",
+          "v1.11.15",
+          "v1.11.16",
+          "v1.11.17",
+          "v1.11.18",
+          "v1.11.19",
+          "v1.11.20",
+          "v1.11.21",
+          "v1.11.22",
+          "v1.12.0.0",
+          "v1.12.0.1",
+          "v1.12.0.2",
+          "v1.12.0.3",
+          "v1.12.0.4",
+          "v1.12.0.5",
+          "v1.12.0.6",
+          "v1.12.0.7",
+          "v1.12.0.8",
+          "v1.12.0.9",
+          "v1.12.0.10",
+          "v1.12.0.11"
+        ]
+      }
+    },
+    "watchedAbilityAttrHistory": {
+      "FRIEND_GUARD": [
+        {
+          "from": "1.10.0",
+          "attrs": "AlliedFieldDamageReductionAbAttr"
+        }
+      ],
+      "POWER_SPOT": [
+        {
+          "from": "1.10.0",
+          "attrs": "AllyMoveCategoryPowerBoostAbAttr"
+        }
+      ],
+      "PLUS": [
+        {
+          "from": "1.10.0",
+          "attrs": "StatMultiplierAbAttr"
+        }
+      ],
+      "MINUS": [
+        {
+          "from": "1.10.0",
+          "attrs": "StatMultiplierAbAttr"
+        }
+      ],
+      "DRIZZLE": [
+        {
+          "from": "1.10.0",
+          "attrs": "PostBiomeChangeWeatherChangeAbAttr, PostSummonWeatherChangeAbAttr"
+        },
+        {
+          "from": "v1.11.15",
+          "attrs": "AiMovegenMoveStatsAbAttr, PostBiomeChangeWeatherChangeAbAttr, PostSummonWeatherChangeAbAttr"
+        }
+      ],
+      "ELECTRIC_SURGE": [
+        {
+          "from": "1.10.0",
+          "attrs": "PostBiomeChangeTerrainChangeAbAttr, PostSummonTerrainChangeAbAttr"
+        },
+        {
+          "from": "v1.11.15",
+          "attrs": "PostBiomeChangeTerrainChangeAbAttr, PostSummonTerrainChangeAbAttr, SummonTerrainAiMovegenMoveStatsAbAttr"
+        }
+      ],
+      "VOLT_ABSORB": [
+        {
+          "from": "1.10.0",
+          "attrs": "TypeImmunityHealAbAttr"
+        }
+      ],
+      "WATER_ABSORB": [
+        {
+          "from": "1.10.0",
+          "attrs": "TypeImmunityHealAbAttr"
+        }
+      ],
+      "LEVITATE": [
+        {
+          "from": "1.10.0",
+          "attrs": "AttackTypeImmunityAbAttr"
+        },
+        {
+          "from": "v1.12.1.0",
+          "attrs": "UngroundedAbAttr"
+        }
+      ],
+      "RUN_AWAY": [
+        {
+          "from": "1.10.0",
+          "attrs": "RunSuccessAbAttr"
+        }
+      ],
+      "AURA_BREAK": [
+        {
+          "from": "1.10.0",
+          "attrs": "FieldMoveTypePowerBoostAbAttr, PostSummonMessageAbAttr"
+        }
+      ],
+      "CLOUD_NINE": [
+        {
+          "from": "1.10.0",
+          "attrs": "PostFaintUnsuppressedWeatherFormChangeAbAttr, PostSummonUnnamedMessageAbAttr, PostSummonWeatherSuppressedFormChangeAbAttr, SuppressWeatherEffectAbAttr"
+        }
+      ],
+      "MAGIC_BOUNCE": [
+        {
+          "from": "1.10.0",
+          "attrs": "ReflectStatusMoveAbAttr"
+        }
+      ],
+      "BATTERY": [
+        {
+          "from": "1.10.0",
+          "attrs": "AllyMoveCategoryPowerBoostAbAttr"
+        }
+      ],
+      "STEELY_SPIRIT": [
+        {
+          "from": "1.10.0",
+          "attrs": "UserFieldMoveTypePowerBoostAbAttr"
+        }
+      ],
+      "FLOWER_GIFT": [
+        {
+          "from": "1.10.0",
+          "attrs": "AllyStatMultiplierAbAttr, NoFusionAbilityAbAttr, PostSummonFormChangeByWeatherAbAttr, PostWeatherChangeFormChangeAbAttr, StatMultiplierAbAttr"
+        }
+      ]
+    },
+    "sourceFiles": {
+      "1.10.0": {
+        "eggMoves": "src/data/balance/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ability.ts"
+        ]
+      },
+      "v1.10.1": {
+        "eggMoves": "src/data/balance/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ability.ts"
+        ]
+      },
+      "v1.10.2": {
+        "eggMoves": "src/data/balance/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ability.ts"
+        ]
+      },
+      "v1.10.3": {
+        "eggMoves": "src/data/balance/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ability.ts"
+        ]
+      },
+      "v1.10.4": {
+        "eggMoves": "src/data/balance/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ability.ts"
+        ]
+      },
+      "v1.10.5": {
+        "eggMoves": "src/data/balance/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ability.ts"
+        ]
+      },
+      "v1.10.6": {
+        "eggMoves": "src/data/balance/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ability.ts"
+        ]
+      },
+      "v1.10.7": {
+        "eggMoves": "src/data/balance/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ability.ts"
+        ]
+      },
+      "v1.11.0": {
+        "eggMoves": "src/data/balance/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ability.ts"
+        ]
+      },
+      "v1.11.1": {
+        "eggMoves": "src/data/balance/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ability.ts"
+        ]
+      },
+      "v1.11.2": {
+        "eggMoves": "src/data/balance/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ability.ts"
+        ]
+      },
+      "v1.11.3": {
+        "eggMoves": "src/data/balance/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ability.ts"
+        ]
+      },
+      "v1.11.4": {
+        "eggMoves": "src/data/balance/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ability.ts"
+        ]
+      },
+      "v1.11.5": {
+        "eggMoves": "src/data/balance/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ability.ts"
+        ]
+      },
+      "v1.11.6": {
+        "eggMoves": "src/data/balance/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ability.ts"
+        ]
+      },
+      "v1.11.7": {
+        "eggMoves": "src/data/balance/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.11.8": {
+        "eggMoves": "src/data/balance/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.11.9": {
+        "eggMoves": "src/data/balance/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.11.10": {
+        "eggMoves": "src/data/balance/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.11.11": {
+        "eggMoves": "src/data/balance/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.11.12": {
+        "eggMoves": "src/data/balance/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.11.13": {
+        "eggMoves": "src/data/balance/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.11.14": {
+        "eggMoves": "src/data/balance/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.11.15": {
+        "eggMoves": "src/data/balance/moves/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.11.16": {
+        "eggMoves": "src/data/balance/moves/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.11.17": {
+        "eggMoves": "src/data/balance/moves/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.11.18": {
+        "eggMoves": "src/data/balance/moves/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.11.19": {
+        "eggMoves": "src/data/balance/moves/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.11.20": {
+        "eggMoves": "src/data/balance/moves/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.11.21": {
+        "eggMoves": "src/data/balance/moves/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.11.22": {
+        "eggMoves": "src/data/balance/moves/egg-moves.ts",
+        "passives": "src/data/balance/passives.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.12.0.0": {
+        "eggMoves": "src/data/balance/moves/egg-moves.ts",
+        "passives": "src/data/balance/species/generation-*.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.12.0.1": {
+        "eggMoves": "src/data/balance/moves/egg-moves.ts",
+        "passives": "src/data/balance/species/generation-*.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.12.0.2": {
+        "eggMoves": "src/data/balance/moves/egg-moves.ts",
+        "passives": "src/data/balance/species/generation-*.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.12.0.3": {
+        "eggMoves": "src/data/balance/moves/egg-moves.ts",
+        "passives": "src/data/balance/species/generation-*.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.12.0.4": {
+        "eggMoves": "src/data/balance/moves/egg-moves.ts",
+        "passives": "src/data/balance/species/generation-*.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.12.0.5": {
+        "eggMoves": "src/data/balance/moves/egg-moves.ts",
+        "passives": "src/data/balance/species/generation-*.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.12.0.6": {
+        "eggMoves": "src/data/balance/moves/egg-moves.ts",
+        "passives": "src/data/balance/species/generation-*.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.12.0.7": {
+        "eggMoves": "src/data/balance/moves/egg-moves.ts",
+        "passives": "src/data/balance/species/generation-*.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.12.0.8": {
+        "eggMoves": "src/data/balance/moves/egg-moves.ts",
+        "passives": "src/data/balance/species/generation-*.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.12.0.9": {
+        "eggMoves": "src/data/balance/moves/egg-moves.ts",
+        "passives": "src/data/balance/species/generation-*.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.12.0.10": {
+        "eggMoves": "src/data/balance/moves/egg-moves.ts",
+        "passives": "src/data/balance/species/generation-*.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.12.0.11": {
+        "eggMoves": "src/data/balance/moves/egg-moves.ts",
+        "passives": "src/data/balance/species/generation-*.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.12.1.0": {
+        "eggMoves": "src/data/balance/moves/egg-moves.ts",
+        "passives": "src/data/balance/species/generation-*.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.12.1.1": {
+        "eggMoves": "src/data/balance/moves/egg-moves.ts",
+        "passives": "src/data/balance/species/generation-*.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.12.1.2": {
+        "eggMoves": "src/data/balance/moves/egg-moves.ts",
+        "passives": "src/data/balance/species/generation-*.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      },
+      "v1.12.1.3": {
+        "eggMoves": "src/data/balance/moves/egg-moves.ts",
+        "passives": "src/data/balance/species/generation-*.ts",
+        "abilities": [
+          "src/data/abilities/ab-attrs.ts",
+          "src/data/abilities/ability.ts",
+          "src/data/abilities/init-abilities.ts"
+        ]
+      }
+    }
+  },
+  "pairs": [
+    {
+      "from": "1.10.0",
+      "to": "v1.10.1",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.10.1",
+      "to": "v1.10.2",
+      "eggMoves": {
+        "startersChanged": 1,
+        "rareSlotChanged": 1,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [
+          "CLAMPERL: STEAM_ERUPTION → BOUNCY_BUBBLE"
+        ],
+        "startersChangedList": [
+          "CLAMPERL"
+        ]
+      },
+      "passives": {
+        "speciesChanged": 1,
+        "formsChanged": 1,
+        "added": [],
+        "removed": [],
+        "changes": [
+          "CLAMPERL/0: DAUNTLESS_SHIELD → OVERCOAT"
+        ]
+      },
+      "starterPassives": {
+        "speciesChanged": 1,
+        "formsChanged": 1,
+        "added": [],
+        "removed": [],
+        "changes": [
+          "CLAMPERL/0: DAUNTLESS_SHIELD → OVERCOAT"
+        ]
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.10.2",
+      "to": "v1.10.3",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.10.3",
+      "to": "v1.10.4",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.10.4",
+      "to": "v1.10.5",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.10.5",
+      "to": "v1.10.6",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.10.6",
+      "to": "v1.10.7",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [
+          "CancelInteractionAbAttr"
+        ],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.10.7",
+      "to": "v1.11.0",
+      "eggMoves": {
+        "startersChanged": 34,
+        "rareSlotChanged": 14,
+        "commonSlotOnly": 20,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [
+          "MAGNEMITE: THUNDERCLAP → ICE_BEAM",
+          "MUNCHLAX: EXTREME_SPEED → SLACK_OFF",
+          "SNIVY: FLEUR_CANNON → DRACO_METEOR",
+          "SCRAGGY: VICTORY_DANCE → THUNDEROUS_KICK",
+          "RUFFLET: BOLT_BEAK → NO_RETREAT",
+          "LARVESTA: HYDRO_STEAM → SANDSEAR_STORM",
+          "LITLEO: BLUE_FLARE → BOOMBURST",
+          "GRUBBIN: THUNDERCLAP → ICE_BEAM",
+          "MAREANIE: LEECH_SEED → FLIP_TURN",
+          "STUFFUL: RAGE_FIST → CRUSH_GRIP",
+          "TAPU_KOKO: BOLT_STRIKE → TRIPLE_AXEL",
+          "DURALUDON: TACHYON_CUTTER → CORE_ENFORCER",
+          "HISUI_VOLTORB: ELECTRO_DRIFT → MIND_BLOWN",
+          "SANDY_SHOCKS: THUNDERCLAP → ICE_BEAM"
+        ],
+        "startersChangedList": [
+          "PIDGEY",
+          "SPEAROW",
+          "MAGNEMITE",
+          "SHELLDER",
+          "VOLTORB",
+          "AERODACTYL",
+          "CLEFFA",
+          "MAREEP",
+          "MURKROW",
+          "GLIGAR",
+          "TREECKO",
+          "CHIMCHAR",
+          "MUNCHLAX",
+          "SNIVY",
+          "SCRAGGY",
+          "RUFFLET",
+          "LARVESTA",
+          "LITLEO",
+          "BINACLE",
+          "ETERNAL_FLOETTE",
+          "GRUBBIN",
+          "MAREANIE",
+          "STUFFUL",
+          "TAPU_KOKO",
+          "MAGEARNA",
+          "BLACEPHALON",
+          "ROLYCOLY",
+          "FALINKS",
+          "MORPEKO",
+          "DURALUDON",
+          "HISUI_VOLTORB",
+          "SQUAWKABILLY",
+          "SANDY_SHOCKS",
+          "PALDEA_TAUROS"
+        ]
+      },
+      "passives": {
+        "speciesChanged": 18,
+        "formsChanged": 20,
+        "added": [],
+        "removed": [],
+        "changes": [
+          "SQUIRTLE/0: DAUNTLESS_SHIELD → BULLETPROOF",
+          "WARTORTLE/0: DAUNTLESS_SHIELD → BULLETPROOF",
+          "BLASTOISE/0: DAUNTLESS_SHIELD → BULLETPROOF",
+          "SPEAROW/0: MOXIE → SPEED_BOOST",
+          "FEAROW/0: MOXIE → SPEED_BOOST",
+          "GASTLY/0: SHADOW_SHIELD → PRANKSTER",
+          "HAUNTER/0: SHADOW_SHIELD → PRANKSTER",
+          "GENGAR/0: SHADOW_SHIELD → LEVITATE",
+          "GENGAR/2: GLUTTONY → REGENERATOR",
+          "SCRAGGY/0: PROTEAN → UNBURDEN",
+          "SCRAFTY/0: PROTEAN → UNBURDEN",
+          "VOLCARONA/0: DROUGHT → FLASH_FIRE",
+          "FROAKIE/0: TECHNICIAN → STAKEOUT",
+          "FROGADIER/0: TECHNICIAN → STAKEOUT",
+          "GRENINJA/0: TECHNICIAN → STAKEOUT",
+          "LITLEO/0: BEAST_BOOST → DROUGHT",
+          "PYROAR/0: BEAST_BOOST → DROUGHT",
+          "DURALUDON/1: UNAWARE → FILTER",
+          "HISUI_VOLTORB/0: TRANSISTOR → MAGIC_GUARD",
+          "HISUI_ELECTRODE/0: TRANSISTOR → MAGIC_GUARD"
+        ]
+      },
+      "starterPassives": {
+        "speciesChanged": 7,
+        "formsChanged": 8,
+        "added": [],
+        "removed": [],
+        "changes": [
+          "SQUIRTLE/0: DAUNTLESS_SHIELD → BULLETPROOF",
+          "SPEAROW/0: MOXIE → SPEED_BOOST",
+          "GASTLY/0: SHADOW_SHIELD → PRANKSTER",
+          "SCRAGGY/0: PROTEAN → UNBURDEN",
+          "FROAKIE/0: TECHNICIAN → STAKEOUT",
+          "LITLEO/0: BEAST_BOOST → DROUGHT",
+          "DURALUDON/1: UNAWARE → FILTER",
+          "HISUI_VOLTORB/0: TRANSISTOR → MAGIC_GUARD"
+        ]
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 1,
+        "abilitiesChanged": [
+          "SUPREME_OVERLORD"
+        ]
+      }
+    },
+    {
+      "from": "v1.11.0",
+      "to": "v1.11.1",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.11.1",
+      "to": "v1.11.2",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 1,
+        "formsChanged": 1,
+        "added": [],
+        "removed": [],
+        "changes": [
+          "UXIE/0: ILLUSION → MAGIC_BOUNCE"
+        ]
+      },
+      "starterPassives": {
+        "speciesChanged": 1,
+        "formsChanged": 1,
+        "added": [],
+        "removed": [],
+        "changes": [
+          "UXIE/0: ILLUSION → MAGIC_BOUNCE"
+        ]
+      },
+      "abAttrs": {
+        "added": [
+          "ChangeMovePriorityInBracketAbAttr"
+        ],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 2,
+        "abilitiesChanged": [
+          "STALL",
+          "MYCELIUM_MIGHT"
+        ]
+      }
+    },
+    {
+      "from": "v1.11.2",
+      "to": "v1.11.3",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [
+          "MoveDamageBoostAbAttr"
+        ],
+        "removed": [
+          "DamageBoostAbAttr"
+        ],
+        "abilitiesWithChangedAttrSet": 2,
+        "abilitiesChanged": [
+          "TINTED_LENS",
+          "PARENTAL_BOND"
+        ]
+      }
+    },
+    {
+      "from": "v1.11.3",
+      "to": "v1.11.4",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [
+          "PreSwitchOutClearWeatherAbAttr"
+        ],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.11.4",
+      "to": "v1.11.5",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.11.5",
+      "to": "v1.11.6",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.11.6",
+      "to": "v1.11.7",
+      "eggMoves": {
+        "startersChanged": 41,
+        "rareSlotChanged": 18,
+        "commonSlotOnly": 23,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [
+          "AERODACTYL: SWORDS_DANCE → DRAGON_ASCENT",
+          "LUGIA: OBLIVION_WING → LUMINA_CRASH",
+          "HO_OH: BOLT_BEAK → DRAGON_DANCE",
+          "RAYQUAZA: OBLIVION_WING → DRAGON_DARTS",
+          "CRANIDOS: SHIFT_GEAR → DRAGON_DANCE",
+          "CHERUBI: FLOWER_TRICK → STRENGTH_SAP",
+          "STUNKY: DIRE_CLAW → PARTING_SHOT",
+          "SCRAGGY: THUNDEROUS_KICK → TRIPLE_AXEL",
+          "FURFROU: MULTI_ATTACK → TIDY_UP",
+          "HOOPA: SHELL_SMASH → PHOTON_GEYSER",
+          "MUDBRAY: THOUSAND_WAVES → SHORE_UP",
+          "ZERAORA: TRIPLE_AXEL → SWORDS_DANCE",
+          "SNOM: SPORE → EARTH_POWER",
+          "CAPSAKID: TORCH_SONG → APPLE_ACID",
+          "TINKATINK: SHIFT_GEAR → OBSTRUCT",
+          "FLAMIGO: VICTORY_DANCE → AQUA_STEP",
+          "IRON_THORNS: PLASMA_FISTS → DIAMOND_STORM",
+          "IRON_VALIANT: MAGICAL_TORQUE → NO_RETREAT"
+        ],
+        "startersChangedList": [
+          "VULPIX",
+          "TANGELA",
+          "TAUROS",
+          "AERODACTYL",
+          "CHIKORITA",
+          "HERACROSS",
+          "SKARMORY",
+          "LUGIA",
+          "HO_OH",
+          "MAKUHITA",
+          "RAYQUAZA",
+          "STARLY",
+          "CRANIDOS",
+          "CHERUBI",
+          "STUNKY",
+          "SPIRITOMB",
+          "SCRAGGY",
+          "FURFROU",
+          "HAWLUCHA",
+          "CARBINK",
+          "DIANCIE",
+          "HOOPA",
+          "VOLCANION",
+          "ROWLET",
+          "MUDBRAY",
+          "DHELMISE",
+          "TAPU_BULU",
+          "GUZZLORD",
+          "MAGEARNA",
+          "ZERAORA",
+          "BLIPBUG",
+          "APPLIN",
+          "SNOM",
+          "CUFANT",
+          "GLASTRIER",
+          "CAPSAKID",
+          "TINKATINK",
+          "FLAMIGO",
+          "IRON_THORNS",
+          "TING_LU",
+          "… 1 more"
+        ]
+      },
+      "passives": {
+        "speciesChanged": 22,
+        "formsChanged": 30,
+        "added": [],
+        "removed": [],
+        "changes": [
+          "CHARMELEON/0: BEAST_BOOST → SHEER_FORCE",
+          "CHARIZARD/0: BEAST_BOOST → BATTLE_BOND",
+          "TANGELA/0: SEED_SOWER → TANGLING_HAIR",
+          "TANGROWTH/0: SEED_SOWER → TANGLING_HAIR",
+          "TAUROS/0: STAMINA → MOXIE",
+          "SKARMORY/0: STAMINA → TOUGH_CLAWS",
+          "HO_OH/0: MAGIC_GUARD → SERENE_GRACE",
+          "TAILLOW/0: AERILATE → FLARE_BOOST",
+          "SWELLOW/0: AERILATE → FLARE_BOOST",
+          "CLAMPERL/0: OVERCOAT → COMATOSE",
+          "BELDUM/0: LEVITATE → ROCK_HEAD",
+          "METANG/0: LEVITATE → IRON_FIST",
+          "METAGROSS/0: LEVITATE → IRON_FIST",
+          "CHIMCHAR/0: UNNERVE → DEFIANT",
+          "MONFERNO/0: BEAST_BOOST → DEFIANT",
+          "INFERNAPE/0: BEAST_BOOST → BATTLE_BOND",
+          "CHERRIM/0: ORICHALCUM_PULSE → DROUGHT",
+          "CHERRIM/1: ORICHALCUM_PULSE → CHLOROPHYLL",
+          "ABOMASNOW/1: SEED_SOWER → GRASSY_SURGE",
+          "HEATRAN/0: EARTH_EATER → FILTER",
+          "DRAGALGE/0: DRAGONS_MAW → REGENERATOR",
+          "ZYGARDE/0: UNNERVE → TERAFORM_ZERO",
+          "ZYGARDE/1: MOXIE → TERAFORM_ZERO",
+          "ZYGARDE/2: UNNERVE → TERAFORM_ZERO",
+          "ZYGARDE/3: MOXIE → TERAFORM_ZERO",
+          "ZYGARDE/4: ADAPTABILITY → TERAFORM_ZERO",
+          "ZYGARDE/5: ADAPTABILITY → TERAFORM_ZERO",
+          "MAGEARNA/0: STEELY_SPIRIT → MIRROR_ARMOR",
+          "MAGEARNA/1: STEELY_SPIRIT → MIRROR_ARMOR",
+          "ELDEGOSS/0: GRASSY_SURGE → SEED_SOWER"
+        ]
+      },
+      "starterPassives": {
+        "speciesChanged": 11,
+        "formsChanged": 17,
+        "added": [],
+        "removed": [],
+        "changes": [
+          "TANGELA/0: SEED_SOWER → TANGLING_HAIR",
+          "TAUROS/0: STAMINA → MOXIE",
+          "SKARMORY/0: STAMINA → TOUGH_CLAWS",
+          "HO_OH/0: MAGIC_GUARD → SERENE_GRACE",
+          "TAILLOW/0: AERILATE → FLARE_BOOST",
+          "CLAMPERL/0: OVERCOAT → COMATOSE",
+          "BELDUM/0: LEVITATE → ROCK_HEAD",
+          "CHIMCHAR/0: UNNERVE → DEFIANT",
+          "HEATRAN/0: EARTH_EATER → FILTER",
+          "ZYGARDE/0: UNNERVE → TERAFORM_ZERO",
+          "ZYGARDE/1: MOXIE → TERAFORM_ZERO",
+          "ZYGARDE/2: UNNERVE → TERAFORM_ZERO",
+          "ZYGARDE/3: MOXIE → TERAFORM_ZERO",
+          "ZYGARDE/4: ADAPTABILITY → TERAFORM_ZERO",
+          "ZYGARDE/5: ADAPTABILITY → TERAFORM_ZERO",
+          "MAGEARNA/0: STEELY_SPIRIT → MIRROR_ARMOR",
+          "MAGEARNA/1: STEELY_SPIRIT → MIRROR_ARMOR"
+        ]
+      },
+      "abAttrs": {
+        "added": [
+          "IceFaceFormChangeAbAttr",
+          "PostWeatherChangeAddBattlerTagAbAttr"
+        ],
+        "removed": [
+          "ClearTerrainAbAttr",
+          "ClearWeatherAbAttr",
+          "PostTeraFormChangeStatChangeAbAttr",
+          "PostWeatherChangeAddBattlerTagAttr"
+        ],
+        "abilitiesWithChangedAttrSet": 14,
+        "abilitiesChanged": [
+          "NORMALIZE",
+          "REFRIGERATE",
+          "PIXILATE",
+          "AERILATE",
+          "GALVANIZE",
+          "DISGUISE",
+          "BATTLE_BOND",
+          "ICE_FACE",
+          "PROTOSYNTHESIS",
+          "EMBODY_ASPECT_TEAL",
+          "EMBODY_ASPECT_WELLSPRING",
+          "EMBODY_ASPECT_HEARTHFLAME",
+          "EMBODY_ASPECT_CORNERSTONE",
+          "TERAFORM_ZERO"
+        ]
+      }
+    },
+    {
+      "from": "v1.11.7",
+      "to": "v1.11.8",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.11.8",
+      "to": "v1.11.9",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.11.9",
+      "to": "v1.11.10",
+      "eggMoves": {
+        "startersChanged": 1,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 1,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": [
+          "LUGIA"
+        ]
+      },
+      "passives": {
+        "speciesChanged": 1,
+        "formsChanged": 1,
+        "added": [],
+        "removed": [],
+        "changes": [
+          "DRACOVISH/0: THERMAL_EXCHANGE → MOLD_BREAKER"
+        ]
+      },
+      "starterPassives": {
+        "speciesChanged": 1,
+        "formsChanged": 1,
+        "added": [],
+        "removed": [],
+        "changes": [
+          "DRACOVISH/0: THERMAL_EXCHANGE → MOLD_BREAKER"
+        ]
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.11.10",
+      "to": "v1.11.11",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.11.11",
+      "to": "v1.11.12",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.11.12",
+      "to": "v1.11.13",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.11.13",
+      "to": "v1.11.14",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.11.14",
+      "to": "v1.11.15",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [
+          "AiMovegenMoveStatsAbAttr",
+          "SummonTerrainAiMovegenMoveStatsAbAttr"
+        ],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 27,
+        "abilitiesChanged": [
+          "DRIZZLE",
+          "DAMP",
+          "COMPOUND_EYES",
+          "HUGE_POWER",
+          "HUSTLE",
+          "DROUGHT",
+          "PURE_POWER",
+          "SKILL_LINK",
+          "SNIPER",
+          "SNOW_WARNING",
+          "ANALYTIC",
+          "VICTORY_STAR",
+          "PARENTAL_BOND",
+          "PRIMORDIAL_SEA",
+          "DESOLATE_LAND",
+          "ELECTRIC_SURGE",
+          "PSYCHIC_SURGE",
+          "MISTY_SURGE",
+          "GRASSY_SURGE",
+          "INTREPID_SWORD",
+          "DAUNTLESS_SHIELD",
+          "GORILLA_TACTICS",
+          "SWORD_OF_RUIN",
+          "BEADS_OF_RUIN",
+          "ORICHALCUM_PULSE",
+          "HADRON_ENGINE",
+          "POISON_PUPPETEER"
+        ]
+      }
+    },
+    {
+      "from": "v1.11.15",
+      "to": "v1.11.16",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.11.16",
+      "to": "v1.11.17",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.11.17",
+      "to": "v1.11.18",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.11.18",
+      "to": "v1.11.19",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 1,
+        "abilitiesChanged": [
+          "ZERO_TO_HERO"
+        ]
+      }
+    },
+    {
+      "from": "v1.11.19",
+      "to": "v1.11.20",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.11.20",
+      "to": "v1.11.21",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.11.21",
+      "to": "v1.11.22",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.11.22",
+      "to": "v1.12.0.0",
+      "eggMoves": {
+        "startersChanged": 141,
+        "rareSlotChanged": 73,
+        "commonSlotOnly": 68,
+        "added": [
+          "BATTLE_BOND_GRENINJA",
+          "HISUI_BASCULIN"
+        ],
+        "removed": [],
+        "rareSlotChanges": [
+          "BULBASAUR: MATCHA_GOTCHA → SAPPY_SEED",
+          "SPEAROW: TRIPLE_ARROWS → HYPER_DRILL",
+          "PARAS: SAPPY_SEED → BITTER_BLADE",
+          "BELLSPROUT: VICTORY_DANCE → SAPPY_SEED",
+          "PONYTA: VOLT_TACKLE → VICTORY_DANCE",
+          "DODUO: TRIPLE_ARROWS → HYPER_DRILL",
+          "SHELLDER: BONE_RUSH → BULLET_SEED",
+          "LICKITUNG: MAGICAL_TORQUE → OBSTRUCT",
+          "STARYU: MYSTICAL_POWER → BOUNCY_BUBBLE",
+          "ZAPDOS: ELECTRO_SHOT → BLEAKWIND_STORM",
+          "MOLTRES: TORCH_SONG → AEROBLAST",
+          "DRATINI: GIGATON_HAMMER → CRUSH_GRIP",
+          "PICHU: AURA_WHEEL → TRIPLE_AXEL",
+          "CLEFFA: LIGHT_OF_RUIN → LUNAR_BLESSING",
+          "WOOPER: SURGING_STRIKES → TRIPLE_DIVE",
+          "SHUCKLE: SALT_CURE → PAIN_SPLIT",
+          "HOUNDOUR: ARMOR_CANNON → FIERY_WRATH",
+          "STANTLER: BOOMBURST → HIGH_JUMP_KICK",
+          "ENTEI: PYRO_BALL → DRAGON_DANCE",
+          "RALTS: BOOMBURST → NO_RETREAT",
+          "SABLEYE: SALT_CURE → TOPSY_TURVY",
+          "ARON: SALT_CURE → SHORE_UP",
+          "LUNATONE: LUMINA_CRASH → DARK_VOID",
+          "BARBOACH: SURGING_STRIKES → TRIPLE_DIVE",
+          "STARLY: EXTREME_SPEED → SUPERPOWER",
+          "COMBEE: VICTORY_DANCE → SPORE",
+          "BUIZEL: SURGING_STRIKES → TRIPLE_DIVE",
+          "BUNEARY: SWORDS_DANCE → LOVELY_KISS",
+          "CHINGLING: BOOMBURST → TORCH_SONG",
+          "BRONZOR: LUMINA_CRASH → PSYSHIELD_BASH",
+          "RIOLU: SUNSTEEL_STRIKE → TACHYON_CUTTER",
+          "MANTYKE: OBLIVION_WING → BOUNCY_BUBBLE",
+          "SNOVER: MATCHA_GOTCHA → SAPPY_SEED",
+          "DIALGA: MAKE_IT_RAIN → TACHYON_CUTTER",
+          "DARKRAI: MAKE_IT_RAIN → FIERY_WRATH",
+          "TEPIG: VICTORY_DANCE → NO_RETREAT",
+          "DRILBUR: THOUSAND_ARROWS → HEADLONG_RUSH",
+          "ARCHEN: MIGHTY_CLEAVE → COLLISION_COURSE",
+          "TYNAMO: AURA_WHEEL → PLASMA_FISTS",
+          "LITWICK: TORCH_SONG → BLUE_FLARE",
+          "… 33 more"
+        ],
+        "startersChangedList": [
+          "BULBASAUR",
+          "SQUIRTLE",
+          "WEEDLE",
+          "RATTATA",
+          "SPEAROW",
+          "EKANS",
+          "SANDSHREW",
+          "NIDORAN_M",
+          "PARAS",
+          "BELLSPROUT",
+          "PONYTA",
+          "DODUO",
+          "SHELLDER",
+          "GASTLY",
+          "ONIX",
+          "LICKITUNG",
+          "TANGELA",
+          "GOLDEEN",
+          "STARYU",
+          "SCYTHER",
+          "PORYGON",
+          "ZAPDOS",
+          "MOLTRES",
+          "DRATINI",
+          "CHIKORITA",
+          "TOTODILE",
+          "PICHU",
+          "CLEFFA",
+          "WOOPER",
+          "GIRAFARIG",
+          "GLIGAR",
+          "SHUCKLE",
+          "TEDDIURSA",
+          "SKARMORY",
+          "HOUNDOUR",
+          "PHANPY",
+          "STANTLER",
+          "ELEKID",
+          "ENTEI",
+          "HO_OH",
+          "… 101 more"
+        ]
+      },
+      "passives": {
+        "speciesChanged": 64,
+        "formsChanged": 132,
+        "added": [
+          "BATTLE_BOND_GRENINJA",
+          "HISUI_BASCULIN"
+        ],
+        "removed": [],
+        "changes": [
+          "WEEDLE/0: POISON_TOUCH → POISON_POINT",
+          "PIDGEY/0: SHEER_FORCE → GALE_WINGS",
+          "PIDGEOTTO/0: SHEER_FORCE → GALE_WINGS",
+          "PIKACHU/0: ELECTRIC_SURGE → TRANSISTOR",
+          "RAICHU/0: ELECTRIC_SURGE → TRANSISTOR",
+          "RAICHU/1: - → MAGIC_GUARD",
+          "RAICHU/2: - → TERAVOLT",
+          "SANDSHREW/0: TOUGH_CLAWS → SAND_STREAM",
+          "SANDSLASH/0: TOUGH_CLAWS → SAND_STREAM",
+          "CLEFABLE/0: ANALYTIC → NEUROFORCE",
+          "CLEFABLE/1: - → UNAWARE",
+          "VICTREEBEL/1: - → TOXIC_DEBRIS",
+          "PONYTA/0: MAGIC_GUARD → FIRE_MANE",
+          "RAPIDASH/0: MAGIC_GUARD → FIRE_MANE",
+          "LICKITUNG/0: CHEEK_POUCH → POISON_HEAL",
+          "STARMIE/1: - → REGENERATOR",
+          "DRAGONITE/1: - → AERILATE",
+          "MEGANIUM/1: - → THICK_FAT",
+          "FERALIGATR/1: - → STRONG_JAW",
+          "PICHU/0: ELECTRIC_SURGE → TRANSISTOR",
+          "SKARMORY/1: - → TOUGH_CLAWS",
+          "WURMPLE/0: GLUTTONY → POISON_POINT",
+          "CHIMECHO/1: - → PUNK_ROCK",
+          "ABSOL/0: SHARPNESS → TOUGH_CLAWS",
+          "ABSOL/1: SHARPNESS → SHADOW_SHIELD",
+          "ABSOL/2: - → SHARPNESS",
+          "SNORUNT/0: SNOW_WARNING → OVERCOAT",
+          "GLALIE/0: SNOW_WARNING → INTIMIDATE",
+          "GLALIE/1: SNOW_WARNING → MOODY",
+          "SALAMENCE/0: GALE_WINGS → OWN_TEMPO",
+          "STARAPTOR/1: - → ROCK_HEAD",
+          "LOPUNNY/1: ADAPTABILITY → SUPER_LUCK",
+          "GARCHOMP/1: SAND_RUSH → MOLD_BREAKER",
+          "GARCHOMP/2: - → LEVITATE",
+          "LUCARIO/2: - → MEGA_LAUNCHER",
+          "LICKILICKY/0: CHEEK_POUCH → POISON_HEAL",
+          "FROSLASS/0: SNOW_WARNING → DAZZLING",
+          "FROSLASS/1: - → QUEENLY_MAJESTY",
+          "HEATRAN/1: - → FILTER",
+          "DARKRAI/1: - → UNNERVE",
+          "… 92 more"
+        ]
+      },
+      "starterPassives": {
+        "speciesChanged": 34,
+        "formsChanged": 62,
+        "added": [
+          "BATTLE_BOND_GRENINJA",
+          "HISUI_BASCULIN"
+        ],
+        "removed": [],
+        "changes": [
+          "WEEDLE/0: POISON_TOUCH → POISON_POINT",
+          "PIDGEY/0: SHEER_FORCE → GALE_WINGS",
+          "PIKACHU/0: ELECTRIC_SURGE → TRANSISTOR",
+          "SANDSHREW/0: TOUGH_CLAWS → SAND_STREAM",
+          "PONYTA/0: MAGIC_GUARD → FIRE_MANE",
+          "LICKITUNG/0: CHEEK_POUCH → POISON_HEAL",
+          "PICHU/0: ELECTRIC_SURGE → TRANSISTOR",
+          "SKARMORY/1: - → TOUGH_CLAWS",
+          "WURMPLE/0: GLUTTONY → POISON_POINT",
+          "ABSOL/0: SHARPNESS → TOUGH_CLAWS",
+          "ABSOL/1: SHARPNESS → SHADOW_SHIELD",
+          "ABSOL/2: - → SHARPNESS",
+          "SNORUNT/0: SNOW_WARNING → OVERCOAT",
+          "HEATRAN/1: - → FILTER",
+          "DARKRAI/1: - → UNNERVE",
+          "BASCULIN/0: ROCK_HEAD → MOXIE",
+          "BASCULIN/1: RECKLESS → MOXIE",
+          "BASCULIN/2: SUPREME_OVERLORD → -",
+          "AXEW/0: OWN_TEMPO → SHARPNESS",
+          "STUNFISK/0: STORM_DRAIN → WATER_ABSORB",
+          "DRUDDIGON/0: INTIMIDATE → DRAGONIZE",
+          "HEATMOR/0: CONTRARY → SPICY_SPRAY",
+          "GENESECT/0: PROTEAN → HEATPROOF",
+          "GENESECT/1: PROTEAN → HEATPROOF",
+          "GENESECT/2: PROTEAN → HEATPROOF",
+          "GENESECT/3: PROTEAN → HEATPROOF",
+          "GENESECT/4: PROTEAN → HEATPROOF",
+          "FENNEKIN/0: FLUFFY → NEUROFORCE",
+          "FROAKIE/1: STAKEOUT → -",
+          "LITLEO/0: DROUGHT → BLAZE",
+          "ESPURR/0: PRANKSTER → FLUFFY",
+          "INKAY/0: SHADOW_SHIELD → GOOEY",
+          "CLAUNCHER/0: PROTEAN → QUICK_DRAW",
+          "HELIOPTILE/0: PROTEAN → FLARE_BOOST",
+          "TYRUNT/0: SHEER_FORCE → DRAGONIZE",
+          "HAWLUCHA/0: MOXIE → STAMINA",
+          "HAWLUCHA/1: - → STAMINA",
+          "ZYGARDE/6: - → MOLD_BREAKER",
+          "ZYGARDE/7: - → MOLD_BREAKER",
+          "ETERNAL_FLOETTE/1: - → MAGIC_GUARD",
+          "… 22 more"
+        ]
+      },
+      "abAttrs": {
+        "added": [
+          "PostDefendApplyStatusEffectAbAttr",
+          "PreAttackWeatherOverrideAbAttr"
+        ],
+        "removed": [
+          "PostDefendContactApplyStatusEffectAbAttr"
+        ],
+        "abilitiesWithChangedAttrSet": 5,
+        "abilitiesChanged": [
+          "STATIC",
+          "POISON_POINT",
+          "FLAME_BODY",
+          "UNSEEN_FIST",
+          "POISON_PUPPETEER"
+        ]
+      }
+    },
+    {
+      "from": "v1.12.0.0",
+      "to": "v1.12.0.1",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 1,
+        "added": [],
+        "removed": [],
+        "changes": [
+          "DELPHOX/1: NEUROFORCE → MAGICIAN"
+        ]
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.12.0.1",
+      "to": "v1.12.0.2",
+      "eggMoves": {
+        "startersChanged": 4,
+        "rareSlotChanged": 1,
+        "commonSlotOnly": 3,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [
+          "BUNEARY: LOVELY_KISS → WICKED_BLOW"
+        ],
+        "startersChangedList": [
+          "BUNEARY",
+          "MANTYKE",
+          "TYRUNT",
+          "ZYGARDE"
+        ]
+      },
+      "passives": {
+        "speciesChanged": 4,
+        "formsChanged": 4,
+        "added": [],
+        "removed": [],
+        "changes": [
+          "GLAMEOW/0: INTIMIDATE → PICKUP",
+          "PURUGLY/0: INTIMIDATE → FUR_COAT",
+          "LITLEO/0: BLAZE → INTIMIDATE",
+          "PYROAR/0: BEAST_BOOST → INTIMIDATE"
+        ]
+      },
+      "starterPassives": {
+        "speciesChanged": 2,
+        "formsChanged": 2,
+        "added": [],
+        "removed": [],
+        "changes": [
+          "GLAMEOW/0: INTIMIDATE → PICKUP",
+          "LITLEO/0: BLAZE → INTIMIDATE"
+        ]
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.12.0.2",
+      "to": "v1.12.0.3",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.12.0.3",
+      "to": "v1.12.0.4",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.12.0.4",
+      "to": "v1.12.0.5",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.12.0.5",
+      "to": "v1.12.0.6",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.12.0.6",
+      "to": "v1.12.0.7",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.12.0.7",
+      "to": "v1.12.0.8",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [
+          "IncreasePpUsedAbAttr"
+        ],
+        "removed": [
+          "IncreasePpAbAttr"
+        ],
+        "abilitiesWithChangedAttrSet": 2,
+        "abilitiesChanged": [
+          "PRESSURE",
+          "KEEN_EYE"
+        ]
+      }
+    },
+    {
+      "from": "v1.12.0.8",
+      "to": "v1.12.0.9",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.12.0.9",
+      "to": "v1.12.0.10",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.12.0.10",
+      "to": "v1.12.0.11",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.12.0.11",
+      "to": "v1.12.1.0",
+      "eggMoves": {
+        "startersChanged": 20,
+        "rareSlotChanged": 9,
+        "commonSlotOnly": 11,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [
+          "SEEL: STEAM_ERUPTION → BOUNCY_BUBBLE",
+          "CORSOLA: SALT_CURE → STRENGTH_SAP",
+          "ZANGOOSE: TIDY_UP → EXTREME_SPEED",
+          "LATIAS: MYSTICAL_POWER → SPARKLY_SWIRL",
+          "MANAPHY: ORIGIN_PULSE → WILDBOLT_STORM",
+          "SEWADDLE: VICTORY_DANCE → BITTER_BLADE",
+          "MILCERY: GEOMANCY → SPARKLY_SWIRL",
+          "DONDOZO: SALT_CURE → SOFT_BOILED",
+          "GREAT_TUSK: SHIFT_GEAR → COLLISION_COURSE"
+        ],
+        "startersChangedList": [
+          "ABRA",
+          "SEEL",
+          "CORSOLA",
+          "TORCHIC",
+          "ZANGOOSE",
+          "ABSOL",
+          "LATIAS",
+          "LATIOS",
+          "HAPPINY",
+          "GIBLE",
+          "CRESSELIA",
+          "MANAPHY",
+          "SEWADDLE",
+          "CLOBBOPUS",
+          "MILCERY",
+          "GALAR_DARUMAKA",
+          "GLIMMET",
+          "DONDOZO",
+          "GREAT_TUSK",
+          "IRON_MOTH"
+        ]
+      },
+      "passives": {
+        "speciesChanged": 5,
+        "formsChanged": 10,
+        "added": [],
+        "removed": [],
+        "changes": [
+          "SWAMPERT/1: DRIZZLE → REGENERATOR",
+          "MINUN/0: POWER_SPOT → FRIEND_GUARD",
+          "ABSOL/2: SHARPNESS → SUPER_LUCK",
+          "LOPUNNY/1: SUPER_LUCK → LONG_REACH",
+          "GARCHOMP/2: LEVITATE → INTIMIDATE",
+          "LUCARIO/2: MEGA_LAUNCHER → NEUROFORCE",
+          "UXIE/0: MAGIC_BOUNCE → AURA_GUARD",
+          "ENAMORUS/0: FAIRY_AURA → CLOUD_NINE",
+          "TOEDSCOOL/0: RUN_AWAY → WATER_ABSORB",
+          "TOEDSCRUEL/0: PRANKSTER → WATER_ABSORB"
+        ]
+      },
+      "starterPassives": {
+        "speciesChanged": 4,
+        "formsChanged": 5,
+        "added": [],
+        "removed": [],
+        "changes": [
+          "MINUN/0: POWER_SPOT → FRIEND_GUARD",
+          "ABSOL/2: SHARPNESS → SUPER_LUCK",
+          "UXIE/0: MAGIC_BOUNCE → AURA_GUARD",
+          "ENAMORUS/0: FAIRY_AURA → CLOUD_NINE",
+          "TOEDSCOOL/0: RUN_AWAY → WATER_ABSORB"
+        ]
+      },
+      "abAttrs": {
+        "added": [
+          "MoveHealBoostAbAttr",
+          "UngroundedAbAttr"
+        ],
+        "removed": [
+          "AttackTypeImmunityAbAttr"
+        ],
+        "abilitiesWithChangedAttrSet": 4,
+        "abilitiesChanged": [
+          "LEVITATE",
+          "MEGA_LAUNCHER",
+          "EELEVATE",
+          "SPICY_SPRAY"
+        ]
+      }
+    },
+    {
+      "from": "v1.12.1.0",
+      "to": "v1.12.1.1",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.12.1.1",
+      "to": "v1.12.1.2",
+      "eggMoves": {
+        "startersChanged": 1,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 1,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": [
+          "TOEDSCOOL"
+        ]
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    },
+    {
+      "from": "v1.12.1.2",
+      "to": "v1.12.1.3",
+      "eggMoves": {
+        "startersChanged": 0,
+        "rareSlotChanged": 0,
+        "commonSlotOnly": 0,
+        "added": [],
+        "removed": [],
+        "rareSlotChanges": [],
+        "startersChangedList": []
+      },
+      "passives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "starterPassives": {
+        "speciesChanged": 0,
+        "formsChanged": 0,
+        "added": [],
+        "removed": [],
+        "changes": []
+      },
+      "abAttrs": {
+        "added": [],
+        "removed": [],
+        "abilitiesWithChangedAttrSet": 0,
+        "abilitiesChanged": []
+      }
+    }
+  ]
+}
