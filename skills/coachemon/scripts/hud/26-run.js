@@ -5,9 +5,8 @@ import { closeRead, openRead, sandbox } from "./01-core.js";
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 
 // A replay may read only what the run key or its memo's `k` holds: any other fact is served stale from the memo. HP
-// keys as standing or not, or every hit taken would miss the memo. The members key in no order, since a switch puts
-// the incoming one in slot 0 and would otherwise miss every memo (#563): a memo whose answer turns on slot order
-// keeps that order in its own `k`.
+// keys as standing or not, or every hit taken would miss the memo. The members key in no order, or every switch would
+// miss every memo (game-code.md §9, #563): a memo whose answer turns on slot order keeps that order in its own `k`.
 const memberKey = p => JSON.stringify([p.species?.speciesId ?? null, p.level ?? null, p.luck ?? null, (p.hp ?? 0) > 0]);
 const runFacts = s => {
   const party = tryDo(() => s.getPlayerParty().filter(Boolean), []) ?? [];
