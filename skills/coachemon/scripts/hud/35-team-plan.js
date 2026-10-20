@@ -658,9 +658,10 @@ const tpView = (M, plan, pinned) => {
     if (spent.length) warnings.push(`${names(spent)} goes down before ${w} comes in`);
   } else if (lost) warnings.push(`${lost}the plan runs out with ${left} foe${left > 1 ? "s" : ""} standing — maximise damage`);
 
-  // One line, never a competing step list: the user still has one decision to follow (#113).
+  // One line, never a competing step list: the user still has one decision to follow (#113). Single battles only: the
+  // pin covers one slot of a double, and the `gain` named the other slot's ⚔ action back as an alternative (#845).
   const prefers = (() => {
-    if (!pinned || !base || base === plan) return null;
+    if (double || !pinned || !base || base === plan) return null;
     const gain = base.val - plan.val;
     if (!(gain >= TP_PREFER || (plan.result !== "win" && base.result === "win"))) return null;
     const [a, nxt] = base.steps;

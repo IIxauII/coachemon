@@ -647,9 +647,10 @@ const sporeFoes = (sleeping = false) => [
 
 // The same field with Machamp already asleep: there is nothing for Spore to add, so Breloom attacks.
 {
-  const { field } = render({ party: sporeParty(), foes: sporeFoes(true), live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
+  const { field, card } = render({ party: sporeParty(), foes: sporeFoes(true), live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
   console.log(`== doubles: nothing for a status play to add (live)\n${field.join("\n")}`);
   assert.match(lineOf(field, "Breloom"), /Seed Bomb →/, `no Spore into a sleeping foe:\n${field.join("\n")}`);
+  assert.equal(card.teamPlan.prefers, null, "no ≈ prefers in a double (#845)");
 }
 
 // Machamp outspeeds Salamence and 1HKOs it; Munchlax cannot hurt anyone. Dragon Claw is the better move into
@@ -704,10 +705,11 @@ const dyingHydreigon = () => [
 }
 // Focus: with only Aura Sphere, the hit lands on Snorlax either way, so Lucario aims at Hydreigon as insurance.
 {
-  const { lines, field } = render({ party: doublesParty(), foes: dyingHydreigon(), live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
+  const { lines, field, card } = render({ party: doublesParty(), foes: dyingHydreigon(), live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
   console.log(`== doubles spare hit: focus, the redirect carries the same move (live)\n${lines.join("\n")}`);
   const slots = slotLines(field);
   assert.equal(slots.length, 2);
+  assert.equal(card.teamPlan.prefers, null, "no ≈ prefers in a double (#845)");
   assert.ok(slots.every(l => /→ Hydreigon/.test(l)), `both slots aim at Hydreigon:\n${field.join("\n")}`);
   assert.ok(field.some(l => /spare hit — goes to Snorlax if Hydreigon falls first/.test(l)), `the spare hit says where it lands:\n${field.join("\n")}`);
 }
@@ -732,7 +734,10 @@ const dyingHydreigon = () => [
     assert.match(slotLines(at(acc).field).find(l => /Lucario/.test(l)) ?? "", /Close Combat → Snorlax/, `a near-sure KO still spreads at ${acc}`);
   }
   for (const acc of [0.55, 0.35, 0.2]) {
-    assert.match(slotLines(at(acc).field).find(l => /Lucario/.test(l)) ?? "", /→ Hydreigon/, `a doubtful KO focuses at ${acc}`);
+    const { field, card } = at(acc);
+    assert.match(slotLines(field).find(l => /Lucario/.test(l)) ?? "", /→ Hydreigon/, `a doubtful KO focuses at ${acc}`);
+    // At 0.35 and 0.2 the plan offered "Lucario Aura Sphere → Hydreigon", the ⚔ line Lucario already has (#845).
+    assert.equal(card.teamPlan.prefers, null, `no ≈ prefers in a double at ${acc} (#845)`);
   }
   const { lines, field } = at(0.5);
   console.log(`== doubles spare hit: focus, the partner's KO is not certain (live)\n${lines.join("\n")}`);
