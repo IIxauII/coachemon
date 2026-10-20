@@ -341,6 +341,39 @@ for (const [slot0Best, expect] of [[10, ["e0"]], [1, ["e1"]]]) {
   assert.equal(ai.teraOf(bench), null, "a foe the trainer isn't Terastallizing carries no Tera type");
 }
 
+// ---- Only this turn's own command is asked pre-Tera: a later turn, the send-in score and the bench a trainer Teras
+// on entry are all priced at the typing the foe will actually fight at (#648).
+{
+  const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A", target: -10 }] });
+  const bench = mkMon({ id: "b", player: false });
+  e.getTeraType = () => 8; // Steel
+  bench.getTeraType = () => 5; // Rock, the slot the trainer Teras the moment it comes in
+  const me = foe();
+  const trainer = {
+    config: { isBoss: false, trainerAI: { instantTeras: [1] } }, shouldTera: m => m.id === "e",
+    getPartyMemberMatchupScores: () => [[1, 1]], getSortedPartyMemberMatchupScores: sc => sc, getNextSummonIndex: () => 1,
+  };
+  const ai = setup({ player: [me], enemy: [e, bench], trainer });
+
+  const seen = { pick: [], switch: [], replay: [], sendIn: [] };
+  // The switch check comes first of all: predicting the Tera asks it, before any flag is on.
+  let at = "switch";
+  e.getMoveType = mv => (seen[at].push(!!e.isTerastallized), mv.type);
+  e.getMatchupScore = () => (seen[at].push(!!e.isTerastallized), 1);
+  ai.ask(t => {
+    at = "pick"; t.enemyDistribution(e);
+    at = "replay"; t.replayAI(e, me);
+    at = "sendIn"; t.sendInScore(e, me);
+  });
+  assert.deepEqual([...new Set(seen.pick)], [false], "this turn's move pick is made pre-Tera");
+  assert.deepEqual([...new Set(seen.switch)], [false], "and so is this turn's switch check");
+  assert.deepEqual([...new Set(seen.replay)], [true], "a turn after this one is replayed with the Tera on");
+  assert.deepEqual([...new Set(seen.sendIn)], [true], "and the send-in score sees it too");
+
+  assert.equal(ai.teraOf(bench), "Rock", "a benched foe in instantTeras carries the Tera type it comes in at");
+  assert.equal(bench.isTerastallized, undefined, "flag restored on the bench too");
+}
+
 const nextMoveOf = (e, fn) => Object.setPrototypeOf(e, { getNextMove: fn });
 
 // ---- The exact move is one outcome at p 1 with the game's own target, and the distribution stays beside it.
