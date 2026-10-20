@@ -698,12 +698,13 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     delay = actDelay(me) + (mine.semi && pF >= 0.5 ? 1 : 0);
     const nowUse = !mt.charge && delay === 0;
     const first = nowUse && entry ? entry : mine;
+    const rest = first !== mine ? useOf(mine) : null;
     qWe = nowUse ? (first.pKo ?? 0) * now : 0;
     const curve = koCurve(turn.mon(foe), useOf(first), {
       scale, turnEnd: heal, cat: mine.cat,
       act: i => (i === 0 && nowUse ? now : steady * (acts ? acts.act(i + 1) : 1)),
       firstKo: exact && nowUse ? qWe : null, start: after?.foe, chain: ourLock ? OUR_CHAIN : null,
-      useAt: first !== mine ? () => useOf(mine) : null,
+      useAt: rest && (() => rest),
     });
     downAt = curve.downAt;
     const perChunk = curve.perChunk;

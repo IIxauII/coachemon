@@ -270,8 +270,8 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
     if (!m.has(k)) m.set(k, fn());
     return m.get(k);
   };
-  // Every game call below goes through one of these. This turn's `EnemyCommandPhase` reads, the switch check and the
-  // move pick, come before any Tera (game-code.md §7).
+  // Every game call below goes through `asDamage`, the patches on. This turn's `EnemyCommandPhase` reads, the switch
+  // check and the move pick, come before any Tera (`asCommand`; game-code.md §7).
   const asDamage = fn => (patches.length ? withPatches(patches, fn) : fn());
   const asCommand = fn => beforeTera(() => asDamage(fn));
   const refused = (atk, def) => memo("refused", `${atk.id}|${def.id}`,
