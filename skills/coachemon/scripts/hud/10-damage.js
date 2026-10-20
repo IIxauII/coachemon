@@ -110,8 +110,7 @@ const barStep = (f, hp, bar, d, ohko = false) => {
   if (f.finalBoss && bar < 1) d = Math.min(d, hp - 1);
   return [d, after];
 };
-// [[state, p], …]. `tok`: the enemy endure token is spent for the wave. It saves only the hit it procs on
-// (game-code.md §3).
+// [[state, p], …]. `tok`: the enemy endure token is spent for the wave (game-code.md §3).
 const landHit = (f, st, d, ohko) => {
   let idx;
   // The token rolls on the damage before the bar clamps it, hence `raw` (game-code.md §3).
@@ -119,9 +118,12 @@ const landHit = (f, st, d, ohko) => {
   [d, idx] = barStep(f, st.hp, st.idx, d, ohko);
   const left = st.hp - d;
   if (raw < st.hp) return [[{ hp: left, idx, tok: st.tok }, 1]];
-  // Sturdy answers before the token can (game-code.md §3).
-  if (f.sturdy && st.hp >= f.maxHp) return [[{ hp: Math.max(1, left), idx, tok: st.tok }, 1]];
   const endure = st.tok ? 0 : f.pEndure;
+  // Sturdy answers before the token can, but the roll still spends it (game-code.md §3).
+  if (f.sturdy && st.hp >= f.maxHp) return [
+    [{ hp: Math.max(1, left), idx, tok: true }, endure],
+    [{ hp: Math.max(1, left), idx, tok: st.tok }, 1 - endure],
+  ].filter(([, p]) => p > 0);
   if (left > 0) return [
     [{ hp: left, idx, tok: true }, endure],
     [{ hp: left, idx, tok: st.tok }, 1 - endure],
@@ -224,8 +226,8 @@ const applyHit = (f, d) => {
   return { hp: Math.max(0, end.hp), ko: end.hp <= 0 };
 };
 
-// `bar` is 0 on the last bar and for a non-boss. `tok`: 2 once the enemy endure token is spent for the wave, else 0.
-export const stateOf = (facts, hp = facts.hp, bar = null) => ({ hp, bar: bar ?? facts.idx, revived: false, tok: 0, facts });
+// `bar` is 0 on the last bar and for a non-boss. `tok`: the enemy endure token is spent for the wave.
+export const stateOf = (facts, hp = facts.hp, bar = null) => ({ hp, bar: bar ?? facts.idx, revived: false, tok: false, facts });
 // No luck: no Focus Band, endure token or Reviver Seed. A state without `facts` has no bars.
 export const hitOn = (state, dmg) => {
   const [d, bar] = state.facts ? barStep(state.facts, state.hp, state.bar, Math.max(0, dmg)) : [Math.max(0, dmg), state.bar];
@@ -241,13 +243,13 @@ const land = (f, b, d, out, luck = true) => {
   const endure = luck && !b.tok && d >= b.hp ? f.pEndure : 0;
   if (b.hp - dealt > 0) {
     // A roll on a hit the bar clamp already stops still spends the token (game-code.md §3).
-    if (endure) out.push(branch(b.hp - dealt, bar, b.revived, 2, b.p * endure));
+    if (endure) out.push(branch(b.hp - dealt, bar, b.revived, true, b.p * endure));
     if (endure < 1) out.push(branch(b.hp - dealt, bar, b.revived, b.tok, b.p * (1 - endure)));
     return 0;
   }
   let gone = b.p;
   if (luck) {
-    if (endure) out.push(branch(1, bar, b.revived, 2, b.p * endure));
+    if (endure) out.push(branch(1, bar, b.revived, true, b.p * endure));
     if (f.pFocus) out.push(branch(1, bar, b.revived, b.tok, b.p * (1 - endure) * f.pFocus));
     gone = b.p * (1 - endure) * (1 - f.pFocus);
   }
@@ -291,8 +293,8 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
   const from = chain?.from ?? NO_CHAIN;
   const stepOf = chain ? chain.step : () => NO_STEP;
   let states = (start?.length
-    ? start.map(x => branch(x.hp, x.bar ?? init.bar, !!x.revived, x.tok ?? 0, x.p))
-    : [branch(init.hp, init.bar, false, 0, 1)]).flatMap(b => from.map(c => inChain(branch(b.hp, b.bar, b.revived, b.tok, b.p * c.p), c.s)));
+    ? start.map(x => branch(x.hp, x.bar ?? init.bar, !!x.revived, !!x.tok, x.p))
+    : [branch(init.hp, init.bar, false, false, 1)]).flatMap(b => from.map(c => inChain(branch(b.hp, b.bar, b.revived, b.tok, b.p * c.p), c.s)));
   const by = [], downAt = [];
   const brokeAt = Array(bars).fill(KO_USES);
   let down = 0, after1 = [];
@@ -334,7 +336,7 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
       const k = Math.min(1, firstKo);
       const offs = shares([...wentOff.values()], from);
       if (standing > 0) for (const x of hit) x.p *= (1 - k) / standing;
-      else if (k < 1) for (const c of offs) hit.push(inChain(branch(1, init.bar, false, 0, (1 - k) * c.p), c.s));
+      else if (k < 1) for (const c of offs) hit.push(inChain(branch(1, init.bar, false, false, (1 - k) * c.p), c.s));
       fell = k;
       if (fellTo) fellTo = new Map(offs.map(c => [c.s?.key, { s: c.s, p: k * c.p }]));
     }

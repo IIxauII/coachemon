@@ -370,7 +370,7 @@ const bigHit = move(1, "Big Hit", 14, 120);
   assert.ok(ms < 50, `10-hit resolve took ${ms} ms`);
 }
 
-// ---- The endure token rolls on the pre-clamp hit, so a two-strike move faces two rolls (game-code.md §3)
+// ---- The endure token rolls on the pre-clamp hit, so a proc on a strike the bar stops spends it (game-code.md §3)
 {
   const atk = mon("a");
   const boss = mon("endureboss", { hp: 200, maxHp: 200, boss: 2, player: false });
@@ -395,6 +395,11 @@ const bigHit = move(1, "Big Hit", 14, 120);
   const twin = moveOutcome(scene, atk, holder, pmOf(move(22, "Twin Hit", 0, 150, { attrs: [new MultiHitAttr(MultiHitType.TWO)] })), { crit: false });
   assert.equal(twin.pKo, 1, "the second lethal strike finds the token spent");
   assert.equal(twin.expected, 100);
+  // Sturdy answers first, but the roll on that hit still spends the token.
+  const sturdyHolder = mon("sturdyholder", { hp: 100, player: false, abilities: ["PreDefendFullHpEndureAbAttr"] });
+  setup(atk, sturdyHolder);
+  const vsSturdy = moveOutcome(scene, atk, sturdyHolder, pmOf(move(22, "Twin Hit", 0, 150, { attrs: [new MultiHitAttr(MultiHitType.TWO)] })), { crit: false });
+  assert.equal(vsSturdy.pKo, 1, "Sturdy saves strike 1 and the token is gone for strike 2");
   scene.enemyModifiers.length = 0;
 }
 
@@ -744,7 +749,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.deepEqual(round(koCurve(tough, sure(600, 2)).by).slice(0, 2), [1, 1], "the save covers only the hit it rolled on");
   scene.enemyModifiers = [held("EnemyEndureChanceModifier", { chance: 100 })];
   assert.deepEqual(koCurve(tough, sure(300)).by.slice(0, 2), [0, 1], "a sure token saves use 1, use 2 KOs");
-  assert.deepEqual(koCurve(tough, sure(600, 2)).by[0], 1, "two lethal hits in one use: the first is saved, the second KOs");
+  assert.equal(koCurve(tough, sure(600, 2)).by[0], 1,"two lethal hits in one use: the first is saved, the second KOs");
   const tokBoss = mon("tokboss", { hp: 200, boss: 2, player: false });
   assert.deepEqual(koCurve(tokBoss, sure(250)).by.slice(0, 2), [0, 1], "a proc on a hit the bar clamp stops spends the token");
   scene.enemyModifiers = [];
