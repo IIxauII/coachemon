@@ -425,10 +425,32 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
 {
   const p = mon("berry", { hp: 90, maxHp: 200, items: [new BerryModifier(0), new BerryModifier(2), new TurnHealModifier()] });
   assert.equal(endOfTurnHp(p, { s: scene }), 50 + 12);
-  assert.equal(endOfTurnHp(p, { s: scene, tookSuperEffective: true, hp: 60 }), 50 + 50 + 12);
+  assert.equal(endOfTurnHp(p, { s: scene, hp: 60 }), 50 + 12, "the Enigma Berry is the KO curve's, never the turn end's");
   assert.equal(endOfTurnHp(p, { s: scene, hp: 150 }), 12, "Sitrus waits for half HP");
   assert.equal(endOfTurnHp(p, { s: scene, hp: 195 }), 5, "capped at max HP");
   assert.equal(endOfTurnHp(p, { s: scene, hp: 0 }), 0);
+}
+
+// ---- An Enigma Berry is a target fact: a quarter for each berry held, none under Heal Block; Unnerve is the reader's (#652)
+{
+  const enigma = (n = 1) => held("BerryModifier", { berryType: 2 }, n);
+  const factsOf = (o, s = scene) => recOf(mon("enigma", { hp: 100, maxHp: 200, ...o }), s).facts;
+  const enigmaOf = (o, s) => factsOf(o, s).enigma;
+  assert.deepEqual(enigmaOf({ items: [enigma(2)] }), { heal: 50, left: 2 });
+  assert.deepEqual(enigmaOf({ items: [enigma()], abilities: ["DoubleBerryEffectAbAttr"] }), { heal: 100, left: 1 }, "Ripen");
+  assert.equal(enigmaOf({ items: [enigma()], tags: ["HEAL_BLOCK"] }), null, "Heal Block");
+  const unnerve = mon("unnerve", { player: false, abilities: ["PreventBerryUseAbAttr"] });
+  assert.deepEqual(enigmaOf({ items: [enigma()] }, { ...scene, getField: () => [unnerve] }), { heal: 50, left: 1 }, "an Unnerve on the field now");
+  assert.equal(enigmaOf({ items: [new BerryModifier(0)] }), null, "a Sitrus is no Enigma");
+  assert.deepEqual([factsOf({ abilities: ["PreventBerryUseAbAttr"] }).unnerve, factsOf({}).unnerve], [true, false]);
+}
+
+// ---- The turn end's part ahead of the berries: Shell Bell and the weather (game-code.md §21)
+{
+  const sand = { ...scene, arena: { tags: [], weather: { weatherType: 3 }, terrain: null } };
+  const p = mon("sand", { hp: 89, maxHp: 160, items: [new BerryModifier(0), new TurnHealModifier()] });
+  assert.equal(endOfTurnHp(p, { s: sand }), -10 + 40 + 10, "sand, Sitrus at 79/160, Leftovers");
+  assert.equal(endOfTurnHp(p, { s: sand, beforeBerries: true }), -10, "the sand alone");
 }
 
 // ---- Turn-end chip and heals land in the game's order and amounts (game-code.md §21)

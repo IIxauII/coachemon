@@ -13,7 +13,7 @@ Fight plan likely lost
 ➜ 1. Metagross ⇄ Steel Meteor Mash → Weavile switch in, takes a hit · falls · foe at 89%
 ➜ 2. Morpeko free Electric Aura Wheel → Weavile falls · foe at 69%
 ➜ 3. Scrafty free Fighting High Jump Kick → Weavile falls · foe at 68%
-≈ prefers: let Scrafty fall → Metagross in free (+28)
+≈ prefers: let Scrafty fall → Metagross in free (+55)
 ⚠ likely lost: nobody KOs Weavile 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Scrafty, Metagross
 == cyrus, no Metagross (live)
 ⇄ Gyarados → Weavile switches — moves aimed at it
@@ -282,7 +282,7 @@ Fight plan steps approximate winnable
 ➜ 2.~ Lucario Fighting Aura Sphere → Snorlax KO · 32% left
 == doubles protect (live)
 ⚔ Garchomp Dragon Dragon Claw → Hydreigon 1 hit
-⚔ Lucario 💀 Dark 100% {Hydreigon's Dark Pulse: ~100% of current HP, before it can act} Normal Protect Garchomp KOs Hydreigon first
+⚔ Lucario Normal Protect Garchomp KOs Hydreigon first
 foes weak to: Fighting ×2 Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon ↯ Dark Dark Pulse → Garchomp 0% likely · moves after
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
@@ -366,7 +366,8 @@ Sitrus x1, one already ate turnsWe 3 · our HP 164 · P(steal) 1
 …and Pound follows it      turnsWe 3 · our HP 164 · P(steal) 0
 Sitrus x2                  turnsWe 3 · our HP 364 · P(steal) 1
 Sitrus x2, one already ate turnsWe 3 · our HP 264 · P(steal) 1
-depth 2: the follow-up leaves us 182 HP (282 if turn 1's steal were forgotten)
+depth 2: the follow-up leaves us 264 HP (364 if turn 1's steal were forgotten)
+our Enigma fed beside the steal: they need 4 into Bug Bite, 3 into Pound
 Sitrus x1                  turn end: none gone 70 · one gone 0 · two gone 0
 Sitrus x2                  turn end: none gone 70 · one gone 70 · two gone 0
 Sitrus x1 + Lum x1         turn end: none gone 70 · one gone 35 · two gone 0
@@ -385,7 +386,38 @@ two Sitrus from full HP over a long fight: 328/400 after 6 turns
 eaten: plain 70 · Ripen 140 · Heal Block 0 · Cheek Pouch 163, off a Lum 93
 reach: sticky false,true,false · sub false,true,false
 == gordie w180 t7: Leavanny into the incoming Carracosta
-as plain damage: Leaf Storm (Leaf Storm: we need 2, they need 2 (2.393), P(steal) 0 · Bug Bite: we need 6, they need 2 (2.393), P(steal) 0)
-with the steal:  Leaf Storm (Leaf Storm: we need 2, they need 2 (2.393), P(steal) 0 · Bug Bite: we need 6, they need 3 (3.126), P(steal) 1)
+as plain damage: Leaf Storm (Leaf Storm: we need 3, they need 2 (2.393), P(steal) 0 · Bug Bite: we need 6, they need 2 (2.393), P(steal) 0)
+with the steal:  Leaf Storm (Leaf Storm: we need 3, they need 2 (2.393), P(steal) 0 · Bug Bite: we need 6, they need 3 (3.126), P(steal) 1)
 the ⚔ call does not flip: still Leaf Storm
+== a lost race: only what lands counts (#650)
+⚔ Dragonite ⚠ Dragon ×2 100% {Rayquaza's Outrage: ~100% of current HP} Normal Extreme Speed → Rayquaza 3 hits
+⤵ Dragonite falls this turn › Raichu in free
+⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
+== the priority move alone (#650)
+⚔ Dragonite ⚠ Dragon ×2 100% {Rayquaza's Outrage: ~100% of current HP} Normal Extreme Speed → Rayquaza 3 hits
+⤵ Dragonite falls this turn › Raichu in free
+⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
+== a charge move on a speed tie: acts 0.5 · first 0.5
+== a depth-2 line pays the charge (#650)
+⚔ Dragonite ⚠ Ground 100% {Groudon's Precipice Blades: ~100% of current HP, 50% KO} Normal Extreme Speed → Groudon 2 hits
+== an outsped setup never lands (#650)
+⚔ Gallade 💀 Fighting 100% {Lucario's Close Combat: ~100% of current HP, 50% KO, before it can act} Grass Leaf Blade → Lucario
+== an outsped spread move (#650)
+⚔ Garchomp 💀 Dark 100% {Hydreigon's Dark Pulse: ~100% of current HP, 50% KO, before it can act} Dragon Dragon Claw → Hydreigon 1 hit
+== an Enigma Berry fed by a super-effective hit (#652)
+Meteor Mash ×2, no berry: 300 HP bar 1 (10%) · 150 HP bar 0 (73%) · 150 HP bar 0 (6%) · 150 HP bar 0 (6%) · 150 HP bar 0 (6%)
+Meteor Mash ×2, Enigma:   300 HP bar 1 (10%) · 225 HP bar 0 (68%) · 225 HP bar 0 (11%) · 225 HP bar 0 (6%) · 225 HP bar 0 (6%)
+Aura Wheel ×1, Enigma:    212 HP bar 1 (25%) · 216 HP bar 1 (25%) · 219 HP bar 1 (25%) · 223 HP bar 1 (25%)
+Meteor Mash ×2 from 250:  250 HP bar 1 (10%) · 225 HP bar 0 (68%) · 225 HP bar 0 (11%) · 225 HP bar 0 (6%) · 225 HP bar 0 (6%)
+Knock Off ×2 into us, no berry: 112 HP (19%) · 117 HP (31%) · 124 HP (31%) · 130 HP (19%)
+Knock Off ×2 into us, Enigma:   174 HP (19%) · 179 HP (31%) · 186 HP (31%) · 192 HP (19%)
+Triple Axel ×½ into us, Enigma: 207 HP (30%) · 209 HP (24%) · 212 HP (42%) · 250 HP (5%)
+Fire Fang ×2 into a poisoned us at full, Enigma: 219 HP (81%) · 219 HP (6%) · 219 HP (6%) · 219 HP (6%)
+Knock Off at 40%, Triple Axel at 60%: the berry pays 24.8
+Knock Off at 60%, Triple Axel at 40%: the berry pays 37.2
+Knock Off until we fall, expected turns: no berry 2.191 · one 3.000 · two 3.070
+Fire Fang ×2 into us at 100, Enigma: 150 HP (6%) · 151 HP (50%) · 152 HP (38%) · 152 HP (6%)
+Fire Fang ×2 into us at full in hail, Enigma: 250 HP (81%) · 250 HP (6%) · 250 HP (6%) · 250 HP (6%)
+Fire Punch at 50% beside Knock Off: the berry pays 46.5
+Aura Wheel ×4 into a Gyarados that survives at 1, Enigma: 63 HP bar 0 (100%)
 ok

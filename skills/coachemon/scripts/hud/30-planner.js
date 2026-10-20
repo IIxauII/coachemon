@@ -6,7 +6,8 @@ import { addShare, koChanceAt, koCurve, koTurn, koTurns, rawMax, shares, useOf }
 
 const pmName = pm => pm?.getName?.() ?? pm?.name ?? "";
 const bossBarsLeft = p => (p.isBoss?.() && p.bossSegments > 1 ? Math.max(1, (p.bossSegmentIndex ?? p.bossSegments - 1) + 1) : 1);
-// Turn-end HP change, signed: heals +, chip −. `dealt`: damage `p` deals a turn (Shell Bell).
+// Turn-end HP change, signed: heals +, chip −. `dealt`: damage `p` deals a turn (Shell Bell). Never with
+// `tookSuperEffective`: `koCurve` eats the Enigma Berry, branch by branch.
 const healAtEnd = (turn, p, dealt = 0) => (turn.live ? turn.turnEndHp(p, { dealt }) : 0) || 0;
 const heldStack = (p, name) => (p.getHeldItems?.() ?? []).filter(m => m.constructor?.name === name).reduce((t, m) => t + (m.getStackCount?.() ?? 1), 0);
 const hitCounts = o => {
@@ -57,6 +58,14 @@ export const planOutcomes = (turn, atk, def) => turn.memo(`o:${atk.id}>${def.id}
       pKo: bars <= 1 && dmg >= def.hp ? 1 : 0, targetHp: def.hp, live: false };
   });
 });
+
+// Our hit on a foe the turn it switches in, where a bench mon the trainer Teras takes it at the typing it comes in at
+// (game-code.md §7); null for any other foe.
+const entryOutcome = (turn, me, foe, name) => {
+  if (!turn.teraLater(foe)) return null;
+  const at = turn.memo(`entry:${foe.id}`, () => turn.assuming([{ mon: foe, tera: false }]));
+  return planOutcomes(at, me, foe).find(o => o.name === name) ?? null;
+};
 
 const NO_MOVE_INFO = { priority: 0 };
 // Quick Claw and Quick Draw (game-code.md §5).
@@ -111,7 +120,7 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
     const dist = turn.enemyAction(foe, { ranges }).moves;
     if (dist?.length) {
       const idx = me.isOnField?.() ? me.getBattlerIndex?.() : null;
-      return dist.map(d => {
+      return withFails(turn, foe, me, true, dist.map(d => {
         const o = outs.find(x => x.name === d.name) ?? null;
         // The share that lands on `me`; a bench mon coming in takes an average slot's.
         const ts = d.targetDist?.length ? d.targetDist : d.targets ?? [];
@@ -125,11 +134,13 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
         const later = reroll ? 1 / Math.max(1, opponentCount(foe)) : tp;
         // The outcome's type is the one the move lands with (Tera Blast); the AI's row can carry the base type.
         return { o, name: d.name, type: o?.type ?? d.type, p: d.p * tp, ...(later !== tp ? { pLater: d.p * later } : {}) };
-      });
+      }));
     }
   }
   if (live && outs.some(o => o.live)) {
-    const rows = replayMoves(turn, foe, me, outs);
+    // This turn's pick comes before every predicted Tera, and a benched foe's first before its own (game-code.md §7).
+    const now = !next && !!foe.isOnField?.();
+    const rows = replayMoves(turn, foe, me, outs, { preTera: now ? "command" : turn.teraLater(foe) ? "entry" : null }, now);
     if (rows) return rows;
   }
   const pool = outs.filter(o => o.expected > 0).sort((a, b) => b.expected - a.expected);
@@ -152,12 +163,20 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
   });
 };
 
-const replayMoves = (turn, foe, me, outs, opts) => {
+const replayMoves = (turn, foe, me, outs, opts, now = false) => {
   const rows = turn.replayAI(foe, me, opts);
-  return rows?.length ? rows.map(d => {
+  return rows?.length ? withFails(turn, foe, me, now, rows.map(d => {
     const o = outs.find(x => x.name === d.name) ?? null;
     return { o, name: d.name, type: o?.type ?? d.type, p: d.p };
-  }) : null;
+  })) : null;
+};
+// A damaging move the AI names with no outcome behind it goes off and fails: the AI skips the move's own condition
+// (game-code.md §6), and a Tera can turn it against the user (#648). Only this turn's pick (`now`) is judged on the
+// state now; a later one only on what the foe's Tera does, which lasts.
+const withFails = (turn, foe, me, now, rows) => {
+  let failing = null;
+  const fails = name => (failing ??= now ? turn.failing(foe, me) : turn.teraFailing(foe, me)).includes(name);
+  return rows.map(r => (!r.o && fails(r.name) ? { ...r, fails: true } : r));
 };
 
 // A foe's lock still running: `left` uses, its queued one included (game-code.md §5).
@@ -194,7 +213,7 @@ const actDelay = p => {
   return Math.max(0, Math.ceil((st.sleepTurnsRemaining ?? 0) / (1 + early)) - 1);
 };
 
-// `{ expected, use }` of one use of `moves`, each row at `pOf(m)`.
+// `{ expected, use }` of one use of `moves`, each row at `pOf(m)`. A point's `se`: its share that lands super-effective.
 const landing = (foe, moves, pOf, next) => {
   let expected = 0;
   const use = [];
@@ -204,7 +223,7 @@ const landing = (foe, moves, pOf, next) => {
     const pm = m.o.pm ?? foe.moveset.find(x => x?.getName() === m.name) ?? NO_MOVE_INFO;
     const p = q * actChance(foe, pm.getMove?.() ?? null, next);
     expected += p * m.o.expected;
-    for (const x of useOf(m.o)) use.push({ d: x.d, p: x.p * p, n: x.n ?? 1 });
+    for (const x of useOf(m.o)) use.push({ d: x.d, p: x.p * p, n: x.n ?? 1, se: x.d > 0 && (m.o.e ?? 1) >= 2 ? 1 : 0 });
   }
   const dealt = use.reduce((sum, x) => sum + x.p, 0);
   if (dealt < 1) use.push({ d: 0, p: 1 - dealt, n: 0 });
@@ -236,9 +255,12 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
   if (ownMoves && ownFrom <= 0) moves = ownMoves;
   const { expected, use } = landing(foe, moves, m => m.p, next);
   const own = ownMoves && ownFrom > 0 ? landing(foe, ownMoves, m => m.p, next) : null;
-  // `later`: the uses after this one, where a re-drawn target (`likelyMoves`) lands on `me` otherwise or the next is
-  // the foe's own pick; null where neither.
+  // A benched foe's picks after its first are made at the Tera it takes then (game-code.md §7).
+  const teraPicks = live && turn.teraLater(foe) ? replayMoves(turn, foe, me, outs) : null;
+  // `later`: the uses after this one, where a re-drawn target (`likelyMoves`) lands on `me` otherwise, the next is the
+  // foe's own pick, or the foe has Tera'd since; null where none.
   const later = own && ownFrom === 1 ? own
+    : teraPicks ? landing(foe, teraPicks, m => m.p, next)
     : moves.some(m => m.pLater != null) ? landing(foe, moves, m => m.pLater ?? m.p, next) : null;
   const lockRule = { relock: false, immune };
   const steps = lockedRow ? lockSteps([{ s: lockState(lock.left, 0), p: 1 }], lockRule) : null;
@@ -269,7 +291,7 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
     const hits = (m.o.dist ?? []).reduce((sum, d) => sum + d.n * d.p, 0) || 1;
     kos.push({ p, max: m.o.max, pKo: ko, acc: m.o.acc ?? 1, revive: m.o.revive ?? 0, cat: m.o.cat, hits, targetHp: me.hp, live });
   }
-  const brief = m => m && { name: m.name, type: m.type, e: m.o?.e ?? null, p: m.p, hits: hitCounts(m.o) };
+  const brief = m => m && { name: m.name, type: m.type, e: m.o?.e ?? null, p: m.p, hits: hitCounts(m.o), ...(m.fails ? { fails: true } : {}) };
   return {
     expected, worst: worst?.o.max ?? 0, pKo, first, koFirst: pKo > 0 ? koFirst / pKo : first,
     move: brief(likely), worstMove: brief(worst), moves: kos, hp: me.hp, from: foe.name, live, use, later,
@@ -525,10 +547,12 @@ export const berryGone = (holder, heal, { berry = null, eater = null, hp = 0, st
 };
 
 // `at(j)`: `me`'s turn-end HP change at the end of turn j (1 = this turn) of a fight with `foe`, `flat` when that never
-// moves. It moves with Toxic, a status the foe's hits may hand it, and items the foe may steal. `eaten`, from a berry
-// `foe` eats off it a turn (#646): `byCount` as `berryGone` gives it, and `counts(j)`, P(k berries gone by turn j's end).
+// moves. It moves with Toxic, a status the foe's hits may hand it, and items the foe may steal. `pre`: the part of `base`
+// ahead of the berries. `eaten`, from a berry `foe` eats off it a turn (#646): `byCount` as `berryGone` gives it, and
+// `counts(j)`, P(k berries gone by turn j's end).
 export const turnEndCourse = (turn, me, foe, hitsPerTurn, dealt = 0, eaten = null) => {
   const base = healAtEnd(turn, me, dealt);
+  const pre = (turn.live ? turn.turnEndHp(me, { dealt, beforeBerries: true }) : 0) || 0;
   const toxic = me.status?.effect === StatusEffect.TOXIC
     ? j => healAtEnd(turn, Object.create(me, { status: { value: { ...me.status, effect: StatusEffect.TOXIC, toxicTurnCount: (me.status.toxicTurnCount ?? 0) + j - 1 } } }), dealt)
     : null;
@@ -536,8 +560,8 @@ export const turnEndCourse = (turn, me, foe, hitsPerTurn, dealt = 0, eaten = nul
     ? j => eaten.counts(j).reduce((sum, p, k) => sum + p * (eaten.byCount[k] - base), 0)
     : null;
   const plain = toxic ?? (() => base);
-  const flat = berries ? { base, flat: false, at: j => plain(j) + berries(j) }
-    : toxic ? { base, flat: false, at: toxic } : { base, flat: true, at: () => base };
+  const flat = berries ? { base, pre, flat: false, at: j => plain(j) + berries(j) }
+    : toxic ? { base, pre, flat: false, at: toxic } : { base, pre, flat: true, at: () => base };
   if (!foe || !(hitsPerTurn >= 0)) return flat;
   const odds = hitsPerTurn > 0 ? tokenOdds(turn, foe, me) : null;
   const statusChange = odds ? tokenShift(odds, me, p => healAtEnd(turn, p, dealt)) : 0;
@@ -547,7 +571,13 @@ export const turnEndCourse = (turn, me, foe, hitsPerTurn, dealt = 0, eaten = nul
     ? j => stealCounts(rates.perTurn * (j - 1), rates.perHit * hitsPerTurn * j).reduce((sum, p, k) => sum + p * (byCount[k] - base), 0)
     : null;
   if (!statusChange && !items) return flat;
-  return { base, flat: false, at: j => flat.at(j) + (statusChange ? statusChange * odds.by(hitsPerTurn * j) : 0) + (items ? items(j) : 0) };
+  return { base, pre, flat: false, at: j => flat.at(j) + (statusChange ? statusChange * odds.by(hitsPerTurn * j) : 0) + (items ? items(j) : 0) };
+};
+// An opposing Unnerve keeps `holder`'s berries uneaten: `opp`'s, or in a double any on the field (game-code.md §21).
+export const unnervedBy = (turn, holder, opp) => {
+  if (opp && turn.mon(opp).facts.unnerve) return true;
+  if (!turn.facts.double) return false;
+  try { return (holder.getOpponents?.() ?? []).some(q => q && turn.mon(q).facts.unnerve); } catch { return false; }
 };
 export const hitsOn = t => (t?.moves ?? []).reduce((sum, m) => sum + m.p * (m.acc ?? 1) * (m.hits ?? 1), 0);
 // `heal` and `drain` are each a number, or a function of the turn.
@@ -607,6 +637,7 @@ export const foeCurve = (turn, t, me, hp, { dealt = 0, foe = null, mult = null, 
   const usesBefore = start ? 1 : 0;
   return koCurve(turn.mon(me), useOn(threatUse(t, usesBefore)), {
     hp, start, act, turnEnd: withDrain(course.flat ? course.base : course.at, drain), chain: t?.lockChain?.(usesBefore),
+    beforeBerry: withDrain(course.pre, drain), se: foe && unnervedBy(turn, me, foe) ? null : 0,
     scale: mult || ramp ? i => (mult ? mult(i + 1) : 1) * (ramp ? ramp(i + 1) : 1) : undefined,
     firstKo: t?.expected > 0 && !start ? threatKoAt(t, hp) * act(0) * (t.lockAct ? t.lockAct(0) : 1) : null,
     useAt: t?.later || t?.own ? i => useOn(threatUse(t, i + usesBefore)) : null,
@@ -633,9 +664,11 @@ export const sendInBase = (turn, f, me) => {
   if (v != null) return { base: v, outspeed };
   // game-less-backed
   const moves = (f.moveset ?? []).map(pm => pm?.getMove?.()).filter(mv => mv && mv.category !== MoveCategory.STATUS);
-  const atk = moves.length ? moves.reduce((t, mv) => t + effectiveness(TYPES[mv.type], me) * (typesOf(f).includes(TYPES[mv.type]) ? 1.5 : 1), 0) / moves.length : 1;
-  const def = typesOf(me).reduce((x, t) => x / Math.max(effectiveness(t, f), 0.25), 1);
-  return { base: atk + def, outspeed };
+  return turn.atEntry([f], () => {
+    const atk = moves.length ? moves.reduce((t, mv) => t + effectiveness(TYPES[mv.type], me) * (typesOf(f).includes(TYPES[mv.type]) ? 1.5 : 1), 0) / moves.length : 1;
+    const def = typesOf(me).reduce((x, t) => x / Math.max(effectiveness(t, f), 0.25), 1);
+    return { base: atk + def, outspeed };
+  });
 };
 // @mirrors send-in-at
 export const sendInAt = ({ base, outspeed }, foeHp, foeMax, ourHp, ourMax) => {
@@ -719,6 +752,14 @@ const lockCarry = (turn, me, mine, foe, afterKo) => {
   return lockSteps(afterKo.values(), { relock: false, immune }).reduce((t, s) => t + s.go * forced + s.self * selfHit, 0);
 };
 
+// `me` paralysed, for the order to be asked again at half Speed. The id is part of the clone so `turn`'s own caches
+// don't hand back the unslowed answer.
+export const paralysed = me => {
+  const slowed = { id: { value: `${me.id}~paralysed` }, status: { value: { effect: StatusEffect.PARALYSIS } } };
+  if (typeof me.getEffectiveStat !== "function") slowed.getStat = { value: i => me.getStat(i) / (i === Stat.SPD ? 2 : 1) };
+  return Object.create(me, slowed);
+};
+
 // One-on-one from now: `me` repeats `pm` into `foe` while `foe` answers with its likely moves. Turn 1 is exact; later
 // turns race the two `koCurve`s. Options: `hp` (ours after an incoming hit); `after` (an earlier exchange's `turn1`,
 // both curves starting from its branches, where the exact odds don't hold); `free` (the foe switches in and doesn't
@@ -728,6 +769,7 @@ const lockCarry = (turn, me, mine, foe, afterKo) => {
 // the second Bug Bite of a depth-2 line). `cost`: our max HP the move spends, plus a little for a lock-in.
 // `turn1`: P(we KO first), P(they do), and the HP branches each side stands on if neither does, each summing to 1.
 // `stole`: P(this turn's berry steal lands), 0 for a move that steals none.
+// `pNeverUsed`: the chance our mon falls before this move goes off at all (#650).
 export const exchange = (turn, me, pm, foe, opts = {}) => {
   const hp = opts.hp ?? me.hp;
   const after = opts.after ?? null;
@@ -784,7 +826,8 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   })() : null;
   const lands = eats ? j => (j === 1 ? now : steady) * (mine.acc ?? 1) : () => 0;
   const counts = theft ? berryCounts(lands, theft.supply, stole) : null;
-  if (mine?.expected > 0) {
+  const entry = opts.free && !after ? entryOutcome(turn, me, foe, mine?.name) : null;
+  if (mine?.expected > 0 || entry?.expected > 0) {
     const atkStat = mine.cat === "special" ? Stat.SPATK : Stat.ATK;
     const drop = mt.drops?.[atkStat] ?? 0;
     const s0 = me.summonData?.statStages?.[atkStat - 1] ?? 0;
@@ -798,11 +841,15 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
       * (defUpBy ? stage(d0) / stage(Math.max(-6, Math.min(6, d0 + defUpBy * i))) : 1);
     delay = actDelay(me) + (mine.semi && pF >= 0.5 ? 1 : 0);
     const nowUse = !mt.charge && delay === 0;
-    qWe = nowUse ? (mine.pKo ?? 0) * now : 0;
-    const curve = koCurve(turn.mon(foe), useOf(mine), {
-      scale, turnEnd: heal, cat: mine.cat,
+    const first = nowUse && entry ? entry : mine;
+    const rest = first !== mine ? useOf(mine) : null;
+    qWe = nowUse ? (first.pKo ?? 0) * now : 0;
+    const curve = koCurve(turn.mon(foe), useOf(first), {
+      scale, turnEnd: heal, beforeBerry: course.pre + (t?.drain ?? 0), cat: mine.cat,
+      se: unnervedBy(turn, foe, me) ? null : i => (((i ? mine : first).e ?? 1) >= 2 ? 1 : 0),
       act: i => (i === 0 && nowUse ? now : steady * (acts ? acts.act(i + 1) : 1)),
       firstKo: exact && nowUse ? qWe : null, start: after?.foe, chain: ourLock ? OUR_CHAIN : null,
+      useAt: rest && (() => rest),
     });
     downAt = curve.downAt;
     const perChunk = curve.perChunk;
@@ -870,9 +917,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   let pLast = pFirstField;
   const pPara = acts && turnsWe < 9 ? acts.para(turnsWe - 1) : 0;
   if (pPara > 0) {
-    const slowed = { id: { value: `${me.id}~paralysed` }, status: { value: { effect: StatusEffect.PARALYSIS } } };
-    if (typeof me.getEffectiveStat !== "function") slowed.getEffectiveStat = { value: i => stat(me, i) / (i === Stat.SPD ? 2 : 1) };
-    const tp = threatFrom(turn, fieldFoe, Object.create(me, slowed), pm, tOpts);
+    const tp = threatFrom(turn, fieldFoe, paralysed(me), pm, tOpts);
     pLast = (1 - pPara) * pFirstField + pPara * (tp ? 1 - (tp.pKo > 0 ? tp.koFirst : tp.first) : pFirstField);
   }
   const speedUp = tThey?.boost?.[Stat.SPD] ?? 0;
@@ -885,6 +930,10 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   // After turn 1 the two sides' KO hazards are taken as independent; on a turn both would KO, the order decides.
   const hazard = (F, j) => (F(j - 1) >= 1 ? 1 : Math.max(0, (F(j) - F(j - 1)) / (1 - F(j - 1))));
   let pWe = weFirst, pThey = theyFirst, standing = Math.max(0, 1 - weFirst - theyFirst);
+  // The share of turn `j`'s knockouts of ours that come before this move's first use: all of them while a charging or
+  // delayed move has none yet, those with the foe moving first on the turn it would have its first (#650).
+  const unused = j => (usesBy(j - 1) >= 1 ? 0 : usesBy(j) >= 1 ? 1 - pLast : 1);
+  let never = theyFirst - (usesBy(1) >= 1 ? pFField * (1 - qWe) * qThey : 0);
   const afterKo = new Map();
   // The lock as it stood where use n knocked out.
   const knockedOut = (p, n) => {
@@ -897,6 +946,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     pWe += ko;
     knockedOut(ko, usesBy(j));
     pThey += standing * b * (1 - a + a * (1 - pLast));
+    never += standing * b * unused(j);
     standing *= (1 - a) * (1 - b);
   }
   // Expected turns, for scoring; `turnsWe` / `turnsThey` are the likely ones the panel shows.
@@ -926,12 +976,13 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     pWeKoFirst: Math.min(1, Math.round(pWe * 1e9) / 1e9), pTheyKoFirst: Math.min(1, Math.round(pThey * 1e9) / 1e9),
     expectedHpLeft: Math.round(hpLeft),
     turnsWe, turnsThey, pFirst, hitsWe, stole: eats ? lands(1) : 0,
+    pNeverUsed: Math.min(1, Math.round(never * 1e9) / 1e9),
     eTurnsWe: expTurns(weBy), eTurnsThey: expTurns(theyBy),
     cost: Math.min(1, (selfSpent + selfKo * Math.max(0, hp - selfSpent)) / maxHp) + (mt.lock ? 0.1 + lockCarry(turn, me, mine, foe, afterKo) : 0),
     turn1: (() => {
       // The curve front-loaded every use's self-cost, and turn 1 has only paid one.
       const me1 = freeThey || !theirs ? [{ hp, p: 1 }]
-        : theirs.after1.map(x => ({ ...x, hp: x.revived ? x.hp : Math.min(hp, x.hp + selfSpent - (mine?.self ?? 0)) }));
+        : theirs.after1.map(x => ({ ...x, hp: x.revived ? x.hp : Math.min(maxHp, x.hp + selfSpent - (mine?.self ?? 0)) }));
       return {
         we: weFirst, they: theyFirst, me: me1, hp: me1.reduce((t, x) => t + x.p * x.hp, 0),
         foe: foeAfter1 ?? [{ hp: foe.hp, p: 1 }],
@@ -1024,10 +1075,14 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     const last = entering ? null : lastMoveOf(me);
     const cost = o => -(o.benefit ?? 0) * AI_POINT - (last != null && o.pm?.moveId === last ? KEEP_BONUS : 0);
     const feed = f => feedCost(f, party.length - 1);
+    // The foe's whole bar left to the rest of the team, for the share of the time our mon falls before landing a hit:
+    // every scorer below pays it, or the one that skips it wins a lost race (#650).
+    const unlanded = never => never * FOE_BAR;
     const one = (o, fi) => {
       const x = trade(o, active[fi]);
       const turns = x.turnsWe + lost;
-      return { me, move: o, target: fi, turns, hits: x.turnsWe, score: lasts - x.eTurnsWe - lost + (x.pWeKoFirst - x.pTheyKoFirst) - (x.cost ?? 0) - cost(o) - feed(active[fi]) * x.pTheyKoFirst, hp, trade: x };
+      const score = lasts - x.eTurnsWe - unlanded(x.pNeverUsed) - lost + (x.pWeKoFirst - x.pTheyKoFirst) - (x.cost ?? 0) - cost(o) - feed(active[fi]) * x.pTheyKoFirst;
+      return { me, move: o, target: fi, turns, hits: x.turnsWe, score, hp, trade: x };
     };
     // The redirect (CONTEXT.md, `Spare hit`; game-code.md §18): `redirScore` is what the hit is worth on the survivor,
     // and `mix` prices the blend (#236). A move the survivor is immune to scores the empty turn.
@@ -1064,7 +1119,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
         const eTurns = 1 + (1 - t1.we) * x2.eTurnsWe;
         const edge = t1.we + standing * x2.pWeKoFirst - (t1.they + standing * x2.pTheyKoFirst);
         const spent = Math.min(1, (o.self ?? 0) / (me.getMaxHp?.() || hp)) + (x2.cost ?? 0);
-        return lasts - eTurns - lost + edge - spent - cost(o) - feed(f) * (t1.they + standing * x2.pTheyKoFirst);
+        return lasts - eTurns - unlanded(x.trade.pNeverUsed) - lost + edge - spent - cost(o) - feed(f) * (t1.they + standing * x2.pTheyKoFirst);
       };
       const score = scoreOf(best);
       const { y, x2 } = best;
@@ -1084,7 +1139,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const hits = Math.max(...hit.map(({ x }) => x.turnsWe));
       if (hits + lost >= 9) return null;
       const edge = Math.min(...xs.flatMap((x, i) => (x ? [x.pWeKoFirst - x.pTheyKoFirst - (x.cost ?? 0) - feed(active[i]) * x.pTheyKoFirst] : [])));
-      const slow = Math.max(...hit.map(({ x }) => x.eTurnsWe));
+      const slow = Math.max(...hit.map(({ x }) => x.eTurnsWe + unlanded(x.pNeverUsed)));
       const rep = hit[0].o;
       const both0 = hit.length > 1 ? { ...rep, benefit: Math.max(...hit.map(({ o }) => o.benefit ?? 0)) } : rep;
       return { me, move: rep, target: "both", turns: hits + lost, hits, each,
@@ -1154,7 +1209,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const missed = landed && w < 1 ? follow(null) : null;
       if (!landed || (w < 1 && !missed)) return null;
       const mix = k => w * landed.x2[k] + (missed ? (1 - w) * missed.x2[k] : 0);
-      const eTurns = 1 + mix("eTurnsWe");
+      const eTurns = 1 + mix("eTurnsWe") + unlanded(they + standing * mix("pNeverUsed"));
       const edge = standing * (mix("pWeKoFirst") - mix("pTheyKoFirst")) - they - feed(f) * (they + standing * mix("pTheyKoFirst"));
       const spent = (play.hpCost ?? 0) / maxHp + mix("cost");
       const bonus = play.kind === "hazard" ? play.value * works : 0;
@@ -1162,7 +1217,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const hits = Math.min(9, 1 + landed.x2.turnsWe);
       return {
         me, move: { name: info.name, type: info.type, cat: "status", pm, expected: 0, notes: [] }, target: fi, self: !!play.self,
-        turns: hits + lost, hits, score: lasts - eTurns - lost + edge - spent + start.keep + bonus + nudge - STATUS_COST, hp, then: landed.y,
+        turns: hits + lost, hits, score: lasts - eTurns - lost + edge - spent + start.keep + bonus + nudge - STATUS_COST, hp, then: landed.y && (planOutcomes(turn, me, f).find(z => z.name === landed.y.name) ?? landed.y),
         effect: start.effect,
       };
     };
@@ -1278,7 +1333,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   const planValueOf = picks => {
     if (!team || slots !== 1 || !picks[0]) return null;
     const mi = party.indexOf(picks[0].me);
-    return mi < 0 ? null : team.at({ mi, free: freeSwitch })?.val ?? null;
+    return mi < 0 ? null : team.at({ mi, outcome: picks[0].move, then: picks[0].then, free: freeSwitch })?.val ?? null;
   };
   // Per pick: `ally`, what a move that hits every other pokémon does to our partner; `spare`, the pair's other hit
   // already does all this one does, so a move with a drawback gives way to one without (CONTEXT.md, `Spare hit`).
@@ -1541,10 +1596,14 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     };
   };
   const worse = (a, b) => (!a ? b : b && RANK[b.level] > RANK[a.level] ? b : a);
-  const nowThreat = me => attackers.reduce((w, f) => worse(w, tagOf(threatFrom(turn, f, me), me.hp, false)), null);
-  const slotThreat = (p, entering) => {
+  // `pm`: the move the slot is going to use, so the order is the one the pick actually gets — a priority move taken
+  // against no move of ours read as a knockout "before it can act" (#650). A mon leaving the field has no pick to take
+  // it against, and passes none.
+  const nowThreat = (me, pm = null) => attackers.reduce((w, f) => worse(w, tagOf(threatFrom(turn, f, me, pm), me.hp, false)), null);
+  // `guarded`: the slot Protects this turn, so this turn's hits are no danger to it (#650).
+  const slotThreat = (p, entering, guarded = false) => {
     const faced = typeof p.target === "number" ? [active[p.target]] : active;
-    let tag = entering ? null : nowThreat(p.me);
+    let tag = entering || guarded ? null : nowThreat(p.me, p.move?.pm ?? null);
     for (const f of faced) {
       if (entering || !attackers.includes(f)) tag = worse(tag, tagOf(threatFrom(turn, f, p.me, p.move?.pm ?? null, { next: true }), entering ? p.hp : p.me.hp, true));
     }
@@ -1661,7 +1720,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   // in slot 0, so the pin is the slot aimed there: its step 1 is then an action the player is actually told to take.
   const chosen = slots === 1 ? best.picks[0]
     : best.picks.find(p => !p.play && (p.target === 0 || p.target === "both")) ?? best.picks.find(p => !p.play) ?? best.picks[0];
-  const pin = team && chosen ? { mi: party.indexOf(chosen.me), outcome: chosen.move, free: freeSwitch } : null;
+  const pin = team && chosen ? { mi: party.indexOf(chosen.me), outcome: chosen.move, then: chosen.then, free: freeSwitch } : null;
   const ahead = pin && pin.mi >= 0 ? team.after(pin) : null;
   // A plan step is a whole exchange, so its free entry is this turn's news only when the mon goes down on this one —
   // counting the pick's own trade, since a foe switching in is not an `attackers` threat yet.
@@ -1693,7 +1752,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
           ko: sup || each ? 0 : helped && typeof p.target === "number" ? 1 : p.hits <= 3 ? p.hits : 0,
           helped,
           koEach: sup || p.target !== "both" || !p.each ? null : p.each.map(n => (n <= 3 ? n : 0)),
-          threat: slotThreat(p, enter),
+          threat: slotThreat(p, enter, sup?.kind === "protect"),
           // A slot with nothing left to do says which restriction emptied its pool.
           stopped: sup || p.move || !active[0] ? [] : turn.stopped(p.me, active[0]),
           traps: sup ? [] : trapsOn(p, active),
@@ -1742,6 +1801,7 @@ const STATUS_COST = 0.2;
 const STATUS_CANDS = 2;
 // Turns of ours a whole HP bar of a mon still to come is worth.
 const HAZARD_TURNS = 2;
+const FOE_BAR = 2 * HAZARD_TURNS;
 const FEED_COST = 0.5;
 
 // What a status move of `me`'s does to a fight with `f`, if the planner can price it (game-code.md §14): a `setup`,
@@ -1799,26 +1859,30 @@ const statusPlay = (turn, me, f, info) => {
   return null;
 };
 // A hazard's worth against the trainer's mons still to come (game-code.md §14), in turns, and how many it touches.
-const hazardValue = (turn, me, tagType) => {
+// @only tests: hazardValue
+export const hazardValue = (turn, me, tagType) => {
   if (!turn.facts.trainer) return null;
   const coming = turn.facts.foes.filter(p => p && p.hp > 0 && !p.isOnField?.());
   if (!coming.length) return null;
   const layers = turn.facts.hazards(tagType, ArenaTagSide.ENEMY);
   const grounded = p => { try { return p.isGrounded?.() ?? !typesOf(p).includes("Flying"); } catch { return true; } };
   const guarded = p => !!p.hasAbilityWithAttr?.("BlockNonDirectDamageAbAttr");
-  if (tagType === "TOXIC_SPIKES" && coming.some(p => grounded(p) && typesOf(p).includes("Poison"))) return null;
   // @mirrors spikes-ratio
   const spikes = n => (n > 0 ? 1 / (10 - 2 * n) : 0);
   const share = p => {
-    if (tagType === "STEALTH_ROCK") return turn.mon(p).rockChip;
+    if (tagType === "STEALTH_ROCK") return turn.mon(p).rockChip();
     if (!grounded(p)) return 0;
     if (tagType === "SPIKES") return guarded(p) ? 0 : spikes(layers + 1) - spikes(layers);
     if (tagType === "TOXIC_SPIKES") return guarded(p) || !turn.mon(p).canTake(StatusEffect.POISON, me) ? 0 : layers ? 0.1 : 0.25;
     return 0;
   };
-  const shares = coming.map(p => Math.min(p.hp / p.getMaxHp(), share(p)));
-  const total = shares.reduce((t, x) => t + x, 0);
-  return total > 0 ? { turns: total * HAZARD_TURNS, n: shares.filter(x => x > 0).length } : null;
+  // A hazard lands on summon, before an instant Tera (game-code.md §7).
+  return turn.atEntry(coming, () => {
+    if (tagType === "TOXIC_SPIKES" && coming.some(p => grounded(p) && typesOf(p).includes("Poison"))) return null;
+    const shares = coming.map(p => Math.min(p.hp / p.getMaxHp(), share(p)));
+    const total = shares.reduce((t, x) => t + x, 0);
+    return total > 0 ? { turns: total * HAZARD_TURNS, n: shares.filter(x => x > 0).length } : null;
+  });
 };
 const lastMoveOf = me => ((me.summonData?.turnCount ?? 0) >= 2 ? me.getLastXMoves?.(1)?.[0]?.move ?? null : null);
 const cameInLastTurn = (turn, p) => (p.summonData?.turnCount ?? 2) <= 1 && (turn.facts.turn ?? 1) > 1;
@@ -1928,7 +1992,9 @@ export const battleModel = (baseTurn, { team = null } = {}) => {
       const both = slot.target === "both";
       // A status move's row shows the damage of the attack it sets up.
       const then = slot.move.cat === "status" ? slot.then ?? null : null;
-      const dmg = both ? planOutcomes(turn, slot.me, target).find(x => x.name === slot.move.name)?.expected ?? 0 : (then ?? slot.move).expected;
+      // A switch-in takes this turn's hit (`entryOutcome`).
+      const entry = !then && !active.includes(target) ? entryOutcome(turn, slot.me, target, slot.move.name) : null;
+      const dmg = entry?.expected ?? (both ? planOutcomes(turn, slot.me, target).find(x => x.name === slot.move.name)?.expected ?? 0 : (then ?? slot.move).expected);
       // The slot's own KO turns, so the row and the ⚔ line agree.
       return { me: slot.me, mine: { ...slot.move, dmg, then }, myTurns: both ? slot.each?.[ai] ?? koTurn(koCurve(turn.mon(target), [{ d: dmg, p: 1 }]).by) : slot.hits, score: slot.score, later: false, vs: target };
     }
@@ -1945,9 +2011,11 @@ export const battleModel = (baseTurn, { team = null } = {}) => {
 
   const teamWeak = {};
   const rows = foes.map(foe => {
+    // A bench mon's predicted Tera: after a faint send-in it Teras before any hit of ours lands (game-code.md §7).
+    const types = typesOf(foe), eff = TYPES.map(t => effectiveness(t, foe));
     const weak = [], avoid = [];
-    for (const t of TYPES) {
-      const e = effectiveness(t, foe);
+    for (const [i, t] of TYPES.entries()) {
+      const e = eff[i];
       if (e >= 2) { weak.push([t, e >= 4 ? "×4" : ""]); teamWeak[t] = (teamWeak[t] ?? 0) + 1; }
       else if (e === 0) avoid.push([t, "×0"]);
       else if (e <= 0.25) avoid.push([t, "×¼"]);
@@ -1963,7 +2031,7 @@ export const battleModel = (baseTurn, { team = null } = {}) => {
     const bars = bossBarsLeft(vs);
     const n = p?.mine ? hitCounts(p.mine) : null;
     return {
-      icon: iconOf(foe), name: foe.name, lv: foe.level, types: typesOf(foe), tera: turn.mon(foe).tera,
+      icon: iconOf(foe), name: foe.name, lv: foe.level, types, tera: turn.mon(foe).tera,
       traps, boss: !!foe.isBoss?.(), status: foe.status?.effect ?? 0,
       hp: Math.round(foe.hp / foe.getMaxHp() * 100),
       weak, avoid,
@@ -1974,6 +2042,7 @@ export const battleModel = (baseTurn, { team = null } = {}) => {
         confidence: t.confidence ?? "estimate",
         at: aimedAt(turn, t, foe),
         first: Math.round(t.first * 100), hits: t.move.hits,
+        ...(t.move.fails ? { fails: true } : {}),
       } : null,
       pick: p?.mine ? {
         icon: iconOf(p.me), name: p.me.name, move: p.mine.name, type: p.mine.type, cat: p.mine.cat,

@@ -14,7 +14,7 @@ Fight plan likely lost
 == easy trainer
 winnable · Charizard
 == a bug bite pairing's foe heal profile
-it keeps {"base":0,"sitrus":100,"enigma":0} · after the steal {"base":0,"sitrus":0,"enigma":0}
+it keeps {"base":0,"pre":0,"sitrus":100,"enigma":0,"enigmas":0} · after the steal {"base":0,"pre":0,"sitrus":0,"enigma":0,"enigmas":0}
 == a bug bite switch-in's entry turn
 switch: won in 2 · free: won in 1
 == thieves and tokens
@@ -30,4 +30,36 @@ Blastoise loses 191 / 287 / 400 HP after 0 / 1 / 2 KOs (no ability: 191 / 191 / 
 == feeding Beast Boost
 Pidgey → Buzzwole: falls · foe at 47% · feeds Beast Boost +1 Atk
 Blastoise → Buzzwole: KO · 82% left
+== a priority move from a slower mon (#650)
+Close Combat at 1 leaves 300 · Mach Punch at 0 leaves 214
+== priority from a mon already first (#650): Drain Punch · first 0
+== a free entry that more often falls than wins (#651): Breloom → Haxorus → Ninjask
+== a free entry that walls the foe (#651): Breloom → Granbull
+== an open slot in a double (#651): Granbull free
+== a free entry that acts (#651)
+⤵ Breloom falls this turn › Raichu in free
+➜ 1. Breloom stay Drain Punch → Rayquaza sacrifice → Raichu in free
+➜ 2. Raichu free Thunderbolt → Rayquaza falls · foe at 60%
+➜ 3. Tentacruel free Surf → Rayquaza sacrifice → Crawdaunt in free
+➜ 4. Crawdaunt free Crabhammer → Rayquaza falls · foe at 60%
+== a free entry that acts (#651), Pidgeot on the bench
+⤵ Breloom falls this turn › Raichu in free
+➜ 1. Breloom stay Drain Punch → Rayquaza sacrifice → Raichu in free
+➜ 2. Raichu free Thunderbolt → Rayquaza falls · foe at 60%
+➜ 3. Tentacruel free Surf → Rayquaza falls · foe at 60%
+➜ 4. Crawdaunt free Crabhammer → Rayquaza falls · foe at 60%
+== the move pick sees the Enigma Berry it feeds (#652), bars
+pace with nothing fed: Moonblast 2.00, Thunderbolt 2.00
+no berry: Moonblast ×2 (222)
+Enigma:   Thunderbolt ×1 (185), the berry would pay 107
+== the move pick sees the Enigma Berry it feeds (#652), no bars
+pace with nothing fed: Moonblast 2.00, Thunderbolt 2.14
+no berry: Moonblast ×2 (185)
+Enigma:   Thunderbolt ×1 (157), the berry would pay 75
+== the plan's Enigma Berry
+one berry: down on turn 4 · two: turn 5
+== an Unnerve in its own pairing
+the Unnerve on the field fells Garchomp in 4 turns, the one on the bench without it in 5
+== an instant Tera on the bench (#648)
+Hydro Pump into Coalossal: ×4 as Fire/Rock, ×2 at Tera Rock
 ok

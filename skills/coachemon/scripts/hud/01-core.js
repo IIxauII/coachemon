@@ -86,7 +86,8 @@ export const squeezeDist = (points, k) => {
     for (let i = 1; i < out.length - 1; i++) if (out[i + 1].d - out[i].d < out[at + 1].d - out[at].d) at = i;
     const [a, b] = [out[at], out[at + 1]];
     const p = a.p + b.p;
-    out.splice(at, 2, { d: (a.d * a.p + b.d * b.p) / p, p, ...(a.n != null || b.n != null ? { n: ((a.n ?? 1) * a.p + (b.n ?? 1) * b.p) / p } : {}) });
+    out.splice(at, 2, { d: (a.d * a.p + b.d * b.p) / p, p, ...(a.n != null || b.n != null ? { n: ((a.n ?? 1) * a.p + (b.n ?? 1) * b.p) / p } : {}),
+      ...(a.se != null || b.se != null ? { se: ((a.se ?? 0) * a.p + (b.se ?? 0) * b.p) / p } : {}) });
   }
   return out;
 };
