@@ -23,6 +23,14 @@ const teraMon = (...args) => {
   p.getTypes = () => (p.isTerastallized ? [teraType] : base);
   return p;
 };
+// A move of `p`'s whose own condition can say no. The factory's `getMove` builds a fresh object each call, so the
+// patched one is frozen in place for the gate and the AI to read the same move back.
+const withCondition = (p, move, cond) => {
+  const pm = p.moveset.find(m => m.getName() === move);
+  const mv = { ...pm.getMove(), applyConditions: user => cond(user) };
+  pm.getMove = () => mv;
+  return p;
+};
 // Stat i lives at `statStages[i - 1]`.
 const withStages = (p, statStages) => { p.summonData.statStages = statStages; return p; };
 const party = [
@@ -65,6 +73,15 @@ const scenarios = {
   tera: { double: false, trainer: { isBoss: false }, teras: ["Lycanroc"], party: [
     mon("Charizard", 66, ["Fire","Flying"], "Blaze", [190,125,118,160,128,120], [["Flamethrower","Fire",90,"S"],["Air Slash","Flying",75,"S"]], true, 120)],
     foes: [teraMon("Lycanroc", 70, ["Rock"], "Keen Eye", [200,190,100,80,90,140], [["Stone Edge","Rock",100,"P"]], true, "Steel")] },
+  // Gordie W180 (#648). Coalossal Teras to Rock before it moves, so Burn Up — picked while it was still Fire — goes
+  // off and fails. Centiskorch is the party slot `instantTeras` names, so from here on it is priced at the Tera Rock
+  // it will come in at, not at the Fire/Bug it is sitting on the bench as.
+  teraFails: { double: false, trainer: { isBoss: false, trainerAI: { instantTeras: [1] } }, teras: ["Coalossal"], bench: [], party: [
+    mon("Gyarados", 80, ["Water","Flying"], "Intimidate", [260,170,130,120,150,140], [["Waterfall","Water",80,"P"]], true)],
+    foes: [
+      withCondition(teraMon("Coalossal", 80, ["Fire","Rock"], "Steam Engine", [250,160,180,160,180,60],
+        [["Burn Up","Fire",130,"S"],["Rock Slide","Rock",75,"P"]], true, "Rock"), "Burn Up", u => u.getTypes().includes(TY.indexOf("Fire"))),
+      teraMon("Centiskorch", 80, ["Fire","Bug"], "Flash Fire", [240,150,120,140,130,100], [["Fire Lash","Fire",80,"P"]], false, "Rock")] },
   // A trap the planned move runs into goes on the foe row's ✦: Fire into Thick Fat.
   trap: { double: false, party: [
     mon("Charizard", 66, ["Fire","Flying"], "Blaze", [190,125,118,160,128,148], [["Flamethrower","Fire",90,"S"]], true)],
@@ -181,3 +198,16 @@ const trapsOf = (label, slot, foe) => {
 };
 assert.deepEqual(trapsOf("eelevate", "Garchomp", "Eelektross"), { slot: ["Eelevate"], row: ["Eelevate"] }, "Land's Wrath into Eelevate");
 assert.deepEqual(trapsOf("eelevateArrows", "Garchomp", "Eelektross"), { slot: [], row: [] }, "Thousand Arrows into Eelevate");
+
+// Gordie W180 (#648): the Tera the foe's own pick was made before, and the bench slot it names.
+{
+  const row = name => cards.teraFails.rows.find(r => r.name === name);
+  const coal = row("Coalossal");
+  assert.equal(coal.likely.move, "Burn Up", "the AI's pick is made before the Tera");
+  assert.equal(coal.likely.fails, true, "and reads `fails` once the Tera has taken its Fire typing away");
+  const bench = row("Centiskorch");
+  assert.equal(bench.tera, "Rock", "a bench slot in instantTeras carries the Tera it comes in at");
+  assert.deepEqual(bench.types, ["Rock"], "and its row shows that typing, not the one it is sitting on the bench as");
+  assert.deepEqual(bench.weak.filter(([t]) => ["Water", "Grass", "Rock"].includes(t)), [["Water", ""], ["Grass", ""]],
+    "with Tera Rock's weaknesses: Water ×2 and Grass ×2, and no Rock ×4 of its own");
+}

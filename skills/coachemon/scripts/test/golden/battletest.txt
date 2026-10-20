@@ -94,6 +94,20 @@ Fight plan likely lost
 ➜ 1. Charizard Fire Flamethrower → Lycanroc falls · foe at 100%
 ⚠ likely lost: nobody outspeeds Lycanroc and it KOs 1 of 1 — maximise damage before it comes in, keep Charizard healthy
 summary trainer | Charizard Flamethrower → Lycanroc · 1 hit | 💀 Charizard | plan: likely lost · 💀 Lycanroc KOs 1/1 · nobody outspeeds Lycanroc and it KOs 1 of 1 — maximise damage before it comes in, keep Charizard healthy
+queued during prediction: 0; queueMessage restored: true
+== teraFails
+⌃ {Hide the drawer} × {Close}
+trainer 🎯 W89 · Tester Gyarados Gyarados Waterfall → Coalossal · 2 hits
+⚔ Gyarados Water Waterfall → Coalossal 2 hits
+Foes
+foes weak to: Water ×2
+Coalossal Coalossal L80 Rock TERA 100% ▲ Water ↯ Fire Burn Up → Gyarados fails · moves after
+Centiskorch Centiskorch L80 Rock TERA 100% ▲ Water ↯ Fire Fire Lash → Gyarados moves after ➜ Gyarados Water Waterfall ~99% · 2 hits later
+winnable · Gyarados
+Fight plan winnable
+➜ 1. Gyarados Water Waterfall → Coalossal KO · 100% left
+➜ 2. Gyarados Water Waterfall → Centiskorch KO · 86% left
+summary trainer | Gyarados Waterfall → Coalossal · 2 hits | plan: winnable · Gyarados
 == trap
 ⌃ {Hide the drawer} × {Close}
 easy 🎯 W89 Charizard Flamethrower → Swinub · 1 hit
