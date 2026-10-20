@@ -2,18 +2,17 @@
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { benchMatchupScore, onGame } from "./game-proto.mjs";
+import { cat, mon as fakeMon, outcomeFrom, TY } from "./fake-mon.mjs";
 import { fakeTurn } from "./fake-turn.mjs";
 
-const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
-const cat = { P: 0, S: 1, X: 2 };
-// moves: [name, type, power, cat, target=3, priority=0]
+// moves: as fake-mon.mjs's `mon` takes them.
 const mon = (name, lv, types, ability, [hp, atk, def, spa, spd, spe], moves, field, curHp, boss = 0, next) => onGame({
   next, id: name, getMoveQueue: () => [], isTrapped: () => false, trainerSlot: 0, species: { legendary: false },
   name, level: lv, hp: curHp ?? hp, getMaxHp: () => hp, getTypes: () => types.map(t => TY.indexOf(t)), getAbility: () => ({ name: ability }), hasPassive: () => false,
   getStat: i => [hp, atk, def, spa, spd, spe][i], summonData: { statStages: [0,0,0,0,0,0,0] }, isOnField: () => field,
   isBoss: () => boss > 0, bossSegments: boss, bossSegmentIndex: boss - 1,
   getIconAtlasKey: () => "k", getIconId: () => 1, status: null,
-  moveset: moves.map(([n, t, p, c, target = 3, priority = 0], i) => ({ moveId: i + 1, getName: () => n, getMove: () => ({ type: TY.indexOf(t), power: p, category: cat[c], moveTarget: target, priority }), getMovePp: () => 10, ppUsed: 0 })),
+  moveset: moves.map(([n, t, p, c, priority = 0, { target = 3 } = {}], i) => ({ moveId: i + 1, getName: () => n, getMove: () => ({ type: TY.indexOf(t), power: p, category: cat[c], moveTarget: target, priority }), getMovePp: () => 10, ppUsed: 0 })),
 });
 const party = [
   mon("Morpeko", 100, ["Electric","Dark"], "Hunger Switch", [260,250,160,150,160,250], [["Aura Wheel","Electric",110,"P"],["Crunch","Dark",80,"P"]], true),
@@ -262,7 +261,7 @@ assert.equal(plan.approxDoubles, false);
   const { tpTables, tpFight } = globalThis.__tp;
   const { scene: s } = run(null);
   const golem = mon("Golem", 100, ["Rock","Ground"], "Sturdy", [300,250,230,100,100,90], [["Rock Slide","Rock",75,"P"]], true);
-  const MACH = ["Mach Punch","Fighting",40,"P",3,1], UPPERCUT = ["Sky Uppercut","Fighting",40,"P"];
+  const MACH = ["Mach Punch","Fighting",40,"P",1], UPPERCUT = ["Sky Uppercut","Fighting",40,"P"];
   const tablesFor = moves => globalThis.__tp.readTurn(s, turn => tpTables(turn,
     [mon("Hitmonchan", 100, ["Fighting"], "Iron Fist", [100,200,100,100,100,60], moves, true, 40)], [golem], false));
   const T = tablesFor([MACH, ["Close Combat","Fighting",120,"P"]]);
@@ -285,8 +284,100 @@ assert.equal(plan.approxDoubles, false);
   // A mon that already moves first gains nothing from priority, off the live game as on it (#650).
   const fast = moves => globalThis.__tp.readTurn(s, turn => tpTables(turn,
     [mon("Hitmonchan", 100, ["Fighting"], "Iron Fist", [300,200,100,100,100,120], moves, true)], [golem], false));
-  const F = fast([["Mach Punch","Fighting",70,"P",3,1], ["Drain Punch","Fighting",75,"P"]]);
+  const F = fast([["Mach Punch","Fighting",70,"P",1], ["Drain Punch","Fighting",75,"P"]]);
   console.log(`== priority from a mon already first (#650): ${F.ours[0][0].name} · first ${F.first[0][0]}`);
   assert.equal(F.ours[0][0].name, "Drain Punch", "two uses either way, and the harder hit");
+}
+// A free entry goes to a mon that acts (#651, W145 T9–13). Breloom at 93 of 240 is outsped and one-shot by Rayquaza's
+// Outrage, and so are Tentacruel and Crawdaunt behind it; only Raichu is faster, and takes a Thunderbolt off Rayquaza
+// before it falls. Every ordering loses the line and lands the same 150, so the beam has no damage to tell them apart:
+// the free entry Breloom's fall buys still goes to the member that acts, and the two that cannot are kept for the
+// sacrifices after it.
+{
+  // "attacker>move>defender": [[max damage], accuracy, effectiveness].
+  const W145 = {
+    "Breloom>Drain Punch>Rayquaza": [[40], 1, 0.5], "Rayquaza>Outrage>Breloom": [[339], 1, 1],
+    "Tentacruel>Surf>Rayquaza": [[60], 1, 0.5], "Rayquaza>Outrage>Tentacruel": [[431], 1, 1],
+    "Crawdaunt>Crabhammer>Rayquaza": [[80], 1, 0.5], "Rayquaza>Outrage>Crawdaunt": [[346], 1, 1],
+    "Raichu>Thunderbolt>Rayquaza": [[150], 1, 1], "Rayquaza>Outrage>Raichu": [[437], 1, 1],
+    // Ivy's bench: a Pidgeot two of ours KO one-on-one, so it is neither the win condition nor held for by anyone.
+    "Breloom>Drain Punch>Pidgeot": [[40], 1, 0.5], "Pidgeot>Air Slash>Breloom": [[120], 1, 4],
+    "Tentacruel>Surf>Pidgeot": [[70], 1, 1], "Pidgeot>Air Slash>Tentacruel": [[60], 1, 1],
+    "Crawdaunt>Crabhammer>Pidgeot": [[240], 1, 1], "Pidgeot>Air Slash>Crawdaunt": [[60], 1, 1],
+    "Raichu>Thunderbolt>Pidgeot": [[240], 1, 2], "Pidgeot>Air Slash>Raichu": [[60], 1, 1],
+  };
+  const stub = outcomeFrom(W145);
+  const w145 = (name, ...rest) => fakeMon(name, 80, ...rest);
+  const planOf = (party, foes, double = false) => {
+    for (const f of foes) f.getOpponents = () => party.filter(p => p.isOnField());
+    const turn = fakeTurn({
+      live: true, wave: 145, turn: 9, party, foes, double,
+      trainer: { getName: () => "Ivy", config: { isBoss: false }, isDouble: () => false },
+      outcome: stub,
+      moves: e => [{ name: e.moveset[0].getName(), type: TY[e.moveset[0].getMove().type], p: 1, score: 10, targets: [0] }],
+    });
+    const planner = globalThis.__hud["35-team-plan"].teamPlanner(turn);
+    return { plan: planner.view(null), freeEntry: planner.after(null)?.freeEntry ?? null, planner };
+  };
+  const breloom = () => w145("Breloom", ["Grass","Fighting"], [240,230,120,100,120,130], [["Drain Punch","Fighting",75,"P"]], true, 93);
+  const rayquaza = () => w145("Rayquaza", ["Dragon","Flying"], [350,250,120,250,120,200], [["Outrage","Dragon",120,"P"]], true);
+  const ninjask = () => w145("Ninjask", ["Bug","Flying"], [220,150,90,50,90,260], [["X-Scissor","Bug",80,"P"]], false);
+  const sentOn = (party, foes) => planOf(party, foes).plan.steps.map(x => x.send.name);
+  Object.assign(W145, {
+    "Ninjask>X-Scissor>Rayquaza": [[12], 1, 1], "Rayquaza>Outrage>Ninjask": [[400], 1, 1],
+    "Haxorus>Dragon Rush>Rayquaza": [[420], 0.75, 2], "Rayquaza>Outrage>Haxorus": [[400], 1, 2],
+    "Granbull>Earthquake>Rayquaza": [[0], 1, 0], "Rayquaza>Outrage>Granbull": [[0], 1, 0],
+  });
+  // A free entry that more often falls than wins still takes it when its win is worth more than a chip (#651).
+  {
+    const haxorus = w145("Haxorus", ["Dragon"], [260,250,120,100,120,200], [["Dragon Rush","Dragon",100,"P"]], false);
+    const order = sentOn([breloom(), ninjask(), haxorus], [rayquaza()]);
+    console.log(`== a free entry that more often falls than wins (#651): ${order.join(" → ")}`);
+    assert.deepEqual(order.slice(0, 2), ["Breloom", "Haxorus"], order.join(" → "));
+  }
+  // A free entry that walls the foe for good is not dropped for one that chips it and falls (#651).
+  {
+    const granbull = w145("Granbull", ["Fairy"], [290,200,150,100,120,90], [["Earthquake","Ground",100,"P"]], false);
+    // Breloom stays, as the ⚔ line has it: switching Granbull straight in is the other way to wall it.
+    const order = planOf([breloom(), ninjask(), granbull], [rayquaza()]).planner.at({ mi: 0 }).steps.map(x => ["Breloom", "Ninjask", "Granbull"][x.mi]);
+    console.log(`== a free entry that walls the foe (#651): ${order.join(" → ")}`);
+    assert.deepEqual(order.slice(0, 2), ["Breloom", "Granbull"], order.join(" → "));
+  }
+  // In a double with one slot open, a bench mon that can't hurt the foe still fills it (#651).
+  {
+    const granbull = w145("Granbull", ["Fairy"], [290,200,150,100,120,90], [["Earthquake","Ground",100,"P"]], false);
+    const { plan } = planOf([breloom(), granbull], [rayquaza()], true);
+    const order = plan.steps.map(x => `${x.send.name} ${x.entry}`);
+    console.log(`== an open slot in a double (#651): ${order.join(" → ")}`);
+    assert.equal(order[0], "Granbull free", order.join(" → "));
+  }
+  const planFor = withPidgeot => {
+    const party = [
+      w145("Breloom", ["Grass","Fighting"], [240,230,120,100,120,130], [["Drain Punch","Fighting",75,"P"]], true, 93),
+      w145("Tentacruel", ["Water","Poison"], [300,140,120,160,160,170], [["Surf","Water",90,"S"]], false),
+      w145("Crawdaunt", ["Water","Dark"], [300,220,110,130,110,155], [["Crabhammer","Water",100,"P"]], false),
+      w145("Raichu", ["Electric"], [240,120,100,160,110,220], [["Thunderbolt","Electric",90,"S"]], false),
+    ];
+    const foes = [
+      w145("Rayquaza", ["Dragon","Flying"], [350,250,120,250,120,200], [["Outrage","Dragon",120,"P"]], true),
+      ...(withPidgeot ? [w145("Pidgeot", ["Normal","Flying"], [220,140,110,130,110,190], [["Air Slash","Flying",75,"S"]], false)] : []),
+    ];
+    return planOf(party, foes);
+  };
+  for (const withPidgeot of [false, true]) {
+    const { plan, freeEntry } = planFor(withPidgeot);
+    console.log(`== a free entry that acts (#651)${withPidgeot ? ", Pidgeot on the bench" : ""}\n` +
+      `⤵ ${freeEntry?.out.name} falls this turn › ${freeEntry?.in.name} in free\n` +
+      plan.steps.map((x, i) => `➜ ${i + 1}. ${x.send.name} ${x.entry} ${x.move} → ${x.vs.name} ${x.why}`).join("\n"));
+    const where = `${withPidgeot ? "with" : "without"} Pidgeot`;
+    assert.equal(plan.steps[0].send.name, "Breloom", `Breloom leads ${where}`);
+    assert.ok(plan.steps[0].sacrifice, `Breloom's fall is the sacrifice ${where}: ${plan.steps[0].why}`);
+    assert.equal(plan.steps[1].entry, "free", `and buys a free entry ${where}`);
+    assert.equal(plan.steps[1].send.name, "Raichu", `the only member that acts takes it ${where}`);
+    assert.equal(freeEntry?.in.name, "Raichu", `the ⤵ line names it too ${where}`);
+    assert.deepEqual(plan.sacrifice.map(x => `${x.name} → ${x.frees.name}`).slice(0, 1), ["Breloom → Raichu"],
+      `the card's sacrifice line follows the plan ${where}`);
+    assert.deepEqual(plan.steps.map(x => x.send.name), ["Breloom", "Raichu", "Tentacruel", "Crawdaunt"], `nothing is spent for nothing before Raichu acts ${where}`);
+  }
 }
 console.log("ok");
