@@ -8,11 +8,12 @@ import { type Given, recheck } from "./recheck.ts";
 
 /** Gordie, Drayton and Kieran were recorded on it. */
 const VERSION = "1.12.0.11";
-/** Eternatus W200 was recorded on it. */
+/** Eternatus W200 and Swimmers W173 were recorded on it. */
 const PIN = "1.12.1.3";
 /** Newer than every known fight's save. */
 const NEWER = "1.12.2.0";
-const ETERNATUS = 200;
+/** The waves of the fights recorded on the pin. */
+const ON_PIN: ReadonlySet<number> = new Set([200, 173]);
 
 const replayed = (turns: number): ReplayResult => ({
   kind: "replayed",
@@ -73,20 +74,44 @@ test("the re-check replays the known fights at the stamped version, then checks 
   assert.deepEqual(run.failed, []);
   assert.deepEqual(
     calls.map(c => `${c.kind} ${c.wave}`),
-    ["replay 180", "replay 188", "replay 190", "replay 200", "check 180", "check 188", "check 190", "check 200"],
+    [
+      "replay 180",
+      "replay 188",
+      "replay 190",
+      "replay 200",
+      "replay 173",
+      "check 180",
+      "check 188",
+      "check 190",
+      "check 200",
+      "check 173",
+    ],
   );
   for (const call of calls) assert.equal(call.given.cloneVersion, PIN);
   for (const call of calls) {
-    assert.deepEqual(call.carry, { carried: call.wave !== ETERNATUS }, "only Eternatus W200 was recorded on this version");
+    assert.deepEqual(call.carry, { carried: !ON_PIN.has(call.wave) }, "only Eternatus W200 and Swimmers W173 were recorded on this version");
   }
   for (const call of calls.filter(c => c.kind === "replay")) {
     assert.ok(call.given.live && call.given.liveExport, "a replay needs the live battle and its export");
     assert.equal(call.script?.known?.outcome, "won", "a known line is held to every fact live recorded");
   }
   assert.match(run.text, /carrying the 1\.12\.0\.11 saves of Gordie W180, Drayton W188 and Kieran W190 to 1\.12\.1\.3/);
-  assert.doesNotMatch(run.text, /saves of Eternatus W200/);
+  assert.doesNotMatch(run.text, /saves of (Eternatus W200|Swimmers W173)/);
   assert.match(run.text, /Gordie W180: replayed, won in 19 turns/);
   assert.match(run.text, /Kieran W190\n\s+straight: 31 turns[^\n]*\n\s+fork check: 30 of 30 restores/);
+});
+
+test("the trainer double loaded from a Continue keeps what the load wrote: no foe items as null, and a re-rolled partner name (#835, #821, #829)", async () => {
+  const { calls, deps } = fakes();
+
+  await recheck(PIN, deps);
+
+  const swimmers = calls.find(c => c.kind === "replay" && c.wave === 173)?.given;
+  assert.ok(swimmers?.liveExport, "Swimmers W173 replays with its live export");
+  assert.equal(swimmers.save.enemyModifiers, null);
+  const partnerOf = (save: { trainer?: object | null }) => (save.trainer as { partnerNameKey?: string } | null)?.partnerNameKey;
+  assert.equal(partnerOf(swimmers.save), "trainersCommon:swimmer.female.65");
+  assert.equal(partnerOf(swimmers.liveExport), "trainersCommon:swimmer.female.3");
 });
 
 test("a known fight that doesn't replay fails the re-check by name, and no check runs after it (#665)", async () => {
@@ -138,11 +163,11 @@ test("at a newer game version the re-check carries each known fight's save to it
   const run = await recheck(NEWER, deps);
 
   assert.deepEqual(run.failed, []);
-  assert.equal(calls.length, 8);
+  assert.equal(calls.length, 10);
   for (const call of calls) assert.deepEqual(call.carry, { carried: true });
   for (const call of calls) assert.equal(call.given.cloneVersion, NEWER);
   assert.match(run.text, /carrying the 1\.12\.0\.11 saves of Gordie W180, Drayton W188 and Kieran W190 to 1\.12\.2\.0/);
-  assert.match(run.text, /carrying the 1\.12\.1\.3 saves of Eternatus W200 to 1\.12\.2\.0/);
+  assert.match(run.text, /carrying the 1\.12\.1\.3 saves of Eternatus W200 and Swimmers W173 to 1\.12\.2\.0/);
 });
 
 test("a carried fight that doesn't replay ends the re-check naming it to record again on the new version, and where how is (#703)", async () => {

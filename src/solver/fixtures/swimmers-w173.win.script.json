@@ -1,0 +1,13 @@
+{
+  "inputs": [
+    { "kind": "double", "commands": [{ "kind": "move", "move": "POWER_WHIP", "tera": false, "target": { "side": "foes", "field": 0 } }, { "kind": "move", "move": "AIR_CUTTER", "tera": false }] },
+    { "kind": "double", "commands": [{ "kind": "move", "move": "PAIN_SPLIT", "tera": false, "target": { "side": "ours", "field": 1 } }, { "kind": "move", "move": "AIR_CUTTER", "tera": false }] }
+  ],
+  "known": {
+    "outcome": "won",
+    "after": [
+      { "turn": 1, "ours": { "BRAMBLEGHAST": { "onField": true, "hp": 312 }, "ORICORIO": { "onField": true, "hp": 494 } }, "foes": { "LAPRAS": { "hp": 0 }, "BIBAREL": { "onField": true, "hp": 297 } } },
+      { "turn": 2, "ours": { "BRAMBLEGHAST": { "hp": 405 }, "ORICORIO": { "hp": 405 } }, "foes": { "BIBAREL": { "hp": 0 } } }
+    ]
+  }
+}
