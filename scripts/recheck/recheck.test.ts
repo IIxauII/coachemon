@@ -12,7 +12,6 @@ const VERSION = "1.12.0.11";
 const PIN = "1.12.1.3";
 /** Newer than every known fight's save. */
 const NEWER = "1.12.2.0";
-/** The waves of the fights recorded on the pin. */
 const ON_PIN: ReadonlySet<number> = new Set([200, 173]);
 
 const replayed = (turns: number): ReplayResult => ({
@@ -89,7 +88,7 @@ test("the re-check replays the known fights at the stamped version, then checks 
   );
   for (const call of calls) assert.equal(call.given.cloneVersion, PIN);
   for (const call of calls) {
-    assert.deepEqual(call.carry, { carried: !ON_PIN.has(call.wave) }, "only Eternatus W200 and Swimmers W173 were recorded on this version");
+    assert.deepEqual(call.carry, { carried: !ON_PIN.has(call.wave) }, "only the fights recorded on this version replay uncarried");
   }
   for (const call of calls.filter(c => c.kind === "replay")) {
     assert.ok(call.given.live && call.given.liveExport, "a replay needs the live battle and its export");
