@@ -425,10 +425,22 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
 {
   const p = mon("berry", { hp: 90, maxHp: 200, items: [new BerryModifier(0), new BerryModifier(2), new TurnHealModifier()] });
   assert.equal(endOfTurnHp(p, { s: scene }), 50 + 12);
-  assert.equal(endOfTurnHp(p, { s: scene, tookSuperEffective: true, hp: 60 }), 50 + 50 + 12);
+  assert.equal(endOfTurnHp(p, { s: scene, hp: 60 }), 50 + 12, "the Enigma Berry is the KO curve's, never the turn end's");
   assert.equal(endOfTurnHp(p, { s: scene, hp: 150 }), 12, "Sitrus waits for half HP");
   assert.equal(endOfTurnHp(p, { s: scene, hp: 195 }), 5, "capped at max HP");
   assert.equal(endOfTurnHp(p, { s: scene, hp: 0 }), 0);
+}
+
+// ---- An Enigma Berry is a target fact: a quarter for each berry held, none under Heal Block or a foe's Unnerve (#652)
+{
+  const enigma = (n = 1) => held("BerryModifier", { berryType: 2 }, n);
+  const enigmaOf = (o, s = scene) => recOf(mon("enigma", { hp: 100, maxHp: 200, ...o }), s).facts.enigma;
+  assert.deepEqual(enigmaOf({ items: [enigma(2)] }), { heal: 50, left: 2 });
+  assert.deepEqual(enigmaOf({ items: [enigma()], abilities: ["DoubleBerryEffectAbAttr"] }), { heal: 100, left: 1 }, "Ripen");
+  assert.equal(enigmaOf({ items: [enigma()], tags: ["HEAL_BLOCK"] }), null, "Heal Block");
+  const unnerve = mon("unnerve", { player: false, abilities: ["PreventBerryUseAbAttr"] });
+  assert.equal(enigmaOf({ items: [enigma()] }, { ...scene, getField: () => [unnerve] }), null, "Unnerve");
+  assert.equal(enigmaOf({ items: [new BerryModifier(0)] }), null, "a Sitrus is no Enigma");
 }
 
 // ---- Turn-end chip and heals land in the game's order and amounts (game-code.md §21)

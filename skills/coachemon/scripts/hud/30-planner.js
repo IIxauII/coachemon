@@ -6,18 +6,9 @@ import { addShare, koChanceAt, koCurve, koTurn, koTurns, rawMax, shares, useOf }
 
 const pmName = pm => pm?.getName?.() ?? pm?.name ?? "";
 const bossBarsLeft = p => (p.isBoss?.() && p.bossSegments > 1 ? Math.max(1, (p.bossSegmentIndex ?? p.bossSegments - 1) + 1) : 1);
-// Turn-end HP change, signed: heals +, chip −. `dealt`: damage `p` deals a turn (Shell Bell); `se`: it took a
-// super-effective hit this turn, which is what an Enigma Berry eats on.
-const healAtEnd = (turn, p, dealt = 0, se = false) => (turn.live ? turn.turnEndHp(p, { dealt, tookSuperEffective: se }) : 0) || 0;
-// What a super-effective hit adds to `p`'s turn end: the Enigma Berry's quarter, eaten once (#652). Read at 75 % HP
-// as `tpHealProfile` does, clear of both Sitrus's half and the max-HP cap — `koCurve` puts that cap back branch by
-// branch, so a holder read at full HP would price the quarter its own hit makes room for at nothing.
-const enigmaHeal = (turn, p, dealt = 0) => {
-  if (!turn.live) return 0;
-  const hp = Math.ceil((p.getMaxHp?.() ?? p.hp) * 0.75);
-  const at = se => (turn.turnEndHp(p, { hp, dealt, tookSuperEffective: se }) || 0);
-  return Math.max(0, at(true) - at(false));
-};
+// Turn-end HP change, signed: heals +, chip −. `dealt`: damage `p` deals a turn (Shell Bell). Never with
+// `tookSuperEffective`: `koCurve` eats the Enigma Berry, branch by branch.
+const healAtEnd = (turn, p, dealt = 0) => (turn.live ? turn.turnEndHp(p, { dealt }) : 0) || 0;
 const heldStack = (p, name) => (p.getHeldItems?.() ?? []).filter(m => m.constructor?.name === name).reduce((t, m) => t + (m.getStackCount?.() ?? 1), 0);
 const hitCounts = o => {
   const ns = (o?.dist ?? []).filter(d => d.p > 0).map(d => d.n);
@@ -208,7 +199,7 @@ const actDelay = p => {
   return Math.max(0, Math.ceil((st.sleepTurnsRemaining ?? 0) / (1 + early)) - 1);
 };
 
-// `{ expected, use }` of one use of `moves`, each row at `pOf(m)`.
+// `{ expected, use }` of one use of `moves`, each row at `pOf(m)`. A point's `se`: its share that lands super-effective.
 const landing = (foe, moves, pOf, next) => {
   let expected = 0;
   const use = [];
@@ -218,7 +209,7 @@ const landing = (foe, moves, pOf, next) => {
     const pm = m.o.pm ?? foe.moveset.find(x => x?.getName() === m.name) ?? NO_MOVE_INFO;
     const p = q * actChance(foe, pm.getMove?.() ?? null, next);
     expected += p * m.o.expected;
-    for (const x of useOf(m.o)) use.push({ d: x.d, p: x.p * p, n: x.n ?? 1 });
+    for (const x of useOf(m.o)) use.push({ d: x.d, p: x.p * p, n: x.n ?? 1, se: (m.o.e ?? 1) >= 2 ? 1 : 0 });
   }
   const dealt = use.reduce((sum, x) => sum + x.p, 0);
   if (dealt < 1) use.push({ d: 0, p: 1 - dealt, n: 0 });
@@ -471,17 +462,13 @@ export const afterSteals = (me, heal) => {
 };
 
 // `at(j)`: `me`'s turn-end HP change at the end of turn j (1 = this turn) of a fight with `foe`, `flat` when that never
-// moves. It moves with Toxic, a status the foe's hits may hand it, and items the foe may steal. `se`: the hit `me`
-// takes this turn is super-effective, so an Enigma Berry pays out once, on turn 1 (#652).
-export const turnEndCourse = (turn, me, foe, hitsPerTurn, dealt = 0, se = false) => {
+// moves. It moves with Toxic, a status the foe's hits may hand it, and items the foe may steal.
+export const turnEndCourse = (turn, me, foe, hitsPerTurn, dealt = 0) => {
   const base = healAtEnd(turn, me, dealt);
-  const once = se ? enigmaHeal(turn, me, dealt) : 0;
   const toxic = me.status?.effect === StatusEffect.TOXIC
     ? j => healAtEnd(turn, Object.create(me, { status: { value: { ...me.status, effect: StatusEffect.TOXIC, toxicTurnCount: (me.status.toxicTurnCount ?? 0) + j - 1 } } }), dealt)
     : null;
-  const every = toxic ?? (() => base);
-  const berry = j => (j === 1 ? once : 0);
-  const flat = toxic || once ? { base, flat: false, at: j => every(j) + berry(j) } : { base, flat: true, at: () => base };
+  const flat = toxic ? { base, flat: false, at: toxic } : { base, flat: true, at: () => base };
   if (!foe || !(hitsPerTurn >= 0)) return flat;
   const odds = hitsPerTurn > 0 ? tokenOdds(turn, foe, me) : null;
   const statusChange = odds ? tokenShift(odds, me, p => healAtEnd(turn, p, dealt)) : 0;
@@ -491,7 +478,7 @@ export const turnEndCourse = (turn, me, foe, hitsPerTurn, dealt = 0, se = false)
     ? j => stealCounts(rates.perTurn * (j - 1), rates.perHit * hitsPerTurn * j).reduce((sum, p, k) => sum + p * (byCount[k] - base), 0)
     : null;
   if (!statusChange && !items) return flat;
-  return { base, flat: false, at: j => every(j) + berry(j) + (statusChange ? statusChange * odds.by(hitsPerTurn * j) : 0) + (items ? items(j) : 0) };
+  return { base, flat: false, at: j => (toxic ? toxic(j) : base) + (statusChange ? statusChange * odds.by(hitsPerTurn * j) : 0) + (items ? items(j) : 0) };
 };
 export const hitsOn = t => (t?.moves ?? []).reduce((sum, m) => sum + m.p * (m.acc ?? 1) * (m.hits ?? 1), 0);
 // `heal` is a number, or a function of the turn.
@@ -501,14 +488,13 @@ const withDrain = (heal, drain) => (!drain ? heal : typeof heal === "function" ?
 // damage on turn j against the expected; `act(i)`: the chance its i-th attack goes off; `drain`: what our drain moves
 // win back a turn, negative into Liquid Ooze.
 export const foeCurve = (turn, t, me, hp, { dealt = 0, foe = null, mult = null, act = () => 1, start = null, drain = 0 } = {}) => {
-  // Our own Enigma Berry is fed by what the threat lands on us, so the course reads the likely move's effectiveness.
-  const course = turnEndCourse(turn, me, foe, t ? hitsOn(t) : -1, dealt, (t?.move?.e ?? 1) >= 2);
+  const course = turnEndCourse(turn, me, foe, t ? hitsOn(t) : -1, dealt);
   const ramp = setupRamp(foe, t);
   const useOn = x => (x?.expected > 0 ? x.use ?? [{ d: x.expected, p: 1 }] : [{ d: 0, p: 1 }]);
   // A curve from `start` has no use of this turn's.
   const usesBefore = start ? 1 : 0;
   return koCurve(turn.mon(me), useOn(threatUse(t, usesBefore)), {
-    hp, start, act, turnEnd: withDrain(course.flat ? course.base : course.at, drain), chain: t?.lockChain?.(usesBefore),
+    hp, start, act, turnEnd: withDrain(course.flat ? course.base : course.at, drain), chain: t?.lockChain?.(usesBefore), se: 0,
     scale: mult || ramp ? i => (mult ? mult(i + 1) : 1) * (ramp ? ramp(i + 1) : 1) : undefined,
     firstKo: t?.expected > 0 && !start ? threatKoAt(t, hp) * act(0) * (t.lockAct ? t.lockAct(0) : 1) : null,
     useAt: t?.later || t?.own ? i => useOn(threatUse(t, i + usesBefore)) : null,
@@ -675,8 +661,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     const atkStat = mine.cat === "special" ? Stat.SPATK : Stat.ATK;
     const drop = mt.drops?.[atkStat] ?? 0;
     const s0 = me.summonData?.statStages?.[atkStat - 1] ?? 0;
-    // A super-effective move of ours feeds the target's own Enigma Berry, so the turn line prices the heal our hit buys it.
-    const course = turnEndCourse(turn, foe, me, steady * (mine.acc ?? 1) * ((mine.dist ?? []).reduce((sum, d) => sum + d.n * d.p, 0) || 1), t?.expected ?? 0, (mine.e ?? 1) >= 2);
+    const course = turnEndCourse(turn, foe, me, steady * (mine.acc ?? 1) * ((mine.dist ?? []).reduce((sum, d) => sum + d.n * d.p, 0) || 1), t?.expected ?? 0);
     const heal = withDrain(course.flat ? course.base : course.at, t?.drain ?? 0);
     const defStat = mine.cat === "special" ? Stat.SPDEF : Stat.DEF;
     const defUpBy = t?.boost?.[defStat] ?? 0;
@@ -687,7 +672,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     const nowUse = !mt.charge && delay === 0;
     qWe = nowUse ? (mine.pKo ?? 0) * now : 0;
     const curve = koCurve(turn.mon(foe), useOf(mine), {
-      scale, turnEnd: heal, cat: mine.cat,
+      scale, turnEnd: heal, cat: mine.cat, se: (mine.e ?? 1) >= 2 ? 1 : 0,
       act: i => (i === 0 && nowUse ? now : steady * (acts ? acts.act(i + 1) : 1)),
       firstKo: exact && nowUse ? qWe : null, start: after?.foe, chain: ourLock ? OUR_CHAIN : null,
     });

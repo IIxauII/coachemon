@@ -976,9 +976,9 @@ The **party** judged as a whole: type tallies, luck, and the set of the party th
   - Sturdy at full HP → 1 HP, `FixedDamageAttr` moves included (§1, §3).
   - Focus Band 0.1·stack, and the enemy Endure token 0.02·stack, rolled when the hit would faint it.
 - `moveOutcome(s, atk, def, pm)` → `{ type, cat, e: result→multiplier, perHit: [{max,min}], dist: [{n,p}], acc, expected, uncapped, max, pKo, revive, use, targetHp, name, priority, spread, traits, costs, notes }`. `traits` is 07-move-traits' record with the charging turn judged against this moment; `costs` is `costNotes` with this matchup's amounts, plus the target's contact chip; `notes` keeps the rest (hit counts, boss bars, Sturdy, Focus Band, a crit, an estimate). It combines the above; `targetHp` is the HP the odds were worked out for. It also sets `bypassProtect` from `move.doesFlagEffectApply({ flag: MoveFlags.IGNORE_PROTECT, user, target })` (`move.ts:897`; flag `1 << 1`, `src/enums/move-flags.ts:12`). A move cancelled by primordial weather or Psychic Terrain comes back as "no effect" (`stopped by weather` / `terrain`), from `arena.isMoveWeatherCancelled(user, move)` / `isMoveTerrainCancelled(user, targets, move)` (`src/field/arena.ts:330`, `:484`; §14).
-- `endOfTurnHp(p, { s, hp, tookSuperEffective, dealt })` → the signed turn-end HP change, following the game's phase order (`src/phase-manager.ts:231-237`):
+- `endOfTurnHp(p, { s, hp, dealt })` → the signed turn-end HP change, following the game's phase order (`src/phase-manager.ts:231-237`):
   1. weather chip and Dry Skin / Solar Power (`WeatherEffectPhase`);
-  2. berries (`BerryPhase`, §3: Sitrus below a rounded 50 %, Enigma on a SE hit, Ripen, Unnerve);
+  2. berries (`BerryPhase`, §3: Sitrus below a rounded 50 %, Ripen, Unnerve; not the Enigma, which wants the hit that fed it);
   3. status chip (`CheckStatusEffectPhase`; orbs counted as already on);
   4. `TurnEndPhase.start` (`src/phases/turn-end-phase.ts:24-63`): Leftovers (`TurnHealModifier`), Grassy Terrain `toDmgValue(maxHp / 16)` when grounded, the enemy's `EnemyTurnHealModifier`, `PostTurnAbAttr`s.
 

@@ -69,6 +69,7 @@ const TABLE = {
   "Charizard>Flamethrower>Lycanroc": [[60], 1, 0.5], "Blastoise>Wave Crash>Lycanroc": [[220], 1, 2],
   "Lycanroc>Stone Edge>Charizard": [[500], 0.8, 4], "Lycanroc>Stone Edge>Blastoise": [[150], 0.8, 1],
   "Weavile>Knock Off>Morpeko": [[60], 1, 0.5], "Weavile>Knock Off>Scrafty": [[40], 1, 0.25], "Weavile>Knock Off>Metagross": [[140], 1, 2],
+  "Weavile>Fire Fang>Metagross": [[12], 1, 2],
 };
 // 07-move-traits' shape; a scenario that needs a trait sets it on the record it hands back.
 const TRAITS = {
@@ -1519,69 +1520,92 @@ Object.assign(TABLE, {
   assert.ok(!only.field.some(l => /before it can act/.test(l)), only.field.join("\n"));
 }
 
-// ---- An Enigma Berry is fed by the effectiveness of the hit its holder takes this turn (#652). The `heal` stub stands
-// for the damage module, which already eats the berry on a `tookSuperEffective` turn end (`endOfTurnSteps`, damagetest):
-// a quarter of max HP, once.
+// ---- An Enigma Berry heals its holder a quarter after a super-effective hit lands, one berry a turn (#652)
 {
   const { party, foes } = cyrus(true);
   const [morpeko, , metagross] = party;
   const [, weavile] = foes;
-  const holders = new Set();
-  const asked = [];
   const { scene: s } = render({ party, foes, live: true, switches: () => new Map() });
-  globalThis.__stub.heal = (p, o) => {
-    asked.push([p.name, !!o?.tookSuperEffective]);
-    if (!holders.has(p.name) || !o?.tookSuperEffective) return 0;
-    const max = p.getMaxHp();
-    return Math.min(max, (o.hp ?? p.hp) + Math.floor(max / 4)) - (o.hp ?? p.hp);
-  };
+  const { sceneTurnEndHp } = globalThis.__hud["10-damage"];
+  globalThis.__stub.heal = (p, o) => sceneTurnEndHp({ field: [] }, p, o);
+  const held = (name, fields = {}, n = 1) => Object.assign(new ({ [name]: class {} })[name](), { getStackCount: () => n }, fields);
+  const enigma = (n = 1) => held("BerryModifier", { berryType: 2 }, n);
+  const leftovers = held("TurnHealModifier");
+  const fireFang = mon("Weavile", 84, ["Dark", "Ice"], [300, 250, 100, 60, 110, 299], [["Fire Fang", "Fire", 65, "P"]], false).moveset[0];
   const { exchange } = globalThis.__planner;
-  // Weavile: 300 HP over two bars, so either move of ours has its first hit clamped at the boundary and leaves it on
-  // 150. `back` is the one move Weavile answers with — Knock Off ×2 into Metagross, Triple Axel ×0.5. The threat a
-  // pairing faces is memoised by id, so each run gets its own pair.
-  const run = (tag, me, back = 1) => {
-    asked.length = 0;
-    const foe = { ...weavile, id: `Weavile ${tag}`, moveset: [weavile.moveset[back]] };
-    const x = exchange(s, { ...me, id: `${me.name} ${tag}` }, me.moveset[0], foe);
-    return { x, asked: [...asked] };
+  // The threat a pairing faces is memoised by id, so every mon here gets its own.
+  let n = 0;
+  const as = (p, items, extra = {}) => ({ ...p, id: `${p.name} ${++n}`, getHeldItems: () => items, ...extra });
+  const dists = new Map();
+  globalThis.__stub.dist = e => dists.get(e.id) ?? [];
+  const weavileWith = (moves, items = [], extra = {}) => {
+    const f = as(weavile, items, { moveset: moves.map(([m]) => m), ...extra });
+    dists.set(f.id, moves.map(([m, p]) => ({ name: m.getName(), type: TY[m.getMove().type], p, score: 10, targets: [0] })));
+    return f;
   };
-  const bare = run("bare", metagross);
-  holders.add("Weavile");
-  const fedSE = run("fed", metagross);
-  const neutral = run("neutral", morpeko);
-  const show = ({ x }) => x.turn1.foe.map(b => `${Math.round(b.hp)} HP bar ${b.bar} (${Math.round(b.p * 100)}%)`).join(" · ");
-  console.log(`== an Enigma Berry fed by a super-effective hit (#652)\n` +
-    `Meteor Mash ×2, no berry: ${show(bare)}\n` +
-    `Meteor Mash ×2, Enigma:   ${show(fedSE)}\n` +
-    `Aura Wheel ×1, Enigma:    ${show(neutral)}`);
-  assert.ok(fedSE.asked.some(([n, se]) => n === "Weavile" && se), `our super-effective hit asks the target's turn end for the berry: ${JSON.stringify(fedSE.asked)}`);
-  assert.ok(!neutral.asked.some(([n, se]) => n === "Weavile" && se), `a neutral hit never does: ${JSON.stringify(neutral.asked)}`);
-  const broke = b => b.bar === 0;
-  const onBar = ({ x }) => [...new Set(x.turn1.foe.filter(broke).map(b => Math.round(b.hp)))];
-  assert.deepEqual(onBar(bare), [150], "no berry: the clamped hit leaves it on the boundary");
-  // A quarter of 300 on top, and the bar it broke stays broken.
-  assert.deepEqual(onBar(fedSE), [225], "the berry heals a quarter past the boundary");
-  assert.ok(fedSE.x.turn1.foe.every(b => b.bar <= 1) && fedSE.x.turn1.foe.some(broke), "the heal lifts it past the boundary and the broken bar stays broken");
-  assert.deepEqual(neutral.x.turn1.foe.map(b => b.bar), neutral.x.turn1.foe.map(() => 1), "the neutral hit never reaches the boundary");
-  assert.ok(neutral.x.turn1.foe.every(b => b.hp <= 300 - 76), `and feeds nothing: ${show(neutral)}`);
-  // The berry is eaten once: a second turn of the same hit adds nothing, so the pace is unchanged.
-  assert.equal(fedSE.x.turnsWe, bare.x.turnsWe, `one quarter never buys the boss a turn here: ${fedSE.x.turnsWe} vs ${bare.x.turnsWe}`);
+  const [AXEL, KNOCK] = weavile.moveset;
+  const knockOff = (items, extra) => weavileWith([[KNOCK, 1]], items, extra);
+  const run = (me, foe, opts) => exchange(s, me, me.moveset[0], foe, opts);
+  const foeSide = x => x.turn1.foe.map(b => `${Math.round(b.hp)} HP bar ${b.bar} (${Math.round(b.p * 100)}%)`).join(" · ");
+  const ourSide = x => x.turn1.me.map(b => `${Math.round(b.hp)} HP (${Math.round(b.p * 100)}%)`).join(" · ");
+  const fed = (x, bare) => Math.round((x.turn1.hp - bare.turn1.hp) * 10) / 10;
 
-  // Our side: Weavile's Knock Off is ×2 into Metagross, so our own holder's berry answers its hit.
-  holders.clear();
-  const ours = run("ours bare", metagross);
-  holders.add("Metagross");
-  const oursFed = run("ours fed", metagross);
-  // Triple Axel is ×0.5 into Metagross: a hit that isn't super-effective leaves the berry alone.
-  const resisted = run("resisted", metagross, 0);
-  const mine = ({ x }) => x.turn1.me.map(b => `${Math.round(b.hp)} HP (${Math.round(b.p * 100)}%)`).join(" · ");
-  console.log(`Knock Off ×2 into us, no berry: ${mine(ours)}\nKnock Off ×2 into us, Enigma:   ${mine(oursFed)}\n` +
-    `Triple Axel ×½ into us, Enigma: ${mine(resisted)}`);
-  assert.ok(oursFed.asked.some(([n, se]) => n === "Metagross" && se), `the foe's super-effective hit feeds our berry: ${JSON.stringify(oursFed.asked)}`);
-  assert.ok(oursFed.x.turn1.hp > ours.x.turn1.hp, `and our turn-1 HP is higher for it (${ours.x.turn1.hp} → ${oursFed.x.turn1.hp})`);
-  assert.ok(!resisted.asked.some(([n, se]) => n === "Metagross" && se), `a resisted hit never feeds it: ${JSON.stringify(resisted.asked)}`);
-  assert.ok(resisted.x.turn1.hp > oursFed.x.turn1.hp, `so it stays what the resisted hit leaves: ${mine(resisted)}`);
+  // Weavile's 300 HP is two bars, so Meteor Mash (×2) has its first hit clamped at 150.
+  const bare = run(as(metagross, []), knockOff([]));
+  const fedSE = run(as(metagross, []), knockOff([enigma()]));
+  const neutral = run(as(morpeko, []), knockOff([enigma()]));
+  const missed = run(as(metagross, []), knockOff([enigma()], { hp: 250 }));
+  console.log(`== an Enigma Berry fed by a super-effective hit (#652)\n` +
+    `Meteor Mash ×2, no berry: ${foeSide(bare)}\n` +
+    `Meteor Mash ×2, Enigma:   ${foeSide(fedSE)}\n` +
+    `Aura Wheel ×1, Enigma:    ${foeSide(neutral)}\n` +
+    `Meteor Mash ×2 from 250:  ${foeSide(missed)}`);
+  const broke = b => b.bar === 0;
+  const onBar = x => [...new Set(x.turn1.foe.filter(broke).map(b => Math.round(b.hp)))];
+  assert.deepEqual(onBar(bare), [150], "no berry: the clamped hit leaves it on the boundary");
+  assert.deepEqual(onBar(fedSE), [225], "the berry heals a quarter past the boundary");
+  assert.ok(fedSE.turn1.foe.every(b => b.bar <= 1) && fedSE.turn1.foe.some(broke), "the heal lifts it past the boundary and the broken bar stays broken");
+  assert.deepEqual(neutral.turn1.foe.map(b => b.bar), neutral.turn1.foe.map(() => 1), "the neutral hit never reaches the boundary");
+  assert.ok(neutral.turn1.foe.every(b => b.hp <= 300 - 76), `and feeds nothing: ${foeSide(neutral)}`);
+  assert.deepEqual(missed.turn1.foe.filter(b => !broke(b)).map(b => Math.round(b.hp)), [250], `a miss feeds nothing: ${foeSide(missed)}`);
+  assert.equal(fedSE.turnsWe, bare.turnsWe, `one quarter never buys the boss a turn here: ${fedSE.turnsWe} vs ${bare.turnsWe}`);
+
+  // A quarter of Metagross's 250 is 62.
+  const ours = run(as(metagross, []), knockOff([]));
+  const oursFed = run(as(metagross, [enigma()]), knockOff([]));
+  const resisted = run(as(metagross, [enigma()]), weavileWith([[AXEL, 1]]));
+  const resistedBare = run(as(metagross, []), weavileWith([[AXEL, 1]]));
+  console.log(`Knock Off ×2 into us, no berry: ${ourSide(ours)}\nKnock Off ×2 into us, Enigma:   ${ourSide(oursFed)}\n` +
+    `Triple Axel ×½ into us, Enigma: ${ourSide(resisted)}`);
+  assert.equal(fed(oursFed, ours), 62, "the foe's super-effective hit feeds our berry");
+  assert.equal(fed(resisted, resistedBare), 0, "a resisted hit never does");
+
+  // The berry heals ahead of Leftovers and poison (game-code.md §21).
+  const lefties = run(as(metagross, [leftovers], { hp: 200 }), knockOff([]));
+  const both = run(as(metagross, [enigma(), leftovers], { hp: 200 }), knockOff([]));
+  assert.equal(fed(both, lefties), 62, `Leftovers after it leaves the quarter whole: ${ourSide(both)}`);
+  const poisoned = { status: { effect: 1 } };
+  const fang = run(as(metagross, [enigma()], poisoned), weavileWith([[fireFang, 1]]));
+  console.log(`Fire Fang ×2 into a poisoned us at full, Enigma: ${ourSide(fang)}`);
+  assert.deepEqual([...new Set(fang.turn1.me.map(b => Math.round(b.hp)))], [219], "the berry caps at 250 first, and the poison takes 31 after it");
+
+  // On the field, so the enemy AI's pick is the stub's.
+  for (const p of [0.4, 0.6]) {
+    const mix = items => run(as(metagross, items), weavileWith([[AXEL, 1 - p], [KNOCK, p]], [], { isOnField: () => true }));
+    const paid = fed(mix([enigma()]), mix([]));
+    console.log(`Knock Off at ${p * 100}%, Triple Axel at ${100 - p * 100}%: the berry pays ${paid}`);
+    assert.equal(paid, Math.round(62 * p * 10) / 10, "a quarter on the share Knock Off lands, whichever move is likelier");
+  }
+
+  const curve = k => run(as(metagross, k ? [enigma(k)] : []), knockOff([]));
+  const [none, one, two] = [0, 1, 2].map(curve);
+  console.log(`Knock Off until we fall, expected turns: no berry ${none.eTurnsThey.toFixed(3)} · one ${one.eTurnsThey.toFixed(3)} · two ${two.eTurnsThey.toFixed(3)}`);
+  assert.ok(two.eTurnsThey > one.eTurnsThey, `a second berry is eaten on the second super-effective turn: ${one.eTurnsThey} → ${two.eTurnsThey}`);
+  const next = (k, t1) => run(as(metagross, k ? [enigma(k)] : []), knockOff([]), { hp: t1.turn1.hp, after: t1.turn1, next: true });
+  assert.equal(fed(next(1, one), next(0, one)), 0, "a line's second exchange finds the berry its first ate gone");
+  assert.equal(fed(next(2, two), next(0, two)), 62, "and the second of two still there");
   delete globalThis.__stub.heal;
 }
+
 
 console.log("ok");
