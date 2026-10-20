@@ -368,16 +368,13 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
 const turnKeyOf = (env, facts) => [facts.wave, facts.turn, facts.enemySwitchCounter, facts.decision,
   ...[...env.playerParty, ...env.foes].map(p => p && `${p.id}:${p.hp}:${p.bossSegmentIndex ?? ""}:${p.isOnField?.() ? 1 : 0}:${p.isTerastallized ? 1 : 0}`)].join("|");
 
-// `now`: the foes on the field that Tera this turn, less any the trainer withdraws (`teraNow`). `later`: the bench
-// mons it Teras at their first FIGHT command once sent in (game-code.md §7). Only `shouldTera` reads `instantTeras`
-// right: it names team indexes, which a switch pulls apart from the party slots (#648).
+// `now`: the foes on the field that Tera this turn (`teraNow`). `later`: every other mon the trainer Teras, at its
+// first FIGHT command once sent in, one it withdraws this turn included (game-code.md §7). Only `shouldTera` reads
+// `instantTeras` right: it names team indexes, which a switch pulls apart from the party slots (#648).
 const predictedTeras = (env, turn) => {
   if (!env.trainer?.shouldTera) return { now: [], later: [] };
-  const active = turn.activeFoes();
-  return {
-    now: active.filter(e => tryDo(() => turn.teraNow(e), false)),
-    later: env.foes.filter(e => e && e.hp > 0 && !active.includes(e) && tryDo(() => env.trainer.shouldTera(e), false)),
-  };
+  const now = turn.activeFoes().filter(e => tryDo(() => turn.teraNow(e), false));
+  return { now, later: env.foes.filter(e => e && e.hp > 0 && !now.includes(e) && tryDo(() => env.trainer.shouldTera(e), false)) };
 };
 
 // The turn is dead once `fn` returns. `estimate` never asks the game, decision or not.

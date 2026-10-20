@@ -447,6 +447,21 @@ const planner = () => globalThis.__hud["30-planner"];
   assert.deepEqual(fails(rows.later), [["Burn", true]], "a Tera'd foe's next turn");
 }
 
+// ---- A foe the trainer withdraws this turn Teras at its first FIGHT command once it is back (#648).
+{
+  const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A", target: -10 }] });
+  const b = mkMon({ id: "b", player: false });
+  Object.assign(e, { initialTeamIndex: 0, getTeraType: () => 8 });
+  Object.assign(b, { initialTeamIndex: 1 });
+  const trainer = {
+    config: { isBoss: false, trainerAI: { instantTeras: [0] } },
+    shouldTera: m => !m.isTerastallized && m.initialTeamIndex === 0,
+    getPartyMemberMatchupScores: () => [[1, 99]], getSortedPartyMemberMatchupScores: sc => sc, getNextSummonIndex: () => 1,
+  };
+  const ai = setup({ player: [foe()], enemy: [e, b], trainer });
+  assert.deepEqual(ai.ask(t => [t.switches().has(e), t.teraLater(e), t.mon(e).tera]), [true, true, "Steel"]);
+}
+
 // ---- This turn's replayed pick is made with every predicted Tera off: both slots command before any Tera (#648).
 {
   const player = [foe(), mkMon({ id: "me2", player: true, fieldIndex: 1 })];
