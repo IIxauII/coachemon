@@ -404,4 +404,22 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   assert.equal(ah.doubleOdds(scene, 200, 1), 0, "and the final wave is never double");
 }
 
+// ---- A switch reorders the party and nothing else: the road is served from the memo, not replayed (#563).
+{
+  const party = team();
+  const { scene } = mount({ wave: 24, party });
+  const { readRun } = globalThis.__hud["26-run"];
+  const { aheadModel } = globalThis.__hud["49-ahead"];
+  const { previewNext } = globalThis.__hud["48-preview"];
+  const road = () => readRun(scene, run => ({ ahead: aheadModel(run), preview: previewNext(run) }));
+  const before = road();
+  party.reverse();
+  destroyed = 0;
+  const after = road();
+  assert.equal(after.ahead, before.ahead, "the look-ahead is the memo's");
+  assert.equal(after.preview, before.preview, "the preview is the memo's");
+  assert.equal(destroyed, 0, "nothing was replayed");
+  console.log(`== switched in ${party[0].name}: road served from the memo`);
+}
+
 console.log("ok");

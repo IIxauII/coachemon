@@ -72,4 +72,5 @@ summary "Youngster≈ in 10 (W110) watch — they're +37 levels on us"
 == roster from wave 14 {"wave":20,"name":"Youngster W20~","confidence":"replay","threats":["Garchomp L10 70/31/32/33/34/35 Earthquake+Dragon Claw","Lucario L10 70/31/32/33/34/35 Earthquake+Dragon Claw"]}
 == roster from wave 100 {"wave":110,"name":"Youngster W110≈","confidence":"estimate","threats":["Garchomp L55 160/76/77/78/79/80 Earthquake+Dragon Claw","Lucario L55 160/76/77/78/79/80 Earthquake+Dragon Claw"]}
 == doubles ahead  41–44 0.125  grunt 35 0.3333333333333333  admin 66 0  rival 25 0
+== switched in Lucario: road served from the memo
 ok

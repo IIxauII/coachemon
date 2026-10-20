@@ -38,6 +38,7 @@ const keyOf = s => readRun(s, run => run.key);
     level: scene({ getPlayerParty: () => [mon(1), mon(2, { level: 11 })] }),
     luck: scene({ getPlayerParty: () => [mon(1), mon(2, { luck: 1 })] }),
     standing: scene({ getPlayerParty: () => [mon(1), mon(2, { hp: 0 })] }),
+    standingSwitchedIn: scene({ getPlayerParty: () => [mon(2, { hp: 0 }), mon(1)] }),
     modifiers: scene({ modifiers: [{}] }),
     encountered: scene({ mysteryEncounterSaveData: { encounteredEvents: [{}], encounterSpawnChance: 3 } }),
     spawnChance: scene({ mysteryEncounterSaveData: { encounteredEvents: [], encounterSpawnChance: 4 } }),
@@ -45,6 +46,8 @@ const keyOf = s => readRun(s, run => run.key);
   for (const [what, s] of Object.entries(moved)) assert.notEqual(keyOf(s), base, `${what} moves the key`);
   assert.equal(keyOf(scene({ getPlayerParty: () => [mon(1), mon(2, { hp: 1 })] })), base, "HP short of a faint does not move the key");
   assert.equal(keyOf(scene({ money: 999 })), base, "money does not move the key");
+  // A switch puts the incoming member in slot 0: the party is the same, so the run is (#563).
+  assert.equal(keyOf(scene({ getPlayerParty: () => [mon(2), mon(1)] })), base, "a switch's reorder does not move the key");
   console.log(`moved by ${Object.keys(moved).join(", ")}`);
 }
 
