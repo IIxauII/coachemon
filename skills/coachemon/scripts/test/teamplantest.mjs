@@ -125,7 +125,8 @@ assert.equal(plan.approxDoubles, false);
   assert.deepEqual(globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpHealProfile(turn, Object.assign(zard, { getHeldItems: () => [held] }))), { base: -6, sitrus: 24, enigma: 0 }, "Sitrus after the chip");
 }
 // A pairing whose pick eats a berry off its target reads that foe's heal profile after the steal (#646). The draw is
-// uniform over the berry types held, so a lone Sitrus is sure to go and two types each take half.
+// uniform over the berry types held, so a lone Sitrus is sure to go and two types each take half. A blocked steal
+// (Sticky Hold) leaves the profile alone, exactly as a pick that steals nothing does.
 {
   const steal = new ({ StealEatBerryAttr: class {} }).StealEatBerryAttr();
   const berry = (berryType, n = 1) => Object.assign(new ({ BerryModifier: class { getStackCount() { return n; } } }).BerryModifier(), { berryType, isTransferable: true });
@@ -135,9 +136,10 @@ assert.equal(plan.approxDoubles, false);
     p.moveset[0].getMove = () => ({ ...mv, attrs: bites ? [steal] : [] });
     return p;
   };
-  const holder = items => Object.assign(mon("Snorlax", 100, ["Normal"], "Thick Fat", [400,200,160,120,160,60], [["Tackle","Normal",40,"P"]], true), { getHeldItems: () => items });
-  const at = (bites, items) => {
-    const me = biter(bites), f = holder(items);
+  const holder = (items, extra = {}) => Object.assign(mon("Snorlax", 100, ["Normal"], "Thick Fat", [400,200,160,120,160,60], [["Tackle","Normal",40,"P"]], true), { getHeldItems: () => items }, extra);
+  const sticky = { hasAbilityWithAttr: a => a === "BlockItemTheftAbAttr" };
+  const at = (bites, items, extra = {}) => {
+    const me = biter(bites), f = holder(items, extra);
     const { scene: s } = run(null, { party: [me], foes: [f] });
     const T = globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpTables(turn, [me], [f]));
     return { kept: T.foeHeal[0], after: T.foeHealAt[0][0] };
@@ -150,6 +152,7 @@ assert.equal(plan.approxDoubles, false);
   assert.equal(at(true, []).after, null, "and so does a foe with no berry");
   assert.equal(at(true, [berry(0), berry(1)]).after.sitrus, 50, "beside a Lum, half the draw takes the Sitrus");
   assert.equal(at(true, [berry(0, 2)]).after.sitrus, 100, "a stack of two keeps one turn-end Sitrus");
+  assert.equal(at(true, [berry(0)], sticky).after, null, "Sticky Hold blocks the steal, so the fight plays the heal it keeps");
 }
 // Item thieves and wave status tokens carry through the exchange: a long Blastoise–Snorlax fight.
 {

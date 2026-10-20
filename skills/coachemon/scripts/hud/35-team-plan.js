@@ -3,7 +3,7 @@
 // one foe at a time.
 import { iconOf, squeezeDist } from "./01-core.js";
 import { hitOn, koCurve, koTurns, useOf } from "./10-damage.js";
-import { actionOrder, afterSteals, attemptsLost, berryTypesOf, hitsOn, koBoost, koBoostText, koStageFactor, lessBerry, sendInAt, sendInBase, stealCounts, stealRates, threatFrom, tokenOdds, tokenShift } from "./30-planner.js";
+import { actionOrder, afterSteals, attemptsLost, berryStealable, berryTypesOf, hitsOn, koBoost, koBoostText, koStageFactor, lessBerry, sendInAt, sendInBase, stealCounts, stealRates, threatFrom, tokenOdds, tokenShift } from "./30-planner.js";
 
 // @only tests: tpHealProfile, tpSendScore, tpFight, tpTables, tpActs
 const TP_BEAM = 24;
@@ -101,9 +101,11 @@ export const tpHealProfile = (turn, p) => {
   return { base, sitrus: Math.max(0, at(Math.floor(max * 0.4), false) - base), enigma: Math.max(0, at(Math.ceil(max * 0.75), true) - base) };
 };
 // `f`'s profile once our `pick` has eaten a berry off it (#646): the draw is uniform over the berry types it holds, and
-// only the share of uses that land takes one. Null where the pick steals nothing or there is nothing to take.
+// only the share of uses that land takes one. Null where the pick steals nothing, where the steal is blocked (Sticky
+// Hold, a substitute — `berryStealable`, the same test the planner makes), or where there is nothing to take.
 const tpHealAfterSteal = (turn, f, pick) => {
-  const types = pick?.steals ? berryTypesOf(f) : [];
+  if (!pick?.steals || !berryStealable(f)) return null;
+  const types = berryTypesOf(f);
   if (!types.length) return null;
   const kept = tpHealProfile(turn, f);
   const gone = types.map(b => tpHealProfile(turn, lessBerry(f, b)));
@@ -221,7 +223,9 @@ export const tpFight = (T, st, mi, fi, entry, over = null) => {
   };
   const endTurn = b => {
     [b.mh, b.mb] = tpHeal(b.mh, T.ourMax[mi], T.ourHeal[mi], b.mb, them.e >= 2, (tok ? tok.shift * by(turns) : 0) + tpStolen(T.ourItems?.[mi], b.od, b.og));
-    [b.fh, b.fb] = tpHeal(b.fh, T.foeMax[fi], T.foeHealAt?.[mi]?.[fi] ?? T.foeHeal[fi], b.fb, (us?.e ?? 1) >= 2, tpStolen(T.foeItems?.[fi], b.fd, b.fg));
+    // `foeHealAt` is the profile after the pairing's own pick steals, so only a move in hand that steals reads it:
+    // `over` may pin a different move for this exchange (#113), and that one takes no berry.
+    [b.fh, b.fb] = tpHeal(b.fh, T.foeMax[fi], (us?.steals ? T.foeHealAt?.[mi]?.[fi] : null) ?? T.foeHeal[fi], b.fb, (us?.e ?? 1) >= 2, tpStolen(T.foeItems?.[fi], b.fd, b.fg));
     if (robUs && b.fh >= 1) b.od += robUs.perTurn;
     if (robFoe && b.mh >= 1) b.fd += robFoe.perTurn;
   };

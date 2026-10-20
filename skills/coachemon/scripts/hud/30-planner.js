@@ -541,14 +541,17 @@ const withDrain = (heal, drain) => {
 const drainTotal = (drain, turns) => (typeof drain !== "function" ? drain * turns
   : Array.from({ length: Math.ceil(turns) }, (_, i) => drain(i + 1) * Math.min(1, turns - i)).reduce((t, x) => t + x, 0));
 
-// A landed `StealEatBerryAttr` use (Bug Bite, Pluck) eats one of the target's berries at once (game-code.md §8, #646).
-// Sticky Hold blocks it even on a knockout, a substitute is never reached, and a target with no berry has nothing to
-// lose. `mine` is our move's record.
-const stealsBerry = (mine, foe) => {
-  if (!mine?.traits?.attrNames?.has("StealEatBerryAttr")) return false;
+// Whether a berry can be eaten off `foe` at all (game-code.md §8, #646): Sticky Hold blocks it even on a knockout, a
+// substitute is never reached, and a target with no berry has nothing to lose. A foe off the field answers nothing, so
+// read it as blocked.
+// @only 35-team-plan, tests: berryStealable
+export const berryStealable = foe => {
   try { if (foe.hasAbilityWithAttr?.("BlockItemTheftAbAttr") || foe.getTag?.("SUBSTITUTE")) return false; } catch { return false; }
   return !!berryTypesOf(foe).length;
 };
+// A landed `StealEatBerryAttr` use (Bug Bite, Pluck) eats one of the target's berries at once. `mine` is our move's
+// record.
+const stealsBerry = (mine, foe) => !!mine?.traits?.attrNames?.has("StealEatBerryAttr") && berryStealable(foe);
 // P(k berries gone by the end of turn j), k = 0..9: one draw a landed use, at `land(j)`, until the `supply` runs out.
 // `before`: P(a steal landed before this exchange, from the turn a depth-2 line already paid for). Bug Bite and Pluck
 // are plain single-hit attacks with no delay, so use j is turn j.
