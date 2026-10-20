@@ -20,7 +20,7 @@ const isA = (x, name) => {
   const ability = (p, attr) => { try { return !!p.hasAbilityWithAttr?.(attr); } catch { return false; } };
   const items = p => { try { return p.getHeldItems?.() ?? []; } catch { return []; } };
   const stack = (p, name) => items(p).filter(m => m.constructor.name === name).reduce((t, m) => t + (m.getStackCount?.() ?? m.stackCount ?? 1), 0);
-// One gate for `sceneUsable` and `sceneStopped`, so the pool and the reason it shrank can never disagree. A condition
+// One gate for `sceneUsable` and `sceneRefused`, so the pool and the reason it shrank can never disagree. A condition
 // can draw battle RNG, hence `forcedRng` (game-code.md §6).
 const selectable = (env, p, def, pm) => {
   if (typeof pm.isUsable === "function") {
@@ -49,12 +49,19 @@ const restrictionOn = (p, pm) => {
   }
   return null;
 };
-// Only restrictions are named: a move its own condition dropped leaves no entry.
-// @only 25-turn, tests: sceneStopped
-export const sceneStopped = (env, p, def) => [...new Set([...plainUsable(p), ...plainUsable(p, true)]
-  .filter(pm => !selectable(env, p, def, pm))
-  .map(pm => restrictionOn(p, pm))
-  .filter(Boolean))];
+// The moves the gate refuses, in one pass: `stopped` names the restrictions, and `failing` the damaging moves their
+// own condition dropped, which the enemy AI still picks and fails with (game-code.md §6).
+// @only 25-turn: sceneRefused
+export const sceneRefused = (env, p, def) => {
+  const stopped = new Set(), failing = [];
+  for (const pm of [...plainUsable(p), ...plainUsable(p, true)]) {
+    if (selectable(env, p, def, pm)) continue;
+    const why = restrictionOn(p, pm);
+    if (why) stopped.add(why);
+    else if (pm.getMove().category !== MoveCategory.STATUS) failing.push(pm.getName());
+  }
+  return { stopped: [...stopped], failing };
+};
 const plainUsable = (p, status = false) => p.moveset.filter(Boolean)
   .filter(pm => (pm.getMove().category === MoveCategory.STATUS) === status && pm.getMovePp() - pm.ppUsed > 0);
 const traitsNow = (env, atk, mv, live, def = null) => {

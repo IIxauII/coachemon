@@ -58,6 +58,14 @@ export const planOutcomes = (turn, atk, def) => turn.memo(`o:${atk.id}>${def.id}
   });
 });
 
+// Our hit on a foe the turn it switches in, where a bench mon the trainer Teras takes it at the typing it comes in at
+// (game-code.md §7); null for any other foe.
+const entryOutcome = (turn, me, foe, name) => {
+  if (!turn.teraLater(foe)) return null;
+  const at = turn.memo(`entry:${foe.id}`, () => turn.assuming([{ mon: foe, tera: false }]));
+  return planOutcomes(at, me, foe).find(o => o.name === name) ?? null;
+};
+
 const NO_MOVE_INFO = { priority: 0 };
 // Quick Claw and Quick Draw (game-code.md §5).
 // @mirrors quick-chance
@@ -111,7 +119,7 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
     const dist = turn.enemyAction(foe, { ranges }).moves;
     if (dist?.length) {
       const idx = me.isOnField?.() ? me.getBattlerIndex?.() : null;
-      return dist.map(d => {
+      return withFails(turn, foe, me, true, dist.map(d => {
         const o = outs.find(x => x.name === d.name) ?? null;
         // The share that lands on `me`; a bench mon coming in takes an average slot's.
         const ts = d.targetDist?.length ? d.targetDist : d.targets ?? [];
@@ -125,11 +133,13 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
         const later = reroll ? 1 / Math.max(1, opponentCount(foe)) : tp;
         // The outcome's type is the one the move lands with (Tera Blast); the AI's row can carry the base type.
         return { o, name: d.name, type: o?.type ?? d.type, p: d.p * tp, ...(later !== tp ? { pLater: d.p * later } : {}) };
-      });
+      }));
     }
   }
   if (live && outs.some(o => o.live)) {
-    const rows = replayMoves(turn, foe, me, outs);
+    // This turn's pick comes before every predicted Tera, and a benched foe's first before its own (game-code.md §7).
+    const now = !next && !!foe.isOnField?.();
+    const rows = replayMoves(turn, foe, me, outs, { preTera: now ? "command" : turn.teraLater(foe) ? "entry" : null }, now);
     if (rows) return rows;
   }
   const pool = outs.filter(o => o.expected > 0).sort((a, b) => b.expected - a.expected);
@@ -152,12 +162,20 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
   });
 };
 
-const replayMoves = (turn, foe, me, outs, opts) => {
+const replayMoves = (turn, foe, me, outs, opts, now = false) => {
   const rows = turn.replayAI(foe, me, opts);
-  return rows?.length ? rows.map(d => {
+  return rows?.length ? withFails(turn, foe, me, now, rows.map(d => {
     const o = outs.find(x => x.name === d.name) ?? null;
     return { o, name: d.name, type: o?.type ?? d.type, p: d.p };
-  }) : null;
+  })) : null;
+};
+// A damaging move the AI names with no outcome behind it goes off and fails: the AI skips the move's own condition
+// (game-code.md §6), and a Tera can turn it against the user (#648). Only this turn's pick (`now`) is judged on the
+// state now; a later one only on what the foe's Tera does, which lasts.
+const withFails = (turn, foe, me, now, rows) => {
+  let failing = null;
+  const fails = name => (failing ??= now ? turn.failing(foe, me) : turn.teraFailing(foe, me)).includes(name);
+  return rows.map(r => (!r.o && fails(r.name) ? { ...r, fails: true } : r));
 };
 
 // A foe's lock still running: `left` uses, its queued one included (game-code.md §5).
@@ -236,9 +254,12 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
   if (ownMoves && ownFrom <= 0) moves = ownMoves;
   const { expected, use } = landing(foe, moves, m => m.p, next);
   const own = ownMoves && ownFrom > 0 ? landing(foe, ownMoves, m => m.p, next) : null;
-  // `later`: the uses after this one, where a re-drawn target (`likelyMoves`) lands on `me` otherwise or the next is
-  // the foe's own pick; null where neither.
+  // A benched foe's picks after its first are made at the Tera it takes then (game-code.md §7).
+  const teraPicks = live && turn.teraLater(foe) ? replayMoves(turn, foe, me, outs) : null;
+  // `later`: the uses after this one, where a re-drawn target (`likelyMoves`) lands on `me` otherwise, the next is the
+  // foe's own pick, or the foe has Tera'd since; null where none.
   const later = own && ownFrom === 1 ? own
+    : teraPicks ? landing(foe, teraPicks, m => m.p, next)
     : moves.some(m => m.pLater != null) ? landing(foe, moves, m => m.pLater ?? m.p, next) : null;
   const lockRule = { relock: false, immune };
   const steps = lockedRow ? lockSteps([{ s: lockState(lock.left, 0), p: 1 }], lockRule) : null;
@@ -269,7 +290,7 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
     const hits = (m.o.dist ?? []).reduce((sum, d) => sum + d.n * d.p, 0) || 1;
     kos.push({ p, max: m.o.max, pKo: ko, acc: m.o.acc ?? 1, revive: m.o.revive ?? 0, cat: m.o.cat, hits, targetHp: me.hp, live });
   }
-  const brief = m => m && { name: m.name, type: m.type, e: m.o?.e ?? null, p: m.p, hits: hitCounts(m.o) };
+  const brief = m => m && { name: m.name, type: m.type, e: m.o?.e ?? null, p: m.p, hits: hitCounts(m.o), ...(m.fails ? { fails: true } : {}) };
   return {
     expected, worst: worst?.o.max ?? 0, pKo, first, koFirst: pKo > 0 ? koFirst / pKo : first,
     move: brief(likely), worstMove: brief(worst), moves: kos, hp: me.hp, from: foe.name, live, use, later,
@@ -516,9 +537,11 @@ export const sendInBase = (turn, f, me) => {
   if (v != null) return { base: v, outspeed };
   // game-less-backed
   const moves = (f.moveset ?? []).map(pm => pm?.getMove?.()).filter(mv => mv && mv.category !== MoveCategory.STATUS);
-  const atk = moves.length ? moves.reduce((t, mv) => t + effectiveness(TYPES[mv.type], me) * (typesOf(f).includes(TYPES[mv.type]) ? 1.5 : 1), 0) / moves.length : 1;
-  const def = typesOf(me).reduce((x, t) => x / Math.max(effectiveness(t, f), 0.25), 1);
-  return { base: atk + def, outspeed };
+  return turn.atEntry([f], () => {
+    const atk = moves.length ? moves.reduce((t, mv) => t + effectiveness(TYPES[mv.type], me) * (typesOf(f).includes(TYPES[mv.type]) ? 1.5 : 1), 0) / moves.length : 1;
+    const def = typesOf(me).reduce((x, t) => x / Math.max(effectiveness(t, f), 0.25), 1);
+    return { base: atk + def, outspeed };
+  });
 };
 // @mirrors send-in-at
 export const sendInAt = ({ base, outspeed }, foeHp, foeMax, ourHp, ourMax) => {
@@ -660,7 +683,8 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   let weBy = () => 0, qWe = 0, usesBy = () => 0, downAt = [];
   // An exchange `after` another follows a turn on another move, so this lock starts at its first use.
   const ourLock = mt.lock ? OUR_LOCK : null;
-  if (mine?.expected > 0) {
+  const entry = opts.free && !after ? entryOutcome(turn, me, foe, mine?.name) : null;
+  if (mine?.expected > 0 || entry?.expected > 0) {
     const atkStat = mine.cat === "special" ? Stat.SPATK : Stat.ATK;
     const drop = mt.drops?.[atkStat] ?? 0;
     const s0 = me.summonData?.statStages?.[atkStat - 1] ?? 0;
@@ -673,11 +697,14 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
       * (defUpBy ? stage(d0) / stage(Math.max(-6, Math.min(6, d0 + defUpBy * i))) : 1);
     delay = actDelay(me) + (mine.semi && pF >= 0.5 ? 1 : 0);
     const nowUse = !mt.charge && delay === 0;
-    qWe = nowUse ? (mine.pKo ?? 0) * now : 0;
-    const curve = koCurve(turn.mon(foe), useOf(mine), {
+    const first = nowUse && entry ? entry : mine;
+    const rest = first !== mine ? useOf(mine) : null;
+    qWe = nowUse ? (first.pKo ?? 0) * now : 0;
+    const curve = koCurve(turn.mon(foe), useOf(first), {
       scale, turnEnd: heal, cat: mine.cat,
       act: i => (i === 0 && nowUse ? now : steady * (acts ? acts.act(i + 1) : 1)),
       firstKo: exact && nowUse ? qWe : null, start: after?.foe, chain: ourLock ? OUR_CHAIN : null,
+      useAt: rest && (() => rest),
     });
     downAt = curve.downAt;
     const perChunk = curve.perChunk;
@@ -1666,26 +1693,30 @@ const statusPlay = (turn, me, f, info) => {
   return null;
 };
 // A hazard's worth against the trainer's mons still to come (game-code.md §14), in turns, and how many it touches.
-const hazardValue = (turn, me, tagType) => {
+// @only tests: hazardValue
+export const hazardValue = (turn, me, tagType) => {
   if (!turn.facts.trainer) return null;
   const coming = turn.facts.foes.filter(p => p && p.hp > 0 && !p.isOnField?.());
   if (!coming.length) return null;
   const layers = turn.facts.hazards(tagType, ArenaTagSide.ENEMY);
   const grounded = p => { try { return p.isGrounded?.() ?? !typesOf(p).includes("Flying"); } catch { return true; } };
   const guarded = p => !!p.hasAbilityWithAttr?.("BlockNonDirectDamageAbAttr");
-  if (tagType === "TOXIC_SPIKES" && coming.some(p => grounded(p) && typesOf(p).includes("Poison"))) return null;
   // @mirrors spikes-ratio
   const spikes = n => (n > 0 ? 1 / (10 - 2 * n) : 0);
   const share = p => {
-    if (tagType === "STEALTH_ROCK") return turn.mon(p).rockChip;
+    if (tagType === "STEALTH_ROCK") return turn.mon(p).rockChip();
     if (!grounded(p)) return 0;
     if (tagType === "SPIKES") return guarded(p) ? 0 : spikes(layers + 1) - spikes(layers);
     if (tagType === "TOXIC_SPIKES") return guarded(p) || !turn.mon(p).canTake(StatusEffect.POISON, me) ? 0 : layers ? 0.1 : 0.25;
     return 0;
   };
-  const shares = coming.map(p => Math.min(p.hp / p.getMaxHp(), share(p)));
-  const total = shares.reduce((t, x) => t + x, 0);
-  return total > 0 ? { turns: total * HAZARD_TURNS, n: shares.filter(x => x > 0).length } : null;
+  // A hazard lands on summon, before an instant Tera (game-code.md §7).
+  return turn.atEntry(coming, () => {
+    if (tagType === "TOXIC_SPIKES" && coming.some(p => grounded(p) && typesOf(p).includes("Poison"))) return null;
+    const shares = coming.map(p => Math.min(p.hp / p.getMaxHp(), share(p)));
+    const total = shares.reduce((t, x) => t + x, 0);
+    return total > 0 ? { turns: total * HAZARD_TURNS, n: shares.filter(x => x > 0).length } : null;
+  });
 };
 const lastMoveOf = me => ((me.summonData?.turnCount ?? 0) >= 2 ? me.getLastXMoves?.(1)?.[0]?.move ?? null : null);
 const cameInLastTurn = (turn, p) => (p.summonData?.turnCount ?? 2) <= 1 && (turn.facts.turn ?? 1) > 1;
@@ -1795,7 +1826,9 @@ export const battleModel = (baseTurn, { team = null } = {}) => {
       const both = slot.target === "both";
       // A status move's row shows the damage of the attack it sets up.
       const then = slot.move.cat === "status" ? slot.then ?? null : null;
-      const dmg = both ? planOutcomes(turn, slot.me, target).find(x => x.name === slot.move.name)?.expected ?? 0 : (then ?? slot.move).expected;
+      // A switch-in takes this turn's hit (`entryOutcome`).
+      const entry = !then && !active.includes(target) ? entryOutcome(turn, slot.me, target, slot.move.name) : null;
+      const dmg = entry?.expected ?? (both ? planOutcomes(turn, slot.me, target).find(x => x.name === slot.move.name)?.expected ?? 0 : (then ?? slot.move).expected);
       // The slot's own KO turns, so the row and the ⚔ line agree.
       return { me: slot.me, mine: { ...slot.move, dmg, then }, myTurns: both ? slot.each?.[ai] ?? koTurn(koCurve(turn.mon(target), [{ d: dmg, p: 1 }]).by) : slot.hits, score: slot.score, later: false, vs: target };
     }
@@ -1812,9 +1845,11 @@ export const battleModel = (baseTurn, { team = null } = {}) => {
 
   const teamWeak = {};
   const rows = foes.map(foe => {
+    // A bench mon's predicted Tera: after a faint send-in it Teras before any hit of ours lands (game-code.md §7).
+    const types = typesOf(foe), eff = TYPES.map(t => effectiveness(t, foe));
     const weak = [], avoid = [];
-    for (const t of TYPES) {
-      const e = effectiveness(t, foe);
+    for (const [i, t] of TYPES.entries()) {
+      const e = eff[i];
       if (e >= 2) { weak.push([t, e >= 4 ? "×4" : ""]); teamWeak[t] = (teamWeak[t] ?? 0) + 1; }
       else if (e === 0) avoid.push([t, "×0"]);
       else if (e <= 0.25) avoid.push([t, "×¼"]);
@@ -1830,7 +1865,7 @@ export const battleModel = (baseTurn, { team = null } = {}) => {
     const bars = bossBarsLeft(vs);
     const n = p?.mine ? hitCounts(p.mine) : null;
     return {
-      icon: iconOf(foe), name: foe.name, lv: foe.level, types: typesOf(foe), tera: turn.mon(foe).tera,
+      icon: iconOf(foe), name: foe.name, lv: foe.level, types, tera: turn.mon(foe).tera,
       traps, boss: !!foe.isBoss?.(), status: foe.status?.effect ?? 0,
       hp: Math.round(foe.hp / foe.getMaxHp() * 100),
       weak, avoid,
@@ -1841,6 +1876,7 @@ export const battleModel = (baseTurn, { team = null } = {}) => {
         confidence: t.confidence ?? "estimate",
         at: aimedAt(turn, t, foe),
         first: Math.round(t.first * 100), hits: t.move.hits,
+        ...(t.move.fails ? { fails: true } : {}),
       } : null,
       pick: p?.mine ? {
         icon: iconOf(p.me), name: p.me.name, move: p.mine.name, type: p.mine.type, cat: p.mine.cat,
