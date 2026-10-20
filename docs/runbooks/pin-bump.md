@@ -172,13 +172,13 @@ middle of a bump is recorded by hand (below).
 
 1. Start the plugin's server with `COACHEMON_CAPTURE=1` and solving on. Each solve from a fight's first turn keeps
    `<home>/fights/<seed>-w<wave>-<fight>.json` (what it solved from) and, once it finds an oracle line,
-   `<seed>-w<wave>-<fight>.win.script.json` beside it, its `known` taken from the line's checkpoints. A solve past the
+   `<seed>-w<wave>-<fight>.win.script.json` beside it, its `known` taken from the oracle line's checkpoints. A solve past the
    first turn keeps nothing, and only the 12 latest fights stay.
-2. Solve the fight at its first decision, and win it live on that line. Promoting is your word that you did: nothing
+2. Solve the fight at its first decision, and win it live on that oracle line. Promoting is your word that you did: nothing
    checks it.
 3. Run `npm run recheck:promote -- <home>/fights/<seed>-w<wave>-<fight>.json`. It copies the pair into
    `src/solver/fixtures/` as `<fight>-w<wave>` (`--stem <name>` picks another), names it in `known-fights.json`, and
-   re-checks that fight at the pin without a carry. It refuses a fight with no line file, a mid-fight file, a save from
+   re-checks that fight at the pin without a carry. It refuses a fight with no oracle line file, a mid-fight file, a save from
    another version than the pin, and a stem already taken. A failed re-check takes the fight back out.
 4. Remove the fight it replaces from `known-fights.json` and `src/solver/fixtures/`.
 

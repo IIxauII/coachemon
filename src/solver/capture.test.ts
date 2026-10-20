@@ -66,7 +66,7 @@ const solved =
   async () =>
     result;
 
-test("with capture on, a T1 solve that ends in a line keeps its input and a line readScript reads (#787)", async () => {
+test("with capture on, a T1 solve that ends in an oracle line keeps its input and an oracle line readScript reads (#787)", async () => {
   const dir = home();
   const input = t1();
 
@@ -79,6 +79,7 @@ test("with capture on, a T1 solve that ends in a line keeps its input and a line
     save: input.save,
     liveExport: input.liveExport,
     cloneVersion: "1.12.1.3",
+    budget: { expansions: 3000, turns: 40 },
   });
   const script = readScript(readFileSync(`${stem}.win.script.json`, "utf8"));
   assert.deepEqual(script, {
@@ -122,7 +123,7 @@ test("a mid-fight solve, from the export and its extras, writes nothing even wit
   assert.equal(existsSync(path.join(dir, "fights")), false);
 });
 
-test("a solve that ends with no line keeps its input alone, dropping an earlier solve's line of that fight (#787)", async () => {
+test("a solve that ends with no oracle line keeps its input alone, dropping an earlier solve's oracle line of that fight (#787)", async () => {
   const dir = home();
   const stem = path.join(dir, "fights", "Zu5cgKRQ0vigLcOhpJxYMUa0-w180-gordie");
   await withCapture(solved(), dir, ON)({ input: t1() }, ctl());
@@ -134,7 +135,7 @@ test("a solve that ends with no line keeps its input alone, dropping an earlier 
   assert.equal(existsSync(`${stem}.win.script.json`), false);
 });
 
-test("a solve cancelled before its line came back keeps no line (#787)", async () => {
+test("a solve cancelled before its oracle line came back keeps none (#787)", async () => {
   const dir = home();
   const controller = new AbortController();
   const work: JobWork = async () => {
@@ -147,7 +148,7 @@ test("a solve cancelled before its line came back keeps no line (#787)", async (
   assert.deepEqual(readdirSync(path.join(dir, "fights")), ["Zu5cgKRQ0vigLcOhpJxYMUa0-w180-gordie.json"]);
 });
 
-test("after a 13th kept fight, the oldest fight's input and line are gone and 12 fights remain (#787)", async () => {
+test("after a 13th kept fight, the oldest fight's input and oracle line are gone and 12 fights remain (#787)", async () => {
   const dir = home();
   const fights = path.join(dir, "fights");
   const hourAgo = Date.now() / 1000 - 3600;
@@ -162,7 +163,7 @@ test("after a 13th kept fight, the oldest fight's input and line are gone and 12
   assert.equal(left.filter(n => n.includes("-w2-")).length, 2);
 });
 
-test("a trainer double's line keeps each field slot's command and replacement as played, under the pair's name (#787)", async () => {
+test("a trainer double's oracle line keeps each field slot's command and replacement as played, under the pair's name (#787)", async () => {
   const dir = home();
   const double: Input = {
     kind: "double",

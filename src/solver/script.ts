@@ -24,6 +24,9 @@ const script = z.strictObject({
 });
 
 export type Script = z.infer<typeof script>;
+
+/** A known fight's oracle line beside its `<stem>.json`. */
+export const WIN_SCRIPT = ".win.script.json";
 export type Known = NonNullable<Script["known"]>;
 
 /** Throws, naming each place the text strays from a script. */

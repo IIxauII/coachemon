@@ -17,7 +17,13 @@ const save = {
   party: [],
   enemyParty: [],
 };
-const KEPT = { live: { wave: 180, battleSeed: "U0QKEz8wJ8ea7832" }, save, liveExport: { ...save, party: [{ id: 1 }] }, cloneVersion: PIN };
+const KEPT = {
+  live: { wave: 180, battleSeed: "U0QKEz8wJ8ea7832" },
+  save,
+  liveExport: { ...save, party: [{ id: 1 }] },
+  cloneVersion: PIN,
+  budget: { expansions: 3000, turns: 40 },
+};
 const LINE = { inputs: [{ kind: "move", move: "SURF", tera: false }], known: { outcome: "won", after: [{ turn: 1 }] } };
 const BEFORE: KnownFight[] = [{ stem: "drayton-w188", name: "Drayton W188" }];
 
@@ -34,12 +40,13 @@ function setUp({ kept = KEPT, line = LINE as unknown }: { kept?: unknown; line?:
   const knownFights = path.join(root, "known-fights.json");
   writeFileSync(knownFights, JSON.stringify(BEFORE));
   const rechecked: KnownFight[] = [];
-  const deps = (failed: string[] = []): PromoteDeps => ({
+  const deps = (failed: string[] | Error = []): PromoteDeps => ({
     fixtures,
     knownFights,
     pin: PIN,
     recheck: async fight => {
       rechecked.push(fight);
+      if (failed instanceof Error) throw failed;
       return { failed };
     },
   });
@@ -54,7 +61,7 @@ test("promoting a kept fight adds its fixtures and its known-fights entry, then 
 
   const fight = { stem: "gordie-w180", name: "Gordie W180" };
   assert.deepEqual(out, { promoted: fight });
-  const { cloneVersion: _version, ...given } = KEPT;
+  const { cloneVersion: _version, budget: _budget, ...given } = KEPT;
   assert.deepEqual(JSON.parse(readFileSync(path.join(fixtures, "gordie-w180.json"), "utf8")), given);
   assert.deepEqual(JSON.parse(readFileSync(path.join(fixtures, "gordie-w180.win.script.json"), "utf8")), LINE);
   assert.deepEqual(known(), [...BEFORE, fight]);
@@ -69,7 +76,7 @@ const refusedWith = async (out: Promise<unknown>, why: RegExp) => {
 test("promotion refuses a kept fight with no line file, naming why, and changes nothing (#787)", async () => {
   const { keptFile, fixtures, deps, known, rechecked } = setUp({ line: null });
 
-  await refusedWith(promote(keptFile, deps()), /no line file.*ended without an oracle line/);
+  await refusedWith(promote(keptFile, deps()), /no oracle line file.*ended without an oracle line/);
 
   assert.equal(existsSync(path.join(fixtures, "gordie-w180.json")), false);
   assert.deepEqual(known(), BEFORE);
@@ -118,5 +125,14 @@ test("a promoted fight whose re-check fails is taken back out, fixtures and entr
   assert.deepEqual(out, { refused: "the re-check of Gordie W180 failed: Gordie W180 didn't replay. Nothing was promoted." });
   assert.equal(existsSync(path.join(fixtures, "gordie-w180.json")), false);
   assert.equal(existsSync(path.join(fixtures, "gordie-w180.win.script.json")), false);
+  assert.deepEqual(known(), BEFORE);
+});
+
+test("a promoted fight whose re-check throws is taken back out too (#787)", async () => {
+  const { keptFile, fixtures, deps, known } = setUp();
+
+  await assert.rejects(promote(keptFile, deps(new Error("no pinned clone"))), /no pinned clone/);
+
+  assert.equal(existsSync(path.join(fixtures, "gordie-w180.json")), false);
   assert.deepEqual(known(), BEFORE);
 });

@@ -34,4 +34,4 @@ if ("refused" in out) {
   console.error(`\nNot promoted: ${out.refused}`);
   process.exit(1);
 }
-console.log(`\nPromoted ${out.promoted.name}: src/solver/fixtures/${out.promoted.stem}.json and its line, named in scripts/recheck/known-fights.json.`);
+console.log(`\nPromoted ${out.promoted.name}: src/solver/fixtures/${out.promoted.stem}.json and its oracle line, named in scripts/recheck/known-fights.json.`);
