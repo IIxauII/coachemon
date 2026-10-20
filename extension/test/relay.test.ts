@@ -1,9 +1,10 @@
 // An `EventTarget` stands in for `document` because `dispatchEvent` runs listeners synchronously, so these test
 // "reply before dispatch returns" itself, not a mock of it (extension-distribution.md §9.2).
 import assert from "node:assert/strict";
-import test, { type TestContext } from "node:test";
+import test, { afterEach, beforeEach, type TestContext } from "node:test";
 import { UiMode } from "../../src/enums/generated.ts";
 import { onPage, starterGrid } from "../../src/page/fake-page.ts";
+import type { ProbeResult } from "../../src/page/probe.ts";
 import type { StartersResult } from "../../src/page/starters.ts";
 import type { ToBackground } from "../src/messages.ts";
 import { EVENT, MAX_DETAIL_BYTES, cardBody, encode } from "../src/relay/channel.ts";
@@ -43,6 +44,50 @@ function tab(o: { build?: string } = {}) {
 }
 
 const tabFrames = (sent: ToBackground[]) => sent.filter(m => m.t === "tab");
+
+// The page script installs the error recorder on `globalThis`, which in Node has no `addEventListener`, and
+// `recordErrors` keeps the first recorder it finds: one left over would hold the last test's lines (#475).
+const g = globalThis as unknown as Record<string, unknown>;
+const realConsole = console;
+let pageEvents = new EventTarget();
+beforeEach(() => {
+  pageEvents = new EventTarget();
+  g.addEventListener = pageEvents.addEventListener.bind(pageEvents);
+  g.console = Object.assign(Object.create(realConsole), { error: () => {}, warn: () => {} });
+});
+afterEach(() => {
+  delete g.addEventListener;
+  delete g.__coachemonErrors;
+  g.console = realConsole;
+});
+const firePage = (type: string, fields: Record<string, unknown>) => pageEvents.dispatchEvent(Object.assign(new Event(type), fields));
+
+const probed = (r: Relay, id: number, args: { tail?: boolean } = {}) =>
+  (r.command({ t: "cmd", id, name: "probe", args }) as { result: ProbeResult }).result;
+
+test("a page error or unhandled rejection reaches the next probe's `errorAt` and `tail` (extension-distribution.md §12.4, #475)", () => {
+  const t = tab();
+  const r = t.relay();
+  t.page();
+  assert.equal(probed(r, 1).errorAt, null);
+  firePage("error", { message: "TypeError: x is undefined" });
+  firePage("unhandledrejection", { reason: new Error("save failed") });
+  assert.equal(typeof probed(r, 2).errorAt, "number");
+  assert.deepEqual(probed(r, 3, { tail: true }).console?.map(l => [l.level, l.text]), [
+    ["exception", "TypeError: x is undefined"],
+    ["rejection", "save failed"],
+  ]);
+});
+
+test("a page script that replaces another keeps one recorder, so a console error is recorded once (extension-distribution.md §9.6, #475)", () => {
+  const t = tab();
+  const r = t.relay();
+  const window = {};
+  t.page({ global: window });
+  t.page({ global: window });
+  console.error("once");
+  assert.deepEqual(probed(r, 1, { tail: true }).console?.map(l => [l.level, l.text]), [["error", "once"]]);
+});
 
 test("the double announce makes a tab ready in either load order (extension-distribution.md §9.3)", () => {
   for (const order of ["relay first", "page first"] as const) {

@@ -12,7 +12,6 @@ export const HANG_DWELL_MS = 30_000;
 
 /**
  * Once the page has thrown an unhandled rejection, taken as the save's (extension-distribution.md §12.4). 20 polls.
- * Never under the hub link: nothing installs `recordErrors` there (#475).
  */
 export const HANG_CORROBORATED_MS = 2_000;
 
