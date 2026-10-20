@@ -15,7 +15,8 @@ const act = a => {
     ...(a.tera ? [h("span", { ...ink.ours, marginLeft: "3px" }, "Tera"), a.tera.type ? badge(a.tera.type) : null, h("span", { ...dim, marginRight: "3px" }, "+")] : []),
     a.type ? badge(a.type) : null,
     h("span", { fontWeight: "bold" }, a.move),
-    ...(a.target ? [h("span", { ...dim, margin: "0 3px" }, "→"), mon(a.target.icon, a.target.name, ICON.ref)] : []),
+    ...(a.target ? [h("span", { ...dim, margin: "0 3px" }, "→"), a.target.ourSide ? h("span", { ...ink.ours, marginRight: "3px" }, "our") : null,
+      mon(a.target.icon, a.target.name, ICON.ref)] : []),
   ];
 };
 const teras = a => (a?.kind === "double" ? a.slots.some(x => x.tera) : !!a?.tera);
