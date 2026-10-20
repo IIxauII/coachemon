@@ -906,6 +906,14 @@ export const PAGE: Area = {
       ],
     },
     {
+      ours: "src/page/menu.ts#shop-continue",
+      of: [
+        "src/ui/handlers/modifier-select-ui-handler.ts#ModifierSelectUiHandler.show",
+        "src/ui/handlers/modifier-select-ui-handler.ts#ModifierSelectUiHandler.setRowCursor",
+        "src/ui/handlers/modifier-select-ui-handler.ts#ModifierSelectUiHandler.setCursor",
+      ],
+    },
+    {
       ours: "src/page/menu.ts#shop-rows-reversed",
       of: [
         "src/ui/handlers/modifier-select-ui-handler.ts#ModifierSelectUiHandler.getRowItems",

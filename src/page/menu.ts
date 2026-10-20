@@ -109,10 +109,15 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       const btn = (c: any, col: number) => ({ col, label: __strip(__texts(c)[0]) || null, visible: !!(c && c.visible) });
       // @mirrors shop-buttons
       const buttons = [btn(h.rerollButtonContainer, 0), btn(h.transferButtonContainer, 1), btn(h.checkButtonContainer, 2), btn(h.lockRarityButtonContainer, 3)];
-      if (h.continueButtonContainer && h.continueButtonContainer.visible) buttons.push(btn(h.continueButtonContainer, 4));
       rows.push({ row: 0, kind: "buttons", items: buttons.filter(b => b.visible && b.label) });
       const item = (o: any, col: number) => ({ col, label: __try(() => o.modifierTypeOption.type.name), cost: __try(() => o.modifierTypeOption.cost), desc: __try(() => o.modifierTypeOption.type.getDescription()) });
-      rows.push({ row: 1, kind: "reward", items: (h.options || []).map(item) });
+      const rewards = h.options || [];
+      // With no free reward the game puts Continue at row 1, cursor 0 (#819). Its box shows whenever the reroll is
+      // dead, but its text only while no reward is offered.
+      // @mirrors shop-continue
+      const cont = btn(h.continueButtonContainer, 0);
+      if (rewards.length === 0 && cont.visible && cont.label) rows.push({ row: 1, kind: "buttons", items: [cont] });
+      else rows.push({ row: 1, kind: "reward", items: rewards.map(item) });
       const shop = h.shopOptionsRows || [];
       for (let r = 0; r < shop.length; r++) {
         // Shop rows are indexed backwards (v1-tool-surface.md §7).

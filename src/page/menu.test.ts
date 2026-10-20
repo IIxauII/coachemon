@@ -92,6 +92,41 @@ test("a reward offer carries the game's own description, the field probe.js's re
   assert.equal(menu.extra.rows[0].items.length, 0);
 });
 
+/**
+ * A shop after `ModifierSelectUiHandler.show` has faded its buttons in. `rerollCost < 0` shows the Continue container;
+ * its text shows only with no free reward (#819).
+ */
+function shopScene(rewards: string[], rerollCost: number) {
+  const box = (label: string, visible = true) => ({ visible, list: [{ text: label, visible: true }] });
+  const offer = (name: string, cost: number) => ({ modifierTypeOption: { type: { name, getDescription: () => "" }, cost } });
+  const h = {
+    rowCursor: 2, cursor: 0, rerollCost,
+    options: rewards.map(r => offer(r, 0)),
+    shopOptionsRows: [[offer("Super Potion", 300)]],
+    rerollButtonContainer: box("Reroll"), transferButtonContainer: box("Manage Items"), checkButtonContainer: box("Check Team"),
+    lockRarityButtonContainer: box("Lock Rarities", false), continueButtonContainer: box("Continue", rerollCost < 0),
+    setRowCursor(row: number) { this.rowCursor = row; },
+    setCursor(col: number) { this.cursor = col; },
+  };
+  return { h, scene: { ui: { mode: UiMode.MODIFIER_SELECT, handlers: { [UiMode.MODIFIER_SELECT]: h } }, money: 1000 } };
+}
+
+test("a shop with no free reward reads Continue where the game keeps it, row 1 cursor 0, and selecting it lands there (#819)", t => {
+  const { h, scene } = shopScene([], -1);
+  onPage(t, scene);
+  const cont = send("menu", {}).options.find((o: { label: string }) => o.label === "Continue");
+  assert.deepEqual([cont.i, cont.row, cont.col, cont.kind], ["1:0", 1, 0, "buttons"]);
+  const { fine } = send("probe", {});
+  assert.equal(send("cursor.shop", { row: cont.row, col: cont.col, fine }).ok, true);
+  assert.deepEqual([h.rowCursor, h.cursor], [1, 0]);
+});
+
+test("a shop with free rewards and a dead reroll reads no Continue: the game hides its text while a reward is offered (#819)", t => {
+  onPage(t, shopScene(["Leftovers"], -1).scene);
+  const menu = send("menu", {});
+  assert.deepEqual(menu.options.filter((o: { row: number }) => o.row <= 1).map((o: { i: string; label: string }) => `${o.i} ${o.label}`), ["0:0 Reroll", "0:1 Manage Items", "0:2 Check Team", "1:0 Leftovers"]);
+});
+
 test("an option list reads its cursor as the option under it, counting selectable options only", t => {
   const options = ["Grass", "Fire", "Locked", "Water", "Cancel"].map((label, i) => ({ label, selectable: i !== 2 }));
   const h = { cursor: 1, scrollCursor: 2, maxOptions: 3, options, config: { options: options.map(o => (o.selectable ? { label: o.label } : o)) } };
