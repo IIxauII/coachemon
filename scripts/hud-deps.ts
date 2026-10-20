@@ -307,6 +307,7 @@ export const HUD_DEPS = {
     `src/data/abilities/ab-attrs.ts#ReduceStatusEffectDurationAbAttr.apply`,
     `src/data/battler-tags.ts#MoveLockTag.getNextTargets`,
     `src/data/moves/move-utils.ts#getMoveTargets`,
+    `${P}#Pokemon.getMatchupScore`,
   ],
 
   "35-team-plan.js": [

@@ -403,10 +403,10 @@ export const sceneSwitches = (env, active) => {
   return out;
 };
 
-// The type scores alone, with no HP or Speed factor: asked with `f` at full HP and ours at 0, the factor's HP sum is 2,
-// which no branch of it brings under 1 (game-code.md §7). Ours at 0 alone is not enough, as a slower `f` at 21–40 %
-// HP is still halved. The plan puts the factor back at the HPs it reaches.
+// The type scores alone: with `f` at full HP and ours at 0 the HP factor's sum is 2, which no branch of it brings under
+// 1 (game-code.md §7). Ours at 0 alone still halves a slower `f` at 21–40 % HP, and `sendInAt` halves it again (#464).
 export const sceneSendInScore = (env, f, me) => {
-  const v = Object.create(f, { hp: { value: f.getMaxHp() } }).getMatchupScore(Object.create(me, { hp: { value: 0 } }));
+  const full = Object.create(f, { hp: { value: f.getMaxHp() } }), fainted = Object.create(me, { hp: { value: 0 } });
+  const v = full.getMatchupScore(fainted);
   return Number.isFinite(v) ? v : null;
 };

@@ -31,7 +31,7 @@ const stubTurn = ({ party, foes, live, double, trainer, arena, phase, fieldIndex
     replay: (e, target, opts) => globalThis.__stub.replay?.(e, target, opts) ?? null,
     benefit: (atk, def, mv) => globalThis.__stub.benefit?.(atk, mv, def) ?? 0,
     // The trainer's send-in score.
-    sendIn: (f, me) => f.getMatchupScore?.(me) ?? null,
+    sendIn: (f, me) => (f.getMatchupScore ? globalThis.__hud["20-enemy-ai"].sceneSendInScore(null, f, me) : null),
   });
 };
 // `koCurve` takes the turn's per-mon record, so it is wrapped to look that up.
@@ -1358,6 +1358,27 @@ Object.assign(TABLE, {
   assert.ok(Math.abs(snorlax - (0.1 + confused)) < 1e-3, `the uses land, then confusion (${snorlax})`);
   assert.ok(Math.abs(clefable - (0.1 + 1 + confused / 2)) < 1e-3, `immune: a lost turn, and confusion when it was the last use (${clefable})`);
   assert.ok(Math.abs(skarmory - (0.1 + confused + 1.5 * 0.75)) < 1e-3, `resisted: each forced use loses ¾ of Fire Punch (${skarmory})`);
+
+  // The lock carries onto the mon the game sends in at the HPs on the field (#464): Clefable's type scores beat
+  // Snorlax's, but at 30 % HP and slower than our full-HP Dragonite its score is halved below Snorlax's.
+  {
+    const SPD = 5;
+    const hpRatio = (hp, max) => Math.round(hp / max * 100) / 100;
+    // `Pokemon.getMatchupScore` for a mon off the field (game-code.md §7), its type scores fixed at `typeScore`.
+    function getMatchupScore(o) {
+      const own = hpRatio(this.hp, this.getMaxHp());
+      let hpDiffRatio = own + (1 - hpRatio(o.hp, o.getMaxHp()));
+      if (this.getStat(SPD) >= o.getStat(SPD)) hpDiffRatio *= 1.25;
+      else if (own > 0.2 && own <= 0.4) hpDiffRatio *= 0.5;
+      return this.typeScore * Math.min(hpDiffRatio, 1);
+    }
+    const scored = (name, hp, typeScore) => mon(name, 80, ["Normal"], [500, 100, 100, 100, 100, 50], [["Tackle", "Normal", 40, "P"]], false, hp, { typeScore, getMatchupScore });
+    const me = dragonite([outrage]);
+    const foes = [gyarados(), scored("Clefable", 150, 5), scored("Snorlax", 500, 2)];
+    const { scene: s } = render({ party: [me], foes, live: true, switches: () => new Map(), stubOutcome: locks });
+    const cost = globalThis.__planner.exchange(s, me, me.moveset[0], foes[0]).cost;
+    assert.ok(Math.abs(cost - snorlax) < 1e-9, `the lock carries onto Snorlax, not Clefable (${cost}; Snorlax ${snorlax}, Clefable ${clefable})`);
+  }
 
   const pick = benchNames => {
     const me = dragonite([outrage, ["Dragon Claw", "Dragon", 80, "P"]]);

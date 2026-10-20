@@ -152,21 +152,20 @@ assert.equal(plan.approxDoubles, false);
   const at = (ourHp, fi) => Math.round(tpSendScore(T, { oh: [ourHp], fh: [30, 30] }, fi, 0) * 1000) / 1000;
   assert.deepEqual([at(200, 0), at(20, 0), at(200, 1), at(20, 1)], [0.45, 1.8, 1.125, 3], "the HP factor follows the simulated HP");
 }
-// The same score through the game's own `getMatchupScore` (#464): at any HP the plan reaches, the plan's send-in score
-// is what the game would say there. The slower foe at 30 % HP is the one the game halves, and it must be halved once.
+// The plan's send-in score at any HP it reaches is the game's there (#464): a slower foe at 30 % HP is halved once.
 {
   const { tpTables, tpSendScore } = globalThis.__tp;
   const { sceneSendInScore } = globalThis.__hud["20-enemy-ai"];
-  const pct = (hp, max) => Math.round(hp / max * 100) / 100;
-  // `Pokemon.getMatchupScore` (game-code.md §7), its type scores fixed at `typeScore`.
+  const SPD = 5;
+  const hpRatio = (hp, max) => Math.round(hp / max * 100) / 100;
+  // `Pokemon.getMatchupScore` for a mon off the field (game-code.md §7), its type scores fixed at `typeScore`.
   function getMatchupScore(o) {
-    const outspeed = this.getStat(5) >= o.getStat(5);
-    const hpRatio = pct(this.hp, this.getMaxHp());
-    let d = hpRatio + (1 - pct(o.hp, o.getMaxHp()));
-    if (hpRatio <= 0.2 && this.isOnField()) d = 1 - hpRatio + (outspeed ? 0.2 : 0.1);
-    else if (outspeed) d *= 1.25;
-    else if (hpRatio > 0.2 && hpRatio <= 0.4) d *= 0.5;
-    return this.typeScore * Math.min(d, 1);
+    const outspeed = this.getStat(SPD) >= o.getStat(SPD);
+    const own = hpRatio(this.hp, this.getMaxHp());
+    let hpDiffRatio = own + (1 - hpRatio(o.hp, o.getMaxHp()));
+    if (outspeed) hpDiffRatio *= 1.25;
+    else if (own > 0.2 && own <= 0.4) hpDiffRatio *= 0.5;
+    return this.typeScore * Math.min(hpDiffRatio, 1);
   }
   const me = mon("Blastoise", 100, ["Water"], "Torrent", [200,200,260,230,270,180], [["Hydro Pump","Water",110,"S"]], true);
   const foe = (name, spe, hp) => Object.assign(mon(name, 100, ["Normal"], "x", [300,200,200,200,200,spe], [["Tackle","Normal",40,"P"]], false, hp),
