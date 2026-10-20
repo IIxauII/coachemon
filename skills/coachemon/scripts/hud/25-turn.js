@@ -262,9 +262,13 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
     if (!m.has(k)) m.set(k, fn());
     return m.get(k);
   };
-  // Every game call below goes through one of these: damage with the predicted Tera on, the AI with it off.
+  // Every game call below goes through one of these. Only this turn's `EnemyCommandPhase` — the switch check and the
+  // move pick — happens before the Tera, so only `asCommandAi` turns the predicted flags off. Every other AI call is
+  // about a turn after this one (`replayAI`), a mon coming in later (`sendInScore`) or a move of ours landing on the
+  // foe it will have become, so it sees the Tera like the damage calls do (#648).
   const asDamage = fn => (patches.length ? withPatches(patches, fn) : fn());
-  const asAi = fn => beforeTera(() => asDamage(fn));
+  const asAi = fn => asDamage(fn);
+  const asCommandAi = fn => beforeTera(() => asDamage(fn));
 
   const turn = {
     live, key, facts,
@@ -305,10 +309,10 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
     teraNow: foe => memo("tera", foe, () => !turn.switches().get(foe) && !!tryDo(() => env.trainer?.shouldTera?.(foe), false)),
     // Whatever the exact call said: later turns are played from it, and it is that call's oracle at a pin bump (#183).
     enemyDistribution: foe => memo("dist", foe, () => (live
-      ? tryDo(() => asAi(() => sceneDistribution(env, foe)), null) ?? approxDistribution(foe, (e, o) => turn.outcomes(e, o))
+      ? tryDo(() => asCommandAi(() => sceneDistribution(env, foe)), null) ?? approxDistribution(foe, (e, o) => turn.outcomes(e, o))
       : approxDistribution(foe, (e, o) => turn.outcomes(e, o)))),
     // All slots at once: each decision moves the counter the next reads (game-code.md §7).
-    switches: () => memo("switches", "", () => (live ? asAi(() => sceneSwitches(env, turn.activeFoes())) : new Map())),
+    switches: () => memo("switches", "", () => (live ? asCommandAi(() => sceneSwitches(env, turn.activeFoes())) : new Map())),
     activeFoes: () => memo("activeFoes", "", () => {
       const out = env.foes.filter(p => p.isOnField?.());
       return (out.length ? out : env.foes).slice(0, env.double ? 2 : 1);
@@ -349,10 +353,20 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
 const turnKeyOf = (env, facts) => [facts.wave, facts.turn, facts.enemySwitchCounter, facts.decision,
   ...[...env.playerParty, ...env.foes].map(p => p && `${p.id}:${p.hp}:${p.bossSegmentIndex ?? ""}:${p.isOnField?.() ? 1 : 0}:${p.isTerastallized ? 1 : 0}`)].join("|");
 
-const predictedTeras = (env, turn) => {
-  if (!env.trainer?.shouldTera) return [];
-  return turn.activeFoes().filter(e => tryDo(() => turn.teraNow(e), false));
+// The enemy party slots the trainer Terastallizes the moment they come in (game-code.md §7). It is known up front, and
+// the Tera then stays for the rest of the battle: a bench mon named here is priced at its Tera type from its entry on,
+// so the fight plan and its row see the typing it will actually fight at (#648).
+const instantTeraFoes = (env, turn) => {
+  const slots = tryDo(() => env.trainer?.config?.trainerAI?.instantTeras, null);
+  if (!Array.isArray(slots)) return [];
+  const active = turn.activeFoes();
+  return slots.map(i => env.foes[i]).filter(e => e && e.hp > 0 && !active.includes(e));
 };
+
+const predictedTeras = (env, turn) => [
+  ...(env.trainer?.shouldTera ? turn.activeFoes().filter(e => tryDo(() => turn.teraNow(e), false)) : []),
+  ...instantTeraFoes(env, turn),
+];
 
 // The turn is dead once `fn` returns. `estimate` never asks the game, decision or not.
 export const readTurn = (s, fn, { estimate = false } = {}) => {
