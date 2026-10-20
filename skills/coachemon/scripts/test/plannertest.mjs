@@ -428,6 +428,13 @@ Object.assign(TABLE, { "Ambipom>Fake Out>Slowbro": [[60], 1, 1], "Ambipom>Return
   console.log(`== depth 2: Fake Out then Return (live)\n${withFakeOut}`);
   assert.match(withFakeOut, /Fake Out → Slowbro .*then Return/, `Fake Out first, Return after:\n${withFakeOut}`);
   assert.match(at(outcome), /Return → Slowbro/, "no flinch, no Fake Out");
+
+  // The fight plan can't repeat a first-turn-only move, so a pin on Fake Out runs its follow-up (#650).
+  const { scene: s } = render({ party, foes, live: true, dist, switches: () => new Map(), stubOutcome: fakeOut });
+  const team = globalThis.__hud["35-team-plan"].teamPlanner(s);
+  const [fo, ret] = ["Fake Out", "Return"].map(n => globalThis.__planner.planOutcomes(s, party[0], foes[0]).find(o => o.name === n));
+  const pinned = team.at({ mi: 0, outcome: fo, then: ret }), plain = team.at({ mi: 0, outcome: ret });
+  assert.deepEqual(pinned.steps, plain.steps, `Fake Out then Return plays as Return: ${JSON.stringify(pinned.steps[0])}`);
 }
 
 // ---- Consistency: two equal moves, and the one Garchomp used last turn keeps the edge rather than the first listed.
@@ -460,6 +467,14 @@ Object.assign(TABLE, { "Gallade>Leaf Blade>Snorlax": [[90], 1, 1], "Snorlax>Body
   console.log(`== setup: Swords Dance then Leaf Blade (live)\n${setupLine}`);
   assert.match(setupLine, /Swords Dance .*\+2 Atk .*then Leaf Blade/, `set up, then attack:\n${setupLine}`);
   assert.ok(!/→/.test(setupLine), "a move on the user aims at nobody");
+  // The fight plan runs the follow-up from turn 1, so it is pinned at the strength it has before the setup (#650).
+  {
+    const party = gallade(), foes = snorlax(450);
+    const { scene: s } = oneOnOne({ party, foes, dist: only("Body Slam") });
+    const pick = globalThis.__planner.fieldPlan(s, party, foes, false).picks[0];
+    const base = globalThis.__planner.planOutcomes(s, party[0], foes[0]).find(o => o.name === "Leaf Blade");
+    assert.equal(pick.then?.expected, base.expected, `the pin is the unboosted Leaf Blade: ${pick.then?.expected} vs ${base.expected}`);
+  }
   // 213–250 into 400: already a 2HKO.
   TABLE["Gallade>Leaf Blade>Snorlax"] = [[250], 1, 1];
   assert.match(lineOf(oneOnOne({ party: gallade(), foes: snorlax(400), dist: only("Body Slam") }).field, "Gallade"), /Leaf Blade → Snorlax/, "no setup when the hit already 2HKOs");
@@ -1078,6 +1093,7 @@ const hydreigonSnorlax = () => [
   console.log(`== doubles protect (live)\n${lines.join("\n")}`);
   const slots = slotLines(field);
   assert.match(slots.find(l => /^⚔ Lucario/.test(l)) ?? "", /Protect .*Garchomp KOs Hydreigon first/, `Lucario protects:\n${field.join("\n")}`);
+  assert.ok(!/before it can act|💀/.test(slots.find(l => /^⚔ Lucario/.test(l)) ?? ""), `Protect blocks the hit it would be tagged for (#650):\n${field.join("\n")}`);
   assert.match(slots.find(l => /^⚔ Garchomp/.test(l)) ?? "", /Dragon Claw → Hydreigon/);
 }
 
@@ -1480,6 +1496,103 @@ Object.assign(TABLE, {
   assert.equal(out.groups[0].summary, "no advice — the enemy AI call threw");
   assert.deepEqual(out.lines.filter(l => l.startsWith("⚠")), [], out.lines.join("\n"));
   assert.equal(globalThis.__planner.cardSummary(out.card).field, "no advice — the enemy AI call threw");
+}
+
+// ---- A move is worth only what its user lands before it falls (#650, W145 T4). Dragonite at 169 of 340 is outsped and
+// one-shot by Rayquaza's Outrage. Dragon Hammer fells Rayquaza in two uses and never goes off; Extreme Speed (+2) needs
+// three but takes a third of the bar off first, so it is the call and the plan's step shows the chip.
+Object.assign(TABLE, {
+  "Dragonite>Dragon Hammer>Rayquaza": [[220], 1, 2], "Dragonite>Extreme Speed>Rayquaza": [[140], 1, 1],
+  "Rayquaza>Outrage>Dragonite": [[300], 1, 2],
+  "Raichu>Thunderbolt>Rayquaza": [[150], 1, 1], "Rayquaza>Outrage>Raichu": [[400], 1, 1],
+});
+{
+  const HAMMER = ["Dragon Hammer", "Dragon", 90, "P"], SPEED = ["Extreme Speed", "Normal", 80, "P", 2];
+  const lostRace = moves => {
+    const party = [
+      mon("Dragonite", 80, ["Dragon", "Flying"], [340, 200, 150, 150, 150, 160], moves, true, 169),
+      mon("Raichu", 80, ["Electric"], [240, 120, 100, 160, 110, 180], [["Thunderbolt", "Electric", 90, "S"]], false),
+    ];
+    const foes = [mon("Rayquaza", 84, ["Dragon", "Flying"], [350, 250, 120, 250, 120, 200], [["Outrage", "Dragon", 120, "P"]], true)];
+    return render({ party, foes, live: true, switches: () => new Map(),
+      dist: e => (e === foes[0] ? [{ name: "Outrage", type: "Dragon", p: 1, score: 10, targets: [0] }] : []) });
+  };
+  const both = lostRace([HAMMER, SPEED]);
+  console.log(`== a lost race: only what lands counts (#650)\n${both.field.join("\n")}`);
+  const call = both.field.find(l => /^⚔/.test(l));
+  assert.match(call, /Extreme Speed → .*Rayquaza/, `the move that lands is the call:\n${both.field.join("\n")}`);
+  assert.ok(!/Dragon Hammer/.test(call), `the KO it never reaches is not the call: ${call}`);
+  const step = both.card.teamPlan.steps[0];
+  assert.equal(step.send.name, "Dragonite");
+  assert.ok(step.foeHp < 100, `the pinned plan's step lands the chip: ${step.why}`);
+
+  // With only the priority move there is no choice to make: the step still lands damage, and the card's danger tag is
+  // a risk after our hit, not a KO before it.
+  const only = lostRace([SPEED]);
+  console.log(`== the priority move alone (#650)\n${only.field.join("\n")}`);
+  assert.ok(only.card.teamPlan.steps[0].foeHp < 100, `the step lands damage: ${only.card.teamPlan.steps[0].why}`);
+  assert.notEqual(only.card.field.slots[0].threat?.level, "ko", "a pick that moves first is never KO'd before it acts");
+  assert.ok(!only.field.some(l => /before it can act/.test(l)), only.field.join("\n"));
+}
+
+// ---- A charge move whose one use races the foe's KO on a speed tie goes off half the time (#650).
+Object.assign(TABLE, { "Venusaur>Solar Beam>Arcanine": [[400], 1, 2], "Arcanine>Flare Blitz>Venusaur": [[200], 1, 2] });
+{
+  const me = mon("Venusaur", 80, ["Grass", "Poison"], [300, 150, 150, 200, 150, 100], [["Solar Beam", "Grass", 120, "S"]], true);
+  const foes = [mon("Arcanine", 80, ["Fire"], [300, 200, 150, 150, 150, 100], [["Flare Blitz", "Fire", 120, "P"]], true)];
+  const charges = (a, d, pm, o) => { const x = outcome(a, d, pm, o); return x && pm.getName() === "Solar Beam" ? { ...x, traits: { ...x.traits, charge: true } } : x; };
+  const dist = () => [{ name: "Flare Blitz", type: "Fire", p: 1, score: 10, targets: [0] }];
+  const { scene: s } = render({ party: [me], foes, live: true, dist, switches: () => new Map(), stubOutcome: charges });
+  const x = globalThis.__planner.exchange(s, me, me.moveset[0], foes[0]);
+  console.log(`== a charge move on a speed tie: acts ${1 - x.pNeverUsed} · first ${x.pFirst}`);
+  assert.equal(x.pFirst, 0.5);
+  assert.ok(Math.abs(x.pNeverUsed - 0.5) < 1e-9, `fires only when it moves first on turn 2: ${x.pNeverUsed}`);
+}
+
+// ---- A depth-2 line pays for the turn its first move never goes off, as the move alone does (#650).
+Object.assign(TABLE, {
+  "Dragonite>Dragon Hammer>Groudon": [[220], 1, 1], "Dragonite>Extreme Speed>Groudon": [[140], 1, 1],
+  "Groudon>Precipice Blades>Dragonite": [[300], 1, 1],
+});
+{
+  const me = mon("Dragonite", 80, ["Dragon", "Flying"], [340, 200, 150, 150, 150, 160],
+    [["Dragon Hammer", "Dragon", 90, "P"], ["Extreme Speed", "Normal", 80, "P", 2]], true, 277);
+  const foes = [mon("Groudon", 84, ["Ground"], [230, 250, 120, 250, 120, 200], [["Precipice Blades", "Ground", 120, "P"]], true)];
+  const dist = () => [{ name: "Precipice Blades", type: "Ground", p: 1, score: 10, targets: [0] }];
+  const line = lineOf(render({ party: [me], foes, live: true, dist, switches: () => new Map() }).field, "Dragonite");
+  console.log(`== a depth-2 line pays the charge (#650)\n${line}`);
+  assert.match(line, /Extreme Speed → Groudon/, `the hit that lands before the KO is the call: ${line}`);
+}
+
+// ---- A status play pays for the share of the time its user falls before landing a hit, as an attack does (#650).
+Object.assign(TABLE, { "Gallade>Leaf Blade>Lucario": [[90], 1, 1], "Lucario>Close Combat>Gallade": [[300], 1, 1] });
+{
+  const party = [mon("Gallade", 80, ["Psychic", "Fighting"], [300, 200, 110, 90, 150, 100], [["Leaf Blade", "Grass", 90, "P"], SWORDS_DANCE], true, 277)];
+  const foes = [mon("Lucario", 80, ["Fighting", "Steel"], [450, 150, 110, 80, 150, 200], [["Close Combat", "Fighting", 120, "P"]], true)];
+  const line = lineOf(oneOnOne({ party, foes, dist: only("Close Combat") }).field, "Gallade");
+  console.log(`== an outsped setup never lands (#650)\n${line}`);
+  assert.match(line, /Leaf Blade → Lucario/, `a setup that never lands a hit is not the call: ${line}`);
+}
+
+// ---- A spread move pays for the share of the time its user falls before it goes off, as a single-target one does (#650).
+Object.assign(TABLE, {
+  "Garchomp>Boomburst>Hydreigon": [[120], 1, 1], "Garchomp>Boomburst>Snorlax": [[120], 1, 1], "Garchomp>Dragon Claw>Hydreigon": [[400], 1, 2],
+  "Hydreigon>Dark Pulse>Garchomp": [[190], 1, 1],
+});
+{
+  const party = [
+    mon("Garchomp", 80, ["Dragon", "Ground"], [270, 200, 150, 120, 130, 130], [["Boomburst", "Normal", 140, "S", 0, { target: 6 }], ["Dragon Claw", "Dragon", 80, "P"]], true, 175, { getBattlerIndex: () => 0 }),
+    doublesParty()[1],
+  ];
+  const foes = [
+    foeAt(2, "Hydreigon", 80, ["Dark", "Dragon"], [300, 120, 110, 160, 110, 200], [["Dark Pulse", "Dark", 80, "S"]]),
+    foeAt(3, "Snorlax", 80, ["Normal"], [460, 150, 110, 80, 150, 40], [["Body Slam", "Normal", 85, "P"]]),
+  ];
+  const dist = e => [{ name: e.moveset[0].getName(), type: TY[e.moveset[0].getMove().type], p: 1, score: 10, targets: [e === foes[0] ? 0 : 1] }];
+  const { field } = render({ party, foes, live: true, double: true, dist, switches: () => new Map() });
+  const g = slotLines(field).find(l => /^⚔ Garchomp/.test(l)) ?? "";
+  console.log(`== an outsped spread move (#650)\n${g}`);
+  assert.match(g, /Dragon Claw → Hydreigon/, `the KO it may land beats a chip it may not: ${g}`);
 }
 
 console.log("ok");

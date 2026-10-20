@@ -6,14 +6,14 @@ import { fakeTurn } from "./fake-turn.mjs";
 
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
-// moves: [name, type, power, cat, target=3]
+// moves: [name, type, power, cat, target=3, priority=0]
 const mon = (name, lv, types, ability, [hp, atk, def, spa, spd, spe], moves, field, curHp, boss = 0, next) => onGame({
   next, id: name, getMoveQueue: () => [], isTrapped: () => false, trainerSlot: 0, species: { legendary: false },
   name, level: lv, hp: curHp ?? hp, getMaxHp: () => hp, getTypes: () => types.map(t => TY.indexOf(t)), getAbility: () => ({ name: ability }), hasPassive: () => false,
   getStat: i => [hp, atk, def, spa, spd, spe][i], summonData: { statStages: [0,0,0,0,0,0,0] }, isOnField: () => field,
   isBoss: () => boss > 0, bossSegments: boss, bossSegmentIndex: boss - 1,
   getIconAtlasKey: () => "k", getIconId: () => 1, status: null,
-  moveset: moves.map(([n, t, p, c, target = 3], i) => ({ moveId: i + 1, getName: () => n, getMove: () => ({ type: TY.indexOf(t), power: p, category: cat[c], moveTarget: target }), getMovePp: () => 10, ppUsed: 0 })),
+  moveset: moves.map(([n, t, p, c, target = 3, priority = 0], i) => ({ moveId: i + 1, getName: () => n, getMove: () => ({ type: TY.indexOf(t), power: p, category: cat[c], moveTarget: target, priority }), getMovePp: () => 10, ppUsed: 0 })),
 });
 const party = [
   mon("Morpeko", 100, ["Electric","Dark"], "Hunger Switch", [260,250,160,150,160,250], [["Aura Wheel","Electric",110,"P"],["Crunch","Dark",80,"P"]], true),
@@ -254,5 +254,39 @@ assert.equal(plan.approxDoubles, false);
   const fed = plan.steps.find(x => x.send.name === "Pidgey");
   assert.ok(fed && fed.hp === 0, `Pidgey falls to Buzzwole: ${JSON.stringify(plan.steps)}`);
   assert.match(fed.why, /feeds Beast Boost \+1 Atk/, "a fall into Beast Boost is named");
+}
+// A priority move from a slower mon lands before the faster foe that KOs it: the order is taken per move, not per
+// pairing (#650). Hitmonchan at 40 of 100 is outsped and one-shot by Golem's Rock Slide. Close Combat is the pairing's
+// pick and never goes off; Mach Punch (+1) takes its use off Golem first.
+{
+  const { tpTables, tpFight } = globalThis.__tp;
+  const { scene: s } = run(null);
+  const golem = mon("Golem", 100, ["Rock","Ground"], "Sturdy", [300,250,230,100,100,90], [["Rock Slide","Rock",75,"P"]], true);
+  const MACH = ["Mach Punch","Fighting",40,"P",3,1], UPPERCUT = ["Sky Uppercut","Fighting",40,"P"];
+  const tablesFor = moves => globalThis.__tp.readTurn(s, turn => tpTables(turn,
+    [mon("Hitmonchan", 100, ["Fighting"], "Iron Fist", [100,200,100,100,100,60], moves, true, 40)], [golem], false));
+  const T = tablesFor([MACH, ["Close Combat","Fighting",120,"P"]]);
+  const mach = tablesFor([MACH]).ours[0][0];
+  // Two uses that fell Golem in the same number of turns, the second of them first: the order is part of what a move
+  // costs, so the tie goes to Mach Punch rather than to whichever use the moveset lists first.
+  const even = tablesFor([UPPERCUT, MACH]);
+  const fight = move => tpFight(T, { oh: [40], ob: [0], fh: [300], fs: [0], fb: [0] }, 0, 0, "free", move);
+  const slow = fight(T.ours[0][0]), quick = fight(mach);
+  console.log(`== a priority move from a slower mon (#650)\n${T.ours[0][0].name} at ${T.first[0][0]} leaves ${slow.fh}` +
+    ` · ${mach.name} at ${T.firstBy[0][0][mach.name]} leaves ${Math.round(quick.fh)}`);
+  assert.equal(T.ours[0][0].name, "Close Combat", "two uses still beat four, order and all");
+  assert.equal(T.first[0][0], 1, "the pairing's pick is outsped");
+  assert.equal(T.firstBy[0][0][mach.name], 0, "the priority move is not: the order is taken per move");
+  assert.equal(slow.fh, 300, `the pick never goes off, so it takes nothing off: ${slow.why ?? slow.fh}`);
+  assert.equal(Math.round(quick.fh), Math.round(300 - mach.dmg), `the priority move lands one use first: ${quick.fh}`);
+  assert.equal(quick.pLoss, 1, "and still loses the race");
+  assert.equal(even.ours[0][0].name, "Mach Punch", "a KO one use slower that moves first is the better use of the mon");
+
+  // A mon that already moves first gains nothing from priority, off the live game as on it (#650).
+  const fast = moves => globalThis.__tp.readTurn(s, turn => tpTables(turn,
+    [mon("Hitmonchan", 100, ["Fighting"], "Iron Fist", [300,200,100,100,100,120], moves, true)], [golem], false));
+  const F = fast([["Mach Punch","Fighting",70,"P",3,1], ["Drain Punch","Fighting",75,"P"]]);
+  console.log(`== priority from a mon already first (#650): ${F.ours[0][0].name} · first ${F.first[0][0]}`);
+  assert.equal(F.ours[0][0].name, "Drain Punch", "two uses either way, and the harder hit");
 }
 console.log("ok");
