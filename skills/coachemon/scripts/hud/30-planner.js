@@ -507,13 +507,36 @@ const CONFUSION_SELF_HIT = 1 / 3;
 // @mirrors confusion-hit
 const confusionHit = p => ((2 * p.level / 5 + 2) * 40 * stat(p, Stat.ATK) / stat(p, Stat.DEF) / 50 + 2) * 0.925;
 
+// `getMatchupScore` in two halves (game-code.md §7): `sendInBase` is the type scores alone, and `sendInAt` is the one
+// place the HP and Speed factor goes on, at the HPs its caller has reached.
+// @mirrors send-in-base
+export const sendInBase = (turn, f, me) => {
+  const outspeed = (f.isActive?.(true) ? turn.mon(f).speed : f.getStat(Stat.SPD, false)) >= turn.mon(me).speed;
+  const v = turn.sendInScore(f, me);
+  if (v != null) return { base: v, outspeed };
+  // game-less-backed
+  const moves = (f.moveset ?? []).map(pm => pm?.getMove?.()).filter(mv => mv && mv.category !== MoveCategory.STATUS);
+  const atk = moves.length ? moves.reduce((t, mv) => t + effectiveness(TYPES[mv.type], me) * (typesOf(f).includes(TYPES[mv.type]) ? 1.5 : 1), 0) / moves.length : 1;
+  const def = typesOf(me).reduce((x, t) => x / Math.max(effectiveness(t, f), 0.25), 1);
+  return { base: atk + def, outspeed };
+};
+// @mirrors send-in-at
+export const sendInAt = ({ base, outspeed }, foeHp, foeMax, ourHp, ourMax) => {
+  const ratio = (hp, max) => Math.round(hp / max * 100) / 100;
+  const fr = ratio(foeHp, foeMax);
+  let diff = fr + 1 - ratio(ourHp, ourMax);
+  if (outspeed) diff *= 1.25;
+  else if (fr > 0.2 && fr <= 0.4) diff *= 0.5;
+  return base * Math.min(diff, 1);
+};
+
 // The foe a lock that knocks out `foe` carries onto: the trainer's send-in, while no other foe stands to re-roll onto
 // (game-code.md §5, §7).
 const lockSendIn = (turn, me, foe) => {
   if (!turn.facts.trainer) return null;
   const standing = (turn.facts.foes ?? []).filter(f => f && f !== foe && f.hp > 0);
   if (standing.some(f => f.isOnField?.())) return null;
-  const score = f => turn.sendInScore(f, me) ?? -Infinity;
+  const score = f => sendInAt(sendInBase(turn, f, me), f.hp, f.getMaxHp(), me.hp, me.getMaxHp());
   return standing.reduce((b, f) => (!b || score(f) > score(b) ? f : b), null);
 };
 // A lock's state: `uses` left in it (0: none running) and its user's confusion `turns` left.

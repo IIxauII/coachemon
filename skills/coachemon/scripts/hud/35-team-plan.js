@@ -1,9 +1,9 @@
 // A trainer fight played out exchange by exchange, with HP carried between them: what the one-turn planner can't see.
 // The enemy's choices are not branched, it never switches mid-exchange, and a double is planned one of ours against
 // one foe at a time.
-import { TYPES, effectiveness, iconOf, squeezeDist, typesOf } from "./01-core.js";
+import { iconOf, squeezeDist } from "./01-core.js";
 import { hitOn, koCurve, koTurns, useOf } from "./10-damage.js";
-import { actionOrder, afterSteals, attemptsLost, hitsOn, koBoost, koBoostText, koStageFactor, stealCounts, stealRates, threatFrom, tokenOdds, tokenShift } from "./30-planner.js";
+import { actionOrder, afterSteals, attemptsLost, hitsOn, koBoost, koBoostText, koStageFactor, sendInAt, sendInBase, stealCounts, stealRates, threatFrom, tokenOdds, tokenShift } from "./30-planner.js";
 
 // @only tests: tpHealProfile, tpSendScore, tpFight, tpTables, tpActs
 const TP_BEAM = 24;
@@ -84,30 +84,9 @@ const tpFoeFirst = (turn, me, f, ours, theirs) => {
   return b > a ? 1 : b < a ? 0 : 0.5;
 };
 
-// `getMatchupScore` in two halves (game-code.md §7): our HP moves over the plan, so the game is asked with ours at 0
-// and `tpSendScore` puts the HP and Speed factor back. That factor is not always 1 at 0: a slower foe at 21–40 % HP
-// comes back scaled by (1 + its HP ratio) × 0.5 already, and `tpSendScore` halves it again (#464).
-// @mirrors tp-send-base
-const tpSendBase = (turn, f, me) => {
-  const outspeed = (f.isActive?.(true) ? turn.mon(f).speed : f.getStat(Stat.SPD, false)) >= turn.mon(me).speed;
-  const v = turn.sendInScore(f, me);
-  if (v != null) return { base: v, outspeed };
-  // game-less-backed
-  const moves = (f.moveset ?? []).map(pm => pm?.getMove?.()).filter(mv => mv && mv.category !== MoveCategory.STATUS);
-  const atk = moves.length ? moves.reduce((t, mv) => t + effectiveness(TYPES[mv.type], me) * (typesOf(f).includes(TYPES[mv.type]) ? 1.5 : 1), 0) / moves.length : 1;
-  const def = typesOf(me).reduce((x, t) => x / Math.max(effectiveness(t, f), 0.25), 1);
-  return { base: atk + def, outspeed };
-};
-// @mirrors tp-send-score
 export const tpSendScore = (T, st, fi, mi) => {
   const x = T.send[fi][mi];
-  if (typeof x === "number") return x;
-  const ratio = (hp, max) => Math.round(hp / max * 100) / 100;
-  const fr = ratio(st.fh[fi], T.foeMax[fi]);
-  let diff = fr + 1 - ratio(st.oh[mi], T.ourMax[mi]);
-  if (x.outspeed) diff *= 1.25;
-  else if (fr > 0.2 && fr <= 0.4) diff *= 0.5;
-  return x.base * Math.min(diff, 1);
+  return typeof x === "number" ? x : sendInAt(x, st.fh[fi], T.foeMax[fi], st.oh[mi], T.ourMax[mi]);
 };
 
 // Read at 75 % HP, clear of Sitrus's half: moving it below that folds the berry into every turn's `base`.
@@ -130,7 +109,7 @@ export const tpTables = (turn, party, foes, double = false) => {
     // In a double both field mons are out, so neither pays an entry hit to act (#113).
     slots: double && party.length >= 2 ? 2 : 1,
     first: party.map((me, mi) => foes.map((f, fi) => tpFoeFirst(turn, me, f, ours[mi][fi], theirs[fi][mi]))),
-    send: foes.map(f => party.map(me => tpSendBase(turn, f, me))),
+    send: foes.map(f => party.map(me => sendInBase(turn, f, me))),
     memo: new Map(),
     // Every hit overrides its `hp` and `bar` with the ones the fight carries.
     foeState: foes.map(f => turn.mon(f).state),
