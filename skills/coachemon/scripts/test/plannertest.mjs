@@ -1519,4 +1519,18 @@ Object.assign(TABLE, {
   assert.ok(!only.field.some(l => /before it can act/.test(l)), only.field.join("\n"));
 }
 
+// ---- A charge move whose one use races the foe's KO on a speed tie goes off half the time (#650).
+Object.assign(TABLE, { "Venusaur>Solar Beam>Arcanine": [[400], 1, 2], "Arcanine>Flare Blitz>Venusaur": [[200], 1, 2] });
+{
+  const me = mon("Venusaur", 80, ["Grass", "Poison"], [300, 150, 150, 200, 150, 100], [["Solar Beam", "Grass", 120, "S"]], true);
+  const foes = [mon("Arcanine", 80, ["Fire"], [300, 200, 150, 150, 150, 100], [["Flare Blitz", "Fire", 120, "P"]], true)];
+  const charges = (a, d, pm, o) => { const x = outcome(a, d, pm, o); return x && pm.getName() === "Solar Beam" ? { ...x, traits: { ...x.traits, charge: true } } : x; };
+  const dist = () => [{ name: "Flare Blitz", type: "Fire", p: 1, score: 10, targets: [0] }];
+  const { scene: s } = render({ party: [me], foes, live: true, dist, switches: () => new Map(), stubOutcome: charges });
+  const x = globalThis.__planner.exchange(s, me, me.moveset[0], foes[0]);
+  console.log(`== a charge move on a speed tie: acts ${x.pActs} · first ${x.pFirst}`);
+  assert.equal(x.pFirst, 0.5);
+  assert.ok(Math.abs(x.pActs - 0.5) < 1e-9, `fires only when it moves first on turn 2: ${x.pActs}`);
+}
+
 console.log("ok");

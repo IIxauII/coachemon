@@ -360,4 +360,5 @@ Fight plan likely lost
 ⚔ Dragonite ⚠ Dragon ×2 100% {Rayquaza's Outrage: ~100% of current HP} Normal Extreme Speed → Rayquaza 3 hits
 ⤵ Dragonite falls this turn › Raichu in free
 ⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
+== a charge move on a speed tie: acts 0.5 · first 0.5
 ok

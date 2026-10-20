@@ -745,9 +745,9 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   // After turn 1 the two sides' KO hazards are taken as independent; on a turn both would KO, the order decides.
   const hazard = (F, j) => (F(j - 1) >= 1 ? 1 : Math.max(0, (F(j) - F(j - 1)) / (1 - F(j - 1))));
   let pWe = weFirst, pThey = theyFirst, standing = Math.max(0, 1 - weFirst - theyFirst);
-  // The knockouts of ours this move never went off before: of turn 1's, the ones where the foe moved first, and of a
-  // later turn's only while a charging or delayed move still has no use behind it (#650).
-  const unused = j => (usesBy(j - 1) >= 1 ? 0 : 1 - (usesBy(j) >= 1 ? pLast : 0));
+  // The share of turn `j`'s knockouts of ours that come before this move's first use: all of them while a charging or
+  // delayed move has none yet, those with the foe moving first on the turn it would have its first (#650).
+  const unused = j => (usesBy(j - 1) >= 1 ? 0 : usesBy(j) >= 1 ? 1 - pLast : 1);
   let never = theyFirst - (usesBy(1) >= 1 ? pFField * (1 - qWe) * qThey : 0);
   const afterKo = new Map();
   // The lock as it stood where use n knocked out.
@@ -762,7 +762,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     knockedOut(ko, usesBy(j));
     const down = standing * b * (1 - a + a * (1 - pLast));
     pThey += down;
-    never += down * unused(j);
+    never += standing * b * unused(j);
     standing *= (1 - a) * (1 - b);
   }
   // Expected turns, for scoring; `turnsWe` / `turnsThey` are the likely ones the panel shows.
