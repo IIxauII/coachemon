@@ -7,11 +7,7 @@ export type Recorder = {
   lines: ConsoleLine[];
 };
 
-/**
- * For `probe`'s `errorAt` and `tail` (extension-distribution.md §12.4). Nothing outside its tests calls it: the
- * extension's page script never installs it, so under the hub link both read empty. The CDP link reads the same
- * through CDP's own events.
- */
+/** For `probe`'s `errorAt` and `tail` (extension-distribution.md §12.4); the CDP link reads the same through CDP's own events. */
 export function recordErrors(): void {
   const g = globalThis as any;
   if (g.__coachemonErrors) return;

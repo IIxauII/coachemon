@@ -5,6 +5,7 @@
 import { EVENT, encode, decode, type Channel, type Listener, type MakeEvent } from "../relay/channel.ts";
 import { dispatch } from "../../../src/page/dispatch.ts";
 import { disc } from "../../../src/page/disc.ts";
+import { recordErrors } from "../../../src/page/errors.ts";
 import { fine } from "../../../src/page/fine.ts";
 import { locate } from "../../../src/page/locate.ts";
 import { COMMAND_HANDLERS } from "../../../src/page/handlers.ts";
@@ -48,6 +49,10 @@ export function startPage(d: PageDeps): PageInstance {
     dispatchEvent(EVENT.wrongWorld, { side: "page" });
     return { build: d.build, stop: () => {} };
   }
+
+  // Before any command can run: with nothing installing it, `probe`'s `errorAt` and tail read empty under the hub link
+  // (#475).
+  recordErrors();
 
   // The newest copy always wins, including over a copy with no build id left by `read.sh`
   // (extension-distribution.md §9.6).

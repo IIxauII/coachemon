@@ -37,7 +37,7 @@ function files(dir: string): { path: string; rel: string }[] {
 
 const manifestOf = (a: Artifact) => JSON.parse(readFileSync(join(a.dir, "manifest.json"), "utf8")) as Record<string, unknown>;
 
-function commandsOf(a: Artifact): { build: string; commands: string[]; answers: boolean } {
+function commandsOf(a: Artifact): { build: string; commands: string[]; answers: boolean; records: boolean } {
   const doc = new EventTarget();
   const hellos: { build: string; side: string; commands?: string[] }[] = [];
   doc.addEventListener(EVENT.hello, e => {
@@ -45,13 +45,16 @@ function commandsOf(a: Artifact): { build: string; commands: string[]; answers: 
     const parsed = JSON.parse(detail);
     if (parsed.side === "page") hellos.push(parsed);
   });
-  const context = createContext({ document: doc, window: {}, CustomEvent, console, JSON, Promise });
+  // The page's own events and console, which the error recorder hooks (#475): a copy, so the real one stays unwrapped.
+  const events = new EventTarget();
+  const addEventListener = events.addEventListener.bind(events);
+  const context = createContext({ document: doc, window: {}, addEventListener, CustomEvent, console: Object.create(console), JSON, Promise });
   runInContext(readFileSync(join(a.dir, "page.js"), "utf8"), context);
   assert.ok(hellos.length >= 1, `${a.name}: page.js announced no hello`);
   const first = hellos[0];
   // The double announce: a relay hello of the page's own build is answered once more (extension-distribution.md §9.3).
   doc.dispatchEvent(new CustomEvent(EVENT.hello, { detail: encode({ build: first.build, side: "relay" }) }));
-  return { build: first.build, commands: first.commands ?? [], answers: hellos.length === 2 };
+  return { build: first.build, commands: first.commands ?? [], answers: hellos.length === 2, records: context.__coachemonErrors !== undefined };
 }
 
 const all = artifacts();
@@ -84,6 +87,10 @@ for (const a of all) {
       assert.ok(commands.includes(inPage), `dev build does not register ${inPage}`);
       for (const name of inBackground) assert.ok(!commands.includes(name), `the page registered ${name}`);
     }
+  });
+
+  test(`${a.name}: the page installs the error recorder that \`probe\` reads (extension-distribution.md §12.4, #475)`, () => {
+    assert.ok(commandsOf(a).records, "page.js left no `__coachemonErrors`");
   });
 
   test(`${a.name}: the HUD ships comment-stripped (extension-distribution.md §5.2)`, () => {
