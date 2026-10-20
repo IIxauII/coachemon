@@ -1478,6 +1478,8 @@
     "src/phases/mystery-encounter-phases.ts#PostMysteryEncounterPhase.continueEncounter": "6acbeacaee97fd7e",
     "src/phases/mystery-encounter-phases.ts#PostMysteryEncounterPhase.start": "337790beaadbdcd4",
     "src/phases/new-battle-phase.ts#NewBattlePhase": "3a2a200378819e4b",
+    "src/phases/new-biome-encounter-phase.ts#NewBiomeEncounterPhase": "bf92de0731ab1966",
+    "src/phases/next-encounter-phase.ts#NextEncounterPhase": "372d2358276eebe1",
     "src/phases/obtain-status-effect-phase.ts#ObtainStatusEffectPhase.sleepTurnsRemaining": "655d6ef36692170d",
     "src/phases/party-heal-phase.ts#PartyHealPhase.end": "15d5f50e9555c27a",
     "src/phases/party-heal-phase.ts#PartyHealPhase.start": "8933bcd85effaec1",

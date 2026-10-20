@@ -27,6 +27,13 @@ export type HangAssessment =
   | { status: "ok" }
   | { status: "run_interrupted"; cause: "save_hang"; hang: { heldMs: number; corroborated: boolean } };
 
+/** Wave 1's phase and the two subclasses every later wave runs it as (#488, game-code.md §26). */
+const ENCOUNTER_PHASES: ReadonlySet<string | null> = new Set([
+  "EncounterPhase",
+  "NextEncounterPhase",
+  "NewBiomeEncounterPhase",
+]);
+
 export class HangWatch {
   #since: number | null = null;
   #last: number | null = null;
@@ -36,8 +43,7 @@ export class HangWatch {
   /** Every settle-loop poll, across calls. Never reset between calls: a resume keeps holding. */
   poll(p: HangPoll): void {
     if (p === null) return;
-    // `EncounterPhase` alone misses every later wave's save hang (#488, game-code.md §26).
-    if (p.mode === UiMode.MESSAGE && p.phaseName === "EncounterPhase" && !p.onActionInput) {
+    if (p.mode === UiMode.MESSAGE && ENCOUNTER_PHASES.has(p.phaseName) && !p.onActionInput) {
       this.#since ??= p.t;
       this.#last = p.t;
       return;

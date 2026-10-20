@@ -3,6 +3,12 @@ import type { Area } from "../types.ts";
 export const SERVER: Area = {
   reads: [
     { name: "EncounterPhase", kind: "phase", at: ["src/phases/encounter-phase.ts#EncounterPhase"] },
+    { name: "NextEncounterPhase", kind: "phase", at: ["src/phases/next-encounter-phase.ts#NextEncounterPhase"] },
+    {
+      name: "NewBiomeEncounterPhase",
+      kind: "phase",
+      at: ["src/phases/new-biome-encounter-phase.ts#NewBiomeEncounterPhase"],
+    },
     { name: "GameOverPhase", kind: "phase", at: ["src/phases/game-over-phase.ts#GameOverPhase"] },
     { name: "LoginPhase", kind: "phase", at: ["src/phases/login-phase.ts#LoginPhase"] },
     { name: "SelectStarterPhase", kind: "phase", at: ["src/phases/select-starter-phase.ts#SelectStarterPhase"] },
