@@ -36,8 +36,8 @@ const beforeTera = fn => preTera([...teraSaved.keys()], fn);
 const teraTypeOf = e => { try { return teraSaved.has(e) ? TYPES[e.getTeraType?.()] ?? null : null; } catch { return null; } };
 
 // Patches: `{ mon, stages: { [stat 1–5]: change } }`, `{ mon, status }`, `{ mon, types }`, `{ mon, addedType }`,
-// `{ mon, tera: false }` (its predicted Tera off) and `{ mon, waveTurnCount }` (the turn on the field a first-turn-only
-// move reads), written onto the live mons for one synchronous call (game-code.md §14). `patchKey` is part of the derived turn's key, so no hypothetical answer is ever read from a real memo slot.
+// `{ mon, tera: false }` (its predicted Tera off) and `{ mon, waveTurnCount }`, written onto the live mons for one
+// synchronous call (game-code.md §5, §14). `patchKey` is part of the derived turn's key, so no hypothetical answer is ever read from a real memo slot.
 const patchKey = patches => patches.map(({ mon, stages, status, types, addedType, tera, waveTurnCount }) => [
   stages ? `${mon.id}s${Object.entries(stages).map(([i, n]) => `${i}:${n}`).join(",")}` : null,
   status ? `${mon.id}x${status.effect}` : null,

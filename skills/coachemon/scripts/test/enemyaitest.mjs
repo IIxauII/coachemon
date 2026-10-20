@@ -457,9 +457,9 @@ const planner = () => globalThis.__hud["30-planner"];
   const { bench, me, ai } = instantTera();
   // A condition on the state now, such as a held item or the terrain: not first-turn-only, which is read off the turn
   // the pick is for (#824).
-  bench.moveset = [mkMove({ id: 1, name: "Fake", target: 100, cond: () => false }), mkMove({ id: 2, name: "Rock", target: 1 })];
+  bench.moveset = [mkMove({ id: 1, name: "Item", target: 100, cond: () => false }), mkMove({ id: 2, name: "Rock", target: 1 })];
   const rows = ai.ask(t => planner().likelyMoves(t, bench, me, [{ name: "Rock", live: true, expected: 10 }], true));
-  assert.deepEqual(rows.map(r => [r.name, !!r.fails]), [["Fake", false]]);
+  assert.deepEqual(rows.map(r => [r.name, !!r.fails]), [["Item", false]]);
 }
 
 // ---- A foe the trainer withdraws this turn Teras at its first FIGHT command once it is back (#648).
@@ -648,20 +648,15 @@ const nextMoveOf = (e, fn) => Object.setPrototypeOf(e, { getNextMove: fn });
   assert.ok(act.moves.length > 1, "the distribution answers where there is no fixed draw to reproduce");
 }
 
-// ---- First-turn-only moves (#824). Fake Out as the game defines it: it works only while `waveTurnCount` is 1, and its
-// user benefit is +10 then and −20 after (`FirstMoveCondition`, game-code.md §6). Scored 20 against Tackle's 10, the AI
-// names it 75 % on a first turn and never after.
+// Fake Out as the game builds it (game-code.md §5, §6): beside Tackle the AI scores it 20 to 10 on a first turn.
 const firstTurn = p => p.summonData.waveTurnCount === 1;
-const fakeOutFoe = (o = {}) => {
-  const e = mkMon({ id: "e", player: false, fieldIndex: 0, ...o, moves: [
-    { id: 252, name: "Fake Out", once: true, target: -10, cond: (_, u) => firstTurn(u), user: u => (firstTurn(u) ? 10 : -20) },
-    { id: 33, name: "Tackle", target: -10 }] });
-  return e;
-};
+const FAKE_OUT = { id: 252, name: "Fake Out", once: true, target: -10, cond: (_, u) => firstTurn(u), user: u => (firstTurn(u) ? 10 : -20) };
+const TACKLE = { id: 33, name: "Tackle", target: -10 };
+const fakeOutFoe = (o = {}, moves = [FAKE_OUT, TACKLE]) => mkMon({ id: "e", player: false, fieldIndex: 0, ...o, moves });
 const atTurn = (e, n) => { e.summonData.waveTurnCount = n; return e; };
 const names = rows => rows.map(r => [r.name, Math.round(r.p * 100), r.o ? "dmg" : r.fails ? "fails" : "-"]);
 
-// ---- An on-field foe on its first turn: this turn it picks Fake Out, and every pick after is a turn past its first.
+// ---- An on-field foe on its first turn picks Fake Out now and Tackle the turn after (#824).
 {
   const e = atTurn(fakeOutFoe(), 1);
   const me = foe({ dmg: { e: { 252: 20, 33: 30 } } });
@@ -674,7 +669,7 @@ const names = rows => rows.map(r => [r.name, Math.round(r.p * 100), r.o ? "dmg" 
   assert.deepEqual(got.next, [["Tackle", 100, "dmg"]], "next turn it fails Fake Out's condition, as the game's AI sees");
 }
 
-// ---- That foe's uses after this one are priced as Tackle's, which the KO curve and the fight plan read off `later`.
+// ---- A first-turn foe's uses after this one are priced as Tackle's.
 {
   const e = atTurn(fakeOutFoe(), 1);
   const me = foe({ dmg: { e: { 252: 20, 33: 30 } } });
@@ -685,7 +680,7 @@ const names = rows => rows.map(r => [r.name, Math.round(r.p * 100), r.o ? "dmg" 
   assert.equal(e.summonData.waveTurnCount, 1, "the counter is put back");
 }
 
-// ---- A foe past its first turn is read as it stands: no use of it differs from the next.
+// ---- A foe past its first turn is read as it stands.
 {
   const e = atTurn(fakeOutFoe(), 2);
   const me = foe({ dmg: { e: { 252: 20, 33: 30 } } });
@@ -695,10 +690,9 @@ const names = rows => rows.map(r => [r.name, Math.round(r.p * 100), r.o ? "dmg" 
   assert.deepEqual(got.next, [["Tackle", 100, "dmg"]]);
 }
 
-// ---- A benched foe comes in on a first turn whatever its `summonData` still says: its entry pick can be Fake Out,
-// priced with its damage, and its picks after that are made past it.
+// ---- A benched foe's entry pick can be Fake Out whatever its `summonData` says, and its picks after can't.
 for (const [stale, why] of [[3, "withdrawn earlier"], [1, "never sent in"]]) {
-  const e = mkMon({ id: "x", player: false, fieldIndex: 0, moves: [{ id: 33, name: "Tackle", target: -10 }] });
+  const e = mkMon({ id: "x", player: false, fieldIndex: 0, moves: [TACKLE] });
   const bench = atTurn(fakeOutFoe({ id: "b", fieldIndex: null }), stale);
   const me = foe({ dmg: { b: { 252: 20, 33: 30 } } });
   const ai = setup({ player: [me], enemy: [e, bench] });
@@ -714,15 +708,37 @@ for (const [stale, why] of [[3, "withdrawn earlier"], [1, "never sent in"]]) {
 
 // ---- A later pick of a first-turn-only move the AI still names fails, and deals nothing.
 {
-  const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [
-    { id: 252, name: "Fake Out", once: true, target: -10, cond: (_, u) => firstTurn(u), user: u => (firstTurn(u) ? 10 : -20) }] });
-  atTurn(e, 1);
+  const e = atTurn(fakeOutFoe({}, [FAKE_OUT]), 1);
   const me = foe({ dmg: { e: { 252: 20 } } });
   const ai = setup({ player: [me], enemy: [e] });
   const got = ai.ask(t => ({ next: names(planner().likelyMoves(t, e, me, planner().planOutcomes(t, e, me), true)), t: planner().threatFrom(t, e, me) }));
   assert.deepEqual(got.next, [["Fake Out", 100, "fails"]]);
   near(got.t.expected, 18.125, "this turn's still lands");
   assert.equal(got.t.later?.expected, 0, "the ones after it don't");
+}
+
+// ---- A foe the trainer withdraws this turn is back on a first turn: its pick then can be Fake Out.
+{
+  const e = atTurn(fakeOutFoe(), 3);
+  const b = mkMon({ id: "b", player: false, moves: [TACKLE] });
+  const me = foe({ dmg: { e: { 252: 20, 33: 30 } } });
+  const trainer = { config: { isBoss: false }, getPartyMemberMatchupScores: () => [[1, 99]], getSortedPartyMemberMatchupScores: sc => sc, getNextSummonIndex: () => 1 };
+  const ai = setup({ player: [me], enemy: [e, b], trainer });
+  const got = ai.ask(t => ({ out: t.switches().has(e), t: planner().threatFrom(t, e, me, null, { next: true }) }));
+  assert.ok(got.out, "the trainer withdraws it");
+  near(got.t.expected, 0.75 * 18.125 + 0.25 * 27.3125, "its pick on return");
+  near(got.t.later?.expected ?? 0, 27.3125, "and the ones after it");
+}
+
+// ---- In a double, a first-turn foe's later uses land on each of ours alike.
+{
+  const e = atTurn(fakeOutFoe(), 1);
+  const me = foe({ dmg: { e: { 252: 20, 33: 30 } } });
+  const me2 = mkMon({ id: "me2", player: true, fieldIndex: 1, dmg: { e: { 252: 20, 33: 30 } } });
+  const x = mkMon({ id: "x", player: false, fieldIndex: 1, moves: [TACKLE] });
+  const ai = setup({ player: [me, me2], enemy: [e, x], double: true });
+  const t = ai.ask(t => planner().threatFrom(t, e, me));
+  near(t.later?.expected ?? 0, 27.3125 / 2, "half of Tackle's 30, rolled");
 }
 
 console.log("enemy AI: all assertions passed");
