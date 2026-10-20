@@ -21,6 +21,13 @@ export const DEFAULTS: SessionOptions = {
 
 type Target = { id: string; type: string; url: string; webSocketDebuggerUrl: string };
 
+/** `gameUrl`'s origin only: `wiki.` and `beta.` share the domain but are not the game (#644). */
+export const isGameTab = (t: Pick<Target, "type" | "url">, gameUrl: string): boolean =>
+  t.type === "page" && t.url.startsWith(`${new URL(gameUrl).origin}/`);
+
+export const findGameTab = <T extends Pick<Target, "type" | "url">>(targets: T[], gameUrl: string): T | null =>
+  targets.find(t => isGameTab(t, gameUrl)) ?? null;
+
 /** A page-side throw, returned rather than thrown so a read degrades instead of failing the call. */
 export type Thrown = { __throw: string };
 export const isThrown = (v: unknown): v is Thrown => typeof v === "object" && v !== null && "__throw" in v;
@@ -79,7 +86,7 @@ export class CdpSession {
     try {
       const res = await fetch(`http://127.0.0.1:${this.#opts.port}/json/list`, { signal: AbortSignal.timeout(1000) });
       const targets = (await res.json()) as Target[];
-      return targets.find(t => t.type === "page" && t.url.includes("pokerogue.net")) ?? null;
+      return findGameTab(targets, this.#opts.url);
     } catch {
       return null;
     }
