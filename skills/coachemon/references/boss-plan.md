@@ -30,16 +30,16 @@ part follows the game's language.
    file, making its folder if need be. With solving on, the plan still starts without the oracle: a solve takes
    minutes, and the card leads meanwhile. Done when the file holds its three opening lines and all seven sections.
 3. **Take the oracle line** once `hand_oracle_line` gives `held: true` for this fight (`references/solving.md`, step
-   4). Rewrite the file in its form with an oracle line, below, from that solve's `read_job`: `result.oracleLine`
-   holds the steps, each with its input and checkpoint, the validation `receipt` and the `luck`. Keep the attempt, and
-   keep every principle that still holds. A `read_job` is gone once the plugin restarts, so this is the only record of
-   the oracle line that outlives the session: write it before anything else. A plan found with the card's `plan`
-   group leading with an oracle line (`~ oracle line wins in …`, or `!`) that the file doesn't hold was held by a
-   session that ended first: write the oracle line from the `plan` group's rows, and give each step whose After the
-   card doesn't show yet `After: on the card at its turn`. The card carries no receipt and no luck, so in *Why trust
-   it* the one line `Receipt and luck: lost with the session that held the oracle line.` stands in place of the
-   receipt and the luck, and the rest of the section is written as usual. Done when *The oracle line* holds
-   every step and the status line reads `on the line`.
+   4). Rewrite the file in its form with an oracle line, below, from that solve's `read_job` with `detail: "full"`:
+   `result.oracleLine` holds the steps, each with its input and checkpoint, the validation `receipt` and the `luck`.
+   Keep the attempt, and keep every principle that still holds. A `read_job` is gone once the plugin restarts, so
+   this is the only record of the oracle line that outlives the session: write it before anything else. A plan found
+   with the card's `plan` group leading with an oracle line (`~ oracle line wins in …`, or `!`) that the file doesn't
+   hold was held by a session that ended first: write the oracle line from the `plan` group's rows, and give each step
+   whose After the card doesn't show yet `After: on the card at its turn`. The card carries no receipt and no luck, so
+   in *Why trust it* the one line `Receipt and luck: lost with the session that held the oracle line.` stands in place
+   of the receipt and the luck, and the rest of the section is written as usual. Done when *The oracle line* holds every
+   step and the status line reads `on the line`.
 4. **Tick** on every read after. Done when the file matches the card: the call and what leads next are the card's,
    and the status line names the last check the battle has reached. With `card` null, start the HUD as in step 2.
    Rewrite the status line each time.

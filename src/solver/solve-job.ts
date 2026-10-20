@@ -1,11 +1,17 @@
-import type { JobControl, JobWork } from "../jobs.ts";
+import type { JobControl, JobWork, Shorten } from "../jobs.ts";
 import { type CloneSetup, setUpClone } from "./clone.ts";
 import type { FightPool } from "./fight-pool.ts";
 import type { Clone } from "./replay.ts";
 import { harnessIn } from "./run-in-clone.ts";
+import { shortOracleLine } from "./short-oracle-line.ts";
 import { slowWorkersNote, solve, type SolveDeps, type SolveInput, type SolveResult } from "./solver.ts";
 
 export const SOLVE_JOB = "solve";
+
+export const shortSolve: Shorten = result => {
+  const solved = result as SolveResult | null;
+  return solved?.kind === "oracle_line" ? shortOracleLine(solved.oracleLine) : result;
+};
 
 export type SolveJobDeps = {
   setUp: (home: string, ctl: JobControl) => Promise<CloneSetup>;

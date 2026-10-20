@@ -34,16 +34,16 @@ card and the boss-fight plan's principles carry the fight from where it stands.
    meanwhile. For a re-solve, one line is enough: off the line at turn N, the card leads, and a new oracle line is
    being solved from this turn. Then, on each `still solving` line and whenever the player asks, relay `poll_job`'s
    progress line as it is, in one line. Done when the player has the two lines.
-4. **When the end file appears**, `read_job` the job and act on how it ended:
+4. **When the end file appears**, act on how it ended: it holds what `read_job` answers, the oracle line short.
    - **An oracle line** (`result.kind` is `oracle_line`): call `hand_oracle_line` with the job's id at once.
      - `held: true`: tell the player in one line that the card now leads with the oracle line, as its `plan` group
-       says (`~ oracle line wins in 19 turns · 4 of 6 left`), and name the luck it rides from `result.oracleLine.luck`,
-       if any. The strip's ⚔ is now the oracle line's step (`⚔ ~ T1/19 · …`). Each step's `input.learns` answers a
+       says (`~ oracle line wins in 19 turns · 4 of 6 left`), and name the luck it rides from `result.luck`, if any.
+       The strip's ⚔ is now the oracle line's step (`⚔ ~ T1/19 · …`). Each step's `learns` answers a
        "forget a move?" prompt: add one line naming every answer before the last step, with its turn, `T3: Bulbasaur
-       skips Leech Seed` for a `forget` of null, else `T3: Bulbasaur learns Leech Seed over Sunny Day`. Older panels
+       skips Leech Seed` for one that declines, else `T3: Bulbasaur learns Leech Seed over Sunny Day`. Older panels
        leave them off the card, so this line is how the player hears them, and any other answer takes the game off the
        line. The last step's picks are placeholders the search never weighs, so the learn card's own call stands there.
-       Each step's `input.pivots` names the mon to send in at a switch-out's party screen (U-turn, Emergency Exit):
+       Each step's `pivots` names the mon to send in at a switch-out's party screen (U-turn, Emergency Exit):
        name those in the same line, `T4: send Snorlax at the switch-out prompt`, since a panel older than the line's
        release shows none.
        On a boss fight, the boss-fight plan takes the oracle line before anything else (`references/boss-plan.md`,

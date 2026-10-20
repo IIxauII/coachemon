@@ -2086,7 +2086,12 @@ the prompt's closures until `forgetMoveProcess` opens the summary screen in `LEA
 (`src/field/pokemon.ts:1882`); `setMove` writes the new move into both (`:2016-2018`). The phase stays current after
 the move is taken: `learnMove` calls `setMove` before its "learned" message and ends only once that message is
 dismissed (`src/phases/learn-move-phase.ts:211-229`). A decline likewise ends only after its "did not learn" message
-(`:156-157`, `:166-167`). With four, it asks in `UiMode.CONFIRM` whether to forget one (`:78-100`). Yes opens the summary screen in
+(`:156-157`, `:166-167`), and nothing the overlay can read marks that message as a decline (#808). The phase writes
+no field after `start`; leaving a prompt clears its handler (`src/ui/ui.ts:534-535`,
+`src/ui/handlers/base-option-select-ui-handler.ts:544-558`, `src/ui/handlers/summary-ui-handler.ts:1474-1477`); and
+the message text is typed out a character at a time and localized (`src/ui/handlers/message-ui-handler.ts:198-206`).
+So `learnAsked` reads the declined learn as still pending for that one message, while `detect`'s `input` is already
+false in `MESSAGE` mode. With four, it asks in `UiMode.CONFIRM` whether to forget one (`:78-100`). Yes opens the summary screen in
 `SummaryUiMode.LEARN_MOVE`, whose cursor picks the move to forget, 0 to 3 in moveset order, the new move taking that
 slot (`:113-136`, `:211`); cursor 4 is the new move itself, and declines (`:122-125`). No declines too (`:94-97`). A
 decline asks once more, in a second `CONFIRM`, whether to stop teaching the move, but only under the
@@ -2833,7 +2838,7 @@ Evolution checks the base's line first, then the other half's, one at a time, ea
 **Unsplice** (`party-ui-handler.ts:355-394`, `pokemon.ts:3267-3279`): free, in SPLICE mode or on the party check screen
 during the reward phase; the second half is gone for good, its moves and items stay with the base.
 
-## 25. Menu cursors: the command grid and the target cursor
+## 25. Menu cursors: the command grid, the target cursor and the shop's Continue
 
 Read from the pinned source.
 
@@ -2854,6 +2859,16 @@ FIGHT (`src/phases/command-phase.ts:265-270,317`), BALL (`:452-456`), POKEMON an
 writes its pick onto that same object (`src/phases/select-target-phase.ts:60`), or nulls the entry and asks the command
 again (`:57-58`). Cancelling slot 1's command queues `CommandPhase` 0 then 1 (`command-phase.ts:673-678`), so slot 0
 commits anew. While slot 1 is asked, slot 0's entry is one object, and a second ask of slot 1 sees a different one.
+
+**The shop's Continue is row 1, not the button bar.** `ModifierSelectUiHandler` (`src/ui/handlers/modifier-select-ui-handler.ts`)
+shows `continueButtonContainer` whenever the reroll is dead, `rerollCost < 0` (`:341`), but the Continue text inside it
+only while the free-reward row is empty (`:229`). With that row empty, row 1 is Continue: `setRowCursor(1)` lands on
+cursor 0 (`:636-639`), `setCursor` draws Continue there (`:551-560`), and ACTION on row 1 ends the shop
+(`src/phases/select-modifier-phase.ts:118-119,132-136`). Row 0 holds only cursors 0–3: Reroll, Manage Items, Check
+Team, Lock Rarities (`modifier-select-ui-handler.ts:602-623`). A cursor 4 set there draws as Lock Rarities and does
+nothing on ACTION (`select-modifier-phase.ts:114-115`), and a DOWN from it throws: `setRowCursor` scales the 4 onto the
+top shop row, `shopOptionsRows[0]`, past its end (`modifier-select-ui-handler.ts:453,633-635`), and `setCursor` reads
+`modifierTypeOption` off `undefined` (`:581`).
 
 ## 26. The screens the MCP driver walks: title, save slot, and who answers a prompt
 
