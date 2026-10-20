@@ -3,7 +3,7 @@
 // one foe at a time.
 import { iconOf, squeezeDist } from "./01-core.js";
 import { hitOn, koCurve, koTurns, useOf } from "./10-damage.js";
-import { actionOrder, afterSteals, attemptsLost, hitsOn, koBoost, koBoostText, koStageFactor, sendInAt, sendInBase, stealCounts, stealRates, threatFrom, tokenOdds, tokenShift } from "./30-planner.js";
+import { actionOrder, afterSteals, attemptsLost, hitsOn, koBoost, koBoostText, koStageFactor, paralysed, sendInAt, sendInBase, stealCounts, stealRates, threatFrom, tokenOdds, tokenShift } from "./30-planner.js";
 
 // @only tests: tpHealProfile, tpSendScore, tpFight, tpTables, tpActs
 const TP_BEAM = 24;
@@ -33,11 +33,9 @@ const tpOurMove = (turn, me, f, them = null) => {
   const outs = turn.outcomes(me, f);
   // The hit of the foe's that landing first cancels, in turns of ours (CONTEXT.md, `Removal price`): a KO one use
   // slower that moves first takes the same number of hits getting there, so order is part of what a move costs.
-  // `them.first` is already the order against a move of ours at priority 0, so only a move out of that bracket is
-  // asked about again.
   const spared = o => {
     if (!them) return 0;
-    const p = (o.priority ?? 0) === 0 ? them.first : tpFoeFirst(turn, me, f, o, them);
+    const p = (o.priority ?? 0) === 0 && Number.isFinite(them.first) ? them.first : tpFoeFirst(turn, me, f, o, them);
     return Number.isFinite(p) ? 1 - p : 0;
   };
   if (turn.live) {
@@ -105,14 +103,6 @@ const tpFoeFirst = (turn, me, f, ours, theirs) => {
   return b > a ? 1 : b < a ? 0 : 0.5;
 };
 
-// Paralysis halves our Speed, so the order is asked again on a slowed clone. The id is part of the clone so `turn`'s
-// own caches don't hand back the unslowed answer.
-const tpSlowed = me => {
-  const slowed = { id: { value: `${me.id}~paralysed` }, status: { value: { effect: StatusEffect.PARALYSIS } } };
-  if (typeof me.getEffectiveStat !== "function") slowed.getStat = { value: i => me.getStat(i) / (i === Stat.SPD ? 2 : 1) };
-  return Object.create(me, slowed);
-};
-
 // `firstBy[mi][fi][move]`: the order a move of ours gets that is not the pairing's own pick, which `first` already
 // holds. A plan step pinned to the card's ⚔ line runs that line's move, and a priority move lands before a foe that
 // outspeeds the pick (#650). Two moves at the same priority get the same order, so only a move out of the pick's
@@ -145,17 +135,19 @@ export const tpHealProfile = (turn, p) => {
   return { base, sitrus: Math.max(0, at(Math.floor(max * 0.4), false) - base), enigma: Math.max(0, at(Math.ceil(max * 0.75), true) - base) };
 };
 
-export const tpTables = (turn, party, foes, double = false) => {
+// `facing`: the foe the first exchange is against, the only one a pinned move's own order is read for.
+export const tpTables = (turn, party, foes, double = false, facing = null) => {
+  const faced = f => !foes.includes(facing) || f === facing;
   // The foe's side first: which move of ours is worth using against it turns on the order it would get (#650).
   const theirs = foes.map(f => party.map(me => tpTheirMove(turn, f, me)));
   const ours = party.map((me, mi) => foes.map((f, fi) => tpOurMove(turn, me, f, theirs[fi][mi])));
   const first = party.map((me, mi) => foes.map((f, fi) => tpFoeFirst(turn, me, f, ours[mi][fi], theirs[fi][mi])));
-  const wear = tpWear(turn, party, foes, ours);
+  const wear = tpWear(turn, party, foes, ours, faced);
   return {
     ours, theirs, first,
     // In a double both field mons are out, so neither pays an entry hit to act (#113).
     slots: double && party.length >= 2 ? 2 : 1,
-    firstBy: party.map((me, mi) => foes.map((f, fi) => tpFirstBy(turn, me, f, ours[mi][fi], theirs[fi][mi]))),
+    firstBy: party.map((me, mi) => foes.map((f, fi) => (faced(f) ? tpFirstBy(turn, me, f, ours[mi][fi], theirs[fi][mi]) : {}))),
     send: foes.map(f => party.map(me => sendInBase(turn, f, me))),
     memo: new Map(),
     // Every hit overrides its `hp` and `bar` with the ones the fight carries.
@@ -178,16 +170,16 @@ export const tpTables = (turn, party, foes, double = false) => {
 
 // Wave status tokens and item thieves (30-planner.js). `fromUs[fi][mi]` is what foe `fi` steals from our `mi`, and
 // `fromFoe[mi][fi]` the reverse; `ourItems` / `foeItems` are each mon's turn-end HP change after k steals.
-const tpWear = (turn, party, foes, ours) => {
+const tpWear = (turn, party, foes, ours, faced = () => true) => {
   const heal = p => tpHealAt(turn, p);
   const tok = party.map(me => {
     const odds = foes[0] ? tokenOdds(turn, foes[0], me) : null;
     return odds && { odds, shift: tokenShift(odds, me, heal), para: odds.tokens.filter(x => x.effect === StatusEffect.PARALYSIS).reduce((t, x) => t + x.share, 0) };
   });
   const paraOrder = party.map((me, mi) => (tok[mi]?.para ? foes.map((f, fi) => {
-    const clone = tpSlowed(me);
+    const clone = paralysed(me);
     const them = tpTheirMove(turn, f, clone);
-    return { first: tpFoeFirst(turn, clone, f, ours[mi][fi], them), by: tpFirstBy(turn, clone, f, ours[mi][fi], them) };
+    return { first: tpFoeFirst(turn, clone, f, ours[mi][fi], them), by: faced(f) ? tpFirstBy(turn, clone, f, ours[mi][fi], them) : {} };
   }) : null));
   const firstPara = paraOrder.map(row => row && row.map(x => x.first));
   const firstParaBy = paraOrder.map(row => row && row.map(x => x.by));
@@ -460,7 +452,7 @@ const tpFacing = (turn, foes) => {
 const TP_PREFER = 20;
 const TP_HOLD = 10;
 
-// ⚔ owns the turn and this model the rest of the fight (#113). `pin` is `{ mi, outcome?, free? }`: `at(pin)`
+// ⚔ owns the turn and this model the rest of the fight (#113). `pin` is `{ mi, outcome?, then?, free? }`: `at(pin)`
 // re-searches with it as step 1, `after(pin)` reads what that plan says comes next, and `view(pin)` renders it.
 const tpModel = (T, double, party, foes, facing) => {
   const ref = p => ({ icon: iconOf(p), name: p.name });
@@ -528,13 +520,17 @@ const tpModel = (T, double, party, foes, facing) => {
   const free = tpSearch(T, start, []);
   const base = held && (!free || held.val >= free.val - TP_HOLD) ? held : free;
 
+  // A pin runs the ⚔ move, else its follow-up: a first-turn-only or foe-dependent move would repeat in a table
+  // exchange as though it always worked (#650).
+  const pinned = pin => [pin.outcome, pin.then].find(o => o?.expected > 0 && !o.traits?.once && !o.traits?.needsAttack) ?? null;
+  const keyOf = pin => (pin && pin.mi != null && pin.mi >= 0 ? `${pin.mi}|${pinned(pin)?.name ?? ""}|${pin.free ? "f" : ""}` : "");
   const atMemo = new Map();
   const at = pin => {
-    if (!pin || pin.mi == null || pin.mi < 0) return base;
-    const k = `${pin.mi}|${pin.outcome?.name ?? ""}|${pin.free ? "f" : ""}`;
+    const k = keyOf(pin);
+    if (!k) return base;
     if (!atMemo.has(k)) {
-      const move = pin.outcome?.expected > 0 ? tpMoveOf(pin.outcome) : null;
-      atMemo.set(k, tpSearch(T, start, hold, { mi: pin.mi, move, free: !!pin.free }) ?? base);
+      const o = pinned(pin);
+      atMemo.set(k, tpSearch(T, start, hold, { mi: pin.mi, move: o ? tpMoveOf(o) : null, free: !!pin.free }) ?? base);
     }
     return atMemo.get(k);
   };
@@ -553,7 +549,7 @@ const tpModel = (T, double, party, foes, facing) => {
 
   const viewMemo = new Map();
   const view = pin => {
-    const k = pin && pin.mi != null && pin.mi >= 0 ? `${pin.mi}|${pin.outcome?.name ?? ""}|${pin.free ? "f" : ""}` : "";
+    const k = keyOf(pin);
     if (!viewMemo.has(k)) viewMemo.set(k, tpView({ T, party, foes, double, start, win, kills, alive, answers, only, onlyBy, reserve, base, ref, pctOf }, at(pin), !!k));
     return viewMemo.get(k);
   };
@@ -570,7 +566,8 @@ export const teamPlanner = turn => {
   const foes = turn.facts.foes.filter(f => f && f.hp > 0);
   if (!trainer || !party.length || !foes.length) return null;
   // The searches read only the tables `tpTables` builds, never the live game.
-  return tpModel(tpTables(turn, party, foes, double), double, party, foes, tpFacing(turn, foes));
+  const facing = tpFacing(turn, foes);
+  return tpModel(tpTables(turn, party, foes, double, facing), double, party, foes, facing);
 };
 
 export const teamPlan = turn => teamPlanner(turn)?.view(null) ?? null;

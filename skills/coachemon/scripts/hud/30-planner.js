@@ -602,6 +602,14 @@ const lockCarry = (turn, me, mine, foe, afterKo) => {
   return lockSteps(afterKo.values(), { relock: false, immune }).reduce((t, s) => t + s.go * forced + s.self * selfHit, 0);
 };
 
+// `me` paralysed, for the order to be asked again at half Speed. The id is part of the clone so `turn`'s own caches
+// don't hand back the unslowed answer.
+export const paralysed = me => {
+  const slowed = { id: { value: `${me.id}~paralysed` }, status: { value: { effect: StatusEffect.PARALYSIS } } };
+  if (typeof me.getEffectiveStat !== "function") slowed.getStat = { value: i => me.getStat(i) / (i === Stat.SPD ? 2 : 1) };
+  return Object.create(me, slowed);
+};
+
 // One-on-one from now: `me` repeats `pm` into `foe` while `foe` answers with its likely moves. Turn 1 is exact; later
 // turns race the two `koCurve`s. Options: `hp` (ours after an incoming hit); `after` (an earlier exchange's `turn1`,
 // both curves starting from its branches, where the exact odds don't hold); `free` (the foe switches in and doesn't
@@ -730,9 +738,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   let pLast = pFirstField;
   const pPara = acts && turnsWe < 9 ? acts.para(turnsWe - 1) : 0;
   if (pPara > 0) {
-    const slowed = { id: { value: `${me.id}~paralysed` }, status: { value: { effect: StatusEffect.PARALYSIS } } };
-    if (typeof me.getEffectiveStat !== "function") slowed.getEffectiveStat = { value: i => stat(me, i) / (i === Stat.SPD ? 2 : 1) };
-    const tp = threatFrom(turn, fieldFoe, Object.create(me, slowed), pm, tOpts);
+    const tp = threatFrom(turn, fieldFoe, paralysed(me), pm, tOpts);
     pLast = (1 - pPara) * pFirstField + pPara * (tp ? 1 - (tp.pKo > 0 ? tp.koFirst : tp.first) : pFirstField);
   }
   const speedUp = tThey?.boost?.[Stat.SPD] ?? 0;
@@ -745,9 +751,9 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   // After turn 1 the two sides' KO hazards are taken as independent; on a turn both would KO, the order decides.
   const hazard = (F, j) => (F(j - 1) >= 1 ? 1 : Math.max(0, (F(j) - F(j - 1)) / (1 - F(j - 1))));
   let pWe = weFirst, pThey = theyFirst, standing = Math.max(0, 1 - weFirst - theyFirst);
-  // The knockouts of ours this move never went off before: of turn 1's, the ones where the foe moved first, and of a
-  // later turn's only while a charging or delayed move still has no use behind it (#650).
-  const unused = j => (usesBy(j - 1) >= 1 ? 0 : 1 - (usesBy(j) >= 1 ? pLast : 0));
+  // The share of turn `j`'s knockouts of ours that come before this move's first use: all of them while a charging or
+  // delayed move has none yet, those with the foe moving first on the turn it would have its first (#650).
+  const unused = j => (usesBy(j - 1) >= 1 ? 0 : usesBy(j) >= 1 ? 1 - pLast : 1);
   let never = theyFirst - (usesBy(1) >= 1 ? pFField * (1 - qWe) * qThey : 0);
   const afterKo = new Map();
   // The lock as it stood where use n knocked out.
@@ -762,7 +768,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     knockedOut(ko, usesBy(j));
     const down = standing * b * (1 - a + a * (1 - pLast));
     pThey += down;
-    never += down * unused(j);
+    never += standing * b * unused(j);
     standing *= (1 - a) * (1 - b);
   }
   // Expected turns, for scoring; `turnsWe` / `turnsThey` are the likely ones the panel shows.
@@ -878,15 +884,13 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     const last = entering ? null : lastMoveOf(me);
     const cost = o => -(o.benefit ?? 0) * AI_POINT - (last != null && o.pm?.moveId === last ? KEEP_BONUS : 0);
     const feed = f => feedCost(f, party.length - 1);
-    // What a move costs us in turns: its own pace, plus — for the share of the time our mon falls with the move never
-    // off — the foe's whole bar at `FOE_BAR`, left standing for the rest of the team (#650). A race the move never
-    // lives to run earns nothing for the KO turn it was running for. The penalty is the same wherever a mon aims, as a
-    // field threat must be (CONTEXT.md, `Field threat`): what separates its targets is still their own pace.
-    const spentOn = x => x.eTurnsWe + (1 - (x.pActs ?? 1)) * FOE_BAR;
+    // The foe's whole bar left to the rest of the team, for the share of the time our mon falls before landing a hit:
+    // every scorer below pays it, or the one that skips it wins a lost race (#650).
+    const unlanded = never => never * FOE_BAR;
     const one = (o, fi) => {
       const x = trade(o, active[fi]);
       const turns = x.turnsWe + lost;
-      const score = lasts - spentOn(x) - lost + (x.pWeKoFirst - x.pTheyKoFirst) - (x.cost ?? 0) - cost(o) - feed(active[fi]) * x.pTheyKoFirst;
+      const score = lasts - x.eTurnsWe - unlanded(1 - x.pActs) - lost + (x.pWeKoFirst - x.pTheyKoFirst) - (x.cost ?? 0) - cost(o) - feed(active[fi]) * x.pTheyKoFirst;
       return { me, move: o, target: fi, turns, hits: x.turnsWe, score, hp, trade: x };
     };
     // The redirect (CONTEXT.md, `Spare hit`; game-code.md §18): `redirScore` is what the hit is worth on the survivor,
@@ -923,7 +927,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
         const eTurns = 1 + (1 - t1.we) * x2.eTurnsWe;
         const edge = t1.we + standing * x2.pWeKoFirst - (t1.they + standing * x2.pTheyKoFirst);
         const spent = Math.min(1, (o.self ?? 0) / (me.getMaxHp?.() || hp)) + (x2.cost ?? 0);
-        return lasts - eTurns - lost + edge - spent - cost(o) - feed(f) * (t1.they + standing * x2.pTheyKoFirst);
+        return lasts - eTurns - unlanded(1 - x.trade.pActs) - lost + edge - spent - cost(o) - feed(f) * (t1.they + standing * x2.pTheyKoFirst);
       };
       const score = scoreOf(best);
       const { y, x2 } = best;
@@ -943,7 +947,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const hits = Math.max(...hit.map(({ x }) => x.turnsWe));
       if (hits + lost >= 9) return null;
       const edge = Math.min(...xs.flatMap((x, i) => (x ? [x.pWeKoFirst - x.pTheyKoFirst - (x.cost ?? 0) - feed(active[i]) * x.pTheyKoFirst] : [])));
-      const slow = Math.max(...hit.map(({ x }) => x.eTurnsWe));
+      const slow = Math.max(...hit.map(({ x }) => x.eTurnsWe + unlanded(1 - x.pActs)));
       const rep = hit[0].o;
       const both0 = hit.length > 1 ? { ...rep, benefit: Math.max(...hit.map(({ o }) => o.benefit ?? 0)) } : rep;
       return { me, move: rep, target: "both", turns: hits + lost, hits, each,
@@ -1013,7 +1017,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const missed = landed && w < 1 ? follow(null) : null;
       if (!landed || (w < 1 && !missed)) return null;
       const mix = k => w * landed.x2[k] + (missed ? (1 - w) * missed.x2[k] : 0);
-      const eTurns = 1 + mix("eTurnsWe");
+      const eTurns = 1 + mix("eTurnsWe") + unlanded(they + standing * (1 - mix("pActs")));
       const edge = standing * (mix("pWeKoFirst") - mix("pTheyKoFirst")) - they - feed(f) * (they + standing * mix("pTheyKoFirst"));
       const spent = (play.hpCost ?? 0) / maxHp + mix("cost");
       const bonus = play.kind === "hazard" ? play.value * works : 0;
@@ -1137,9 +1141,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   const planValueOf = picks => {
     if (!team || slots !== 1 || !picks[0]) return null;
     const mi = party.indexOf(picks[0].me);
-    // Pinned to the move as well as the mon: the fight the plan goes on to play is the one this pick starts, and a
-    // priority move that lands before the foe acts starts a different one (#650).
-    return mi < 0 ? null : team.at({ mi, outcome: picks[0].move, free: freeSwitch })?.val ?? null;
+    return mi < 0 ? null : team.at({ mi, outcome: picks[0].move, then: picks[0].then, free: freeSwitch })?.val ?? null;
   };
   // Per pick: `ally`, what a move that hits every other pokémon does to our partner; `spare`, the pair's other hit
   // already does all this one does, so a move with a drawback gives way to one without (CONTEXT.md, `Spare hit`).
@@ -1525,7 +1527,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   // in slot 0, so the pin is the slot aimed there: its step 1 is then an action the player is actually told to take.
   const chosen = slots === 1 ? best.picks[0]
     : best.picks.find(p => !p.play && (p.target === 0 || p.target === "both")) ?? best.picks.find(p => !p.play) ?? best.picks[0];
-  const pin = team && chosen ? { mi: party.indexOf(chosen.me), outcome: chosen.move, free: freeSwitch } : null;
+  const pin = team && chosen ? { mi: party.indexOf(chosen.me), outcome: chosen.move, then: chosen.then, free: freeSwitch } : null;
   const ahead = pin && pin.mi >= 0 ? team.after(pin) : null;
   // A plan step is a whole exchange, so its free entry is this turn's news only when the mon goes down on this one —
   // counting the pick's own trade, since a foe switching in is not an `attackers` threat yet.
@@ -1606,8 +1608,6 @@ const STATUS_COST = 0.2;
 const STATUS_CANDS = 2;
 // Turns of ours a whole HP bar of a mon still to come is worth.
 const HAZARD_TURNS = 2;
-// Turns of ours a whole bar of the foe in front of us is worth: what a mon that falls without ever landing a move
-// leaves for the rest of the team to pay (#650). Twice a bar still on the bench — this one is already swinging.
 const FOE_BAR = 2 * HAZARD_TURNS;
 const FEED_COST = 0.5;
 
