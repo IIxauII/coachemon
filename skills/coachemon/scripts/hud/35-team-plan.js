@@ -3,7 +3,7 @@
 // one foe at a time.
 import { iconOf, squeezeDist } from "./01-core.js";
 import { hitOn, koCurve, koTurns, useOf } from "./10-damage.js";
-import { actionOrder, afterSteals, attemptsLost, hitsOn, koBoost, koBoostText, koStageFactor, paralysed, sendInAt, sendInBase, stealCounts, stealRates, threatFrom, tokenOdds, tokenShift } from "./30-planner.js";
+import { actionOrder, afterSteals, attemptsLost, hitsOn, koBoost, koBoostText, koStageFactor, paralysed, sendInAt, sendInBase, stealCounts, stealRates, threatFrom, tokenOdds, tokenShift, unnervedBy } from "./30-planner.js";
 
 // @only tests: tpHealProfile, tpSendScore, tpFight, tpTables, tpActs
 const TP_BEAM = 24;
@@ -13,9 +13,11 @@ const TP_EARLY = 0.01;
 
 const tpSpread = use => {
   const mean = (use ?? []).reduce((t, x) => t + x.d * x.p, 0);
-  return mean > 0 ? squeezeDist(use.map(x => ({ d: x.d / mean, p: x.p, n: x.n ?? 1 })), 4).map(x => ({ r: x.d, p: x.p, n: x.n })) : null;
+  return mean > 0 ? squeezeDist(use.map(x => ({ d: x.d / mean, p: x.p, n: x.n ?? 1, se: x.se })), 4).map(x => ({ r: x.d, p: x.p, n: x.n, se: x.se })) : null;
 };
-const tpTurns = (turn, o, target) => koTurns(koCurve(turn.mon(target), useOf(o)).by);
+// `feeds`: the target eats its Enigma Berry after a super-effective use, as our pick prices it and the foe's AI does
+// not (#652).
+const tpTurns = (turn, o, target, feeds = false) => koTurns(koCurve(turn.mon(target), useOf(o), { se: feeds ? ((o.e ?? 1) >= 2 ? 1 : 0) : null }).by);
 const tpFastest = (turn, list, target, turns = o => tpTurns(turn, o, target), dmg = o => o.dmg) => list
   .map(o => ({ o, n: turns(o) }))
   .reduce((b, x) => (!b || x.n < b.n || (x.n === b.n && dmg(x.o) > dmg(b.o)) ? x : b), null)?.o ?? null;
@@ -39,15 +41,16 @@ const tpOurMove = (turn, me, f, them = null) => {
     const p = tpOrder(turn, me, f, o, them);
     return Number.isFinite(p) ? 1 - p : 0;
   };
+  const feeds = !unnervedBy(turn, f, me);
   if (turn.live) {
     // Two turns a hit for a charge or recharge move, less the recharge after the last hit, which is never spent.
-    const turns = o => (o.expected > 0 ? (o.traits?.charge || o.traits?.recharge ? 2 : 1) * tpTurns(turn, o, f) - (o.traits?.recharge ? 1 : 0) - spared(o) : 99);
+    const turns = o => (o.expected > 0 ? (o.traits?.charge || o.traits?.recharge ? 2 : 1) * tpTurns(turn, o, f, feeds) - (o.traits?.recharge ? 1 : 0) - spared(o) : 99);
     const best = tpFastest(turn, outs, f, turns, o => o.expected);
     if (best?.expected > 0) {
       return tpMoveOf(best, { charge: !!best.traits?.charge, recharge: !!best.traits?.recharge || !!best.traits?.noRepeat, semiCharge: !!best.traits?.charge && !!best.traits?.semiCharge });
     }
   }
-  const m = tpFastest(turn, outs.filter(x => x.dmg > 0), f, o => tpTurns(turn, o, f) - spared(o));
+  const m = tpFastest(turn, outs.filter(x => x.dmg > 0), f, o => tpTurns(turn, o, f, feeds) - spared(o));
   return m ? tpMoveOf(m) : null;
 };
 
@@ -125,15 +128,18 @@ export const tpSendScore = (T, st, fi, mi) => {
 };
 
 // Read at 75 % HP, clear of Sitrus's half: moving it below that folds the berry into every turn's `base`.
-const tpHealAt = (turn, p, hp = Math.ceil(p.getMaxHp() * 0.75), se = false) => {
-  try { return turn.turnEndHp(Object.create(p, { hp: { value: hp } }), { hp, tookSuperEffective: se }) || 0; } catch { return 0; }
+const tpHealAt = (turn, p, hp = Math.ceil(p.getMaxHp() * 0.75), beforeBerries = false) => {
+  try { return turn.turnEndHp(Object.create(p, { hp: { value: hp } }), { hp, beforeBerries }) || 0; } catch { return 0; }
 };
-// `base` recurs every turn, negative when chip outweighs the heals; `sitrus` and `enigma` are one-shot.
+// `base` recurs every turn, negative when chip outweighs the heals, and `pre` is its part ahead of the berries; `sitrus`
+// is one-shot, and `enigma` heals once for each of the `enigmas` it holds.
 export const tpHealProfile = (turn, p) => {
   const max = p.getMaxHp();
-  const at = (hp, se) => tpHealAt(turn, p, hp, se);
-  const base = at(Math.ceil(max * 0.75), false);
-  return { base, sitrus: Math.max(0, at(Math.floor(max * 0.4), false) - base), enigma: Math.max(0, at(Math.ceil(max * 0.75), true) - base) };
+  const at = hp => tpHealAt(turn, p, hp);
+  const base = at(Math.ceil(max * 0.75));
+  const enigma = turn.mon(p).facts.enigma;
+  return { base, pre: tpHealAt(turn, p, Math.ceil(max * 0.75), true), sitrus: Math.max(0, at(Math.floor(max * 0.4)) - base),
+    enigma: enigma?.heal ?? 0, enigmas: enigma?.left ?? 0 };
 };
 
 // `facing`: the foe the first exchange is against, the only one a pinned move's own order is read for.
@@ -155,6 +161,7 @@ export const tpTables = (turn, party, foes, double = false, facing = null) => {
     foeState: foes.map(f => turn.mon(f).state),
     ourMax: party.map(p => p.getMaxHp()), foeMax: foes.map(f => f.getMaxHp()),
     ourHeal: party.map(p => tpHealProfile(turn, p)), foeHeal: foes.map(p => tpHealProfile(turn, p)),
+    ourUnnerve: party.map(p => !!turn.mon(p).facts.unnerve), foeUnnerve: foes.map(f => !!turn.mon(f).facts.unnerve),
     foeStart: foes.map(f => f.hp),
     // `koMult`: the factor both sides' on-KO boosts put on a hit, after `atkN` and `defN` KOs, at physical share `phys`.
     ourKo: party.map(koBoost), foeKo: foes.map(koBoost),
@@ -195,12 +202,16 @@ const tpWear = (turn, party, foes, ours, faced = () => true) => {
 // The turn-end HP change `fixed` sure steals and Grip Claw's `mean` make, against none; `byCount[k]` is after k.
 const tpStolen = (byCount, fixed, mean) => (byCount ? stealCounts(fixed, mean).reduce((t, p, k) => t + p * (byCount[k] - byCount[0]), 0) : 0);
 
+// `used`: bit 0 the Sitrus Berry eaten, and the Enigma Berries eaten counted from bit 1 up. `se`: a super-effective
+// hit landed this turn. The berries heal, capped, between `pre` and the rest of the turn end (game-code.md §21).
 const tpHeal = (hp, max, prof, used, se, extra = 0) => {
   if (!prof || hp < 1) return [hp, used];
-  let add = prof.base + extra;
-  if (hp < max / 2 && !(used & 1) && prof.sitrus) { add += prof.sitrus; used |= 1; }
-  if (se && !(used & 2) && prof.enigma) { add += prof.enigma; used |= 2; }
-  return [Math.min(max, hp + add), used];
+  const pre = prof.pre ?? 0, at = Math.min(max, hp + pre);
+  let berries = 0;
+  if (at < max / 2 && !(used & 1) && prof.sitrus) { berries += prof.sitrus; used |= 1; }
+  if (se && prof.enigma && used >> 1 < (prof.enigmas ?? 1)) { berries += prof.enigma; used += 2; }
+  if (!berries) return [Math.min(max, hp + prof.base + extra), used];
+  return [at < 1 ? at : Math.min(max, Math.min(max, at + berries) + prof.base - pre + extra), used];
 };
 
 // Carried in `st` besides HP: `ox` the landed enemy hits each of ours has taken (wave status tokens), `od` / `og` the
@@ -219,7 +230,12 @@ export const tpFight = (T, st, mi, fi, entry, over = null) => {
   const usMul = us && (nUs || nFoe) && T.koMult ? T.koMult(T.party[mi], T.ourKo[mi], nUs, T.foes[fi], T.foeKo[fi], nFoe, us.cat === "special" ? 0 : 1) : 1;
   const themMul = (nUs || nFoe) && T.koMult ? T.koMult(T.foes[fi], T.foeKo[fi], nFoe, T.party[mi], T.ourKo[mi], nUs, them.phys ?? 1) : 1;
   const tok = T.tok?.[mi], robUs = T.fromUs?.[fi]?.[mi], robFoe = T.fromFoe?.[mi]?.[fi];
-  const ourUse = us?.use ?? [{ r: 1, p: 1 }], theirUse = them.use ?? [{ r: 1, p: 1 }];
+  const ourUse = us?.use ?? [{ r: 1, p: 1 }];
+  // An Unnerve across the pairing keeps both berries uneaten (game-code.md §21).
+  const ourBerry = !!T.ourHeal?.[mi]?.enigma && !T.foeUnnerve?.[fi], foeBerry = !!T.foeHeal?.[fi]?.enigma && !T.ourUnnerve?.[mi];
+  // Its use's share that lands super-effective feeds our berry branch by branch.
+  const theirUse = (them.use ?? [{ r: 1, p: 1 }]).flatMap(t => (ourBerry && t.se > 0 && t.se < 1
+    ? [{ ...t, p: t.p * t.se, se: 1 }, { ...t, p: t.p * (1 - t.se), se: 0 }] : [t]));
   // The order the move being run gets, not the pairing's: with `over` pinned that is the card's ⚔ line, whose priority
   // move may land before a foe that outspeeds the pairing's own pick (#650).
   const foeFirst = T.firstBy?.[mi]?.[fi]?.[us?.name] ?? T.first[mi][fi];
@@ -238,22 +254,25 @@ export const tpFight = (T, st, mi, fi, entry, over = null) => {
       b.fg += robFoe?.perHit ?? 0;
     }
     if (us.drain && b.mh >= 1) b.mh = Math.min(T.ourMax[mi], b.mh + (b.fh - st.hp) * us.drain);
+    b.fse = (us.e ?? 1) >= 2;
     // Recoil is paid whether or not the hit finished the foe.
     if (us.self) b.mh -= us.self;
     b.fh = st.hp;
     b.fs = st.bar;
   };
-  const foeHit = (b, r, dmg = them.dmg) => {
+  const foeHit = (b, r, se, dmg = them.dmg) => {
     const hit = dmg * r * themMul;
     const dealt = Math.min(hit, Math.max(0, b.mh));
     b.mh -= hit;
     if (them.drain && b.fh >= 1) b.fh = Math.min(T.foeMax[fi], b.fh + dealt * them.drain);
     b.ox += them.hits ?? 0;
     b.og += (robUs?.perHit ?? 0) * (them.hits ?? 0);
+    b.mse ||= r > 0 && (se ?? (them.e >= 2 ? 1 : 0)) > 0;
   };
   const endTurn = b => {
-    [b.mh, b.mb] = tpHeal(b.mh, T.ourMax[mi], T.ourHeal[mi], b.mb, them.e >= 2, (tok ? tok.shift * by(turns) : 0) + tpStolen(T.ourItems?.[mi], b.od, b.og));
-    [b.fh, b.fb] = tpHeal(b.fh, T.foeMax[fi], T.foeHeal[fi], b.fb, (us?.e ?? 1) >= 2, tpStolen(T.foeItems?.[fi], b.fd, b.fg));
+    [b.mh, b.mb] = tpHeal(b.mh, T.ourMax[mi], T.ourHeal[mi], b.mb, b.mse && ourBerry, (tok ? tok.shift * by(turns) : 0) + tpStolen(T.ourItems?.[mi], b.od, b.og));
+    [b.fh, b.fb] = tpHeal(b.fh, T.foeMax[fi], T.foeHeal[fi], b.fb, b.fse && foeBerry, tpStolen(T.foeItems?.[fi], b.fd, b.fg));
+    b.mse = b.fse = false;
     if (robUs && b.fh >= 1) b.od += robUs.perTurn;
     if (robFoe && b.mh >= 1) b.fd += robFoe.perTurn;
   };
@@ -266,7 +285,7 @@ export const tpFight = (T, st, mi, fi, entry, over = null) => {
   let standing = [];
   const start = { p: 1, mh: st.oh[mi], mb: st.ob[mi], fh: st.fh[fi], fs: st.fs[fi], fb: st.fb[fi], ox: ox0, od: st.od?.[mi] ?? 0, og: st.og?.[mi] ?? 0, fd: st.fd?.[fi] ?? 0, fg: st.fg?.[fi] ?? 0 };
   if (entry === "switch") {
-    for (const t of theirUse) { const b = { ...start, p: t.p }; foeHit(b, t.r, them.entry ?? them.dmg); endTurn(b); settle(b, standing); }
+    for (const t of theirUse) { const b = { ...start, p: t.p }; foeHit(b, t.r, t.se, them.entry ?? them.dmg); endTurn(b); settle(b, standing); }
     standing = tpMerge(standing, TP_BRANCHES, T, mi, fi);
   } else standing = [start];
   while (standing.length && turns < TP_TURNS) {
@@ -286,11 +305,11 @@ export const tpFight = (T, st, mi, fi, entry, over = null) => {
             const a = { ...b, p: b.p * w * o.p };
             if (o.r > 0) hitFoe(a, o);
             if (a.fh < 1 || hidden) { endTurn(a); settle(a, next); continue; }
-            for (const t of theirUse) { const c = { ...a, p: a.p * t.p }; foeHit(c, t.r); endTurn(c); settle(c, next); }
+            for (const t of theirUse) { const c = { ...a, p: a.p * t.p }; foeHit(c, t.r, t.se); endTurn(c); settle(c, next); }
           } else {
             for (const t of theirUse) {
               const c = { ...b, p: b.p * w * o.p * t.p };
-              foeHit(c, t.r);
+              foeHit(c, t.r, t.se);
               if (c.mh >= 1 && o.r > 0) hitFoe(c, o);
               endTurn(c);
               settle(c, next);

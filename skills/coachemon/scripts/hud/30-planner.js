@@ -6,7 +6,8 @@ import { addShare, koChanceAt, koCurve, koTurn, koTurns, rawMax, shares, useOf }
 
 const pmName = pm => pm?.getName?.() ?? pm?.name ?? "";
 const bossBarsLeft = p => (p.isBoss?.() && p.bossSegments > 1 ? Math.max(1, (p.bossSegmentIndex ?? p.bossSegments - 1) + 1) : 1);
-// Turn-end HP change, signed: heals +, chip −. `dealt`: damage `p` deals a turn (Shell Bell).
+// Turn-end HP change, signed: heals +, chip −. `dealt`: damage `p` deals a turn (Shell Bell). Never with
+// `tookSuperEffective`: `koCurve` eats the Enigma Berry, branch by branch.
 const healAtEnd = (turn, p, dealt = 0) => (turn.live ? turn.turnEndHp(p, { dealt }) : 0) || 0;
 const heldStack = (p, name) => (p.getHeldItems?.() ?? []).filter(m => m.constructor?.name === name).reduce((t, m) => t + (m.getStackCount?.() ?? 1), 0);
 const hitCounts = o => {
@@ -212,7 +213,7 @@ const actDelay = p => {
   return Math.max(0, Math.ceil((st.sleepTurnsRemaining ?? 0) / (1 + early)) - 1);
 };
 
-// `{ expected, use }` of one use of `moves`, each row at `pOf(m)`.
+// `{ expected, use }` of one use of `moves`, each row at `pOf(m)`. A point's `se`: its share that lands super-effective.
 const landing = (foe, moves, pOf, next) => {
   let expected = 0;
   const use = [];
@@ -222,7 +223,7 @@ const landing = (foe, moves, pOf, next) => {
     const pm = m.o.pm ?? foe.moveset.find(x => x?.getName() === m.name) ?? NO_MOVE_INFO;
     const p = q * actChance(foe, pm.getMove?.() ?? null, next);
     expected += p * m.o.expected;
-    for (const x of useOf(m.o)) use.push({ d: x.d, p: x.p * p, n: x.n ?? 1 });
+    for (const x of useOf(m.o)) use.push({ d: x.d, p: x.p * p, n: x.n ?? 1, se: x.d > 0 && (m.o.e ?? 1) >= 2 ? 1 : 0 });
   }
   const dealt = use.reduce((sum, x) => sum + x.p, 0);
   if (dealt < 1) use.push({ d: 0, p: 1 - dealt, n: 0 });
@@ -478,13 +479,15 @@ export const afterSteals = (me, heal) => {
 };
 
 // `at(j)`: `me`'s turn-end HP change at the end of turn j (1 = this turn) of a fight with `foe`, `flat` when that never
-// moves. It moves with Toxic, a status the foe's hits may hand it, and items the foe may steal.
+// moves. It moves with Toxic, a status the foe's hits may hand it, and items the foe may steal. `pre`: the part of `base`
+// ahead of the berries.
 export const turnEndCourse = (turn, me, foe, hitsPerTurn, dealt = 0) => {
   const base = healAtEnd(turn, me, dealt);
+  const pre = (turn.live ? turn.turnEndHp(me, { dealt, beforeBerries: true }) : 0) || 0;
   const toxic = me.status?.effect === StatusEffect.TOXIC
     ? j => healAtEnd(turn, Object.create(me, { status: { value: { ...me.status, effect: StatusEffect.TOXIC, toxicTurnCount: (me.status.toxicTurnCount ?? 0) + j - 1 } } }), dealt)
     : null;
-  const flat = toxic ? { base, flat: false, at: toxic } : { base, flat: true, at: () => base };
+  const flat = toxic ? { base, pre, flat: false, at: toxic } : { base, pre, flat: true, at: () => base };
   if (!foe || !(hitsPerTurn >= 0)) return flat;
   const odds = hitsPerTurn > 0 ? tokenOdds(turn, foe, me) : null;
   const statusChange = odds ? tokenShift(odds, me, p => healAtEnd(turn, p, dealt)) : 0;
@@ -494,7 +497,13 @@ export const turnEndCourse = (turn, me, foe, hitsPerTurn, dealt = 0) => {
     ? j => stealCounts(rates.perTurn * (j - 1), rates.perHit * hitsPerTurn * j).reduce((sum, p, k) => sum + p * (byCount[k] - base), 0)
     : null;
   if (!statusChange && !items) return flat;
-  return { base, flat: false, at: j => (toxic ? toxic(j) : base) + (statusChange ? statusChange * odds.by(hitsPerTurn * j) : 0) + (items ? items(j) : 0) };
+  return { base, pre, flat: false, at: j => (toxic ? toxic(j) : base) + (statusChange ? statusChange * odds.by(hitsPerTurn * j) : 0) + (items ? items(j) : 0) };
+};
+// An opposing Unnerve keeps `holder`'s berries uneaten: `opp`'s, or in a double any on the field (game-code.md §21).
+export const unnervedBy = (turn, holder, opp) => {
+  if (opp && turn.mon(opp).facts.unnerve) return true;
+  if (!turn.facts.double) return false;
+  try { return (holder.getOpponents?.() ?? []).some(q => q && turn.mon(q).facts.unnerve); } catch { return false; }
 };
 export const hitsOn = t => (t?.moves ?? []).reduce((sum, m) => sum + m.p * (m.acc ?? 1) * (m.hits ?? 1), 0);
 // `heal` is a number, or a function of the turn.
@@ -511,6 +520,7 @@ export const foeCurve = (turn, t, me, hp, { dealt = 0, foe = null, mult = null, 
   const usesBefore = start ? 1 : 0;
   return koCurve(turn.mon(me), useOn(threatUse(t, usesBefore)), {
     hp, start, act, turnEnd: withDrain(course.flat ? course.base : course.at, drain), chain: t?.lockChain?.(usesBefore),
+    beforeBerry: course.pre + drain, se: foe && unnervedBy(turn, me, foe) ? null : 0,
     scale: mult || ramp ? i => (mult ? mult(i + 1) : 1) * (ramp ? ramp(i + 1) : 1) : undefined,
     firstKo: t?.expected > 0 && !start ? threatKoAt(t, hp) * act(0) * (t.lockAct ? t.lockAct(0) : 1) : null,
     useAt: t?.later || t?.own ? i => useOn(threatUse(t, i + usesBefore)) : null,
@@ -701,7 +711,8 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     const rest = first !== mine ? useOf(mine) : null;
     qWe = nowUse ? (first.pKo ?? 0) * now : 0;
     const curve = koCurve(turn.mon(foe), useOf(first), {
-      scale, turnEnd: heal, cat: mine.cat,
+      scale, turnEnd: heal, beforeBerry: course.pre + (t?.drain ?? 0), cat: mine.cat,
+      se: unnervedBy(turn, foe, me) ? null : i => (((i ? mine : first).e ?? 1) >= 2 ? 1 : 0),
       act: i => (i === 0 && nowUse ? now : steady * (acts ? acts.act(i + 1) : 1)),
       firstKo: exact && nowUse ? qWe : null, start: after?.foe, chain: ourLock ? OUR_CHAIN : null,
       useAt: rest && (() => rest),
@@ -817,7 +828,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     turn1: (() => {
       // The curve front-loaded every use's self-cost, and turn 1 has only paid one.
       const me1 = freeThey || !theirs ? [{ hp, p: 1 }]
-        : theirs.after1.map(x => ({ ...x, hp: x.revived ? x.hp : Math.min(hp, x.hp + selfSpent - (mine?.self ?? 0)) }));
+        : theirs.after1.map(x => ({ ...x, hp: x.revived ? x.hp : Math.min(maxHp, x.hp + selfSpent - (mine?.self ?? 0)) }));
       return {
         we: weFirst, they: theyFirst, me: me1, hp: me1.reduce((t, x) => t + x.p * x.hp, 0),
         foe: foeAfter1 ?? [{ hp: foe.hp, p: 1 }],
