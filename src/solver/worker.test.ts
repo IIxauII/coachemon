@@ -10,7 +10,7 @@ import { startWorker, WorkerDied } from "./worker.ts";
 
 const save: SessionSave = JSON.parse(readFileSync(new URL("./fixtures/drayton-w188.json", import.meta.url), "utf8")).save;
 const tackle = { kind: "move", move: "TACKLE", tera: false } as const;
-const root = { sig: "root", hp: { ours: [1], foes: [1] }, legal: [tackle], forkPoint: "root" };
+const root = { sig: "root", hp: { ours: [1], foes: [1] }, stages: { ours: [[]], foes: [[]] }, legal: [tackle], forkPoint: "root" };
 
 const HARNESS = readFileSync(new URL("./harness.test.ts.template", import.meta.url), "utf8");
 const FAST_POLL = readFileSync(new URL("./fast-poll.ts.template", import.meta.url), "utf8");

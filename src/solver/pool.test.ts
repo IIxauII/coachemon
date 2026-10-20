@@ -7,7 +7,7 @@ import type { SessionSave } from "./input.ts";
 import { type NotStarted, type Worker, WorkerDied } from "./worker.ts";
 
 const tackle: Input = { kind: "move", move: "TACKLE", tera: false };
-const root: Position = { sig: "root", hp: { ours: [1], foes: [1] }, legal: [tackle], forkPoint: "root" };
+const root: Position = { sig: "root", hp: { ours: [1], foes: [1] }, stages: { ours: [[]], foes: [[]] }, legal: [tackle], forkPoint: "root" };
 const won = (inputs: readonly Action[]): Child[] => inputs.map(input => ({ input, end: "won", hp: { ours: [1], foes: [0] } }));
 const replayed: ReplayResult = { kind: "replayed", replay: { confidence: "replay", outcome: "won", steps: [], receipt: [], luck: [] } };
 const BUDGET = { expansions: 3000, turns: 40 };

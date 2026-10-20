@@ -4,17 +4,24 @@ import { noAnswer } from "./no-answer.ts";
 import type { Beam, Input, Outcome, ReplayResult } from "./oracle-line.ts";
 import { type Action, type Child, type Lds, type Pool, type Position, type Progress, search } from "./search.ts";
 
-/** What a move does from a path: our side's HP fraction and the foe's total HP lost so far, or how the fight ends. */
-type Play = (path: readonly string[], move: string) => { foeLost: number; ours: number } | "won" | "lost";
+/**
+ * What a move does from a path: our side's HP fraction and the foe's total HP lost so far, each side's stat stages if
+ * any, or how the fight ends.
+ */
+type Play = (
+  path: readonly string[],
+  move: string,
+) => { foeLost: number; ours: number; stages?: { ours: number; foes: number } } | "won" | "lost";
 
 const move = (name: string): Input => ({ kind: "move", move: name as Input extends { move: infer M } ? M : never, tera: false });
 const named = (action: Action) => (action?.kind === "move" ? action.move : "wait");
 
 /** A one-on-one fight played by a table; every path is its own position, so nothing merges. */
 function fight(moves: readonly string[], play: Play) {
-  const position = (path: readonly string[], foeLost: number, ours: number): Position => ({
+  const position = (path: readonly string[], foeLost: number, ours: number, stages = { ours: 0, foes: 0 }): Position => ({
     sig: path.join(" "),
     hp: { foes: [1 - foeLost], ours: [ours] },
+    stages: { foes: [[stages.foes]], ours: [[stages.ours]] },
     legal: moves.map(move),
     forkPoint: JSON.stringify(path),
   });
@@ -27,18 +34,24 @@ function fight(moves: readonly string[], play: Play) {
       return inputs.map((input): Child => {
         const played = play(from, named(input));
         if (played === "won" || played === "lost") return { input, end: played, hp: { foes: [0], ours: [0.5] } };
-        return { input, end: "on", at: position([...from, named(input)], played.foeLost, played.ours) };
+        return { input, end: "on", at: position([...from, named(input)], played.foeLost, played.ours, played.stages) };
       });
     },
   };
   return { root: position([], 0, 1), pool, expanded };
 }
 
-/** A fight played by a tree: each path names its moves' results, and a move it doesn't name loses. */
-const tree = (moves: readonly string[], table: Record<string, Record<string, [number, number] | "won" | "lost">>) =>
+/**
+ * A fight played by a tree: each path names its moves' results, as the foe's HP lost, ours left and, where given, our
+ * and the foe's stat stages; a move it doesn't name loses.
+ */
+type Result = [number, number] | [number, number, number, number];
+const tree = (moves: readonly string[], table: Record<string, Record<string, Result | "won" | "lost">>) =>
   fight(moves, (path, name) => {
     const played = table[path.join(" ")]?.[name] ?? "lost";
-    return typeof played === "string" ? played : { foeLost: played[0], ours: played[1] };
+    if (typeof played === "string") return played;
+    const [foeLost, ours, oursStages = 0, foesStages = 0] = played;
+    return { foeLost, ours, stages: { ours: oursStages, foes: foesStages } };
   });
 
 const replayed = (outcome: Outcome): ReplayResult => ({
@@ -199,6 +212,42 @@ test("no answer comes only once every beam has ended, and says how each one did 
     [1, 1, "emptied", 3],
   ]);
   assert.match(result.message, /width 1 at our-HP weight 0\.5 lost every path by turn 2/);
+});
+
+test("a setup move's stat stages count toward its score, so a beam keeps it over a weaker hit (#813)", async () => {
+  // SWORDS_DANCE deals nothing and raises our stages by 2; only it leads to a win.
+  const { root, pool } = tree(["TACKLE", "SWORDS_DANCE"], {
+    "": { TACKLE: [0.02, 1], SWORDS_DANCE: [0, 1, 2, 0] },
+    SWORDS_DANCE: { TACKLE: "won" },
+  });
+
+  const result = await search({ root, pool, validate: replaysAll().validate, budget: BUDGET, lds: null, portfolio: [{ width: 1, ours: 1 }] });
+
+  assert.deepEqual(result.kind === "found" && result.inputs.map(named), ["SWORDS_DANCE", "TACKLE"]);
+});
+
+test("a foe's stat drops count for us, so a beam keeps a stage drop on the foe over a weaker hit (#813)", async () => {
+  // SNARL deals nothing and lowers the foe's stages by 1; only it leads to a win.
+  const { root, pool } = tree(["TACKLE", "SNARL"], {
+    "": { TACKLE: [0.02, 1], SNARL: [0, 1, 0, -1] },
+    SNARL: { TACKLE: "won" },
+  });
+
+  const result = await search({ root, pool, validate: replaysAll().validate, budget: BUDGET, lds: null, portfolio: [{ width: 1, ours: 1 }] });
+
+  assert.deepEqual(result.kind === "found" && result.inputs.map(named), ["SNARL", "TACKLE"]);
+});
+
+test("a foe's stat raises count for nothing, so a hit that breaks a boss's bar outscores a weaker one (#813)", async () => {
+  // The bar HIT breaks raises the boss's stages by 2; only HIT leads to a win.
+  const { root, pool } = tree(["HIT", "TACKLE"], {
+    "": { HIT: [0.1, 1, 0, 2], TACKLE: [0.05, 1] },
+    HIT: { HIT: "won" },
+  });
+
+  const result = await search({ root, pool, validate: replaysAll().validate, budget: BUDGET, lds: null, portfolio: [{ width: 1, ours: 1 }] });
+
+  assert.deepEqual(result.kind === "found" && result.inputs.map(named), ["HIT", "HIT"]);
 });
 
 test("a beam whose foes lose no HP for 6 turns stalls (#662)", async () => {
@@ -520,7 +569,7 @@ test("progress counts the discrepancy search's budget, then goes on from what it
 });
 
 test("a turn the game plays for us is a step with no input, and stays out of the inputs replayed (#662)", async () => {
-  const wait: Position = { sig: "charging", hp: { foes: [0.5], ours: [1] }, legal: [null], forkPoint: "charging" };
+  const wait: Position = { sig: "charging", hp: { foes: [0.5], ours: [1] }, stages: { foes: [[]], ours: [[]] }, legal: [null], forkPoint: "charging" };
   const pool: Pool = {
     size: 1,
     async expand(forkPoint, inputs) {
@@ -528,7 +577,7 @@ test("a turn the game plays for us is a step with no input, and stays out of the
       return inputs.map(input => ({ input, end: "won", hp: { foes: [0], ours: [1] } }));
     },
   };
-  const root: Position = { sig: "root", hp: { foes: [1], ours: [1] }, legal: [move("BOUNCE")], forkPoint: "root" };
+  const root: Position = { sig: "root", hp: { foes: [1], ours: [1] }, stages: { foes: [[]], ours: [[]] }, legal: [move("BOUNCE")], forkPoint: "root" };
   const { asked, validate } = replaysAll();
 
   const result = await search({ root, pool, validate, budget: BUDGET });
@@ -540,7 +589,7 @@ test("a turn the game plays for us is a step with no input, and stays out of the
 test("each faint replacement a turn the game plays for us could take is a path of its own, replayed as an input (#702)", async () => {
   const toGolbat: Input = { kind: "queued", replacement: { slot: 4, species: "GOLBAT" } };
   const toSnorlax: Input = { kind: "queued", replacement: { slot: 2, species: "SNORLAX" } };
-  const wait: Position = { sig: "charging", hp: { foes: [0.5], ours: [1, 1, 1] }, legal: [null], forkPoint: "charging" };
+  const wait: Position = { sig: "charging", hp: { foes: [0.5], ours: [1, 1, 1] }, stages: { foes: [[]], ours: [[], [], []] }, legal: [null], forkPoint: "charging" };
   const pool: Pool = {
     size: 1,
     async expand(forkPoint, inputs) {
@@ -551,7 +600,7 @@ test("each faint replacement a turn the game plays for us could take is a path o
       ];
     },
   };
-  const root: Position = { sig: "root", hp: { foes: [1], ours: [1, 1, 1] }, legal: [move("BOUNCE")], forkPoint: "root" };
+  const root: Position = { sig: "root", hp: { foes: [1], ours: [1, 1, 1] }, stages: { foes: [[]], ours: [[], [], []] }, legal: [move("BOUNCE")], forkPoint: "root" };
   const asked: (readonly Input[])[] = [];
   const validate = async (inputs: readonly Input[]) => (asked.push(inputs), replayed("won"));
 
@@ -569,6 +618,7 @@ test("each learn pick a turn could take is a path of its own, replayed with the 
   const at = (sig: string, foes: number, legal: readonly Action[]): Position => ({
     sig,
     hp: { foes: [foes], ours: [1, 1] },
+    stages: { foes: [[]], ours: [[], []] },
     legal,
     forkPoint: sig,
   });
@@ -599,7 +649,7 @@ test("each learn pick a turn could take is a path of its own, replayed with the 
 });
 
 test("a worker that fails ends the solve in no answer naming it (#662)", async () => {
-  const root: Position = { sig: "root", hp: { foes: [1], ours: [1] }, legal: [move("TACKLE")], forkPoint: "root" };
+  const root: Position = { sig: "root", hp: { foes: [1], ours: [1] }, stages: { foes: [[]], ours: [[]] }, legal: [move("TACKLE")], forkPoint: "root" };
   const pool: Pool = {
     size: 1,
     expand: async () => {
@@ -613,11 +663,15 @@ test("a worker that fails ends the solve in no answer naming it (#662)", async (
   assert.match(result.kind === "no_answer" ? result.message : "", /the worker exited/);
 });
 
+/** What one field slot's move does: the share of the foe's HP it takes, or that and our own HP lost and stages gained. */
+type Command = number | { foeLost: number; oursLost: number; stages: number };
+const effect = (c: Command) => (typeof c === "number" ? { foeLost: c, oursLost: 0, stages: 0 } : c);
+
 /**
- * A double whose two field slots' moves each take their own share of the foe's HP; every turn's position is its own.
- * `apart` names the pairs the game refuses, as it does two Teras.
+ * A double whose two field slots' moves each have their own effect; every turn's position is its own. `apart` names the
+ * pairs the game refuses, as it does two Teras.
  */
-function pairs(slot0: Record<string, number>, slot1: Record<string, number>, win?: [string, string], apart: string[] = []) {
+function pairs(slot0: Record<string, Command>, slot1: Record<string, Command>, win?: [string, string], apart: string[] = []) {
   const pair = (a: string, b: string): Input => ({ kind: "double", commands: [move(a) as FieldMove, move(b) as FieldMove] });
   const legal = Object.keys(slot0).flatMap(a => Object.keys(slot1).flatMap(b => (apart.includes(`${a}+${b}`) ? [] : [pair(a, b)])));
   const names = (action: Action) =>
@@ -630,12 +684,14 @@ function pairs(slot0: Record<string, number>, slot1: Record<string, number>, win
         const [a, b] = names(input).split("+");
         played.push(`${forkPoint}: ${a}+${b}`);
         if (win && a === win[0] && b === win[1]) return { input, end: "won", hp: { foes: [0], ours: [1] } };
-        const lost = slot0[a] + slot1[b];
-        return { input, end: "on", at: { sig: `${forkPoint} ${a}+${b}`, hp: { foes: [1 - lost], ours: [1] }, legal, forkPoint: `${a}+${b}` } };
+        const [x, y] = [effect(slot0[a]), effect(slot1[b])];
+        const hp = { foes: [1 - x.foeLost - y.foeLost], ours: [1 - x.oursLost - y.oursLost] };
+        const stages = { foes: [[]], ours: [[x.stages + y.stages]] };
+        return { input, end: "on", at: { sig: `${forkPoint} ${a}+${b}`, hp, stages, legal, forkPoint: `${a}+${b}` } };
       });
     },
   };
-  return { root: { sig: "root", hp: { foes: [1], ours: [1] }, legal, forkPoint: "root" } satisfies Position, pool, played };
+  return { root: { sig: "root", hp: { foes: [1], ours: [1] }, stages: { foes: [[]], ours: [[]] }, legal, forkPoint: "root" } satisfies Position, pool, played };
 }
 type FieldMove = Extract<Input, { kind: "double" }>["commands"][number];
 
@@ -676,4 +732,16 @@ test("a double's fixed command is one that pairs with every command of the other
 
   const fromRoot = played.filter(p => p.startsWith("root: ")).map(p => p.slice(6));
   assert.ok(fromRoot.includes("A4+B4"), "the best pair is played, though the first legal command can't pair with B4");
+});
+
+test("a double pairs up a move that costs our partner HP for stat stages, as Beat Up on a Justified partner does (#813)", async () => {
+  const slot0 = { DRAGON_PULSE: 0.05, HYPER_VOICE: 0.06, FLAMETHROWER: 0.04, BEAT_UP: { foeLost: 0, oursLost: 0.1, stages: 5 } };
+  const slot1 = { B1: 0.01, B2: 0.02, B3: 0.03, B4: 0.04 };
+  const { root, pool, played } = pairs(slot0, slot1);
+
+  await search({ root, pool, validate: replaysAll().validate, budget: ONE_TURN, lds: null, portfolio: ONE_BEAM, paired: 1 });
+
+  const fromRoot = played.filter(p => p.startsWith("root: ")).map(p => p.slice(6));
+  assert.ok(fromRoot.includes("BEAT_UP+B4"), "Beat Up is the slot's one command paired with the other's best");
+  assert.ok(!fromRoot.includes("HYPER_VOICE+B4"), "the best hit on the foe is not");
 });

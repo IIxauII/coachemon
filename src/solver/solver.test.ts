@@ -79,10 +79,10 @@ function warmLease(answer: Partial<Pick<WorkerPool, "rootAt">> = {}) {
   const asked = { rootAt: [] as unknown[][], expand: [] as { forkPoint: string; signal?: AbortSignal }[], done: [] as boolean[] };
   const pool: WorkerPool = {
     size: 2,
-    root: { sig: "an earlier start", hp: { ours: [1], foes: [1] }, legal: [tackle], forkPoint: "earlier" },
+    root: { sig: "an earlier start", hp: { ours: [1], foes: [1] }, stages: { ours: [[]], foes: [[]] }, legal: [tackle], forkPoint: "earlier" },
     rootAt: answer.rootAt ?? (async (...args) => {
       asked.rootAt.push(args);
-      return { sig: "t5", hp: { ours: [1], foes: [1] }, legal: [tackle], forkPoint: "t5" };
+      return { sig: "t5", hp: { ours: [1], foes: [1] }, stages: { ours: [[]], foes: [[]] }, legal: [tackle], forkPoint: "t5" };
     }),
     expand: async (forkPoint, inputs, signal) => {
       asked.expand.push({ forkPoint, signal });
