@@ -104,6 +104,7 @@ export const fakeTurn = ({
     statusMoves: (atk, def) => as(() => statusMoves(atk, def)),
     stopped: (atk, def) => as(() => stopped(atk, def)),
     failing: (atk, def) => as(() => failing(atk, def) ?? []),
+    teraFailing: () => [],
     turnEndHp: (p, opts = {}) => as(() => heal(p, opts) ?? 0),
     // `exact`: the gate (#183). `{ ok: false, reason }` is what the panel sees on a build past the pin.
     exact: () => exact,

@@ -447,6 +447,16 @@ const planner = () => globalThis.__hud["30-planner"];
   assert.deepEqual(fails(rows.later), [["Burn", true]], "a Tera'd foe's next turn");
 }
 
+// ---- A later pick reads `fails` only where the Tera makes it fail: a condition read off the state now says nothing
+// about the turn the pick is for (#648).
+{
+  const { bench, me, ai } = instantTera();
+  // Fake Out's shape: it asks for the user's first turn on the field, which a bench mon's stale `summonData` denies.
+  bench.moveset = [mkMove({ id: 1, name: "Fake", target: 100, cond: () => false }), mkMove({ id: 2, name: "Rock", target: 1 })];
+  const rows = ai.ask(t => planner().likelyMoves(t, bench, me, [{ name: "Rock", live: true, expected: 10 }], true));
+  assert.deepEqual(rows.map(r => [r.name, !!r.fails]), [["Fake", false]]);
+}
+
 // ---- A foe the trainer withdraws this turn Teras at its first FIGHT command once it is back (#648).
 {
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A", target: -10 }] });

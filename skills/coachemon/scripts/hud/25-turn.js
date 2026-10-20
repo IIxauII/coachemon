@@ -288,6 +288,12 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
       () => (live ? asDamage(() => sceneStatusMoves(env, atk, def)) : [])),
     stopped: (atk, def) => refused(atk, def).stopped,
     failing: (atk, def) => refused(atk, def).failing,
+    // Those of `failing` that `atk`'s own predicted Tera brings on.
+    teraFailing: (atk, def) => memo("teraFailing", `${atk.id}|${def.id}`, () => {
+      if (!live || !teraSaved.has(atk)) return [];
+      const before = preTera([atk], () => asDamage(() => sceneRefused(env, atk, def).failing));
+      return refused(atk, def).failing.filter(n => !before.includes(n));
+    }),
     // Answered live or not, since it decides nothing. Not memoised: callers ask about made-up HP, statuses and item
     // stacks on `Object.create` clones.
     turnEndHp: (p, opts = {}) => { guard(); return asDamage(() => sceneTurnEndHp(env, p, opts)); },
