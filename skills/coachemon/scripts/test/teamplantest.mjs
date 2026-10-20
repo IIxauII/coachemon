@@ -173,7 +173,7 @@ assert.equal(plan.approxDoubles, false);
   const st = () => ({ oh: [150], ob: [0], fh: [200], fs: [0], fb: [0] });
   const fight = (entry, entering) => tpFight(T, st(), 0, 0, entry, null, entering);
   const [stays, enters] = [false, true].map(e => fight("stay", e));
-  console.log(`== a switch-in's entry turn\nstay: ${stays.pWin} win at ${stays.mh} · into a switch-in: ${enters.pWin} win at ${enters.mh}`);
+  console.log(`== a foe's entry turn\nstay: ${stays.pWin} win at ${stays.mh} · into a switch-in: ${enters.pWin} win at ${enters.mh}`);
   assert.equal(stays.pLoss, 1, "a foe already out hits first on turn 1 and wins the race");
   assert.equal(enters.pWin, 1, "against a switch-in our first hit is free, so we win it");
   assert.equal(enters.mh, 50, "having taken one hit, not two");

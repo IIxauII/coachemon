@@ -230,7 +230,8 @@ const tpHeal = (hp, max, prof, used, se, extra = 0) => {
 // Mini Black Hole and Grip Claw steals from it, `fd` / `fg` the same from each foe, and `ok` / `fk` the KOs each side
 // has scored for its on-KO boosts. Returns the likelier ending's state with `pWin`, `pLoss`, `pStall` and all three
 // `ends`. `over` pins our move for this exchange only (#113), and is never memoised: the key names the pair, not the move.
-// `entering`: the foe spends this exchange's first turn switching in and does not attack (#846).
+// `entering`: the foe spends this exchange's first turn switching in and does not attack, so a switch of ours made that
+// turn costs no entry hit (#846).
 export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => {
   const faints = st.oh.filter(hp => hp < 1).length + st.fh.filter(hp => hp < 1).length;
   const nUs = T.ourKo?.[mi] ? (T.ourKo[mi].any ? faints : st.ok?.[mi] ?? 0) : 0;
@@ -255,12 +256,11 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
   const foeFirstSlowed = T.firstParaBy?.[mi]?.[fi]?.[us?.name] ?? T.firstPara?.[mi]?.[fi] ?? foeFirst;
   // A hand-built table or state carries no wear, so every wear field is optional.
   const ox0 = st.ox?.[mi] ?? 0;
-  // Our switch spends the turn the foe spends coming in, so neither side hits it.
   const entryHit = entry === "switch" && !entering;
-  const idle = entering && entry !== "switch";
+  const foeIdle = entering && entry !== "switch";
   let turns = 0;
   // P(token status by the end of turn `t`); `t` 0 is before this exchange.
-  const by = t => (!tok ? 0 : tok.odds.by(ox0 + (entryHit ? them.hits ?? 0 : 0) + (them.hits ?? 0) * Math.max(0, t - (idle ? 1 : 0))));
+  const by = t => (!tok ? 0 : tok.odds.by(ox0 + (entryHit ? them.hits ?? 0 : 0) + (them.hits ?? 0) * Math.max(0, t - (foeIdle ? 1 : 0))));
   // Drain wins back its share of the HP the hits actually took, after the bars and the foe's HP have cut them.
   const hitFoe = (b, o) => {
     const n = Math.max(1, Math.round(o.n ?? 1));
@@ -314,8 +314,8 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
   while (standing.length && turns < TP_TURNS) {
     turns++;
     const para = tok?.para ? by(turns - 1) * tok.para : 0;
-    const still = idle && turns === 1;
-    const pFoe = still ? 0 : Math.max(0, Math.min(1, para * foeFirstSlowed + (1 - para) * foeFirst));
+    const foeIdleNow = foeIdle && turns === 1;
+    const pFoe = foeIdleNow ? 0 : Math.max(0, Math.min(1, para * foeFirstSlowed + (1 - para) * foeFirst));
     const act = tok ? 1 - attemptsLost(tok.odds, by, turns, pFoe) : 1;
     const hits = !!us && (us.charge ? turns % 2 === 0 : us.recharge ? turns % 2 === 1 : true);
     const hidden = !!us && !hits && !!us.semiCharge;
@@ -328,7 +328,7 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
           if (!foeFirst) {
             const a = { ...b, p: b.p * w * o.p };
             if (o.r > 0) hitFoe(a, o);
-            if (a.fh < 1 || hidden || still) { endTurn(a); settle(a, next); continue; }
+            if (a.fh < 1 || hidden || foeIdleNow) { endTurn(a); settle(a, next); continue; }
             for (const t of theirUse) { const c = { ...a, p: a.p * t.p }; foeHit(c, t.r, t.se); endTurn(c); settle(c, next); }
           } else {
             for (const t of theirUse) {
@@ -447,7 +447,7 @@ const tpSearch = (T, start, reserve, pin = null) => {
         const spare = cands.filter(([mi]) => !reserve.some(r => r.mi === mi && r.fi !== fi));
         if (spare.length) cands = spare;
       }
-      const entering = depth === 0 && fi === start.fin;
+      const entering = depth === 0 && fi === start.fenter;
       for (const [mi, entry] of cands) {
         const r = tpFight(T, st, mi, fi, entry, depth === 0 && pin?.move && mi === pin.mi ? pin.move : null, entering);
         const child = end => {
@@ -492,11 +492,12 @@ const tpSearch = (T, start, reserve, pin = null) => {
 
 // The predicted switch-in when a foe is leaving, as the ⚔ line has it: ♟ aimed at the mon walking away, and ⚔ was
 // right every time (#113).
+// `entering`: `foe` is that switch-in.
 const tpFacing = (turn, foes) => {
   const here = turn.activeFoes()[0] ?? null;
-  if (!here || !turn.live || turn.facts.decision === "check-switch") return here;
+  if (!here || !turn.live || turn.facts.decision === "check-switch") return { foe: here, entering: false };
   const to = turn.enemyAction(here).switchTo;
-  return to && foes.includes(to) ? to : here;
+  return to && foes.includes(to) ? { foe: to, entering: true } : { foe: here, entering: false };
 };
 
 const TP_PREFER = 20;
@@ -505,7 +506,7 @@ const TP_HOLD = 10;
 // ⚔ owns the turn and this model the rest of the fight (#113). `pin` is `{ mi, outcome?, then?, free? }`: `at(pin)`
 // re-searches with it as step 1, `after(pin)` reads what that plan says comes next, and `view(pin)` renders it.
 // `entering`: `facing` is the foe switching in this turn.
-const tpModel = (T, double, party, foes, facing, entering = false) => {
+const tpModel = (T, double, party, foes, facing, entering) => {
   const ref = p => ({ icon: iconOf(p), name: p.name });
   const pctOf = (hp, max) => Math.round(hp / max * 100);
   const fcur = foes.indexOf(facing);
@@ -515,7 +516,8 @@ const tpModel = (T, double, party, foes, facing, entering = false) => {
     ox: party.map(() => 0), od: party.map(() => 0), og: party.map(() => 0), fd: foes.map(() => 0), fg: foes.map(() => 0),
     ok: party.map(() => 0), fk: foes.map(() => 0),
     cur: party.flatMap((p, i) => (p.isOnField?.() ? [i] : [])), fcur: fcur >= 0 ? fcur : null, steps: [],
-    fin: entering && fcur >= 0 ? fcur : null,
+    // The foe that spends the first exchange's first turn switching in.
+    fenter: entering && fcur >= 0 ? fcur : null,
   };
   start.act = start.cur[0] ?? null;
 
@@ -618,8 +620,7 @@ export const teamPlanner = turn => {
   const foes = turn.facts.foes.filter(f => f && f.hp > 0);
   if (!trainer || !party.length || !foes.length) return null;
   // The searches read only the tables `tpTables` builds, never the live game.
-  const facing = tpFacing(turn, foes);
-  const entering = !!facing && facing !== turn.activeFoes()[0];
+  const { foe: facing, entering } = tpFacing(turn, foes);
   return tpModel(tpTables(turn, party, foes, double, facing), double, party, foes, facing, entering);
 };
 
