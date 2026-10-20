@@ -379,7 +379,22 @@ const bigHit = move(1, "Big Hit", 14, 120);
   const twin = move(20, "Twin Nuke", 0, 250, { attrs: [new MultiHitAttr(MultiHitType.TWO)] });
   const o = moveOutcome(scene, atk, boss, pmOf(twin), { crit: false });
   assert.equal(o.dist[0].n, 2);
-  near(o.pKo, 0.25, "both rolls have to miss the token");
+  near(o.pKo, 0.75, "a proc on the clamped first strike spends the token, else the second strike rolls");
+  scene.enemyModifiers.length = 0;
+}
+
+// ---- The endure token saves only the hit it procs on (game-code.md §3)
+{
+  const atk = mon("a");
+  const holder = mon("holder", { hp: 100, player: false });
+  scene.enemyModifiers.push(held("EnemyEndureChanceModifier", { chance: 100 }));
+  setup(atk, holder);
+  const one = moveOutcome(scene, atk, holder, pmOf(move(21, "Big Hit", 0, 150)), { crit: false });
+  assert.equal(one.pKo, 0, "a sure token saves the lethal hit");
+  assert.equal(one.expected, 99, "at 1 HP");
+  const twin = moveOutcome(scene, atk, holder, pmOf(move(22, "Twin Hit", 0, 150, { attrs: [new MultiHitAttr(MultiHitType.TWO)] })), { crit: false });
+  assert.equal(twin.pKo, 1, "the second lethal strike finds the token spent");
+  assert.equal(twin.expected, 100);
   scene.enemyModifiers.length = 0;
 }
 
@@ -726,7 +741,12 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   scene.enemyModifiers = [held("EnemyEndureChanceModifier", { chance: 50 })];
   const tough = mon("tough", { hp: 100, player: false });
   assert.deepEqual(round(koCurve(tough, sure(300)).by).slice(0, 2), [0.5, 1], "once a wave");
-  assert.deepEqual(round(koCurve(tough, sure(600, 2)).by).slice(0, 2), [0.5, 1], "the rest of that use too");
+  assert.deepEqual(round(koCurve(tough, sure(600, 2)).by).slice(0, 2), [1, 1], "the save covers only the hit it rolled on");
+  scene.enemyModifiers = [held("EnemyEndureChanceModifier", { chance: 100 })];
+  assert.deepEqual(koCurve(tough, sure(300)).by.slice(0, 2), [0, 1], "a sure token saves use 1, use 2 KOs");
+  assert.deepEqual(koCurve(tough, sure(600, 2)).by[0], 1, "two lethal hits in one use: the first is saved, the second KOs");
+  const tokBoss = mon("tokboss", { hp: 200, boss: 2, player: false });
+  assert.deepEqual(koCurve(tokBoss, sure(250)).by.slice(0, 2), [0, 1], "a proc on a hit the bar clamp stops spends the token");
   scene.enemyModifiers = [];
   assert.deepEqual(koCurve(boss3(), sure(100)).perChunk, [1, 1, 1]);
   assert.deepEqual(koCurve(boss3(), sure(60)).perChunk, [2, 2, 2]);
