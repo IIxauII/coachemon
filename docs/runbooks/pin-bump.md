@@ -98,9 +98,10 @@ The stamp refuses while any MISSING, MISPLACED, ADDED, SHIFTED or UNREGISTERED r
 `package.json` names no pnpm. Then
 it runs the **harness re-check** in that clone:
 
-1. It replays the four known fights from their wave-start saves (`src/solver/fixtures/`): Gordie W180, Drayton W188,
-   Kieran W190 and Eternatus W200, the one that turns double (#788). Each replay passes the replay protocol and must
-   reproduce every fact live recorded on its line, down to the win.
+1. It replays the five known fights from their wave-start saves (`src/solver/fixtures/`): Gordie W180, Drayton W188,
+   Kieran W190, Eternatus W200, the one that turns double (#788), and Swimmers W173, a trainer double loaded from a
+   `Continue` (#835). Each replay passes the replay protocol and must reproduce every fact live recorded on its line,
+   down to the win.
 2. Then it runs the fork check and the chained-restore check on each line (#662).
 
 A known fight recorded on an older version than `<new>` is **carried** to it (#703). The clone loads the old save
@@ -159,7 +160,8 @@ does, `src/ui/handlers/menu-ui-handler.ts` in the clone), and the extension read
 no longer carries is replaced by a new one, played live on pokerogue.net once it serves `<new>`:
 
 1. Reach a fight like the one it replaces: a single trainer fight, a trainer double, or the classic final boss for
-   Eternatus W200. Not a Daily or a Mystery Encounter, which the solver refuses.
+   Eternatus W200. For Swimmers W173, a trainer double reached by a `Continue`, with no input since: its save's
+   `enemyModifiers` is `null`, and the load re-rolls its partner's name (#821, #829). Not a Daily or a Mystery Encounter, which the solver refuses.
 2. At the first decision, before any input, call `read_session`, and write `<stem>.json` from it.
 3. Play it to a win. After each turn, write down what live shows for the mons the line turns on.
 4. Write `<stem>.win.script.json`, and name the fight in `KNOWN_FIGHTS` in place of the one it replaces.
