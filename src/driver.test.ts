@@ -1707,7 +1707,7 @@ test("read_job answers a solved oracle line short unless asked in full, and the 
   const result = short.result as Record<string, unknown> & { steps: unknown[] };
   assert.equal(result.kind, "oracle_line");
   assert.equal(result.turns, 9);
-  assert.deepEqual(result.steps[2], { turn: 13, command: "BUG_BITE", replacements: ["GOLBAT (slot 5)"], ours: ["GOLBAT 493/493"], foes: ["TYRANITAR 512/569"] });
+  assert.deepEqual(result.steps[2], { turn: 13, command: "Bug Bite", replacements: ["Golbat (slot 5)"], ours: ["Golbat 493/493"], foes: ["Tyranitar 512/569"] });
   assert.deepEqual((await driver.readJob(job, "full")).result, SOLVED);
   const { end_file, ...answered } = short;
   assert.deepEqual(JSON.parse(readFileSync(end_file, "utf8")), answered);

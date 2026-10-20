@@ -27,8 +27,7 @@ import { CALL_BUDGET_MS, settle, type SettleResult } from "./settle.ts";
 import { DEFAULT_BUDGET, gate, type NoAnswer, type OracleLine, type SessionSave, type SolveInput, type SolveResult } from "./solver/solver.ts";
 import { noAnswer } from "./solver/no-answer.ts";
 import { fightEnded, FightPool } from "./solver/fight-pool.ts";
-import { SOLVE_JOB, solveJob } from "./solver/solve-job.ts";
-import { shortSolveResult } from "./solver/short-line.ts";
+import { shortSolve, SOLVE_JOB, solveJob } from "./solver/solve-job.ts";
 import type { Choice } from "./stuck/detector.ts";
 
 export const AUTO_ADVANCE_CAP = 12;
@@ -133,7 +132,7 @@ export class Driver {
     this.#transport = transport;
     this.#home = home;
     this.#clock = clock;
-    this.#jobs = new Jobs(jobKinds, path.join(home, "jobs"), { [SOLVE_JOB]: r => ((r as SolveResult | null)?.kind === "oracle_line" ? shortSolveResult(r as SolveResult) : r) });
+    this.#jobs = new Jobs(jobKinds, path.join(home, "jobs"), { [SOLVE_JOB]: shortSolve });
     game.onRejection(t => this.#outcomes.rejection(t));
   }
 

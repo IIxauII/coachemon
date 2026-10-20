@@ -21,7 +21,7 @@ export type JobState = "running" | "done" | "failed" | "cancelled";
  */
 export type JobView = { job: string; kind: string; state: JobState; progress: string | null; end_file: string; result?: unknown; failure?: string };
 
-/** `short` answers through the job kind's `Shorten` where it has one, `full` with the result as its work returned it (#818). */
+/** A kind with no `Shorten` reads the same either way (#818). */
 export type JobDetail = "short" | "full";
 
 export type Shorten = (result: unknown) => unknown;

@@ -1,4 +1,4 @@
-import type { FieldCommand, Input, LearnPick, PartySlot } from "./oracle-line.ts";
+import type { FieldCommand, FieldReplacement, Input, LearnPick, PartySlot } from "./oracle-line.ts";
 
 export const title = (key: string) =>
   key
@@ -9,12 +9,14 @@ export const title = (key: string) =>
 
 export const STAGES = ["Atk", "Def", "SpA", "SpD", "Spe", "Acc", "Eva"];
 
-const mon = ({ slot, species }: PartySlot) => `${title(species)} (slot ${slot})`;
+export const mon = ({ slot, species }: PartySlot) => `${title(species)} (slot ${slot})`;
 
-const learned = ({ move, forget, ...at }: LearnPick) =>
+export const intoField = (r: FieldReplacement) => `${mon(r)} into field ${r.field}`;
+
+export const learned = ({ move, forget, ...at }: LearnPick) =>
   forget === null ? `${mon(at)} declines ${title(move)}` : `${mon(at)} forgets ${title(forget)} for ${title(move)}`;
 
-const commanded = (c: FieldCommand) => {
+export const commanded = (c: FieldCommand) => {
   if (c.kind === "switch") return `switch → ${mon(c.to)}`;
   const target = c.target ? ` → ${c.target.side === "foes" ? "foe" : "our"} field ${c.target.field}` : "";
   return `${c.tera ? "Tera + " : ""}${title(c.move)}${target}`;
@@ -27,8 +29,8 @@ const commanded = (c: FieldCommand) => {
 export function describeInput(input: Input, field: readonly (PartySlot | undefined)[] = []): string {
   if (input.kind === "double") {
     const acts = input.commands.flatMap((c, i) => (c ? [`${field[i] ? title(field[i].species) : `field ${i}`}: ${commanded(c)}`] : []));
-    const replacements = (input.replacements ?? []).map(r => `replacement ${mon(r)} into field ${r.field}`);
-    const pivots = (input.pivots ?? []).map(p => `pivot ${mon(p)} into field ${p.field}`);
+    const replacements = (input.replacements ?? []).map(r => `replacement ${intoField(r)}`);
+    const pivots = (input.pivots ?? []).map(p => `pivot ${intoField(p)}`);
     return [acts.length > 0 ? acts.join(" · ") : "played for us", ...pivots, ...(input.learns ?? []).map(learned), ...replacements].join(", ");
   }
   const act =
