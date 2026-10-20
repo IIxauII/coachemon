@@ -1482,4 +1482,41 @@ Object.assign(TABLE, {
   assert.equal(globalThis.__planner.cardSummary(out.card).field, "no advice — the enemy AI call threw");
 }
 
+// ---- A move is worth only what its user lands before it falls (#650, W145 T4). Dragonite at 169 of 340 is outsped and
+// one-shot by Rayquaza's Outrage. Dragon Hammer fells Rayquaza in two uses and never goes off; Extreme Speed (+2) needs
+// three but takes a third of the bar off first, so it is the call and the plan's step shows the chip.
+Object.assign(TABLE, {
+  "Dragonite>Dragon Hammer>Rayquaza": [[220], 1, 2], "Dragonite>Extreme Speed>Rayquaza": [[140], 1, 1],
+  "Rayquaza>Outrage>Dragonite": [[300], 1, 2],
+  "Raichu>Thunderbolt>Rayquaza": [[150], 1, 1], "Rayquaza>Outrage>Raichu": [[400], 1, 1],
+});
+{
+  const HAMMER = ["Dragon Hammer", "Dragon", 90, "P"], SPEED = ["Extreme Speed", "Normal", 80, "P", 2];
+  const lostRace = moves => {
+    const party = [
+      mon("Dragonite", 80, ["Dragon", "Flying"], [340, 200, 150, 150, 150, 160], moves, true, 169),
+      mon("Raichu", 80, ["Electric"], [240, 120, 100, 160, 110, 180], [["Thunderbolt", "Electric", 90, "S"]], false),
+    ];
+    const foes = [mon("Rayquaza", 84, ["Dragon", "Flying"], [350, 250, 120, 250, 120, 200], [["Outrage", "Dragon", 120, "P"]], true)];
+    return render({ party, foes, live: true, switches: () => new Map(),
+      dist: e => (e === foes[0] ? [{ name: "Outrage", type: "Dragon", p: 1, score: 10, targets: [0] }] : []) });
+  };
+  const both = lostRace([HAMMER, SPEED]);
+  console.log(`== a lost race: only what lands counts (#650)\n${both.field.join("\n")}`);
+  const call = both.field.find(l => /^⚔/.test(l));
+  assert.match(call, /Extreme Speed → .*Rayquaza/, `the move that lands is the call:\n${both.field.join("\n")}`);
+  assert.ok(!/Dragon Hammer/.test(call), `the KO it never reaches is not the call: ${call}`);
+  const step = both.card.teamPlan.steps[0];
+  assert.equal(step.send.name, "Dragonite");
+  assert.ok(step.foeHp < 100, `the pinned plan's step lands the chip: ${step.why}`);
+
+  // With only the priority move there is no choice to make: the step still lands damage, and the card's danger tag is
+  // a risk after our hit, not a KO before it.
+  const only = lostRace([SPEED]);
+  console.log(`== the priority move alone (#650)\n${only.field.join("\n")}`);
+  assert.ok(only.card.teamPlan.steps[0].foeHp < 100, `the step lands damage: ${only.card.teamPlan.steps[0].why}`);
+  assert.notEqual(only.card.field.slots[0].threat?.level, "ko", "a pick that moves first is never KO'd before it acts");
+  assert.ok(!only.field.some(l => /before it can act/.test(l)), only.field.join("\n"));
+}
+
 console.log("ok");

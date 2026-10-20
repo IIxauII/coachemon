@@ -26,4 +26,6 @@ Blastoise loses 191 / 287 / 400 HP after 0 / 1 / 2 KOs (no ability: 191 / 191 / 
 == feeding Beast Boost
 Pidgey → Buzzwole: falls · foe at 47% · feeds Beast Boost +1 Atk
 Blastoise → Buzzwole: KO · 82% left
+== a priority move from a slower mon (#650)
+Close Combat at 1 leaves 300 · Mach Punch at 0 leaves 214
 ok

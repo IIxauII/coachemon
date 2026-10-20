@@ -352,4 +352,12 @@ Fight plan likely lost
 == a foe's lock on our switch-in: Skarmory 3.4383 · Clefable 4.0000 · its last use 4.8086
 == switched into a foe's lock: Skarmory 3.6975 · Clefable 3.0000 · its last use 3.8086
 == a foe's own pick once its lock runs down: Bronzong 3.4383 · Steelix 1.4383
+== a lost race: only what lands counts (#650)
+⚔ Dragonite ⚠ Dragon ×2 100% {Rayquaza's Outrage: ~100% of current HP} Normal Extreme Speed → Rayquaza 3 hits
+⤵ Dragonite falls this turn › Raichu in free
+⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
+== the priority move alone (#650)
+⚔ Dragonite ⚠ Dragon ×2 100% {Rayquaza's Outrage: ~100% of current HP} Normal Extreme Speed → Rayquaza 3 hits
+⤵ Dragonite falls this turn › Raichu in free
+⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
 ok

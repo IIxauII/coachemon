@@ -28,17 +28,27 @@ const tpMoveOf = (o, extra) => {
     charge: !!o.traits?.charge, recharge: !!o.traits?.recharge || !!o.traits?.noRepeat, semiCharge: !!o.traits?.charge && !!o.traits?.semiCharge, ...extra };
 };
 
-const tpOurMove = (turn, me, f) => {
+// `them` is what the foe is bringing back, so the order weighs beside the pace rather than the pace alone (#650).
+const tpOurMove = (turn, me, f, them = null) => {
   const outs = turn.outcomes(me, f);
+  // The hit of the foe's that landing first cancels, in turns of ours (CONTEXT.md, `Removal price`): a KO one use
+  // slower that moves first takes the same number of hits getting there, so order is part of what a move costs.
+  // `them.first` is already the order against a move of ours at priority 0, so only a move out of that bracket is
+  // asked about again.
+  const spared = o => {
+    if (!them) return 0;
+    const p = (o.priority ?? 0) === 0 ? them.first : tpFoeFirst(turn, me, f, o, them);
+    return Number.isFinite(p) ? 1 - p : 0;
+  };
   if (turn.live) {
     // Two turns a hit for a charge or recharge move, less the recharge after the last hit, which is never spent.
-    const turns = o => (o.expected > 0 ? (o.traits?.charge || o.traits?.recharge ? 2 : 1) * tpTurns(turn, o, f) - (o.traits?.recharge ? 1 : 0) : 99);
+    const turns = o => (o.expected > 0 ? (o.traits?.charge || o.traits?.recharge ? 2 : 1) * tpTurns(turn, o, f) - (o.traits?.recharge ? 1 : 0) - spared(o) : 99);
     const best = tpFastest(turn, outs, f, turns, o => o.expected);
     if (best?.expected > 0) {
       return tpMoveOf(best, { charge: !!best.traits?.charge, recharge: !!best.traits?.recharge || !!best.traits?.noRepeat, semiCharge: !!best.traits?.charge && !!best.traits?.semiCharge });
     }
   }
-  const m = tpFastest(turn, outs.filter(x => x.dmg > 0), f);
+  const m = tpFastest(turn, outs.filter(x => x.dmg > 0), f, o => tpTurns(turn, o, f) - spared(o));
   return m ? tpMoveOf(m) : null;
 };
 
@@ -57,6 +67,8 @@ const tpTheirMove = (turn, f, me) => {
         const moved = t.moves.reduce((sum, m) => sum + m.p, 0);
         return {
           dmg: mean > 0 ? mean : per.expected, entry: Number.isFinite(now?.expected) ? now.expected : t.expected, use: tpSpread(per.use),
+          // `first` is the order against a move of ours at priority 0, which is all this table knows: `tpFoeFirst`
+          // takes it again per move for anything out of that bracket (#650).
           name: typeof t.move === "string" ? t.move : t.move?.name ?? null, e: t.move?.e ?? 1, first: t.first, priority: t.move?.priority ?? 0, hits: hitsOn(t),
           drain: t.expected > 0 ? (t.drain ?? 0) / t.expected : 0,
           phys: moved > 0 ? t.moves.reduce((sum, m) => sum + m.p * (m.cat === "special" ? 0 : 1), 0) / moved : 1,
@@ -69,19 +81,51 @@ const tpTheirMove = (turn, f, me) => {
     drain: m?.drain ?? 0, phys: m?.cat === "special" ? 0 : 1 };
 };
 
+// P(the foe acts first), taken against the move of ours it is facing and not against the pairing: a priority move of
+// ours lands before a foe that outspeeds it, and the fight plan is only right if it sees that (#650). `threatFrom`
+// weighs the foe's own picks against our move; `theirs.first`, then raw priority and Speed, are what is left when the
+// game cannot be asked.
 const tpFoeFirst = (turn, me, f, ours, theirs) => {
-  if (Number.isFinite(theirs.first)) return theirs.first;
-  if (turn.live && ours && theirs.name) {
+  if (turn.live && ours?.name) {
     try {
-      const a = me.moveset.find(pm => pm?.getName?.() === ours.name), b = f.moveset.find(pm => pm?.getName?.() === theirs.name);
-      const p = a && b ? actionOrder(turn, me, a, f, b) : null;
-      if (Number.isFinite(p)) return 1 - p;
+      const a = me.moveset.find(pm => pm?.getName?.() === ours.name);
+      if (a) {
+        const t = threatFrom(turn, f, me, a, { next: !me.isOnField?.() || !f.isOnField?.() });
+        if (Number.isFinite(t?.first)) return t.first;
+        const b = theirs.name ? f.moveset.find(pm => pm?.getName?.() === theirs.name) : null;
+        const p = b ? actionOrder(turn, me, a, f, b) : null;
+        if (Number.isFinite(p)) return 1 - p;
+      }
     } catch {}
   }
+  if (Number.isFinite(theirs.first)) return theirs.first;
   const mine = ours?.priority ?? 0;
   if (theirs.priority !== mine) return theirs.priority > mine ? 1 : 0;
   const a = turn.mon(me).speed, b = turn.mon(f).speed;
   return b > a ? 1 : b < a ? 0 : 0.5;
+};
+
+// Paralysis halves our Speed, so the order is asked again on a slowed clone. The id is part of the clone so `turn`'s
+// own caches don't hand back the unslowed answer.
+const tpSlowed = me => {
+  const slowed = { id: { value: `${me.id}~paralysed` }, status: { value: { effect: StatusEffect.PARALYSIS } } };
+  if (typeof me.getEffectiveStat !== "function") slowed.getStat = { value: i => me.getStat(i) / (i === Stat.SPD ? 2 : 1) };
+  return Object.create(me, slowed);
+};
+
+// `firstBy[mi][fi][move]`: the order a move of ours gets that is not the pairing's own pick, which `first` already
+// holds. A plan step pinned to the card's ⚔ line runs that line's move, and a priority move lands before a foe that
+// outspeeds the pick (#650). Two moves at the same priority get the same order, so only a move out of the pick's
+// bracket is asked again — on most pairings that is no question at all. Built here and not on demand: the searches read
+// these tables and never the live game.
+const tpFirstBy = (turn, me, f, own, them) => {
+  const by = {};
+  for (const o of turn.outcomes(me, f)) {
+    if (!o?.name || o.name === own?.name || (o.priority ?? 0) === (own?.priority ?? 0)) continue;
+    const p = tpFoeFirst(turn, me, f, o, them);
+    if (Number.isFinite(p)) by[o.name] = p;
+  }
+  return by;
 };
 
 export const tpSendScore = (T, st, fi, mi) => {
@@ -102,13 +146,16 @@ export const tpHealProfile = (turn, p) => {
 };
 
 export const tpTables = (turn, party, foes, double = false) => {
-  const ours = party.map(me => foes.map(f => tpOurMove(turn, me, f)));
+  // The foe's side first: which move of ours is worth using against it turns on the order it would get (#650).
   const theirs = foes.map(f => party.map(me => tpTheirMove(turn, f, me)));
+  const ours = party.map((me, mi) => foes.map((f, fi) => tpOurMove(turn, me, f, theirs[fi][mi])));
+  const first = party.map((me, mi) => foes.map((f, fi) => tpFoeFirst(turn, me, f, ours[mi][fi], theirs[fi][mi])));
+  const wear = tpWear(turn, party, foes, ours);
   return {
-    ours, theirs,
+    ours, theirs, first,
     // In a double both field mons are out, so neither pays an entry hit to act (#113).
     slots: double && party.length >= 2 ? 2 : 1,
-    first: party.map((me, mi) => foes.map((f, fi) => tpFoeFirst(turn, me, f, ours[mi][fi], theirs[fi][mi]))),
+    firstBy: party.map((me, mi) => foes.map((f, fi) => tpFirstBy(turn, me, f, ours[mi][fi], theirs[fi][mi]))),
     send: foes.map(f => party.map(me => sendInBase(turn, f, me))),
     memo: new Map(),
     // Every hit overrides its `hp` and `bar` with the ones the fight carries.
@@ -125,7 +172,7 @@ export const tpTables = (turn, party, foes, double = false) => {
       return up / guard;
     },
     party, foes,
-    ...tpWear(turn, party, foes, ours),
+    ...wear,
   };
 };
 
@@ -137,16 +184,17 @@ const tpWear = (turn, party, foes, ours) => {
     const odds = foes[0] ? tokenOdds(turn, foes[0], me) : null;
     return odds && { odds, shift: tokenShift(odds, me, heal), para: odds.tokens.filter(x => x.effect === StatusEffect.PARALYSIS).reduce((t, x) => t + x.share, 0) };
   });
-  const firstPara = party.map((me, mi) => (tok[mi]?.para ? foes.map((f, fi) => {
-    const slowed = { id: { value: `${me.id}~paralysed` }, status: { value: { effect: StatusEffect.PARALYSIS } } };
-    if (typeof me.getEffectiveStat !== "function") slowed.getStat = { value: i => me.getStat(i) / (i === Stat.SPD ? 2 : 1) };
-    const clone = Object.create(me, slowed);
-    return tpFoeFirst(turn, clone, f, ours[mi][fi], tpTheirMove(turn, f, clone));
+  const paraOrder = party.map((me, mi) => (tok[mi]?.para ? foes.map((f, fi) => {
+    const clone = tpSlowed(me);
+    const them = tpTheirMove(turn, f, clone);
+    return { first: tpFoeFirst(turn, clone, f, ours[mi][fi], them), by: tpFirstBy(turn, clone, f, ours[mi][fi], them) };
   }) : null));
+  const firstPara = paraOrder.map(row => row && row.map(x => x.first));
+  const firstParaBy = paraOrder.map(row => row && row.map(x => x.by));
   const fromUs = foes.map(f => party.map(me => stealRates(f, me)));
   const fromFoe = party.map(me => foes.map(f => stealRates(me, f)));
   return {
-    tok, firstPara, fromUs, fromFoe,
+    tok, firstPara, firstParaBy, fromUs, fromFoe,
     ourItems: party.map((me, mi) => (foes.some((_, fi) => fromUs[fi][mi]) ? afterSteals(me, heal) : null)),
     foeItems: foes.map((f, fi) => (party.some((_, mi) => fromFoe[mi][fi]) ? afterSteals(f, heal) : null)),
   };
@@ -179,6 +227,10 @@ export const tpFight = (T, st, mi, fi, entry, over = null) => {
   const themMul = (nUs || nFoe) && T.koMult ? T.koMult(T.foes[fi], T.foeKo[fi], nFoe, T.party[mi], T.ourKo[mi], nUs, them.phys ?? 1) : 1;
   const tok = T.tok?.[mi], robUs = T.fromUs?.[fi]?.[mi], robFoe = T.fromFoe?.[mi]?.[fi];
   const ourUse = us?.use ?? [{ r: 1, p: 1 }], theirUse = them.use ?? [{ r: 1, p: 1 }];
+  // The order the move being run gets, not the pairing's: with `over` pinned that is the card's ⚔ line, whose priority
+  // move may land before a foe that outspeeds the pairing's own pick (#650).
+  const foeFirst = T.firstBy?.[mi]?.[fi]?.[us?.name] ?? T.first[mi][fi];
+  const foeFirstSlowed = T.firstParaBy?.[mi]?.[fi]?.[us?.name] ?? T.firstPara?.[mi]?.[fi] ?? foeFirst;
   // A hand-built table or state carries no wear, so every wear field is optional.
   const ox0 = st.ox?.[mi] ?? 0;
   let turns = 0;
@@ -227,7 +279,7 @@ export const tpFight = (T, st, mi, fi, entry, over = null) => {
   while (standing.length && turns < TP_TURNS) {
     turns++;
     const para = tok?.para ? by(turns - 1) * tok.para : 0;
-    const pFoe = Math.max(0, Math.min(1, para * (T.firstPara?.[mi]?.[fi] ?? T.first[mi][fi]) + (1 - para) * T.first[mi][fi]));
+    const pFoe = Math.max(0, Math.min(1, para * foeFirstSlowed + (1 - para) * foeFirst));
     const act = tok ? 1 - attemptsLost(tok.odds, by, turns, pFoe) : 1;
     const hits = !!us && (us.charge ? turns % 2 === 0 : us.recharge ? turns % 2 === 1 : true);
     const hidden = !!us && !hits && !!us.semiCharge;

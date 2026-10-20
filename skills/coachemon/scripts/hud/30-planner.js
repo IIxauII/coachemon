@@ -1137,7 +1137,9 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   const planValueOf = picks => {
     if (!team || slots !== 1 || !picks[0]) return null;
     const mi = party.indexOf(picks[0].me);
-    return mi < 0 ? null : team.at({ mi, free: freeSwitch })?.val ?? null;
+    // Pinned to the move as well as the mon: the fight the plan goes on to play is the one this pick starts, and a
+    // priority move that lands before the foe acts starts a different one (#650).
+    return mi < 0 ? null : team.at({ mi, outcome: picks[0].move, free: freeSwitch })?.val ?? null;
   };
   // Per pick: `ally`, what a move that hits every other pokémon does to our partner; `spare`, the pair's other hit
   // already does all this one does, so a move with a drawback gives way to one without (CONTEXT.md, `Spare hit`).
