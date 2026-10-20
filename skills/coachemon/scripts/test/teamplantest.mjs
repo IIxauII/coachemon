@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { onGame } from "./game-proto.mjs";
+import { fakeTurn } from "./fake-turn.mjs";
 
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
@@ -150,6 +151,37 @@ assert.equal(plan.approxDoubles, false);
   const T = { send: [[{ base: 3, outspeed: false }], [{ base: 3, outspeed: true }]], foeMax: [100, 100], ourMax: [200] };
   const at = (ourHp, fi) => Math.round(tpSendScore(T, { oh: [ourHp], fh: [30, 30] }, fi, 0) * 1000) / 1000;
   assert.deepEqual([at(200, 0), at(20, 0), at(200, 1), at(20, 1)], [0.45, 1.8, 1.125, 3], "the HP factor follows the simulated HP");
+}
+// The same score through the game's own `getMatchupScore` (#464): at any HP the plan reaches, the plan's send-in score
+// is what the game would say there. The slower foe at 30 % HP is the one the game halves, and it must be halved once.
+{
+  const { tpTables, tpSendScore } = globalThis.__tp;
+  const { sceneSendInScore } = globalThis.__hud["20-enemy-ai"];
+  const pct = (hp, max) => Math.round(hp / max * 100) / 100;
+  // `Pokemon.getMatchupScore` (game-code.md §7), its type scores fixed at `typeScore`.
+  function getMatchupScore(o) {
+    const outspeed = this.getStat(5) >= o.getStat(5);
+    const hpRatio = pct(this.hp, this.getMaxHp());
+    let d = hpRatio + (1 - pct(o.hp, o.getMaxHp()));
+    if (hpRatio <= 0.2 && this.isOnField()) d = 1 - hpRatio + (outspeed ? 0.2 : 0.1);
+    else if (outspeed) d *= 1.25;
+    else if (hpRatio > 0.2 && hpRatio <= 0.4) d *= 0.5;
+    return this.typeScore * Math.min(d, 1);
+  }
+  const me = mon("Blastoise", 100, ["Water"], "Torrent", [200,200,260,230,270,180], [["Hydro Pump","Water",110,"S"]], true);
+  const foe = (name, spe, hp) => Object.assign(mon(name, 100, ["Normal"], "x", [300,200,200,200,200,spe], [["Tackle","Normal",40,"P"]], false, hp),
+    { typeScore: 2.5, getMatchupScore });
+  const foes = [foe("Slow30", 120, 90), foe("Fast30", 240, 90), foe("Slow60", 120, 180), foe("Slow15", 120, 45)];
+  const turn = fakeTurn({ party: [me], foes, sendIn: (f, p) => sceneSendInScore(null, f, p) });
+  const T = tpTables(turn, [me], foes);
+  for (const ourHp of [100, 200]) {
+    const st = { oh: [ourHp], fh: foes.map(f => f.hp) };
+    for (const [fi, f] of foes.entries()) {
+      const want = f.getMatchupScore(Object.assign(Object.create(me), { hp: ourHp }));
+      const got = tpSendScore(T, st, fi, 0);
+      assert.ok(Math.abs(got - want) < 1e-9, `${f.name} against our ${ourHp / 2} %: plan ${got}, game ${want}`);
+    }
+  }
 }
 // Speed order and rolls as chances: a mirror match at a speed tie with a coin-flip KO is a coin flip, not a sure win.
 {
