@@ -15,7 +15,7 @@ if (problems.length > 0) {
   console.log(
     `\nFAIL: ${problems.length} problems. Register each game read in scripts/game-reads/registry/ (the area's file), mark a ` +
       "hand constant that copies game data with `// @mirrors <id>` and a Mirror entry, and drop entries nothing reads. A " +
-      'name the game declares needs an entry even where our code or the platform declares it too: from: "ours" when the ' +
+      'name the game declares needs an entry even where our code, the DOM or Node declares it too: from: "ours" when the ' +
       "name is ours.",
   );
   process.exit(1);

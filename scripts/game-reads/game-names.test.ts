@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, test } from "node:test";
-import { GAME_NAMES, readGameNames, writeGameNames } from "./game-names.ts";
+import { GAME_NAMES, type Pin, readGameNames, stageGameNames } from "./game-names.ts";
 
 const PIN = { gameVersion: "1.12.1.3", sha: "a6995c571a092e762ea036589bb6f3a8fa4f5dbd" };
 const HEAD = [
@@ -13,6 +13,11 @@ const HEAD = [
 
 let root: string;
 const file = () => path.join(root, GAME_NAMES);
+const writeGameNames = (at: string, pin: Pin, names: Iterable<string>) => {
+  const { write, ...change } = stageGameNames(at, pin, names);
+  write();
+  return change;
+};
 const put = (text: string) => writeFileSync(file(), text);
 const refusal = () => {
   try {
@@ -45,6 +50,16 @@ test("a second write reports what it added and removed", () => {
   assert.deepEqual(writeGameNames(root, PIN, ["b", "c"]), { added: ["c"], removed: ["a"] });
 });
 
+test("staged names write nothing until asked, and a name with a line break is refused before anything is written", () => {
+  const staged = stageGameNames(root, PIN, ["a"]);
+  assert.equal(refusal(), `${GAME_NAMES} is missing: run npm run drift:check -- --write-names`);
+  staged.write();
+  assert.equal(refusal(), null);
+  const before = readFileSync(file(), "utf8");
+  assert.throws(() => stageGameNames(root, PIN, ["a", "b\nc"]), /a game name holds a line break/);
+  assert.equal(readFileSync(file(), "utf8"), before);
+});
+
 test("a missing file is refused, naming --write-names", () => {
   assert.equal(refusal(), `${GAME_NAMES} is missing: run npm run drift:check -- --write-names`);
 });
@@ -54,6 +69,11 @@ test("names at another version or sha than the pin are refused, naming both", ()
   assert.equal(
     refusal(),
     `${GAME_NAMES} is at v1.12.1.2 (3f1c2aa), the pin is v1.12.1.3 (a6995c5): run npm run drift:check -- --write-names`,
+  );
+  writeGameNames(root, { ...PIN, sha: "3f1c2aa".padEnd(40, "0") }, ["a"]);
+  assert.equal(
+    refusal(),
+    `${GAME_NAMES} is at v1.12.1.3 (3f1c2aa), the pin is v1.12.1.3 (a6995c5): run npm run drift:check -- --write-names`,
   );
 });
 

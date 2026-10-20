@@ -15,11 +15,13 @@ const SOURCE = /^\/\/ Source: pagefaultgames\/pokerogue at v(\S+) \(([0-9a-f]{40
 
 const byCodeUnit = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
-function render(pin: Pin, names: Iterable<string>): string {
+const HEADER_LINES = 2;
+
+function render(pin: Pin, names: Iterable<string>): { text: string; body: string[] } {
   const body = [...new Set(names)].filter(n => n !== "").sort(byCodeUnit);
   for (const n of body) if (/[\r\n]/.test(n)) throw new Error(`a game name holds a line break: ${JSON.stringify(n)}`);
   const head = [GENERATED, `// Source: pagefaultgames/pokerogue at v${pin.gameVersion} (${pin.sha}).`];
-  return `${[...head, ...body].join("\n")}\n`;
+  return { text: `${[...head, ...body].join("\n")}\n`, body };
 }
 
 export function diffNames(was: Iterable<string>, now: Iterable<string>): { added: string[]; removed: string[] } {
@@ -31,13 +33,15 @@ export function diffNames(was: Iterable<string>, now: Iterable<string>): { added
   };
 }
 
-/** Writes the names under `pin`, and returns what changed against the file it replaces. */
-export function writeGameNames(root: string, pin: Pin, names: Iterable<string>): { added: string[]; removed: string[] } {
+/**
+ * The names under `pin`, rendered and checked but not yet written: everything that can refuse them has run by the time
+ * this returns. The change is against the file `write` replaces, read without checking its pin or form.
+ */
+export function stageGameNames(root: string, pin: Pin, names: Iterable<string>): { added: string[]; removed: string[]; write(): void } {
   const file = path.join(root, GAME_NAMES);
-  const was = existsSync(file) ? readFileSync(file, "utf8").split("\n").filter(l => l !== "" && !l.startsWith("// ")) : [];
-  const text = render(pin, names);
-  writeFileSync(file, text);
-  return diffNames(was, text.split("\n").slice(2, -1));
+  const was = existsSync(file) ? readFileSync(file, "utf8").split("\n").slice(HEADER_LINES).filter(l => l !== "") : [];
+  const { text, body } = render(pin, names);
+  return { ...diffNames(was, body), write: () => writeFileSync(file, text) };
 }
 
 export function readGameNames(root: string, pinned: Pin): GameNames {
@@ -55,8 +59,8 @@ export function readGameNames(root: string, pinned: Pin): GameNames {
       `${GAME_NAMES} is at v${version} (${sha.slice(0, 7)}), the pin is v${pinned.gameVersion} (${pinned.sha.slice(0, 7)}): ${FIX}`,
     );
   }
-  const body = lines.slice(2, -1);
-  const canonical = render(pinned, body);
+  const body = lines.slice(HEADER_LINES, -1);
+  const canonical = render(pinned, body).text;
   if (canonical !== text) {
     const want = canonical.split("\n");
     const at = lines.findIndex((l, i) => l !== want[i]);

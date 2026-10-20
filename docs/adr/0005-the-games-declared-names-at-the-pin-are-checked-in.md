@@ -2,8 +2,9 @@
 
 `npm run reads:check` passed a read whose name our own code or the DOM also declares: the declaration made it ours.
 Only `drift:check` asked the game's source, and drift runs at a pin bump. So a game read hidden that way passed its PR
-and CI, and turned master's drift check red later: 51-lead's `row` stood unregistered across two bumps (#767), and two
-solver reads and a HUD name (`switchOutStatus`, `triggerPokemonBattleAnim`, `se`) waited for #806 to be found.
+and CI, and turned master's drift check red later: `hud/51-lead.js`'s `row` stood unregistered across two bumps
+(#767), and two solver reads and a HUD name (`switchOutStatus`, `triggerPokemonBattleAnim`, `se`) waited for #806 to be
+found.
 
 Every member name the game declares at the pin now sits in `scripts/game-reads/game-names.txt`, sorted, one per line,
 under a header naming the pinned version and sha. `reads:check` reads it, so `npm test` holds the whole registry rule
@@ -27,8 +28,9 @@ cannot disagree, and at the pin it names any difference between the file and the
 
 - Two writers, and only two: the stamp, which writes the names at the new pin right after `reviewed.json`, and
   `npm run drift:check -- --write-names`, which rewrites them at the unchanged pin, refuses a clone at any other sha,
-  and touches nothing else. Neither moves the pin without the other.
-- `reads:check` refuses outright while the file is missing, behind the pin, or not as the writer gives it.
+  and touches nothing else. `--write-names` never moves the pin; a stamp whose names write fails leaves the pin
+  moved and the names behind it, which `--write-names` repairs.
+- `reads:check` refuses outright while the file is missing, at another pin, or not as the writer gives it.
 - A hand edit that deletes a name keeps its form and passes offline; drift at the pin names it.
 - Supersedes ADR 0004's consequence that only drift finds what our own declaration hides.
 - UNREVIEWED, a ref with no stamped hash, is still found only by drift.

@@ -134,7 +134,7 @@ export function readsIn(file: string, text: string, tables: Tables, typed?: Type
 
 /**
  * Property names a file declares: object literal keys, class and type members, and any name it assigns, so a write to a
- * game object passes as ours here unless the game declares the name too (game-names.ts).
+ * game object passes as ours here unless the game declares the name too (0005-the-games-declared-names-at-the-pin-are-checked-in.md).
  */
 export function declaredIn(file: string, text: string): Set<string> {
   const sf = parse(file, text);
@@ -176,8 +176,8 @@ export function declaredIn(file: string, text: string): Set<string> {
 }
 
 /**
- * Every member and global the JavaScript, DOM and Node type libraries declare, and JavaScript's alone. The DOM and Node
- * declare names the game declares too (`level`, `cursor`, `text`), so only the language's are never asked of the game.
+ * Every member and global the JavaScript, DOM and Node type libraries declare (`all`), and JavaScript's alone
+ * (`language`): the DOM and Node declare names the game declares too (`level`, `cursor`, `text`).
  */
 export function builtinNames(root: string): { all: Set<string>; language: Set<string> } {
   const files: { file: string; language: boolean }[] = [];

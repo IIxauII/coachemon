@@ -20,7 +20,7 @@ import { findClone, harnessIn, pinOf } from "./clone-test/clone-test.ts";
 import { addDep, blockers, type DepIndex, type DepSource, drift, type Finding } from "./drift/check.ts";
 import { GameSource } from "./drift/source.ts";
 import { format, generatedTables, loadRepo, type Repo } from "./game-reads/check.ts";
-import { GAME_NAMES, writeGameNames } from "./game-reads/game-names.ts";
+import { GAME_NAMES, stageGameNames } from "./game-reads/game-names.ts";
 import { REGISTRY, registryEntries } from "./game-reads/registry/index.ts";
 import { generate } from "./gen-enums.ts";
 import { HUD_DEPS } from "./hud-deps.ts";
@@ -76,17 +76,18 @@ const source = args.source ? path.resolve(args.source) : cloneGame(version);
 const sha = execFileSync("git", ["-C", source, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
 const game = new GameSource(source);
 
-// Before `loadRepo`, which refuses while the names file is missing or behind the pin: this is what fixes that.
+// Before `loadRepo`, which refuses while the names file is missing or at another pin: this is what fixes that.
 if (args["write-names"]) {
   if (sha !== reviewed.pinned.sha) {
     console.error(`Refusing to write the names: ${source} is at ${sha.slice(0, 7)}, the pin at ${reviewed.pinned.sha.slice(0, 7)}.`);
     process.exit(1);
   }
   const names = game.declared();
-  const { added, removed } = writeGameNames(ROOT, reviewed.pinned, names.keys());
+  const staged = stageGameNames(ROOT, reviewed.pinned, names.keys());
+  staged.write();
   console.log(
-    `wrote ${GAME_NAMES} at v${version} @ ${sha.slice(0, 7)}: ${names.size} names, +${added.length} −${removed.length}; ` +
-      "reviewed.json is untouched.",
+    `wrote ${GAME_NAMES} at v${version} @ ${sha.slice(0, 7)}: ${names.size} names, +${staged.added.length} ` +
+      `−${staged.removed.length}; reviewed.json is untouched.`,
   );
   process.exit(0);
 }
@@ -117,7 +118,7 @@ const found = drift({
   modifiers: modifierSets as unknown as Record<string, ReadonlySet<string>>,
   regenerated: await generate(file => readFileSync(path.join(source, file), "utf8"), version),
 });
-const atPin = version === repo.game.version;
+const atPin = sha === reviewed.pinned.sha;
 const namesMoved = [...found.names.added.map(n => `+ ${n}`), ...found.names.removed.map(n => `− ${n}`)];
 
 const shown = (list: Finding[]) => (only === undefined ? list : list.filter(i => i.sources.includes(only)));
@@ -192,13 +193,15 @@ if (args.stamp) {
   }
   const pinned = { gameVersion: version, tag: `v${version}`, sha: pin.sha, locales: pin.locales, assets: pin.assets, pnpm };
   const next: Reviewed = { pinned, hashes: found.hashes, recheck: { gameVersion: version } };
-  writeFileSync(REVIEWED, `${JSON.stringify(next, null, 2)}\n`);
-  // After reviewed.json: a names write that fails then is repaired by `--write-names` at the new pin, not a second re-check.
   const names = game.declared();
-  const { added, removed } = writeGameNames(ROOT, pinned, names.keys());
+  const staged = stageGameNames(ROOT, pinned, names.keys());
+  writeFileSync(REVIEWED, `${JSON.stringify(next, null, 2)}\n`);
+  // A write failing here leaves reviewed.json at the new pin and the names behind it: reads:check refuses until
+  // `--write-names` runs.
+  staged.write();
   console.log(
-    `\nStamped ${Object.keys(found.hashes).length} hashes, ${names.size} game names (+${added.length} −${removed.length}) and ` +
-      `the harness re-check; pin is now ${version} @ ${sha.slice(0, 7)}, set up with pnpm ${pnpm}.`,
+    `\nStamped ${Object.keys(found.hashes).length} hashes, ${names.size} game names (+${staged.added.length} ` +
+      `−${staged.removed.length}) and the harness re-check; pin is now ${version} @ ${sha.slice(0, 7)}, set up with pnpm ${pnpm}.`,
   );
   process.exit(0);
 }

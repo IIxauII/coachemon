@@ -96,7 +96,7 @@ test('an entry, from: "ours" included, keeps a name the game declares from faili
   assert.deepEqual(problems(repo({}, { scene: [] }), registry), []);
 });
 
-test("a name registered only as a phase, storage key or import does not cover a property read of it", () => {
+test("a name registered only as a storage key does not cover a property read of it", () => {
   assert.deepEqual(check(repo({}, { prLang: [] }), CLEAN).map(p => p.what), []);
   const page = fixture("page.ts").replace("cursor: h.cursor,", "cursor: h.cursor, lang: L.prLang,");
   assert.deepEqual(check(repo({ page }, { prLang: [] }), CLEAN).map(p => p.what), ["property prLang"]);

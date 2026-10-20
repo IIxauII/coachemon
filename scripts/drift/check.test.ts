@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { parseEnum } from "../../src/enums/parse.ts";
 import type { Generated } from "../gen-enums.ts";
 import { check, format, type Registry, type Repo, scan } from "../game-reads/check.ts";
-import { GAME_NAMES, readGameNames, writeGameNames } from "../game-reads/game-names.ts";
+import { GAME_NAMES, readGameNames, stageGameNames } from "../game-reads/game-names.ts";
 import type { AreaName } from "../game-reads/files.ts";
 import { blockers, type Drift, drift, type DriftInput } from "./check.ts";
 import { GameSource } from "./source.ts";
@@ -268,7 +268,7 @@ test("reads:check over the names a stamp at v2 would write flags what drift flag
   try {
     mkdirSync(path.dirname(path.join(root, GAME_NAMES)), { recursive: true });
     const pin = { gameVersion: "2", sha: "0".repeat(40) };
-    writeGameNames(root, pin, namesAt("v2").keys());
+    stageGameNames(root, pin, namesAt("v2").keys()).write();
     const offline = check({ ...REPO, game: readGameNames(root, pin) }, REGISTRY).filter(p => p.declared);
     const strip = ({ kind, area, what, where }: (typeof offline)[number]) => ({ kind, area, what, where });
     assert.deepEqual(offline.map(strip), V2.unregistered.map(strip));

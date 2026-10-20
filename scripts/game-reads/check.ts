@@ -1,7 +1,7 @@
 /**
  * The static check behind `npm run reads:check`: every game read in a scanned file resolves to the registry, and every
- * registry entry is still read. It needs no game clone: the game's declared names at the pin come from game-names.txt,
- * which `drift:check` writes and holds to the game's source.
+ * registry entry is still read. It needs no game clone: the game's declared names at the pin come from game-names.txt
+ * (0005-the-games-declared-names-at-the-pin-are-checked-in.md).
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -106,8 +106,8 @@ export function check(repo: Repo, registry: Registry): Problem[] {
     switch (r.kind) {
       case "property": {
         if (props.has(r.name) || repo.language.has(r.name)) break;
-        // A name the game declares needs an entry even where our code or the DOM declares it too: either hid a game read
-        // until the next pin bump (#767, #806).
+        // A name the game declares needs an entry even where our code, the DOM or Node declares it too: each hid a game
+        // read until the next pin bump (#767, #806).
         const refs = repo.game.names.get(r.name);
         if (refs) fail(`property ${r.name}`, { version: repo.game.version, refs });
         else if (!repo.builtin.has(r.name) && !repo.own.has(r.name)) fail(`property ${r.name}`);

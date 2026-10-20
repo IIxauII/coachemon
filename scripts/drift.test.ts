@@ -11,7 +11,7 @@ const DRIFT = path.join(ROOT, "scripts/drift.ts");
 const PINNED = JSON.parse(readFileSync(path.join(ROOT, "src/escape-ladder/reviewed.json"), "utf8")).pinned.gameVersion;
 const run = (...flags: string[]) => spawnSync(process.execPath, [DRIFT, ...flags], { encoding: "utf8", cwd: ROOT });
 
-test("--write-names refuses --stamp, --only and another --version before it clones anything", () => {
+test("--write-names refuses --stamp, --only and another --version with exit 2", () => {
   const cases: [string[], string][] = [
     [["--stamp"], "--write-names cannot be combined with --stamp: the stamp writes the names itself."],
     [["--only", "reads"], "--write-names cannot be combined with --only: the names are the game's, not one source's."],

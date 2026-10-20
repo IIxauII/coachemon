@@ -1,6 +1,6 @@
 /**
  * Everything drift finds at one game version, as data: the CLI in `scripts/drift.ts` prints it and stamps from it. It
- * reads the target's source only, against the stamped hashes, the registry, `src/enums/generated.ts` and game-names.txt.
+ * reads the target's source only, against the stamped hashes, the registry, `src/enums/generated.ts` and `game-names.txt`.
  */
 import path from "node:path";
 import ts from "typescript";
@@ -37,7 +37,7 @@ export type Drift = {
   shifted: string[];
   /** `check()`'s problems over the game's declared names at this version, and only those. */
   unregistered: Problem[];
-  /** The game's declared names here against game-names.txt. */
+  /** Names the game declares at this version that game-names.txt lacks (`added`), and the reverse (`removed`). */
   names: { added: string[]; removed: string[] };
 };
 
