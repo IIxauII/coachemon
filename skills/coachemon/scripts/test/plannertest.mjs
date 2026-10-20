@@ -1034,6 +1034,7 @@ const hydreigonSnorlax = () => [
   console.log(`== doubles protect (live)\n${lines.join("\n")}`);
   const slots = slotLines(field);
   assert.match(slots.find(l => /^⚔ Lucario/.test(l)) ?? "", /Protect .*Garchomp KOs Hydreigon first/, `Lucario protects:\n${field.join("\n")}`);
+  assert.ok(!/before it can act|💀/.test(slots.find(l => /^⚔ Lucario/.test(l)) ?? ""), `Protect blocks the hit it would be tagged for (#650):\n${field.join("\n")}`);
   assert.match(slots.find(l => /^⚔ Garchomp/.test(l)) ?? "", /Dragon Claw → Hydreigon/);
 }
 
