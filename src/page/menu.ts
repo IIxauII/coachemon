@@ -112,8 +112,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       rows.push({ row: 0, kind: "buttons", items: buttons.filter(b => b.visible && b.label) });
       const item = (o: any, col: number) => ({ col, label: __try(() => o.modifierTypeOption.type.name), cost: __try(() => o.modifierTypeOption.cost), desc: __try(() => o.modifierTypeOption.type.getDescription()) });
       const rewards = h.options || [];
-      // With no free reward the game puts Continue at row 1, cursor 0 (#819). Its box shows whenever the reroll is
-      // dead, but its text only while no reward is offered.
+      // Its box shows beside free rewards too, with the text hidden (#819, game-code.md §25).
       // @mirrors shop-continue
       const cont = btn(h.continueButtonContainer, 0);
       if (rewards.length === 0 && cont.visible && cont.label) rows.push({ row: 1, kind: "buttons", items: [cont] });

@@ -150,7 +150,7 @@ test("a PP item's move list takes the first move, since no verb there commits it
   assert.deepEqual(decide(moves, null, freshMemory()).args, { label: "Tackle" });
 });
 
-test("with no rewards card the shop takes the first reward, and leaving an empty shop is no pick (#499)", () => {
+test("with no rewards card the shop takes the first reward, and leaves an empty shop by its Continue, tried once (#499, #819)", () => {
   const shop: Menu = { screen: "MODIFIER_SELECT", wave: 3, options: [{ i: "1:0", label: "Potion", kind: "reward", col: 0, cost: 0 }] };
   assert.deepEqual(decide(shop, null, freshMemory()), { tool: "select_option", args: { index: "1:0" }, by: "rule", intent: "shop" });
   const empty: Menu = { screen: "MODIFIER_SELECT", wave: 3, options: [{ i: "1:0", label: "Continue", kind: "buttons", row: 1, col: 0, cost: null }] };
