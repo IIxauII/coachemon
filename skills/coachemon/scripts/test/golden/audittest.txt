@@ -125,4 +125,87 @@ Team audit vs W165 Guzma
 weakest first Comfey -0.1 · Golduck 0.0 · Crobat 0.1 · Dudunsparce 0.1 · Mamoswine 0.3 · Metagross 0.8
 mushroom 5× Poké Ball: -4 least bad · you have 20
 summary 12 issues: Araquanid (W165) has one answer: Crobat Wing Attack; Flygon (W165) has one answer: Dudunsparce Blizzard (70%); only Crobat outspeeds Flygon (Spe 404) at W165 · no priority attack
+== wave 164 guzma, Triage Giga Drain
+★ 5× Poké Ball least bad · you have 20
+11 issues: Araquanid (W165) has one answer: Crobat Wing Attack; Flygon (W165) has one answer: Dudunsparce Blizzard (70%); the party is no worse off without Comfey at W165 — first to replace
+Team audit vs W165 Guzma
+✗ Araquanid (W165) has one answer: Crobat Wing Attack
+✗ Flygon (W165) has one answer: Dudunsparce Blizzard (70%)
+✗ the party is no worse off without Comfey at W165 — first to replace
+· Mamoswine: Scary Face does little (foe Spe −2)
+· Mamoswine: Amnesia does little (+2 SpD)
+↺ Memory Mushroom: relearn Icicle Crash over Amnesia · +164 power
+· Metagross: Zen Headbutt is a second Psychic attack (Psyshield Bash)
+· Golduck: Aqua Tail is a second Water attack (Surf)
+· Comfey: Play Rough is physical on Atk 223 (SpA 312)
++3 more
+✗ answers Araquanid (W165) has one answer: Crobat Wing Attack
+✗ answers Flygon (W165) has one answer: Dudunsparce Blizzard (70%)
+✗ link the party is no worse off without Comfey at W165 — first to replace
+· slot Mamoswine: Scary Face does little (foe Spe −2)
+· slot Mamoswine: Amnesia does little (+2 SpD) ↺ Icicle Crash over Amnesia +164
+· slot Metagross: Zen Headbutt is a second Psychic attack (Psyshield Bash)
+· slot Golduck: Aqua Tail is a second Water attack (Surf)
+· slot Comfey: Play Rough is physical on Atk 223 (SpA 312)
+· slot Comfey: Petal Dance is a second Grass attack (Giga Drain)
+· slot Dudunsparce: Hyper Drill is a second Normal attack (Boomburst)
+· investment whole party at the Lv 162 cap: 28 EXP item stacks do nothing — take battle items
+weakest first Comfey -0.1 · Golduck 0.0 · Crobat 0.1 · Dudunsparce 0.1 · Mamoswine 0.3 · Metagross 0.8
+mushroom 5× Poké Ball: -4 least bad · you have 20
+summary 11 issues: Araquanid (W165) has one answer: Crobat Wing Attack; Flygon (W165) has one answer: Dudunsparce Blizzard (70%); the party is no worse off without Comfey at W165 — first to replace
+== wave 164 guzma, Triage Pollen Puff
+★ 5× Poké Ball least bad · you have 20
+10 issues: Araquanid (W165) has one answer: Crobat Wing Attack; Flygon (W165) has one answer: Dudunsparce Blizzard (70%); the party is no worse off without Comfey at W165 — first to replace
+Team audit vs W165 Guzma
+✗ Araquanid (W165) has one answer: Crobat Wing Attack
+✗ Flygon (W165) has one answer: Dudunsparce Blizzard (70%)
+✗ the party is no worse off without Comfey at W165 — first to replace
+· Mamoswine: Scary Face does little (foe Spe −2)
+· Mamoswine: Amnesia does little (+2 SpD)
+↺ Memory Mushroom: relearn Icicle Crash over Amnesia · +164 power
+· Metagross: Zen Headbutt is a second Psychic attack (Psyshield Bash)
+· Golduck: Aqua Tail is a second Water attack (Surf)
+· Comfey: Play Rough is physical on Atk 223 (SpA 312)
++2 more
+✗ answers Araquanid (W165) has one answer: Crobat Wing Attack
+✗ answers Flygon (W165) has one answer: Dudunsparce Blizzard (70%)
+✗ link the party is no worse off without Comfey at W165 — first to replace
+· slot Mamoswine: Scary Face does little (foe Spe −2)
+· slot Mamoswine: Amnesia does little (+2 SpD) ↺ Icicle Crash over Amnesia +164
+· slot Metagross: Zen Headbutt is a second Psychic attack (Psyshield Bash)
+· slot Golduck: Aqua Tail is a second Water attack (Surf)
+· slot Comfey: Play Rough is physical on Atk 223 (SpA 312)
+· slot Dudunsparce: Hyper Drill is a second Normal attack (Boomburst)
+· investment whole party at the Lv 162 cap: 28 EXP item stacks do nothing — take battle items
+weakest first Comfey -0.1 · Golduck 0.0 · Crobat 0.1 · Dudunsparce 0.1 · Mamoswine 0.2 · Metagross 0.7
+mushroom 5× Poké Ball: -4 least bad · you have 20
+summary 10 issues: Araquanid (W165) has one answer: Crobat Wing Attack; Flygon (W165) has one answer: Dudunsparce Blizzard (70%); the party is no worse off without Comfey at W165 — first to replace
+== wave 164 guzma, Triage Recover
+★ 5× Poké Ball least bad · you have 20
+11 issues: Araquanid (W165) has one answer: Crobat Wing Attack; Flygon (W165) has one answer: Dudunsparce Blizzard (70%); only Crobat outspeeds Flygon (Spe 404) at W165 · no priority attack
+Team audit vs W165 Guzma
+✗ Araquanid (W165) has one answer: Crobat Wing Attack
+✗ Flygon (W165) has one answer: Dudunsparce Blizzard (70%)
+✗ only Crobat outspeeds Flygon (Spe 404) at W165 · no priority attack
+✗ the party is no worse off without Comfey at W165 — first to replace
+· Mamoswine: Scary Face does little (foe Spe −2)
+· Mamoswine: Amnesia does little (+2 SpD)
+↺ Memory Mushroom: relearn Icicle Crash over Amnesia · +164 power
+· Metagross: Zen Headbutt is a second Psychic attack (Psyshield Bash)
+· Golduck: Aqua Tail is a second Water attack (Surf)
++3 more
+✗ answers Araquanid (W165) has one answer: Crobat Wing Attack
+✗ answers Flygon (W165) has one answer: Dudunsparce Blizzard (70%)
+✗ speed only Crobat outspeeds Flygon (Spe 404) at W165 · no priority attack
+✗ link the party is no worse off without Comfey at W165 — first to replace
+· slot Mamoswine: Scary Face does little (foe Spe −2)
+· slot Mamoswine: Amnesia does little (+2 SpD) ↺ Icicle Crash over Amnesia +164
+· slot Metagross: Zen Headbutt is a second Psychic attack (Psyshield Bash)
+· slot Golduck: Aqua Tail is a second Water attack (Surf)
+· slot Comfey: Play Rough is physical on Atk 223 (SpA 312)
+· slot Dudunsparce: Hyper Drill is a second Normal attack (Boomburst)
+· investment whole party at the Lv 162 cap: 28 EXP item stacks do nothing — take battle items
+weakest first Comfey -0.1 · Golduck 0.0 · Crobat 0.1 · Dudunsparce 0.1 · Mamoswine 0.3 · Metagross 0.8
+mushroom 5× Poké Ball: -4 least bad · you have 20
+summary 11 issues: Araquanid (W165) has one answer: Crobat Wing Attack; Flygon (W165) has one answer: Dudunsparce Blizzard (70%); only Crobat outspeeds Flygon (Spe 404) at W165 · no priority attack
 ok
