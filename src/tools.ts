@@ -179,7 +179,7 @@ export function toolServer(driver: Driver): McpServer {
     "start_job",
     {
       description:
-        "Start a background job: work that outlasts one tool call. Returns at once with the job's id, and the job runs on after the call ends: poll_job reads its progress, read_job its answer, cancel_job stops it. Every job's fields carry end_file, a file that appears only once the job has ended (done, failed or cancelled), so its end can be waited on from outside this server, as a Monitor running `until [ -e <end_file> ]; do sleep 10; done; cat <end_file>` does. A job lasts only as long as this server process. Refuses unknown_job_kind, naming the kinds this server runs, and solving_off for a solving job while the player has solving off.",
+        "Start a background job: work that outlasts one tool call. Returns at once with the job's id, and the job runs on after the call ends: poll_job reads its progress, read_job its answer, cancel_job stops it. Every job's fields carry end_file, a file that appears only once the job has ended (done, failed or cancelled) and holds what read_job answers by default, so its end can be waited on from outside this server, as a Monitor running `until [ -e <end_file> ]; do sleep 10; done; cat <end_file>` does. A job lasts only as long as this server process. Refuses unknown_job_kind, naming the kinds this server runs, and solving_off for a solving job while the player has solving off.",
       inputSchema: {
         kind: z
           .string()
@@ -208,10 +208,17 @@ export function toolServer(driver: Driver): McpServer {
     "read_job",
     {
       description:
-        "A background job's answer: poll_job's fields, plus `result` once it is done or `failure` once it has failed. A cancelled job has neither, and a running one reads as poll_job does.",
-      inputSchema: { job: jobId },
+        "A background job's answer: poll_job's fields, plus `result` once it is done or `failure` once it has failed. A cancelled job has neither, and a running one reads as poll_job does. " +
+        "A solve's oracle line reads short unless detail is full: its turn count, and per turn the command (one per field slot in a double, with its target), Tera, the faint replacements, pivots and learn picks the turn asks, and the on-field mons' HP and status once it has played; then its luck and each receipt step, passed or pending.",
+      inputSchema: {
+        job: jobId,
+        detail: z
+          .enum(["short", "full"])
+          .optional()
+          .describe("full: the result as the job found it, a solve's every checkpoint of both sides included. short, the default, is what the job's end_file holds."),
+      },
     },
-    async ({ job }) => run("read_job", { job }, () => driver.readJob(job)),
+    async ({ job, detail }) => run("read_job", { job, detail }, () => driver.readJob(job, detail)),
   );
 
   server.registerTool(
