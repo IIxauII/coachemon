@@ -89,10 +89,11 @@ export const actionOrder = (turn, a, aPm, b, bPm, { thisTurn = false } = {}) => 
 
 // The draw our `RANDOM_NEAR_ENEMY` command makes before the enemy picks, so the pick is predicted per command
 // (game-code.md §6, #158). Not covered, which is why such a row is `~`: at slot 0's prompt slot 1's command is still
-// to come and may draw too, and a `VariableTargetAttr` can turn another target random. Slot 0's command, read at slot
-// 1's prompt, has already drawn, yet is drawn again here (#476).
+// to come and may draw too, and a `VariableTargetAttr` can turn another target random. At slot 1's prompt slot 0's
+// command is in and has drawn already, so there is nothing left to draw for it.
 const commandDraws = (turn, me, myPm) => {
   if (!turn.facts.double || !me?.isOnField?.()) return [];
+  if (turn.facts.command && me.getBattlerIndex?.() === BattlerIndex.PLAYER) return [];
   const mv = myPm?.getMove?.();
   if (!mv || mv.moveTarget !== MoveTarget.RANDOM_NEAR_ENEMY) return [];
   const n = opponentCount(me);
