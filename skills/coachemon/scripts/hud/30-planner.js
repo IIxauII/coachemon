@@ -1434,9 +1434,10 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   // against no move of ours read as a knockout "before it can act" (#650). A mon leaving the field has no pick to take
   // it against, and passes none.
   const nowThreat = (me, pm = null) => attackers.reduce((w, f) => worse(w, tagOf(threatFrom(turn, f, me, pm), me.hp, false)), null);
-  const slotThreat = (p, entering) => {
+  // `guarded`: the slot Protects this turn, so this turn's hits are no danger to it (#650).
+  const slotThreat = (p, entering, guarded = false) => {
     const faced = typeof p.target === "number" ? [active[p.target]] : active;
-    let tag = entering ? null : nowThreat(p.me, p.move?.pm ?? null);
+    let tag = entering || guarded ? null : nowThreat(p.me, p.move?.pm ?? null);
     for (const f of faced) {
       if (entering || !attackers.includes(f)) tag = worse(tag, tagOf(threatFrom(turn, f, p.me, p.move?.pm ?? null, { next: true }), entering ? p.hp : p.me.hp, true));
     }
@@ -1585,7 +1586,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
           ko: sup || each ? 0 : helped && typeof p.target === "number" ? 1 : p.hits <= 3 ? p.hits : 0,
           helped,
           koEach: sup || p.target !== "both" || !p.each ? null : p.each.map(n => (n <= 3 ? n : 0)),
-          threat: slotThreat(p, enter),
+          threat: slotThreat(p, enter, sup?.kind === "protect"),
           // A slot with nothing left to do says which restriction emptied its pool.
           stopped: sup || p.move || !active[0] ? [] : turn.stopped(p.me, active[0]),
           traps: sup ? [] : trapsOn(p, active),
