@@ -5,14 +5,14 @@ import { benchMatchupScore, onGame } from "./game-proto.mjs";
 import { cat, mon as fakeMon, outcomeFrom, TY } from "./fake-mon.mjs";
 import { fakeTurn } from "./fake-turn.mjs";
 
-// moves: [name, type, power, cat, target=3, priority=0]
+// moves: as fake-mon.mjs's `mon` takes them.
 const mon = (name, lv, types, ability, [hp, atk, def, spa, spd, spe], moves, field, curHp, boss = 0, next) => onGame({
   next, id: name, getMoveQueue: () => [], isTrapped: () => false, trainerSlot: 0, species: { legendary: false },
   name, level: lv, hp: curHp ?? hp, getMaxHp: () => hp, getTypes: () => types.map(t => TY.indexOf(t)), getAbility: () => ({ name: ability }), hasPassive: () => false,
   getStat: i => [hp, atk, def, spa, spd, spe][i], summonData: { statStages: [0,0,0,0,0,0,0] }, isOnField: () => field,
   isBoss: () => boss > 0, bossSegments: boss, bossSegmentIndex: boss - 1,
   getIconAtlasKey: () => "k", getIconId: () => 1, status: null,
-  moveset: moves.map(([n, t, p, c, target = 3, priority = 0], i) => ({ moveId: i + 1, getName: () => n, getMove: () => ({ type: TY.indexOf(t), power: p, category: cat[c], moveTarget: target, priority }), getMovePp: () => 10, ppUsed: 0 })),
+  moveset: moves.map(([n, t, p, c, priority = 0, { target = 3 } = {}], i) => ({ moveId: i + 1, getName: () => n, getMove: () => ({ type: TY.indexOf(t), power: p, category: cat[c], moveTarget: target, priority }), getMovePp: () => 10, ppUsed: 0 })),
 });
 const party = [
   mon("Morpeko", 100, ["Electric","Dark"], "Hunger Switch", [260,250,160,150,160,250], [["Aura Wheel","Electric",110,"P"],["Crunch","Dark",80,"P"]], true),
@@ -261,7 +261,7 @@ assert.equal(plan.approxDoubles, false);
   const { tpTables, tpFight } = globalThis.__tp;
   const { scene: s } = run(null);
   const golem = mon("Golem", 100, ["Rock","Ground"], "Sturdy", [300,250,230,100,100,90], [["Rock Slide","Rock",75,"P"]], true);
-  const MACH = ["Mach Punch","Fighting",40,"P",3,1], UPPERCUT = ["Sky Uppercut","Fighting",40,"P"];
+  const MACH = ["Mach Punch","Fighting",40,"P",1], UPPERCUT = ["Sky Uppercut","Fighting",40,"P"];
   const tablesFor = moves => globalThis.__tp.readTurn(s, turn => tpTables(turn,
     [mon("Hitmonchan", 100, ["Fighting"], "Iron Fist", [100,200,100,100,100,60], moves, true, 40)], [golem], false));
   const T = tablesFor([MACH, ["Close Combat","Fighting",120,"P"]]);
@@ -284,7 +284,7 @@ assert.equal(plan.approxDoubles, false);
   // A mon that already moves first gains nothing from priority, off the live game as on it (#650).
   const fast = moves => globalThis.__tp.readTurn(s, turn => tpTables(turn,
     [mon("Hitmonchan", 100, ["Fighting"], "Iron Fist", [300,200,100,100,100,120], moves, true)], [golem], false));
-  const F = fast([["Mach Punch","Fighting",70,"P",3,1], ["Drain Punch","Fighting",75,"P"]]);
+  const F = fast([["Mach Punch","Fighting",70,"P",1], ["Drain Punch","Fighting",75,"P"]]);
   console.log(`== priority from a mon already first (#650): ${F.ours[0][0].name} · first ${F.first[0][0]}`);
   assert.equal(F.ours[0][0].name, "Drain Punch", "two uses either way, and the harder hit");
 }

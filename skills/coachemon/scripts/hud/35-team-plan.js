@@ -380,7 +380,7 @@ const tpValue = (T, st, end) => {
   });
   st.oh.forEach((hp, mi) => { v += 25 * hp / T.ourMax[mi]; });
   if (st.fh.every(hp => hp < 1)) v += 100;
-  return v + (st.early ?? 0);
+  return v + (st.result === "win" || st.result === "stall" ? 0 : st.early ?? 0);
 };
 
 // `reserve`: `[{ mi, fi }]`, our `mi` kept off every foe but `fi` while anyone else can still fight. `pin`:
@@ -414,14 +414,13 @@ const tpSearch = (T, start, reserve, pin = null) => {
           c.act = end.mh >= 1 ? mi : rest[0] ?? null;
           c.fcur = end.fh >= 1 ? fi : null;
           c.result = c.fh.every(hp => hp < 1) ? "win" : c.oh.every(hp => hp < 1) ? "loss" : end.mh >= 1 && end.fh >= 1 ? "stall" : null;
-          // Every ordering of a lost line deals the same and leaves nobody standing, so without this the beam spent
-          // the members that never act ahead of the one that does (#651).
+          // Every ordering of a lost line deals the same and leaves nobody standing, so without this tie-break the
+          // beam spent the members that never act ahead of the one that does (#651).
           c.early = (st.early ?? 0) + TP_EARLY * (horizon - depth) * Math.max(0, st.fh[fi] - end.fh) / T.foeStart[fi];
           return c;
         };
-        // Only the likelier ending goes on. `banked` holds what every ending the line has dropped is worth, weighted by
-        // its chance, and `mass` the chance of the one it follows, so a finished line is valued by all its endings and
-        // not by its last step's alone.
+        // Only the likelier ending goes on, so `val` banks every ending the line drops: valued by its last step's
+        // endings alone, a line that ends on a gamble forgot the earlier step's win (#651).
         const c = child(r);
         c.steps = [...st.steps, { mi, fi, entry, hp: r.mh, foeFrom: st.fh[fi], foeHp: r.fh, turns: r.turns, odds: r.fh < 1 ? r.pWin : r.mh < 1 ? r.pLoss : r.pStall }];
         const norm = Math.max(1e-9, (r.ends.win ? r.pWin : 0) + (r.ends.loss ? r.pLoss : 0) + (r.ends.stall ? r.pStall : 0));
