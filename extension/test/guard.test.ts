@@ -37,7 +37,7 @@ function files(dir: string): { path: string; rel: string }[] {
 
 const manifestOf = (a: Artifact) => JSON.parse(readFileSync(join(a.dir, "manifest.json"), "utf8")) as Record<string, unknown>;
 
-function commandsOf(a: Artifact): { build: string; commands: string[]; answers: boolean; records: boolean } {
+function runPage(a: Artifact): { build: string; commands: string[]; answers: boolean; records: boolean } {
   const doc = new EventTarget();
   const hellos: { build: string; side: string; commands?: string[] }[] = [];
   doc.addEventListener(EVENT.hello, e => {
@@ -74,7 +74,7 @@ for (const a of all) {
   });
 
   test(`${a.name}: the page registers exactly the commands this flavour may have (extension-distribution.md §5.5 check 4)`, () => {
-    const { build, commands, answers } = commandsOf(a);
+    const { build, commands, answers } = runPage(a);
     assert.match(build, /^\d+\.\d+\.\d+\+[0-9a-f]{12}$/, "the build id was not stamped");
     assert.ok(answers, "the page did not answer a relay hello");
     if (a.flavour === "store") {
@@ -90,7 +90,7 @@ for (const a of all) {
   });
 
   test(`${a.name}: the page installs the error recorder that \`probe\` reads (extension-distribution.md §12.4, #475)`, () => {
-    assert.ok(commandsOf(a).records, "page.js left no `__coachemonErrors`");
+    assert.ok(runPage(a).records, "page.js left no `__coachemonErrors`");
   });
 
   test(`${a.name}: the HUD ships comment-stripped (extension-distribution.md §5.2)`, () => {

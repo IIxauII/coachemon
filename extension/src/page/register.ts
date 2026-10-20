@@ -50,8 +50,7 @@ export function startPage(d: PageDeps): PageInstance {
     return { build: d.build, stop: () => {} };
   }
 
-  // Before any command can run: with nothing installing it, `probe`'s `errorAt` and tail read empty under the hub link
-  // (#475).
+  // Before any command can run, or `probe`'s `errorAt` and `tail` read empty under the hub link (#475).
   recordErrors();
 
   // The newest copy always wins, including over a copy with no build id left by `read.sh`

@@ -3,8 +3,8 @@
 import assert from "node:assert/strict";
 import test, { afterEach, beforeEach, type TestContext } from "node:test";
 import { UiMode } from "../../src/enums/generated.ts";
-import type { ConsoleLine } from "../../src/page/errors.ts";
 import { onPage, starterGrid } from "../../src/page/fake-page.ts";
+import type { ProbeResult } from "../../src/page/probe.ts";
 import type { StartersResult } from "../../src/page/starters.ts";
 import type { ToBackground } from "../src/messages.ts";
 import { EVENT, MAX_DETAIL_BYTES, cardBody, encode } from "../src/relay/channel.ts";
@@ -45,8 +45,8 @@ function tab(o: { build?: string } = {}) {
 
 const tabFrames = (sent: ToBackground[]) => sent.filter(m => m.t === "tab");
 
-// The page script installs the error recorder on `globalThis`, which in Node has no `addEventListener`. Each test gets
-// a stand-in for the page's events and a silent console of its own, so no recorder outlives its test (#475).
+// The page script installs the error recorder on `globalThis`, which in Node has no `addEventListener`, and
+// `recordErrors` keeps the first recorder it finds: one left over would hold the last test's lines (#475).
 const g = globalThis as unknown as Record<string, unknown>;
 const realConsole = console;
 let pageEvents = new EventTarget();
@@ -62,11 +62,10 @@ afterEach(() => {
 });
 const firePage = (type: string, fields: Record<string, unknown>) => pageEvents.dispatchEvent(Object.assign(new Event(type), fields));
 
-type Probed = { errorAt: number | null; console?: ConsoleLine[] };
 const probed = (r: Relay, id: number, args: { tail?: boolean } = {}) =>
-  (r.command({ t: "cmd", id, name: "probe", args }) as { result: Probed }).result;
+  (r.command({ t: "cmd", id, name: "probe", args }) as { result: ProbeResult }).result;
 
-test("a page error or unhandled rejection reaches the next probe's `errorAt` and tail (extension-distribution.md §12.4, #475)", () => {
+test("a page error or unhandled rejection reaches the next probe's `errorAt` and `tail` (extension-distribution.md §12.4, #475)", () => {
   const t = tab();
   const r = t.relay();
   t.page();

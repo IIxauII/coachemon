@@ -7,7 +7,7 @@ export type Recorder = {
   lines: ConsoleLine[];
 };
 
-/** For `probe`'s `errorAt` and `tail` (extension-distribution.md §12.4); the CDP link reads the same through CDP's own events. */
+/** For `probe`'s `errorAt` and `tail` (extension-distribution.md §12.4, §13.2). */
 export function recordErrors(): void {
   const g = globalThis as any;
   if (g.__coachemonErrors) return;
