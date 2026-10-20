@@ -102,12 +102,45 @@ trainer 🎯 W89 · Tester Gyarados Gyarados Waterfall → Coalossal · 2 hits
 Foes
 foes weak to: Water ×2
 Coalossal Coalossal L80 Rock TERA 100% ▲ Water Grass ↯ Fire Burn Up → Gyarados fails · moves after
-Centiskorch Centiskorch L80 Rock TERA 100% ▲ Water Grass ↯ Fire Fire Lash → Gyarados moves after ➜ Gyarados Water Waterfall ~99% · 2 hits later
+Centiskorch Centiskorch L80 Fire Bug TERA 100% ▲ Water ▼ Grass ×¼ ↯ Fire Fire Lash → Gyarados moves after ➜ Gyarados Water Waterfall ~99% · 2 hits later
 winnable · Gyarados
 Fight plan winnable
 ➜ 1. Gyarados Water Waterfall → Coalossal KO · 100% left
 ➜ 2. Gyarados Water Waterfall → Centiskorch KO · 86% left
 summary trainer | Gyarados Waterfall → Coalossal · 2 hits | plan: winnable · Gyarados
+queued during prediction: 0; queueMessage restored: true
+== teraSwitchIn
+⌃ {Hide the drawer} × {Close}
+trainer 🎯 W89 · Tester Gyarados Gyarados Hydro Pump → Coalossal · 3 hits
+⇄ Barbaracle → Coalossal switches — moves aimed at it
+⚔ Gyarados ⚠ Rock ×2 86% {next turn: Coalossal's Rock Slide: ~86% of current HP} Water Hydro Pump → Coalossal 3 hits
+↺ if it stays: Gyarados Water Hydro Pump → Barbaracle
+Foes
+Barbaracle Barbaracle L80 Rock Water 100% ▲ —
+Coalossal Coalossal L80 Fire Rock TERA 100% ▲ Water ×4 ↯ Rock Rock Slide → Gyarados moves after
+likely lost · 💀 Coalossal KOs 1/1 · nobody KOs Coalossal 1-on-1 — maximise damage before it comes in, chip it with Gyarados
+Fight plan likely lost
+💀 Coalossal Coalossal KOs 1/1 · win condition
+⤵ Gyarados save for Coalossal ~26%/turn
+➜ 1. Gyarados Water Hydro Pump → Coalossal falls · foe at 43%
+⚠ likely lost: nobody KOs Coalossal 1-on-1 — maximise damage before it comes in, chip it with Gyarados
+summary trainer | Gyarados Hydro Pump → Coalossal · 3 hits | plan: likely lost · 💀 Coalossal KOs 1/1 · nobody KOs Coalossal 1-on-1 — maximise damage before it comes in, chip it with Gyarados
+queued during prediction: 0; queueMessage restored: true
+== plainSwitchIn
+⌃ {Hide the drawer} × {Close}
+trainer 🎯 W89 · Tester Gyarados Gyarados Hydro Pump → Coalossal · 2 hits
+⇄ Barbaracle → Coalossal switches — moves aimed at it
+⚔ Gyarados ⚠ Rock ×2 86% {next turn: Coalossal's Rock Slide: ~86% of current HP} Water Hydro Pump → Coalossal 2 hits
+↺ if it stays: Gyarados Water Hydro Pump → Barbaracle
+Foes
+Barbaracle Barbaracle L80 Rock Water 100% ▲ —
+Coalossal Coalossal L80 Fire Rock 100% ▲ Water ×4 ↯ Rock Rock Slide → Gyarados moves after
+likely lost · the plan runs out with 1 foe standing — maximise damage
+Fight plan likely lost
+➜ 1. Gyarados Water Hydro Pump → Coalossal KO · 14% left
+➜ 2. Gyarados Water Hydro Pump → Barbaracle falls · foe at 59%
+⚠ likely lost: the plan runs out with 1 foe standing — maximise damage
+summary trainer | Gyarados Hydro Pump → Coalossal · 2 hits | plan: likely lost · the plan runs out with 1 foe standing — maximise damage
 queued during prediction: 0; queueMessage restored: true
 == w180
 ⌃ {Hide the drawer} × {Close}

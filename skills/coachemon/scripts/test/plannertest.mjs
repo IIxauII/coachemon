@@ -1,10 +1,9 @@
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
+import { mon, outcomeFrom, TY } from "./fake-mon.mjs";
 import { fakeTurn } from "./fake-turn.mjs";
 import { benchMatchupScore } from "./game-proto.mjs";
 
-const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
-const cat = { P: 0, S: 1, X: 2 };
 // The tables a scenario sets: `outcome` what each move does, `dist` the enemy AI's pick, `switches` the trainer's
 // switch-in, `heal` a turn end's cost, `benefit` the game's own score for a move of ours. `__stub` is rebound per
 // scenario, so every op reads it at call time rather than closing over it.
@@ -42,23 +41,6 @@ const plannerApi = turn => ({
   cardSummary: globalThis.__hud["60-card"].cardSummary,
 });
 
-// moves: [name, type, power, cat, priority = 0, { target = 3, attrs = [], id }]; an attr is a class name, or
-// [name, fields] for one that carries its constructor arguments.
-const attr = a => (Array.isArray(a) ? Object.assign(new ({ [a[0]]: class {} })[a[0]](), a[1]) : new ({ [a]: class {} })[a]());
-// `getTypes` follows `summonData` as the game's does (game-code.md §14), so a hypothesis the planner writes shows here.
-const monTypes = (sd, types) => () => {
-  const base = sd.types?.length ? [...sd.types] : types.map(t => TY.indexOf(t));
-  return sd.addedType != null && !base.includes(sd.addedType) ? [...base, sd.addedType] : base;
-};
-const mon = (name, lv, types, [hp, atk, def, spa, spd, spe], moves, field, curHp, extra = {}, summonData = { statStages: [0,0,0,0,0,0,0], types: [] }) => ({
-  id: name, getMoveQueue: () => [], isTrapped: () => false, trainerSlot: 0, species: { legendary: false },
-  name, level: lv, hp: curHp ?? hp, getMaxHp: () => hp, getTypes: monTypes(summonData, types), getAbility: () => ({ name: "x" }), hasPassive: () => false,
-  getStat: i => [hp, atk, def, spa, spd, spe][i], summonData, isOnField: () => field, isBoss: () => !!extra.bossSegments,
-  getIconAtlasKey: () => "k", getIconId: () => 1, status: null, getBattlerIndex: () => (field ? 0 : -1), getHeldItems: () => [],
-  moveset: moves.map(([n, t, p, c, priority = 0, { target = 3, attrs = [], id } = {}]) => ({ getName: () => n, moveId: id, getMove: () => ({ id, name: n, type: TY.indexOf(t), power: p, category: cat[c], moveTarget: target, priority, accuracy: 100, attrs: attrs.map(attr) }), getMovePp: () => 10, ppUsed: 0 })),
-  ...extra,
-});
-
 // "attacker>move>defender": [per-hit max damage, accuracy, effectiveness]. Triple Axel's 0.95 has Wide Lens folded in.
 const TABLE = {
   "Morpeko>Aura Wheel>Gyarados": [[300], 1, 4], "Morpeko>Aura Wheel>Weavile": [[90], 1, 1],
@@ -71,49 +53,7 @@ const TABLE = {
   "Weavile>Knock Off>Morpeko": [[60], 1, 0.5], "Weavile>Knock Off>Scrafty": [[40], 1, 0.25], "Weavile>Knock Off>Metagross": [[140], 1, 2],
   "Weavile>Fire Fang>Metagross": [[12], 1, 2],
 };
-// 07-move-traits' shape; a scenario that needs a trait sets it on the record it hands back.
-const TRAITS = {
-  charge: false, semiCharge: false, recharge: false, interrupt: false, needsAttack: false, once: false, lock: false,
-  noRepeat: false, recoil: null, halfSac: false, crash: false, selfKo: null, drops: {}, removesType: false,
-};
-// Enumerates hits landed × 16 damage rolls, with boss bars clamping each hit at the bar's boundary.
-const outcome = (atk, def, pm, { crit = false } = {}) => {
-  const row = TABLE[`${atk.name}>${pm.getName()}>${def.name}`];
-  if (!row) return null;
-  const [per, acc, e] = row;
-  // Stat stages and burn, as the game's damage call has them (game-code.md §1).
-  const phys = pm.getMove().category === 0;
-  const stg = (p, i) => { const x = p.summonData?.statStages?.[i - 1] ?? 0; return x >= 0 ? (2 + x) / 2 : 2 / (2 - x); };
-  const mult = (crit ? 1.5 : 1) * stg(atk, phys ? 1 : 3) / stg(def, phys ? 2 : 4) * (phys && atk.status?.effect === 6 ? 0.5 : 1);
-  const seg = def.getMaxHp() / (def.bossSegments || 1);
-  const land = per.map((_, k) => (k < per.length - 1 ? acc ** (k + 1) * (1 - acc) : acc ** per.length));
-  const play = (hits, roll) => {
-    let hp = def.hp, idx = def.bossSegments ? def.bossSegmentIndex : 0;
-    for (let k = 0; k < hits && hp > 0; k++) {
-      let d = Math.floor(per[k] * mult * roll);
-      if (idx > 0 && hp - d < seg * idx) { d = hp - seg * idx; idx--; }
-      hp -= d;
-    }
-    return hp;
-  };
-  let expected = 0, pKo = 0, uncapped = 0;
-  per.forEach((x, k) => {
-    for (let r = 0; r < 16; r++) uncapped += acc ** (k + 1) / 16 * Math.floor(x * mult * (85 + r) / 100);
-  });
-  land.forEach((p, i) => {
-    for (let r = 0; r < 16; r++) {
-      const hp = play(i + 1, (85 + r) / 100);
-      expected += p / 16 * (def.hp - Math.max(hp, 0));
-      if (hp <= 0) pKo += p / 16;
-    }
-  });
-  const mv = pm.getMove();
-  return {
-    name: pm.getName(), type: TY[mv.type], cat: mv.category ? "special" : "physical", e, priority: mv.priority, spread: [2, 4, 6, 8].includes(mv.moveTarget),
-    acc, dist: [{ n: per.length, p: 1 }], perHit: per.map(x => ({ max: Math.floor(x * mult), min: Math.floor(x * mult * 0.85) })),
-    expected, uncapped, max: def.hp - Math.max(play(per.length, 1), 0), pKo, traits: { ...TRAITS }, costs: [], notes: [],
-  };
-};
+const outcome = outcomeFrom(TABLE);
 
 const cyrus = withMetagross => {
   const party = [
@@ -429,6 +369,13 @@ Object.assign(TABLE, { "Ambipom>Fake Out>Slowbro": [[60], 1, 1], "Ambipom>Return
   console.log(`== depth 2: Fake Out then Return (live)\n${withFakeOut}`);
   assert.match(withFakeOut, /Fake Out → Slowbro .*then Return/, `Fake Out first, Return after:\n${withFakeOut}`);
   assert.match(at(outcome), /Return → Slowbro/, "no flinch, no Fake Out");
+
+  // The fight plan can't repeat a first-turn-only move, so a pin on Fake Out runs its follow-up (#650).
+  const { scene: s } = render({ party, foes, live: true, dist, switches: () => new Map(), stubOutcome: fakeOut });
+  const team = globalThis.__hud["35-team-plan"].teamPlanner(s);
+  const [fo, ret] = ["Fake Out", "Return"].map(n => globalThis.__planner.planOutcomes(s, party[0], foes[0]).find(o => o.name === n));
+  const pinned = team.at({ mi: 0, outcome: fo, then: ret }), plain = team.at({ mi: 0, outcome: ret });
+  assert.deepEqual(pinned.steps, plain.steps, `Fake Out then Return plays as Return: ${JSON.stringify(pinned.steps[0])}`);
 }
 
 // ---- Consistency: two equal moves, and the one Garchomp used last turn keeps the edge rather than the first listed.
@@ -461,6 +408,14 @@ Object.assign(TABLE, { "Gallade>Leaf Blade>Snorlax": [[90], 1, 1], "Snorlax>Body
   console.log(`== setup: Swords Dance then Leaf Blade (live)\n${setupLine}`);
   assert.match(setupLine, /Swords Dance .*\+2 Atk .*then Leaf Blade/, `set up, then attack:\n${setupLine}`);
   assert.ok(!/→/.test(setupLine), "a move on the user aims at nobody");
+  // The fight plan runs the follow-up from turn 1, so it is pinned at the strength it has before the setup (#650).
+  {
+    const party = gallade(), foes = snorlax(450);
+    const { scene: s } = oneOnOne({ party, foes, dist: only("Body Slam") });
+    const pick = globalThis.__planner.fieldPlan(s, party, foes, false).picks[0];
+    const base = globalThis.__planner.planOutcomes(s, party[0], foes[0]).find(o => o.name === "Leaf Blade");
+    assert.equal(pick.then?.expected, base.expected, `the pin is the unboosted Leaf Blade: ${pick.then?.expected} vs ${base.expected}`);
+  }
   // 213–250 into 400: already a 2HKO.
   TABLE["Gallade>Leaf Blade>Snorlax"] = [[250], 1, 1];
   assert.match(lineOf(oneOnOne({ party: gallade(), foes: snorlax(400), dist: only("Body Slam") }).field, "Gallade"), /Leaf Blade → Snorlax/, "no setup when the hit already 2HKOs");
@@ -1518,6 +1473,66 @@ Object.assign(TABLE, {
   assert.ok(only.card.teamPlan.steps[0].foeHp < 100, `the step lands damage: ${only.card.teamPlan.steps[0].why}`);
   assert.notEqual(only.card.field.slots[0].threat?.level, "ko", "a pick that moves first is never KO'd before it acts");
   assert.ok(!only.field.some(l => /before it can act/.test(l)), only.field.join("\n"));
+}
+
+// ---- A charge move whose one use races the foe's KO on a speed tie goes off half the time (#650).
+Object.assign(TABLE, { "Venusaur>Solar Beam>Arcanine": [[400], 1, 2], "Arcanine>Flare Blitz>Venusaur": [[200], 1, 2] });
+{
+  const me = mon("Venusaur", 80, ["Grass", "Poison"], [300, 150, 150, 200, 150, 100], [["Solar Beam", "Grass", 120, "S"]], true);
+  const foes = [mon("Arcanine", 80, ["Fire"], [300, 200, 150, 150, 150, 100], [["Flare Blitz", "Fire", 120, "P"]], true)];
+  const charges = (a, d, pm, o) => { const x = outcome(a, d, pm, o); return x && pm.getName() === "Solar Beam" ? { ...x, traits: { ...x.traits, charge: true } } : x; };
+  const dist = () => [{ name: "Flare Blitz", type: "Fire", p: 1, score: 10, targets: [0] }];
+  const { scene: s } = render({ party: [me], foes, live: true, dist, switches: () => new Map(), stubOutcome: charges });
+  const x = globalThis.__planner.exchange(s, me, me.moveset[0], foes[0]);
+  console.log(`== a charge move on a speed tie: acts ${1 - x.pNeverUsed} · first ${x.pFirst}`);
+  assert.equal(x.pFirst, 0.5);
+  assert.ok(Math.abs(x.pNeverUsed - 0.5) < 1e-9, `fires only when it moves first on turn 2: ${x.pNeverUsed}`);
+}
+
+// ---- A depth-2 line pays for the turn its first move never goes off, as the move alone does (#650).
+Object.assign(TABLE, {
+  "Dragonite>Dragon Hammer>Groudon": [[220], 1, 1], "Dragonite>Extreme Speed>Groudon": [[140], 1, 1],
+  "Groudon>Precipice Blades>Dragonite": [[300], 1, 1],
+});
+{
+  const me = mon("Dragonite", 80, ["Dragon", "Flying"], [340, 200, 150, 150, 150, 160],
+    [["Dragon Hammer", "Dragon", 90, "P"], ["Extreme Speed", "Normal", 80, "P", 2]], true, 277);
+  const foes = [mon("Groudon", 84, ["Ground"], [230, 250, 120, 250, 120, 200], [["Precipice Blades", "Ground", 120, "P"]], true)];
+  const dist = () => [{ name: "Precipice Blades", type: "Ground", p: 1, score: 10, targets: [0] }];
+  const line = lineOf(render({ party: [me], foes, live: true, dist, switches: () => new Map() }).field, "Dragonite");
+  console.log(`== a depth-2 line pays the charge (#650)\n${line}`);
+  assert.match(line, /Extreme Speed → Groudon/, `the hit that lands before the KO is the call: ${line}`);
+}
+
+// ---- A status play pays for the share of the time its user falls before landing a hit, as an attack does (#650).
+Object.assign(TABLE, { "Gallade>Leaf Blade>Lucario": [[90], 1, 1], "Lucario>Close Combat>Gallade": [[300], 1, 1] });
+{
+  const party = [mon("Gallade", 80, ["Psychic", "Fighting"], [300, 200, 110, 90, 150, 100], [["Leaf Blade", "Grass", 90, "P"], SWORDS_DANCE], true, 277)];
+  const foes = [mon("Lucario", 80, ["Fighting", "Steel"], [450, 150, 110, 80, 150, 200], [["Close Combat", "Fighting", 120, "P"]], true)];
+  const line = lineOf(oneOnOne({ party, foes, dist: only("Close Combat") }).field, "Gallade");
+  console.log(`== an outsped setup never lands (#650)\n${line}`);
+  assert.match(line, /Leaf Blade → Lucario/, `a setup that never lands a hit is not the call: ${line}`);
+}
+
+// ---- A spread move pays for the share of the time its user falls before it goes off, as a single-target one does (#650).
+Object.assign(TABLE, {
+  "Garchomp>Boomburst>Hydreigon": [[120], 1, 1], "Garchomp>Boomburst>Snorlax": [[120], 1, 1], "Garchomp>Dragon Claw>Hydreigon": [[400], 1, 2],
+  "Hydreigon>Dark Pulse>Garchomp": [[190], 1, 1],
+});
+{
+  const party = [
+    mon("Garchomp", 80, ["Dragon", "Ground"], [270, 200, 150, 120, 130, 130], [["Boomburst", "Normal", 140, "S", 0, { target: 6 }], ["Dragon Claw", "Dragon", 80, "P"]], true, 175, { getBattlerIndex: () => 0 }),
+    doublesParty()[1],
+  ];
+  const foes = [
+    foeAt(2, "Hydreigon", 80, ["Dark", "Dragon"], [300, 120, 110, 160, 110, 200], [["Dark Pulse", "Dark", 80, "S"]]),
+    foeAt(3, "Snorlax", 80, ["Normal"], [460, 150, 110, 80, 150, 40], [["Body Slam", "Normal", 85, "P"]]),
+  ];
+  const dist = e => [{ name: e.moveset[0].getName(), type: TY[e.moveset[0].getMove().type], p: 1, score: 10, targets: [e === foes[0] ? 0 : 1] }];
+  const { field } = render({ party, foes, live: true, double: true, dist, switches: () => new Map() });
+  const g = slotLines(field).find(l => /^⚔ Garchomp/.test(l)) ?? "";
+  console.log(`== an outsped spread move (#650)\n${g}`);
+  assert.match(g, /Dragon Claw → Hydreigon/, `the KO it may land beats a chip it may not: ${g}`);
 }
 
 // ---- An Enigma Berry heals its holder a quarter after a super-effective hit lands, one berry a turn (#652)

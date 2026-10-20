@@ -32,6 +32,11 @@ const withCondition = (p, move, cond) => {
   pm.getMove = () => mv;
   return p;
 };
+const switchIn = teras => ({ double: false, trainer: { isBoss: false }, teras, bench: [1], summonIndex: 1, party: [
+  mon("Gyarados", 80, ["Water","Flying"], "Intimidate", [260,170,130,120,150,140], [["Hydro Pump","Water",110,"S"]], true)],
+  foes: [
+    mon("Barbaracle", 80, ["Rock","Water"], "Tough Claws", [240,190,180,100,130,110], [["Razor Shell","Water",75,"P"]], true),
+    teraMon("Coalossal", 80, ["Fire","Rock"], "Steam Engine", [400,160,180,160,250,60], [["Rock Slide","Rock",75,"P"]], false, "Rock")] });
 // Stat i lives at `statStages[i - 1]`.
 const withStages = (p, statStages) => { p.summonData.statStages = statStages; return p; };
 // Gordie W180 at turn 5, rebuilt from the solver fixture (#648): each mon's level, stats, current HP, Tera type and
@@ -89,8 +94,8 @@ const scenarios = {
     mon("Charizard", 66, ["Fire","Flying"], "Blaze", [190,125,118,160,128,120], [["Flamethrower","Fire",90,"S"],["Air Slash","Flying",75,"S"]], true, 120)],
     foes: [teraMon("Lycanroc", 70, ["Rock"], "Keen Eye", [200,190,100,80,90,140], [["Stone Edge","Rock",100,"P"]], true, "Steel")] },
   // Gordie W180 (#648). Coalossal Teras to Rock before it moves, so Burn Up — picked while it was still Fire — goes
-  // off and fails. Centiskorch is a bench mon the trainer's own `shouldTera` says yes to as well, so from here on it
-  // is priced at the Tera Rock it will come in at, not at the Fire/Bug it is sitting on the bench as.
+  // off and fails. The trainer's `shouldTera` says yes to Centiskorch on the bench as well, which comes in at its
+  // Fire/Bug and Teras at its first FIGHT command (game-code.md §7).
   teraFails: { double: false, trainer: { isBoss: false }, teras: ["Coalossal", "Centiskorch"], bench: [], party: [
     mon("Gyarados", 80, ["Water","Flying"], "Intimidate", [260,170,130,120,150,140], [["Waterfall","Water",80,"P"]], true),
     mon("Venusaur", 80, ["Grass","Poison"], "Overgrow", [260,140,140,160,160,120], [["Power Whip","Grass",120,"P"]], false)],
@@ -98,6 +103,10 @@ const scenarios = {
       withCondition(teraMon("Coalossal", 80, ["Fire","Rock"], "Steam Engine", [250,160,180,160,180,60],
         [["Burn Up","Fire",130,"S"],["Rock Slide","Rock",75,"P"]], true, "Rock"), "Burn Up", u => u.getTypes().includes(TY.indexOf("Fire"))),
       teraMon("Centiskorch", 80, ["Fire","Bug"], "Flash Fire", [240,150,120,140,130,100], [["Fire Lash","Fire",80,"P"]], false, "Rock")] },
+  // Barbaracle withdraws for Coalossal, which comes in at its Fire/Rock and Teras only at its first FIGHT command, so
+  // this turn's Hydro Pump lands at ×4 (#648). `plainSwitchIn` is the same switch with no Tera anywhere.
+  teraSwitchIn: switchIn(["Coalossal"]),
+  plainSwitchIn: switchIn([]),
   // The same thing on the real party (#648): Gordie W180 at T5, rebuilt from the fixture. `instantTeras` is his own
   // `[5]`, and at T5 team index 5 is Coalossal, in party slot 0 — slot 5 holds Carracosta, which must stay un-Tera'd.
   // The card still reads the harness's own wave; only the mons and their indexes come from W180.
@@ -235,7 +244,7 @@ const trapsOf = (label, slot, foe) => {
 assert.deepEqual(trapsOf("eelevate", "Garchomp", "Eelektross"), { slot: ["Eelevate"], row: ["Eelevate"] }, "Land's Wrath into Eelevate");
 assert.deepEqual(trapsOf("eelevateArrows", "Garchomp", "Eelektross"), { slot: [], row: [] }, "Thousand Arrows into Eelevate");
 
-// Gordie W180 (#648): the Tera the foe's own pick was made before, and the bench mon it is coming for too.
+// Gordie W180 (#648): the Tera the foe's own pick was made before, and the bench mon that Teras only once it fights.
 {
   const row = name => cards.teraFails.rows.find(r => r.name === name);
   const coal = row("Coalossal");
@@ -244,10 +253,19 @@ assert.deepEqual(trapsOf("eelevateArrows", "Garchomp", "Eelektross"), { slot: []
   assert.deepEqual(coal.weak.filter(([t]) => ["Water", "Grass"].includes(t)), [["Water", ""], ["Grass", ""]],
     "Tera Rock is Water ×2 and Grass ×2, not the Water ×4 its Fire/Rock read at");
   const bench = row("Centiskorch");
-  assert.equal(bench.tera, "Rock", "a bench mon the trainer Teras on entry carries the Tera it comes in at");
-  assert.deepEqual(bench.types, ["Rock"], "and its row shows that typing, not the one it is sitting on the bench as");
-  assert.deepEqual(bench.weak.filter(([t]) => ["Water", "Grass", "Rock"].includes(t)), [["Water", ""], ["Grass", ""]],
-    "with Tera Rock's weaknesses: Water ×2 and Grass ×2, and no Rock ×4 of its own");
+  assert.equal(bench.tera, "Rock", "a bench mon the trainer Teras names the Tera it will take");
+  assert.deepEqual(bench.types, ["Fire", "Bug"], "but its row shows the typing it comes in at");
+  assert.deepEqual(bench.weak.filter(([t]) => ["Water", "Grass", "Rock"].includes(t)), [["Rock", "×4"], ["Water", ""]],
+    "with Fire/Bug's weaknesses: Rock ×4 and Water ×2");
+}
+
+// A predicted switch-in takes this turn's hit at the typing it comes in at, whatever it Teras to later (#648).
+{
+  const row = (label, name) => cards[label].rows.find(r => r.name === name);
+  const [tera, plain] = [row("teraSwitchIn", "Coalossal"), row("plainSwitchIn", "Coalossal")];
+  assert.equal(tera.pick.pct, plain.pick.pct, "this turn's Hydro Pump lands at Fire/Rock's ×4");
+  assert.ok(tera.pick.ko === 0 || tera.pick.ko > plain.pick.ko, "and the hits after it at Tera Rock's ×2");
+  assert.deepEqual([tera.types, tera.tera], [["Fire", "Rock"], "Rock"], "its row: the typing it comes in at, and the Tera it will take");
 }
 
 // The same against the real party (#648): Gordie W180 at T5, rebuilt from the solver fixture. `instantTeras` is `[5]`,

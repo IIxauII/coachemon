@@ -49,19 +49,19 @@ const restrictionOn = (p, pm) => {
   }
   return null;
 };
-// Only restrictions are named: a move its own condition dropped leaves no entry.
-// @only 25-turn, tests: sceneStopped
-export const sceneStopped = (env, p, def) => [...new Set([...plainUsable(p), ...plainUsable(p, true)]
-  .filter(pm => !selectable(env, p, def, pm))
-  .map(pm => restrictionOn(p, pm))
-  .filter(Boolean))];
-// The other half of the same gate: the damaging moves `sceneOutcomes` has no row for because their own condition
-// said no, which is what `sceneStopped` leaves unnamed. The enemy AI skips those conditions (game-code.md §6), so a
-// foe that Teras out of Fire still picks Burn Up and then fails with it (#648).
-// @only 25-turn, tests: sceneFailing
-export const sceneFailing = (env, p, def) => plainUsable(p)
-  .filter(pm => !selectable(env, p, def, pm) && !restrictionOn(p, pm))
-  .map(pm => pm.getName());
+// The moves the gate refuses, in one pass: `stopped` names the restrictions, and `failing` the damaging moves their
+// own condition dropped, which the enemy AI still picks and fails with (game-code.md §6).
+// @only 25-turn: sceneRefused
+export const sceneRefused = (env, p, def) => {
+  const stopped = new Set(), failing = [];
+  for (const pm of [...plainUsable(p), ...plainUsable(p, true)]) {
+    if (selectable(env, p, def, pm)) continue;
+    const why = restrictionOn(p, pm);
+    if (why) stopped.add(why);
+    else if (pm.getMove().category !== MoveCategory.STATUS) failing.push(pm.getName());
+  }
+  return { stopped: [...stopped], failing };
+};
 const plainUsable = (p, status = false) => p.moveset.filter(Boolean)
   .filter(pm => (pm.getMove().category === MoveCategory.STATUS) === status && pm.getMovePp() - pm.ppUsed > 0);
 const traitsNow = (env, atk, mv, live, def = null) => {

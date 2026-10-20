@@ -122,7 +122,6 @@ export const drawBattle = m => {
         ...(r.likely.at ? r.likely.at.flatMap(x => [h("span", { ...dim, margin: "0 2px 0 3px" }, "\u2192"), mon(x.icon, x.name, ICON.ref)])
           : r.pick ? [h("span", { ...dim, margin: "0 2px 0 3px" }, "\u2192"), mon(r.pick.icon, r.pick.name, ICON.ref)] : []),
         h("span", { ...dim, marginLeft: "4px" }, [
-          // Picked before the foe's Tera, used after it: the move goes off and does nothing (#648).
           r.likely.fails ? "fails" : null,
           r.likely.pct != null ? `~${r.likely.pct}% HP` : r.likely.p != null ? `${r.likely.p}% likely` : null,
           r.likely.hits ? `${r.likely.hits}-hit` : null, firstText(r.likely.first),

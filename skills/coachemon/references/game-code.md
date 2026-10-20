@@ -835,8 +835,12 @@ The HUD's `predictSwitches` (`20-enemy-ai.js`) follows this rule. The pieces:
   `enemyFaintsHistory`. `TurnStartPhase` pushes `TeraPhase` before any `MovePhase`
   (`src/phases/turn-start-phase.ts:64-66,153`). `TeraPhase.end` writes `isTerastallized = true` and
   `summonData.addedType = null` (`src/phases/tera-phase.ts:38-41`). So this turn the enemy defends with its Tera type
-  and gets Tera STAB. The HUD sets both fields for the whole refresh (`withPredictedTera`) and takes them back off
-  (`beforeTera`) for the AI's own choices, which `EnemyCommandPhase` makes before `TeraPhase`.
+  and gets Tera STAB, while its move was picked (`getNextMove`, `:91`) before the Tera. The Tera check comes only
+  after the switch check has returned (`:57-85`, `:93-95`), so a bench mon in `instantTeras` comes in at its base type,
+  by a switch or after a faint. The trainer scores it for the send-in (`getPartyMemberMatchupScores`) at that type, it
+  takes entry hazards on summon (`src/phases/post-summon-phase.ts:24`) at it, a switch-in takes that turn's hits at it,
+  and it Teras at its first turn on the field that picks FIGHT. The Tera lasts until it faints (`resetTera`,
+  `src/phases/faint-phase.ts:123`), a switch out included.
 
 ---
 
@@ -1009,7 +1013,7 @@ The **party** judged as a whole: type tallies, luck, and the set of the party th
 - `aiReplay(s, e, target, { hp })` → rows like `enemyMoveDistribution`'s, without targets: `getNextMove` replayed against one of our mons, which needn't be on the field (§6), status moves included. Sandbox per call.
 - `predictSwitches(s, b, active)` mirrors `EnemyCommandPhase.start` (`src/phases/enemy-command-phase.ts:36-106`). A trainer mon that isn't trapped (`isTrapped`) and has an empty move queue switches when `best bench score × (1 − 0.1^(1/enemySwitchCounter)) ≥ avg own score × (isBoss ? 2 : 3)`, sending `getNextSummonIndex`. The counter goes +1 on a switch and −1 (floor 0) on a move. Keep it, run it in `sandbox`, and sequence the counter across doubles slots. A Commander Tatsugiri's command carries `skip` (`skipTurn`, `:40-46`), and `TurnStartPhase` drops that command (`src/phases/turn-start-phase.ts:84`).
 - `enemyAction(s, e)` → `{ kind: 'switch', to } | { kind: 'move', dist, tera: b.trainer?.shouldTera(e) ?? false }`. `Trainer.shouldTera` (`src/field/trainer.ts:774-785`, pure) is true in INSTANT_TERA mode for a listed `initialTeamIndex` that isn't yet Terastallized and hasn't fainted.
-- `predictedTeras(s, b)` → the active foes whose action this turn Terastallizes. `withPredictedTera(mons, fn)` runs `fn` with `isTerastallized` set and `summonData.addedType` cleared on them, as `TeraPhase.end` does (`src/phases/tera-phase.ts:38-41`). `beforeTera(fn)` takes that back off, and `teraTypeOf(e)` names the type via `getTeraType()` (`pokemon.ts:2487`).
+- `predictedTeras(s, b)` → `now`, the active foes whose action this turn Terastallizes, and `later`, the bench mons `shouldTera` names, which Tera at their first FIGHT command once sent in (§7). `withPredictedTera(mons, fn)` runs `fn` with `isTerastallized` set and `summonData.addedType` cleared on them, as `TeraPhase.end` does (`src/phases/tera-phase.ts:38-41`). `preTera(mons, fn)` takes that back off for `mons` (`beforeTera(fn)`: for all), and `teraTypeOf(e)` names the type via `getTeraType()` (`pokemon.ts:2487`).
 
 ### Planner (30-planner.js)
 - `actionOrder(s, a, aMove, b, bMove)` → `P(a acts before b)`. Switches go first. Otherwise mirror `MovePhasePriorityQueue.sortPostSpeed` (`src/queues/move-phase-priority-queue.ts:23-36`), which sorts by, in order:
