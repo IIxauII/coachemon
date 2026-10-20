@@ -476,11 +476,12 @@ export const lessBerry = (p, b) => {
   });
   return took ? Object.create(p, { getHeldItems: { value: () => held } }) : p;
 };
-// The berries the turn-end model prices (10-damage.js) heal the eater a quarter; every other berry is worth nothing to
-// either side here and still takes its share of the draw (game-code.md §3). `room`: the most it can take.
+// What eating berry `b` heals `eater` at once (game-code.md §3): the berries the turn-end model prices (10-damage.js)
+// heal a quarter, and Cheek Pouch adds a third for any berry. Any other berry heals nothing and still takes its share
+// of the draw.
 // @mirrors stolen-berry-heal
 const EATEN_QUARTER = [BerryType.SITRUS, BerryType.ENIGMA];
-const eatenNow = (eater, b, room = Infinity) => {
+const eatenNow = (eater, b) => {
   const max = eater?.getMaxHp?.() ?? 0;
   if (!(max > 0)) return 0;
   try { if (eater.getTag?.("HEAL_BLOCK")) return 0; } catch { return 0; }
@@ -490,13 +491,14 @@ const eatenNow = (eater, b, room = Infinity) => {
     pouch = !!eater.hasAbilityWithAttr?.("HealFromBerryUseAbAttr");
   } catch { /* read as neither */ }
   const berry = EATEN_QUARTER.includes(b) ? Math.max(1, Math.floor(max / 4)) * (ripen ? 2 : 1) : 0;
-  return Math.max(0, Math.min(room, berry + (pouch ? Math.max(1, Math.floor(max / 3)) : 0)));
+  return berry + (pouch ? Math.max(1, Math.floor(max / 3)) : 0);
 };
-// `out[k]`: the expected `value(berryType)` of the (k+1)-th berry drawn off `holder`: what it held after k draws less
-// what it held after k + 1, on the same walk `afterSteals` takes.
-const drawValues = (holder, value) => {
-  const w = afterSteals(holder, p => heldBerries(p).reduce((t, m) => t + value(m.berryType) * stackOf(m), 0), isBerry);
-  return w.map((x, k) => (k < 9 ? x - w[k + 1] : 0));
+// `out[k]`: the expected `value.get(berryType)` of the (k+1)-th berry drawn off `holder`: what it held after k draws
+// less what it held after k + 1, on the same walk `afterSteals` takes. That walk stops at 9, so the 10th draw on is
+// priced at the mean berry left.
+const drawValues = (holder, value, supply) => {
+  const w = afterSteals(holder, p => heldBerries(p).reduce((t, m) => t + (value.get(m.berryType) ?? 0) * stackOf(m), 0), isBerry);
+  return w.map((x, k) => (k < 9 ? x - w[k + 1] : supply > 9 ? x / (supply - 9) : 0));
 };
 // What one berry leaving `holder` is worth, as the HUD prices a held berry. `berry`: a `BerryType` to name the one
 // that goes, else a uniform draw over the berry types held. `heal(p)`: a holder's turn-end HP change, as
@@ -511,15 +513,16 @@ export const berryGone = (holder, heal, { berry = null, eater = null, hp = 0, st
   const types = berry == null ? held.map(m => m.berryType) : held.some(m => m.berryType === berry) ? [berry] : [];
   if (!types.length) return null;
   const room = Math.max(0, (eater?.getMaxHp?.() ?? 0) - hp);
+  const supply = held.reduce((t, m) => t + stackOf(m), 0);
   if (berry != null) {
-    return { types, byCount: null, eatenAt: null, eatenFirst: null, supply: held.reduce((t, m) => t + stackOf(m), 0),
-      lost: heal(lessBerry(holder, berry)) - heal(holder), eaten: eatenNow(eater, berry, room) };
+    return { types, byCount: null, eatenAt: null, eatenFirst: null, supply,
+      lost: heal(lessBerry(holder, berry)) - heal(holder), eaten: Math.min(room, eatenNow(eater, berry)) };
   }
   const byCount = steals ?? afterSteals(holder, heal, isBerry);
-  const eatenFirst = drawValues(holder, b => eatenNow(eater, b, room));
+  const value = new Map(types.map(b => [b, eatenNow(eater, b)]));
+  const eatenFirst = drawValues(holder, new Map([...value].map(([b, v]) => [b, Math.min(room, v)])), supply);
   return {
-    types, byCount, supply: held.reduce((t, m) => t + stackOf(m), 0), lost: byCount[1] - byCount[0], eaten: eatenFirst[0],
-    eatenAt: drawValues(holder, b => eatenNow(eater, b)), eatenFirst,
+    types, byCount, supply, lost: byCount[1] - byCount[0], eaten: eatenFirst[0], eatenAt: drawValues(holder, value, supply), eatenFirst,
   };
 };
 
@@ -776,10 +779,10 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   const eats = mine?.expected > 0 && stealsBerry(mine, foe, me);
   const theft = eats || stole > 0 ? (() => {
     const dealt = t?.expected ?? 0, heal = p => healAtEnd(turn, p, dealt);
-    // Keyed on what `heal` reads, so a made-up foe that keeps the real one's id is not served the real one's answer.
-    const held = heldBerries(foe).map(m => `${m.berryType}x${stackOf(m)}`).join(",");
-    const steals = held ? turn.memo(`berries:${foe.id}:${foe.hp}:${foe.status?.effect ?? 0}:${held}:${dealt}`, () => afterSteals(foe, heal, isBerry)) : null;
-    return berryGone(foe, heal, { eater: me, hp, steals });
+    // Keyed on the foe object, not its id: a made-up foe that keeps the real one's id reads its own.
+    const byFoe = turn.memo(`berries:${dealt}`, () => new WeakMap());
+    if (berryTypesOf(foe).length && !byFoe.has(foe)) byFoe.set(foe, afterSteals(foe, heal, isBerry));
+    return berryGone(foe, heal, { eater: me, hp, steals: byFoe.get(foe) ?? null });
   })() : null;
   const lands = eats ? j => (j === 1 ? now : steady) * (mine.acc ?? 1) : () => 0;
   const counts = theft ? berryCounts(lands, theft.supply, stole) : null;
@@ -845,10 +848,12 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   const myStart = after?.me.map(x => ({ ...x, hp: x.revived ? x.hp : x.hp - selfSpent })).filter(x => x.hp > 0);
   const drained = (mine?.drain ?? 0) * (mine?.expected ?? 0) * steady;
   // The stolen berry is eaten at once, so it comes back like a drain: once a landed use, worth what the next draw from
-  // the berries still held gives. Moving first on turn 1, we eat it before any hit has made room (#646).
-  const eatenOn = (j, k) => (j === 1 ? pF * theft.eatenFirst[k] + (1 - pF) * theft.eatenAt[k] : theft.eatenAt[k]);
-  const ourDrain = !(eats && theft?.eatenAt?.some(v => v > 0)) ? drained
-    : j => drained + lands(j) * counts(j - 1).reduce((sum, p, k) => sum + p * eatenOn(j, Math.min(9, k)), 0);
+  // the berries still held gives (#646). `ourDrain` is a turn-end heal to the curves, so on turn 1 a thief that moves
+  // before whoever hits it eats it before any room is made.
+  const eatenBy = (j, at) => lands(j) * counts(j - 1).reduce((sum, p, k) => sum + p * at[Math.min(9, k)], 0);
+  const stealing = eats && theft?.eatenAt?.some(v => v > 0);
+  const ourDrain = !stealing ? drained
+    : j => drained + (j === 1 ? pFField * eatenBy(1, theft.eatenFirst) + (1 - pFField) * eatenBy(1, theft.eatenAt) : eatenBy(j, theft.eatenAt));
   const theirs = budget > 0 ? foeCurve(turn, foeT, me, budget, {
     dealt: mine?.uncapped ?? mine?.expected ?? 0, foe: fieldFoe, mult, act: theirAct, start: myStart?.length ? myStart : null, drain: ourDrain,
   }) : null;
@@ -903,19 +908,20 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   // An exchange `after` another has no turn of this one's.
   const usesBefore = after ? 1 : 0;
   const landed = i => threatUse(tThey, i + usesBefore).expected * (tThey.lockAct ? tThey.lockAct(i + usesBefore) : 1);
-  const hitsTaken = !tThey ? 0 : Array.from({ length: Math.ceil(taken) }, (_, i) => landed(i) * Math.min(1, taken - i))
-    .reduce((sum, x) => sum + x, 0) * defUp * boosted;
-  // A stolen berry's heal is capped at max HP turn by turn, not once over the whole fight (#646).
+  const hitOn = i => (tThey ? landed(i) * Math.min(1, taken - i) * defUp * boosted : 0);
+  const hitsTaken = Array.from({ length: Math.ceil(taken) }, (_, i) => hitOn(i)).reduce((sum, x) => sum + x, 0);
+  // A stolen berry's heal is capped at max HP turn by turn, eaten before the turn's hit when we move first (#646).
   const stepped = () => {
-    const drainTurns = Math.min(taken, turnsWe);
-    let h = hp - selfSpent;
-    for (let i = 0; i < Math.ceil(Math.max(taken, drainTurns)); i++) {
-      if (tThey && i < taken) h -= landed(i) * Math.min(1, taken - i) * defUp * boosted;
-      if (i < drainTurns) h = Math.min(maxHp, h + ourDrain(i + 1) * Math.min(1, drainTurns - i));
+    const drainTurns = Math.min(taken, turnsWe), cost = selfSpent / taken;
+    let h = hp;
+    for (let i = 0; i < Math.ceil(taken); i++) {
+      const share = Math.min(1, taken - i), back = i < drainTurns ? (drained + eatenBy(i + 1, theft.eatenAt)) * Math.min(1, drainTurns - i) : 0;
+      h -= cost * share;
+      h = pFField * (Math.min(maxHp, h + back) - hitOn(i)) + (1 - pFField) * Math.min(maxHp, h - hitOn(i) + back);
     }
     return h;
   };
-  const hpLeft = Math.max(0, Math.min(maxHp, typeof ourDrain === "function" ? stepped()
+  const hpLeft = Math.max(0, Math.min(maxHp, stealing && taken > 0 ? stepped()
     : hp - hitsTaken - selfSpent + drainTotal(ourDrain, Math.min(taken, turnsWe)))) * (1 - selfKo);
   return {
     pWeKoFirst: Math.min(1, Math.round(pWe * 1e9) / 1e9), pTheyKoFirst: Math.min(1, Math.round(pThey * 1e9) / 1e9),

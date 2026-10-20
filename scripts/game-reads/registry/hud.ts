@@ -1961,6 +1961,8 @@ export const HUD: Area = {
       ours: "skills/coachemon/scripts/hud/30-planner.js#stolen-berry-heal",
       of: [
         "src/data/berry.ts#getBerryEffectFunc",
+        "src/data/moves/move.ts#StealEatBerryAttr",
+        "src/data/abilities/ab-attrs.ts#HealFromBerryUseAbAttr",
       ],
     },
     {

@@ -379,9 +379,9 @@ named: Sitrus of a x2      types 0 · supply 2 · lost 0 · eaten 70
 named: Liechi beside it    types 3 · supply 2 · lost 0 · eaten 0
 named: a Lum it lacks      nothing to lose
 draws: Sitrus x1 + Lum x2     35 · 17.5 · 17.5 · 0
-we eat from full HP, Sitrus x2: 36 over a Heal Blocked thief
+we eat from full HP, Sitrus x2: 18 over a Heal Blocked thief
 we eat from full HP, Sitrus x1: moving first 0 · moving second 18
-two Sitrus from full HP over a long fight: 346/400 after 6 turns
+two Sitrus from full HP over a long fight: 328/400 after 6 turns
 eaten: plain 70 · Ripen 140 · Heal Block 0 · Cheek Pouch 163, off a Lum 93
 reach: sticky false,true,false · sub false,true,false
 == gordie w180 t7: Leavanny into the incoming Carracosta

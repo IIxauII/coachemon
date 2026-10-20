@@ -1635,6 +1635,7 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
   console.log(`we eat from full HP, Sitrus x2: ${fullHp.hp - blockedHp.hp} over a Heal Blocked thief`);
   assert.equal(fullHp.turnsWe, blockedHp.turnsWe);
   assert.ok(fullHp.hp > blockedHp.hp, `the second Sitrus heals a thief the foe has hit since (${fullHp.hp} vs ${blockedHp.hp})`);
+  assert.ok(fullHp.hp - blockedHp.hp <= 20, `moving first, it eats before each Brine: one 20 HP hit back at most (${fullHp.hp - blockedHp.hp})`);
   // At full HP on turn 1, a thief that moves first has no room yet; one the foe hits first does.
   const fromFull = foeSpe => {
     const [ate, blocked] = [null, "HEAL_BLOCK"].map(thiefTag => bite([berryItem(BERRY.SITRUS)], { hp: 400, foeSpe, thiefTag }));
