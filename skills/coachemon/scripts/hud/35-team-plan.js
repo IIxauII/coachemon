@@ -33,11 +33,9 @@ const tpOurMove = (turn, me, f, them = null) => {
   const outs = turn.outcomes(me, f);
   // The hit of the foe's that landing first cancels, in turns of ours (CONTEXT.md, `Removal price`): a KO one use
   // slower that moves first takes the same number of hits getting there, so order is part of what a move costs.
-  // `them.first` is already the order against a move of ours at priority 0, so only a move out of that bracket is
-  // asked about again.
   const spared = o => {
     if (!them) return 0;
-    const p = (o.priority ?? 0) === 0 ? them.first : tpFoeFirst(turn, me, f, o, them);
+    const p = (o.priority ?? 0) === 0 && Number.isFinite(them.first) ? them.first : tpFoeFirst(turn, me, f, o, them);
     return Number.isFinite(p) ? 1 - p : 0;
   };
   if (turn.live) {

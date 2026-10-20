@@ -281,5 +281,12 @@ assert.equal(plan.approxDoubles, false);
   assert.equal(Math.round(quick.fh), Math.round(300 - mach.dmg), `the priority move lands one use first: ${quick.fh}`);
   assert.equal(quick.pLoss, 1, "and still loses the race");
   assert.equal(even.ours[0][0].name, "Mach Punch", "a KO one use slower that moves first is the better use of the mon");
+
+  // A mon that already moves first gains nothing from priority, off the live game as on it (#650).
+  const fast = moves => globalThis.__tp.readTurn(s, turn => tpTables(turn,
+    [mon("Hitmonchan", 100, ["Fighting"], "Iron Fist", [300,200,100,100,100,120], moves, true)], [golem], false));
+  const F = fast([["Mach Punch","Fighting",70,"P",3,1], ["Drain Punch","Fighting",75,"P"]]);
+  console.log(`== priority from a mon already first (#650): ${F.ours[0][0].name} · first ${F.first[0][0]}`);
+  assert.equal(F.ours[0][0].name, "Drain Punch", "two uses either way, and the harder hit");
 }
 console.log("ok");
