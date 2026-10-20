@@ -601,13 +601,13 @@ export const learnAdvice = (pk, mv, ctx = {}) => {
   return { learn, kind, slot, forget: slot >= 0 ? moves[slot].name : null, against: compare >= 0 ? moves[compare].name : null, gain: plan.gain, reason, setup, plan };
 };
 
+// A full moveset only, so never the `free` kind: the learn screen opens on no other (game-code.md §17).
 export const learnModel = ({ pk, mv, double, party, roster = null }) => {
   const blind = roster?.unavailable ?? null;
   const { plan } = learnAdvice(pk, mv, { double, party: party?.length ? party : [pk], roster: blind ? null : roster });
   const { moves, incoming, forget, compare, team } = plan;
   // No colour: colour is the panel's and never the model's (#349).
   const verdict = {
-    free: "Learns it — free slot",
     status: "Can't score this one — your call",
     "only-status": "Nothing scorable to drop — your call",
     learn: `Learn → forget ${moves[forget]?.name}`,
