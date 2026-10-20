@@ -3,7 +3,7 @@
 // one foe at a time.
 import { iconOf, squeezeDist } from "./01-core.js";
 import { hitOn, koCurve, koTurns, useOf } from "./10-damage.js";
-import { actionOrder, afterSteals, attemptsLost, hitsOn, koBoost, koBoostText, koStageFactor, paralysed, sendInAt, sendInBase, stealCounts, stealRates, threatFrom, tokenOdds, tokenShift, unnervedBy } from "./30-planner.js";
+import { actionOrder, afterSteals, attemptsLost, berryStealable, berryTypesOf, hitsOn, koBoost, koBoostText, koStageFactor, lessBerry, paralysed, sendInAt, sendInBase, stealCounts, stealRates, threatFrom, tokenOdds, tokenShift, unnervedBy } from "./30-planner.js";
 
 // @only tests: tpHealProfile, tpSendScore, tpFight, tpTables, tpActs
 const TP_BEAM = 24;
@@ -27,7 +27,7 @@ const tpFastest = (turn, list, target, turns = o => tpTurns(turn, o, target), dm
 const tpMoveOf = (o, extra) => {
   const use = useOf(o);
   return { name: o.name, type: o.type, cat: o.cat, e: o.e, priority: o.priority ?? 0, dmg: use.reduce((t, x) => t + x.d * x.p, 0), use: tpSpread(use), drain: o.drain ?? 0,
-    self: o.self ?? 0,
+    self: o.self ?? 0, acc: o.acc ?? 1, steals: !!o.traits?.attrNames?.has("StealEatBerryAttr"),
     charge: !!o.traits?.charge, recharge: !!o.traits?.recharge || !!o.traits?.noRepeat, semiCharge: !!o.traits?.charge && !!o.traits?.semiCharge, ...extra };
 };
 
@@ -141,6 +141,16 @@ export const tpHealProfile = (turn, p) => {
   return { base, pre: tpHealAt(turn, p, Math.ceil(max * 0.75), true), sitrus: Math.max(0, at(Math.floor(max * 0.4)) - base),
     enigma: enigma?.heal ?? 0, enigmas: enigma?.left ?? 0 };
 };
+// `f`'s profile once `me`'s `pick` has eaten a berry off it (#646), at the pick's accuracy. Null where it can't.
+const tpHealAfterSteal = (turn, me, f, pick) => {
+  if (!pick?.steals || !berryStealable(f, me)) return null;
+  const types = berryTypesOf(f);
+  const kept = tpHealProfile(turn, f);
+  const gone = types.map(b => tpHealProfile(turn, lessBerry(f, b)));
+  const q = Math.max(0, Math.min(1, pick.acc ?? 1));
+  const mix = k => kept[k] * (1 - q) + (q * gone.reduce((t, prof) => t + prof[k], 0)) / gone.length;
+  return Object.fromEntries(Object.keys(kept).map(k => [k, mix(k)]));
+};
 
 // `facing`: the foe the first exchange is against, the only one a pinned move's own order is read for.
 export const tpTables = (turn, party, foes, double = false, facing = null) => {
@@ -161,6 +171,8 @@ export const tpTables = (turn, party, foes, double = false, facing = null) => {
     foeState: foes.map(f => turn.mon(f).state),
     ourMax: party.map(p => p.getMaxHp()), foeMax: foes.map(f => f.getMaxHp()),
     ourHeal: party.map(p => tpHealProfile(turn, p)), foeHeal: foes.map(p => tpHealProfile(turn, p)),
+    // `foeHealAt[mi][fi]`: the foe's profile for the pairings whose pick eats a berry off it, else nothing.
+    foeHealAt: party.map((me, mi) => foes.map((f, fi) => tpHealAfterSteal(turn, me, f, ours[mi][fi]))),
     ourUnnerve: party.map(p => !!turn.mon(p).facts.unnerve), foeUnnerve: foes.map(f => !!turn.mon(f).facts.unnerve),
     foeStart: foes.map(f => f.hp),
     // `koMult`: the factor both sides' on-KO boosts put on a hit, after `atkN` and `defN` KOs, at physical share `phys`.
@@ -269,9 +281,12 @@ export const tpFight = (T, st, mi, fi, entry, over = null) => {
     b.og += (robUs?.perHit ?? 0) * (them.hits ?? 0);
     b.mse ||= r > 0 && (se ?? (them.e >= 2 ? 1 : 0)) > 0;
   };
-  const endTurn = b => {
+  // `attacked`: we have used our move by this turn end, so a steal can have happened — not on a switch-in's entry turn.
+  const endTurn = (b, attacked = true) => {
     [b.mh, b.mb] = tpHeal(b.mh, T.ourMax[mi], T.ourHeal[mi], b.mb, b.mse && ourBerry, (tok ? tok.shift * by(turns) : 0) + tpStolen(T.ourItems?.[mi], b.od, b.og));
-    [b.fh, b.fb] = tpHeal(b.fh, T.foeMax[fi], T.foeHeal[fi], b.fb, b.fse && foeBerry, tpStolen(T.foeItems?.[fi], b.fd, b.fg));
+    // `foeHealAt` is the profile after the pairing's own pick steals, so only a move in hand that steals reads it:
+    // `over` may pin a different move for this exchange (#113), and that one takes no berry.
+    [b.fh, b.fb] = tpHeal(b.fh, T.foeMax[fi], (attacked && us?.steals ? T.foeHealAt?.[mi]?.[fi] : null) ?? T.foeHeal[fi], b.fb, b.fse && foeBerry, tpStolen(T.foeItems?.[fi], b.fd, b.fg));
     b.mse = b.fse = false;
     if (robUs && b.fh >= 1) b.od += robUs.perTurn;
     if (robFoe && b.mh >= 1) b.fd += robFoe.perTurn;
@@ -285,7 +300,7 @@ export const tpFight = (T, st, mi, fi, entry, over = null) => {
   let standing = [];
   const start = { p: 1, mh: st.oh[mi], mb: st.ob[mi], fh: st.fh[fi], fs: st.fs[fi], fb: st.fb[fi], ox: ox0, od: st.od?.[mi] ?? 0, og: st.og?.[mi] ?? 0, fd: st.fd?.[fi] ?? 0, fg: st.fg?.[fi] ?? 0 };
   if (entry === "switch") {
-    for (const t of theirUse) { const b = { ...start, p: t.p }; foeHit(b, t.r, t.se, them.entry ?? them.dmg); endTurn(b); settle(b, standing); }
+    for (const t of theirUse) { const b = { ...start, p: t.p }; foeHit(b, t.r, t.se, them.entry ?? them.dmg); endTurn(b, false); settle(b, standing); }
     standing = tpMerge(standing, TP_BRANCHES, T, mi, fi);
   } else standing = [start];
   while (standing.length && turns < TP_TURNS) {
