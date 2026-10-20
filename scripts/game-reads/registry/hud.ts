@@ -1382,6 +1382,11 @@ export const HUD: Area = {
       kind: "field",
       at: ["src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.starterContainers"],
     },
+    {
+      name: "starterPreferences",
+      kind: "field",
+      at: ["src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.starterPreferences"],
+    },
     { name: "starters", kind: "field", at: ["src/@types/daily-run.ts#CustomDailyRunConfig.starters"] },
     {
       name: "starterSelectCallback",

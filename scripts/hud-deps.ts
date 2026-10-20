@@ -755,6 +755,7 @@ export const HUD_DEPS = {
     `src/ui/utils/starter-select-ui-utils.ts#getStarterData`,
     `src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.getStarterDexAttrPropsFromPreferences`,
     `src/ui/utils/starter-select-ui-utils.ts#getStarterDexAttrPropsFromPreferences`,
+    `src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.setNewFormIndex`,
     `src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.filterStarters`,
     `src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.setCursor`,
     `src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.isPartyValid`,

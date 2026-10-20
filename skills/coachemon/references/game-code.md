@@ -2674,7 +2674,12 @@ pure): at least one member passes the **strict** check (`soft` false: each activ
 `applyStarterChoice(species, holder, props)` on the species itself); the others need only the soft one. The props a
 challenge check takes come from `getStarterDexAttrPropsFromPreferences(id)` (`:3241-3243`, pure, over the module
 function at `src/ui/utils/starter-select-ui-utils.ts:376-390` and `gameData.getSpeciesDefaultDexAttrProps`,
-`src/system/game-data.ts:1925`, which defaults the form to the lowest one caught, `:1929-1936`).
+`src/system/game-data.ts:1925`, which defaults the form to the lowest one caught, `:1929-1936`). The form
+`addToParty` gives a member follows the same rule, the saved preference else the lowest form caught
+(`getDexAttrFromPreferences`, `src/ui/utils/starter-select-ui-utils.ts:316-366`), so the props' `formIndex` is the form
+the grid adds a species as. A form the player cycles to is saved into the private `starterPreferences[id].formIndex` at
+once (`setNewFormIndex`, `:1316-1323`). A form is `species.forms[i]` (`src/data/pokemon-species.ts:918-922`), a
+`PokemonForm` with its own `baseStats`, `baseTotal`, `type1` / `type2` and `abilityHidden`.
 
 **The budget.** `getRunValueLimit()` (`src/ui/utils/starter-select-ui-utils.ts:438-452`, a module function): 15 in
 Endless and Spliced Endless, 10 otherwise, less `LowerStarterPointsChallenge`'s value (`src/data/challenge.ts:1173`).
