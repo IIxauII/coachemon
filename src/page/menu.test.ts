@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { UiMode } from "../enums/generated.ts";
+import { PartyUiMode, UiMode } from "../enums/generated.ts";
 import { onPage, send, starterGrid } from "./fake-page.ts";
 
 test("STARTER_SELECT lists the whole filtered grid by name and puts the cursor on its grid index (v1-tool-surface.md §7)", t => {
@@ -102,6 +102,58 @@ test("an option list reads its cursor as the option under it, counting selectabl
   assert.deepEqual(menu.extra.unskippedIndices, [0, 1, 3, 4]);
   assert.equal(menu.extra.selectedIndex, 3);
   assert.equal(menu.cursor, 2);
+});
+
+/** A party handler's options window, laid out as `PartyUiHandler` draws it (game-code.md §17). */
+function partyOptions(partyUiMode: number, rows: { name: string; prefix?: { level: number } | { tm: string } }[], optionsCursor: number) {
+  const list: Record<string, unknown>[] = [{ width: 94 }];
+  const optionPrefixes: (Record<string, unknown> | null)[] = [];
+  rows.slice().reverse().forEach((row, o) => {
+    const y = -22 - 16 * o;
+    let prefix: Record<string, unknown> | null = null;
+    if (row.prefix && "level" in row.prefix) prefix = { text: String(row.prefix.level), y: y + 8 };
+    else if (row.prefix) prefix = { frame: row.prefix.tm, y: y + 8 };
+    if (prefix) list.push(prefix);
+    optionPrefixes.push(prefix);
+    list.push({ text: `[shadow]${row.name}[/shadow]`, y });
+  });
+  list.push({ frame: "cursor", y: -22 - 16 * (rows.length - 1 - optionsCursor) });
+  const h = { active: true, partyUiMode, optionsMode: true, transferMode: false, optionsCursor, cursor: 0, optionsContainer: { list }, optionPrefixes };
+  return { ui: { mode: UiMode.PARTY, handlers: { [UiMode.PARTY]: h } } };
+}
+
+test("a Memory Mushroom's move list reads one row per move plus Cancel, its learn levels not rows of their own (#528)", t => {
+  const rows = [{ name: "Wrap", prefix: { level: 1 } }, { name: "Leer", prefix: { level: 1 } }, { name: "Twister", prefix: { level: 5 } }, { name: "Cancel" }];
+  onPage(t, partyOptions(PartyUiMode.REMEMBER_MOVE_MODIFIER, rows, 2));
+  const menu = send("menu", {});
+  assert.deepEqual(menu.options, [
+    { i: 0, label: "Wrap", learnLevel: 1 },
+    { i: 1, label: "Leer", learnLevel: 1 },
+    { i: 2, label: "Twister", learnLevel: 5 },
+    { i: 3, label: "Cancel" },
+  ]);
+  assert.equal(menu.cursor, 2);
+});
+
+test("a Memory Mushroom list mixing a level move and a TM move reads one row each, the learn level on its own move (#528)", t => {
+  const rows = [{ name: "Ember", prefix: { level: 9 } }, { name: "Flamethrower", prefix: { tm: "tm_fire" } }, { name: "Scratch", prefix: { level: 1 } }, { name: "Cancel" }];
+  onPage(t, partyOptions(PartyUiMode.REMEMBER_MOVE_MODIFIER, rows, 3));
+  const menu = send("menu", {});
+  assert.deepEqual(menu.options, [
+    { i: 0, label: "Ember", learnLevel: 9 },
+    { i: 1, label: "Flamethrower" },
+    { i: 2, label: "Scratch", learnLevel: 1 },
+    { i: 3, label: "Cancel" },
+  ]);
+  assert.equal(menu.cursor, 3);
+});
+
+test("a faint switch's options read one row per option", t => {
+  const rows = [{ name: "Send Out" }, { name: "Summary" }, { name: "Cancel" }];
+  onPage(t, partyOptions(PartyUiMode.FAINT_SWITCH, rows, 0));
+  const menu = send("menu", {});
+  assert.deepEqual(menu.options, [{ i: 0, label: "Send Out" }, { i: 1, label: "Summary" }, { i: 2, label: "Cancel" }]);
+  assert.equal(menu.cursor, 0);
 });
 
 test("a mode without a handler is unreadable", t => {

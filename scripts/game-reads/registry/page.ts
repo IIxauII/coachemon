@@ -493,6 +493,7 @@ export const PAGE: Area = {
         "src/ui/handlers/mystery-encounter-ui-handler.ts#MysteryEncounterUiHandler.optionsContainer",
       ],
     },
+    { name: "optionPrefixes", kind: "field", at: ["src/ui/handlers/party-ui-handler.ts#PartyUiHandler.optionPrefixes"] },
     { name: "optionsCursor", kind: "field", at: ["src/ui/handlers/party-ui-handler.ts#PartyUiHandler.optionsCursor"] },
     { name: "optionsMode", kind: "field", at: ["src/ui/handlers/party-ui-handler.ts#PartyUiHandler.optionsMode"] },
     { name: "optionsScroll", kind: "field", at: ["src/ui/handlers/party-ui-handler.ts#PartyUiHandler.optionsScroll"] },
