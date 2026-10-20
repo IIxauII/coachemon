@@ -4,7 +4,7 @@ import { TYPES, vs } from "./01-core.js";
 import { challengeOn, challengeValue } from "./03-calendar.js";
 import { gameTables } from "./04-game-tables.js";
 import { RANDBATS } from "./05-randbats.js";
-import { finalBstOf } from "./08-party.js";
+import { finalBstOf, formOf } from "./08-party.js";
 
 const MAX_PARTY = 6;
 const WEIGHTS = [1, 0.8, 0.55, 0.35, 0.2, 0.1];
@@ -64,15 +64,17 @@ const evolutionsUnder = (evos, moveset) => {
 };
 
 const asFinal = x => ({ final: x.baseTotal ?? 0, finalSp: x, estimated: false });
+// Not `formOf` alone: at form 0 it answers `forms[0]`, where the card has always read the species itself.
+const startForm = (sp, formIndex) => (formIndex ? formOf(sp, formIndex) : sp);
 
 // The line's strongest final form, and how it first evolves. `moveset` is the Moveset Randomizer's value; at 1,
-// `moveFinal` is the stronger final that only a move would have reached.
-const lineOf = (sp, reg, moveset = 0) => {
+// `moveFinal` is the stronger final that only a move would have reached. `formIndex` is the form the grid adds.
+const lineOf = (sp, reg, moveset = 0, formIndex = 0) => {
   const evos = tryDo(() => sp.getEvolutionLevels(), []);
-  const own = asFinal(sp);
+  const own = { ...asFinal(sp), final: startForm(sp, formIndex).baseTotal ?? 0 };
   if (!evos.length) return { ...own, evo: null, moveFinal: null };
   if (!reg) {
-    const est = finalBstOf({ species: sp });
+    const est = finalBstOf({ species: sp, formIndex: formIndex || null });
     return { final: est.final, finalSp: null, estimated: est.estimated, evo: evos[0][1] > 1 ? { level: evos[0][1] } : { item: true }, moveFinal: null };
   }
   const evolutionsOf = (id, value) => evolutionsUnder(tryDo(() => reg.getEvolutions(id), []) ?? [], value);
@@ -108,19 +110,20 @@ const starterData = (s, id) => {
   return { dexEntry, starterDataEntry };
 };
 
-// `starter`: the grid's own entry for a species already on the team, whose ability and passive then count as chosen
-// rather than as unlocked.
-const speciesValue = (s, h, sp, ctx, starter = null) => {
+// `formIndex`: the form the grid adds the species as. `starter`: the grid's own entry for a species already on the
+// team, whose ability and passive then count as chosen rather than as unlocked.
+const speciesValue = (s, sp, ctx, formIndex = 0, starter = null) => {
   const id = sp.speciesId;
   const { dexEntry: dex, starterDataEntry: st } = starterData(s, id);
-  const line = lineOf(sp, ctx.tables?.species, ctx.movesetRandomizer);
+  const form = startForm(sp, formIndex);
+  const line = lineOf(sp, ctx.tables?.species, ctx.movesetRandomizer, formIndex);
   const why = [];
   const finalForm = line.finalSp && line.finalSp.speciesId !== id ? line.finalSp : null;
   const finalName = finalForm ? ` (${finalForm.name})` : "";
   const power = 45 * clamp((line.final - 380) / 220, 0, 1.5) ** 1.5;
   why.push({ w: power, text: `final BST ${line.estimated ? "~" : ""}${line.final}${finalName}` });
-  const early = 8 * clamp(((sp.baseTotal ?? 0) - 250) / 250, 0, 1);
-  why.push({ w: early, text: `BST ${sp.baseTotal} from L5`, quiet: (sp.baseTotal ?? 0) < 450 });
+  const early = 8 * clamp(((form.baseTotal ?? 0) - 250) / 250, 0, 1);
+  why.push({ w: early, text: `BST ${form.baseTotal} from L5`, quiet: (form.baseTotal ?? 0) < 450 });
   if (line.evo?.item) why.push({ w: -3, text: "evolves by item or condition" });
   else if (line.evo?.level > 36) why.push({ w: -4, text: `evolves at L${line.evo.level}` });
   if (line.moveFinal) why.push({ w: -1.5, text: `${line.moveFinal.name} needs a move it likely won't learn` });
@@ -133,15 +136,15 @@ const speciesValue = (s, h, sp, ctx, starter = null) => {
     return name && aid !== starterAid ? `${name}${finalName}` : name;
   };
   const passiveOn = starter ? !!starter.passive : ((st.passiveAttr ?? 0) & Passive.UNLOCKED) !== 0;
-  const own = ctx.rerolled.passive ? null : fought(tryDo(() => sp.getPassiveAbility(starter?.formIndex ?? 0)), tryDo(() => finalForm.getPassiveAbility(0)));
+  const own = ctx.rerolled.passive ? null : fought(tryDo(() => sp.getPassiveAbility(formIndex)), tryDo(() => finalForm.getPassiveAbility(0)));
   const passive = ctx.rerolled.passive ? { w: 4, text: "random passive", offText: "random passive is off" }
     : { w: 8, text: own ? `passive ${own}` : "passive", offText: `${own ?? "passive"} is off` };
   if (passiveOn) why.push({ w: passive.w, text: passive.text });
   else if (starter && ((st.passiveAttr ?? 0) & Passive.UNLOCKED)) why.push({ w: -3 * passive.w / 8, text: passive.offText });
   const hiddenOn = starter ? starter.abilityIndex === 2 : ((st.abilityAttr ?? 0) & AbilityAttr.ABILITY_HIDDEN) !== 0;
-  const hidden = (finalForm ?? sp).abilityHidden;
+  const hidden = (finalForm ?? form).abilityHidden;
   if (hiddenOn && hidden && !ctx.rerolled.ability(hidden)) {
-    const name = fought(sp.abilityHidden, finalForm?.abilityHidden);
+    const name = fought(form.abilityHidden, finalForm?.abilityHidden);
     why.push({ w: 3, text: name ? `hidden ${name}` : "hidden ability" });
   }
   const eggs = st.eggMoves ?? 0;
@@ -161,9 +164,9 @@ const speciesValue = (s, h, sp, ctx, starter = null) => {
   const luck = ctx.fresh ? 0 : caught & 64n ? 3 : caught & 32n ? 2 : caught & 2n ? 1 : 0;
   if (luck) why.push({ w: 1.5 * luck, text: `luck +${luck}` });
 
-  const finalSp = line.finalSp ?? sp;
+  const finalSp = finalForm ?? form;
   // A randbats role is a moveset's, which the Moveset Randomizer rerolls (#721).
-  const roles = ctx.movesetRandomizer ? [] : rolesOf([finalSp.name, sp.name]);
+  const roles = ctx.movesetRandomizer ? [] : rolesOf([(finalForm ?? sp).name, sp.name]);
   const [, atk, def, spa, spd] = finalSp.baseStats ?? sp.baseStats ?? [];
   const role = roles.some(r => CARRY_ROLES.has(r)) ? "carry" : roles.length ? "support"
     : Math.max(atk ?? 0, spa ?? 0) >= 1.1 * Math.max(def ?? 0, spd ?? 0) ? "carry" : null;
@@ -244,7 +247,10 @@ export const starterModel = (s, h) => {
   for (const st of Object.values(s.gameData?.starterData ?? {})) {
     unlocks += (st?.valueReduction ?? 0) + 3 * (st?.passiveAttr ?? 0) + 11 * (st?.eggMoves ?? 0) + 37 * (st?.abilityAttr ?? 0);
   }
-  const key = JSON.stringify([limit, unlocks, chosen.map((sp, i) => [sp.speciesId, h.partyStarters?.[i]?.passive, h.partyStarters?.[i]?.abilityIndex]),
+  // So does a form cycled on the grid (game-code.md §23).
+  let formsKey = 0;
+  for (const [id, p] of Object.entries(h.starterPreferences ?? {})) if (p?.formIndex != null) formsKey += Number(id) * (p.formIndex + 1);
+  const key = JSON.stringify([limit, unlocks, formsKey, chosen.map((sp, i) => [sp.speciesId, h.partyStarters?.[i]?.passive, h.partyStarters?.[i]?.abilityIndex]),
     // The scan fills the tables in place a chunk at a time (#381), so each one that lands has to rebuild the card.
     candidates.length, !!tables, !!tables?.abilities, !!tables?.eggMoves, !!tables?.moves, challenges.map(c => [c.id, c.value])]);
   if (cache.key !== key) cache = { key, value: build(s, h, { tables, challenges, has, limit, chosen, candidates, onScreen }) };
@@ -269,12 +275,18 @@ const build = (s, h, { tables, challenges, has, limit, chosen, candidates, onScr
   };
   const iconById = new Map([...onScreen].map(([id, c]) => [id, iconOfContainer(c)]));
   const costOf = sp => tryDo(() => s.gameData.getSpeciesStarterValue(sp.speciesId), onScreen.get(sp.speciesId)?.cost ?? 1);
+  // What the grid adds a species as, form included (game-code.md §23).
+  const propsCache = new Map();
+  const propsOf = id => {
+    if (!propsCache.has(id)) propsCache.set(id, tryDo(() => h.getStarterDexAttrPropsFromPreferences(id)));
+    return propsCache.get(id);
+  };
   // The strict challenge check, which one member of a team must pass (game-code.md §23).
   const strictCache = new Map();
   const strict = sp => {
     if (!challenges.length) return true;
     if (!strictCache.has(sp.speciesId)) {
-      const props = tryDo(() => h.getStarterDexAttrPropsFromPreferences(sp.speciesId));
+      const props = propsOf(sp.speciesId);
       strictCache.set(sp.speciesId, challenges.every(c => {
         if (typeof c.applyStarterChoice !== "function") return true;
         const holder = { value: true };
@@ -287,14 +299,17 @@ const build = (s, h, { tables, challenges, has, limit, chosen, candidates, onScr
   const valid = members => !members.length || members.some(m => strict(m.sp));
 
   const withIcon = (v, cost, chosenIdx) => ({ ...v, cost, icon: iconById.get(v.id) ?? speciesIcon(v.sp), chosen: chosenIdx >= 0 });
-  const fixed = chosen.map((sp, i) => withIcon(speciesValue(s, h, sp, ctx, h.partyStarters?.[i]), costOf(sp), i));
+  const fixed = chosen.map((sp, i) => {
+    const starter = h.partyStarters?.[i];
+    return withIcon(speciesValue(s, sp, ctx, starter?.formIndex ?? 0, starter), costOf(sp), i);
+  });
   const spent = fixed.reduce((t, m) => t + m.cost, 0);
   const room = limit - spent;
   const taken = new Set(chosen.map(sp => sp.speciesId));
   const all = candidates
     .filter(sp => !taken.has(sp.speciesId))
     .filter(sp => big(starterData(s, sp.speciesId).dexEntry.caughtAttr) > 0n)
-    .map(sp => withIcon(speciesValue(s, h, sp, ctx), costOf(sp), -1))
+    .map(sp => withIcon(speciesValue(s, sp, ctx, propsOf(sp.speciesId)?.formIndex ?? 0), costOf(sp), -1))
     .sort((a, b) => b.value - a.value);
   const values = new Map(all.map((v, i) => [v.id, { v, rank: i + 1 }]));
   const pool = all.filter(v => v.cost <= room + 1e-9);
