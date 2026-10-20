@@ -1,8 +1,8 @@
 // The boss Weavile outspeeds and KOs all four of ours.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
-import { benchMatchupScore, onGame } from "./game-proto.mjs";
 import { fakeTurn } from "./fake-turn.mjs";
+import { benchMatchupScore, onGame } from "./game-proto.mjs";
 
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
@@ -281,5 +281,92 @@ assert.equal(plan.approxDoubles, false);
   assert.equal(Math.round(quick.fh), Math.round(300 - mach.dmg), `the priority move lands one use first: ${quick.fh}`);
   assert.equal(quick.pLoss, 1, "and still loses the race");
   assert.equal(even.ours[0][0].name, "Mach Punch", "a KO one use slower that moves first is the better use of the mon");
+}
+// A free entry goes to a mon that acts (#651, W145 T9–13). Breloom at 93 of 240 is outsped and one-shot by Rayquaza's
+// Outrage, and so are Tentacruel and Crawdaunt behind it; only Raichu is faster, and takes a Thunderbolt off Rayquaza
+// before it falls. Every ordering loses the line and lands the same 150, so the beam has no damage to tell them apart:
+// the free entry Breloom's fall buys still goes to the member that acts, and the two that cannot are kept for the
+// sacrifices after it.
+{
+  // 07-move-traits' shape; nothing here carries a trait.
+  const TRAITS = { charge: false, semiCharge: false, recharge: false, interrupt: false, needsAttack: false, once: false,
+    lock: false, noRepeat: false, recoil: null, halfSac: false, crash: false, selfKo: null, drops: {}, removesType: false };
+  // "attacker>move>defender": [max damage, effectiveness]. One hit, always lands, 16 rolls at 85–100 %.
+  const W145 = {
+    "Breloom>Drain Punch>Rayquaza": [40, 0.5], "Rayquaza>Outrage>Breloom": [339, 1],
+    "Tentacruel>Surf>Rayquaza": [60, 0.5], "Rayquaza>Outrage>Tentacruel": [431, 1],
+    "Crawdaunt>Crabhammer>Rayquaza": [80, 0.5], "Rayquaza>Outrage>Crawdaunt": [346, 1],
+    "Raichu>Thunderbolt>Rayquaza": [150, 1], "Rayquaza>Outrage>Raichu": [437, 1],
+    // Ivy's bench: a Pidgeot two of ours KO one-on-one, so it is neither the win condition nor held for by anyone.
+    "Breloom>Drain Punch>Pidgeot": [40, 0.5], "Pidgeot>Air Slash>Breloom": [120, 4],
+    "Tentacruel>Surf>Pidgeot": [70, 1], "Pidgeot>Air Slash>Tentacruel": [60, 1],
+    "Crawdaunt>Crabhammer>Pidgeot": [240, 1], "Pidgeot>Air Slash>Crawdaunt": [60, 1],
+    "Raichu>Thunderbolt>Pidgeot": [240, 2], "Pidgeot>Air Slash>Raichu": [60, 1],
+  };
+  const stub = (atk, def, pm) => {
+    const row = W145[`${atk.name}>${pm.getName()}>${def.name}`];
+    if (!row) return null;
+    const [max, e] = row;
+    const mv = pm.getMove();
+    let expected = 0, pKo = 0, uncapped = 0;
+    for (let r = 0; r < 16; r++) {
+      const d = Math.floor(max * (85 + r) / 100);
+      uncapped += d / 16;
+      expected += Math.min(d, def.hp) / 16;
+      if (d >= def.hp) pKo += 1 / 16;
+    }
+    return { name: pm.getName(), type: TY[mv.type], cat: mv.category ? "special" : "physical", e, priority: 0,
+      spread: false, acc: 1, dist: [{ n: 1, p: 1 }], perHit: [{ max, min: Math.floor(max * 0.85) }],
+      expected, uncapped, max: Math.min(max, def.hp), pKo, traits: { ...TRAITS }, costs: [], notes: [] };
+  };
+  const w145 = (name, types, [hp, atk, def, spa, spd, spe], moves, field, curHp) => ({
+    id: name, getMoveQueue: () => [], isTrapped: () => false, trainerSlot: 0, species: { legendary: false },
+    name, level: 80, hp: curHp ?? hp, getMaxHp: () => hp, getTypes: () => types.map(t => TY.indexOf(t)),
+    getAbility: () => ({ name: "x" }), hasPassive: () => false, getStat: i => [hp, atk, def, spa, spd, spe][i],
+    summonData: { statStages: [0,0,0,0,0,0,0], types: [] }, isOnField: () => field, isBoss: () => false,
+    getIconAtlasKey: () => "k", getIconId: () => 1, status: null, getBattlerIndex: () => (field ? 0 : -1),
+    getHeldItems: () => [],
+    moveset: moves.map(([n, ty, p, c], i) => ({ moveId: i + 1, getName: () => n, getMovePp: () => 10, ppUsed: 0,
+      getMove: () => ({ id: i + 1, name: n, type: TY.indexOf(ty), power: p, category: cat[c], moveTarget: 3, priority: 0, accuracy: 100, attrs: [] }) })),
+  });
+  const planFor = withPidgeot => {
+    const party = [
+      w145("Breloom", ["Grass","Fighting"], [240,230,120,100,120,130], [["Drain Punch","Fighting",75,"P"]], true, 93),
+      w145("Tentacruel", ["Water","Poison"], [300,140,120,160,160,170], [["Surf","Water",90,"S"]], false),
+      w145("Crawdaunt", ["Water","Dark"], [300,220,110,130,110,155], [["Crabhammer","Water",100,"P"]], false),
+      w145("Raichu", ["Electric"], [240,120,100,160,110,220], [["Thunderbolt","Electric",90,"S"]], false),
+    ];
+    const foes = [
+      w145("Rayquaza", ["Dragon","Flying"], [350,250,120,250,120,200], [["Outrage","Dragon",120,"P"]], true),
+      ...(withPidgeot ? [w145("Pidgeot", ["Normal","Flying"], [220,140,110,130,110,190], [["Air Slash","Flying",75,"S"]], false)] : []),
+    ];
+    for (const f of foes) f.getOpponents = () => party.filter(p => p.isOnField());
+    const turn = fakeTurn({
+      live: true, wave: 145, turn: 9, party, foes,
+      trainer: { getName: () => "Ivy", config: { isBoss: false }, isDouble: () => false },
+      outcome: stub,
+      moves: e => [{ name: e.moveset[0].getName(), type: TY[e.moveset[0].getMove().type], p: 1, score: 10, targets: [0] }],
+    });
+    const planner = globalThis.__hud["35-team-plan"].teamPlanner(turn);
+    return { plan: planner.view(null), freeEntry: planner.after(null)?.freeEntry ?? null };
+  };
+  for (const withPidgeot of [false, true]) {
+    const { plan, freeEntry } = planFor(withPidgeot);
+    console.log(`== a free entry that acts (#651)${withPidgeot ? ", Pidgeot on the bench" : ""}\n` +
+      `⤵ ${freeEntry?.out.name} falls this turn › ${freeEntry?.in.name} in free\n` +
+      plan.steps.map((x, i) => `➜ ${i + 1}. ${x.send.name} ${x.entry} ${x.move} → ${x.vs.name} ${x.why}`).join("\n"));
+    const where = `${withPidgeot ? "with" : "without"} Pidgeot`;
+    assert.equal(plan.steps[0].send.name, "Breloom", `Breloom leads ${where}`);
+    assert.ok(plan.steps[0].sacrifice, `Breloom's fall is the sacrifice ${where}: ${plan.steps[0].why}`);
+    assert.equal(plan.steps[1].entry, "free", `and buys a free entry ${where}`);
+    assert.equal(plan.steps[1].send.name, "Raichu", `the only member that acts takes it ${where}`);
+    assert.equal(freeEntry?.in.name, "Raichu", `the ⤵ line names it too ${where}`);
+    assert.deepEqual(plan.sacrifice.map(x => `${x.name} → ${x.frees.name}`).slice(0, 1), ["Breloom → Raichu"],
+      `the card's sacrifice line follows the plan ${where}`);
+    // Raichu is spent on the first free entry, so neither of the two that never act goes in ahead of it.
+    const acted = plan.steps.findIndex(x => x.send.name === "Raichu");
+    assert.ok(!plan.steps.slice(0, acted).some(x => ["Tentacruel", "Crawdaunt"].includes(x.send.name)),
+      `nothing is spent for nothing before Raichu acts ${where}: ${JSON.stringify(plan.steps.map(x => x.send.name))}`);
+  }
 }
 console.log("ok");

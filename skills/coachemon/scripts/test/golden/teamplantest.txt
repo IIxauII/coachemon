@@ -28,4 +28,16 @@ Pidgey → Buzzwole: falls · foe at 47% · feeds Beast Boost +1 Atk
 Blastoise → Buzzwole: KO · 82% left
 == a priority move from a slower mon (#650)
 Close Combat at 1 leaves 300 · Mach Punch at 0 leaves 214
+== a free entry that acts (#651)
+⤵ Breloom falls this turn › Raichu in free
+➜ 1. Breloom stay Drain Punch → Rayquaza sacrifice → Raichu in free
+➜ 2. Raichu free Thunderbolt → Rayquaza falls · foe at 60%
+➜ 3. Tentacruel free Surf → Rayquaza sacrifice → Crawdaunt in free
+➜ 4. Crawdaunt free Crabhammer → Rayquaza falls · foe at 60%
+== a free entry that acts (#651), Pidgeot on the bench
+⤵ Breloom falls this turn › Raichu in free
+➜ 1. Breloom stay Drain Punch → Rayquaza sacrifice → Raichu in free
+➜ 2. Raichu free Thunderbolt → Rayquaza falls · foe at 60%
+➜ 3. Tentacruel free Surf → Rayquaza falls · foe at 60%
+➜ 4. Crawdaunt free Crabhammer → Rayquaza falls · foe at 60%
 ok

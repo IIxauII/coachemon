@@ -410,6 +410,12 @@ const tpSearch = (T, start, reserve, pin = null) => {
         const spare = cands.filter(([mi]) => !reserve.some(r => r.mi === mi && r.fi !== fi));
         if (spare.length) cands = spare;
       }
+      // A free entry goes to a member that lands something before it falls, where one is left (#651). Every ordering
+      // of a lost line deals the same damage and leaves nobody alive, so `tpValue` scores them all the same and the
+      // beam threw the members that never act in first, leaving the one that does for last. The filter runs after
+      // `reserve`, so a held answer is still held.
+      const acting = cands.filter(([mi, entry]) => entry !== "free" || tpActs(tpFight(T, st, mi, fi, entry), st.fh[fi]));
+      if (acting.length) cands = acting;
       for (const [mi, entry] of cands) {
         const r = tpFight(T, st, mi, fi, entry, depth === 0 && pin?.move && mi === pin.mi ? pin.move : null);
         const child = end => {
