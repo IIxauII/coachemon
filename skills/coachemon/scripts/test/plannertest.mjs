@@ -428,6 +428,13 @@ Object.assign(TABLE, { "Ambipom>Fake Out>Slowbro": [[60], 1, 1], "Ambipom>Return
   console.log(`== depth 2: Fake Out then Return (live)\n${withFakeOut}`);
   assert.match(withFakeOut, /Fake Out → Slowbro .*then Return/, `Fake Out first, Return after:\n${withFakeOut}`);
   assert.match(at(outcome), /Return → Slowbro/, "no flinch, no Fake Out");
+
+  // The fight plan can't repeat a first-turn-only move, so a pin on Fake Out runs its follow-up (#650).
+  const { scene: s } = render({ party, foes, live: true, dist, switches: () => new Map(), stubOutcome: fakeOut });
+  const team = globalThis.__hud["35-team-plan"].teamPlanner(s);
+  const [fo, ret] = ["Fake Out", "Return"].map(n => globalThis.__planner.planOutcomes(s, party[0], foes[0]).find(o => o.name === n));
+  const pinned = team.at({ mi: 0, outcome: fo, then: ret }), plain = team.at({ mi: 0, outcome: ret });
+  assert.deepEqual(pinned.steps, plain.steps, `Fake Out then Return plays as Return: ${JSON.stringify(pinned.steps[0])}`);
 }
 
 // ---- Consistency: two equal moves, and the one Garchomp used last turn keeps the edge rather than the first listed.

@@ -454,7 +454,7 @@ const tpFacing = (turn, foes) => {
 const TP_PREFER = 20;
 const TP_HOLD = 10;
 
-// ⚔ owns the turn and this model the rest of the fight (#113). `pin` is `{ mi, outcome?, free? }`: `at(pin)`
+// ⚔ owns the turn and this model the rest of the fight (#113). `pin` is `{ mi, outcome?, then?, free? }`: `at(pin)`
 // re-searches with it as step 1, `after(pin)` reads what that plan says comes next, and `view(pin)` renders it.
 const tpModel = (T, double, party, foes, facing) => {
   const ref = p => ({ icon: iconOf(p), name: p.name });
@@ -522,13 +522,17 @@ const tpModel = (T, double, party, foes, facing) => {
   const free = tpSearch(T, start, []);
   const base = held && (!free || held.val >= free.val - TP_HOLD) ? held : free;
 
+  // A pin runs the ⚔ move, else its follow-up: a first-turn-only or foe-dependent move would repeat in a table
+  // exchange as though it always worked (#650).
+  const pinned = pin => [pin.outcome, pin.then].find(o => o?.expected > 0 && !o.traits?.once && !o.traits?.needsAttack) ?? null;
+  const keyOf = pin => (pin && pin.mi != null && pin.mi >= 0 ? `${pin.mi}|${pinned(pin)?.name ?? ""}|${pin.free ? "f" : ""}` : "");
   const atMemo = new Map();
   const at = pin => {
-    if (!pin || pin.mi == null || pin.mi < 0) return base;
-    const k = `${pin.mi}|${pin.outcome?.name ?? ""}|${pin.free ? "f" : ""}`;
+    const k = keyOf(pin);
+    if (!k) return base;
     if (!atMemo.has(k)) {
-      const move = pin.outcome?.expected > 0 ? tpMoveOf(pin.outcome) : null;
-      atMemo.set(k, tpSearch(T, start, hold, { mi: pin.mi, move, free: !!pin.free }) ?? base);
+      const o = pinned(pin);
+      atMemo.set(k, tpSearch(T, start, hold, { mi: pin.mi, move: o ? tpMoveOf(o) : null, free: !!pin.free }) ?? base);
     }
     return atMemo.get(k);
   };
@@ -547,7 +551,7 @@ const tpModel = (T, double, party, foes, facing) => {
 
   const viewMemo = new Map();
   const view = pin => {
-    const k = pin && pin.mi != null && pin.mi >= 0 ? `${pin.mi}|${pin.outcome?.name ?? ""}|${pin.free ? "f" : ""}` : "";
+    const k = keyOf(pin);
     if (!viewMemo.has(k)) viewMemo.set(k, tpView({ T, party, foes, double, start, win, kills, alive, answers, only, onlyBy, reserve, base, ref, pctOf }, at(pin), !!k));
     return viewMemo.get(k);
   };

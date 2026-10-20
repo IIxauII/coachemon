@@ -1135,9 +1135,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   const planValueOf = picks => {
     if (!team || slots !== 1 || !picks[0]) return null;
     const mi = party.indexOf(picks[0].me);
-    // Pinned to the move as well as the mon: the fight the plan goes on to play is the one this pick starts, and a
-    // priority move that lands before the foe acts starts a different one (#650).
-    return mi < 0 ? null : team.at({ mi, outcome: picks[0].move, free: freeSwitch })?.val ?? null;
+    return mi < 0 ? null : team.at({ mi, outcome: picks[0].move, then: picks[0].then, free: freeSwitch })?.val ?? null;
   };
   // Per pick: `ally`, what a move that hits every other pokémon does to our partner; `spare`, the pair's other hit
   // already does all this one does, so a move with a drawback gives way to one without (CONTEXT.md, `Spare hit`).
@@ -1523,7 +1521,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   // in slot 0, so the pin is the slot aimed there: its step 1 is then an action the player is actually told to take.
   const chosen = slots === 1 ? best.picks[0]
     : best.picks.find(p => !p.play && (p.target === 0 || p.target === "both")) ?? best.picks.find(p => !p.play) ?? best.picks[0];
-  const pin = team && chosen ? { mi: party.indexOf(chosen.me), outcome: chosen.move, free: freeSwitch } : null;
+  const pin = team && chosen ? { mi: party.indexOf(chosen.me), outcome: chosen.move, then: chosen.then, free: freeSwitch } : null;
   const ahead = pin && pin.mi >= 0 ? team.after(pin) : null;
   // A plan step is a whole exchange, so its free entry is this turn's news only when the mon goes down on this one —
   // counting the pick's own trade, since a foe switching in is not an `attackers` threat yet.
