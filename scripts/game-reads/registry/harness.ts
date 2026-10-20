@@ -290,6 +290,12 @@ export const HARNESS: Area = {
       at: ["src/phases/return-phase.ts#ReturnPhase.summon", "src/phases/summon-phase.ts#SummonPhase.summon"],
     },
     {
+      name: "switchOutStatus",
+      kind: "field",
+      at: ["src/field/pokemon.ts#Pokemon.switchOutStatus"],
+      note: "set on a fainted foe the fork point takes off the field",
+    },
+    {
       name: "target",
       kind: "field",
       at: ["test/framework/phase-interceptor.ts#PhaseInterceptor.target"],
@@ -323,6 +329,12 @@ export const HARNESS: Area = {
       note: "read off the session save's arena",
     },
     { name: "to", kind: "method", at: ["test/framework/phase-interceptor.ts#PhaseInterceptor.to"] },
+    {
+      name: "triggerPokemonBattleAnim",
+      kind: "method",
+      at: ["src/battle-scene.ts#BattleScene.triggerPokemonBattleAnim"],
+      note: "wrapped so Commander's animations are skipped headless",
+    },
     {
       name: "turnCount",
       kind: "field",
