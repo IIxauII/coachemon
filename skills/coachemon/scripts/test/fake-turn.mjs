@@ -72,7 +72,7 @@ export const fakeTurn = ({
       const f = plainFacts(p, over.facts ?? {}, facts.enemyModifiers);
       const core = hud()["01-core"], dmg = hud()["10-damage"];
       return {
-        p, facts: f, state: { hp: f.hp, bar: f.idx, revived: false, tok: 0, facts: f },
+        p, facts: f, state: { hp: f.hp, bar: f.idx, revived: false, tok: false, facts: f },
         speed: p.getEffectiveStat?.(STAT_SPD) ?? (p.getStat?.(STAT_SPD) ?? 0) * stage(p.summonData?.statStages?.[STAT_SPD - 1] ?? 0),
         tera: null,
         order: pm => {
