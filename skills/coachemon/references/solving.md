@@ -43,6 +43,9 @@ card and the boss-fight plan's principles carry the fight from where it stands.
        skips Leech Seed` for a `forget` of null, else `T3: Bulbasaur learns Leech Seed over Sunny Day`. Older panels
        leave them off the card, so this line is how the player hears them, and any other answer takes the game off the
        line. The last step's picks are placeholders the search never weighs, so the learn card's own call stands there.
+       Each step's `input.pivots` names the mon to send in at a switch-out's party screen (U-turn, Emergency Exit):
+       name those in the same line, `T4: send Snorlax at the switch-out prompt`, since a panel older than the line's
+       release shows none.
        On a boss fight, the boss-fight plan takes the oracle line before anything else (`references/boss-plan.md`,
        *Take the oracle line*): the plugin forgets `read_job` when it restarts, and the plan file is the record that
        outlives it.
@@ -61,7 +64,7 @@ card and the boss-fight plan's principles carry the fight from where it stands.
    can be won: the card and its fight plan carry the fight from there, and the player plays on. It comes two ways:
    - **At once, from `start_job`, with no job started**, for a fight solving can't take: a Daily, whose seed every
      player shares; a live game version other than the one solving is pinned to, or one its harness hasn't been
-     re-checked on; a Mystery Encounter battle; a double; Safeguard up mid-fight; an item the clone would drop on load;
+     re-checked on; a Mystery Encounter battle; Safeguard up mid-fight; an item the clone would drop on load;
      past the first turn, a live extra the tab couldn't read; or a plugin reading the game over CDP rather than the
      hub.
    - **As a finished solve's answer**, when no search found a win that replayed from the save, or the harness couldn't

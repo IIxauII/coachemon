@@ -56,8 +56,6 @@ export function cause(reason: Reason): string {
       );
     case "mystery_encounter":
       return "the oracle can't replay a Mystery Encounter battle yet.";
-    case "double":
-      return "the oracle can't replay a double battle yet.";
     case "safeguard":
       return "Safeguard is up, and a reload of the fight would lose it.";
     case "dropped_item":

@@ -17,9 +17,10 @@ const learnPick = z.strictObject({
 }) satisfies z.ZodType<LearnPick>;
 
 const learns = z.array(learnPick).min(1).readonly().optional();
-const asked = { replacement: partySlot.optional(), learns };
+const asked = { replacement: partySlot.optional(), learns, pivots: z.array(partySlot).min(1).readonly().optional() };
 
 const field = z.union([z.literal(0), z.literal(1)]);
+const fieldPicks = z.array(z.strictObject({ ...partySlot.shape, field })).min(1).readonly().optional();
 
 const command = z.discriminatedUnion("kind", [
   z.strictObject({
@@ -35,11 +36,12 @@ const double = z
   .strictObject({
     kind: z.literal("double"),
     commands: z.tuple([command.nullable(), command.nullable()]).readonly(),
-    replacements: z.array(z.strictObject({ ...partySlot.shape, field })).min(1).readonly().optional(),
+    replacements: fieldPicks,
     learns,
+    pivots: fieldPicks,
   })
-  .refine(d => d.commands.some(c => c !== null) || d.replacements !== undefined || d.learns !== undefined, {
-    message: "a double turn names a command, a faint replacement or a learn pick",
+  .refine(d => d.commands.some(c => c !== null) || [d.replacements, d.learns, d.pivots].some(a => a !== undefined), {
+    message: "a double turn names a command, a faint replacement, a learn pick or a pivot",
   })
   .refine(
     ({ commands: [a, b] }) => a?.kind !== "switch" || b?.kind !== "switch" || a.to.slot !== b.to.slot,
@@ -55,8 +57,8 @@ export const input = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("switch"), to: partySlot, ...asked }),
   z
     .strictObject({ kind: z.literal("queued"), ...asked })
-    .refine(q => q.replacement !== undefined || q.learns !== undefined, {
-      message: "a turn the game plays for us names a faint replacement, learn picks or both",
+    .refine(q => [q.replacement, q.learns, q.pivots].some(a => a !== undefined), {
+      message: "a turn the game plays for us names a faint replacement, a learn pick or a pivot",
     }),
   double,
 ]) satisfies z.ZodType<Input>;

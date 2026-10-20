@@ -32,6 +32,7 @@ const thenPicked = p => [h("span", { ...ink.ours, margin: "0 3px" }, "then"), ..
 export const drawOracleLine = m => (m?.steps ?? []).map(st => line(MARK[st.at],
   turnOf(st),
   ...act(st.act),
+  ...st.pivots.flatMap(x => [h("span", { ...dim, margin: "0 3px" }, "· send"), mon(x.icon, x.name, ICON.mon), ...forOut(x)]),
   ...st.learns.flatMap(p => [h("span", { ...dim, margin: "0 3px" }, "·"), ...picked(p)]),
   ...st.sends.flatMap(x => [h("span", { ...dim, margin: "0 3px" }, "· send"), mon(x.icon, x.name, ICON.mon), ...forOut(x)]),
   ...(st.at === "later" ? [] : after(st, m.mark))));
@@ -46,10 +47,12 @@ export const drawOracleStep = m => {
     learning ? line("⚔", ...picked(learning), ...after(st, m.mark))
       : picking ? line("⚔", ...sendTo("send", picking), ...after(st, m.mark))
       : line(st.act ? "⚔" : "·", turnOf(st), ...act(st.act), ...after(st, m.mark)),
+    ...(learning || picking ? [] : st.pivots).map(x => line("⤵", ...sendTo("then send", x), h("span", { ...dim, marginLeft: "3px" }, "at the switch-out prompt"))),
     ...toCome.map(p => line("⤵", ...thenPicked(p), h("span", { ...dim, marginLeft: "3px" }, "at the move prompt"))),
     ...sendsToCome(m, st).map(x => line("⤵", ...sendTo("then send", x), h("span", { ...dim, marginLeft: "3px" }, "at the faint prompt"))),
     !picking && !learning && teras(st.act) ? line("·", h("span", dim, "Tera: ← from Fight to the Tera button")) : null,
-    ...oracleLineUnasked(m).map(x => line("·", turnOf(x), ...act(null), ...x.learns.flatMap(thenPicked), ...x.sends.flatMap(y => sendTo("then send", y)),
+    ...oracleLineUnasked(m).map(x => line("·", turnOf(x), ...act(null), ...x.pivots.flatMap(y => sendTo("then send", y)),
+      ...x.learns.flatMap(thenPicked), ...x.sends.flatMap(y => sendTo("then send", y)),
       ...after(x, m.mark))),
   ].filter(Boolean);
 };

@@ -1,4 +1,4 @@
-import { BattleType, GameModes, TrainerVariant } from "../enums/generated.ts";
+import { BattleType, GameModes } from "../enums/generated.ts";
 import { MODIFIER_CLASSES, MODIFIER_TYPE_IDS } from "../enums/modifiers.ts";
 import { readExtras } from "./extras.ts";
 import type { Recheck, SolveInput } from "./input.ts";
@@ -32,11 +32,6 @@ export function refuse(
   if (save.battleType === BattleType.MYSTERY_ENCOUNTER || (save.mysteryEncounterType ?? -1) !== -1) {
     return noAnswer({ code: "mystery_encounter" });
   }
-  // A trainer's `enemyParty` is its whole team, so only the variant tells its double from its single
-  // (game-code.md §28).
-  const double =
-    save.battleType === BattleType.WILD ? save.enemyParty.length > 1 : save.trainer?.variant === TrainerVariant.DOUBLE;
-  if (double) return noAnswer({ code: "double" });
   if (extras) {
     const read = readExtras(save, extras);
     if (read.kind === "missing") return noAnswer({ code: "missing_extras", extras: read.extras });

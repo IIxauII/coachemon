@@ -50,6 +50,7 @@ what was only observed on a tab) is in §22, not in the sections.
 | The session save, and what a reload resets mid-fight | §30 |
 | The randomizer challenges: what they rewrite, and which calls see it | §33 |
 | The classic final boss's second stage and the double it turns into | §34 |
+| A double's skipped commands, and what a reload sends out after a faint | §35 |
 | HUD API built on the above | Recommended API for the HUD |
 
 ---
@@ -3259,3 +3260,40 @@ Eternatus at the classic final boss even on a load (`src/phases/encounter-phase.
 encounter's bar count, `getEncounterBossSegments` (`src/battle-scene.ts:1944-1986`), even in its second form, and puts
 the bar index back at the top of them (`src/field/pokemon.ts:6697-6708`). Its saved `hp` is kept. A second-stage save also loads single
 (§28).
+
+## 35. A double's turn beyond the final boss: skipped commands, and what a reload sends out after a faint
+
+Read at the pinned tag (`v1.12.1.3`), for the solver's harness (`src/solver/harness.test.ts.template`, #792).
+
+**A command the game skips.** `CommandPhase.start` ends at once on a field slot whose turn command is already marked
+`skip` (`src/phases/command-phase.ts:182-185`). Two things mark it before that check. `checkCommander`
+(`:98-110`, called at `:180`): in a double, a mon whose ally holds a `COMMANDED` tag sourced from it gets a `FIGHT` of
+`MoveId.NONE` with `skip`. `handleFieldIndexLogic` (`:75-92`, run for any nonzero field index, so slot 1 in a double,
+`:176-178`): an ally that chose `BALL` or `RUN` gives slot 1 the same command with `skip`; with only one of ours active
+it instead moves the phase to that mon's field index and marks nothing (`:79-83`).
+
+**Commander's animations.** Commander's apply queues `PokemonAnimType.COMMANDER_APPLY` through
+`BattleScene.triggerPokemonBattleAnim` (`src/data/abilities/ab-attrs.ts:2943`, `src/battle-scene.ts:3008-3022`). The
+animation phase reads `getSprite()` off the Tatsugiri (first at `src/phases/pokemon-anim-phase.ts:264`, `frame.name`
+at `:273`), and `COMMANDER_REMOVE` (queued by `CommandedTag.onRemove`, `src/data/battler-tags.ts:2875-2879`) reads it
+off the Tatsugiri through the Dondozo (`pokemon-anim-phase.ts:347-350`); otherwise both only add, tween, hide or show
+and destroy sprites and play sounds (`:252-333`, `:335-394`). Upstream's own Commander test mocks `triggerPokemonBattleAnim` to return `true`, so none plays
+(`test/tests/abilities/commander.test.ts:38`).
+
+**A faint, live.** `FaintPhase` takes the fainted mon off the field with `leaveField()` (`src/phases/faint-phase.ts:225`)
+and, in a trainer or Mystery Encounter battle, pushes a `SwitchSummonPhase` into its field slot only while an able mon
+of the same trainer slot is off the field (`:185-193`). With none, the fainted mon keeps its party slot, and the other foe keeps its own.
+
+**A reload after one.** A wild battle's `EncounterPhase` adds every `enemyParty` entry of a field slot to the field,
+fainted or not (`src/phases/encounter-phase.ts:249-255`), so a fainted wild foe comes back on it. A trainer's queues
+`SummonPhase` for field slot 0, and for slot 1 only with more than one able mon (`:445-450`). `SummonPhase.preSummon`
+swaps a fainted party member, a foe's included, with the first able one after it (`src/phases/summon-phase.ts:37-72`),
+so with the slot 0 foe fainted the trainer's last able mon is sent into slot 0 (centred, `:137-140`), not its own, and
+the fainted mon takes its party index.
+
+**An entry weather or terrain on a reload.** The trainer's summon on a load runs the foe's entry abilities again
+(§30), through `PostSummonActivateAbilityPhase` (`src/phases/post-summon-activate-ability-phase.ts:20`). A weather or
+terrain ability calls `trySetWeather` or `trySetTerrain` with its user (`src/data/abilities/ab-attrs.ts:2597`, `:2617`),
+which refuse only the type already up (`canSetWeather`, `canSetTerrain`, `src/field/arena.ts:245-247`, `:406-408`)
+and give it five turns from a user (`:296-300`, `:426-430`). So a Drizzle whose rain had ended by the save brings it
+back for five turns, where the saved fight had none.

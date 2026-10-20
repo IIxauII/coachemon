@@ -4,7 +4,7 @@ import type { FieldCommand, Input, LearnPick, MonState, OracleLine, PartySlot } 
 
 type PageStep = PageOracleLine["steps"][number];
 
-const slot = (p: PartySlot) => ({ ...p, species: SpeciesId[p.species] });
+const slot = <P extends PartySlot>(p: P) => ({ ...p, species: SpeciesId[p.species] });
 
 const mon = (m: MonState) => ({ ...m, species: SpeciesId[m.species], status: StatusEffect[m.status] });
 
@@ -20,21 +20,23 @@ const command = (c: FieldCommand | null) =>
 
 function input(i: Input): NonNullable<PageStep["input"]> {
   if (i.kind === "double") {
-    const { replacements, learns, commands } = i;
+    const { replacements, learns, pivots, commands } = i;
     return {
       kind: "double",
       commands: [command(commands[0]), command(commands[1])],
-      ...(replacements !== undefined && { replacements: replacements.map(r => ({ ...r, species: SpeciesId[r.species] })) }),
+      ...(pivots !== undefined && { pivots: pivots.map(slot) }),
+      ...(replacements !== undefined && { replacements: replacements.map(slot) }),
       ...(learns !== undefined && { learns: learns.map(pick) }),
     };
   }
-  const { replacement, learns, ...rest } = i;
+  const { replacement, learns, pivots, ...rest } = i;
   const ids =
     rest.kind === "move" ? { ...rest, move: MoveId[rest.move] }
     : rest.kind === "switch" ? { ...rest, to: slot(rest.to) }
     : rest;
   return {
     ...ids,
+    ...(pivots !== undefined && { pivots: pivots.map(slot) }),
     ...(learns !== undefined && { learns: learns.map(pick) }),
     ...(replacement !== undefined && { replacement: slot(replacement) }),
   };
