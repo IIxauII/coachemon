@@ -113,7 +113,8 @@ export const LADDER = {
     deps: [`${H}/battle-message-ui-handler.ts#BattleMessageUiHandler.processInput`],
     note:
       "Frozen here under EncounterPhase, NextEncounterPhase or NewBiomeEncounterPhase is #11's save-failure hang: " +
-      "onActionInput is null, no button does anything, and only the reload remains. That verdict is the stuck detector's (#16), not this table's.",
+      "onActionInput is null, no button does anything, and only the reload remains. " +
+      "That verdict is the stuck detector's (#16), not this table's.",
   },
 
   TITLE: {

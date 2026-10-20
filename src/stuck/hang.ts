@@ -27,7 +27,7 @@ export type HangAssessment =
   | { status: "ok" }
   | { status: "run_interrupted"; cause: "save_hang"; hang: { heldMs: number; corroborated: boolean } };
 
-/** Wave 1's phase and the two subclasses every later wave runs it as (#488, game-code.md §26). */
+/** `EncounterPhase` and the subclasses that inherit its unguarded save (#488, game-code.md §26). */
 const ENCOUNTER_PHASES: ReadonlySet<string | null> = new Set([
   "EncounterPhase",
   "NextEncounterPhase",
