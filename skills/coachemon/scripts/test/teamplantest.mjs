@@ -118,10 +118,10 @@ assert.equal(plan.approxDoubles, false);
   const { scene: s } = run(null);
   const zard = mon("Charizard", 30, ["Fire","Flying"], "Blaze", [96,60,55,80,60,75], [["Flamethrower","Fire",90,"S"]], true);
   s.arena = { weather: { weatherType: 3 } };
-  assert.deepEqual(globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpHealProfile(turn, zard)), { base: -6, sitrus: 0, enigma: 0, enigmas: 0 }, "sandstorm chip in the profile");
+  assert.deepEqual(globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpHealProfile(turn, zard)), { base: -6, pre: -6, sitrus: 0, enigma: 0, enigmas: 0 }, "sandstorm chip in the profile, all of it ahead of the berries");
   // A Sitrus is read at the HP after the chip (game-code.md §21): 38/96, chipped to 32, heals a quarter of max.
   const held = Object.assign(new ({ BerryModifier: class { berryType = 0; getStackCount() { return 1; } } }).BerryModifier(), {});
-  assert.deepEqual(globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpHealProfile(turn, Object.assign(zard, { getHeldItems: () => [held] }))), { base: -6, sitrus: 24, enigma: 0, enigmas: 0 }, "Sitrus after the chip");
+  assert.deepEqual(globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpHealProfile(turn, Object.assign(zard, { getHeldItems: () => [held] }))), { base: -6, pre: -6, sitrus: 24, enigma: 0, enigmas: 0 }, "Sitrus after the chip");
 }
 // Item thieves and wave status tokens carry through the exchange: a long Blastoise–Snorlax fight.
 {
@@ -453,6 +453,31 @@ assert.equal(plan.approxDoubles, false);
   // We move first and fall to its reply: one turn, 200 → 190 → 200 with the berry, then 25 of chip.
   const capped = tpFight({ ...T({ dmg: 10, e: 2 }, { dmg: 1000, e: 1 }, enigma(1, -25)) }, st(), 0, 0, "free");
   assert.equal(capped.ends.loss.fh, 175, "the berry caps at max HP before the chip, not after");
+  // Hail's 12 comes ahead of the berry: 200 → 195 → 183 → 200.
+  const hail = tpFight(T({ dmg: 5, e: 2 }, { dmg: 1000, e: 1 }, { ...enigma(1, -12), pre: -12 }), st(), 0, 0, "free");
+  assert.equal(hail.ends.loss.fh, 200, "the berry heals after the weather chip");
+  // Ours, against a foe that is ×½ on 60 % of its uses and ×2 on the rest, first, before we fell it.
+  const mixed = tpFight({ ...T({ dmg: 1000, e: 1 }, { dmg: 50, e: 0.5, use: [{ r: 0.3, p: 0.6, se: 0 }, { r: 2, p: 0.4, se: 1 }] }, null),
+    first: [[1]], ourHeal: [enigma(1)] }, st(), 0, 0, "free");
+  assert.ok(Math.abs(mixed.ends.win.mh - (0.6 * 385 + 0.4 * 350)) < 1e-9, `the berry pays on the super-effective share alone: ${mixed.ends.win.mh}`);
+}
+// An Unnerve blocks the berry in its own pairing, wherever it stands now (#652).
+{
+  const { sceneTurnEndHp } = globalThis.__hud["10-damage"];
+  const stub = outcomeFrom({ "Bisharp>Iron Head>Garchomp": [[100], 1, 2], "Garchomp>Earthquake>Bisharp": [[10], 1, 1] });
+  const enigma = Object.assign(new ({ BerryModifier: class {} }).BerryModifier(), { berryType: 2, getStackCount: () => 1 });
+  const bisharp = (id, field, extra = {}) => fakeMon("Bisharp", 80, ["Dark", "Steel"], [300, 200, 200, 100, 100, 100], [["Iron Head", "Steel", 80, "P"]], field, undefined, { id, ...extra });
+  const party = [bisharp("Unnerve", true, { hasAbilityWithAttr: a => a === "PreventBerryUseAbAttr" }), bisharp("Plain", false)];
+  const chomp = fakeMon("Garchomp", 80, ["Dragon", "Fairy"], [300, 200, 200, 100, 100, 50], [["Earthquake", "Ground", 100, "P"]], true, undefined,
+    { getHeldItems: () => [enigma], getOpponents: () => [party[0]] });
+  const turn = fakeTurn({ live: true, party, foes: [chomp], outcome: stub, heal: (p, o) => sceneTurnEndHp({ field: [] }, p, o),
+    moves: e => [{ name: "Earthquake", type: "Ground", p: 1, score: 10, targets: [0] }] });
+  const T = globalThis.__tp.tpTables(turn, party, [chomp], false);
+  const fight = mi => globalThis.__tp.tpFight(T, { oh: [300, 300], ob: [0, 0], fh: [300], fs: [0], fb: [0] }, mi, 0, "free");
+  const [blocked, eaten] = [0, 1].map(fight);
+  console.log(`== an Unnerve in its own pairing\nthe Unnerve on the field fells Garchomp in ${blocked.turns} turns, the one on the bench without it in ${eaten.turns}`);
+  assert.equal(T.foeHeal[0].enigma, 75, "the profile keeps the berry an Unnerve on the field would block");
+  assert.ok(eaten.turns > blocked.turns, "the pairing without the Unnerve pays for the berry");
 }
 // The profile's Enigma is the berry's own quarter, whatever heals after it at the turn end.
 {
