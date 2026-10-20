@@ -73,6 +73,43 @@ test("any other phase breaks the hold", () => {
   assert.equal(watch.assess().status, "ok");
 });
 
+for (const phaseName of ["NextEncounterPhase", "NewBiomeEncounterPhase"]) {
+  const laterWave = (t: number): HangPoll => ({ t, mode: 0, phaseName, onActionInput: false });
+
+  test(`a later wave's ${phaseName} holds the signature for the full dwell (#488, game-code.md §26)`, () => {
+    const watch = new HangWatch();
+    for (let t = 0; t <= HANG_DWELL_MS; t += 100) watch.poll(laterWave(t));
+
+    assert.deepEqual(watch.assess(), {
+      status: "run_interrupted",
+      cause: "save_hang",
+      hang: { heldMs: HANG_DWELL_MS, corroborated: false },
+    });
+  });
+
+  test(`a rejection under a later wave's ${phaseName} shortens the dwell (#488)`, () => {
+    const watch = new HangWatch();
+    watch.poll(laterWave(0));
+    watch.unhandledRejection(50);
+    for (let t = 100; t <= HANG_CORROBORATED_MS; t += 100) watch.poll(laterWave(t));
+
+    assert.deepEqual(watch.assess(), {
+      status: "run_interrupted",
+      cause: "save_hang",
+      hang: { heldMs: HANG_CORROBORATED_MS, corroborated: true },
+    });
+  });
+
+  test(`any other phase breaks a ${phaseName} hold`, () => {
+    const watch = new HangWatch();
+    for (let t = 0; t <= 20_000; t += 100) watch.poll(laterWave(t));
+    watch.poll({ t: 20_100, mode: 0, phaseName: "CommandPhase", onActionInput: false });
+    for (let t = 20_200; t <= HANG_DWELL_MS + 100; t += 100) watch.poll(laterWave(t));
+
+    assert.equal(watch.assess().status, "ok");
+  });
+}
+
 test("the hold accumulates across calls: a resume keeps polling the same watch", () => {
   const watch = new HangWatch();
   hold(watch, 0, 15_000);
