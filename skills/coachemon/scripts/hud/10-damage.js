@@ -235,8 +235,8 @@ export const hitOn = (state, dmg) => {
 };
 // `stop`: the branch's use has ended (a revive).
 const branch = (hp, bar, revived, tok, p, stop = false) => ({ hp, bar, revived, tok, p, stop });
-// Pushes what stands onto `out` and returns the probability that goes down. `luck` false (turn-end chip) skips the
-// endure token, Focus Band and Reviver Seed, none of which saves from an indirect KO (game-code.md §21).
+// Pushes what stands onto `out` and returns the probability that goes down. `luck` false: turn-end chip, an indirect
+// KO, so no endure token, Focus Band or Reviver Seed (game-code.md §21).
 const land = (f, b, d, out, luck = true) => {
   const [dealt, bar] = barStep(f, b.hp, b.bar, Math.max(0, d));
   const endure = luck && !b.tok && d >= b.hp ? f.pEndure : 0;

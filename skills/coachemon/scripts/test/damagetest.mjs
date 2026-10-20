@@ -715,7 +715,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
     // 200 → 120 → 100 (the bar) → 20 → down; without bars it would go on the third.
     ["a bar also stops chip", mon("b", { hp: 200, boss: 2, player: false }), sure(0), { turnEnd: -80 }, [0, 0, 0, 1]],
     ["Reviver Seed: a second life at half HP", mon("t", { hp: 100, maxHp: 200, items: [seed] }), sure(100), {}, [0, 1]],
-    // The seed refuses an indirect KO (game-code.md §21): 100 → 40 → chip → down.
+    // game-code.md §21 (#478): 100 → 40 → chip → down.
     ["…but not after turn-end chip", mon("t", { hp: 100, maxHp: 200, items: [seed] }), sure(60), { turnEnd: -50 }, [1]],
     // 100 → revived on 100 → 90 → down.
     ["…a lethal hit still revives with chip on", mon("t", { hp: 100, maxHp: 200, items: [seed] }), sure(100), { turnEnd: -10 }, [0, 1]],
