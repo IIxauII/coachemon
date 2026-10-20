@@ -311,7 +311,6 @@ export const HUD_DEPS = {
   ],
 
   "35-team-plan.js": [
-    `${P}#Pokemon.getMatchupScore`,
     `src/field/trainer.ts#Trainer.getPartyMemberMatchupScores`,
     `src/field/trainer.ts#Trainer.getNextSummonIndex`,
   ],

@@ -1,7 +1,7 @@
 // The boss Weavile outspeeds and KOs all four of ours.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
-import { onGame } from "./game-proto.mjs";
+import { benchMatchupScore, onGame } from "./game-proto.mjs";
 import { fakeTurn } from "./fake-turn.mjs";
 
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
@@ -156,20 +156,9 @@ assert.equal(plan.approxDoubles, false);
 {
   const { tpTables, tpSendScore } = globalThis.__tp;
   const { sceneSendInScore } = globalThis.__hud["20-enemy-ai"];
-  const SPD = 5;
-  const hpRatio = (hp, max) => Math.round(hp / max * 100) / 100;
-  // `Pokemon.getMatchupScore` for a mon off the field (game-code.md §7), its type scores fixed at `typeScore`.
-  function getMatchupScore(o) {
-    const outspeed = this.getStat(SPD) >= o.getStat(SPD);
-    const own = hpRatio(this.hp, this.getMaxHp());
-    let hpDiffRatio = own + (1 - hpRatio(o.hp, o.getMaxHp()));
-    if (outspeed) hpDiffRatio *= 1.25;
-    else if (own > 0.2 && own <= 0.4) hpDiffRatio *= 0.5;
-    return this.typeScore * Math.min(hpDiffRatio, 1);
-  }
   const me = mon("Blastoise", 100, ["Water"], "Torrent", [200,200,260,230,270,180], [["Hydro Pump","Water",110,"S"]], true);
   const foe = (name, spe, hp) => Object.assign(mon(name, 100, ["Normal"], "x", [300,200,200,200,200,spe], [["Tackle","Normal",40,"P"]], false, hp),
-    { typeScore: 2.5, getMatchupScore });
+    { typeScore: 2.5, getMatchupScore: benchMatchupScore });
   const foes = [foe("Slow30", 120, 90), foe("Fast30", 240, 90), foe("Slow60", 120, 180), foe("Slow15", 120, 45)];
   const turn = fakeTurn({ party: [me], foes, sendIn: (f, p) => sceneSendInScore(null, f, p) });
   const T = tpTables(turn, [me], foes);

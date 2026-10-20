@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { fakeTurn } from "./fake-turn.mjs";
+import { benchMatchupScore } from "./game-proto.mjs";
 
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
@@ -1362,17 +1363,7 @@ Object.assign(TABLE, {
   // The lock carries onto the mon the game sends in at the HPs on the field (#464): Clefable's type scores beat
   // Snorlax's, but at 30 % HP and slower than our full-HP Dragonite its score is halved below Snorlax's.
   {
-    const SPD = 5;
-    const hpRatio = (hp, max) => Math.round(hp / max * 100) / 100;
-    // `Pokemon.getMatchupScore` for a mon off the field (game-code.md §7), its type scores fixed at `typeScore`.
-    function getMatchupScore(o) {
-      const own = hpRatio(this.hp, this.getMaxHp());
-      let hpDiffRatio = own + (1 - hpRatio(o.hp, o.getMaxHp()));
-      if (this.getStat(SPD) >= o.getStat(SPD)) hpDiffRatio *= 1.25;
-      else if (own > 0.2 && own <= 0.4) hpDiffRatio *= 0.5;
-      return this.typeScore * Math.min(hpDiffRatio, 1);
-    }
-    const scored = (name, hp, typeScore) => mon(name, 80, ["Normal"], [500, 100, 100, 100, 100, 50], [["Tackle", "Normal", 40, "P"]], false, hp, { typeScore, getMatchupScore });
+    const scored = (name, hp, typeScore) => mon(name, 80, ["Normal"], [500, 100, 100, 100, 100, 50], [["Tackle", "Normal", 40, "P"]], false, hp, { typeScore, getMatchupScore: benchMatchupScore });
     const me = dragonite([outrage]);
     const foes = [gyarados(), scored("Clefable", 150, 5), scored("Snorlax", 500, 2)];
     const { scene: s } = render({ party: [me], foes, live: true, switches: () => new Map(), stubOutcome: locks });
