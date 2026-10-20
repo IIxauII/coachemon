@@ -108,6 +108,26 @@ Fight plan winnable
 ➜ 1. Gyarados Water Waterfall → Coalossal KO · 100% left
 ➜ 2. Gyarados Water Waterfall → Centiskorch KO · 86% left
 summary trainer | Gyarados Waterfall → Coalossal · 2 hits | plan: winnable · Gyarados
+queued during prediction: 0; queueMessage restored: true
+== w180
+⌃ {Hide the drawer} × {Close}
+trainer 🎯 W89 · Tester Leavanny › Gyarados Leavanny Leaf Storm → Coalossal · 2 hits
+⚔ Leavanny Grass Leaf Storm → Coalossal 2 hits
+we're weak to Rock ×2
+foes weak to: Grass ×5
+Coalossal Coalossal L179 Rock TERA 92% ▲ Water Grass ↯ Fire Burn Up → Leavanny fails · moves after
+Tyranitar Tyranitar L169 Rock Dark 100% ▲ Bug Water Grass ↯ Dark Crunch → Gyarados moves after ➜ Gyarados Water Hydro Pump ~54% · 2 hits later
+Stonjourner Stonjourner L172 Rock 100% ▲ Water Grass ↯ Normal Body Slam → Gyarados moves after ➜ Gyarados Water Hydro Pump ~100% · 1 hit later
+Barbaracle Barbaracle L172 Rock Water 100% ▲ Grass ×4 ↯ Rock Stone Edge → Leavanny moves after ➜ Leavanny Grass Leaf Storm ~100% · 1 hit later
+Carracosta Carracosta L169 Water Rock 100% ✦ Solid Rock ▲ Grass ↯ Rock Rock Slide → Leavanny moves after ➜ Leavanny Grass Leaf Storm ~100% · 1 hit later
+winnable · Leavanny
+Fight plan winnable
+➜ 1. Leavanny Grass Leaf Storm → Coalossal KO · 77% left
+➜ 2. Leavanny Grass Leaf Storm → Tyranitar KO · 7% left
+➜ 3. Leavanny Grass Leaf Storm → Stonjourner KO · 7% left
+➜ 4. Leavanny Grass Leaf Storm → Barbaracle KO · 7% left
+➜ 5. Leavanny Grass Leaf Storm → Carracosta KO · 7% left
+summary trainer | Leavanny Leaf Storm → Coalossal · 2 hits | plan: winnable · Leavanny
 == trap
 ⌃ {Hide the drawer} × {Close}
 easy 🎯 W89 Charizard Flamethrower → Swinub · 1 hit
