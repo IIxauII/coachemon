@@ -561,7 +561,7 @@ const learnPlan = (pk, mv, { double: flag = false, party = [pk], roster = null }
   let compare = -1;
   moves.forEach((m, i) => { if (m.value !== null && (compare < 0 || gainOf(m) > gainOf(moves[compare]))) compare = i; });
   // Not `current`: under Transform the game asks on the copied moveset but forgets from the mon's own (game-code.md §17).
-  const free = (pk.getMoveset?.() ?? pk.moveset ?? []).filter(Boolean).length < 4;
+  const free = (pk.getMoveset?.() ?? pk.moveset ?? []).length < 4;
   const against = free || compare < 0 ? current : current.filter((_, j) => j !== compare);
   const incoming = info(pk, mv, moveScore(pk, mv, against, double, ctx));
   // `statusScore` has already noted the boost: this is only for the verdict line.

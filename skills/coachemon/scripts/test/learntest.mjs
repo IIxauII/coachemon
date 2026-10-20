@@ -35,7 +35,6 @@ const mon = (name, types, atk, spa, moves, extra = {}) => ({
   ...(extra.transformed && { getMoveset: () => extra.transformed.map(pokemonMove) }),
 });
 
-// Too weak to keep, this is the slot a 3-move case drops, so the new move is weighed against the three it was written with.
 const FILLER = ["Constrict","Normal",10,"P"];
 
 const run = (pk, newMove, { double = false, party = [pk], roster = null } = {}) => {

@@ -2083,7 +2083,9 @@ the prompt's closures until `forgetMoveProcess` opens the summary screen in `LEA
 **Answering it.** `start` ends at once on a move the mon already knows, Sketch excepted, or one unimplemented
 (`src/phases/learn-move-phase.ts:48-57`), and learns into the next slot unasked while the mon knows fewer than four
 (`:62-63`). Both checks read `getMoveset()`, which is the Transform or Mimic moveset in `summonData` while one is set
-(`src/field/pokemon.ts:1882`); `setMove` writes the new move into both (`:2016-2018`). The phase stays current after
+(`src/field/pokemon.ts:1882`); `setMove` writes the new move into both (`:2016-2018`). The summary screen lists the
+mon's own `moveset`, not `getMoveset()` (`src/ui/handlers/summary-ui-handler.ts:1319-1321`), so a transformed mon is
+asked on the copied moveset and picks the move to forget from its own. The phase stays current after
 the move is taken: `learnMove` calls `setMove` before its "learned" message and ends only once that message is
 dismissed (`src/phases/learn-move-phase.ts:211-229`). A decline likewise ends only after its "did not learn" message
 (`:156-157`, `:166-167`), and nothing the overlay can read marks that message as a decline (#808). The phase writes
