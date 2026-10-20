@@ -140,7 +140,10 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
   if (live && outs.some(o => o.live)) {
     // This turn's pick comes before every predicted Tera, and a benched foe's first before its own (game-code.md §7).
     const now = !next && !!foe.isOnField?.();
-    const rows = replayMoves(turn, foe, me, outs, { preTera: now ? "command" : turn.teraLater(foe) ? "entry" : null }, now);
+    // Any other pick is read on the turn it is for, and so are the outcomes it is priced with.
+    const at = now ? turn : useTurns(turn, foe, next).first;
+    if (at !== turn) outs = planOutcomes(at, foe, me);
+    const rows = replayMoves(at, foe, me, outs, { preTera: now ? "command" : turn.teraLater(foe) ? "entry" : null }, now);
     if (rows) return rows;
   }
   const pool = outs.filter(o => o.expected > 0).sort((a, b) => b.expected - a.expected);
@@ -172,11 +175,31 @@ const replayMoves = (turn, foe, me, outs, opts, now = false) => {
 };
 // A damaging move the AI names with no outcome behind it goes off and fails: the AI skips the move's own condition
 // (game-code.md §6), and a Tera can turn it against the user (#648). Only this turn's pick (`now`) is judged on the
-// state now; a later one only on what the foe's Tera does, which lasts.
+// state now. A later one is judged on what the foe's Tera does, which lasts, and on a first-turn-only move's condition,
+// which `turn` is already the turn of (`useTurns`).
 const withFails = (turn, foe, me, now, rows) => {
   let failing = null;
-  const fails = name => (failing ??= now ? turn.failing(foe, me) : turn.teraFailing(foe, me)).includes(name);
+  const later = () => [...turn.teraFailing(foe, me), ...turn.failing(foe, me).filter(n => isOnce(foe.moveset.find(pm => pm?.getName() === n)))];
+  const fails = name => (failing ??= now ? turn.failing(foe, me) : later()).includes(name);
   return rows.map(r => (!r.o && fails(r.name) ? { ...r, fails: true } : r));
+};
+
+// Fake Out and First Impression: they work only on the user's first turn on the field (game-code.md §5).
+const isOnce = pm => !!pm && !!moveTraits(pm.getMove()).once;
+// The turn a pick of `foe`'s is for, told apart only where a first-turn-only move reads it (#824): `entry`, its first
+// on the field, which a switch-in starts afresh whatever a benched mon's stale `summonData` says, and `later`, any turn
+// after that (game-code.md §6). Otherwise `turn` itself.
+const turnFor = (turn, foe, when) => {
+  const n = foe.summonData?.waveTurnCount;
+  if (!turn.live || n == null || (when === "entry" ? n === 1 : n !== 1) || !(foe.moveset ?? []).some(isOnce)) return turn;
+  const at = when === "entry" ? 1 : 2;
+  return turn.memo(`waveTurn:${foe.id}:${at}`, () => turn.assuming([{ mon: foe, waveTurnCount: at }]));
+};
+// The turns `foe`'s next use (`first`) and the uses after it (`later`) are picked on. This turn's own pick, with `next`
+// false, is `turn`'s.
+const useTurns = (turn, foe, next) => {
+  const later = turnFor(turn, foe, "later");
+  return { first: foe.isOnField?.() ? (next ? later : turn) : turnFor(turn, foe, "entry"), later };
 };
 
 // A foe's lock still running: `left` uses, its queued one included (game-code.md §5).
@@ -251,16 +274,20 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
   const spent = entered && lockedRow ? 1 : 0;
   // The foe's use, from now, its own pick takes over on (game-code.md §5).
   const ownFrom = lockedRow ? (immune ? 1 : lock.left) - spent : null;
-  const ownMoves = ownFrom != null && live ? replayMoves(turn, foe, me, outs, { afterLock: true }) : null;
+  const at = useTurns(turn, foe, next);
+  const outsOn = t => (t === turn ? outs : planOutcomes(t, foe, me));
+  const ownAt = ownFrom > 0 ? at.later : at.first;
+  const ownMoves = ownFrom != null && live ? replayMoves(ownAt, foe, me, outsOn(ownAt), { afterLock: true }) : null;
   if (ownMoves && ownFrom <= 0) moves = ownMoves;
   const { expected, use } = landing(foe, moves, m => m.p, next);
   const own = ownMoves && ownFrom > 0 ? landing(foe, ownMoves, m => m.p, next) : null;
-  // A benched foe's picks after its first are made at the Tera it takes then (game-code.md §7).
-  const teraPicks = live && turn.teraLater(foe) ? replayMoves(turn, foe, me, outs) : null;
+  // A benched foe's picks after its first are made at the Tera it takes then (game-code.md §7), and a first-turn-only
+  // move's on a turn past its first (#824).
+  const laterPicks = live && (turn.teraLater(foe) || at.later !== at.first) ? replayMoves(at.later, foe, me, outsOn(at.later)) : null;
   // `later`: the uses after this one, where a re-drawn target (`likelyMoves`) lands on `me` otherwise, the next is the
-  // foe's own pick, or the foe has Tera'd since; null where none.
+  // foe's own pick, the foe has Tera'd since, or its first turn on the field is behind it; null where none.
   const later = own && ownFrom === 1 ? own
-    : teraPicks ? landing(foe, teraPicks, m => m.p, next)
+    : laterPicks ? landing(foe, laterPicks, m => m.p, next)
     : moves.some(m => m.pLater != null) ? landing(foe, moves, m => m.pLater ?? m.p, next) : null;
   const lockRule = { relock: false, immune };
   const steps = lockedRow ? lockSteps([{ s: lockState(lock.left, 0), p: 1 }], lockRule) : null;
