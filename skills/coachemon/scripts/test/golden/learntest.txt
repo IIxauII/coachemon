@@ -44,6 +44,15 @@ Moves
 · Bug Pin Missile 3.1 hits · SE on Psychic/Dark power 93
 Team
 team: +SE Normal/Ice
+== Mew (transformed) ← Aura Sphere
+🎓 Mew learns Mew Atk 100 / SpA 100 Learn → forget Pound
+✓ Fighting Aura Sphere SE on Normal/Rock/Steel… · set move (Fast Bulky Setup) power 125 +83 power
+Moves
+✗ Normal Pound neutral on Psychic/Dark power 42
+· Psychic Psychic SE on Fighting/Poison · set move (Fast Bulky Setup) power 211
+· Normal Transform status
+Team
+team: +SE Normal/Rock/Steel…
 == Cloyster (Skill Link) ← Triple Axel
 🎓 Cloyster learns Cloyster Atk 140 / SpA 90 Learn → forget Constrict
 ✓ Ice Triple Axel 2.7 hits · 2nd Ice move power 122 +114 power

@@ -25,19 +25,21 @@ const mv = ([n, t, p, c, a = 100, attrs = [], charge = false, target = 3, extra 
 });
 // 07-move-traits reads these abilities by attribute, not by name.
 const AB_ATTRS = { "Skill Link": ["MaxMultiHitAbAttr"], "Magic Guard": ["BlockNonDirectDamageAbAttr"], "Rock Head": ["BlockRecoilDamageAttr"], "Parental Bond": ["AddSecondStrikeAbAttr"] };
+const pokemonMove = m => ({ getMove: () => mv(m), getName: () => m[0], getMovePp: () => 10, ppUsed: 0 });
+// `transformed`: the moveset Transform copied, which `getMoveset` answers with (game-code.md §17).
 const mon = (name, types, atk, spa, moves, extra = {}) => ({
   name, level: 64, hp: 100, getMaxHp: () => 100, getTypes: () => types.map(t => TY.indexOf(t)), getAbility: () => ({ name: extra.ability ?? "x" }),
   hasAbilityWithAttr: a => (AB_ATTRS[extra.ability] ?? []).includes(a), getAbilityAttrs: a => extra.abAttrs?.[a] ?? [], getHeldItems: () => [],
   getStat: i => ({ 1: atk, 3: spa }[i] ?? 100), getIconAtlasKey: () => "k", getIconId: () => 1, friendship: 70,
-  moveset: moves.map(m => ({ getMove: () => mv(m), getName: () => m[0], getMovePp: () => 10, ppUsed: 0 })),
+  moveset: moves.map(pokemonMove),
+  ...(extra.transformed && { getMoveset: () => extra.transformed.map(pokemonMove) }),
 });
 
-// The learn screen opens only on a full moveset (game-code.md §17). Too weak to keep, this is the slot a 3-move case
-// drops, so the new move is weighed against the three it was written with.
+// Too weak to keep, this is the slot a 3-move case drops, so the new move is weighed against the three it was written with.
 const FILLER = ["Constrict","Normal",10,"P"];
 
 const run = (pk, newMove, { double = false, party = [pk], roster = null } = {}) => {
-  assert.equal(pk.moveset.length, 4, `${pk.name}: the learn screen opens only on a full moveset`);
+  assert.equal((pk.getMoveset?.() ?? pk.moveset).length, 4, `${pk.name}: the learn screen opens only on a full moveset (game-code.md §17)`);
   let el; const ds = {};
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const scene = { currentBattle: { double }, ui: { mode: 9, getHandler: () => ({ summaryUiMode: 1, pokemon: pk, newMove: mv(newMove) }) }, getEnemyParty: () => [], getPlayerParty: () => party };
@@ -88,6 +90,17 @@ for (const [label, pk, newMove, double] of cases) {
   assert.equal(r.model.forget, r.model.moves.findIndex(m => m.name === "Tackle"), "Double Kick replaces Tackle");
   assert.equal(byName(r.model, "Pin Missile").hits, 3.1, "2–5 hits average 3.1");
   assert.ok(byName(r.model, "Pin Missile").value > byName(r.model, "Tackle").value, "Pin Missile outscores Tackle");
+}
+
+// ---- Transformed into a foe with four moves, a mon that knows three is asked which to forget, from its own three.
+{
+  const foe = [["Body Slam","Normal",85,"P"],["Earthquake","Ground",100,"P",100,[],false,4],["Crunch","Dark",80,"P"],["Ice Punch","Ice",75,"P"]];
+  const mew = mon("Mew", ["Psychic"], 100, 100, [["Pound","Normal",40,"P"],["Psychic","Psychic",90,"S"],["Transform","Normal",-1,"X",-1]], { transformed: foe });
+  const r = run(mew, ["Aura Sphere","Fighting",80,"S"]);
+  show("Mew (transformed) ← Aura Sphere", r);
+  assert.notEqual(r.model.decision, "free", "the game asks which move to forget");
+  assert.deepEqual(r.model.moves.map(m => m.name), ["Pound", "Psychic", "Transform"], "the card judges the moves the summary screen lists");
+  assert.equal(r.model.verdict, "Learn → forget Pound");
 }
 
 // ---- Technician + Skill Link, and Triple Axel's growing hits with per-hit accuracy.
