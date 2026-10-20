@@ -13,7 +13,7 @@ Fight plan likely lost
 ➜ 1. Metagross ⇄ Steel Meteor Mash → Weavile switch in, takes a hit · falls · foe at 89%
 ➜ 2. Morpeko free Electric Aura Wheel → Weavile falls · foe at 69%
 ➜ 3. Scrafty free Fighting High Jump Kick → Weavile falls · foe at 68%
-≈ prefers: let Scrafty fall → Metagross in free (+28)
+≈ prefers: let Scrafty fall → Metagross in free (+55)
 ⚠ likely lost: nobody KOs Weavile 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Scrafty, Metagross
 == cyrus, no Metagross (live)
 ⇄ Gyarados → Weavile switches — moves aimed at it

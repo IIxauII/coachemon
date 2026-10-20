@@ -308,6 +308,49 @@ assert.equal(plan.approxDoubles, false);
   };
   const stub = outcomeFrom(W145);
   const w145 = (name, ...rest) => fakeMon(name, 80, ...rest);
+  const planOf = (party, foes, double = false) => {
+    for (const f of foes) f.getOpponents = () => party.filter(p => p.isOnField());
+    const turn = fakeTurn({
+      live: true, wave: 145, turn: 9, party, foes, double,
+      trainer: { getName: () => "Ivy", config: { isBoss: false }, isDouble: () => false },
+      outcome: stub,
+      moves: e => [{ name: e.moveset[0].getName(), type: TY[e.moveset[0].getMove().type], p: 1, score: 10, targets: [0] }],
+    });
+    const planner = globalThis.__hud["35-team-plan"].teamPlanner(turn);
+    return { plan: planner.view(null), freeEntry: planner.after(null)?.freeEntry ?? null, planner };
+  };
+  const breloom = () => w145("Breloom", ["Grass","Fighting"], [240,230,120,100,120,130], [["Drain Punch","Fighting",75,"P"]], true, 93);
+  const rayquaza = () => w145("Rayquaza", ["Dragon","Flying"], [350,250,120,250,120,200], [["Outrage","Dragon",120,"P"]], true);
+  const ninjask = () => w145("Ninjask", ["Bug","Flying"], [220,150,90,50,90,260], [["X-Scissor","Bug",80,"P"]], false);
+  const sentOn = (party, foes) => planOf(party, foes).plan.steps.map(x => x.send.name);
+  Object.assign(W145, {
+    "Ninjask>X-Scissor>Rayquaza": [[12], 1, 1], "Rayquaza>Outrage>Ninjask": [[400], 1, 1],
+    "Haxorus>Dragon Rush>Rayquaza": [[420], 0.75, 2], "Rayquaza>Outrage>Haxorus": [[400], 1, 2],
+    "Granbull>Earthquake>Rayquaza": [[0], 1, 0], "Rayquaza>Outrage>Granbull": [[0], 1, 0],
+  });
+  // A free entry that more often falls than wins still takes it when its win is worth more than a chip (#651).
+  {
+    const haxorus = w145("Haxorus", ["Dragon"], [260,250,120,100,120,200], [["Dragon Rush","Dragon",100,"P"]], false);
+    const order = sentOn([breloom(), ninjask(), haxorus], [rayquaza()]);
+    console.log(`== a free entry that more often falls than wins (#651): ${order.join(" → ")}`);
+    assert.deepEqual(order.slice(0, 2), ["Breloom", "Haxorus"], order.join(" → "));
+  }
+  // A free entry that walls the foe for good is not dropped for one that chips it and falls (#651).
+  {
+    const granbull = w145("Granbull", ["Fairy"], [290,200,150,100,120,90], [["Earthquake","Ground",100,"P"]], false);
+    // Breloom stays, as the ⚔ line has it: switching Granbull straight in is the other way to wall it.
+    const order = planOf([breloom(), ninjask(), granbull], [rayquaza()]).planner.at({ mi: 0 }).steps.map(x => ["Breloom", "Ninjask", "Granbull"][x.mi]);
+    console.log(`== a free entry that walls the foe (#651): ${order.join(" → ")}`);
+    assert.deepEqual(order.slice(0, 2), ["Breloom", "Granbull"], order.join(" → "));
+  }
+  // In a double with one slot open, a bench mon that can't hurt the foe still fills it (#651).
+  {
+    const granbull = w145("Granbull", ["Fairy"], [290,200,150,100,120,90], [["Earthquake","Ground",100,"P"]], false);
+    const { plan } = planOf([breloom(), granbull], [rayquaza()], true);
+    const order = plan.steps.map(x => `${x.send.name} ${x.entry}`);
+    console.log(`== an open slot in a double (#651): ${order.join(" → ")}`);
+    assert.equal(order[0], "Granbull free", order.join(" → "));
+  }
   const planFor = withPidgeot => {
     const party = [
       w145("Breloom", ["Grass","Fighting"], [240,230,120,100,120,130], [["Drain Punch","Fighting",75,"P"]], true, 93),
@@ -319,15 +362,7 @@ assert.equal(plan.approxDoubles, false);
       w145("Rayquaza", ["Dragon","Flying"], [350,250,120,250,120,200], [["Outrage","Dragon",120,"P"]], true),
       ...(withPidgeot ? [w145("Pidgeot", ["Normal","Flying"], [220,140,110,130,110,190], [["Air Slash","Flying",75,"S"]], false)] : []),
     ];
-    for (const f of foes) f.getOpponents = () => party.filter(p => p.isOnField());
-    const turn = fakeTurn({
-      live: true, wave: 145, turn: 9, party, foes,
-      trainer: { getName: () => "Ivy", config: { isBoss: false }, isDouble: () => false },
-      outcome: stub,
-      moves: e => [{ name: e.moveset[0].getName(), type: TY[e.moveset[0].getMove().type], p: 1, score: 10, targets: [0] }],
-    });
-    const planner = globalThis.__hud["35-team-plan"].teamPlanner(turn);
-    return { plan: planner.view(null), freeEntry: planner.after(null)?.freeEntry ?? null };
+    return planOf(party, foes);
   };
   for (const withPidgeot of [false, true]) {
     const { plan, freeEntry } = planFor(withPidgeot);
@@ -342,10 +377,7 @@ assert.equal(plan.approxDoubles, false);
     assert.equal(freeEntry?.in.name, "Raichu", `the ⤵ line names it too ${where}`);
     assert.deepEqual(plan.sacrifice.map(x => `${x.name} → ${x.frees.name}`).slice(0, 1), ["Breloom → Raichu"],
       `the card's sacrifice line follows the plan ${where}`);
-    // Raichu is spent on the first free entry, so neither of the two that never act goes in ahead of it.
-    const acted = plan.steps.findIndex(x => x.send.name === "Raichu");
-    assert.ok(!plan.steps.slice(0, acted).some(x => ["Tentacruel", "Crawdaunt"].includes(x.send.name)),
-      `nothing is spent for nothing before Raichu acts ${where}: ${JSON.stringify(plan.steps.map(x => x.send.name))}`);
+    assert.deepEqual(plan.steps.map(x => x.send.name), ["Breloom", "Raichu", "Tentacruel", "Crawdaunt"], `nothing is spent for nothing before Raichu acts ${where}`);
   }
 }
 console.log("ok");
