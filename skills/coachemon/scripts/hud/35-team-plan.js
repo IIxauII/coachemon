@@ -149,7 +149,7 @@ const tpHealAfterSteal = (turn, me, f, pick) => {
   const gone = types.map(b => tpHealProfile(turn, lessBerry(f, b)));
   const q = Math.max(0, Math.min(1, pick.acc ?? 1));
   const mix = k => kept[k] * (1 - q) + (q * gone.reduce((t, prof) => t + prof[k], 0)) / gone.length;
-  return { base: mix("base"), pre: mix("pre"), sitrus: mix("sitrus"), enigma: mix("enigma"), enigmas: mix("enigmas") };
+  return Object.fromEntries(Object.keys(kept).map(k => [k, mix(k)]));
 };
 
 // `facing`: the foe the first exchange is against, the only one a pinned move's own order is read for.

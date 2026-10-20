@@ -845,7 +845,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     const rest = first !== mine ? useOf(mine) : null;
     qWe = nowUse ? (first.pKo ?? 0) * now : 0;
     const curve = koCurve(turn.mon(foe), useOf(first), {
-      scale, turnEnd: heal, beforeBerry: course.pre + (t?.drain ?? 0), cat: mine.cat,
+      scale, turnEnd: heal, beforeBerry: withDrain(course.pre, t?.drain ?? 0), cat: mine.cat,
       se: unnervedBy(turn, foe, me) ? null : i => (((i ? mine : first).e ?? 1) >= 2 ? 1 : 0),
       act: i => (i === 0 && nowUse ? now : steady * (acts ? acts.act(i + 1) : 1)),
       firstKo: exact && nowUse ? qWe : null, start: after?.foe, chain: ourLock ? OUR_CHAIN : null,

@@ -1534,8 +1534,8 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
   console.log(`depth 2: the follow-up leaves us ${chained.carried} HP (${chained.forgotten} if turn 1's steal were forgotten)`);
   assert.ok(chained.carried < chained.forgotten, `forgetting turn 1's steal would pay the follow-up for the same berry twice (${chained.carried} vs ${chained.forgotten})`);
 
-  // Scar: the steal's heal is a function of the turn, and adding it to the turn end's part ahead of the berries made a
-  // string of it, so a thief whose own Enigma a super-effective hit fed lost that turn's whole turn end (#652).
+  // The steal's heal is a function of the turn, and adding it to the turn end's part ahead of the berries made a string
+  // of it, so a thief whose own Enigma a super-effective hit fed lost that turn's whole turn end (#646, #652).
   const fedThief = move => {
     const se = TABLE["Shuckle>Brine>Beedrill"];
     TABLE["Shuckle>Brine>Beedrill"] = [[120], 1, 2];
