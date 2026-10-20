@@ -100,8 +100,8 @@ async function chooseOption(game: GameManager): Promise<boolean> {
   return false;
 }
 
-// `select` refuses a move with no PP left, and an encounter can spend it between heals: Part-Timer left Splash on 2
-// at wave 82, and the walk stopped at 85 (#778). The PP is reset on the moveset `select` reads.
+// `select` refuses a move out of PP, and Part-Timer leaves every move on 2 until the next heal, so the walk ran dry
+// (#778, game-code.md §12, §13).
 function splash(game: GameManager, slot: BattlerIndex.PLAYER | BattlerIndex.PLAYER_2) {
   for (const move of game.scene.getPlayerField()[slot].getMoveset()) {
     if (move.moveId === MoveId.SPLASH) {
