@@ -878,15 +878,13 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     const last = entering ? null : lastMoveOf(me);
     const cost = o => -(o.benefit ?? 0) * AI_POINT - (last != null && o.pm?.moveId === last ? KEEP_BONUS : 0);
     const feed = f => feedCost(f, party.length - 1);
-    // What a move costs us in turns: its own pace, plus — for the share of the time our mon falls with the move never
-    // off — the foe's whole bar at `FOE_BAR`, left standing for the rest of the team (#650). A race the move never
-    // lives to run earns nothing for the KO turn it was running for. The penalty is the same wherever a mon aims, as a
-    // field threat must be (CONTEXT.md, `Field threat`): what separates its targets is still their own pace.
-    const spentOn = x => x.eTurnsWe + (1 - (x.pActs ?? 1)) * FOE_BAR;
+    // The foe's whole bar left to the rest of the team, for the share of the time our mon falls before landing a hit:
+    // every scorer below pays it, or the one that skips it wins a lost race (#650).
+    const unlanded = never => never * FOE_BAR;
     const one = (o, fi) => {
       const x = trade(o, active[fi]);
       const turns = x.turnsWe + lost;
-      const score = lasts - spentOn(x) - lost + (x.pWeKoFirst - x.pTheyKoFirst) - (x.cost ?? 0) - cost(o) - feed(active[fi]) * x.pTheyKoFirst;
+      const score = lasts - x.eTurnsWe - unlanded(1 - x.pActs) - lost + (x.pWeKoFirst - x.pTheyKoFirst) - (x.cost ?? 0) - cost(o) - feed(active[fi]) * x.pTheyKoFirst;
       return { me, move: o, target: fi, turns, hits: x.turnsWe, score, hp, trade: x };
     };
     // The redirect (CONTEXT.md, `Spare hit`; game-code.md §18): `redirScore` is what the hit is worth on the survivor,
@@ -923,7 +921,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
         const eTurns = 1 + (1 - t1.we) * x2.eTurnsWe;
         const edge = t1.we + standing * x2.pWeKoFirst - (t1.they + standing * x2.pTheyKoFirst);
         const spent = Math.min(1, (o.self ?? 0) / (me.getMaxHp?.() || hp)) + (x2.cost ?? 0);
-        return lasts - eTurns - lost + edge - spent - cost(o) - feed(f) * (t1.they + standing * x2.pTheyKoFirst);
+        return lasts - eTurns - unlanded(1 - x.trade.pActs) - lost + edge - spent - cost(o) - feed(f) * (t1.they + standing * x2.pTheyKoFirst);
       };
       const score = scoreOf(best);
       const { y, x2 } = best;
@@ -943,7 +941,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const hits = Math.max(...hit.map(({ x }) => x.turnsWe));
       if (hits + lost >= 9) return null;
       const edge = Math.min(...xs.flatMap((x, i) => (x ? [x.pWeKoFirst - x.pTheyKoFirst - (x.cost ?? 0) - feed(active[i]) * x.pTheyKoFirst] : [])));
-      const slow = Math.max(...hit.map(({ x }) => x.eTurnsWe));
+      const slow = Math.max(...hit.map(({ x }) => x.eTurnsWe + unlanded(1 - x.pActs)));
       const rep = hit[0].o;
       const both0 = hit.length > 1 ? { ...rep, benefit: Math.max(...hit.map(({ o }) => o.benefit ?? 0)) } : rep;
       return { me, move: rep, target: "both", turns: hits + lost, hits, each,
@@ -1013,7 +1011,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const missed = landed && w < 1 ? follow(null) : null;
       if (!landed || (w < 1 && !missed)) return null;
       const mix = k => w * landed.x2[k] + (missed ? (1 - w) * missed.x2[k] : 0);
-      const eTurns = 1 + mix("eTurnsWe");
+      const eTurns = 1 + mix("eTurnsWe") + unlanded(they + standing * (1 - mix("pActs")));
       const edge = standing * (mix("pWeKoFirst") - mix("pTheyKoFirst")) - they - feed(f) * (they + standing * mix("pTheyKoFirst"));
       const spent = (play.hpCost ?? 0) / maxHp + mix("cost");
       const bonus = play.kind === "hazard" ? play.value * works : 0;
@@ -1606,8 +1604,6 @@ const STATUS_COST = 0.2;
 const STATUS_CANDS = 2;
 // Turns of ours a whole HP bar of a mon still to come is worth.
 const HAZARD_TURNS = 2;
-// Turns of ours a whole bar of the foe in front of us is worth: what a mon that falls without ever landing a move
-// leaves for the rest of the team to pay (#650). Twice a bar still on the bench — this one is already swinging.
 const FOE_BAR = 2 * HAZARD_TURNS;
 const FEED_COST = 0.5;
 
