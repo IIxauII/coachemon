@@ -282,7 +282,7 @@ Fight plan steps approximate winnable
 ➜ 2.~ Lucario Fighting Aura Sphere → Snorlax KO · 32% left
 == doubles protect (live)
 ⚔ Garchomp Dragon Dragon Claw → Hydreigon 1 hit
-⚔ Lucario 💀 Dark 100% {Hydreigon's Dark Pulse: ~100% of current HP, before it can act} Normal Protect Garchomp KOs Hydreigon first
+⚔ Lucario Normal Protect Garchomp KOs Hydreigon first
 foes weak to: Fighting ×2 Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon ↯ Dark Dark Pulse → Garchomp 0% likely · moves after
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
