@@ -8,7 +8,6 @@ import { slowWorkersNote, solve, type SolveDeps, type SolveInput, type SolveResu
 
 export const SOLVE_JOB = "solve";
 
-/** Anything but an oracle line, a no answer included, reads as the solve answered it. */
 export const shortSolve: Shorten = result => {
   const solved = result as SolveResult | null;
   return solved?.kind === "oracle_line" ? shortOracleLine(solved.oracleLine) : result;
