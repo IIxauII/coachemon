@@ -42,14 +42,19 @@ export type Input =
    * that asks for neither is a step with no input (#702, #673).
    */
   | ({ kind: "queued" } & Asked)
-  /** Every turn that starts with the battle double, as the final boss's second stage is (#788). */
+  /** Every turn that starts with the battle double: a trainer double, a wild wave of two, the final boss's second stage (#788, #792). */
   | {
       kind: "double";
-      /** By field slot. null: that slot is asked for nothing this turn (empty, or playing a queued move). */
+      /**
+       * By field slot. null: that slot is asked for nothing this turn (empty, playing a queued move, or inside its
+       * Commander ally).
+       */
       commands: readonly [FieldCommand | null, FieldCommand | null];
       /** In the order the turn asks; `field` is the slot each one fills. */
       replacements?: readonly FieldReplacement[];
       learns?: readonly LearnPick[];
+      /** In the order asked; `field` is the slot each one fills (CONTEXT.md, `Pivot`). */
+      pivots?: readonly FieldReplacement[];
     };
 
 /** What this step's turn asks for after its command, each picked inside the step. */
@@ -58,6 +63,8 @@ type Asked = {
   replacement?: PartySlot;
   /** Absent where the turn asks for none (#673). */
   learns?: readonly LearnPick[];
+  /** In the order asked (CONTEXT.md, `Pivot`). */
+  pivots?: readonly PartySlot[];
 };
 
 /** One field slot's command in a double battle. */
@@ -130,7 +137,6 @@ export type Reason =
   | { code: "version_mismatch"; save: string; live: string | null; clone: string }
   | { code: "not_rechecked"; version: string }
   | { code: "mystery_encounter" }
-  | { code: "double" }
   | { code: "safeguard" }
   | { code: "dropped_item"; items: readonly string[] }
   | { code: "no_live_battle" }

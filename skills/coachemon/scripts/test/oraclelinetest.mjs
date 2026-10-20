@@ -681,7 +681,8 @@ const rolandPlayed = (seed, inputs, answer, { at = 3, to = 3, asked = true } = {
 // Eternatus's W200 (#788): Rayquaza alone until Eternatus's last bar breaks on T2, then Eternamax, back at full HP behind
 // five bars, against Rayquaza and Zacian. Rayquaza falls on T4 and Blissey takes its field slot; Snorlax stays benched.
 const ETERNA = { RAYQUAZA: ["Rayquaza", ["DRAGON_ASCENT"], "FLYING"], ZACIAN: ["Zacian", ["BEHEMOTH_BLADE", "CLOSE_COMBAT"], "STEEL"],
-  BLISSEY: ["Blissey", ["SEISMIC_TOSS"]], SNORLAX: ["Snorlax", []], ETERNATUS: ["Eternatus", []] };
+  BLISSEY: ["Blissey", ["SEISMIC_TOSS"]], SNORLAX: ["Snorlax", []], ETERNATUS: ["Eternatus", []],
+  LIEPARD: ["Liepard", []], GARBODOR: ["Garbodor", []], SCRAGGY: ["Scraggy", []] };
 const ETERNA_MOVES = { DRAGON_ASCENT: ["Dragon Ascent", "FLYING"], BEHEMOTH_BLADE: ["Behemoth Blade", "STEEL"],
   CLOSE_COMBAT: ["Close Combat", "FIGHTING"], SEISMIC_TOSS: ["Seismic Toss", "FIGHTING"] };
 const keyOf = id => Object.keys(SpeciesId).find(k => SpeciesId[k] === id);
@@ -712,7 +713,8 @@ const eternaLine = (seed, inputs = {}) => ({ seed, wave: 200, gameVersion: "1.12
   steps: [1, 2, 3, 4, 5].map(turn => ({ turn, input: turn in inputs ? inputs[turn] : ETERNA_INPUTS[turn], checkpoint: ETERNA_CP[turn] })) });
 // The game on `turn`, standing as `cp` (by default the checkpoint before it): a field slot is its party slot.
 // `cmds`: each field slot's committed command, `{ move, tera, targets }` or `{ switchTo }`.
-const eternaAt = (seed, turn, { cp = ETERNA_CP[turn - 1], phase = { phaseName: "CommandPhase" }, cmds = [] } = {}) => {
+const eternaAt = (seed, turn, { cp = ETERNA_CP[turn - 1], phase = { phaseName: "CommandPhase" }, cmds = [], wave = 200,
+  battlers = turn > 2 ? 2 : 1 } = {}) => {
   const build = m => {
     const [name, moves = [], tera] = ETERNA[keyOf(m.species)];
     const p = mon(keyOf(m.species), name, m.hp, { field: m.onField, moves: moves.map(k => move(k, ...ETERNA_MOVES[k])), tera });
@@ -724,9 +726,9 @@ const eternaAt = (seed, turn, { cp = ETERNA_CP[turn - 1], phase = { phaseName: "
   const turnCommands = Object.fromEntries(cmds.map((c, f) => [f, c && command(c)]));
   const preTurnCommands = Object.fromEntries(cmds.map((c, f) => [f, c && { command: c.tera ? Command.TERA : command(c).command }]));
   const ours = [...cp.ours].sort((a, b) => a.slot - b.slot), party = ours.map(build), foes = cp.foes.map(build);
-  // The double starts on T3, Eternamax's first turn.
-  const getBattlerCount = () => (turn > 2 ? 2 : 1), getPokemonAllowedInBattle = () => party.filter((_, i) => ours[i].hp > 0);
-  return guard({ seed, currentBattle: { waveIndex: 200, turn, turnCommands, preTurnCommands, getBattlerCount },
+  // By default the double starts on T3, Eternamax's first turn.
+  const getBattlerCount = () => battlers, getPokemonAllowedInBattle = () => party.filter((_, i) => ours[i].hp > 0);
+  return guard({ seed, currentBattle: { waveIndex: wave, turn, turnCommands, preTurnCommands, getBattlerCount },
     phaseManager: { getCurrentPhase: () => phase }, getPlayerParty: () => party, getEnemyParty: () => foes, getPokemonAllowedInBattle });
 };
 const eternaPlay = (seed, turn, cmds) => oracleLineSeen(eternaAt(seed, turn, { phase: { phaseName: "MovePhase" }, cmds }));
@@ -877,6 +879,78 @@ const FAINT = field => ({ phaseName: "SwitchPhase", isModal: true, doReturn: fal
   assert.equal(scored.wrong, false);
   assert.deepEqual(scored.misses.map(m => `${m.name} ${m.expected} · ${m.came}`),
     ["Blissey in front · benched", "Snorlax benched · in front"]);
+}
+
+// ---- A pivot is named after the turn's call and at the switch-out prompt's turn, in a single as in a double; one out of shape is ignored
+{
+  const seed = "a W200 run, pivoting";
+  scene = eternaAt(seed, 1);
+  const pivot = (slot, key, field) => ({ slot, species: SpeciesId[key], ...(field === undefined ? {} : { field }) });
+  hand("T1 pivots to Blissey", eternaLine(seed, { 1: { ...ASCENT, pivots: [pivot(2, "BLISSEY")] } }));
+  const { act: t1 } = now("W200 T1, Rayquaza pivoting out", scene);
+  assert.equal(t1.summary, "⚔ ~ T1/5 · Rayquaza Dragon Ascent · then send Blissey for Rayquaza");
+  assert.ok(t1.rows.some(r => r.startsWith("⤵ then send Blissey for Rayquaza at the switch-out prompt")), t1.rows.join("\n"));
+  hand("T3's Zacian pivots to Snorlax", eternaLine(seed, { 3: double([ASCENT, BLADE], { pivots: [pivot(3, "SNORLAX", 1)] }) }));
+  assert.equal(now("W200 T3, Zacian pivoting out", eternaAt(seed, 3)).act.summary,
+    "⚔ ~ T3/5 · Rayquaza Dragon Ascent ; Zacian Behemoth Blade · then send Snorlax for Zacian");
+  const bad = input => hand("out of shape", eternaLine(seed, { 3: input })).why;
+  assert.equal(bad(double([ASCENT, BLADE], { pivots: [pivot(3, "SNORLAX")] })), "malformed", "a double's pivot names its field slot");
+  assert.equal(bad({ ...ASCENT, pivots: pivot(2, "BLISSEY") }), "malformed", "a turn's pivots are a list");
+  assert.equal(hand("a queued turn's pivot alone", eternaLine(seed, { 2: { kind: "queued", pivots: [pivot(2, "BLISSEY")] } })).ok, true);
+}
+
+// Plasma Grunts' double: Rayquaza and Zacian against Liepard and Garbodor, Scraggy behind them. Garbodor falls on T1 and
+// Scraggy takes its field slot; Zacian pivots out to Blissey on T2.
+const PAIR_CP = {
+  0: { ours: [state("RAYQUAZA", 0, true, 400, 400), state("ZACIAN", 1, true, 350, 350), ...bench()],
+    foes: [state("LIEPARD", 0, true, 300, 300), state("GARBODOR", 1, true, 350, 350), state("SCRAGGY", 2, false, 280, 280)] },
+  1: { ours: [state("RAYQUAZA", 0, true, 380, 400), state("ZACIAN", 1, true, 350, 350), ...bench()],
+    foes: [state("LIEPARD", 0, true, 120, 300), state("SCRAGGY", 1, true, 280, 280), state("GARBODOR", 2, false, 0, 350)] },
+  2: { ours: [state("RAYQUAZA", 0, true, 360, 400), state("BLISSEY", 1, true, 600, 600), state("ZACIAN", 2, false, 350, 350), state("SNORLAX", 3, false, 500, 500)],
+    foes: [state("LIEPARD", 0, true, 20, 300), state("SCRAGGY", 1, true, 80, 280), state("GARBODOR", 2, false, 0, 350)] },
+  3: { ours: [state("RAYQUAZA", 0, true, 360, 400), state("BLISSEY", 1, true, 600, 600), state("ZACIAN", 2, false, 350, 350), state("SNORLAX", 3, false, 500, 500)],
+    foes: [state("LIEPARD", 0, false, 0, 300), state("SCRAGGY", 1, false, 0, 280), state("GARBODOR", 2, false, 0, 350)] },
+};
+const aimed = (side, field) => ({ target: { side, field } });
+const PAIR_INPUTS = {
+  1: double([{ ...ASCENT, ...aimed("foes", 1) }, { ...BLADE, ...aimed("foes", 0) }]),
+  2: double([{ ...ASCENT, ...aimed("foes", 1) }, { kind: "move", move: MoveId.CLOSE_COMBAT, tera: false, ...aimed("foes", 0) }],
+    { pivots: [{ slot: 2, species: SpeciesId.BLISSEY, field: 1 }] }),
+  3: double([ASCENT, { kind: "move", move: MoveId.SEISMIC_TOSS, tera: false, ...aimed("foes", 1) }]),
+};
+const pairLine = seed => ({ seed, wave: 62, gameVersion: "1.12.1.3", receipt: [], luck: [],
+  steps: [1, 2, 3].map(turn => ({ turn, input: PAIR_INPUTS[turn], checkpoint: PAIR_CP[turn] })) });
+const pairAt = (seed, turn, opts = {}) => eternaAt(seed, turn, { cp: PAIR_CP[turn - 1], wave: 62, battlers: 2, ...opts });
+
+// ---- A trainer double's step names each field slot's target among two foes, the foe sent into a fallen one's slot included
+{
+  const seed = "a W62 run, a trainer double";
+  scene = pairAt(seed, 1);
+  assert.equal(hand("Plasma Grunts' W62", pairLine(seed)).ok, true);
+  assert.equal(now("W62 T1", scene).act.summary, "⚔ ~ T1/3 · Rayquaza Dragon Ascent → Garbodor ; Zacian Behemoth Blade → Liepard");
+  assert.equal(now("W62 T2, Scraggy in Garbodor's slot", pairAt(seed, 2)).act.summary,
+    "⚔ ~ T2/3 · Rayquaza Dragon Ascent → Scraggy ; Zacian Close Combat → Liepard · then send Blissey for Zacian");
+  assert.equal(now("W62 T3, Blissey in Zacian's slot", pairAt(seed, 3)).act.summary,
+    "⚔ ~ T3/3 · Rayquaza Dragon Ascent ; Blissey Seismic Toss → Scraggy");
+}
+
+// ---- A trainer double pressed as said matches; a pivot other than the oracle line's is the player's input
+{
+  const seed = "a W62 run, on the line";
+  const pairPlay = (turn, cmds) => oracleLineSeen(pairAt(seed, turn, { phase: { phaseName: "MovePhase" }, cmds }));
+  const pairDecide = (turn, cp) => { scored = oracleLineCheck(pairAt(seed, turn, { cp })); console.log(`scored ${scoredText(scored)}`); };
+  scene = pairAt(seed, 1);
+  hand("Plasma Grunts' W62, to score", pairLine(seed));
+  pairPlay(1, [{ move: "DRAGON_ASCENT", targets: [BattlerIndex.ENEMY_2] }, { move: "BEHEMOTH_BLADE", targets: [BattlerIndex.ENEMY] }]);
+  pairDecide(2, PAIR_CP[1]);
+  assert.deepEqual([scored.turn, scored.misses], [1, []]);
+  pairPlay(2, [{ move: "DRAGON_ASCENT", targets: [BattlerIndex.ENEMY_2] }, { move: "CLOSE_COMBAT", targets: [BattlerIndex.ENEMY] }]);
+  const snorlax = structuredClone(PAIR_CP[2]);
+  Object.assign(snorlax.ours[1], { slot: 3, onField: false });
+  Object.assign(snorlax.ours[3], { slot: 1, onField: true });
+  pairDecide(3, snorlax);
+  assert.equal(scored.wrong, false, "the pick at the switch-out prompt was the player's");
+  assert.deepEqual(scored.misses.map(m => `${m.name} ${m.expected} · ${m.came}`), ["Blissey in front · benched", "Snorlax benched · in front"]);
 }
 
 // ---- Neither a handoff nor a card drawn from it writes to the game

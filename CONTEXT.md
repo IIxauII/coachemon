@@ -276,6 +276,15 @@ member with a move slot free learns without being asked, and needs no pick.
 Each pick is a choice the **oracle** solves over, as it does a command. A line that leaves a prompt unanswered, or
 answers one the game never asks, does not replay.
 
+## Pivot
+
+The mon one of ours sends in when it leaves the field mid-turn by its own move or ability: U-turn, Volt Switch, Flip
+Turn, Parting Shot, Emergency Exit. The game asks for it on a party screen inside the turn, so an **oracle line** names
+the pivot inside the step whose turn asked, as it names a faint replacement, and in a double by the field slot it
+fills. Like a **learn pick**, each pivot is a choice the oracle solves over.
+
+Distinct from a switch, which is the turn's command, and from a faint replacement, which fills a slot a faint emptied.
+
 ## Augmented export
 
 What the **oracle** solves from when the fight is already under way: the session export taken at a **decision**, and

@@ -612,3 +612,68 @@ test("a worker that fails ends the solve in no answer naming it (#662)", async (
   assert.equal(result.kind === "no_answer" && result.reason.code, "harness_failed");
   assert.match(result.kind === "no_answer" ? result.message : "", /the worker exited/);
 });
+
+/**
+ * A double whose two field slots' moves each take their own share of the foe's HP; every turn's position is its own.
+ * `apart` names the pairs the game refuses, as it does two Teras.
+ */
+function pairs(slot0: Record<string, number>, slot1: Record<string, number>, win?: [string, string], apart: string[] = []) {
+  const pair = (a: string, b: string): Input => ({ kind: "double", commands: [move(a) as FieldMove, move(b) as FieldMove] });
+  const legal = Object.keys(slot0).flatMap(a => Object.keys(slot1).flatMap(b => (apart.includes(`${a}+${b}`) ? [] : [pair(a, b)])));
+  const names = (action: Action) =>
+    action?.kind === "double" ? action.commands.map(c => (c?.kind === "move" ? c.move : "-")).join("+") : "?";
+  const played: string[] = [];
+  const pool: Pool = {
+    size: 2,
+    async expand(forkPoint, inputs) {
+      return inputs.map((input): Child => {
+        const [a, b] = names(input).split("+");
+        played.push(`${forkPoint}: ${a}+${b}`);
+        if (win && a === win[0] && b === win[1]) return { input, end: "won", hp: { foes: [0], ours: [1] } };
+        const lost = slot0[a] + slot1[b];
+        return { input, end: "on", at: { sig: `${forkPoint} ${a}+${b}`, hp: { foes: [1 - lost], ours: [1] }, legal, forkPoint: `${a}+${b}` } };
+      });
+    },
+  };
+  return { root: { sig: "root", hp: { foes: [1], ours: [1] }, legal, forkPoint: "root" } satisfies Position, pool, played };
+}
+type FieldMove = Extract<Input, { kind: "double" }>["commands"][number];
+
+const ONE_TURN = { expansions: 3000, turns: 1 };
+const ONE_BEAM: Beam[] = [{ width: 1, ours: 1 }];
+
+test("a double plays each slot's commands beside one fixed command of the other's, then pairs only each one's best (#792)", async () => {
+  const slot0 = { A1: 0.01, A2: 0.05, A3: 0.04, A4: 0.03, A5: 0.02 };
+  const slot1 = { B1: 0.01, B2: 0.02, B3: 0.06, B4: 0.05, B5: 0.04 };
+  const { root, pool, played } = pairs(slot0, slot1);
+
+  await search({ root, pool, validate: replaysAll().validate, budget: ONE_TURN, lds: null, portfolio: ONE_BEAM, paired: 3 });
+
+  const fromRoot = played.filter(p => p.startsWith("root: ")).map(p => p.slice(6));
+  const probed = [...Object.keys(slot0).map(a => `${a}+B1`), ...Object.keys(slot1).slice(1).map(b => `A1+${b}`)];
+  const paired = ["A2", "A3", "A4"].flatMap(a => ["B3", "B4", "B5"].map(b => `${a}+${b}`));
+  assert.deepEqual(new Set(fromRoot), new Set([...probed, ...paired]));
+  assert.equal(fromRoot.length, probed.length + paired.length, "no pair is played twice");
+  assert.ok(!fromRoot.includes("A5+B2"), "two slots' lesser commands are never paired");
+});
+
+test("a double whose slots each have no more than the pairing's share plays every pair; a win in the first round counts as best (#792)", async () => {
+  const small = pairs({ A1: 0.01, A2: 0.02 }, { B1: 0.01, B2: 0.02, B3: 0.03 });
+  await search({ root: small.root, pool: small.pool, validate: replaysAll().validate, budget: ONE_TURN, lds: null, portfolio: ONE_BEAM, paired: 3 });
+  assert.equal(small.played.length, 6);
+
+  const won = pairs({ A1: 0.01, A2: 0.02, A3: 0.03, A4: 0.04 }, { B1: 0.01, B2: 0.02, B3: 0.03, B4: 0.04 }, ["A1", "B1"]);
+  const result = await search({ root: won.root, pool: won.pool, validate: replaysAll().validate, budget: ONE_TURN, lds: null, portfolio: ONE_BEAM, paired: 1 });
+  assert.equal(result.kind, "found");
+});
+
+test("a double's fixed command is one that pairs with every command of the other slot, so none goes unscored (#792)", async () => {
+  const slot0 = { A1: 0.01, A2: 0.02, A3: 0.03, A4: 0.04 };
+  const slot1 = { B1: 0.01, B2: 0.02, B3: 0.03, B4: 0.09 };
+  const { root, pool, played } = pairs(slot0, slot1, undefined, ["A1+B4"]);
+
+  await search({ root, pool, validate: replaysAll().validate, budget: ONE_TURN, lds: null, portfolio: ONE_BEAM, paired: 3 });
+
+  const fromRoot = played.filter(p => p.startsWith("root: ")).map(p => p.slice(6));
+  assert.ok(fromRoot.includes("A4+B4"), "the best pair is played, though the first legal command can't pair with B4");
+});

@@ -126,11 +126,17 @@ test("a Mystery Encounter battle gets no answer, by its battle type or its encou
   }
 });
 
-test("a double gets no answer: a trainer saved as a double, or a wild battle with two foes (#659)", () => {
+test("a double passes the gate: a trainer saved as a double, or a wild battle with two foes (#792)", () => {
   const [foe] = drayton.enemyParty;
   for (const save of [doubleDrayton, { ...drayton, battleType: BattleType.WILD, trainer: null, enemyParty: [foe, foe] }]) {
-    assert.deepEqual(ask({ save })?.reason, { code: "double" });
+    assert.equal(ask({ save }), null);
   }
+});
+
+test("a trainer double mid-fight passes the gate, its read naming the battle double or not (#792)", () => {
+  const save = { ...t5.save, trainer: { ...t5.save.trainer!, variant: TrainerVariant.DOUBLE } };
+  assert.equal(ask({ save, extras: { ...t5.extras, double: true } }), null);
+  assert.equal(ask({ save, extras: t5.extras }), null, "a reload builds the double from the save's own variant");
 });
 
 test("Safeguard up mid-fight gets no answer, on either side, though no save ever carries it (#659)", () => {
@@ -171,5 +177,6 @@ test("an item the clone drops on load gets no answer naming it: a type or a clas
 });
 
 test("a fight the oracle can't replay is refused for itself, not for a re-check a release would bring (#659)", () => {
-  assert.deepEqual(ask({ save: doubleDrayton }, null)?.reason, { code: "double" });
+  const save = { ...drayton, mysteryEncounterType: MysteryEncounterType.FIGHT_OR_FLIGHT };
+  assert.deepEqual(ask({ save }, null)?.reason, { code: "mystery_encounter" });
 });
