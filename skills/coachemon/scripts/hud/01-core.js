@@ -198,9 +198,7 @@ export const awaitingDecision = s => {
   return null;
 };
 
-// Which moveset is the caller's to pick: `getMoveset()` is the one the battle reads, a Transform's or Mimic's copy while
-// one is set, and `moveset` the one the member keeps (game-code.md §17). A loop, not `.some`: `learnAsked` reads it
-// each frame.
+// The caller picks the moveset: `getMoveset()` or `moveset` (game-code.md §17).
 export const hasMove = (moveset, id) => {
   if (moveset) for (let i = 0; i < moveset.length; i++) if (moveset[i]?.moveId === id) return true;
   return false;

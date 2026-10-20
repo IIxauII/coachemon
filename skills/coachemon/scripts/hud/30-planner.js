@@ -1670,7 +1670,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   // Support moves, conservative because the planner only scores damage: Protect for a slot likely KO'd before it moves
   // whose partner likely KOs that foe first anyway; Helping Hand when it turns a likely survivor into a likely KO.
   const usablePm = pm => pm && (pm.getMovePp?.() ?? 1) - (pm.ppUsed ?? 0) > 0;
-  // Protect's streak, which reads the last move by id, whatever moveset it came from (game-code.md §14).
+  // Protect's streak, by move id rather than any moveset (game-code.md §14).
   const protectedLast = me => {
     const last = me.getLastXMoves?.(1)?.[0];
     if (!last || last.result !== MoveResult.SUCCESS) return false;

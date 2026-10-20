@@ -23,8 +23,7 @@ const shopUsers = (t, party) => {
   if (typeof t.selectFilter !== "function") return null;
   try { return party.filter(p => t.selectFilter(p) == null); } catch { return null; }
 };
-// The select filter skips the member's own moves only, and the learn then ends on a move its battle moveset holds
-// (game-code.md §16).
+// Both movesets: the filter passes a move known only for the battle, which the learn then refuses (game-code.md §16).
 const knowsMove = (p, id) => hasMove(p.moveset, id) || hasMove(p.getMoveset?.(), id);
 // The TM's select filter, else the `isTmCompatible` it wraps (game-code.md §16). null when neither can tell.
 const tmLearners = (t, party) => {

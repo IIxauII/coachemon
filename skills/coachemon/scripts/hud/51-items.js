@@ -150,8 +150,8 @@ for (const id of Object.keys(ORB)) {
   HELD[id] = (p, c) => {
     if (c.holds(p, "TOXIC_ORB") || c.holds(p, "FLAME_ORB")) return null;
     const statusable = !typesSafe(p).some(t => o.immuneTypes.includes(t)) && !has(p, o.immuneAbilities);
-    const facade = hasMove(p.moveset, MoveId.FACADE), moves = facade || hasMove(p.moveset, MoveId.PSYCHO_SHIFT);
-    const good = statusable && (has(p, o.specific) || (has(p, STATUS_ABILITIES) && !has(p, o.opposite)) || moves);
+    const facade = hasMove(p.moveset, MoveId.FACADE), statusMove = facade || hasMove(p.moveset, MoveId.PSYCHO_SHIFT);
+    const good = statusable && (has(p, o.specific) || (has(p, STATUS_ABILITIES) && !has(p, o.opposite)) || statusMove);
     const reason = abilitiesOf(p).find(a => o.specific.includes(a)) ?? abilitiesOf(p).find(a => STATUS_ABILITIES.includes(a))
       ?? (facade ? "Facade" : "Psycho Shift");
     return good && [14, `${p.name} · ${reason} wants the status`];

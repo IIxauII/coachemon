@@ -1038,8 +1038,7 @@ const hydreigonSnorlax = () => [
   assert.ok(!/before it can act|💀/.test(slots.find(l => /^⚔ Lucario/.test(l)) ?? ""), `Protect blocks the hit it would be tagged for (#650):\n${field.join("\n")}`);
   assert.match(slots.find(l => /^⚔ Garchomp/.test(l)) ?? "", /Dragon Claw → Hydreigon/);
 
-  // The turn after a Detect or a Quick Guard that held, moves Lucario's own lack (a Transform's, a Mimic's or a call's):
-  // the streak counts them by id, so a Protect now passes 1 time in 3 and is not offered (game-code.md §14).
+  // The turn after a Detect or a Quick Guard held, neither of them in Lucario's own moves: Protect is not offered.
   const protectMove = party[1].moveset[1].getMove();
   const tables = { moves: { 197: { ...protectMove, id: 197, name: "Detect" }, 501: { ...protectMove, id: 501, name: "Quick Guard", attrs: [] } } };
   for (const [id, name] of [[197, "Detect"], [501, "Quick Guard"]]) {
@@ -1048,6 +1047,10 @@ const hydreigonSnorlax = () => [
     const lucario = slotLines(after.field).find(l => /^⚔ Lucario/.test(l)) ?? "";
     assert.ok(!/Protect/.test(lucario), `no Protect straight after a ${name} that held:\n${after.field.join("\n")}`);
   }
+  // Before the game's tables load, the move is looked up in the member's moves.
+  party[1].getLastXMoves = () => [{ move: 182, targets: [1], result: 1 }];
+  const early = render({ party, foes, live: true, double: true, dist, switches: () => new Map() });
+  assert.ok(!/Protect/.test(slotLines(early.field).find(l => /^⚔ Lucario/.test(l)) ?? ""), `no Protect straight after a Protect that held:\n${early.field.join("\n")}`);
   delete party[1].getLastXMoves;
 }
 
