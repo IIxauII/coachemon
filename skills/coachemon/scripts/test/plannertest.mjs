@@ -467,6 +467,14 @@ Object.assign(TABLE, { "Gallade>Leaf Blade>Snorlax": [[90], 1, 1], "Snorlax>Body
   console.log(`== setup: Swords Dance then Leaf Blade (live)\n${setupLine}`);
   assert.match(setupLine, /Swords Dance .*\+2 Atk .*then Leaf Blade/, `set up, then attack:\n${setupLine}`);
   assert.ok(!/→/.test(setupLine), "a move on the user aims at nobody");
+  // The fight plan runs the follow-up from turn 1, so it is pinned at the strength it has before the setup (#650).
+  {
+    const party = gallade(), foes = snorlax(450);
+    const { scene: s } = oneOnOne({ party, foes, dist: only("Body Slam") });
+    const pick = globalThis.__planner.fieldPlan(s, party, foes, false).picks[0];
+    const base = globalThis.__planner.planOutcomes(s, party[0], foes[0]).find(o => o.name === "Leaf Blade");
+    assert.equal(pick.then?.expected, base.expected, `the pin is the unboosted Leaf Blade: ${pick.then?.expected} vs ${base.expected}`);
+  }
   // 213–250 into 400: already a 2HKO.
   TABLE["Gallade>Leaf Blade>Snorlax"] = [[250], 1, 1];
   assert.match(lineOf(oneOnOne({ party: gallade(), foes: snorlax(400), dist: only("Body Slam") }).field, "Gallade"), /Leaf Blade → Snorlax/, "no setup when the hit already 2HKOs");
@@ -1535,9 +1543,9 @@ Object.assign(TABLE, { "Venusaur>Solar Beam>Arcanine": [[400], 1, 2], "Arcanine>
   const dist = () => [{ name: "Flare Blitz", type: "Fire", p: 1, score: 10, targets: [0] }];
   const { scene: s } = render({ party: [me], foes, live: true, dist, switches: () => new Map(), stubOutcome: charges });
   const x = globalThis.__planner.exchange(s, me, me.moveset[0], foes[0]);
-  console.log(`== a charge move on a speed tie: acts ${x.pActs} · first ${x.pFirst}`);
+  console.log(`== a charge move on a speed tie: acts ${1 - x.pNeverUsed} · first ${x.pFirst}`);
   assert.equal(x.pFirst, 0.5);
-  assert.ok(Math.abs(x.pActs - 0.5) < 1e-9, `fires only when it moves first on turn 2: ${x.pActs}`);
+  assert.ok(Math.abs(x.pNeverUsed - 0.5) < 1e-9, `fires only when it moves first on turn 2: ${x.pNeverUsed}`);
 }
 
 // ---- A depth-2 line pays for the turn its first move never goes off, as the move alone does (#650).
