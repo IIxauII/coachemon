@@ -389,6 +389,30 @@ reach: sticky false,true,false · sub false,true,false
 as plain damage: Leaf Storm (Leaf Storm: we need 3, they need 2 (2.393), P(steal) 0 · Bug Bite: we need 6, they need 2 (2.393), P(steal) 0)
 with the steal:  Leaf Storm (Leaf Storm: we need 3, they need 2 (2.393), P(steal) 0 · Bug Bite: we need 6, they need 3 (3.126), P(steal) 1)
 the ⚔ call does not flip: still Leaf Storm
+play: Toxic, bare foe         note toxic · patches Machamp status 2 · skip0 0 · foeAct — · gain 0
+play: Toxic, Lum x1           note — · patches — · skip0 0 · foeAct — · gain 0
+play: Toxic, Lum x2           note — · patches — · skip0 0 · foeAct — · gain 0
+play: Toxic, Sitrus only      note toxic · patches Machamp status 2 · skip0 0 · foeAct — · gain 0
+play: Toxic, Sitrus + Lum     note — · patches — · skip0 0 · foeAct — · gain 0
+play: Spore, bare foe         note sleep · patches Machamp status 4 · skip0 1 · foeAct yes · gain 0
+play: Spore, Lum x1           note — · patches — · skip0 1 · foeAct — · gain 0
+play: Thunder Wave, bare foe  note paralysis · patches Machamp status 3 · skip0 0.125 · foeAct — · gain 0
+play: Thunder Wave, Lum x1    note — · patches — · skip0 0.125 · foeAct — · gain 0
+play: Toxic, Lum x1, Unnerve  note toxic · patches Machamp status 2 · skip0 0 · foeAct — · gain 0
+pick: Toxic, bare foe                 Toxic · effect "toxic" · score 3.8504
+pick: Toxic, Lum x1                   Giga Drain · effect "" · score 1.0504
+pick: Spore, bare foe, slower than it Spore · effect "sleep" · score -0.8163
+pick: Spore, Lum x1, slower than it   Giga Drain · effect "" · score -0.8489
+pick: Spore, Lum x2, slower than it   Giga Drain · effect "" · score -0.8489
+pick: Spore, Sitrus only, slower      Spore · effect "sleep" · score -0.8163
+== lum: the ⚔ line for a sleep it cures (live)
+⚔ Vileplume Grass Spore → Machamp
+== lum: …and for one that lasts (live)
+⚔ Vileplume Grass Spore → Machamp sleep
+== lum: a double's status play, bare foe (live)
+⚔ Breloom 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Grass Spore → Machamp sleep
+== lum: …and into a Lum holder (live)
+⚔ Breloom 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Grass Seed Bomb → Machamp
 == a lost race: only what lands counts (#650)
 ⚔ Dragonite ⚠ Dragon ×2 100% {Rayquaza's Outrage: ~100% of current HP} Normal Extreme Speed → Rayquaza 3 hits
 ⤵ Dragonite falls this turn › Raichu in free

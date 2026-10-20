@@ -1162,7 +1162,8 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       return {
         f, pm, mv, t, x1, pF, works, maxHp: me.getMaxHp?.() ?? hp,
         keep: last != null && pm.moveId === last ? KEEP_BONUS : 0,
-        effect: `${play.note}${aimed && works < 0.995 ? ` ${Math.round(works * 100)}%` : ""}`,
+        // A play with nothing to say — a status a held Lum cures this same turn — shows no note and no tail.
+        effect: play.note ? `${play.note}${aimed && works < 0.995 ? ` ${Math.round(works * 100)}%` : ""}` : "",
       };
     };
     // A single battle's status play: turn 1 an `exchange` in which we deal nothing, then the best attack on the state
@@ -1212,7 +1213,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const eTurns = 1 + mix("eTurnsWe") + unlanded(they + standing * mix("pNeverUsed"));
       const edge = standing * (mix("pWeKoFirst") - mix("pTheyKoFirst")) - they - feed(f) * (they + standing * mix("pTheyKoFirst"));
       const spent = (play.hpCost ?? 0) / maxHp + mix("cost");
-      const bonus = play.kind === "hazard" ? play.value * works : 0;
+      const bonus = ((play.kind === "hazard" ? play.value : 0) + (play.gain ?? 0)) * works;
       const nudge = turn.benefit(me, f, mv) * AI_POINT;
       const hits = Math.min(9, 1 + landed.x2.turnsWe);
       return {
@@ -1236,7 +1237,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
         me, move: { name: info.name, type: info.type, cat: "status", pm: start.pm, expected: 0, notes: [] }, target: fi, self: !!play.self,
         play, works, rank: benefit * works, hp, turns: 9, hits: 9, foe: f, act,
         heal: play.kind === "heal" ? Math.min(play.amount, Math.max(0, maxHp - hp)) : 0,
-        score: -1 - (play.hpCost ?? 0) / maxHp + start.keep + (play.kind === "hazard" ? play.value * works : 0) + benefit * AI_POINT - STATUS_COST,
+        score: -1 - (play.hpCost ?? 0) / maxHp + start.keep + ((play.kind === "hazard" ? play.value : 0) + (play.gain ?? 0)) * works + benefit * AI_POINT - STATUS_COST,
         effect: start.effect,
       };
     };
@@ -1807,7 +1808,9 @@ const FEED_COST = 0.5;
 // What a status move of `me`'s does to a fight with `f`, if the planner can price it (game-code.md §14): a `setup`,
 // `status`, `heal`, `hazard` or `types` play, its effect as `patches` for the game's own code to price; else null.
 // This turn's hit meets the state as it stands: only a sleep or paralysis that lands first cancels it (`skip0`).
-const statusPlay = (turn, me, f, info) => {
+// `gain`: what the play is worth beside its patches, as a share of a bar.
+// @only tests: statusPlay
+export const statusPlay = (turn, me, f, info) => {
   const mv = info.pm.getMove?.();
   if (!mv || info.blocked) return null;
   const t = moveTraits(mv, me, { target: f });
@@ -1826,10 +1829,17 @@ const statusPlay = (turn, me, f, info) => {
     if (f.status?.effect || !turn.mon(f).canTake(inflict.effect, me)) return null;
     const early = !!f.hasAbilityWithAttr?.("ReduceStatusEffectDurationAbAttr");
     const skip = a => STATUS_SKIP[StatusEffect.SLEEP](a, early);
+    // @mirrors para-skip
+    const skip0 = inflict.effect === StatusEffect.SLEEP ? skip(0) : inflict.effect === StatusEffect.PARALYSIS ? 1 / 8 : 0;
+    // A held Lum cures it at this turn's end, unless an opponent's Unnerve stops the berry (game-code.md §3).
+    let unnerved = false;
+    try { unnerved = [me, ...(f.getOpponents?.() ?? [])].some(q => q?.hasAbilityWithAttr?.("PreventBerryUseAbAttr")); } catch { /* read as none */ }
+    const lum = unnerved ? null : berryGone(f, p => healAtEnd(turn, p), { berry: BerryType.LUM });
+    if (lum) return { kind: "status", self: false, patches: null, skip0, foeAct: null, note: null,
+      gain: lum.lost ? -lum.lost / (f.getMaxHp?.() || 1) : 0 };
     return {
       kind: "status", self: false, patches: [{ mon: f, status: { effect: inflict.effect, toxicTurnCount: 0, sleepTurnsRemaining: 0 } }],
-      // @mirrors para-skip
-      skip0: inflict.effect === StatusEffect.SLEEP ? skip(0) : inflict.effect === StatusEffect.PARALYSIS ? 1 / 8 : 0,
+      skip0,
       // Given it landed on turn 1, the foe's next attempt is its second if we moved first, else its first.
       foeAct: inflict.effect === StatusEffect.SLEEP ? pF => i => 1 - (pF * skip(i + 1) + (1 - pF) * skip(i)) : null,
       note: STATUS_FRAMES[inflict.effect],

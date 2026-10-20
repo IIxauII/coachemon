@@ -1685,6 +1685,147 @@ Object.assign(TABLE, {
   assert.ok(priced.rows[1].eTurnsThey > asPlainDamage.rows[1].eTurnsThey, `the sixth of a quarter Leavanny eats must buy it turns: ${priced.rows[1].eTurnsThey} vs ${asPlainDamage.rows[1].eTurnsThey}`);
 }
 
+// ---- A foe's held Lum cures our status at this turn's end, so the status play is a one-turn play (#647).
+// `BerryPhase` runs at turn end before the status chip, so a Toxic or a burn into a Lum holder never deals anything,
+// and nothing of the status reaches a later turn. A sleep or a paralysis still costs the foe this turn's move if we
+// moved first. All the play leaves behind is the berry it burnt, priced by #646's `berryGone`.
+// Two scenes, both read off `fieldPlan`'s pick for the slot. In the first Vileplume's Giga Drain takes six turns on
+// Machamp's 300 HP against a Close Combat that chips it for 40, and whether the status is worth its turn decides the
+// call. In the second Giga Drain does nothing at all, so the status play is the slot's only option and its ⚔ line is
+// there to read whatever the play is worth.
+Object.assign(TABLE, { "Machamp>Close Combat>Vileplume": [[40], 1, 1], "Vileplume>Giga Drain>Machamp": [[50], 1, 1] });
+{
+  const BERRY = { SITRUS: 0, LUM: 1 };
+  const berryItem = (berryType, n = 1) => Object.assign(new ({ BerryModifier: class { getStackCount() { return this.n; } } }).BerryModifier(), { berryType, n, isTransferable: true });
+  const TOXIC = ["Toxic", "Poison", 0, "X", 0, { id: 92, attrs: [["StatusEffectAttr", { effect: 2 }]] }];
+  const WAVE = ["Thunder Wave", "Electric", 0, "X", 0, { id: 86, attrs: [["StatusEffectAttr", { effect: 3 }]] }];
+  const GIGA_DRAIN = ["Giga Drain", "Grass", 75, "S"];
+  // The turn-end stub chips a toxic'd mon a quarter of its HP, fast enough that a lasting Toxic alone wins a fight
+  // Vileplume cannot otherwise touch. A Lum cures the status before any turn end, so a cured one is worth none of it.
+  const toxicChip = p => (p.status?.effect === 2 ? -Math.floor(p.getMaxHp() / 4) : 0);
+  const vileplume = (moves, spe) => mon("Vileplume", 80, ["Grass", "Poison"], [250, 180, 100, 90, 100, spe], moves, true);
+  const machamp = items => mon("Machamp", 80, ["Fighting"], [300, 200, 110, 60, 110, 50], [["Close Combat", "Fighting", 120, "P"]], true, undefined,
+    { getHeldItems: () => items });
+  // `drain`: what Giga Drain deals. 0 leaves the slot with nothing that damages, so the status play is its only option.
+  const scene = (moves, items, spe, drain = 50) => {
+    TABLE["Vileplume>Giga Drain>Machamp"] = [[drain], 1, drain ? 1 : 0];
+    const me = vileplume(moves, spe), foe = machamp(items);
+    const { scene: s, field } = render({ party: [me], foes: [foe], live: true, switches: () => new Map(), heal: toxicChip,
+      dist: () => [{ name: "Close Combat", type: "Fighting", p: 1, score: 10, targets: [0] }] });
+    return { s, me, foe, field };
+  };
+  // Machamp is slower at Vileplume's default 60 Speed and faster at 40.
+  const playFor = (move, items, spe = 60, ourAttr = null) => {
+    const { s, me, foe } = scene([GIGA_DRAIN, move], items, spe);
+    if (ourAttr) {
+      const own = me.hasAbilityWithAttr?.bind(me);
+      me.hasAbilityWithAttr = a => a === ourAttr || !!own?.(a);
+    }
+    return globalThis.__planner.statusPlay(s, me, foe, s.statusMoves(me, foe).find(x => x.name === move[0]));
+  };
+  const shape = p => (!p ? "no play" : [`note ${p.note ?? "—"}`,
+    `patches ${p.patches ? p.patches.map(x => `${x.mon.name} status ${x.status.effect}`).join() : "—"}`,
+    `skip0 ${Math.round((p.skip0 ?? 0) * 1e4) / 1e4}`, `foeAct ${p.foeAct ? "yes" : "—"}`, `gain ${p.gain ?? 0}`].join(" · "));
+  const lum = n => [berryItem(BERRY.LUM, n)];
+  for (const [what, move, items] of [
+    ["Toxic, bare foe", TOXIC, []], ["Toxic, Lum x1", TOXIC, lum(1)], ["Toxic, Lum x2", TOXIC, lum(2)],
+    ["Toxic, Sitrus only", TOXIC, [berryItem(BERRY.SITRUS)]], ["Toxic, Sitrus + Lum", TOXIC, [berryItem(BERRY.SITRUS), berryItem(BERRY.LUM)]],
+    ["Spore, bare foe", SPORE, []], ["Spore, Lum x1", SPORE, lum(1)],
+    ["Thunder Wave, bare foe", WAVE, []], ["Thunder Wave, Lum x1", WAVE, lum(1)],
+  ]) console.log(`play: ${what.padEnd(23)} ${shape(playFor(move, items))}`);
+  // Our Unnerve stops the foe eating its Lum, so the status lasts as on a bare foe.
+  const unnerved = playFor(TOXIC, lum(1), 60, "PreventBerryUseAbAttr");
+  console.log(`play: ${"Toxic, Lum x1, Unnerve".padEnd(23)} ${shape(unnerved)}`);
+  assert.equal(shape(unnerved), shape(playFor(TOXIC, [])), "an Unnerved Lum holder takes a lasting Toxic");
+
+  // A lasting status writes itself into the follow-up and keeps costing the foe attempts; a Lum-cured one writes
+  // nothing and asks nothing of any later turn.
+  const bareToxic = playFor(TOXIC, []), lumToxic = playFor(TOXIC, lum(1));
+  assert.ok(bareToxic.patches?.length === 1 && bareToxic.note === "toxic", `a bare foe prices Toxic exactly as before: ${shape(bareToxic)}`);
+  assert.equal(lumToxic.patches, null, "a Lum holder takes no lasting status patch");
+  assert.equal(lumToxic.foeAct, null, "…and nothing of it reaches a later turn");
+  assert.equal(lumToxic.skip0, 0, "Toxic costs the foe no attempt even on the turn it lands");
+  assert.equal(lumToxic.note, null, "…so the play has no status note to show");
+  // The burnt Lum, from #646's `berryGone` for a named berry. A Lum heals nothing at a turn end (10-damage.js prices
+  // Sitrus and Enigma only), so its `lost` is 0 and the gain here is too: the play is worth the move it costs, no more.
+  const { berryGone, lessBerry, berryTypesOf } = globalThis.__planner;
+  const held = machamp(lum(2));
+  assert.equal(berryGone(held, toxicChip, { berry: BERRY.LUM }).lost, 0, "a Lum is worth nothing to the turn-end model, so the burn prices at 0");
+  assert.equal(lumToxic.gain, 0, "…and that is the whole of the play's gain");
+  assert.equal(playFor(TOXIC, [berryItem(BERRY.SITRUS)]).patches?.length, 1, "a foe holding no Lum is priced as before");
+
+  // Sleep keeps this turn's skipped attempt and drops the later ones.
+  const lumSpore = playFor(SPORE, lum(1)), bareSpore = playFor(SPORE, []);
+  assert.equal(lumSpore.skip0, 1, "a sleep that lands before the slower Lum holder moves still costs it this turn");
+  assert.equal(lumSpore.foeAct, null, "…but no later turn: the Lum cures it at this turn's end");
+  assert.ok(bareSpore.foeAct && bareSpore.patches, `a bare foe still sleeps on: ${shape(bareSpore)}`);
+  assert.equal(playFor(WAVE, lum(1)).skip0, 1 / 8, "a paralysis a Lum cures still rolls full para on the turn it lands");
+
+  // A Lum x2 holder is priced the same one-turn way, and one Lum is left standing for the next status.
+  const twice = playFor(TOXIC, lum(2));
+  assert.deepEqual([twice.patches, twice.foeAct, twice.gain], [null, null, 0], `a Lum x2 holder takes the same one-turn price: ${shape(twice)}`);
+  assert.deepEqual(berryTypesOf(lessBerry(held, BERRY.LUM)), [BERRY.LUM], "burning one of two leaves the second, so two statuses are needed before one sticks");
+
+  // Scene 1: what the slot is actually told to do, and the score it was told it on. A play worth nothing loses to
+  // Giga Drain.
+  const picked = (move, items, spe, drain) => {
+    const { s, me, foe, field } = scene([GIGA_DRAIN, move], items, spe, drain);
+    const [p] = globalThis.__planner.fieldPlan(s, [me], [foe], false).picks;
+    return { name: p.move?.name ?? null, effect: p.effect ?? "", score: Math.round(p.score * 1e4) / 1e4, line: lineOf(field, "Vileplume") };
+  };
+  const rows = [
+    ["Toxic, bare foe", TOXIC, [], 60], ["Toxic, Lum x1", TOXIC, lum(1), 60],
+    ["Spore, bare foe, slower than it", SPORE, [], 40], ["Spore, Lum x1, slower than it", SPORE, lum(1), 40],
+    ["Spore, Lum x2, slower than it", SPORE, lum(2), 40], ["Spore, Sitrus only, slower", SPORE, [berryItem(BERRY.SITRUS)], 40],
+  ].map(([what, move, items, spe]) => [what, picked(move, items, spe)]);
+  for (const [what, p] of rows) console.log(`pick: ${what.padEnd(31)} ${p.name} · effect "${p.effect}" · score ${p.score}`);
+  const by = what => rows.find(([w]) => w === what)[1];
+  // A lasting Toxic's chip wins a fight Giga Drain loses; a cured one deals nothing, so attacking is the call again.
+  assert.equal(by("Toxic, bare foe").name, "Toxic", "a lasting Toxic is worth the turn it spends");
+  assert.equal(by("Toxic, Lum x1").name, "Giga Drain", "a Toxic a Lum cures buys no chip and no later turn, so it loses to attacking");
+  // A sleep from a slower user is worth its later lost attempts and nothing else, so a Lum takes all of its value:
+  // nothing was skipped this turn, and the burnt Lum is worth nothing here.
+  assert.equal(by("Spore, bare foe, slower than it").name, "Spore", "a lasting sleep keeps costing the foe attempts");
+  assert.equal(by("Spore, Lum x1, slower than it").name, "Giga Drain",
+    "from a slower user nothing is skipped either, so the play is worth only the burnt Lum");
+  assert.equal(by("Spore, Lum x2, slower than it").score, by("Spore, Lum x1, slower than it").score, "a Lum x2 holder is priced the same one-turn way");
+  assert.equal(by("Spore, Sitrus only, slower").score, by("Spore, bare foe, slower than it").score, "a foe with no Lum prices exactly as before");
+
+  // Scene 2: the slot has nothing that damages, so the status play is the call whatever it is worth, and the ⚔ line
+  // is there to read. It keeps the play and drops the status note — no new line, no tail.
+  const alone = (items, spe = 60) => picked(SPORE, items, spe, 0);
+  const cured = alone(lum(1)), lasting = alone([]);
+  console.log(`== lum: the ⚔ line for a sleep it cures (live)\n${cured.line}\n== lum: …and for one that lasts (live)\n${lasting.line}`);
+  assert.match(lasting.line, /Spore → Machamp .*sleep/, `a lasting status still names itself:\n${lasting.line}`);
+  assert.match(cured.line, /Spore → Machamp/, `the play is still the call:\n${cured.line}`);
+  assert.ok(!/sleep/.test(cured.line), `no status note for a status the Lum cures this turn:\n${cured.line}`);
+  assert.equal(cured.effect, "", "the note is empty, not a bare accuracy tail");
+  assert.equal(alone(lum(2)).score, cured.score, "…and a Lum x2 holder is the same play again");
+
+  // Doubles take the same shape: `playCandidate` reads the one-turn play off the same `statusPlay`. The field is
+  // #262's — Breloom's Spore into a Machamp neither of ours can dent, with Salamence finishing Munchlax — so a bare
+  // Machamp is still slept and a Lum-holding one is not worth the turn.
+  Object.assign(TABLE, {
+    "Breloom>Seed Bomb>Machamp": [[60], 1, 1], "Breloom>Seed Bomb>Munchlax": [[60], 1, 1],
+    "Salamence>Dragon Claw>Machamp": [[60], 1, 1], "Salamence>Dragon Claw>Munchlax": [[400], 1, 1],
+    "Machamp>Close Combat>Breloom": [[400], 1, 1], "Machamp>Close Combat>Salamence": [[300], 1, 1],
+    "Munchlax>Body Slam>Breloom": [[30], 1, 1], "Munchlax>Body Slam>Salamence": [[30], 1, 1],
+  });
+  const pair = items => {
+    const foes = [
+      mon("Machamp", 80, ["Fighting"], [300, 200, 110, 60, 110, 140], [["Close Combat", "Fighting", 120, "P"]], true, undefined,
+        { getBattlerIndex: () => 2, getHeldItems: () => items }),
+      mon("Munchlax", 80, ["Normal"], [300, 150, 110, 80, 150, 40], [["Body Slam", "Normal", 85, "P"]], true, undefined, { getBattlerIndex: () => 3 }),
+    ];
+    const { field } = render({ party: sporeParty(), foes, live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
+    return lineOf(field, "Breloom");
+  };
+  const [bare, lumHeld] = [pair([]), pair(lum(1))];
+  console.log(`== lum: a double's status play, bare foe (live)\n${bare}\n== lum: …and into a Lum holder (live)\n${lumHeld}`);
+  assert.match(bare, /Spore → Machamp .*sleep/, `a bare foe is still the double's Spore target:\n${bare}`);
+  assert.ok(!/Spore/.test(lumHeld), `a sleep a Lum cures is not worth the double's turn:\n${lumHeld}`);
+}
+
 // ---- The one gate: with no exact enemy answer, the card, the fight plan and the catch advice stop together (#183)
 {
   const party = [mon("Morpeko", 80, ["Electric", "Dark"], [220, 150, 90, 120, 100, 170], [["Aura Wheel", "Electric", 110, "P"]], true, 180)];
