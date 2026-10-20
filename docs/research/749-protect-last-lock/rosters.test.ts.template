@@ -1,0 +1,149 @@
+// Runs inside the pinned clone (`rosters.ts` copies it in and removes it again): every `#…` import is upstream's.
+// Generates trainer parties with the game's own `Trainer.genPartyMember`, the call `EncounterPhase` makes, at the waves
+// each trainer class meets us in Classic, and counts the members whose moveset holds a frenzy lock-in.
+import { writeFileSync } from "node:fs";
+import { Battle } from "#app/battle";
+import { speciesDataRegistry } from "#app/global-species-data-registry";
+import { allMoves } from "#data/data-lists";
+import { AbilityId } from "#enums/ability-id";
+import { BattleType } from "#enums/battle-type";
+import { MoveId } from "#enums/move-id";
+import { PokemonType } from "#enums/pokemon-type";
+import { SpeciesId } from "#enums/species-id";
+import { TrainerType } from "#enums/trainer-type";
+import { TrainerVariant } from "#enums/trainer-variant";
+import { Trainer } from "#field/trainer";
+import { GameManager } from "#test/framework/game-manager";
+import { trainerConfigs } from "#trainers/trainer-config";
+import { beforeAll, describe, it } from "vitest";
+
+const OUT = process.env.COACH_OUT as string;
+const SAMPLES = Number(process.env.COACH_SAMPLES ?? "30");
+const LOCKS = [MoveId.THRASH, MoveId.PETAL_DANCE, MoveId.OUTRAGE, MoveId.RAGING_FURY];
+
+// The waves each class meets us at in Classic: ClassicFixedBossWaves for the fixed ones, `w % 30 === 20` for a gym
+// (`GameMode.isWaveTrainer`), anything for a generic trainer.
+const GENERIC = [15, 35, 55, 75, 95, 115, 135, 155, 175];
+const GYM = [20, 50, 80, 110, 140, 170];
+const fixed: Partial<Record<string, number[]>> = {
+  RIVAL: [8], RIVAL_2: [25], RIVAL_3: [55], RIVAL_4: [95], RIVAL_5: [145], RIVAL_6: [195],
+};
+const GRUNT_WAVES = [35, 62, 64, 112];
+const ADMIN_WAVES = [66, 114, 164];
+const ME_TRAINERS = new Set(["BUCK", "CHERYL", "MARLEY", "MIRA", "RILEY", "VICTOR", "VICTORIA", "VIVI", "VICKY", "VITO",
+  "BUG_TYPE_SUPERFAN", "EXPERT_POKEMON_BREEDER", "PLAYER_M_ALTERNATE", "PLAYER_F_ALTERNATE"]);
+
+const classOf = (t: number, name: string): string | null => {
+  if (ME_TRAINERS.has(name) || name === "UNKNOWN") return null;
+  if (t >= TrainerType.RIVAL) return "rival";
+  if (t >= TrainerType.BLUE) return "champion";
+  if (t >= TrainerType.LORELEI) return "elite four";
+  if (t >= TrainerType.BROCK) return "gym leader";
+  if (t >= TrainerType.ROCKET_BOSS_GIOVANNI_1) return "evil boss";
+  if (t >= TrainerType.ROCKET_GRUNT) return name.endsWith("_GRUNT") ? "evil grunt" : "evil admin";
+  return "generic";
+};
+const wavesOf = (cls: string, name: string): number[] => {
+  switch (cls) {
+    case "rival": return fixed[name] ?? [];
+    case "champion": return [190];
+    case "elite four": return [182, 184, 186, 188];
+    case "gym leader": return GYM;
+    case "evil boss": return name.endsWith("_2") ? [165] : [115];
+    case "evil grunt": return GRUNT_WAVES;
+    case "evil admin": return ADMIN_WAVES;
+    default: return GENERIC;
+  }
+};
+
+describe("Coachemon research #749 - frenzy lock-ins in trainer rosters", () => {
+  let phaserGame: Phaser.Game;
+  let game: GameManager;
+
+  beforeAll(() => {
+    phaserGame = new Phaser.Game({ type: Phaser.HEADLESS });
+  });
+
+  it("counts", async () => {
+    game = new GameManager(phaserGame);
+    await game.classicMode.startBattle(SpeciesId.BULBASAUR);
+    const s = game.scene;
+    const rows: unknown[] = [];
+    const errors: string[] = [];
+    for (const key of Object.keys(trainerConfigs)) {
+      const t = Number(key);
+      const name = TrainerType[t];
+      const cls = name == null ? null : classOf(t, name);
+      if (!cls) continue;
+      for (const w of wavesOf(cls, name)) {
+        let parties = 0, withLock = 0, members = 0, lockMembers = 0;
+        const carriers = new Map<string, number>();
+        for (let k = 0; k < SAMPLES; k++) {
+          const made: { destroy(): void }[] = [];
+          try {
+            s.seed = `coach749-${k}`;
+            s.resetSeed(w);
+            let trainer!: Trainer;
+            s.executeWithSeedOffset(() => { trainer = new Trainer(t, TrainerVariant.DEFAULT); }, w << 8);
+            made.push(trainer);
+            const battle = new Battle(s.gameMode, { waveIndex: w, battleType: BattleType.TRAINER, trainer, double: false });
+            s.currentBattle = battle;
+            for (let e = 0; e < (battle.enemyLevels?.length ?? 0); e++) {
+              battle.enemyParty[e] = trainer.genPartyMember(e);
+              made.push(battle.enemyParty[e]);
+            }
+            parties++;
+            let any = false;
+            for (const p of battle.enemyParty) {
+              members++;
+              const lock = p.getMoveset().find(m => m && LOCKS.includes(m.moveId));
+              if (lock) {
+                any = true;
+                lockMembers++;
+                const tag = `${p.species.name} ${allMoves[lock.moveId].name}`;
+                carriers.set(tag, (carriers.get(tag) ?? 0) + 1);
+              }
+            }
+            if (any) withLock++;
+          } catch (e) {
+            errors.push(`${name}@${w}#${k}: ${e instanceof Error ? e.message : String(e)}`);
+          } finally {
+            for (const m of made) {
+              try { m.destroy(); } catch {}
+            }
+          }
+        }
+        rows.push({ cls, name, wave: w, parties, withLock, members, lockMembers, carriers: Object.fromEntries(carriers) });
+      }
+      writeFileSync(OUT, JSON.stringify({ rows, errors: errors.slice(0, 50), errorCount: errors.length }));
+    }
+
+    // Our side, off the species data: who can carry Protect and who is immune to each lock-in.
+    const all = speciesDataRegistry.getAllSpecies();
+    const starters = new Set(speciesDataRegistry.getAllStarters());
+    const has = (sp: { ability1: number; ability2: number; abilityHidden: number }, a: number) =>
+      sp.ability1 === a || sp.ability2 === a || sp.abilityHidden === a;
+    const ofType = (sp: { type1: number; type2: number | null }, ty: number) => sp.type1 === ty || sp.type2 === ty;
+    const side = { species: all.length, protectTm: 0, protectLevel: 0, fairy: 0, ghost: 0, flashFireOrWellBaked: 0, sapSipper: 0 };
+    const wild: Record<string, { species: number; minLevel: number }> = {};
+    for (const sp of all) {
+      const tms = speciesDataRegistry.getTms(sp.speciesId);
+      const lv = sp.getLevelMoves();
+      if (tms.includes(MoveId.PROTECT)) side.protectTm++;
+      if (lv.some(([, m]) => m === MoveId.PROTECT)) side.protectLevel++;
+      if (ofType(sp, PokemonType.FAIRY)) side.fairy++;
+      if (ofType(sp, PokemonType.GHOST)) side.ghost++;
+      if (has(sp, AbilityId.FLASH_FIRE) || has(sp, AbilityId.WELL_BAKED_BODY)) side.flashFireOrWellBaked++;
+      if (has(sp, AbilityId.SAP_SIPPER)) side.sapSipper++;
+      for (const m of LOCKS) {
+        const at = lv.filter(([, x]) => x === m).map(([l]) => l);
+        if (!at.length) continue;
+        const n = allMoves[m].name;
+        wild[n] ??= { species: 0, minLevel: 999 };
+        wild[n].species++;
+        wild[n].minLevel = Math.min(wild[n].minLevel, ...at.filter(l => l > 0));
+      }
+    }
+    writeFileSync(OUT, JSON.stringify({ rows, errors: errors.slice(0, 50), errorCount: errors.length, side, starters: starters.size, wild }));
+  }, 3_600_000);
+});
