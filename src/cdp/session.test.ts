@@ -7,6 +7,7 @@ const page = (url: string, id = url) => ({ id, type: "page", url, webSocketDebug
 test("the game tab is a page on the game's origin, whatever its path, query or hash (#644)", () => {
   assert.equal(isGameTab(page("https://pokerogue.net/"), DEFAULTS.url), true);
   assert.equal(isGameTab(page("https://pokerogue.net/?x#y"), DEFAULTS.url), true);
+  assert.equal(isGameTab(page("https://pokerogue.net/some/path"), DEFAULTS.url), true);
 });
 
 test("a subdomain, another scheme or a URL that only mentions the game is not the game tab (#644)", () => {

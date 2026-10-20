@@ -21,11 +21,11 @@ export const DEFAULTS: SessionOptions = {
 
 type Target = { id: string; type: string; url: string; webSocketDebuggerUrl: string };
 
-/** `gameUrl`'s origin only: `wiki.` and `beta.` share the domain but are not the game (#644). */
+/** `gameUrl`'s origin only: `wiki.` shares the domain but is not the game (#644, extension-distribution.md §6). */
 export const isGameTab = (t: Pick<Target, "type" | "url">, gameUrl: string): boolean =>
   t.type === "page" && t.url.startsWith(`${new URL(gameUrl).origin}/`);
 
-export const findGameTab = <T extends Pick<Target, "type" | "url">>(targets: T[], gameUrl: string): T | null =>
+export const findGameTab = (targets: Target[], gameUrl: string): Target | null =>
   targets.find(t => isGameTab(t, gameUrl)) ?? null;
 
 /** A page-side throw, returned rather than thrown so a read degrades instead of failing the call. */
