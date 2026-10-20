@@ -141,7 +141,8 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
     }
   }
   if (live && outs.some(o => o.live)) {
-    const rows = replayMoves(turn, foe, me, outs);
+    // This turn's pick, and a benched foe's first, come before its predicted Tera (game-code.md §7).
+    const rows = replayMoves(turn, foe, me, outs, { preTera: (!next && !!foe.isOnField?.()) || turn.teraLater(foe) });
     if (rows) return rows;
   }
   const pool = outs.filter(o => o.expected > 0).sort((a, b) => b.expected - a.expected);
@@ -248,9 +249,12 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
   if (ownMoves && ownFrom <= 0) moves = ownMoves;
   const { expected, use } = landing(foe, moves, m => m.p, next);
   const own = ownMoves && ownFrom > 0 ? landing(foe, ownMoves, m => m.p, next) : null;
-  // `later`: the uses after this one, where a re-drawn target (`likelyMoves`) lands on `me` otherwise or the next is
-  // the foe's own pick; null where neither.
+  // A benched foe's picks after its first are made at the Tera it takes then (game-code.md §7).
+  const teraPicks = live && turn.teraLater(foe) ? replayMoves(turn, foe, me, outs) : null;
+  // `later`: the uses after this one, where a re-drawn target (`likelyMoves`) lands on `me` otherwise, the next is the
+  // foe's own pick, or the foe has Tera'd since; null where none.
   const later = own && ownFrom === 1 ? own
+    : teraPicks ? landing(foe, teraPicks, m => m.p, next)
     : moves.some(m => m.pLater != null) ? landing(foe, moves, m => m.pLater ?? m.p, next) : null;
   const lockRule = { relock: false, immune };
   const steps = lockedRow ? lockSteps([{ s: lockState(lock.left, 0), p: 1 }], lockRule) : null;

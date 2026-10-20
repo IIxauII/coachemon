@@ -325,8 +325,9 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
       const out = env.foes.filter(p => p.isOnField?.());
       return (out.length ? out : env.foes).slice(0, env.double ? 2 : 1);
     }),
-    replayAI: (foe, target, opts = {}) => memo("replay", `${foe.id}|${target.id}|${opts.hp ?? ""}|${opts.bi ?? ""}|${opts.afterLock ? 1 : ""}`,
-      () => (live ? tryDo(() => asDamage(() => sceneReplayAI(env, foe, target, opts)), null) : null)),
+    // `preTera`: a pick the foe makes before its own predicted Tera.
+    replayAI: (foe, target, opts = {}) => memo("replay", `${foe.id}|${target.id}|${opts.hp ?? ""}|${opts.bi ?? ""}|${opts.afterLock ? 1 : ""}|${opts.preTera ? 1 : ""}`,
+      () => (live ? tryDo(() => preTera(opts.preTera ? [foe] : [], () => asDamage(() => sceneReplayAI(env, foe, target, opts))), null) : null)),
     sendInScore: (f, me) => memo("sendIn", `${f.id}|${me.id}`, () => (live ? tryDo(() => turn.atEntry([f], () => asDamage(() => sceneSendInScore(env, f, me))), null) : null)),
     // A benched foe the trainer Teras at its first FIGHT command on the field, not on entry (game-code.md §7).
     teraLater: foe => !!shared.teraLater?.has(foe),

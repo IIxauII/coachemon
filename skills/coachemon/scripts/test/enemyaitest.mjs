@@ -402,6 +402,36 @@ const planner = () => globalThis.__hud["30-planner"];
   assert.deepEqual([...new Set(seen)], [false]);
 }
 
+// ---- The replay standing in for this turn's pick is made pre-Tera, like the pick it stands in for (#648).
+{
+  const { e, me, ai } = instantTera();
+  const seen = [];
+  e.getMoveType = mv => (seen.push(!!e.isTerastallized), mv.type);
+  ai.ask(t => {
+    e.getOpponents = () => [];
+    planner().likelyMoves(t, e, me, [{ name: "A", live: true, expected: 10 }], false);
+  });
+  assert.deepEqual([...new Set(seen)], [false]);
+}
+
+// ---- A benched instant-Tera foe's first pick is made before its Tera, and its picks after that at it (#648).
+{
+  const { bench, me, ai } = instantTera();
+  bench.moveset = [mkMove({ id: 1, name: "A", target: -10 })];
+  // Each replay's flag as the AI reads it, by whether the replay was asked for a pick before the Tera.
+  const seen = { pre: [], post: [] };
+  let at = null;
+  bench.getMoveType = mv => (at && seen[at].push(!!bench.isTerastallized), mv.type);
+  const replayAs = t => Object.create(t, { replayAI: { value: (f, target, opts) => {
+    at = opts?.preTera ? "pre" : "post";
+    try { return t.replayAI(f, target, opts); } finally { at = null; }
+  } } });
+  const t1 = ai.ask(t => planner().threatFrom(replayAs(t), bench, me, null, { next: true }));
+  assert.deepEqual([...new Set(seen.pre)], [false], "the first pick, pre-Tera");
+  assert.deepEqual([...new Set(seen.post)], [true], "the ones after it, at the Tera");
+  assert.ok(t1.later, "and the uses after the first are priced off those");
+}
+
 // ---- Entry hazards land on summon, so a benched instant-Tera foe takes Stealth Rock at its base type (#648).
 {
   const { e, bench, me, ai } = instantTera();
