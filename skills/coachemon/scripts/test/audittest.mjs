@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { MoveFlags } from "../../../../src/enums/generated.ts";
+import { TY } from "./fake-mon.mjs";
 
 class ModifierType {}
 class PokemonModifierType extends ModifierType {}
@@ -10,7 +11,6 @@ class ExpBoosterModifier {}
 class ExpShareModifier {}
 const mk = (C, f) => Object.assign(new C(), f);
 
-const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const MOVES = {};
 let nextId = 1;
 const move = (name, type, power, category, accuracy = 100, f = {}) => {

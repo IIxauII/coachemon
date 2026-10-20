@@ -2,9 +2,7 @@
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { wholeCard } from "./panel.mjs";
-
-const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
-const cat = { P: 0, S: 1, X: 2 };
+import { cat, TY } from "./fake-mon.mjs";
 
 // id → [name, types, bst, direct evolutions [[id, level, evoLevelThreshold?]], legendary]
 const SPECIES = {

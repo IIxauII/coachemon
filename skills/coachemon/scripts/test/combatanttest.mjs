@@ -2,8 +2,8 @@
 // Garchomp at level 50 with 31 IVs and a neutral nature has 183 HP whoever computes it.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
+import { TY } from "./fake-mon.mjs";
 
-const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 // `abilities` and `moves` are indexed by id, as the game's own tables are.
 const ABILITIES = [];
 // Disguise is one of the abilities that doesn't work on a fusion, and carries the attr the game refuses it by.

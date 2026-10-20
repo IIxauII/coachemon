@@ -5,6 +5,7 @@ import { runInNewContext } from "node:vm";
 import { bundle } from "../hud-bundle.mjs";
 import { BattlerIndex, Command, PartyUiMode, UiMode } from "../../../../src/enums/generated.ts";
 import { guard, writes } from "./game-writes.mjs";
+import { TY } from "./fake-mon.mjs";
 
 setFlagsFromString("--expose-gc");
 const gc = runInNewContext("gc");
@@ -21,7 +22,6 @@ globalThis.setTimeout = fn => { tasks.push(fn); return tasks.length; };
 globalThis.clearTimeout = () => {};
 
 // The game the overlay looks at. Every field is read through the scene on each frame, so a step changes it in place.
-const TY = ["Normal", "Fighting", "Flying", "Poison", "Ground", "Rock", "Bug", "Ghost", "Steel", "Fire", "Water", "Grass", "Electric", "Psychic", "Ice", "Dragon"];
 const MOVES = {
   10: ["Scratch", "Normal", 40, 0], 22: ["Vine Whip", "Grass", 45, 0], 33: ["Tackle", "Normal", 40, 0], 45: ["Growl", "Normal", 0, 2],
   52: ["Ember", "Fire", 40, 1], 53: ["Flamethrower", "Fire", 90, 1], 166: ["Sketch", "Normal", 0, 2], 225: ["Dragon Breath", "Dragon", 60, 1],

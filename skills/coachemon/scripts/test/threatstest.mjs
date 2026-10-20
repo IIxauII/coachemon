@@ -4,8 +4,8 @@
 // it damages is — which is all the pick reads it for, the four slots going to the moves the duel can score.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
+import { TY } from "./fake-mon.mjs";
 
-const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const STATUS = 2; // the game's `MoveCategory.STATUS`, which is all the pick asks a move about
 
 // `[speciesId, name, types, baseStats, ability1?]`, by the game's own species ids — which order the pool, and so break

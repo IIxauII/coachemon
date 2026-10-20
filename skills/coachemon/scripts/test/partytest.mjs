@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
-import { party, mon, species, SPECIES, ATTRS, TY } from "./fixtures/party.mjs";
+import { party, mon, species, SPECIES, ATTRS } from "./fixtures/party.mjs";
+import { TY } from "./fake-mon.mjs";
 
 // A bare scene with no `ui`, so the HUD's own tick draws nothing.
 globalThis.window = globalThis;

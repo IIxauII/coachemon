@@ -3,9 +3,7 @@ import { bundle } from "../hud-bundle.mjs";
 import { wholeCard } from "./panel.mjs";
 import { GAME_PROTO } from "./game-proto.mjs";
 import { Challenges, PartyMemberStrength, PokemonType, SpeciesId } from "../../../../src/enums/generated.ts";
-
-const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
-const cat = { P: 0, S: 1, X: 2 };
+import { cat, TY } from "./fake-mon.mjs";
 
 const species = (id, name, types, bst, extra = {}) => ({ speciesId: id, name, type1: TY.indexOf(types[0]), type2: types[1] ? TY.indexOf(types[1]) : null,
   baseTotal: bst, getEvolutionLevels: () => [], getRootSpeciesId: () => id, getName: () => name, getIconAtlasKey: () => "k", getIconId: () => String(id), ...extra });

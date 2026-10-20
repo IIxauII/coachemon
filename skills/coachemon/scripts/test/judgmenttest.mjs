@@ -6,7 +6,8 @@
 // drawn as a threat against itself.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
-import { mon, species, TY } from "./fixtures/party.mjs";
+import { mon, species } from "./fixtures/party.mjs";
+import { cat as CAT, TY } from "./fake-mon.mjs";
 
 const STATUS = 2; // the game's `MoveCategory.STATUS`
 const SINGLE_TYPE = 1, LIMITED_SUPPORT = 8, HARDCORE = 9; // `Challenges`, which only the bundle's prelude holds
@@ -192,7 +193,6 @@ const FACTS = {
   "Wild Charge": ["Electric", 90, "P"], "Wood Hammer": ["Grass", 120, "P"], "X-Scissor": ["Bug", 80, "P"],
   "Zen Headbutt": ["Psychic", 80, "P"],
 };
-const CAT = { P: 0, S: 1 };
 
 let draws = 0, sets = 0;
 globalThis.window = globalThis;
