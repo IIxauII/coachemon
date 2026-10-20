@@ -192,6 +192,18 @@ test("a carried fight whose harness failed asks for no new recording: a new figh
   assert.doesNotMatch(run.text, /in (its|their) place/);
 });
 
+test("the re-check of one known fight, as promotion runs it, replays and checks that fight alone (#787)", async () => {
+  const { calls, deps } = fakes();
+
+  const run = await recheck(PIN, deps, () => {}, [{ stem: "swimmers-w173", name: "Swimmers W173" }]);
+
+  assert.deepEqual(run.failed, []);
+  assert.deepEqual(
+    calls.map(c => `${c.kind} ${c.wave}`),
+    ["replay 173", "check 173"],
+  );
+});
+
 test("a known fight that doesn't replay on its own version asks for no new recording: the harness drifted, not the game (#703)", async () => {
   const { deps } = fakes({ replays: { 188: noAnswer({ code: "known_turn_missed", misses: ["turn 1"] }) } });
 
