@@ -294,8 +294,8 @@ The rules below live in `src/menu-family.ts`: one plan per menu family (reach, s
 | `MODIFIER_SELECT` | **`setCursor`** — `setRowCursor(row)` **then** `setCursor(col)`. Order is load-bearing: `setRowCursor` sets `this.cursor = -1` before re-entering `setCursor` | **[live]**, every wave, worked every time (#6) |
 | `STARTER_SELECT` grid | **`setCursor`** — clamps, keeps the sprite synced, fires `setSpecies`/`updateInstructions` | **[live]** #8, measured reversibly |
 | `TITLE` / `CONFIRM` / `OPTION_SELECT` / `MENU` | **`setScrollCursor` then `setCursor`**. The option is `options[cursor + scrollCursor]`: **`h.cursor` is a screen row, not the option index**. An option with `selectable: false` arms `repeatInput`, which replays the next button, so `cursor.option` clears it | **[source]** #4 at 1.12.1.1, not exercised live |
-| `COMMAND` | presses. Read the cursor with **`h.getCursor()`** (`fieldIndex ? cursor2 : cursor`) — plain `h.cursor` is wrong on field slot 2 in doubles | `setCursor` is **[source]**-safe but leaves the tera glow stale |
-| `FIGHT` | presses (UP/DOWN are ±2, LEFT/RIGHT ±1 over a 2×2). Read with `h.getCursor()` | `setCursor` is **[source]**-safe; the one live move change used `DOWN` |
+| `COMMAND` | presses. Read the cursor with **`h.getCursor()`** (`fieldIndex ? cursor2 : cursor`) — plain `h.cursor` is wrong on field slot 2 in doubles. The `Tera` option, cursor 4, is LEFT of Fight and Pokémon; RIGHT leaves it for Fight (#642) | `setCursor` is **[source]**-safe but leaves the tera glow stale |
+| `FIGHT` | presses (UP/DOWN are ±2, LEFT/RIGHT ±1 over a 2×2). Read with `h.getCursor()`. `extra.tera` is true when the `Tera` command opened it (`h.fromCommand === Command.TERA`), so the move picked Terastallizes first (#642) | `setCursor` is **[source]**-safe; the one live move change used `DOWN` |
 | `PARTY` slot phase | presses | `setCursor` is **[source]**-safe but skips the `lastLeftPokemonCursor` bookkeeping; live runs used `DOWN` |
 | `PARTY` option phase | **presses, always** | `setOptionsCursor` assumes ±1 steps and desynchronises `optionsScrollCursor` on a multi-step jump when `optionsScroll === true`. That branch has never been observed true — which is not a reason to risk it |
 | `SAVE_SLOT` | presses | Absolute index is `h.cursor + h.scrollCursor`; `setCursor` moves only the on-screen row and is not re-entrant with `scrollCursor` |
@@ -311,7 +311,7 @@ The rules below live in `src/menu-family.ts`: one plan per menu family (reach, s
 | Screen | Labels | Care |
 |---|---|---|
 | `TITLE` / `CONFIRM` / `OPTION_SELECT` | `handler.config.options[i].label` | clean, in cursor order |
-| `COMMAND` | text children of `h.commandsContainer` | child 0 is the tera sprite |
+| `COMMAND` | text children of `h.commandsContainer`, then a synthetic `Tera` at index 4 while `h.canTera()` | child 0 is the tera sprite, which has no text |
 | `FIGHT` | text children of `h.movesContainer` | `"-"` is an empty slot |
 | `MODIFIER_SELECT` | `h.options[]` and `h.shopOptionsRows[][]`; label `opt.modifierTypeOption.type.name`, cost `.cost` | shop rows are indexed **backwards**: row *n* ≥ 2 is `h.shopOptionsRows.at(-(n-1))`. **Row 0 is the button bar** (`Reroll`, `Manage Items`, `Check Team`, `Lock Rarities`) — these must be read from the game's own i18n keys (`reroll`/`manageItems`/`checkTeam`/`lockRarities`), **not hardcoded in English as the prototype did** |
 | `PARTY` slot phase | `scene.getPlayerParty()` objects | slot 6 is Cancel; slot 7 is the transfer/discard toggle in item modes |

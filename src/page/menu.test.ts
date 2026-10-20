@@ -192,3 +192,44 @@ test("a mode without a handler is unreadable", t => {
   onPage(t, { ui: { mode: 2, handlers: {} } });
   assert.deepEqual(send("menu", {}), { readable: false, why: "no-handler", mode: 2 });
 });
+
+/** COMMAND as `CommandUiHandler.setup` builds it: the Tera button is a sprite among the four command texts. */
+function commandScene(canTera: boolean, cursor = 0) {
+  const text = (t: string) => ({ text: t });
+  const h = {
+    cursor, fieldIndex: 0,
+    commandsContainer: { list: [{ frame: "fire" }, text("Fight"), text("Ball"), text("Pokémon"), text("Run")] },
+    getCursor() { return this.cursor; },
+    canTera: () => canTera,
+  };
+  return { ui: { mode: UiMode.COMMAND, handlers: { [UiMode.COMMAND]: h } }, currentBattle: {} };
+}
+
+test("COMMAND lists a Tera option at index 4 while the handler can Terastallize, the game drawing no text for it (#642)", t => {
+  onPage(t, commandScene(true, 4));
+  const menu = send("menu", {});
+  assert.equal(menu.family, "command");
+  assert.deepEqual(menu.options, [{ i: 0, label: "Fight" }, { i: 1, label: "Ball" }, { i: 2, label: "Pokémon" }, { i: 3, label: "Run" }, { i: 4, label: "Tera", synthetic: true }]);
+  assert.equal(menu.cursor, 4);
+});
+
+test("COMMAND lists no Tera option while the handler can't Terastallize (#642)", t => {
+  onPage(t, commandScene(false));
+  assert.deepEqual(send("menu", {}).options.map((o: { label: string }) => o.label), ["Fight", "Ball", "Pokémon", "Run"]);
+});
+
+/** FIGHT as `FightUiHandler.show` leaves it: `fromCommand` is the command that opened it, `Command.TERA` (4) for a Tera turn. */
+function fightScene(fromCommand: number) {
+  const text = (t: string) => ({ text: t });
+  const h = { cursor: 0, fieldIndex: 0, fromCommand, movesContainer: { list: [text("Hydro Pump"), text("Bite"), text("-"), text("-")] }, getCursor() { return this.cursor; } };
+  return { ui: { mode: UiMode.FIGHT, handlers: { [UiMode.FIGHT]: h } }, getPlayerField: () => [] };
+}
+
+test("FIGHT reports Tera mode when the Tera command opened it, and not when Fight did (#642)", t => {
+  onPage(t, fightScene(4));
+  const tera = send("menu", {});
+  assert.equal(tera.family, "fight");
+  assert.equal(tera.extra.tera, true);
+  onPage(t, fightScene(0));
+  assert.equal(send("menu", {}).extra.tera, false);
+});

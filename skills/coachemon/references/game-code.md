@@ -2845,7 +2845,10 @@ Read from the pinned source.
 **The command menu.** `Command` is FIGHT 0, BALL 1, POKEMON 2, RUN 3, TERA 4 (`src/enums/command.ts:1`), laid out 2×2
 (`src/ui/handlers/command-ui-handler.ts:52-61`). UP/DOWN move ±2 and LEFT/RIGHT ±1, never wrapping (`:157-182`). TERA
 sits off the grid: LEFT from FIGHT or POKEMON reaches it when `canTera()` (`:170-172`), RIGHT returns to FIGHT
-(`:178-180`), and `show` moves a cursor left on POKEMON back to FIGHT (`:98-99`).
+(`:178-180`), and `show` moves a cursor left on POKEMON back to FIGHT (`:98-99`). The button is a sprite with no text
+(`:40-50`) and `canTera()` (`:193`) decides whether it shows. ACTION on it opens FIGHT with `Command.TERA` as the
+handler's `fromCommand` (`:143-149`, `fight-ui-handler.ts:125`), which draws the `cursor_tera` cursor (`:309-310`) and
+is the command a move commits (`:155-159`), so a FIGHT opened that way Terastallizes with its move.
 
 **The target cursor.** `TargetSelectUiHandler.processInput` (`src/ui/handlers/target-select-ui-handler.ts:89`) moves a
 `BattlerIndex` — PLAYER 0, PLAYER_2 1, ENEMY 2, ENEMY_2 3 (`src/enums/battler-index.ts:5`) — and only ever lands on a

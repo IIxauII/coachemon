@@ -8,7 +8,10 @@ import type { CursorTarget, MenuOption, MenuRead } from "./game/port.ts";
 import { normalizeLabel } from "./labels.ts";
 import type { Choice } from "./stuck/detector.ts";
 
-export type StepRule = "list" | "grid2x2" | "down_cycle" | "battler_grid";
+export type StepRule = "list" | "grid2x2" | "command_grid" | "down_cycle" | "battler_grid";
+
+/** `Command.TERA`: the Tera button, off COMMAND's 2×2 grid (game-code.md §25). */
+export const TERA_COMMAND = 4;
 
 export type Walk = { to: number; rule: StepRule };
 
@@ -34,6 +37,11 @@ export function step(rule: StepRule, cursor: number, to: number): Button {
     case "grid2x2":
       if (Math.floor(cursor / 2) !== Math.floor(to / 2)) return cursor < to ? Button.DOWN : Button.UP;
       return cursor < to ? Button.RIGHT : Button.LEFT;
+    // LEFT reaches the Tera button from Fight or Pokémon, and RIGHT leaves it for Fight (#642, game-code.md §25).
+    case "command_grid":
+      if (to === TERA_COMMAND) return Button.LEFT;
+      if (cursor === TERA_COMMAND) return Button.RIGHT;
+      return step("grid2x2", cursor, to);
     case "down_cycle":
       return Button.DOWN;
     case "battler_grid": {
@@ -68,7 +76,7 @@ export function planSelect(menu: MenuRead, target: MenuOption): Plan {
     // label (#56).
     case "command":
       if (i === 1 && menu.extra.catchable === false) throw cannotCatch(menu, target);
-      return plan(walk("grid2x2"));
+      return plan(walk("command_grid"));
     // v1-tool-surface.md §7 FIGHT. MYSTERY_ENCOUNTER has no row, and only its four-option layout is FIGHT's grid
     // (game-code.md §13).
     case "fight":

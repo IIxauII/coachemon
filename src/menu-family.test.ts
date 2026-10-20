@@ -25,6 +25,8 @@ const steps: Record<StepRule, [cursor: number, to: number, button: Button][]> = 
   list: [[0, 2, Button.DOWN], [3, 1, Button.UP], [4, 0, Button.UP]],
   // (game-code.md §25)
   grid2x2: [[0, 1, Button.RIGHT], [1, 0, Button.LEFT], [0, 3, Button.DOWN], [1, 2, Button.DOWN], [3, 0, Button.UP], [2, 3, Button.RIGHT]],
+  // The Tera button, 4, is LEFT of Fight and Pokémon and leaves RIGHT to Fight (#642, game-code.md §25).
+  command_grid: [[0, 4, Button.LEFT], [2, 4, Button.LEFT], [1, 4, Button.LEFT], [3, 4, Button.LEFT], [4, 0, Button.RIGHT], [4, 3, Button.RIGHT], [0, 3, Button.DOWN], [1, 0, Button.LEFT]],
   // (v1-tool-surface.md §10)
   down_cycle: [[0, 6, Button.DOWN], [6, 0, Button.DOWN], [3, 1, Button.DOWN]],
   // (#40, game-code.md §25)
@@ -59,10 +61,11 @@ test("option_select refuses option_skipped on an option the handler skips", () =
 });
 
 const commands = labelled("Fight", "Ball", "Pokémon", "Run");
+const withTera: MenuOption[] = [...commands, { i: 4, label: "Tera", synthetic: true }];
 
-for (const family of ["command", "fight", "mystery_encounter"] as const) {
+for (const family of ["fight", "mystery_encounter"] as const) {
   test(`${family} walks its 2×2 grid`, () => {
-    const extra = { command: { fieldIndex: 0, catchable: true }, fight: { fieldIndex: 0 }, mystery_encounter: {} }[family];
+    const extra = { fight: { fieldIndex: 0, tera: false }, mystery_encounter: {} }[family];
     const menu = menuOf(family, extra as FamilyExtra[typeof family], labelled("A", "B", "C", "D"));
     const plan = planSelect(menu, menu.options[3]);
     assert.deepEqual(plan.reach, { kind: "walk", to: 3, rule: "grid2x2" });
@@ -70,17 +73,32 @@ for (const family of ["command", "fight", "mystery_encounter"] as const) {
   });
 }
 
+test("command walks its grid and the Tera button beside it, committing with ACTION (#642)", () => {
+  const menu = menuOf("command", { fieldIndex: 0, catchable: true }, withTera);
+  for (const option of [menu.options[3], menu.options[4]]) {
+    const plan = planSelect(menu, option);
+    assert.deepEqual(plan.reach, { kind: "walk", to: option.i, rule: "command_grid" });
+    assert.deepEqual(plan.commit, { kind: "action" });
+  }
+});
+
 test("command refuses Ball in a trainer battle, by position, and still plans the other commands (#56)", () => {
   const menu = menuOf("command", { fieldIndex: 0, catchable: false }, commands);
   const r = refusal(() => planSelect(menu, menu.options[1]));
   assert.equal(r.code, "cannot_catch_trainer");
   assert.deepEqual(r.detail, { screen: "COMMAND", options: ["fight", "ball", "pokémon", "run"], cursor: 0 });
-  assert.deepEqual(planSelect(menu, menu.options[3]).reach, { kind: "walk", to: 3, rule: "grid2x2" });
+  assert.deepEqual(planSelect(menu, menu.options[3]).reach, { kind: "walk", to: 3, rule: "command_grid" });
+});
+
+test("command still refuses Ball by position in a trainer battle while Tera is offered (#56, #642)", () => {
+  const menu = menuOf("command", { fieldIndex: 0, catchable: false }, withTera);
+  assert.equal(refusal(() => planSelect(menu, menu.options[1])).code, "cannot_catch_trainer");
+  assert.deepEqual(planSelect(menu, menu.options[4]).reach, { kind: "walk", to: 4, rule: "command_grid" });
 });
 
 test("command takes Ball in a wild battle (#56)", () => {
   const menu = menuOf("command", { fieldIndex: 0, catchable: true }, commands);
-  assert.deepEqual(planSelect(menu, menu.options[1]).reach, { kind: "walk", to: 1, rule: "grid2x2" });
+  assert.deepEqual(planSelect(menu, menu.options[1]).reach, { kind: "walk", to: 1, rule: "command_grid" });
 });
 
 const balls: MenuOption[] = [

@@ -61,6 +61,9 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
     } else if (mode === m.COMMAND) {
       out.family = "command";
       out.options = __texts(h.commandsContainer).map((t, i) => opt(i, t));
+      // The Tera button is a sprite with no text: `Command.TERA`, shown while `canTera()` holds (#642, game-code.md §25).
+      // @mirrors command-tera
+      if (__try(() => h.canTera()) === true) out.options.push(opt(4, "Tera", { synthetic: true }));
       out.cursor = h.getCursor ? h.getCursor() : h.cursor;
       out.extra.fieldIndex = h.fieldIndex || 0;
       out.extra.catchable = catchable();
@@ -70,6 +73,9 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       out.options = __texts(h.movesContainer).map((t, i) => opt(i, t));
       out.cursor = h.getCursor ? h.getCursor() : h.cursor;
       out.extra.fieldIndex = h.fieldIndex || 0;
+      // Opened by the Tera command, `Command.TERA`, the cursor that draws `cursor_tera` (#642).
+      // @mirrors command-tera
+      out.extra.tera = h.fromCommand === 4;
       const pk = __try(() => scene.getPlayerField()[h.fieldIndex || 0]);
       const ms = __try(() => pk.getMoveset());
       if (ms) out.extra.moves = ms.map((m: any) => m ? __try(() => {
