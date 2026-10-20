@@ -1789,7 +1789,12 @@ Read at the pinned tag. The refs are under `30-planner.js`, `10-damage.js` and `
   - Neither field is `summonData` state the HUD has to invent: the write is exactly the game's, and `withHypothesis`
     puts the previous value back.
 - **Protect.** `ProtectAttr.getCondition` (`src/data/moves/move.ts:6812-6833`): the n-th success in a row passes when
-  `randBattleSeedInt(3^n) === 0`, a battle-stream draw. `MoveEffectPhase.protectedCheck` lets a move through when
+  `randBattleSeedInt(3^n) === 0`, a battle-stream draw. The streak runs back through `getLastXMoves(-1)`, newest first,
+  looking each move up by id in `allMoves`: a move with `ProtectAttr`, or Quick Guard or Wide Guard, which carry none
+  (`AddArenaTagAttr`, `src/data/moves/move.ts:10932-10935`, `:11053-11056`), and it stops at the first other move or
+  non-`SUCCESS` result (`:6816-6828`). No moveset is read, so a Protect out of a Transform's or Mimic's copy (§17) counts,
+  and so does one another move called, which `MoveEffectPhase` records under its own id (`CallMoveAttr`, `:7877-7885`;
+  `src/phases/move-effect-phase.ts:161-166`, `:258-261`). `MoveEffectPhase.protectedCheck` lets a move through when
   `doesFlagEffectApply({ flag: IGNORE_PROTECT })` holds (Feint; Unseen Fist on contact;
   `src/phases/move-effect-phase.ts:497-527`, `src/data/moves/move.ts:897`).
 - **Stopped before damage.** `MovePhase.secondFailureCheck` cancels a move in primordial weather
@@ -1932,6 +1937,13 @@ zero, not a positive one. The TM pool
 `getCompatibleTms(true, true, true)` over the **whole** party (known, level-up and already-used TMs removed), keeps the
 tier's, and picks with `randSeedInt`. The card considers every member outside Hardcore, the living ones in it, and marks
 a fainted recipient.
+
+**A move known only for the battle.** `excludeKnown` drops the member's own `moveset` (`src/field/pokemon.ts:6089-6091`),
+never the Transform or Mimic copy `getMoveset()` answers while one is set (§17). The learn a TM queues
+(`TmModifier.apply`, `src/modifier/modifier.ts:2295-2304`) reads `getMoveset()` and ends at once on a move it holds
+(`src/phases/learn-move-phase.ts:46-57`), so a member that knows the move only through that copy passes the filter and
+learns nothing. The party screen's label reads them the other way round: "Learned" off `getMoveset()`, then "Able" off
+`isTmCompatible(tmMoveId)` without `excludeKnown` (`src/ui/handlers/party-ui-handler.ts:2251-2256`).
 
 **What `getCompatibleTms`' exclusions really drop.** `excludeLevelUp` (`src/field/pokemon.ts:6092-6094`) asks
 `getLevelMoves({ includeEvolutionMoves: true, includeRelearnerMoves: true })`, so `startingLevel` is the member's own
@@ -2083,7 +2095,10 @@ the prompt's closures until `forgetMoveProcess` opens the summary screen in `LEA
 **Answering it.** `start` ends at once on a move the mon already knows, Sketch excepted, or one unimplemented
 (`src/phases/learn-move-phase.ts:48-57`), and learns into the next slot unasked while the mon knows fewer than four
 (`:62-63`). Both checks read `getMoveset()`, which is the Transform or Mimic moveset in `summonData` while one is set
-(`src/field/pokemon.ts:1882`); `setMove` writes the new move into both (`:2016-2018`). The phase stays current after
+(`src/field/pokemon.ts:1882`); `setMove` writes the new move into both (`:2016-2018`). The copy outlives the wave on
+our side, since `EncounterPhase` resets only the enemy's summon data (`src/phases/encounter-phase.ts:142-146`); a
+switch, a faint or a `ReturnPhase` clears it (`src/phases/switch-summon-phase.ts:134`, `src/phases/faint-phase.ts:60`,
+`src/phases/return-phase.ts:23`). The phase stays current after
 the move is taken: `learnMove` calls `setMove` before its "learned" message and ends only once that message is
 dismissed (`src/phases/learn-move-phase.ts:211-229`). A decline likewise ends only after its "did not learn" message
 (`:156-157`, `:166-167`), and nothing the overlay can read marks that message as a decline (#808). The phase writes

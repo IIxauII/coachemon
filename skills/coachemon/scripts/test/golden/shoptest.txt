@@ -232,6 +232,14 @@ Others
 Team audit
 ✗ 2 of 2 weak to Ground, nobody resists
 · nothing hits Fighting/Poison/Ground/Rock +5 super-effectively
+== tm known through Mimic
+⌃ ×
+🛒 $200 nothing affordable take TM Fire Fang → Snorlax
+★ TM Fire Fang Snorlax free slot · +80 power
+2 issues: 2 of 2 weak to Fighting, nobody resists; nothing hits Fighting/Poison/Ground/Rock +9 super-effectively
+Team audit
+✗ 2 of 2 weak to Fighting, nobody resists
+· nothing hits Fighting/Poison/Ground/Rock +9 super-effectively
 == tm nobody
 ⌃ ×
 🛒 $200 nothing affordable take 5× Poké Ball

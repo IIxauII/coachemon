@@ -198,13 +198,21 @@ export const awaitingDecision = s => {
   return null;
 };
 
+// Which moveset is the caller's to pick: `getMoveset()` is the one the battle reads, a Transform's or Mimic's copy while
+// one is set, and `moveset` the one the member keeps (game-code.md §17). A loop, not `.some`: `learnAsked` reads it
+// each frame.
+export const hasMove = (moveset, id) => {
+  if (moveset) for (let i = 0; i < moveset.length; i++) if (moveset[i]?.moveId === id) return true;
+  return false;
+};
+
 // The member a `LearnMovePhase` asks to forget a move for, or null: the phase also runs for a learn into a free slot, and
 // stays current over "X learned Y!" once the move is taken (game-code.md §17, #525). Allocates nothing, as the watch's
 // detector reads it each frame.
 export const learnAsked = (party, ph) => {
   const pk = party?.[ph.partyMemberIndex], ms = pk?.getMoveset?.() ?? pk?.moveset;
   if (!ms || ms.length < 4) return null;
-  if (ph.moveId !== MoveId.SKETCH) for (let i = 0; i < ms.length; i++) if (ms[i] && ms[i].moveId === ph.moveId) return null;
+  if (ph.moveId !== MoveId.SKETCH && hasMove(ms, ph.moveId)) return null;
   return pk;
 };
 

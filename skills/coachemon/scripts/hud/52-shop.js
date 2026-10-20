@@ -1,6 +1,6 @@
 // The rewards card's model: what to take, what to buy, and whether to reroll. A reward is judged by who the game's own
 // select filter lets use it, then by its tier; 51-items.js judges the ones that go to one member (game-code.md §15).
-import { TIER_NAMES, TYPES, iconOf } from "./01-core.js";
+import { TIER_NAMES, TYPES, hasMove, iconOf } from "./01-core.js";
 import { stage } from "./01-meter.js";
 import { challengeOn, waveKind } from "./03-calendar.js";
 import { learnAdvice, learnMoveById } from "./40-learn.js";
@@ -23,7 +23,9 @@ const shopUsers = (t, party) => {
   if (typeof t.selectFilter !== "function") return null;
   try { return party.filter(p => t.selectFilter(p) == null); } catch { return null; }
 };
-const knowsMove = (p, id) => (p.moveset ?? []).some(m => m?.moveId === id);
+// The select filter skips the member's own moves only, and the learn then ends on a move its battle moveset holds
+// (game-code.md §16).
+const knowsMove = (p, id) => hasMove(p.moveset, id) || hasMove(p.getMoveset?.(), id);
 // The TM's select filter, else the `isTmCompatible` it wraps (game-code.md §16). null when neither can tell.
 const tmLearners = (t, party) => {
   let users = shopUsers(t, party);
