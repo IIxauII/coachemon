@@ -166,14 +166,18 @@ function choices(active: any, move: MoveId): number[] {
   return targets.length > 1 && !multiple ? targets : [];
 }
 
-/** A target is named only where there is a choice of foes, and ours only where no foe is a choice (#788). */
+/**
+ * Each mon of ours the game lets the move aim at is named (#794), and a foe only where there is a choice of foes: a lone
+ * foe goes unnamed, as `issue` aims at it.
+ */
 function targetsOf(active: any, move: string): (Target | undefined)[] {
   if (!double()) return [undefined];
   const all = choices(active, MoveId[move as keyof typeof MoveId]);
+  if (all.length === 0) return [undefined];
   const foes = all.filter(t => t >= BattlerIndex.ENEMY);
-  const offered = foes.length > 0 ? foes : all;
-  if (foes.length === 1 || offered.length === 0) return [undefined];
-  return offered.map(t => (t >= BattlerIndex.ENEMY ? { side: "foes", field: t - BattlerIndex.ENEMY } : { side: "ours", field: t }));
+  const ours: Target[] = all.filter(t => t < BattlerIndex.ENEMY).map(field => ({ side: "ours", field }));
+  const named: Target[] = foes.map(t => ({ side: "foes", field: t - BattlerIndex.ENEMY }));
+  return [...(foes.length === 1 ? [undefined] : named), ...ours];
 }
 
 function commandsOf(active: any): FieldCommand[] {
