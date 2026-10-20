@@ -138,8 +138,8 @@ assert.equal(plan.approxDoubles, false);
   };
   const holder = (items, extra = {}) => Object.assign(mon("Snorlax", 100, ["Normal"], "Thick Fat", [400,200,160,120,160,60], [["Tackle","Normal",40,"P"]], true), { getHeldItems: () => items }, extra);
   const sticky = { hasAbilityWithAttr: a => a === "BlockItemTheftAbAttr" };
-  const at = (bites, items, extra = {}) => {
-    const me = biter(bites), f = holder(items, extra);
+  const at = (bites, items, extra = {}, thief = {}) => {
+    const me = Object.assign(biter(bites), thief), f = holder(items, extra);
     const { scene: s } = run(null, { party: [me], foes: [f] });
     const T = globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpTables(turn, [me], [f]));
     return { kept: T.foeHeal[0], after: T.foeHealAt[0][0] };
@@ -153,6 +153,18 @@ assert.equal(plan.approxDoubles, false);
   assert.equal(at(true, [berry(0), berry(1)]).after.sitrus, 50, "beside a Lum, half the draw takes the Sitrus");
   assert.equal(at(true, [berry(0, 2)]).after.sitrus, 100, "a stack of two keeps one turn-end Sitrus");
   assert.equal(at(true, [berry(0)], sticky).after, null, "Sticky Hold blocks the steal, so the fight plays the heal it keeps");
+  assert.deepEqual(at(true, [berry(0)], sticky, { hasAbilityWithAttr: a => a === "MoveAbilityBypassAbAttr" }).after, sitrus.after, "a Mold Breaker thief gets past it");
+}
+// A switch-in's entry turn ends before our Bug Bite has gone off, so the foe still eats its own Sitrus then (#646).
+{
+  const { tpFight } = globalThis.__tp;
+  const T = { ours: [[{ dmg: 100, steals: true }]], theirs: [[{ dmg: 10, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [null],
+    foeHeal: [{ base: 0, sitrus: 50, enigma: 0 }], foeHealAt: [[{ base: 0, sitrus: 0, enigma: 0 }]] };
+  const st = { oh: [200], ob: [0], fh: [90], fs: [0], fb: [0] };
+  const [switched, free] = ["switch", "free"].map(e => tpFight(T, st, 0, 0, e));
+  console.log(`== a bug bite switch-in's entry turn\nswitch: won in ${switched.ends.win.turns} · free: won in ${free.ends.win.turns}`);
+  assert.equal(switched.ends.win.turns, 2, "the Sitrus eaten at the entry turn's end takes a second Bug Bite");
+  assert.equal(free.ends.win.turns, 1, "with no entry turn, the first Bug Bite fells it");
 }
 // Item thieves and wave status tokens carry through the exchange: a long Blastoise–Snorlax fight.
 {

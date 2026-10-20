@@ -100,13 +100,10 @@ export const tpHealProfile = (turn, p) => {
   const base = at(Math.ceil(max * 0.75), false);
   return { base, sitrus: Math.max(0, at(Math.floor(max * 0.4), false) - base), enigma: Math.max(0, at(Math.ceil(max * 0.75), true) - base) };
 };
-// `f`'s profile once our `pick` has eaten a berry off it (#646): the draw is uniform over the berry types it holds, and
-// only the share of uses that land takes one. Null where the pick steals nothing, where the steal is blocked (Sticky
-// Hold, a substitute — `berryStealable`, the same test the planner makes), or where there is nothing to take.
-const tpHealAfterSteal = (turn, f, pick) => {
-  if (!pick?.steals || !berryStealable(f)) return null;
+// `f`'s profile once `me`'s `pick` has eaten a berry off it (#646), at the pick's accuracy. Null where it can't.
+const tpHealAfterSteal = (turn, me, f, pick) => {
+  if (!pick?.steals || !berryStealable(f, me)) return null;
   const types = berryTypesOf(f);
-  if (!types.length) return null;
   const kept = tpHealProfile(turn, f);
   const gone = types.map(b => tpHealProfile(turn, lessBerry(f, b)));
   const q = Math.max(0, Math.min(1, pick.acc ?? 1));
@@ -129,7 +126,7 @@ export const tpTables = (turn, party, foes, double = false) => {
     ourMax: party.map(p => p.getMaxHp()), foeMax: foes.map(f => f.getMaxHp()),
     ourHeal: party.map(p => tpHealProfile(turn, p)), foeHeal: foes.map(p => tpHealProfile(turn, p)),
     // `foeHealAt[mi][fi]`: the foe's profile for the pairings whose pick eats a berry off it, else nothing.
-    foeHealAt: party.map((me, mi) => foes.map((f, fi) => tpHealAfterSteal(turn, f, ours[mi][fi]))),
+    foeHealAt: party.map((me, mi) => foes.map((f, fi) => tpHealAfterSteal(turn, me, f, ours[mi][fi]))),
     foeStart: foes.map(f => f.hp),
     // `koMult`: the factor both sides' on-KO boosts put on a hit, after `atkN` and `defN` KOs, at physical share `phys`.
     ourKo: party.map(koBoost), foeKo: foes.map(koBoost),
@@ -221,11 +218,12 @@ export const tpFight = (T, st, mi, fi, entry, over = null) => {
     b.ox += them.hits ?? 0;
     b.og += (robUs?.perHit ?? 0) * (them.hits ?? 0);
   };
-  const endTurn = b => {
+  // `attacked`: we have used our move by this turn end, so a steal can have happened — not on a switch-in's entry turn.
+  const endTurn = (b, attacked = true) => {
     [b.mh, b.mb] = tpHeal(b.mh, T.ourMax[mi], T.ourHeal[mi], b.mb, them.e >= 2, (tok ? tok.shift * by(turns) : 0) + tpStolen(T.ourItems?.[mi], b.od, b.og));
     // `foeHealAt` is the profile after the pairing's own pick steals, so only a move in hand that steals reads it:
     // `over` may pin a different move for this exchange (#113), and that one takes no berry.
-    [b.fh, b.fb] = tpHeal(b.fh, T.foeMax[fi], (us?.steals ? T.foeHealAt?.[mi]?.[fi] : null) ?? T.foeHeal[fi], b.fb, (us?.e ?? 1) >= 2, tpStolen(T.foeItems?.[fi], b.fd, b.fg));
+    [b.fh, b.fb] = tpHeal(b.fh, T.foeMax[fi], (attacked && us?.steals ? T.foeHealAt?.[mi]?.[fi] : null) ?? T.foeHeal[fi], b.fb, (us?.e ?? 1) >= 2, tpStolen(T.foeItems?.[fi], b.fd, b.fg));
     if (robUs && b.fh >= 1) b.od += robUs.perTurn;
     if (robFoe && b.mh >= 1) b.fd += robFoe.perTurn;
   };
@@ -238,7 +236,7 @@ export const tpFight = (T, st, mi, fi, entry, over = null) => {
   let standing = [];
   const start = { p: 1, mh: st.oh[mi], mb: st.ob[mi], fh: st.fh[fi], fs: st.fs[fi], fb: st.fb[fi], ox: ox0, od: st.od?.[mi] ?? 0, og: st.og?.[mi] ?? 0, fd: st.fd?.[fi] ?? 0, fg: st.fg?.[fi] ?? 0 };
   if (entry === "switch") {
-    for (const t of theirUse) { const b = { ...start, p: t.p }; foeHit(b, t.r, them.entry ?? them.dmg); endTurn(b); settle(b, standing); }
+    for (const t of theirUse) { const b = { ...start, p: t.p }; foeHit(b, t.r, them.entry ?? them.dmg); endTurn(b, false); settle(b, standing); }
     standing = tpMerge(standing, TP_BRANCHES, T, mi, fi);
   } else standing = [start];
   while (standing.length && turns < TP_TURNS) {

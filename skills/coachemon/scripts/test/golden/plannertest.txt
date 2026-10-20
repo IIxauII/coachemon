@@ -357,7 +357,7 @@ Sitrus x1, Pound instead   turnsWe 4 · our HP 146 · P(steal) 0
 Sitrus x1                  turnsWe 3 · our HP 264 · P(steal) 1
 we eat: Sitrus 100 · at 350/400 50 · beside a Lum 50 · a Sitrus x2 beside a Lum 50 · beside a Liechi 50
 Sitrus x1 + Lum x1         turnsWe 3 · our HP 264 · P(steal) 1
-Sitrus x2 + Lum x1         turnsWe 3 · our HP 264 · P(steal) 1
+Sitrus x2 + Lum x1         turnsWe 3 · our HP 289 · P(steal) 1
 Sitrus x1 + Liechi x1      turnsWe 3 · our HP 264 · P(steal) 1
 nothing held               turnsWe 3 · our HP 164 · P(steal) 0
 Sitrus x1, Sticky Hold     turnsWe 4 · our HP 146 · P(steal) 0
@@ -378,6 +378,10 @@ draw: Sitrus + Liechi      types 0,3 · supply 2 · lost -35 · eaten 35
 named: Sitrus of a x2      types 0 · supply 2 · lost 0 · eaten 70
 named: Liechi beside it    types 3 · supply 2 · lost 0 · eaten 0
 named: a Lum it lacks      nothing to lose
+draws: Sitrus x1 + Lum x2     35 · 17.5 · 17.5 · 0
+we eat from full HP, Sitrus x2: 36 over a Heal Blocked thief
+eaten: plain 70 · Ripen 140 · Heal Block 0
+reach: sticky false,true,false · sub false,true,false
 == gordie w180 t7: Leavanny into the incoming Carracosta
 as plain damage: Leaf Storm (Leaf Storm: we need 2, they need 2 (2.393), P(steal) 0 · Bug Bite: we need 6, they need 2 (2.393), P(steal) 0)
 with the steal:  Leaf Storm (Leaf Storm: we need 2, they need 2 (2.393), P(steal) 0 · Bug Bite: we need 6, they need 3 (3.126), P(steal) 1)

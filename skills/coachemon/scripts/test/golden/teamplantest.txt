@@ -15,6 +15,8 @@ Fight plan likely lost
 winnable · Charizard
 == a bug bite pairing's foe heal profile
 it keeps {"base":0,"sitrus":100,"enigma":0} · after the steal {"base":0,"sitrus":0,"enigma":0}
+== a bug bite switch-in's entry turn
+switch: won in 2 · free: won in 1
 == thieves and tokens
 KO · 60% left
 == mirror at a speed tie

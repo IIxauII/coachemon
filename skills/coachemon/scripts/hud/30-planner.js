@@ -457,8 +457,7 @@ export const afterSteals = (me, heal, takes = m => m.isTransferable !== false) =
   return out;
 };
 
-// A berry eaten off its holder (`StealEatBerryAttr`, game-code.md §8). The draw is over the holder's BerryModifiers,
-// so a stack of two is one entry and leaves one behind.
+// A berry eaten off its holder (`StealEatBerryAttr`, game-code.md §3).
 const isBerry = m => m?.constructor?.name === "BerryModifier";
 const stackOf = m => m.getStackCount?.() ?? m.stackCount ?? 1;
 const heldBerries = p => (p.getHeldItems?.() ?? []).filter(isBerry);
@@ -477,31 +476,62 @@ export const lessBerry = (p, b) => {
   });
   return took ? Object.create(p, { getHeldItems: { value: () => held } }) : p;
 };
-// The berries the turn-end model prices (10-damage.js): Sitrus and Enigma each heal a quarter. A steal's `eatBerry`
-// runs no predicate, so the thief gets that heal whatever its HP — capped only by the room it has left. Every other
-// berry is worth nothing to either side here and still takes its share of the draw.
+// The berries the turn-end model prices (10-damage.js) heal the eater a quarter; every other berry is worth nothing to
+// either side here and still takes its share of the draw (game-code.md §3). `room`: the most it can take.
 // @mirrors stolen-berry-heal
 const EATEN_QUARTER = [BerryType.SITRUS, BerryType.ENIGMA];
-const eatenNow = (eater, hp, b) => {
+const eatenNow = (eater, b, room = Infinity) => {
   const max = eater?.getMaxHp?.() ?? 0;
-  return EATEN_QUARTER.includes(b) ? Math.min(Math.max(0, max - hp), Math.max(1, Math.floor(max / 4))) : 0;
+  if (!EATEN_QUARTER.includes(b) || !(max > 0)) return 0;
+  try { if (eater.getTag?.("HEAL_BLOCK")) return 0; } catch { return 0; }
+  let ripen = false;
+  try { ripen = !!eater.hasAbilityWithAttr?.("DoubleBerryEffectAbAttr"); } catch { /* read as no Ripen */ }
+  return Math.max(0, Math.min(room, Math.max(1, Math.floor(max / 4)) * (ripen ? 2 : 1)));
+};
+// `out[k]`: the expected value of the (k+1)-th uniform draw over `stacks`, 0 once none is left.
+const drawValues = (stacks, value) => {
+  let dist = new Map([[stacks.join(), { st: stacks, p: 1 }]]);
+  const out = [];
+  for (let k = 0; k <= 9; k++) {
+    const next = new Map();
+    let e = 0;
+    for (const { st, p } of dist.values()) {
+      const left = st.flatMap((n, i) => (n > 0 ? [i] : []));
+      for (const i of left) {
+        const q = p / left.length, ns = st.map((n, j) => (j === i ? n - 1 : n)), key = ns.join();
+        e += q * value[i];
+        const cur = next.get(key);
+        if (cur) cur.p += q; else next.set(key, { st: ns, p: q });
+      }
+    }
+    out.push(e);
+    dist = next;
+  }
+  return out;
 };
 // What one berry leaving `holder` is worth, as the HUD prices a held berry. `berry`: a `BerryType` to name the one
 // that goes, else a uniform draw over the berry types held. `heal(p)`: a holder's turn-end HP change, as
 // `turnEndCourse` reads it. `eater` / `hp`: who eats the berry and the HP it stands on. Null when nothing can go.
 // `lost`: what the holder's turn ends lose by it (negative where the berry healed); `eaten`: what the eater gains at
-// once; `byCount[k]`: the holder's turn-end HP change after k berries gone, for a uniform draw; `supply`: the berries
-// it can lose in all.
-// @only 35-team-plan, tests: berryGone
+// once, from `hp`; `byCount[k]`: the holder's turn-end HP change after k berries gone, for a uniform draw;
+// `eatenAt[k]` / `eatenFirst[k]`: the eater's gain from the (k+1)-th draw, uncapped / capped at the room `hp` leaves;
+// `supply`: the berries it can lose in all.
+// @only tests: berryGone
 export const berryGone = (holder, heal, { berry = null, eater = null, hp = 0 } = {}) => {
   const held = heldBerries(holder);
   const types = berry == null ? held.map(m => m.berryType) : held.some(m => m.berryType === berry) ? [berry] : [];
   if (!types.length) return null;
-  const byCount = berry == null ? afterSteals(holder, heal, isBerry) : null;
+  const room = Math.max(0, (eater?.getMaxHp?.() ?? 0) - hp);
+  if (berry != null) {
+    return { types, byCount: null, eatenAt: null, eatenFirst: null, supply: held.reduce((t, m) => t + stackOf(m), 0),
+      lost: heal(lessBerry(holder, berry)) - heal(holder), eaten: eatenNow(eater, berry, room) };
+  }
+  const byCount = afterSteals(holder, heal, isBerry);
+  const stacks = held.map(stackOf);
+  const eatenFirst = drawValues(stacks, types.map(b => eatenNow(eater, b, room)));
   return {
-    types, byCount, supply: held.reduce((t, m) => t + stackOf(m), 0),
-    lost: byCount ? byCount[1] - byCount[0] : heal(lessBerry(holder, berry)) - heal(holder),
-    eaten: types.reduce((t, b) => t + eatenNow(eater, hp, b), 0) / types.length,
+    types, byCount, supply: stacks.reduce((t, n) => t + n, 0), lost: byCount[1] - byCount[0], eaten: eatenFirst[0],
+    eatenAt: drawValues(stacks, types.map(b => eatenNow(eater, b))), eatenFirst,
   };
 };
 
@@ -513,10 +543,10 @@ export const turnEndCourse = (turn, me, foe, hitsPerTurn, dealt = 0, eaten = nul
   const toxic = me.status?.effect === StatusEffect.TOXIC
     ? j => healAtEnd(turn, Object.create(me, { status: { value: { ...me.status, effect: StatusEffect.TOXIC, toxicTurnCount: (me.status.toxicTurnCount ?? 0) + j - 1 } } }), dealt)
     : null;
-  const plain = toxic ?? (() => base);
   const berries = eaten?.byCount?.some(v => v !== base)
     ? j => eaten.counts(j).reduce((sum, p, k) => sum + p * (eaten.byCount[k] - base), 0)
     : null;
+  const plain = toxic ?? (() => base);
   const flat = berries ? { base, flat: false, at: j => plain(j) + berries(j) }
     : toxic ? { base, flat: false, at: toxic } : { base, flat: true, at: () => base };
   if (!foe || !(hitsPerTurn >= 0)) return flat;
@@ -528,7 +558,7 @@ export const turnEndCourse = (turn, me, foe, hitsPerTurn, dealt = 0, eaten = nul
     ? j => stealCounts(rates.perTurn * (j - 1), rates.perHit * hitsPerTurn * j).reduce((sum, p, k) => sum + p * (byCount[k] - base), 0)
     : null;
   if (!statusChange && !items) return flat;
-  return { base, flat: false, at: j => plain(j) + (berries ? berries(j) : 0) + (statusChange ? statusChange * odds.by(hitsPerTurn * j) : 0) + (items ? items(j) : 0) };
+  return { base, flat: false, at: j => flat.at(j) + (statusChange ? statusChange * odds.by(hitsPerTurn * j) : 0) + (items ? items(j) : 0) };
 };
 export const hitsOn = t => (t?.moves ?? []).reduce((sum, m) => sum + m.p * (m.acc ?? 1) * (m.hits ?? 1), 0);
 // `heal` and `drain` are each a number, or a function of the turn.
@@ -541,17 +571,23 @@ const withDrain = (heal, drain) => {
 const drainTotal = (drain, turns) => (typeof drain !== "function" ? drain * turns
   : Array.from({ length: Math.ceil(turns) }, (_, i) => drain(i + 1) * Math.min(1, turns - i)).reduce((t, x) => t + x, 0));
 
-// Whether a berry can be eaten off `foe` at all (game-code.md §8, #646): Sticky Hold blocks it even on a knockout, a
-// substitute is never reached, and a target with no berry has nothing to lose. A foe off the field answers nothing, so
-// read it as blocked.
+// Whether `thief` can eat a berry off `foe` at all (game-code.md §3). A foe off the field answers nothing, so read it
+// as blocked.
 // @only 35-team-plan, tests: berryStealable
-export const berryStealable = foe => {
-  try { if (foe.hasAbilityWithAttr?.("BlockItemTheftAbAttr") || foe.getTag?.("SUBSTITUTE")) return false; } catch { return false; }
+export const berryStealable = (foe, thief = null) => {
+  let bypass = false, infiltrates = false;
+  try {
+    bypass = !!thief?.hasAbilityWithAttr?.("MoveAbilityBypassAbAttr");
+    infiltrates = !!thief?.hasAbilityWithAttr?.("InfiltratorAbAttr");
+  } catch { /* read as neither */ }
+  try {
+    if (!bypass && foe.hasAbilityWithAttr?.("BlockItemTheftAbAttr")) return false;
+    if (!infiltrates && foe.getTag?.("SUBSTITUTE")) return false;
+  } catch { return false; }
   return !!berryTypesOf(foe).length;
 };
-// A landed `StealEatBerryAttr` use (Bug Bite, Pluck) eats one of the target's berries at once. `mine` is our move's
-// record.
-const stealsBerry = (mine, foe) => !!mine?.traits?.attrNames?.has("StealEatBerryAttr") && berryStealable(foe);
+// `mine` is our move's record.
+const stealsBerry = (mine, foe, me) => !!mine?.traits?.attrNames?.has("StealEatBerryAttr") && berryStealable(foe, me);
 // P(k berries gone by the end of turn j), k = 0..9: one draw a landed use, at `land(j)`, until the `supply` runs out.
 // `before`: P(a steal landed before this exchange, from the turn a depth-2 line already paid for). Bug Bite and Pluck
 // are plain single-hit attacks with no delay, so use j is turn j.
@@ -749,8 +785,8 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   // `stole` is a berry an earlier turn of a depth-2 line already ate, which the target stays short of whatever we
   // follow up with — so the course still reads the theft when this move steals none.
   const stole = Math.min(1, opts.stole ?? 0);
-  const eats = mine?.expected > 0 && stealsBerry(mine, foe);
-  const theft = eats || (stole > 0 && berryTypesOf(foe).length)
+  const eats = mine?.expected > 0 && stealsBerry(mine, foe, me);
+  const theft = eats || stole > 0
     ? berryGone(foe, p => healAtEnd(turn, p, t?.expected ?? 0), { eater: me, hp })
     : null;
   const lands = eats ? j => (j === 1 ? now : steady) * (mine.acc ?? 1) : () => 0;
@@ -816,10 +852,10 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   const mult = (aimedAtField && foeMult) || defUp !== 1 ? j => (aimedAtField && foeMult ? foeMult(j) : 1) * defUp : null;
   const myStart = after?.me.map(x => ({ ...x, hp: x.revived ? x.hp : x.hp - selfSpent })).filter(x => x.hp > 0);
   const drained = (mine?.drain ?? 0) * (mine?.expected ?? 0) * steady;
-  // The stolen berry is eaten at once, so it comes back like a drain: once a landed use, while the target still has
-  // one to lose (#646).
-  const ourDrain = !(eats && theft?.eaten > 0) ? drained
-    : j => drained + lands(j) * theft.eaten * counts(j - 1).reduce((left, p, k) => left + (k < theft.supply ? p : 0), 0);
+  // The stolen berry is eaten at once, so it comes back like a drain: once a landed use, worth what the next draw from
+  // the berries still held gives. Turn 1's is capped at the room we start with; a later one by `koCurve` (#646).
+  const ourDrain = !(eats && theft?.eatenAt?.some(v => v > 0)) ? drained
+    : j => drained + lands(j) * counts(j - 1).reduce((sum, p, k) => sum + p * (j === 1 ? theft.eatenFirst : theft.eatenAt)[Math.min(9, k)], 0);
   const theirs = budget > 0 ? foeCurve(turn, foeT, me, budget, {
     dealt: mine?.uncapped ?? mine?.expected ?? 0, foe: fieldFoe, mult, act: theirAct, start: myStart?.length ? myStart : null, drain: ourDrain,
   }) : null;

@@ -1466,11 +1466,7 @@ Object.assign(TABLE, {
   assert.ok(Math.abs(steelix - (1 + 71 / 162)) < 1e-9, `the entry hit ran it down: Fire Blast from the first use (${steelix})`);
 }
 
-// ---- Bug Bite and Pluck eat one of the target's berries (#646): the user gets the berry's effect at once, and the foe
-// is one short of it at every later turn end. The draw is uniform over the berry TYPES held, so a stack of two is one
-// entry that leaves one behind, and a berry the turn-end model prices at nothing still takes its share of the draw.
-// Shuckle's 280 HP and a Sitrus healing 70 a turn: Bug Bite (138.1 a use) needs 4 turns through the heal, 3 once the
-// berry is gone. Beedrill at 200/400 eats the quarter it is missing room for, 100.
+// ---- Bug Bite and Pluck eat one of the target's berries, drawn uniformly over the types it holds (#646)
 Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pound>Shuckle": [[150], 1, 1], "Shuckle>Brine>Beedrill": [[20], 1, 1] });
 {
   const BERRY = { SITRUS: 0, LUM: 1, ENIGMA: 2, LIECHI: 3 };
@@ -1488,8 +1484,16 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
   const shuckle = (items, extra, maxHp) => mon("Shuckle", 80, ["Bug", "Rock"], [maxHp, 10, 230, 10, 230, 5], [["Brine", "Water", 65, "S"]], true, undefined,
     { getHeldItems: () => items, ...extra });
   // `move`: 0 Bug Bite, 1 Pound. `stole`: a berry an earlier turn of a depth-2 line already ate.
-  const bite = (items, { hp = 200, move = 0, stole = 0, foeHp = 280, ...extra } = {}) => {
+  const bite = (items, { hp = 200, move = 0, stole = 0, foeHp = 280, thiefAttr = null, thiefTag = null, ...extra } = {}) => {
     const me = beedrill(hp), foe = shuckle(items, extra, foeHp);
+    if (thiefAttr) {
+      const own = me.hasAbilityWithAttr?.bind(me);
+      me.hasAbilityWithAttr = a => a === thiefAttr || !!own?.(a);
+    }
+    if (thiefTag) {
+      const own = me.getTag?.bind(me);
+      me.getTag = t => (t === thiefTag ? { tagType: t } : own?.(t) ?? null);
+    }
     const { scene } = render({ party: [me], foes: [foe], live: true, switches: () => new Map(), stubOutcome: withAttrs,
       heal: sitrusHeal, dist: () => [{ name: "Brine", type: "Water", p: 1, score: 10, targets: [0] }] });
     const x = globalThis.__planner.exchange(scene, me, me.moveset[move], foe, { stole });
@@ -1609,7 +1613,9 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
   show("named: Sitrus of a x2", gone([berryItem(BERRY.SITRUS, 2)], { berry: BERRY.SITRUS }));
   show("named: Liechi beside it", gone([berryItem(BERRY.SITRUS), berryItem(BERRY.LIECHI)], { berry: BERRY.LIECHI }));
   show("named: a Lum it lacks", gone([berryItem(BERRY.SITRUS)], { berry: BERRY.LUM }));
-  assert.deepEqual(gone([berryItem(BERRY.SITRUS)]), { types: [BERRY.SITRUS], byCount: [70, 0, 0, 0, 0, 0, 0, 0, 0, 0], supply: 1, lost: -70, eaten: 70 });
+  const { eatenAt, eatenFirst, ...one } = gone([berryItem(BERRY.SITRUS)]);
+  assert.deepEqual(one, { types: [BERRY.SITRUS], byCount: [70, 0, 0, 0, 0, 0, 0, 0, 0, 0], supply: 1, lost: -70, eaten: 70 });
+  assert.deepEqual([eatenAt, eatenFirst].map(a => a.slice(0, 2)), [[70, 0], [70, 0]], "one Sitrus, eaten on the first draw");
   assert.equal(gone([berryItem(BERRY.SITRUS, 2)]).lost, 0, "a stack of two keeps the heal");
   assert.equal(gone([berryItem(BERRY.SITRUS, 2)]).supply, 2, "…and has two to lose in all");
   assert.deepEqual(gone([berryItem(BERRY.SITRUS), berryItem(BERRY.LIECHI)]).lost, -35, "half the draw takes the Sitrus");
@@ -1618,15 +1624,37 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
   assert.equal(gone([berryItem(BERRY.SITRUS), berryItem(BERRY.LIECHI)], { berry: BERRY.LIECHI }).eaten, 0, "a named Liechi is worth nothing here");
   assert.equal(gone([berryItem(BERRY.SITRUS)], { berry: BERRY.LUM }), null, "a berry it doesn't hold");
   assert.equal(gone([]), null, "no berry at all");
+
+  // Each draw is from what the earlier ones left: Sitrus x1 + Lum x2 has one Sitrus to give over three steals.
+  const draws = gone([berryItem(BERRY.SITRUS), berryItem(BERRY.LUM, 2)]).eatenAt.slice(0, 4);
+  console.log(`draws: Sitrus x1 + Lum x2     ${draws.join(" · ")}`);
+  assert.deepEqual(draws, [35, 17.5, 17.5, 0], "one Sitrus in all, spread over the three draws");
+  assert.deepEqual(gone([berryItem(BERRY.SITRUS, 2), berryItem(BERRY.LUM)]).eatenAt.slice(0, 3).reduce((t, x) => t + x, 0), 140, "two Sitrus in all");
+  // A thief at full HP has no room on turn 1, but a later steal still heals it.
+  const fullHp = bite([berryItem(BERRY.SITRUS, 2)], { hp: 400 }), blockedHp = bite([berryItem(BERRY.SITRUS, 2)], { hp: 400, thiefTag: "HEAL_BLOCK" });
+  console.log(`we eat from full HP, Sitrus x2: ${fullHp.hp - blockedHp.hp} over a Heal Blocked thief`);
+  assert.equal(fullHp.turnsWe, blockedHp.turnsWe);
+  assert.ok(fullHp.hp > blockedHp.hp, `the second Sitrus heals a thief the foe has hit since (${fullHp.hp} vs ${blockedHp.hp})`);
+  // Ripen doubles the quarter; Heal Block stops it.
+  const eater = attr => ({ getMaxHp: () => 280, hasAbilityWithAttr: a => a === attr, getTag: t => (attr === t ? { tagType: t } : null) });
+  const eatBy = attr => berryGone(holder([berryItem(BERRY.SITRUS)]), sitrusHeal, { eater: eater(attr), hp: 0 }).eaten;
+  console.log(`eaten: plain ${eatBy(null)} · Ripen ${eatBy("DoubleBerryEffectAbAttr")} · Heal Block ${eatBy("HEAL_BLOCK")}`);
+  assert.deepEqual([eatBy(null), eatBy("DoubleBerryEffectAbAttr"), eatBy("HEAL_BLOCK")], [70, 140, 0]);
+  // Mold Breaker gets past Sticky Hold, Infiltrator past a substitute; neither helps the other way round.
+  const { berryStealable } = globalThis.__planner;
+  const sitrusFoe = extra => shuckle([berryItem(BERRY.SITRUS)], extra, 280);
+  const stickyFoe = sitrusFoe({ hasAbilityWithAttr: a => a === "BlockItemTheftAbAttr" });
+  const subFoe = sitrusFoe({ getTag: t => (t === "SUBSTITUTE" ? { tagType: t } : null) });
+  const thief = attr => ({ hasAbilityWithAttr: a => a === attr });
+  const reach = [[stickyFoe, null], [stickyFoe, "MoveAbilityBypassAbAttr"], [stickyFoe, "InfiltratorAbAttr"],
+    [subFoe, null], [subFoe, "InfiltratorAbAttr"], [subFoe, "MoveAbilityBypassAbAttr"]].map(([f, a]) => berryStealable(f, thief(a)));
+  console.log(`reach: sticky ${reach.slice(0, 3).join()} · sub ${reach.slice(3).join()}`);
+  assert.deepEqual(reach, [false, true, false, false, true, false]);
+  const breaker = bite([berryItem(BERRY.SITRUS)], { hasAbilityWithAttr: a => a === "BlockItemTheftAbAttr", thiefAttr: "MoveAbilityBypassAbAttr" });
+  assert.deepEqual(breaker, sitrus, "a Mold Breaker Bug Bite eats a Sticky Hold foe's berry like any other");
 }
 
-// ---- Gordie W180 T7, rebuilt: Leavanny at 320/497 with Sp. Atk at −2 meets the Carracosta Gordie just sent in, which
-// holds six berry types at one stack each (`src/solver/fixtures/gordie-w180.t5.json`): Leppa, Ganlon, Enigma, Starf,
-// Liechi and Petaya. Only the Enigma is one the model gives a value, and only on the eater's side — the planner's
-// turn-end model never claims a super-effective hit, so the Enigma Carracosta keeps heals it nothing either way. So the
-// steal is worth a sixth of the quarter Leavanny has room for, 20.7 HP, and nothing to Carracosta's turn ends.
-// The damage table is stubbed around the card of that turn (Leaf Storm 4× for a two-use knockout, Bug Bite a neutral
-// chip, Rock Slide 4× back). Whether it flips the ⚔ call is recorded below; it does not have to.
+// ---- Gordie W180 T7: Leavanny's Bug Bite into the six-berry Carracosta, and whether the ⚔ call flips (#646)
 Object.assign(TABLE, {
   "Leavanny>Leaf Storm>Carracosta": [[520], 0.9, 4], "Leavanny>Bug Bite>Carracosta": [[90], 1, 1],
   "Carracosta>Rock Slide>Leavanny": [[180], 0.9, 4], "Carracosta>Brine>Leavanny": [[60], 1, 1],
