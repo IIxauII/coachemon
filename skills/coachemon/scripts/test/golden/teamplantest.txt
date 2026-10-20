@@ -28,6 +28,10 @@ Pidgey → Buzzwole: falls · foe at 47% · feeds Beast Boost +1 Atk
 Blastoise → Buzzwole: KO · 82% left
 == a priority move from a slower mon (#650)
 Close Combat at 1 leaves 300 · Mach Punch at 0 leaves 214
+== priority from a mon already first (#650): Drain Punch · first 0
+== a free entry that more often falls than wins (#651): Breloom → Haxorus → Ninjask
+== a free entry that walls the foe (#651): Breloom → Granbull
+== an open slot in a double (#651): Granbull free
 == a free entry that acts (#651)
 ⤵ Breloom falls this turn › Raichu in free
 ➜ 1. Breloom stay Drain Punch → Rayquaza sacrifice → Raichu in free

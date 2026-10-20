@@ -3,12 +3,13 @@
 // one foe at a time.
 import { iconOf, squeezeDist } from "./01-core.js";
 import { hitOn, koCurve, koTurns, useOf } from "./10-damage.js";
-import { actionOrder, afterSteals, attemptsLost, hitsOn, koBoost, koBoostText, koStageFactor, sendInAt, sendInBase, stealCounts, stealRates, threatFrom, tokenOdds, tokenShift } from "./30-planner.js";
+import { actionOrder, afterSteals, attemptsLost, hitsOn, koBoost, koBoostText, koStageFactor, paralysed, sendInAt, sendInBase, stealCounts, stealRates, threatFrom, tokenOdds, tokenShift } from "./30-planner.js";
 
 // @only tests: tpHealProfile, tpSendScore, tpFight, tpTables, tpActs
 const TP_BEAM = 24;
 const TP_TURNS = 15;
 const TP_BRANCHES = 4;
+const TP_EARLY = 0.01;
 
 const tpSpread = use => {
   const mean = (use ?? []).reduce((t, x) => t + x.d * x.p, 0);
@@ -33,11 +34,9 @@ const tpOurMove = (turn, me, f, them = null) => {
   const outs = turn.outcomes(me, f);
   // The hit of the foe's that landing first cancels, in turns of ours (CONTEXT.md, `Removal price`): a KO one use
   // slower that moves first takes the same number of hits getting there, so order is part of what a move costs.
-  // `them.first` is already the order against a move of ours at priority 0, so only a move out of that bracket is
-  // asked about again.
   const spared = o => {
     if (!them) return 0;
-    const p = (o.priority ?? 0) === 0 ? them.first : tpFoeFirst(turn, me, f, o, them);
+    const p = tpOrder(turn, me, f, o, them);
     return Number.isFinite(p) ? 1 - p : 0;
   };
   if (turn.live) {
@@ -105,19 +104,11 @@ const tpFoeFirst = (turn, me, f, ours, theirs) => {
   return b > a ? 1 : b < a ? 0 : 0.5;
 };
 
-// Paralysis halves our Speed, so the order is asked again on a slowed clone. The id is part of the clone so `turn`'s
-// own caches don't hand back the unslowed answer.
-const tpSlowed = me => {
-  const slowed = { id: { value: `${me.id}~paralysed` }, status: { value: { effect: StatusEffect.PARALYSIS } } };
-  if (typeof me.getEffectiveStat !== "function") slowed.getStat = { value: i => me.getStat(i) / (i === Stat.SPD ? 2 : 1) };
-  return Object.create(me, slowed);
-};
+// A priority-0 move's order is the pairing's own, so the table and the pick read one answer.
+const tpOrder = (turn, me, f, o, them) => ((o?.priority ?? 0) === 0 && Number.isFinite(them.first) ? them.first : tpFoeFirst(turn, me, f, o, them));
 
-// `firstBy[mi][fi][move]`: the order a move of ours gets that is not the pairing's own pick, which `first` already
-// holds. A plan step pinned to the card's ⚔ line runs that line's move, and a priority move lands before a foe that
-// outspeeds the pick (#650). Two moves at the same priority get the same order, so only a move out of the pick's
-// bracket is asked again — on most pairings that is no question at all. Built here and not on demand: the searches read
-// these tables and never the live game.
+// `firstBy[mi][fi][move]`: the order a move of ours out of the pairing's own pick's priority bracket gets, for a plan
+// step pinned to that move (#650).
 const tpFirstBy = (turn, me, f, own, them) => {
   const by = {};
   for (const o of turn.outcomes(me, f)) {
@@ -145,17 +136,19 @@ export const tpHealProfile = (turn, p) => {
   return { base, sitrus: Math.max(0, at(Math.floor(max * 0.4), false) - base), enigma: Math.max(0, at(Math.ceil(max * 0.75), true) - base) };
 };
 
-export const tpTables = (turn, party, foes, double = false) => {
+// `facing`: the foe the first exchange is against, the only one a pinned move's own order is read for.
+export const tpTables = (turn, party, foes, double = false, facing = null) => {
+  const faced = f => !foes.includes(facing) || f === facing;
   // The foe's side first: which move of ours is worth using against it turns on the order it would get (#650).
   const theirs = foes.map(f => party.map(me => tpTheirMove(turn, f, me)));
   const ours = party.map((me, mi) => foes.map((f, fi) => tpOurMove(turn, me, f, theirs[fi][mi])));
-  const first = party.map((me, mi) => foes.map((f, fi) => tpFoeFirst(turn, me, f, ours[mi][fi], theirs[fi][mi])));
-  const wear = tpWear(turn, party, foes, ours);
+  const first = party.map((me, mi) => foes.map((f, fi) => tpOrder(turn, me, f, ours[mi][fi], theirs[fi][mi])));
+  const wear = tpWear(turn, party, foes, ours, faced);
   return {
     ours, theirs, first,
     // In a double both field mons are out, so neither pays an entry hit to act (#113).
     slots: double && party.length >= 2 ? 2 : 1,
-    firstBy: party.map((me, mi) => foes.map((f, fi) => tpFirstBy(turn, me, f, ours[mi][fi], theirs[fi][mi]))),
+    firstBy: party.map((me, mi) => foes.map((f, fi) => (faced(f) ? tpFirstBy(turn, me, f, ours[mi][fi], theirs[fi][mi]) : {}))),
     send: foes.map(f => party.map(me => sendInBase(turn, f, me))),
     memo: new Map(),
     // Every hit overrides its `hp` and `bar` with the ones the fight carries.
@@ -178,16 +171,16 @@ export const tpTables = (turn, party, foes, double = false) => {
 
 // Wave status tokens and item thieves (30-planner.js). `fromUs[fi][mi]` is what foe `fi` steals from our `mi`, and
 // `fromFoe[mi][fi]` the reverse; `ourItems` / `foeItems` are each mon's turn-end HP change after k steals.
-const tpWear = (turn, party, foes, ours) => {
+const tpWear = (turn, party, foes, ours, faced = () => true) => {
   const heal = p => tpHealAt(turn, p);
   const tok = party.map(me => {
     const odds = foes[0] ? tokenOdds(turn, foes[0], me) : null;
     return odds && { odds, shift: tokenShift(odds, me, heal), para: odds.tokens.filter(x => x.effect === StatusEffect.PARALYSIS).reduce((t, x) => t + x.share, 0) };
   });
   const paraOrder = party.map((me, mi) => (tok[mi]?.para ? foes.map((f, fi) => {
-    const clone = tpSlowed(me);
+    const clone = paralysed(me);
     const them = tpTheirMove(turn, f, clone);
-    return { first: tpFoeFirst(turn, clone, f, ours[mi][fi], them), by: tpFirstBy(turn, clone, f, ours[mi][fi], them) };
+    return { first: tpOrder(turn, clone, f, ours[mi][fi], them), by: faced(f) ? tpFirstBy(turn, clone, f, ours[mi][fi], them) : {} };
   }) : null));
   const firstPara = paraOrder.map(row => row && row.map(x => x.first));
   const firstParaBy = paraOrder.map(row => row && row.map(x => x.by));
@@ -387,7 +380,7 @@ const tpValue = (T, st, end) => {
   });
   st.oh.forEach((hp, mi) => { v += 25 * hp / T.ourMax[mi]; });
   if (st.fh.every(hp => hp < 1)) v += 100;
-  return v;
+  return v + (st.result === "win" || st.result === "stall" ? 0 : st.early ?? 0);
 };
 
 // `reserve`: `[{ mi, fi }]`, our `mi` kept off every foe but `fi` while anyone else can still fight. `pin`:
@@ -396,7 +389,8 @@ const tpSearch = (T, start, reserve, pin = null) => {
   let beam = [start];
   const done = [];
   const slots = T.slots ?? 1;
-  for (let depth = 0; beam.length && depth <= start.oh.length + start.fh.length + 1; depth++) {
+  const horizon = start.oh.length + start.fh.length + 2;
+  for (let depth = 0; depth < horizon && beam.length; depth++) {
     const next = new Map();
     for (const st of beam) {
       const fi = st.fcur ?? tpNextFoe(T, st);
@@ -410,12 +404,6 @@ const tpSearch = (T, start, reserve, pin = null) => {
         const spare = cands.filter(([mi]) => !reserve.some(r => r.mi === mi && r.fi !== fi));
         if (spare.length) cands = spare;
       }
-      // A free entry goes to a member that lands something before it falls, where one is left (#651). Every ordering
-      // of a lost line deals the same damage and leaves nobody alive, so `tpValue` scores them all the same and the
-      // beam threw the members that never act in first, leaving the one that does for last. The filter runs after
-      // `reserve`, so a held answer is still held.
-      const acting = cands.filter(([mi, entry]) => entry !== "free" || tpActs(tpFight(T, st, mi, fi, entry), st.fh[fi]));
-      if (acting.length) cands = acting;
       for (const [mi, entry] of cands) {
         const r = tpFight(T, st, mi, fi, entry, depth === 0 && pin?.move && mi === pin.mi ? pin.move : null);
         const child = end => {
@@ -426,17 +414,27 @@ const tpSearch = (T, start, reserve, pin = null) => {
           c.act = end.mh >= 1 ? mi : rest[0] ?? null;
           c.fcur = end.fh >= 1 ? fi : null;
           c.result = c.fh.every(hp => hp < 1) ? "win" : c.oh.every(hp => hp < 1) ? "loss" : end.mh >= 1 && end.fh >= 1 ? "stall" : null;
+          // Every ordering of a lost line deals the same and leaves nobody standing, so without this tie-break the
+          // beam spent the members that never act ahead of the one that does (#651).
+          c.early = (st.early ?? 0) + TP_EARLY * (horizon - depth) * Math.max(0, st.fh[fi] - end.fh) / T.foeStart[fi];
           return c;
         };
-        // Only the likelier ending goes on, but the value weighs every ending by its chance.
+        // Only the likelier ending goes on, so `val` banks every ending the line drops: valued by its last step's
+        // endings alone, a line that ends on a gamble forgot the earlier step's win (#651).
         const c = child(r);
         c.steps = [...st.steps, { mi, fi, entry, hp: r.mh, foeFrom: st.fh[fi], foeHp: r.fh, turns: r.turns, odds: r.fh < 1 ? r.pWin : r.mh < 1 ? r.pLoss : r.pStall }];
-        c.val = [["win", r.pWin], ["loss", r.pLoss], ["stall", r.pStall]].reduce((v, [k, p]) => {
+        const norm = Math.max(1e-9, (r.ends.win ? r.pWin : 0) + (r.ends.loss ? r.pLoss : 0) + (r.ends.stall ? r.pStall : 0));
+        let banked = st.banked ?? 0, kept = 0;
+        for (const [k, p] of [["win", r.pWin], ["loss", r.pLoss], ["stall", r.pStall]]) {
           const e = r.ends[k];
-          if (!e || !(p > 0)) return v;
-          const x = e.mh === r.mh && e.fh === r.fh ? c : child(e);
-          return v + p * tpValue(T, x, !!x.result);
-        }, 0) / Math.max(1e-9, (r.ends.win ? r.pWin : 0) + (r.ends.loss ? r.pLoss : 0) + (r.ends.stall ? r.pStall : 0));
+          if (!e || !(p > 0)) continue;
+          if (e.mh === r.mh && e.fh === r.fh) { kept += p / norm; continue; }
+          const x = child(e);
+          banked += (st.mass ?? 1) * p / norm * tpValue(T, x, !!x.result);
+        }
+        c.banked = banked;
+        c.mass = (st.mass ?? 1) * kept;
+        c.val = banked + c.mass * tpValue(T, c, !!c.result);
         if (c.result) { done.push(c); continue; }
         const sig = [c.cur.join("-"), c.act, c.fcur, ...c.oh.map(Math.round), ...c.fh.map(Math.round), ...c.ok, ...c.fk].join(",");
         if (!next.has(sig) || next.get(sig).val < c.val) next.set(sig, c);
@@ -460,7 +458,7 @@ const tpFacing = (turn, foes) => {
 const TP_PREFER = 20;
 const TP_HOLD = 10;
 
-// ⚔ owns the turn and this model the rest of the fight (#113). `pin` is `{ mi, outcome?, free? }`: `at(pin)`
+// ⚔ owns the turn and this model the rest of the fight (#113). `pin` is `{ mi, outcome?, then?, free? }`: `at(pin)`
 // re-searches with it as step 1, `after(pin)` reads what that plan says comes next, and `view(pin)` renders it.
 const tpModel = (T, double, party, foes, facing) => {
   const ref = p => ({ icon: iconOf(p), name: p.name });
@@ -528,13 +526,17 @@ const tpModel = (T, double, party, foes, facing) => {
   const free = tpSearch(T, start, []);
   const base = held && (!free || held.val >= free.val - TP_HOLD) ? held : free;
 
+  // A pin runs the ⚔ move, else its follow-up: a first-turn-only or foe-dependent move would repeat in a table
+  // exchange as though it always worked (#650).
+  const pinned = pin => [pin.outcome, pin.then].find(o => o?.expected > 0 && !o.traits?.once && !o.traits?.needsAttack) ?? null;
+  const keyOf = pin => (pin && pin.mi != null && pin.mi >= 0 ? `${pin.mi}|${pinned(pin)?.name ?? ""}|${pin.free ? "f" : ""}` : "");
   const atMemo = new Map();
   const at = pin => {
-    if (!pin || pin.mi == null || pin.mi < 0) return base;
-    const k = `${pin.mi}|${pin.outcome?.name ?? ""}|${pin.free ? "f" : ""}`;
+    const k = keyOf(pin);
+    if (!k) return base;
     if (!atMemo.has(k)) {
-      const move = pin.outcome?.expected > 0 ? tpMoveOf(pin.outcome) : null;
-      atMemo.set(k, tpSearch(T, start, hold, { mi: pin.mi, move, free: !!pin.free }) ?? base);
+      const o = pinned(pin);
+      atMemo.set(k, tpSearch(T, start, hold, { mi: pin.mi, move: o ? tpMoveOf(o) : null, free: !!pin.free }) ?? base);
     }
     return atMemo.get(k);
   };
@@ -553,7 +555,7 @@ const tpModel = (T, double, party, foes, facing) => {
 
   const viewMemo = new Map();
   const view = pin => {
-    const k = pin && pin.mi != null && pin.mi >= 0 ? `${pin.mi}|${pin.outcome?.name ?? ""}|${pin.free ? "f" : ""}` : "";
+    const k = keyOf(pin);
     if (!viewMemo.has(k)) viewMemo.set(k, tpView({ T, party, foes, double, start, win, kills, alive, answers, only, onlyBy, reserve, base, ref, pctOf }, at(pin), !!k));
     return viewMemo.get(k);
   };
@@ -570,7 +572,8 @@ export const teamPlanner = turn => {
   const foes = turn.facts.foes.filter(f => f && f.hp > 0);
   if (!trainer || !party.length || !foes.length) return null;
   // The searches read only the tables `tpTables` builds, never the live game.
-  return tpModel(tpTables(turn, party, foes, double), double, party, foes, tpFacing(turn, foes));
+  const facing = tpFacing(turn, foes);
+  return tpModel(tpTables(turn, party, foes, double, facing), double, party, foes, facing);
 };
 
 export const teamPlan = turn => teamPlanner(turn)?.view(null) ?? null;
