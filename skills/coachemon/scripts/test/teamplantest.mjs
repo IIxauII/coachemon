@@ -369,6 +369,68 @@ assert.equal(plan.approxDoubles, false);
       `nothing is spent for nothing before Raichu acts ${where}: ${JSON.stringify(plan.steps.map(x => x.send.name))}`);
   }
 }
+// The move pick sees the Enigma Berry its own hit would feed (#652, Ivy W145 T11–13). Rayquaza holds one on the
+// second of three bars, and a hit of any size here breaks one bar a turn, so Moonblast ×2 and Thunderbolt ×1 fell it in
+// the same two turns. Attempt 2 took the bigger hit: Moonblast broke the bar to 143 and the berry put the last bar back
+// to 250. Among moves at the same pace the one that feeds nothing wins, so Thunderbolt is the pick.
+{
+  // "attacker>move>defender": [max damage, effectiveness]. One hit, always lands, 16 rolls at 85–100 %. Thunderbolt is
+  // ×1 into Dragon/Flying as the W145 rows above have it.
+  const T11 = { "Raichu>Moonblast>Rayquaza": [350, 2], "Raichu>Thunderbolt>Rayquaza": [200, 1], "Rayquaza>Outrage>Raichu": [437, 1] };
+  const stub = (atk, def, pm) => {
+    const row = T11[`${atk.name}>${pm.getName()}>${def.name}`];
+    if (!row) return null;
+    const [max, e] = row;
+    let expected = 0, pKo = 0, uncapped = 0;
+    for (let r = 0; r < 16; r++) {
+      const d = Math.floor(max * (85 + r) / 100);
+      uncapped += d / 16;
+      expected += Math.min(d, def.hp) / 16;
+      if (d >= def.hp) pKo += 1 / 16;
+    }
+    return { name: pm.getName(), type: TY[pm.getMove().type], cat: pm.getMove().category ? "special" : "physical",
+      e, priority: 0, spread: false, acc: 1, dist: [{ n: 1, p: 1 }], perHit: [{ max, min: Math.floor(max * 0.85) }],
+      expected, uncapped, max: Math.min(max, def.hp), pKo,
+      traits: { charge: false, semiCharge: false, recharge: false, noRepeat: false }, costs: [], notes: [] };
+  };
+  const raichu = mon("Raichu", 80, ["Electric"], "Static", [240,120,100,160,110,220],
+    [["Moonblast","Fairy",95,"S"],["Thunderbolt","Electric",90,"S"]], true);
+  // 428 over three bars: 143 on the bar Moonblast breaks, and a quarter of 428 is the 107 the berry puts back.
+  const ray = mon("Rayquaza", 80, ["Dragon","Flying"], "Air Lock", [428,250,120,250,120,200], [["Outrage","Dragon",120,"P"]], true, 285, 3);
+  Object.assign(ray, { bossSegmentIndex: 1, getOpponents: () => [raichu] });
+  const holders = new Set();
+  const turnFor = () => fakeTurn({
+    live: true, wave: 145, turn: 11, party: [raichu], foes: [ray],
+    trainer: { getName: () => "Ivy", config: { isBoss: false }, isDouble: () => false },
+    outcome: stub,
+    heal: (p, o) => {
+      if (!holders.has(p.name) || !o?.tookSuperEffective) return 0;
+      const max = p.getMaxHp(), at = o.hp ?? p.hp;
+      return Math.min(max, at + Math.floor(max / 4)) - at;
+    },
+    moves: e => [{ name: e.moveset[0].getName(), type: TY[e.moveset[0].getMove().type], p: 1, score: 10, targets: [0] }],
+  });
+  const { koCurve, koTurns, useOf } = globalThis.__hud["10-damage"];
+  const pick = () => {
+    const turn = turnFor();
+    const T = globalThis.__tp.tpTables(turn, [raichu], [ray], false);
+    const pace = Object.fromEntries(turn.outcomes(raichu, ray).map(o => [o.name, koTurns(koCurve(turn.mon(ray), useOf(o)).by)]));
+    return { move: T.ours[0][0], fed: T.foeHeal[0].enigma, pace };
+  };
+  const bare = pick();
+  holders.add("Rayquaza");
+  const fed = pick();
+  console.log(`== the move pick sees the Enigma Berry it feeds (#652)\n` +
+    `both fell Rayquaza in ${fed.pace.Moonblast} turns: Moonblast ×2, Thunderbolt ×1\n` +
+    `no berry: ${bare.move.name} ×${bare.move.e} (${Math.round(bare.move.dmg)})\n` +
+    `Enigma:   ${fed.move.name} ×${fed.move.e} (${Math.round(fed.move.dmg)}), the berry would pay ${fed.fed}`);
+  assert.equal(fed.pace.Moonblast, fed.pace.Thunderbolt, `the two are at the same pace: ${JSON.stringify(fed.pace)}`);
+  assert.equal(bare.move.name, "Moonblast", "with nothing to feed, the bigger hit wins the tie");
+  assert.equal(bare.fed, 0, "and there is no heal to price");
+  assert.equal(fed.fed, 107, "a quarter of Rayquaza's 428");
+  assert.equal(fed.move.name, "Thunderbolt", "the ×1 move breaks the bar just as fast and hands the berry nothing");
+  assert.ok(fed.move.dmg < bare.move.dmg, "it is the smaller hit, so only the heal can have moved the pick");
+}
 // A bench the trainer Teras the moment it comes in (#648, Gordie W180): Coalossal's team index is in `instantTeras`,
 // so the plan prices it at Tera Rock from its entry — Water ×2, not the ×4 its Fire/Rock reads at. `instantTeras` names
 // team indexes and a switch has already pulled those apart from the party slots, so Coalossal sits in slot 1 carrying

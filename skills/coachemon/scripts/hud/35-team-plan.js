@@ -15,9 +15,11 @@ const tpSpread = use => {
   return mean > 0 ? squeezeDist(use.map(x => ({ d: x.d / mean, p: x.p, n: x.n ?? 1 })), 4).map(x => ({ r: x.d, p: x.p, n: x.n })) : null;
 };
 const tpTurns = (turn, o, target) => koTurns(koCurve(turn.mon(target), useOf(o)).by);
-const tpFastest = (turn, list, target, turns = o => tpTurns(turn, o, target), dmg = o => o.dmg) => list
-  .map(o => ({ o, n: turns(o) }))
-  .reduce((b, x) => (!b || x.n < b.n || (x.n === b.n && dmg(x.o) > dmg(b.o)) ? x : b), null)?.o ?? null;
+// `feeds(o)`: the one-shot heal the move hands the target. Among moves at the same pace the one that feeds nothing
+// wins, and only then the bigger hit (#652).
+const tpFastest = (turn, list, target, turns = o => tpTurns(turn, o, target), dmg = o => o.dmg, feeds = () => 0) => list
+  .map(o => ({ o, n: turns(o), fed: feeds(o) }))
+  .reduce((b, x) => (!b || x.n < b.n || (x.n === b.n && (x.fed < b.fed || (x.fed === b.fed && dmg(x.o) > dmg(b.o)))) ? x : b), null)?.o ?? null;
 
 // `dmg` is a use's mean, uncut by the target's HP or bars. `recharge` covers a move that can't repeat too: both lose
 // the turn after each hit.
@@ -40,15 +42,18 @@ const tpOurMove = (turn, me, f, them = null) => {
     const p = (o.priority ?? 0) === 0 ? them.first : tpFoeFirst(turn, me, f, o, them);
     return Number.isFinite(p) ? 1 - p : 0;
   };
+  // What `f`'s own Enigma Berry pays it for a super-effective hit (#652): against a boss's bars the cap often leaves a
+  // neutral move breaking in the same number of turns, and that one hands it nothing.
+  const fed = o => ((o.e ?? 1) >= 2 ? tpEnigmaOf(turn, f) : 0);
   if (turn.live) {
     // Two turns a hit for a charge or recharge move, less the recharge after the last hit, which is never spent.
     const turns = o => (o.expected > 0 ? (o.traits?.charge || o.traits?.recharge ? 2 : 1) * tpTurns(turn, o, f) - (o.traits?.recharge ? 1 : 0) - spared(o) : 99);
-    const best = tpFastest(turn, outs, f, turns, o => o.expected);
+    const best = tpFastest(turn, outs, f, turns, o => o.expected, fed);
     if (best?.expected > 0) {
       return tpMoveOf(best, { charge: !!best.traits?.charge, recharge: !!best.traits?.recharge || !!best.traits?.noRepeat, semiCharge: !!best.traits?.charge && !!best.traits?.semiCharge });
     }
   }
-  const m = tpFastest(turn, outs.filter(x => x.dmg > 0), f, o => tpTurns(turn, o, f) - spared(o));
+  const m = tpFastest(turn, outs.filter(x => x.dmg > 0), f, o => tpTurns(turn, o, f) - spared(o), undefined, fed);
   return m ? tpMoveOf(m) : null;
 };
 
@@ -144,6 +149,9 @@ export const tpHealProfile = (turn, p) => {
   const base = at(Math.ceil(max * 0.75), false);
   return { base, sitrus: Math.max(0, at(Math.floor(max * 0.4), false) - base), enigma: Math.max(0, at(Math.ceil(max * 0.75), true) - base) };
 };
+// The `enigma` one-shot alone, for the move pick: memoised because it is asked once per pairing and the tables build
+// the full profile only once per mon.
+const tpEnigmaOf = (turn, p) => turn.memo(`tp:enigma:${p.id}`, () => tpHealProfile(turn, p).enigma);
 
 export const tpTables = (turn, party, foes, double = false) => {
   // The foe's side first: which move of ours is worth using against it turns on the order it would get (#650).

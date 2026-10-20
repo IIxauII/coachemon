@@ -40,6 +40,10 @@ Close Combat at 1 leaves 300 · Mach Punch at 0 leaves 214
 ➜ 2. Raichu free Thunderbolt → Rayquaza falls · foe at 60%
 ➜ 3. Tentacruel free Surf → Rayquaza falls · foe at 60%
 ➜ 4. Crawdaunt free Crabhammer → Rayquaza falls · foe at 60%
+== the move pick sees the Enigma Berry it feeds (#652)
+both fell Rayquaza in 2 turns: Moonblast ×2, Thunderbolt ×1
+no berry: Moonblast ×2 (324)
+Enigma:   Thunderbolt ×1 (185), the berry would pay 107
 == an instant Tera on the bench (#648)
 Hydro Pump into Coalossal: ×4 as Fire/Rock, ×2 at Tera Rock
 ok
