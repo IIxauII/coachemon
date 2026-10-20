@@ -397,6 +397,7 @@ play: Spore, bare foe         note sleep · patches Machamp status 4 · skip0 1 
 play: Spore, Lum x1           note — · patches — · skip0 1 · foeAct — · gain 0
 play: Thunder Wave, bare foe  note paralysis · patches Machamp status 3 · skip0 0.125 · foeAct — · gain 0
 play: Thunder Wave, Lum x1    note — · patches — · skip0 0.125 · foeAct — · gain 0
+play: Toxic, Lum x1, Unnerve  note toxic · patches Machamp status 2 · skip0 0 · foeAct — · gain 0
 pick: Toxic, bare foe                 Toxic · effect "toxic" · score 3.8504
 pick: Toxic, Lum x1                   Giga Drain · effect "" · score 1.0504
 pick: Spore, bare foe, slower than it Spore · effect "sleep" · score -0.8163

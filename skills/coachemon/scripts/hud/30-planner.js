@@ -1771,11 +1771,10 @@ export const statusPlay = (turn, me, f, info) => {
     const skip = a => STATUS_SKIP[StatusEffect.SLEEP](a, early);
     // @mirrors para-skip
     const skip0 = inflict.effect === StatusEffect.SLEEP ? skip(0) : inflict.effect === StatusEffect.PARALYSIS ? 1 / 8 : 0;
-    // A held Lum cures any status, and `BerryPhase` runs at turn end before the status chip (game-code.md §3), so
-    // the status never lasts past this turn and never deals anything: all it costs the foe is the move a sleep or
-    // paralysis takes before we are through (`skip0`), and all it leaves behind is the berry it burnt. A Lum x2
-    // holder keeps the second one, so this stays the price there too — one more status is needed before one sticks.
-    const lum = berryGone(f, p => healAtEnd(turn, p), { berry: BerryType.LUM });
+    // A held Lum cures it at this turn's end, unless an opponent's Unnerve stops the berry (game-code.md §3).
+    let unnerved = false;
+    try { unnerved = [me, ...(f.getOpponents?.() ?? [])].some(q => q?.hasAbilityWithAttr?.("PreventBerryUseAbAttr")); } catch { /* read as none */ }
+    const lum = unnerved ? null : berryGone(f, p => healAtEnd(turn, p), { berry: BerryType.LUM });
     if (lum) return { kind: "status", self: false, patches: null, skip0, foeAct: null, note: null,
       gain: lum.lost ? -lum.lost / (f.getMaxHp?.() || 1) : 0 };
     return {

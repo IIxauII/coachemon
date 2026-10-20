@@ -1724,7 +1724,6 @@ Object.assign(TABLE, { "Machamp>Close Combat>Vileplume": [[40], 1, 1], "Vileplum
 {
   const BERRY = { SITRUS: 0, LUM: 1 };
   const berryItem = (berryType, n = 1) => Object.assign(new ({ BerryModifier: class { getStackCount() { return this.n; } } }).BerryModifier(), { berryType, n, isTransferable: true });
-  const SPORE = ["Spore", "Grass", 0, "X", 0, { id: 147, attrs: [["StatusEffectAttr", { effect: 4 }]] }];
   const TOXIC = ["Toxic", "Poison", 0, "X", 0, { id: 92, attrs: [["StatusEffectAttr", { effect: 2 }]] }];
   const WAVE = ["Thunder Wave", "Electric", 0, "X", 0, { id: 86, attrs: [["StatusEffectAttr", { effect: 3 }]] }];
   const GIGA_DRAIN = ["Giga Drain", "Grass", 75, "S"];
@@ -1743,8 +1742,12 @@ Object.assign(TABLE, { "Machamp>Close Combat>Vileplume": [[40], 1, 1], "Vileplum
     return { s, me, foe, field };
   };
   // Machamp is slower at Vileplume's default 60 Speed and faster at 40.
-  const playFor = (move, items, spe = 60) => {
+  const playFor = (move, items, spe = 60, ourAttr = null) => {
     const { s, me, foe } = scene([GIGA_DRAIN, move], items, spe);
+    if (ourAttr) {
+      const own = me.hasAbilityWithAttr?.bind(me);
+      me.hasAbilityWithAttr = a => a === ourAttr || !!own?.(a);
+    }
     return globalThis.__planner.statusPlay(s, me, foe, s.statusMoves(me, foe).find(x => x.name === move[0]));
   };
   const shape = p => (!p ? "no play" : [`note ${p.note ?? "—"}`,
@@ -1757,6 +1760,10 @@ Object.assign(TABLE, { "Machamp>Close Combat>Vileplume": [[40], 1, 1], "Vileplum
     ["Spore, bare foe", SPORE, []], ["Spore, Lum x1", SPORE, lum(1)],
     ["Thunder Wave, bare foe", WAVE, []], ["Thunder Wave, Lum x1", WAVE, lum(1)],
   ]) console.log(`play: ${what.padEnd(23)} ${shape(playFor(move, items))}`);
+  // Our Unnerve stops the foe eating its Lum, so the status lasts as on a bare foe.
+  const unnerved = playFor(TOXIC, lum(1), 60, "PreventBerryUseAbAttr");
+  console.log(`play: ${"Toxic, Lum x1, Unnerve".padEnd(23)} ${shape(unnerved)}`);
+  assert.equal(shape(unnerved), shape(playFor(TOXIC, [])), "an Unnerved Lum holder takes a lasting Toxic");
 
   // A lasting status writes itself into the follow-up and keeps costing the foe attempts; a Lum-cured one writes
   // nothing and asks nothing of any later turn.
