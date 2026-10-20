@@ -146,9 +146,8 @@ const onStat = (p, mv) => {
 const answersTo = (p, foe) => typedAttacks(p).filter(mv => effectiveness(TYPES[mv.type], foe, mv) >= 2 && onStat(p, mv))
   .map(mv => ({ name: nameOf(mv), acc: mv.accuracy > 0 ? mv.accuracy : 100 }));
 
-// The abilities that move a kind of attack first, each with its test for that kind (game-code.md §17): Gale Wings
-// a Flying attack (its full-HP condition is not read), Triage one flagged as healing — the draining attacks and
-// Pollen Puff. Status moves don't count, healing or not: `typedAttacks` holds attacks only.
+// Gale Wings and Triage move an attack first (game-code.md §17). Gale Wings' full-HP condition is not read, and a
+// healing status move never counts: `typedAttacks` holds attacks only.
 // @mirrors priority-abilities
 const PRIORITY_ABILITIES = new Map([
   ["Gale Wings", mv => TYPES[mv.type] === "Flying"],
@@ -160,8 +159,8 @@ const speedCheck = (party, foes, wave) => {
   if (!spe) return [];
   const faster = party.filter(p => tryDo(() => p.getStat(Stat.SPD), 0) > spe);
   const priority = party.filter(p => {
-    const sped = tryDo(() => abilitiesOf(p), []).map(a => PRIORITY_ABILITIES.get(a)).filter(Boolean);
-    return typedAttacks(p).some(mv => (mv.priority ?? 0) > 0 || sped.some(test => test(mv)));
+    const priorityTests = tryDo(() => abilitiesOf(p), []).map(a => PRIORITY_ABILITIES.get(a)).filter(Boolean);
+    return typedAttacks(p).some(mv => (mv.priority ?? 0) > 0 || priorityTests.some(test => test(mv)));
   });
   if (faster.length >= 2 || priority.length) return [];
   return [{ kind: "speed", level: "high",

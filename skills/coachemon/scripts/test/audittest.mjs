@@ -241,8 +241,7 @@ const scenarios = {
     } };
 }
 
-// Triage moves a healing-flagged move at +3 (game-code.md §17), and draining attacks carry the flag: a Triage Comfey's
-// Giga Drain goes before Flygon, so the party is not short of priority (#474).
+// A Triage Comfey's Giga Drain goes before Flygon (game-code.md §17), so the party is not short of priority (#474).
 {
   const guzma = scenarios["wave 164 guzma"];
   const triage = (...swap) => () => guzma.party().map(p => (p.name !== "Comfey" ? p
@@ -250,7 +249,7 @@ const scenarios = {
   const speed = a => a.findings.filter(f => f.kind === "speed").map(f => f.text);
   scenarios["wave 164 guzma, Triage Giga Drain"] = { ...guzma, party: triage(),
     expect: a => assert.deepEqual(speed(a), [], "Triage's Giga Drain is a +3 attack") };
-  // The game put the flag on Pollen Puff at 1.12.1.1: read from the move, it counts with no name to add.
+  // Pollen Puff counts through its flag.
   scenarios["wave 164 guzma, Triage Pollen Puff"] = { ...guzma, party: triage([M.gigaDrain, M.pollenPuff]),
     expect: a => assert.deepEqual(speed(a), [], "Triage's Pollen Puff is a +3 attack") };
   // Recover carries the flag too, but it is no attack: the party is still short of priority.
