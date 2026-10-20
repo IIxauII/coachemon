@@ -1560,6 +1560,18 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
   row("Sitrus x2", bite([berryItem(BERRY.SITRUS, 2)]));
   row("Sitrus x2, one already ate", bite([berryItem(BERRY.SITRUS, 2)], { stole: 1 }));
   assert.equal(gain([berryItem(BERRY.SITRUS, 2)], { stole: 1 }), 100, "the second steal eats the second Sitrus");
+  // …and the carry itself, composed as `deeper` composes it: turn 1's exchange, then the follow-up from the HP it left.
+  const follow = items => {
+    const me = beedrill(200), foe = shuckle(items, {}, 280);
+    const { scene } = render({ party: [me], foes: [foe], live: true, switches: () => new Map(), stubOutcome: withAttrs,
+      heal: sitrusHeal, dist: () => [{ name: "Brine", type: "Water", p: 1, score: 10, targets: [0] }] });
+    const pm = me.moveset[0], x = globalThis.__planner.exchange(scene, me, pm, foe), t1 = x.turn1;
+    const step = stole => globalThis.__planner.exchange(scene, me, pm, foe, { hp: t1.hp, after: t1, next: true, stole }).expectedHpLeft;
+    return { carried: step(x.stole), forgotten: step(0) };
+  };
+  const chained = follow([berryItem(BERRY.SITRUS)]);
+  console.log(`depth 2: the follow-up leaves us ${chained.carried} HP (${chained.forgotten} if turn 1's steal were forgotten)`);
+  assert.ok(chained.carried < chained.forgotten, `forgetting turn 1's steal would pay the follow-up for the same berry twice (${chained.carried} vs ${chained.forgotten})`);
 
   // What the holder's own turn ends lose, read off the course the exchange builds for it — with the count pinned to
   // exactly k berries gone, so the single draw's expectation shows plainly. A Sitrus x2 holder keeps a turn-end Sitrus

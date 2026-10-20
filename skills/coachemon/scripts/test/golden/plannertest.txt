@@ -366,6 +366,7 @@ Sitrus x1, one already ate turnsWe 3 · our HP 164 · P(steal) 1
 …and Pound follows it      turnsWe 3 · our HP 164 · P(steal) 0
 Sitrus x2                  turnsWe 3 · our HP 364 · P(steal) 1
 Sitrus x2, one already ate turnsWe 3 · our HP 264 · P(steal) 1
+depth 2: the follow-up leaves us 182 HP (282 if turn 1's steal were forgotten)
 Sitrus x1                  turn end: none gone 70 · one gone 0 · two gone 0
 Sitrus x2                  turn end: none gone 70 · one gone 70 · two gone 0
 Sitrus x1 + Lum x1         turn end: none gone 70 · one gone 35 · two gone 0
