@@ -48,7 +48,7 @@ const SPECIES = [
 // Each form's [types, base stats, passive]; form 0 is the species' own.
 const FORMS = {
   479: [[["Electric","Ghost"], [50,50,77,95,77,91], 41], [["Electric","Fire"], [50,65,107,105,107,86], 42],
-    [["Electric","Water"], [50,65,107,105,107,86], 43]],
+    [["Electric","Water"], [50,60,107,100,107,86], 43]],
 };
 const ABILITY_NAMES = { 11: "Chlorophyll", 13: "Solar Power", 15: "Rain Dish", 17: "Big Pecks", 19: "Guts", 21: "Lightning Rod", 23: "Moxie", 25: "Multiscale", 27: "Huge Power", 29: "Rough Skin", 31: "Synchronize", 41: "Levitate", 42: "Flame Body", 43: "Water Absorb", 24: "Rattled", 30: "Rough Skin (H)", 33: "Intimidate", 34: "Sand Force", [AbilityId.BATTLE_BOND]: "Battle Bond" };
 
@@ -120,7 +120,7 @@ const freshStart = {
 };
 // `valid`: the grid's challenge-filtered ids, which a challenge run's candidates come from; the other modes take the
 // registry's starters.
-// `getSpeciesDefaultDexAttrProps`' form: the lowest one caught (game-code.md §23).
+// `getSpeciesDefaultDexAttrProps`' form (game-code.md §23).
 const defaultForm = caught => { for (let i = 0; i < 32; i++) if (caught & (128n << BigInt(i))) return i; return 0; };
 // `forms`: a saved form preference per species id.
 const mount = ({ limit = 10, chosen = [], valid = STARTERS, challenges = [], withTables = true, looking = null, onGrid = true, picking = true, forms = {} }) => {
@@ -308,9 +308,10 @@ const yanmaUnder = value => ({ challenges: [{ id: 11, value }], valid: [...START
   assert.ok(m.picks[0].noCarry && !m.picks[0].members.some(x => x.role === "carry"), JSON.stringify(m.picks[0]));
 }
 
-// ---- From 1.12.1.3 the grid adds the lowest form caught, so Rotom without form 0 is valued as Heat Rotom. An idle
-// challenge makes `valid` the grid, so Rotom is the only candidate.
+// Rotom alone on the grid: an idle challenge makes `valid` the candidates.
 const rotom = opts => ({ challenges: [{ id: 11, value: 0 }], valid: [ROTOM], looking: ROTOM, ...opts });
+
+// ---- Without form 0 caught, Rotom is valued as Heat Rotom, the lowest form caught.
 {
   const m = show("Rotom, form 0 uncaught", rotom());
   const why = m.viewing.why.join(" · ");
@@ -324,6 +325,7 @@ const rotom = opts => ({ challenges: [{ id: 11, value: 0 }], valid: [ROTOM], loo
 {
   const m = show("Rotom, Wash saved", rotom({ forms: { [ROTOM]: 2 } }));
   const why = m.viewing.why.join(" · ");
+  assert.ok(m.viewing.why.includes("BST 510 from L5"), why);
   assert.ok(m.viewing.why.includes("passive Water Absorb"), why);
   // Electric/Water hits Water, Flying, Fire, Ground and Rock.
   assert.equal(m.picks[0].covers, 5, JSON.stringify(m.picks[0]));

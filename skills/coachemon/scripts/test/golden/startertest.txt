@@ -200,8 +200,8 @@ summary best: Rotom (carry) · 3/10 pts
 🌱 Starters 0/10 pts best: Rotom (carry) · 3/10 pts
 Proposals
 ★ best 3 pts · SE vs 5 types
-Rotom Rotom 3 carry final BST 520 · BST 520 from L5
-· cursor: Rotom Rotom 3 pts · #1 of 1 · in best final BST 520 · BST 520 from L5 · passive Water Absorb
+Rotom Rotom 3 carry final BST 510 · BST 510 from L5
+· cursor: Rotom Rotom 3 pts · #1 of 1 · in best final BST 510 · BST 510 from L5 · passive Water Absorb
 summary best: Rotom (carry) · 3/10 pts
 == Rotom picked as Wash
 ⌃ ×

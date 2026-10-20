@@ -64,7 +64,7 @@ const evolutionsUnder = (evos, moveset) => {
 };
 
 const asFinal = x => ({ final: x.baseTotal ?? 0, finalSp: x, estimated: false });
-// Form 0 answers the species itself, never `forms[0]`.
+// Not `formOf` alone: at form 0 it answers `forms[0]`, where the card has always read the species itself.
 const startForm = (sp, formIndex) => (formIndex ? formOf(sp, formIndex) : sp);
 
 // The line's strongest final form, and how it first evolves. `moveset` is the Moveset Randomizer's value; at 1,
@@ -247,10 +247,10 @@ export const starterModel = (s, h) => {
   for (const st of Object.values(s.gameData?.starterData ?? {})) {
     unlocks += (st?.valueReduction ?? 0) + 3 * (st?.passiveAttr ?? 0) + 11 * (st?.eggMoves ?? 0) + 37 * (st?.abilityAttr ?? 0);
   }
-  // Cycling a form on the grid saves it as a preference, which changes the form a species is valued as.
-  let forms = 0;
-  for (const [id, p] of Object.entries(h.starterPreferences ?? {})) if (p?.formIndex != null) forms += Number(id) * (p.formIndex + 1);
-  const key = JSON.stringify([limit, unlocks, forms, chosen.map((sp, i) => [sp.speciesId, h.partyStarters?.[i]?.passive, h.partyStarters?.[i]?.abilityIndex]),
+  // So does a form cycled on the grid (game-code.md §23).
+  let formsKey = 0;
+  for (const [id, p] of Object.entries(h.starterPreferences ?? {})) if (p?.formIndex != null) formsKey += Number(id) * (p.formIndex + 1);
+  const key = JSON.stringify([limit, unlocks, formsKey, chosen.map((sp, i) => [sp.speciesId, h.partyStarters?.[i]?.passive, h.partyStarters?.[i]?.abilityIndex]),
     // The scan fills the tables in place a chunk at a time (#381), so each one that lands has to rebuild the card.
     candidates.length, !!tables, !!tables?.abilities, !!tables?.eggMoves, !!tables?.moves, challenges.map(c => [c.id, c.value])]);
   if (cache.key !== key) cache = { key, value: build(s, h, { tables, challenges, has, limit, chosen, candidates, onScreen }) };
