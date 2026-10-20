@@ -100,6 +100,17 @@ async function chooseOption(game: GameManager): Promise<boolean> {
   return false;
 }
 
+// `select` refuses a move with no PP left, and an encounter can spend it between heals: Part-Timer left Splash on 2
+// at wave 82, and the walk stopped at 85 (#778). The PP is reset on the moveset `select` reads.
+function splash(game: GameManager, slot: BattlerIndex.PLAYER | BattlerIndex.PLAYER_2) {
+  for (const move of game.scene.getPlayerField()[slot].getMoveset()) {
+    if (move.moveId === MoveId.SPLASH) {
+      move.ppUsed = 0;
+    }
+  }
+  game.move.select(MoveId.SPLASH, slot);
+}
+
 async function clear(game: GameManager) {
   forgetPrompts(game);
   if (game.isCurrentPhase("MysteryEncounterPhase") && !(await chooseOption(game))) {
@@ -118,9 +129,9 @@ async function clear(game: GameManager) {
   }
   // A faint only plays out through a turn, and a turn needs our commands. The foes are down before it starts, so
   // none of them acts.
-  game.move.select(MoveId.SPLASH, BattlerIndex.PLAYER);
+  splash(game, BattlerIndex.PLAYER);
   if (b.double && game.scene.getPlayerField().length > 1) {
-    game.move.select(MoveId.SPLASH, BattlerIndex.PLAYER_2);
+    splash(game, BattlerIndex.PLAYER_2);
   }
   await game.doKillOpponents();
 }
