@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { bundle } from "../hud-bundle.mjs";
 import { wholeCard } from "./panel.mjs";
-import { MoveFlags } from "../../../../src/enums/generated.ts";
+import { MoveFlags, SpeciesId } from "../../../../src/enums/generated.ts";
 import { onGame } from "./game-proto.mjs";
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
@@ -23,8 +24,35 @@ const teraMon = (...args) => {
   p.getTypes = () => (p.isTerastallized ? [teraType] : base);
   return p;
 };
+// A move of `p`'s whose own condition can say no. The factory's `getMove` builds a fresh object each call, so the
+// patched one is frozen in place for the gate and the AI to read the same move back.
+const withCondition = (p, move, cond) => {
+  const pm = p.moveset.find(m => m.getName() === move);
+  const mv = { ...pm.getMove(), applyConditions: user => cond(user) };
+  pm.getMove = () => mv;
+  return p;
+};
+const switchIn = teras => ({ double: false, trainer: { isBoss: false }, teras, bench: [1], summonIndex: 1, party: [
+  mon("Gyarados", 80, ["Water","Flying"], "Intimidate", [260,170,130,120,150,140], [["Hydro Pump","Water",110,"S"]], true)],
+  foes: [
+    mon("Barbaracle", 80, ["Rock","Water"], "Tough Claws", [240,190,180,100,130,110], [["Razor Shell","Water",75,"P"]], true),
+    teraMon("Coalossal", 80, ["Fire","Rock"], "Steam Engine", [400,160,180,160,250,60], [["Rock Slide","Rock",75,"P"]], false, "Rock")] });
 // Stat i lives at `statStages[i - 1]`.
 const withStages = (p, statStages) => { p.summonData.statStages = statStages; return p; };
+// Gordie W180 at turn 5, rebuilt from the solver fixture (#648): each mon's level, stats, current HP, Tera type and
+// party slot are the fixture's own, and `extras.foes` gives it the `initialTeamIndex` the trainer's instant Tera keys
+// on. The T5 enemy party sits in team-index order [5,0,2,3,4,1], so no slot there is its own team index. Typing,
+// ability and move data are not in a save, so they are spelled out at the call.
+const W180 = JSON.parse(readFileSync(new URL("../../../../src/solver/fixtures/gordie-w180.t5.json", import.meta.url), "utf8"));
+const w180Mon = (species, name, types, ability, moves, { ours = false } = {}) => {
+  const saved = W180.save[ours ? "party" : "enemyParty"].find(m => m.species === species);
+  const live = W180.extras[ours ? "party" : "foes"].find(f => f.id === saved.id);
+  const p = ours
+    ? mon(name, saved.level, types, ability, saved.stats, moves, W180.save.party.indexOf(saved) === 0, saved.hp)
+    : teraMon(name, saved.level, types, ability, saved.stats, moves, live.onField, saved.hp, undefined, TY[saved.teraType]);
+  if (!ours) p.initialTeamIndex = live.initialTeamIndex;
+  return p;
+};
 const party = [
   mon("Charizard", 66, ["Fire","Flying"], "Blaze", [190,125,118,160,128,148], [["Heat Wave","Fire",95,"S",6],["Flare Blitz","Fire",120,"P"],["Air Slash","Flying",75,"S"],["Flamethrower","Fire",90,"S"]], true),
   mon("Venusaur", 65, ["Grass","Poison"], "Overgrow", [200,135,122,144,144,118], [["Double-Edge","Normal",120,"P"],["Power Whip","Grass",120,"P"]], true),
@@ -65,6 +93,35 @@ const scenarios = {
   tera: { double: false, trainer: { isBoss: false }, teras: ["Lycanroc"], party: [
     mon("Charizard", 66, ["Fire","Flying"], "Blaze", [190,125,118,160,128,120], [["Flamethrower","Fire",90,"S"],["Air Slash","Flying",75,"S"]], true, 120)],
     foes: [teraMon("Lycanroc", 70, ["Rock"], "Keen Eye", [200,190,100,80,90,140], [["Stone Edge","Rock",100,"P"]], true, "Steel")] },
+  // Gordie W180 (#648). Coalossal Teras to Rock before it moves, so Burn Up — picked while it was still Fire — goes
+  // off and fails. The trainer's `shouldTera` says yes to Centiskorch on the bench as well: it comes in at its
+  // Fire/Bug, but Teras at its first FIGHT command, before any hit of ours after a faint send-in (game-code.md §7).
+  teraFails: { double: false, trainer: { isBoss: false }, teras: ["Coalossal", "Centiskorch"], bench: [], party: [
+    mon("Gyarados", 80, ["Water","Flying"], "Intimidate", [260,170,130,120,150,140], [["Waterfall","Water",80,"P"]], true),
+    mon("Venusaur", 80, ["Grass","Poison"], "Overgrow", [260,140,140,160,160,120], [["Power Whip","Grass",120,"P"]], false)],
+    foes: [
+      withCondition(teraMon("Coalossal", 80, ["Fire","Rock"], "Steam Engine", [250,160,180,160,180,60],
+        [["Burn Up","Fire",130,"S"],["Rock Slide","Rock",75,"P"]], true, "Rock"), "Burn Up", u => u.getTypes().includes(TY.indexOf("Fire"))),
+      teraMon("Centiskorch", 80, ["Fire","Bug"], "Flash Fire", [240,150,120,140,130,100], [["Fire Lash","Fire",80,"P"]], false, "Rock")] },
+  // Barbaracle withdraws for Coalossal, which comes in at its Fire/Rock and Teras only at its first FIGHT command, so
+  // this turn's Hydro Pump lands at ×4 (#648). `plainSwitchIn` is the same switch with no Tera anywhere.
+  teraSwitchIn: switchIn(["Coalossal"]),
+  plainSwitchIn: switchIn([]),
+  // The same thing on the real party (#648): Gordie W180 at T5, rebuilt from the fixture. `instantTeras` is his own
+  // `[5]`, and at T5 team index 5 is Coalossal, in party slot 0 — slot 5 holds Carracosta, which must stay un-Tera'd.
+  // The card still reads the harness's own wave; only the mons and their indexes come from W180.
+  // `bench: []` is the T5 fact that Coalossal stays in: a foe the trainer withdraws never Teras (`teraNow`).
+  w180: { double: false, trainer: { isBoss: false, trainerAI: { instantTeras: [5] } }, bench: [], party: [
+    w180Mon(SpeciesId.LEAVANNY, "Leavanny", ["Bug","Grass"], "Swarm", [["Leaf Storm","Grass",130,"S"],["Bug Bite","Bug",60,"P"]], { ours: true }),
+    w180Mon(SpeciesId.GYARADOS, "Gyarados", ["Water","Flying"], "Intimidate", [["Hydro Pump","Water",110,"S"],["Hurricane","Flying",110,"S"]], { ours: true })],
+    foes: [
+      withCondition(w180Mon(SpeciesId.COALOSSAL, "Coalossal", ["Fire","Rock"], "Steam Engine",
+        [["Burn Up","Fire",130,"S"],["Stone Edge","Rock",100,"P"]]), "Burn Up", u => u.getTypes().includes(TY.indexOf("Fire"))),
+      w180Mon(SpeciesId.GIGALITH, "Gigalith", ["Rock"], "Sand Stream", [["Rock Slide","Rock",75,"P"]]),
+      w180Mon(SpeciesId.TYRANITAR, "Tyranitar", ["Rock","Dark"], "Sand Stream", [["Crunch","Dark",80,"P"],["Earthquake","Ground",100,"P"]]),
+      w180Mon(SpeciesId.STONJOURNER, "Stonjourner", ["Rock"], "Power Spot", [["Earthquake","Ground",100,"P"],["Body Slam","Normal",85,"P"]]),
+      w180Mon(SpeciesId.BARBARACLE, "Barbaracle", ["Rock","Water"], "Tough Claws", [["Stone Edge","Rock",100,"P"],["Razor Shell","Water",75,"P"]]),
+      w180Mon(SpeciesId.CARRACOSTA, "Carracosta", ["Water","Rock"], "Solid Rock", [["Rock Slide","Rock",75,"P"],["Brine","Water",65,"S"]])] },
   // A trap the planned move runs into goes on the foe row's ✦: Fire into Thick Fat.
   trap: { double: false, party: [
     mon("Charizard", 66, ["Fire","Flying"], "Blaze", [190,125,118,160,128,148], [["Flamethrower","Fire",90,"S"]], true)],
@@ -159,7 +216,12 @@ for (const [label, sc] of Object.entries(scenarios)) {
   const trainer = sc.trainer ? { getName: () => "Tester", config: sc.trainer, isDouble: () => false,
     getPartyMemberMatchupScores: () => { pm.queueMessage("side effect"); return (sc.bench ?? sc.foes.map((_f, i) => i).slice(1)).map(i => [i, 5]); },
     getSortedPartyMemberMatchupScores: sc2 => sc2.slice().sort((a, b) => b[1] - a[1]),
-    getNextSummonIndex: () => sc.summonIndex ?? 1, shouldTera: e => !!sc.teras?.includes(e.name) } : null;
+    getNextSummonIndex: () => sc.summonIndex ?? 1,
+    // The game's own instant-Tera test, keyed the way the game keys it: on the mon's team index, never its slot. A
+    // scenario carrying `trainerAI.instantTeras` is shaped like the real trainer, indexes and all.
+    shouldTera: e => (sc.trainer.trainerAI
+      ? !e.isTerastallized && sc.trainer.trainerAI.instantTeras.includes(e.initialTeamIndex)
+      : !!sc.teras?.includes(e.name)) } : null;
   const scene = { phaseManager: pm, getField: () => [...onField(), ...sc.foes.filter(f => f.isOnField())], currentBattle: { waveIndex: 89, turn: 1, double: sc.double, enemySwitchCounter: 0, getBattlerCount: () => (sc.double ? 2 : 1), trainer }, ui: { mode: 0, getHandler: () => ({}) }, getPlayerParty: () => sc.party, getEnemyParty: () => sc.foes };
   globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
   const node = () => { const n = { style: {}, children: [], addEventListener(ev, fn) { if (ev === "click") n.onclick = fn; }, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
@@ -181,3 +243,44 @@ const trapsOf = (label, slot, foe) => {
 };
 assert.deepEqual(trapsOf("eelevate", "Garchomp", "Eelektross"), { slot: ["Eelevate"], row: ["Eelevate"] }, "Land's Wrath into Eelevate");
 assert.deepEqual(trapsOf("eelevateArrows", "Garchomp", "Eelektross"), { slot: [], row: [] }, "Thousand Arrows into Eelevate");
+
+// Gordie W180 (#648): the Tera the foe's own pick was made before, and the bench mon that Teras only once it fights.
+{
+  const row = name => cards.teraFails.rows.find(r => r.name === name);
+  const coal = row("Coalossal");
+  assert.equal(coal.likely.move, "Burn Up", "the AI's pick is made before the Tera");
+  assert.equal(coal.likely.fails, true, "and reads `fails` once the Tera has taken its Fire typing away");
+  assert.deepEqual(coal.weak.filter(([t]) => ["Water", "Grass"].includes(t)), [["Water", ""], ["Grass", ""]],
+    "Tera Rock is Water ×2 and Grass ×2, not the Water ×4 its Fire/Rock read at");
+  const bench = row("Centiskorch");
+  assert.equal(bench.tera, "Rock", "a bench mon the trainer Teras names the Tera it will take");
+  assert.deepEqual(bench.types, ["Rock"], "and its row shows the typing our hits meet");
+  assert.deepEqual(bench.weak.filter(([t]) => ["Water", "Grass", "Rock"].includes(t)), [["Water", ""], ["Grass", ""]],
+    "with Tera Rock's weaknesses, not Fire/Bug's Rock ×4");
+}
+
+// A predicted switch-in takes this turn's hit at the typing it comes in at, whatever it Teras to later (#648).
+{
+  const row = (label, name) => cards[label].rows.find(r => r.name === name);
+  const [tera, plain] = [row("teraSwitchIn", "Coalossal"), row("plainSwitchIn", "Coalossal")];
+  assert.equal(tera.pick.pct, plain.pick.pct, "this turn's Hydro Pump lands at Fire/Rock's ×4");
+  assert.ok(tera.pick.ko === 0 || tera.pick.ko > plain.pick.ko, "and the hits after it at Tera Rock's ×2");
+  assert.deepEqual([tera.types, tera.tera], [["Rock"], "Rock"], "its row: the Tera every later hit meets");
+}
+
+// The same against the real party (#648): Gordie W180 at T5, rebuilt from the solver fixture. `instantTeras` is `[5]`,
+// a *team* index — and at T5 team index 5 is Coalossal in party slot 0, while party slot 5 holds Carracosta.
+{
+  const row = name => cards.w180.rows.find(r => r.name === name);
+  const coal = row("Coalossal");
+  assert.equal(coal.tera, "Rock", "the Tera lands on the foe whose team index is 5, whatever slot it sits in");
+  assert.deepEqual(coal.types, ["Rock"], "and its row shows the Tera typing");
+  assert.deepEqual(coal.weak.filter(([t]) => ["Water", "Grass"].includes(t)), [["Water", ""], ["Grass", ""]],
+    "Water ×2 and Grass ×2 at Tera Rock, not the Water ×4 its Fire/Rock read at");
+  assert.equal(coal.likely.move, "Burn Up", "the pick is still made before the Tera");
+  assert.equal(coal.likely.fails, true, "and Burn Up reads `fails` once the Tera has taken its Fire typing away");
+  const carr = row("Carracosta");
+  assert.equal(carr.tera, null, "the foe merely sitting in party slot 5 is team index 1 and carries no Tera");
+  assert.deepEqual(carr.types, ["Water", "Rock"], "its row keeps its own typing");
+  assert.deepEqual(cards.w180.rows.filter(r => r.tera).map(r => r.name), ["Coalossal"], "and no other foe is Tera'd");
+}

@@ -163,17 +163,21 @@ test("an augmented export missing any extra gets no answer naming each one it la
 });
 
 test("an item the clone drops on load gets no answer naming it: a type or a class the pinned game lacks (#659)", () => {
-  const [ours] = drayton.modifiers;
-  const [theirs] = drayton.enemyModifiers;
+  const [ours] = drayton.modifiers!;
+  const [theirs] = drayton.enemyModifiers!;
   const save = {
     ...drayton,
-    modifiers: [...drayton.modifiers, { ...ours, typeId: "GOLDEN_SHINY_CHARM" }],
-    enemyModifiers: [...drayton.enemyModifiers, { ...theirs, className: "FutureHeldItemModifier" }],
+    modifiers: [...drayton.modifiers!, { ...ours, typeId: "GOLDEN_SHINY_CHARM" }],
+    enemyModifiers: [...drayton.enemyModifiers!, { ...theirs, className: "FutureHeldItemModifier" }],
   };
   const result = ask({ save });
 
   assert.deepEqual(result?.reason, { code: "dropped_item", items: ["GOLDEN_SHINY_CHARM", theirs.typeId] });
   assert.match(result.message, new RegExp(`GOLDEN_SHINY_CHARM, ${theirs.typeId}`));
+});
+
+test("a save whose side holds no items, written null by a load, passes the gate (#821)", () => {
+  assert.equal(ask({ save: { ...drayton, modifiers: null, enemyModifiers: null } }), null);
 });
 
 test("a fight the oracle can't replay is refused for itself, not for a re-check a release would bring (#659)", () => {

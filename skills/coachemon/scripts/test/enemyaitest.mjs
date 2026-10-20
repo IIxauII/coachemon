@@ -341,6 +341,167 @@ for (const [slot0Best, expect] of [[10, ["e0"]], [1, ["e1"]]]) {
   assert.equal(ai.teraOf(bench), null, "a foe the trainer isn't Terastallizing carries no Tera type");
 }
 
+// A Gordie W180-shaped trainer (#648): `e` on the field and `bench` both in `instantTeras`. It names *team* indexes,
+// which a switch has already pulled apart from the party slots: `bench` sits in slot 1 carrying team index 5, and slot
+// 5 holds `other`, team index 1 — the order the real W180 party is in at T5 (game-code.md §7).
+const instantTera = () => {
+  const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A", target: -10 }] });
+  // Fire/Bug, Tera Rock, as Centiskorch.
+  const bench = mkMon({ id: "b", player: false, types: [9, 6] });
+  const other = mkMon({ id: "o", player: false });
+  const filler = [2, 3, 4].map(i => Object.assign(mkMon({ id: `f${i}`, player: false }), { initialTeamIndex: i }));
+  const tera = (p, type) => {
+    const base = p.getTypes();
+    Object.assign(p, { getTeraType: () => type, getTypes: () => (p.isTerastallized ? [type] : base) });
+  };
+  tera(e, 8);
+  tera(bench, 5);
+  tera(other, 14);
+  Object.assign(e, { initialTeamIndex: 0 });
+  Object.assign(bench, { initialTeamIndex: 5 });
+  Object.assign(other, { initialTeamIndex: 1 });
+  const me = foe();
+  const instantTeras = [0, 5];
+  const trainer = {
+    config: { isBoss: false, trainerAI: { instantTeras } },
+    shouldTera: m => !m.isTerastallized && instantTeras.includes(m.initialTeamIndex),
+    getPartyMemberMatchupScores: () => [[1, 1]], getSortedPartyMemberMatchupScores: sc => sc, getNextSummonIndex: () => 1,
+  };
+  return { e, bench, other, me, ai: setup({ player: [me], enemy: [e, bench, ...filler, other], trainer }) };
+};
+const planner = () => globalThis.__hud["30-planner"];
+
+// ---- Only this turn's own command is asked pre-Tera: a later turn is replayed at the Tera (#648).
+{
+  const { e, bench, other, me, ai } = instantTera();
+  const seen = { pick: [], switch: [], replay: [] };
+  // The switch check comes first of all: predicting the Tera asks it, before any flag is on.
+  let at = "switch";
+  e.getMoveType = mv => (seen[at].push(!!e.isTerastallized), mv.type);
+  e.getMatchupScore = () => (seen[at].push(!!e.isTerastallized), 1);
+  ai.ask(t => {
+    at = "pick"; t.enemyDistribution(e);
+    at = "replay"; t.replayAI(e, me);
+  });
+  assert.deepEqual([...new Set(seen.pick)], [false], "this turn's move pick is made pre-Tera");
+  assert.deepEqual([...new Set(seen.switch)], [false], "and so is this turn's switch check");
+  assert.deepEqual([...new Set(seen.replay)], [true], "a turn after this one is replayed with the Tera on");
+
+  assert.equal(ai.teraOf(bench), "Rock", "the benched foe whose team index is in instantTeras names the Tera it will take");
+  assert.equal(ai.teraOf(other), null, "the foe merely sitting in that party slot names none");
+  assert.equal(bench.isTerastallized, undefined, "flag restored on the bench too");
+}
+
+// ---- The trainer scores a bench mon for its send-in at its base type: an instant Tera comes only with a FIGHT command
+// on the field (#648, game-code.md §7).
+{
+  const { bench, me, ai } = instantTera();
+  const seen = [];
+  bench.getMatchupScore = () => (seen.push(!!bench.isTerastallized), 1);
+  ai.ask(t => t.sendInScore(bench, me));
+  assert.deepEqual([...new Set(seen)], [false]);
+}
+
+// ---- The replay standing in for this turn's pick is made pre-Tera, like the pick it stands in for (#648).
+{
+  const { e, me, ai } = instantTera();
+  const seen = [];
+  e.getMoveType = mv => (seen.push(!!e.isTerastallized), mv.type);
+  ai.ask(t => {
+    e.getOpponents = () => [];
+    planner().likelyMoves(t, e, me, [{ name: "A", live: true, expected: 10 }], false);
+  });
+  assert.deepEqual([...new Set(seen)], [false]);
+}
+
+// ---- A benched instant-Tera foe's first pick is made before its Tera, and its picks after that at it (#648).
+{
+  const { bench, me, ai } = instantTera();
+  bench.moveset = [mkMove({ id: 1, name: "A", target: -10 })];
+  // Each replay's flag as the AI reads it, by whether the replay was asked for a pick before the Tera.
+  const seen = { pre: [], post: [] };
+  let at = null;
+  bench.getMoveType = mv => (at && seen[at].push(!!bench.isTerastallized), mv.type);
+  const replayAs = t => Object.create(t, { replayAI: { value: (f, target, opts) => {
+    at = opts?.preTera ? "pre" : "post";
+    try { return t.replayAI(f, target, opts); } finally { at = null; }
+  } } });
+  const t1 = ai.ask(t => planner().threatFrom(replayAs(t), bench, me, null, { next: true }));
+  assert.deepEqual([...new Set(seen.pre)], [false], "the first pick, pre-Tera");
+  assert.deepEqual([...new Set(seen.post)], [true], "the ones after it, at the Tera");
+  assert.ok(t1.later, "and the uses after the first are priced off those");
+}
+
+// ---- A replayed pick whose own condition fails at the Tera reads `fails`, whichever turn it is replayed for (#648).
+{
+  const { e, bench, me, ai } = instantTera();
+  // Burn Up's shape: its user must still be Fire, which the Tera takes away. Scored far above the other move, so the
+  // AI, which skips that condition (game-code.md §6), names it either side of the Tera.
+  const burnUp = p => [mkMove({ id: 1, name: "Burn", target: 100, cond: () => !p.isTerastallized }), mkMove({ id: 2, name: "Rock", target: 1 })];
+  bench.moveset = burnUp(bench);
+  e.moveset = burnUp(e);
+  const outs = [{ name: "Rock", live: true, expected: 10 }];
+  const fails = rows => rows.map(r => [r.name, !!r.fails]);
+  const rows = ai.ask(t => ({ first: planner().likelyMoves(t, bench, me, outs, true), later: planner().likelyMoves(t, e, me, outs, true) }));
+  assert.deepEqual(fails(rows.first), [["Burn", true]], "a bench foe's first pick");
+  assert.deepEqual(fails(rows.later), [["Burn", true]], "a Tera'd foe's next turn");
+}
+
+// ---- A later pick reads `fails` only where the Tera makes it fail: a condition read off the state now says nothing
+// about the turn the pick is for (#648).
+{
+  const { bench, me, ai } = instantTera();
+  // Fake Out's shape: it asks for the user's first turn on the field, which a bench mon's stale `summonData` denies.
+  bench.moveset = [mkMove({ id: 1, name: "Fake", target: 100, cond: () => false }), mkMove({ id: 2, name: "Rock", target: 1 })];
+  const rows = ai.ask(t => planner().likelyMoves(t, bench, me, [{ name: "Rock", live: true, expected: 10 }], true));
+  assert.deepEqual(rows.map(r => [r.name, !!r.fails]), [["Fake", false]]);
+}
+
+// ---- A foe the trainer withdraws this turn Teras at its first FIGHT command once it is back (#648).
+{
+  const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A", target: -10 }] });
+  const b = mkMon({ id: "b", player: false });
+  Object.assign(e, { initialTeamIndex: 0, getTeraType: () => 8 });
+  Object.assign(b, { initialTeamIndex: 1 });
+  const trainer = {
+    config: { isBoss: false, trainerAI: { instantTeras: [0] } },
+    shouldTera: m => !m.isTerastallized && m.initialTeamIndex === 0,
+    getPartyMemberMatchupScores: () => [[1, 99]], getSortedPartyMemberMatchupScores: sc => sc, getNextSummonIndex: () => 1,
+  };
+  const ai = setup({ player: [foe()], enemy: [e, b], trainer });
+  assert.deepEqual(ai.ask(t => [t.switches().has(e), t.teraLater(e), t.mon(e).tera]), [true, true, "Steel"]);
+}
+
+// ---- This turn's replayed pick is made with every predicted Tera off: both slots command before any Tera (#648).
+{
+  const player = [foe(), mkMon({ id: "me2", player: true, fieldIndex: 1 })];
+  const a = mkMon({ id: "a", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A", target: -10 }] });
+  const b = mkMon({ id: "b", player: false, fieldIndex: 1 });
+  b.getTeraType = () => 2;
+  const trainer = {
+    config: { isBoss: false }, shouldTera: m => m === b && !m.isTerastallized,
+    getPartyMemberMatchupScores: () => [], getSortedPartyMemberMatchupScores: sc => sc, getNextSummonIndex: () => 0,
+  };
+  const ai = setup({ player, enemy: [a, b], double: true, trainer });
+  const seen = [];
+  a.getMoveType = mv => (seen.push(!!b.isTerastallized), mv.type);
+  ai.ask(t => {
+    assert.equal(b.isTerastallized, true, "the partner's Tera is predicted");
+    a.getOpponents = () => [];
+    planner().likelyMoves(t, a, player[0], [{ name: "A", live: true, expected: 10 }], false);
+  });
+  assert.deepEqual([...new Set(seen)], [false]);
+}
+
+// ---- Entry hazards land on summon, so a benched instant-Tera foe takes Stealth Rock at its base type (#648).
+{
+  const { e, bench, me, ai } = instantTera();
+  for (const p of scene.getEnemyParty()) if (p !== e && p !== bench) p.hp = 0;
+  // Fire/Bug takes Rock ×4, half its HP; Tera Rock takes it neutral. `HAZARD_TURNS` is 2 a mon's whole HP.
+  const v = ai.ask(t => planner().hazardValue(t, me, "STEALTH_ROCK"));
+  assert.equal(v?.turns, 1);
+}
+
 const nextMoveOf = (e, fn) => Object.setPrototypeOf(e, { getNextMove: fn });
 
 // ---- The exact move is one outcome at p 1 with the game's own target, and the distribution stays beside it.
