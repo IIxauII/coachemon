@@ -1298,6 +1298,33 @@ Object.assign(TABLE, {
   assert.ok(drawn.lines.some(l => l.includes("Waterfall") && l.includes("~")), `the row carries the mark:\n${drawn.lines.join("\n")}`);
 }
 
+// ---- At slot 1's prompt slot 0's committed random target is not drawn again (#476)
+{
+  const random = { target: 7 };
+  const build = (fieldIndex, turnCommands = []) => {
+    const party = [
+      mon("Morpeko", 80, ["Electric", "Dark"], [220, 150, 90, 120, 100, 170], [["Aura Wheel", "Electric", 110, "P", 0, random]], true, 180),
+      mon("Scrafty", 80, ["Dark", "Fighting"], [254, 152, 172, 63, 165, 80], [["High Jump Kick", "Fighting", 130, "P", 0, random]], true, 133, { getBattlerIndex: () => 1 }),
+    ];
+    const foes = [
+      mon("Gyarados", 82, ["Water", "Flying"], [250, 170, 110, 80, 130, 150], [["Waterfall", "Water", 80, "P"]], true),
+      mon("Weavile", 84, ["Dark", "Ice"], [300, 250, 100, 60, 110, 299], [["Triple Axel", "Ice", 20, "P"]], true),
+    ];
+    for (const p of party) p.getOpponents = () => foes;
+    const exactRow = (name, type) => [{ name, type, p: 1, score: null, exact: true, targets: [0], targetDist: [{ battlerIndex: 0, p: 1 }] }];
+    const { scene } = render({ party, foes, live: true, double: true, switches: () => new Map(), fieldIndex, turnCommands,
+      dist: e => (e.name === "Gyarados" ? exactRow("Waterfall", "Water") : exactRow("Triple Axel", "Ice")) });
+    const [morpeko, scrafty] = party;
+    const threat = me => globalThis.__planner.threatFrom(scene, foes[0], me, me.moveset[0]).confidence;
+    return { slot0: threat(morpeko), slot1: threat(scrafty) };
+  };
+  assert.equal(build(0).slot0, "replay", "at slot 0's prompt its random target is still to be drawn");
+  // Slot 0 committed Aura Wheel (game-code.md §6).
+  const committed = build(1, [{ command: 0, cursor: 0, move: { move: 1, targets: [] }, targets: [2] }]);
+  assert.equal(committed.slot0, "exact", "slot 0's committed draw is spent: nothing to draw again");
+  assert.equal(committed.slot1, "replay", "slot 1's own random target is still to be drawn");
+}
+
 // ---- A lock that knocks out carries its last uses onto the trainer's next mon (game-code.md §5).
 // Outrage 1HKOs Gyarados moving first, so 1 or 2 uses are left, each half the time. Each confused turn of the 2.5 is
 // lost a third of the time and hits Dragonite for ((2·80/5 + 2)·40/50 + 2)·0.925 = 27.01 of its 400.
