@@ -33,6 +33,8 @@ export const fakeTurn = ({
   outcomes = null,
   statusMoves = () => [],
   stopped = () => [],
+  // The damaging moves whose own condition says no: `likelyMoves` reads it for the ↯ row's `fails`.
+  failing = () => [],
   heal = () => 0,
   moves = () => [],
   switchTo = () => null,
@@ -101,6 +103,7 @@ export const fakeTurn = ({
     }),
     statusMoves: (atk, def) => as(() => statusMoves(atk, def)),
     stopped: (atk, def) => as(() => stopped(atk, def)),
+    failing: (atk, def) => as(() => failing(atk, def) ?? []),
     turnEndHp: (p, opts = {}) => as(() => heal(p, opts) ?? 0),
     // `exact`: the gate (#183). `{ ok: false, reason }` is what the panel sees on a build past the pin.
     exact: () => exact,
@@ -128,7 +131,7 @@ export const fakeTurn = ({
     assuming: more => fakeTurn({
       live, exact, wave, turn: turnNo, enemySwitchCounter, double, trainer, decision, party, foes, field, command,
       trickRoom, weather, modifiers, enemyModifiers, hazards, balls, mode, battleType, mysteryEncounter, biomeId,
-      outcome, outcomes, statusMoves, stopped, heal, moves, switchTo, replay, sendIn, benefit, speedTie, mon,
+      outcome, outcomes, statusMoves, stopped, failing, heal, moves, switchTo, replay, sendIn, benefit, speedTie, mon,
       patches: [...patches, ...more],
     }),
   };

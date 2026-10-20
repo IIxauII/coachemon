@@ -55,6 +55,13 @@ export const sceneStopped = (env, p, def) => [...new Set([...plainUsable(p), ...
   .filter(pm => !selectable(env, p, def, pm))
   .map(pm => restrictionOn(p, pm))
   .filter(Boolean))];
+// The other half of the same gate: the damaging moves `sceneOutcomes` has no row for because their own condition
+// said no, which is what `sceneStopped` leaves unnamed. The enemy AI skips those conditions (game-code.md §6), so a
+// foe that Teras out of Fire still picks Burn Up and then fails with it (#648).
+// @only 25-turn, tests: sceneFailing
+export const sceneFailing = (env, p, def) => plainUsable(p)
+  .filter(pm => !selectable(env, p, def, pm) && !restrictionOn(p, pm))
+  .map(pm => pm.getName());
 const plainUsable = (p, status = false) => p.moveset.filter(Boolean)
   .filter(pm => (pm.getMove().category === MoveCategory.STATUS) === status && pm.getMovePp() - pm.ppUsed > 0);
 const traitsNow = (env, atk, mv, live, def = null) => {

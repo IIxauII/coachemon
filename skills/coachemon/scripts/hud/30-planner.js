@@ -111,8 +111,12 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
     const dist = turn.enemyAction(foe, { ranges }).moves;
     if (dist?.length) {
       const idx = me.isOnField?.() ? me.getBattlerIndex?.() : null;
+      // The AI picks before the predicted Tera and the damage layer prices after it, so a move it named can have no
+      // row left at all: it is not missing, it goes off and fails (#648).
+      const failing = turn.failing(foe, me);
       return dist.map(d => {
         const o = outs.find(x => x.name === d.name) ?? null;
+        const fails = !o && failing.includes(d.name);
         // The share that lands on `me`; a bench mon coming in takes an average slot's.
         const ts = d.targetDist?.length ? d.targetDist : d.targets ?? [];
         let tp = 1;
@@ -124,7 +128,7 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
         const reroll = turn.facts.double && idx != null && o?.pm?.getMove?.()?.moveTarget === MoveTarget.RANDOM_NEAR_ENEMY;
         const later = reroll ? 1 / Math.max(1, opponentCount(foe)) : tp;
         // The outcome's type is the one the move lands with (Tera Blast); the AI's row can carry the base type.
-        return { o, name: d.name, type: o?.type ?? d.type, p: d.p * tp, ...(later !== tp ? { pLater: d.p * later } : {}) };
+        return { o, name: d.name, type: o?.type ?? d.type, p: d.p * tp, ...(fails ? { fails: true } : {}), ...(later !== tp ? { pLater: d.p * later } : {}) };
       });
     }
   }
@@ -269,7 +273,7 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
     const hits = (m.o.dist ?? []).reduce((sum, d) => sum + d.n * d.p, 0) || 1;
     kos.push({ p, max: m.o.max, pKo: ko, acc: m.o.acc ?? 1, revive: m.o.revive ?? 0, cat: m.o.cat, hits, targetHp: me.hp, live });
   }
-  const brief = m => m && { name: m.name, type: m.type, e: m.o?.e ?? null, p: m.p, hits: hitCounts(m.o) };
+  const brief = m => m && { name: m.name, type: m.type, e: m.o?.e ?? null, p: m.p, hits: hitCounts(m.o), ...(m.fails ? { fails: true } : {}) };
   return {
     expected, worst: worst?.o.max ?? 0, pKo, first, koFirst: pKo > 0 ? koFirst / pKo : first,
     move: brief(likely), worstMove: brief(worst), moves: kos, hp: me.hp, from: foe.name, live, use, later,
@@ -1841,6 +1845,8 @@ export const battleModel = (baseTurn, { team = null } = {}) => {
         confidence: t.confidence ?? "estimate",
         at: aimedAt(turn, t, foe),
         first: Math.round(t.first * 100), hits: t.move.hits,
+        // It was picked before the foe's Tera and goes off after it: no damage follows (#648).
+        ...(t.move.fails ? { fails: true } : {}),
       } : null,
       pick: p?.mine ? {
         icon: iconOf(p.me), name: p.me.name, move: p.mine.name, type: p.mine.type, cat: p.mine.cat,
