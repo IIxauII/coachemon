@@ -15,8 +15,16 @@ export type JobKinds = Readonly<Record<string, JobWork>>;
 
 export type JobState = "running" | "done" | "failed" | "cancelled";
 
-/** `end_file` appears once the job has ended, for a watcher outside this process to wait on (#673). */
+/**
+ * `end_file` appears once the job has ended, for a watcher outside this process to wait on (#673), and holds what `read`
+ * answers by default.
+ */
 export type JobView = { job: string; kind: string; state: JobState; progress: string | null; end_file: string; result?: unknown; failure?: string };
+
+/** `short` answers through the job kind's `Shorten` where it has one, `full` with the result as its work returned it (#818). */
+export type JobDetail = "short" | "full";
+
+export type Shorten = (result: unknown) => unknown;
 
 export const KEPT_ENDED = 16;
 
@@ -26,6 +34,7 @@ type Job = { id: string; kind: string; state: JobState; progress: string | null;
 
 export class Jobs {
   readonly #kinds: JobKinds;
+  readonly #shorten: Readonly<Record<string, Shorten>>;
   readonly #jobs = new Map<string, Job>();
   readonly #ended: string[] = [];
   readonly #endsIn: string;
@@ -33,8 +42,9 @@ export class Jobs {
   readonly #processTag = randomBytes(4).toString("hex");
   #started = 0;
 
-  constructor(kinds: JobKinds, endsIn: string) {
+  constructor(kinds: JobKinds, endsIn: string, shorten: Readonly<Record<string, Shorten>> = {}) {
     this.#kinds = kinds;
+    this.#shorten = shorten;
     this.#endsIn = endsIn;
     clearStaleEnds(endsIn);
   }
@@ -72,9 +82,13 @@ export class Jobs {
     return view(this.#job(id));
   }
 
-  read(id: string): JobView {
-    const job = this.#job(id);
-    if (job.state === "done") return { ...view(job), result: job.result };
+  read(id: string, detail: JobDetail = "short"): JobView {
+    return this.#answer(this.#job(id), detail);
+  }
+
+  #answer(job: Job, detail: JobDetail): JobView {
+    const shorten = detail === "short" && Object.hasOwn(this.#shorten, job.kind) ? this.#shorten[job.kind] : null;
+    if (job.state === "done") return { ...view(job), result: shorten ? shortened(shorten, job.result) : job.result };
     if (job.state === "failed") return { ...view(job), failure: job.failure };
     return view(job);
   }
@@ -88,7 +102,7 @@ export class Jobs {
   #end(job: Job, end: Pick<Job, "state" | "result" | "failure">): boolean {
     if (job.state !== "running") return false;
     Object.assign(job, end);
-    writeEnd(job);
+    writeEnd(job.endFile, this.#answer(job, "short"));
     this.#ended.push(job.id);
     while (this.#ended.length > KEPT_ENDED) {
       const id = this.#ended.shift()!;
@@ -104,6 +118,15 @@ export class Jobs {
     throw new Refusal("unknown_job", `No job ${JSON.stringify(id)}: a job lasts only as long as the server process, and only the last ${KEPT_ENDED} to end are kept.`, {
       jobs: [...this.#jobs.keys()],
     });
+  }
+}
+
+/** Never throws: `#end` writes the end file through it, where a throw would go unhandled and no end file appear. */
+function shortened(shorten: Shorten, result: unknown): unknown {
+  try {
+    return shorten(result);
+  } catch {
+    return result;
   }
 }
 
@@ -131,13 +154,13 @@ function clearStaleEnds(dir: string): void {
 }
 
 /** Whole or not at all, so a watcher never reads half a file. */
-function writeEnd(job: Job): void {
-  const { end_file: _file, ...ended } = view(job);
-  const part = `${job.endFile}.part`;
+function writeEnd(file: string, answer: JobView): void {
+  const { end_file: _file, ...ended } = answer;
+  const part = `${file}.part`;
   try {
-    mkdirSync(path.dirname(job.endFile), { recursive: true });
+    mkdirSync(path.dirname(file), { recursive: true });
     writeFileSync(part, JSON.stringify(ended) + "\n");
-    renameSync(part, job.endFile);
+    renameSync(part, file);
   } catch {
     // An end file that won't write never fails the job.
   }

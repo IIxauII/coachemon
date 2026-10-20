@@ -13,7 +13,7 @@ import { ladderFor, PINNED_GAME_VERSION } from "./escape-ladder/lookup.ts";
 import { LinkGame } from "./game/link-game.ts";
 import { coachemonHome } from "./home.ts";
 import { HubLink, hubPort, usesHub } from "./hub/link.ts";
-import { Jobs, type JobKinds, type JobView } from "./jobs.ts";
+import { Jobs, type JobDetail, type JobKinds, type JobView } from "./jobs.ts";
 import { PLUGIN_VERSION } from "./plugin-version.ts";
 import type { CommandName } from "./protocol/commands.ts";
 import { MOVED, type Act, type CursorTarget, type ExtrasRead, type Failed, type GamePort, type MenuOption, type MenuRead, type Ready, type SessionRead, type SnapshotDetail } from "./game/port.ts";
@@ -28,6 +28,7 @@ import { DEFAULT_BUDGET, gate, type NoAnswer, type OracleLine, type SessionSave,
 import { noAnswer } from "./solver/no-answer.ts";
 import { fightEnded, FightPool } from "./solver/fight-pool.ts";
 import { SOLVE_JOB, solveJob } from "./solver/solve-job.ts";
+import { shortSolveResult } from "./solver/short-line.ts";
 import type { Choice } from "./stuck/detector.ts";
 
 export const AUTO_ADVANCE_CAP = 12;
@@ -132,7 +133,7 @@ export class Driver {
     this.#transport = transport;
     this.#home = home;
     this.#clock = clock;
-    this.#jobs = new Jobs(jobKinds, path.join(home, "jobs"));
+    this.#jobs = new Jobs(jobKinds, path.join(home, "jobs"), { [SOLVE_JOB]: r => ((r as SolveResult | null)?.kind === "oracle_line" ? shortSolveResult(r as SolveResult) : r) });
     game.onRejection(t => this.#outcomes.rejection(t));
   }
 
@@ -250,7 +251,7 @@ export class Driver {
   /** Never a claim: a handoff changes the overlay alone (extension-distribution.md §10.1). */
   async handOracleLine(job: string, ctx: CallContext): Promise<Record<string, unknown>> {
     await this.#reachable("hand_oracle_line");
-    const line = solvedLine(this.#jobs.read(job));
+    const line = solvedLine(this.#jobs.read(job, "full"));
     return this.#readReached("hand_oracle_line", ctx, async ready => {
       refuseMovedOn(ready, line);
       const menu = await this.#game.menu();
@@ -327,8 +328,8 @@ export class Driver {
     return this.#jobs.poll(id);
   }
 
-  async readJob(id: string): Promise<JobView> {
-    return this.#jobs.read(id);
+  async readJob(id: string, detail?: JobDetail): Promise<JobView> {
+    return this.#jobs.read(id, detail);
   }
 
   async cancelJob(id: string): Promise<JobView> {

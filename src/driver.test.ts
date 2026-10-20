@@ -1276,7 +1276,7 @@ test("a job's end_file appears once the job has ended, saying how it ended, and 
   assert.ok(started.end_file.startsWith(path.join(home, "jobs") + path.sep), `kept in the plugin's home: ${started.end_file}`);
   assert.equal(existsSync(started.end_file), false, "no end file while the job runs");
   await job.step();
-  assert.deepEqual(JSON.parse(readFileSync(started.end_file, "utf8")), { job: started.job, kind: "stepped", state: "done", progress: "step 1 of 1" });
+  assert.deepEqual(JSON.parse(readFileSync(started.end_file, "utf8")), { job: started.job, kind: "stepped", state: "done", progress: "step 1 of 1", result: { steps: 1 } });
 
   const cancelled = await driver.startJob("stepped", { steps: 2 });
   await driver.cancelJob(cancelled.job);
@@ -1287,7 +1287,9 @@ test("a job that fails leaves an end_file saying it failed (#673)", async t => {
   const driver = jobDriver({ broken: async () => { throw new Error("the clone is gone"); } }, tempHome(t));
   const { end_file } = await driver.startJob("broken", {});
   await new Promise(r => setImmediate(r));
-  assert.equal(JSON.parse(readFileSync(end_file, "utf8")).state, "failed");
+  const ended = JSON.parse(readFileSync(end_file, "utf8"));
+  assert.equal(ended.state, "failed");
+  assert.equal(ended.failure, "the clone is gone", "the end file says what read_job says (#818)");
 });
 
 test("solving is off until the player turns it on (#666)", async t => {
@@ -1406,7 +1408,7 @@ test("a solve job solves the fight on the tab from its wave-start save, relays i
   assert.deepEqual(await driver.pollJob(started.job), { job: started.job, kind: SOLVE_JOB, state: "running", progress: "searched 1,200 of 9,000 turns", end_file: started.end_file });
   held.finish();
   await settledJobs();
-  assert.deepEqual((await driver.readJob(started.job)).result, answer);
+  assert.deepEqual((await driver.readJob(started.job, "full")).result, answer);
 });
 
 const OFF_PIN = { gameVersion: "1.12.1.0" };
@@ -1699,9 +1701,23 @@ test("a solve past the fight's first turn starts from the augmented export: the 
   await settledJobs();
 });
 
+test("read_job answers a solved oracle line short unless asked in full, and the solve's end file carries the short one (#818)", async t => {
+  const { driver, job } = await solvedTab(t, SOLVED);
+  const short = await driver.readJob(job);
+  const result = short.result as Record<string, unknown> & { steps: unknown[] };
+  assert.equal(result.kind, "oracle_line");
+  assert.equal(result.turns, 9);
+  assert.deepEqual(result.steps[2], { turn: 13, command: "BUG_BITE", replacements: ["GOLBAT (slot 5)"], ours: ["GOLBAT 493/493"], foes: ["TYRANITAR 512/569"] });
+  assert.deepEqual((await driver.readJob(job, "full")).result, SOLVED);
+  const { end_file, ...answered } = short;
+  assert.deepEqual(JSON.parse(readFileSync(end_file, "utf8")), answered);
+  const r = await outcome(driver.handOracleLine(job, {}));
+  assert.equal(r.held, true, "the panel still takes the full oracle line");
+});
+
 test("a re-solve off the line answers with an oracle line from the turn it was solved at, and the panel holds it (#677)", async t => {
   const { driver, job, handed } = await solvedTab(t, SOLVED);
-  assert.deepEqual((await driver.readJob(job)).result, SOLVED);
+  assert.deepEqual((await driver.readJob(job, "full")).result, SOLVED);
   const r = await outcome(driver.handOracleLine(job, {}));
   assert.equal(r.status, "ok", JSON.stringify(r));
   assert.equal(r.held, true);

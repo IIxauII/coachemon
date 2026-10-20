@@ -51,6 +51,16 @@ test("a job started over MCP is read back over MCP once it has answered (#667)",
   assert.equal((await call(client, "cancel_job", { job: "echo-1" })).body.state, "done");
 });
 
+test("read_job takes detail short or full over MCP (#818)", async t => {
+  const client = await connect(t, { echo: async args => args });
+  const { tools } = await client.listTools();
+  const schema = tools.find(tool => tool.name === "read_job")?.inputSchema.properties as Record<string, { enum?: string[] }>;
+  assert.deepEqual(schema.detail?.enum, ["short", "full"]);
+  await call(client, "start_job", { kind: "echo", args: { wave: 180 } });
+  await new Promise(r => setImmediate(r));
+  assert.deepEqual((await call(client, "read_job", { job: "echo-1", detail: "full" })).body.result, { wave: 180 });
+});
+
 test("a job tool refused over MCP is an error result carrying its code (#667)", async t => {
   const { body, isError } = await call(await connect(t), "poll_job", { job: "solve-1" });
   assert.equal(isError, true);
