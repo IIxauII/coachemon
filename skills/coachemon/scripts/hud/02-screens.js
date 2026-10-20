@@ -1,4 +1,5 @@
 // `probe.js` reads the screen through these too. Reads only: a UI mode, a handler field, the current phase's name.
+import { learnAsked } from "./01-core.js";
 
 // Before the summary screen opens, `LearnMovePhase` keeps only the move's id, so the move is built through a moveset
 // entry's own `PokemonMove` class (game-code.md §17).
@@ -9,9 +10,9 @@ export const learnState = s => {
   if (s.ui.mode === UiMode.SUMMARY && h?.summaryUiMode === SummaryUiMode.LEARN_MOVE && h.newMove) return { pk: h.pokemon, mv: h.newMove, double, party };
   const phase = s.phaseManager?.getCurrentPhase?.();
   if (phase?.phaseName !== "LearnMovePhase") return null;
-  const pk = party[phase.partyMemberIndex];
+  const pk = learnAsked(party, phase);
   const pm = pk?.moveset.find(Boolean);
-  return pk && pm ? { pk, mv: new pm.constructor(phase.moveId).getMove(), double, party } : null;
+  return pm ? { pk, mv: new pm.constructor(phase.moveId).getMove(), double, party } : null;
 };
 
 // A shop after a wild foe flees has no `options` but is a choice; only the shop closing empties its rows too.
