@@ -2,7 +2,8 @@
  * Drift check for everything this repo reads out of PokéRogue's source, the escape ladder, the coach HUD and the
  * registry of game reads, under one pin and one stamp (0001-escape-ladder-hand-curated-checked-at-pin-bump.md,
  * 0004-every-game-read-is-registered.md). Run it at a pin bump, since at the pinned ref no hash can move, and `--stamp`
- * only after re-reading every entry it named: stamping is the sign-off, solving's included (pin-bump.md).
+ * only after re-reading every entry it named: stamping is the sign-off, solving's included (pin-bump.md). `--write-names`
+ * rewrites game-names.txt at the pin and nothing else (0005-the-games-declared-names-at-the-pin-are-checked-in.md).
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -18,9 +19,9 @@ import { cloneGame } from "./clone-provision/provision.ts";
 import { findClone, harnessIn, pinOf } from "./clone-test/clone-test.ts";
 import { addDep, blockers, type DepIndex, type DepSource, drift, type Finding } from "./drift/check.ts";
 import { GameSource } from "./drift/source.ts";
-import { generatedTables, loadRepo } from "./game-reads/check.ts";
+import { format, generatedTables, loadRepo, type Repo } from "./game-reads/check.ts";
+import { GAME_NAMES, writeGameNames } from "./game-reads/game-names.ts";
 import { REGISTRY, registryEntries } from "./game-reads/registry/index.ts";
-import { builtinNames } from "./game-reads/scan.ts";
 import { generate } from "./gen-enums.ts";
 import { HUD_DEPS } from "./hud-deps.ts";
 import { recheck } from "./recheck/recheck.ts";
@@ -40,6 +41,7 @@ const { values: args } = parseArgs({
     source: { type: "string" },
     stamp: { type: "boolean", default: false },
     only: { type: "string" },
+    "write-names": { type: "boolean", default: false },
   },
 });
 
@@ -57,8 +59,37 @@ const only = args.only as DepSource | undefined;
 const reviewed: Reviewed = JSON.parse(readFileSync(REVIEWED, "utf8"));
 
 const version = args.version ?? reviewed.pinned.gameVersion;
+if (args["write-names"]) {
+  const refuse = args.stamp
+    ? "--write-names cannot be combined with --stamp: the stamp writes the names itself."
+    : args.only !== undefined
+      ? "--write-names cannot be combined with --only: the names are the game's, not one source's."
+      : version !== reviewed.pinned.gameVersion
+        ? `--write-names writes the pinned version's names (${reviewed.pinned.gameVersion}), not ${version}: moving the pin is the stamp's.`
+        : null;
+  if (refuse !== null) {
+    console.error(refuse);
+    process.exit(2);
+  }
+}
 const source = args.source ? path.resolve(args.source) : cloneGame(version);
 const sha = execFileSync("git", ["-C", source, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+const game = new GameSource(source);
+
+// Before `loadRepo`, which refuses while the names file is missing or behind the pin: this is what fixes that.
+if (args["write-names"]) {
+  if (sha !== reviewed.pinned.sha) {
+    console.error(`Refusing to write the names: ${source} is at ${sha.slice(0, 7)}, the pin at ${reviewed.pinned.sha.slice(0, 7)}.`);
+    process.exit(1);
+  }
+  const names = game.declared();
+  const { added, removed } = writeGameNames(ROOT, reviewed.pinned, names.keys());
+  console.log(
+    `wrote ${GAME_NAMES} at v${version} @ ${sha.slice(0, 7)}: ${names.size} names, +${added.length} −${removed.length}; ` +
+      "reviewed.json is untouched.",
+  );
+  process.exit(0);
+}
 
 const deps: DepIndex = new Map();
 for (const [screen, entry] of Object.entries(LADDER as Record<string, Entry>)) for (const ref of entry.deps) addDep(deps, ref, screen, "ladder");
@@ -67,20 +98,27 @@ for (const [module, list] of Object.entries(HUD_DEPS as Record<string, readonly 
   for (const ref of list) addDep(deps, ref, `hud/${module}`, "hud");
 }
 
-const game = new GameSource(source);
-const repo = loadRepo(ROOT);
+let repo: Repo;
+try {
+  repo = loadRepo(ROOT);
+} catch (e) {
+  console.error((e as Error).message);
+  process.exit(1);
+}
 const found = drift({
   source: game,
   hashes: reviewed.hashes,
   deps,
   ladder: LADDER as Record<string, Entry>,
   registry: REGISTRY,
-  reads: repo.reads,
+  repo,
+  version,
   tables: generatedTables(),
   modifiers: modifierSets as unknown as Record<string, ReadonlySet<string>>,
   regenerated: await generate(file => readFileSync(path.join(source, file), "utf8"), version),
-  language: builtinNames(ROOT, true),
 });
+const atPin = version === repo.game.version;
+const namesMoved = [...found.names.added.map(n => `+ ${n}`), ...found.names.removed.map(n => `− ${n}`)];
 
 const shown = (list: Finding[]) => (only === undefined ? list : list.filter(i => i.sources.includes(only)));
 const lines = (list: string[], source: DepSource = "reads") => (only === undefined || only === source ? list : []);
@@ -93,7 +131,8 @@ const lineFindings: [string, string[]][] = [
   ["MISPLACED — mode or handler differs at this ref", lines(found.misplaced, "ladder")],
   ["ADDED — a member the game added to a set we mirror or switch on", lines(found.added)],
   ["SHIFTED — src/enums/generated.ts regenerated at this ref changes these", lines(found.shifted)],
-  ["UNREGISTERED — read by a scanned file, declared by the game, in no registry entry", lines(found.unregistered)],
+  ["UNREGISTERED — read by a scanned file, declared by the game, in no registry entry", lines(found.unregistered.map(format))],
+  [`NAMES — ${GAME_NAMES} differs from the game at this ref; npm run drift:check -- --write-names rewrites it`, lines(atPin ? namesMoved : [])],
 ];
 
 const depsFrom = (s: DepSource) => [...deps.values()].filter(d => d.sources.includes(s)).length;
@@ -112,6 +151,11 @@ for (const [label, list] of lineFindings) {
   if (list.length === 0) continue;
   console.log(`\n${label} (${list.length}):`);
   for (const line of list) console.log(`  ${line}`);
+}
+if (!atPin && lines(namesMoved).length > 0) {
+  console.log(
+    `\nnames: +${found.names.added.length} −${found.names.removed.length} against v${repo.game.version}; the stamp writes them at v${version}.`,
+  );
 }
 
 if (args.stamp) {
@@ -149,9 +193,12 @@ if (args.stamp) {
   const pinned = { gameVersion: version, tag: `v${version}`, sha: pin.sha, locales: pin.locales, assets: pin.assets, pnpm };
   const next: Reviewed = { pinned, hashes: found.hashes, recheck: { gameVersion: version } };
   writeFileSync(REVIEWED, `${JSON.stringify(next, null, 2)}\n`);
+  // After reviewed.json: a names write that fails then is repaired by `--write-names` at the new pin, not a second re-check.
+  const names = game.declared();
+  const { added, removed } = writeGameNames(ROOT, pinned, names.keys());
   console.log(
-    `\nStamped ${Object.keys(found.hashes).length} hashes and the harness re-check; pin is now ${version} @ ${sha.slice(0, 7)}, ` +
-      `set up with pnpm ${pnpm}.`,
+    `\nStamped ${Object.keys(found.hashes).length} hashes, ${names.size} game names (+${added.length} −${removed.length}) and ` +
+      `the harness re-check; pin is now ${version} @ ${sha.slice(0, 7)}, set up with pnpm ${pnpm}.`,
   );
   process.exit(0);
 }

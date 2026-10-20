@@ -1,12 +1,13 @@
 /**
  * Everything drift finds at one game version, as data: the CLI in `scripts/drift.ts` prints it and stamps from it. It
- * reads the target's source only, against the stamped hashes, the registry and `src/enums/generated.ts`.
+ * reads the target's source only, against the stamped hashes, the registry, `src/enums/generated.ts` and game-names.txt.
  */
 import path from "node:path";
 import ts from "typescript";
 import type { Entry } from "../../src/escape-ladder/types.ts";
 import type { Generated } from "../gen-enums.ts";
-import type { Registry, ScannedRead } from "../game-reads/check.ts";
+import { check, type Problem, type Registry, type Repo } from "../game-reads/check.ts";
+import { diffNames } from "../game-reads/game-names.ts";
 import type { Tables } from "../game-reads/scan.ts";
 import { type GameSet, oursOf, refParts } from "../game-reads/types.ts";
 import { GameSource, hash } from "./source.ts";
@@ -34,7 +35,10 @@ export type Drift = {
   misplaced: string[];
   added: string[];
   shifted: string[];
-  unregistered: string[];
+  /** `check()`'s problems over the game's declared names at this version, and only those. */
+  unregistered: Problem[];
+  /** The game's declared names here against game-names.txt. */
+  names: { added: string[]; removed: string[] };
 };
 
 export type DriftInput = {
@@ -44,14 +48,15 @@ export type DriftInput = {
   deps: ReadonlyMap<string, { readonly dependents: readonly string[]; readonly sources: readonly DepSource[] }>;
   ladder: Readonly<Record<string, Entry>>;
   registry: Registry;
-  reads: readonly ScannedRead[];
+  /** `loadRepo` as it stands: its reads, and the declared names game-names.txt holds. */
+  repo: Repo;
+  /** The game version `source` is at. */
+  version: string;
   /** `src/enums/generated.ts` and `src/enums/modifiers.ts` as they stand. */
   tables: Tables;
   modifiers: Readonly<Record<string, ReadonlySet<string>>>;
   /** gen-enums run at the target. */
   regenerated: Generated;
-  /** Language builtins: a read of one of these names is never asked for a registry entry. */
-  language: ReadonlySet<string>;
 };
 
 /** What `--stamp` refuses on. */
@@ -170,11 +175,9 @@ export function drift(input: DriftInput): Drift {
   const missing: Finding[] = [];
   const miss = (ref: string, dependents: string[]) => missing.push({ ref, dependents, sources: ["reads"] });
 
-  const registered = new Set<string>();
   const libs = new Map<keyof typeof LIBS, string[]>();
   for (const [area, a] of Object.entries(input.registry)) {
     for (const r of a.reads) {
-      registered.add(r.name);
       const who = `${area}: ${r.kind} ${r.name}`;
       if (r.from === "phaser" || r.from === "vitest") libs.set(r.from, [...(libs.get(r.from) ?? []), who]);
       for (const ref of r.at) addDep(items, ref, who, "reads");
@@ -248,7 +251,7 @@ export function drift(input: DriftInput): Drift {
   }
 
   const enumReads = new Map<string, Set<string>>();
-  for (const r of input.reads) {
+  for (const r of input.repo.reads) {
     if (r.kind !== "enum-member") continue;
     const tables = r.table !== null ? [r.table] : Object.keys(input.tables).filter(t => Object.hasOwn(input.tables[t], r.name));
     if (tables.some(t => target[t]?.has(r.name))) continue;
@@ -257,19 +260,12 @@ export function drift(input: DriftInput): Drift {
   }
   for (const [key, where] of enumReads) miss(`enum member ${key}`, [...where]);
 
-  const unregistered: string[] = [];
   const declared = source.declared();
-  const flagged = new Set<string>();
-  for (const r of input.reads) {
-    if (r.kind !== "property" || flagged.has(r.name) || registered.has(r.name) || input.language.has(r.name)) continue;
-    const refs = declared.get(r.name);
-    if (!refs) continue;
-    flagged.add(r.name);
-    const more = refs.length > 3 ? `, +${refs.length - 3} more` : "";
-    unregistered.push(`${r.name} — read at ${r.file}:${r.line}; the game declares it at ${refs.slice(0, 3).join(", ")}${more}`);
-  }
+  const unregistered = check({ ...input.repo, game: { version: input.version, names: declared } }, input.registry)
+    .filter(p => p.declared);
+  const names = diffNames(input.repo.game.names.keys(), declared.keys());
 
-  return { hashes, moved, missing, unreviewed, misplaced: misplaced(source, input.ladder), added, shifted, unregistered };
+  return { hashes, moved, missing, unreviewed, misplaced: misplaced(source, input.ladder), added, shifted, unregistered, names };
 }
 
 function misplaced(source: GameSource, ladder: Readonly<Record<string, Entry>>): string[] {

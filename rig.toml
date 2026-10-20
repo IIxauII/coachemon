@@ -14,6 +14,7 @@ test_paths = [
   "src/hub/fake-ext.ts",
   "src/page/fake-page.ts",
   "src/stuck/fixtures/**",
+  "scripts/game-reads/game-names.txt",
   "skills/coachemon/scripts/test/**",
 ]
 

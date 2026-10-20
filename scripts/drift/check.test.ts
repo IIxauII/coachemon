@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { parseEnum } from "../../src/enums/parse.ts";
 import type { Generated } from "../gen-enums.ts";
-import { type Registry, scan } from "../game-reads/check.ts";
+import { check, format, type Registry, type Repo, scan } from "../game-reads/check.ts";
+import { GAME_NAMES, readGameNames, writeGameNames } from "../game-reads/game-names.ts";
 import type { AreaName } from "../game-reads/files.ts";
 import { blockers, type Drift, drift, type DriftInput } from "./check.ts";
 import { GameSource } from "./source.ts";
@@ -124,6 +127,18 @@ const DEPS: DriftInput["deps"] = new Map([
   [`${SSU}#StarterSelectUiHandler.processInput`, { dependents: ["STARTER_SELECT"], sources: ["ladder"] }],
 ]);
 
+const namesAt = (version: string) => new Map([...new GameSource(`${FIXTURES}/${version}`).declared().keys()].map(n => [n, []]));
+
+/** Ours declares `rerollCount`, which v2 declares too. */
+const REPO: Repo = {
+  reads: scan(OURS, tables),
+  own: new Set(["rerollCount"]),
+  builtin: new Set(["length", "getItem"]),
+  language: new Set(["length", "getItem"]),
+  game: { version: "1", names: namesAt("v1") },
+  tables,
+};
+
 const at = (version: string, hashes: Record<string, string>): Drift =>
   drift({
     source: new GameSource(`${FIXTURES}/${version}`),
@@ -131,11 +146,11 @@ const at = (version: string, hashes: Record<string, string>): Drift =>
     deps: DEPS,
     ladder: {},
     registry: REGISTRY,
-    reads: scan(OURS, tables),
+    repo: REPO,
+    version: version.slice(1),
     tables,
     modifiers: {},
     regenerated: { enums: enumsAt(version), modifiers: {}, enumsText: "", modifiersText: "" },
-    language: new Set(["length", "getItem"]),
   });
 
 const STAMP = at("v1", {}).hashes;
@@ -150,6 +165,7 @@ test("at the stamped version every kind is clean, so the stamp would record only
   const found = { ...again, hashes: undefined };
   assert.deepEqual(found, {
     hashes: undefined, moved: [], missing: [], unreviewed: [], misplaced: [], added: [], shifted: [], unregistered: [],
+    names: { added: [], removed: [] },
   });
 });
 
@@ -233,11 +249,32 @@ test("an import specifier of the harness that no longer resolves is MISSING", ()
   assert.ok(refs(V2.missing).includes("src/system/version-migration/version-converter.ts#applySessionVersionMigration"));
 });
 
-test("a name we read and the new version declares, with no registry entry, is UNREGISTERED", () => {
-  assert.deepEqual(V2.unregistered, [
-    "rerollCount — read at skills/coachemon/scripts/hud/52-shop.js:3; the game declares it at " +
-      `${SSU}#StarterSelectUiHandler.rerollCount`,
+test("a name we read and the new version declares, with no registry entry, is UNREGISTERED though our code declares it", () => {
+  assert.deepEqual(V2.unregistered.map(format), [
+    "UNREGISTERED [hud] property rerollCount (skills/coachemon/scripts/hud/52-shop.js:3) — the game declares it at v2 " +
+      `(${SSU}#StarterSelectUiHandler.rerollCount): register it with the game's ref, or with from: "ours" if the name is ` +
+      "ours and the game only shares it",
   ]);
+});
+
+test("drift names what the game added and dropped against the names file, and nothing at the file's own version", () => {
+  assert.deepEqual(at("v1", STAMP).names, { added: [], removed: [] });
+  assert.ok(V2.names.added.includes("rerollCount"));
+  assert.ok(V2.names.removed.includes("filteredStarterContainers") && V2.names.removed.includes("lastSpecies"));
+});
+
+test("reads:check over the names a stamp at v2 would write flags what drift flags at v2", () => {
+  const root = mkdtempSync(path.join(tmpdir(), "drift-names-"));
+  try {
+    mkdirSync(path.dirname(path.join(root, GAME_NAMES)), { recursive: true });
+    const pin = { gameVersion: "2", sha: "0".repeat(40) };
+    writeGameNames(root, pin, namesAt("v2").keys());
+    const offline = check({ ...REPO, game: readGameNames(root, pin) }, REGISTRY).filter(p => p.declared);
+    const strip = ({ kind, area, what, where }: (typeof offline)[number]) => ({ kind, area, what, where });
+    assert.deepEqual(offline.map(strip), V2.unregistered.map(strip));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("the stamp refuses while anything MISSING, ADDED, SHIFTED or UNREGISTERED remains", () => {

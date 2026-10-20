@@ -1,12 +1,14 @@
 /**
  * The static check behind `npm run reads:check`: every game read in a scanned file resolves to the registry, and every
- * registry entry is still read. It needs no game clone; `drift:check` finds what a declaration of our own hides.
+ * registry entry is still read. It needs no game clone: the game's declared names at the pin come from game-names.txt,
+ * which `drift:check` writes and holds to the game's source.
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import * as generated from "../../src/enums/generated.ts";
 import { type AreaName, ownFiles, scannedFiles } from "./files.ts";
 import ts from "typescript";
+import { type GameNames, type Pin, readGameNames } from "./game-names.ts";
 import { builtinNames, declaredIn, type Found, readsIn, type Tables, type Typed } from "./scan.ts";
 import { type Area, oursOf, refParts } from "./types.ts";
 
@@ -14,7 +16,14 @@ export type Registry = Readonly<Record<AreaName, Area>>;
 
 export type ScannedRead = Found & { area: AreaName; file: string };
 
-export type Problem = { kind: "UNREGISTERED" | "STALE" | "INVALID"; area: AreaName; what: string; where?: string };
+export type Problem = {
+  kind: "UNREGISTERED" | "STALE" | "INVALID";
+  area: AreaName;
+  what: string;
+  where?: string;
+  /** Set on a property read the game declares: the version that declares it, and where, when the game's source was read. */
+  declared?: { version: string; refs: readonly string[] };
+};
 
 const KEBAB = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
@@ -22,6 +31,9 @@ export type Repo = {
   reads: ScannedRead[];
   own: ReadonlySet<string>;
   builtin: ReadonlySet<string>;
+  /** JavaScript's own builtins, a subset of `builtin`: the only names never asked of the game. */
+  language: ReadonlySet<string>;
+  game: GameNames;
   tables: Tables;
 };
 
@@ -57,6 +69,8 @@ export function program(root: string, files: string[]): (file: string) => Typed 
 }
 
 export function loadRepo(root: string): Repo {
+  const pinned: Pin = JSON.parse(readFileSync(path.join(root, "src/escape-ladder/reviewed.json"), "utf8")).pinned;
+  const game = readGameNames(root, pinned);
   const tables = generatedTables();
   const scanned = scannedFiles(root);
   const files = Object.fromEntries(
@@ -65,7 +79,8 @@ export function loadRepo(root: string): Repo {
   const own = new Set<string>();
   for (const f of ownFiles(root)) for (const n of declaredIn(f, readFileSync(path.join(root, f), "utf8"))) own.add(n);
   const typed = program(root, Object.values(scanned).flat());
-  return { reads: scan(files, tables, typed), own, builtin: builtinNames(root), tables };
+  const builtin = builtinNames(root);
+  return { reads: scan(files, tables, typed), own, builtin: builtin.all, language: builtin.language, game, tables };
 }
 
 export function check(repo: Repo, registry: Registry): Problem[] {
@@ -82,16 +97,22 @@ export function check(repo: Repo, registry: Registry): Problem[] {
   const seen = new Set<string>();
 
   for (const r of repo.reads) {
-    const fail = (what: string) => {
+    const fail = (what: string, declared?: Problem["declared"]) => {
       const key = `${r.area}|${what}`;
       if (seen.has(key)) return;
       seen.add(key);
-      problems.push({ kind: "UNREGISTERED", area: r.area, what, where: where(r) });
+      problems.push({ kind: "UNREGISTERED", area: r.area, what, where: where(r), ...(declared && { declared }) });
     };
     switch (r.kind) {
-      case "property":
-        if (!repo.builtin.has(r.name) && !repo.own.has(r.name) && !props.has(r.name)) fail(`property ${r.name}`);
+      case "property": {
+        if (props.has(r.name) || repo.language.has(r.name)) break;
+        // A name the game declares needs an entry even where our code or the DOM declares it too: either hid a game read
+        // until the next pin bump (#767, #806).
+        const refs = repo.game.names.get(r.name);
+        if (refs) fail(`property ${r.name}`, { version: repo.game.version, refs });
+        else if (!repo.builtin.has(r.name) && !repo.own.has(r.name)) fail(`property ${r.name}`);
         break;
+      }
       case "phase":
         if (!phases.has(r.name)) fail(`phase ${r.name}`);
         break;
@@ -133,4 +154,13 @@ export function check(repo: Repo, registry: Registry): Problem[] {
   return problems;
 }
 
-export const format = (p: Problem) => `${p.kind} [${p.area}] ${p.what}${p.where ? ` (${p.where})` : ""}`;
+const declaredAt = ({ version, refs }: NonNullable<Problem["declared"]>) => {
+  const shown = refs.length === 0 ? "" : ` (${refs.slice(0, 3).join(", ")}${refs.length > 3 ? `, +${refs.length - 3} more` : ""})`;
+  return (
+    ` — the game declares it at v${version}${shown}: register it with the game's ref, or with from: "ours" if the name is ` +
+    "ours and the game only shares it"
+  );
+};
+
+export const format = (p: Problem) =>
+  `${p.kind} [${p.area}] ${p.what}${p.where ? ` (${p.where})` : ""}${p.declared ? declaredAt(p.declared) : ""}`;
