@@ -1481,11 +1481,11 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
   };
   const BUG_BITE = ["Bug Bite", "Bug", 60, "P", 0, { attrs: ["StealEatBerryAttr"] }];
   const beedrill = hp => mon("Beedrill", 80, ["Bug", "Poison"], [400, 180, 90, 100, 100, 200], [BUG_BITE, ["Pound", "Normal", 40, "P"]], true, hp);
-  const shuckle = (items, extra, maxHp) => mon("Shuckle", 80, ["Bug", "Rock"], [maxHp, 10, 230, 10, 230, 5], [["Brine", "Water", 65, "S"]], true, undefined,
+  const shuckle = (items, extra, maxHp, spe = 5) => mon("Shuckle", 80, ["Bug", "Rock"], [maxHp, 10, 230, 10, 230, spe], [["Brine", "Water", 65, "S"]], true, undefined,
     { getHeldItems: () => items, ...extra });
   // `move`: 0 Bug Bite, 1 Pound. `stole`: a berry an earlier turn of a depth-2 line already ate.
-  const bite = (items, { hp = 200, move = 0, stole = 0, foeHp = 280, thiefAttr = null, thiefTag = null, ...extra } = {}) => {
-    const me = beedrill(hp), foe = shuckle(items, extra, foeHp);
+  const bite = (items, { hp = 200, move = 0, stole = 0, foeHp = 280, foeSpe = 5, thiefAttr = null, thiefTag = null, ...extra } = {}) => {
+    const me = beedrill(hp), foe = shuckle(items, extra, foeHp, foeSpe);
     if (thiefAttr) {
       const own = me.hasAbilityWithAttr?.bind(me);
       me.hasAbilityWithAttr = a => a === thiefAttr || !!own?.(a);
@@ -1635,11 +1635,27 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
   console.log(`we eat from full HP, Sitrus x2: ${fullHp.hp - blockedHp.hp} over a Heal Blocked thief`);
   assert.equal(fullHp.turnsWe, blockedHp.turnsWe);
   assert.ok(fullHp.hp > blockedHp.hp, `the second Sitrus heals a thief the foe has hit since (${fullHp.hp} vs ${blockedHp.hp})`);
+  // At full HP on turn 1, a thief that moves first has no room yet; one the foe hits first does.
+  const fromFull = foeSpe => {
+    const [ate, blocked] = [null, "HEAL_BLOCK"].map(thiefTag => bite([berryItem(BERRY.SITRUS)], { hp: 400, foeSpe, thiefTag }));
+    assert.equal(ate.turnsWe, blocked.turnsWe);
+    return ate.hp - blocked.hp;
+  };
+  const [first, second] = [fromFull(5), fromFull(500)];
+  console.log(`we eat from full HP, Sitrus x1: moving first ${first} · moving second ${second}`);
+  assert.equal(first, 0, "eaten at full HP, before any hit");
+  assert.ok(second > 0, `eaten after the foe's hit made room (${second})`);
+  // The heal is capped at max HP turn by turn: two stolen Sitrus can't refill more than the foe has taken by then.
+  const twice = bite([berryItem(BERRY.SITRUS, 2)], { hp: 400, foeHp: 600 });
+  console.log(`two Sitrus from full HP over a long fight: ${twice.hp}/400 after ${twice.turnsWe} turns`);
+  assert.ok(twice.hp < 400, `not refilled to the brim by a heal that overflowed on an earlier turn (${twice.hp})`);
   // Ripen doubles the quarter; Heal Block stops it.
   const eater = attr => ({ getMaxHp: () => 280, hasAbilityWithAttr: a => a === attr, getTag: t => (attr === t ? { tagType: t } : null) });
   const eatBy = attr => berryGone(holder([berryItem(BERRY.SITRUS)]), sitrusHeal, { eater: eater(attr), hp: 0 }).eaten;
-  console.log(`eaten: plain ${eatBy(null)} · Ripen ${eatBy("DoubleBerryEffectAbAttr")} · Heal Block ${eatBy("HEAL_BLOCK")}`);
-  assert.deepEqual([eatBy(null), eatBy("DoubleBerryEffectAbAttr"), eatBy("HEAL_BLOCK")], [70, 140, 0]);
+  const pouchLum = berryGone(holder([berryItem(BERRY.LUM)]), sitrusHeal, { eater: eater("HealFromBerryUseAbAttr"), hp: 0 }).eaten;
+  console.log(`eaten: plain ${eatBy(null)} · Ripen ${eatBy("DoubleBerryEffectAbAttr")} · Heal Block ${eatBy("HEAL_BLOCK")} · Cheek Pouch ${eatBy("HealFromBerryUseAbAttr")}, off a Lum ${pouchLum}`);
+  assert.deepEqual([eatBy(null), eatBy("DoubleBerryEffectAbAttr"), eatBy("HEAL_BLOCK"), eatBy("HealFromBerryUseAbAttr"), pouchLum], [70, 140, 0, 163, 93],
+    "Cheek Pouch adds a third of max HP for any berry");
   // Mold Breaker gets past Sticky Hold, Infiltrator past a substitute; neither helps the other way round.
   const { berryStealable } = globalThis.__planner;
   const sitrusFoe = extra => shuckle([berryItem(BERRY.SITRUS)], extra, 280);

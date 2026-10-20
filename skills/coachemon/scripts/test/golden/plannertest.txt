@@ -380,7 +380,9 @@ named: Liechi beside it    types 3 · supply 2 · lost 0 · eaten 0
 named: a Lum it lacks      nothing to lose
 draws: Sitrus x1 + Lum x2     35 · 17.5 · 17.5 · 0
 we eat from full HP, Sitrus x2: 36 over a Heal Blocked thief
-eaten: plain 70 · Ripen 140 · Heal Block 0
+we eat from full HP, Sitrus x1: moving first 0 · moving second 18
+two Sitrus from full HP over a long fight: 346/400 after 6 turns
+eaten: plain 70 · Ripen 140 · Heal Block 0 · Cheek Pouch 163, off a Lum 93
 reach: sticky false,true,false · sub false,true,false
 == gordie w180 t7: Leavanny into the incoming Carracosta
 as plain damage: Leaf Storm (Leaf Storm: we need 2, they need 2 (2.393), P(steal) 0 · Bug Bite: we need 6, they need 2 (2.393), P(steal) 0)
