@@ -74,9 +74,9 @@ const scenarios = {
     mon("Charizard", 66, ["Fire","Flying"], "Blaze", [190,125,118,160,128,120], [["Flamethrower","Fire",90,"S"],["Air Slash","Flying",75,"S"]], true, 120)],
     foes: [teraMon("Lycanroc", 70, ["Rock"], "Keen Eye", [200,190,100,80,90,140], [["Stone Edge","Rock",100,"P"]], true, "Steel")] },
   // Gordie W180 (#648). Coalossal Teras to Rock before it moves, so Burn Up — picked while it was still Fire — goes
-  // off and fails. Centiskorch is the party slot `instantTeras` names, so from here on it is priced at the Tera Rock
-  // it will come in at, not at the Fire/Bug it is sitting on the bench as.
-  teraFails: { double: false, trainer: { isBoss: false, trainerAI: { instantTeras: [1] } }, teras: ["Coalossal"], bench: [], party: [
+  // off and fails. Centiskorch is a bench mon the trainer's own `shouldTera` says yes to as well, so from here on it
+  // is priced at the Tera Rock it will come in at, not at the Fire/Bug it is sitting on the bench as.
+  teraFails: { double: false, trainer: { isBoss: false }, teras: ["Coalossal", "Centiskorch"], bench: [], party: [
     mon("Gyarados", 80, ["Water","Flying"], "Intimidate", [260,170,130,120,150,140], [["Waterfall","Water",80,"P"]], true),
     mon("Venusaur", 80, ["Grass","Poison"], "Overgrow", [260,140,140,160,160,120], [["Power Whip","Grass",120,"P"]], false)],
     foes: [
@@ -200,7 +200,7 @@ const trapsOf = (label, slot, foe) => {
 assert.deepEqual(trapsOf("eelevate", "Garchomp", "Eelektross"), { slot: ["Eelevate"], row: ["Eelevate"] }, "Land's Wrath into Eelevate");
 assert.deepEqual(trapsOf("eelevateArrows", "Garchomp", "Eelektross"), { slot: [], row: [] }, "Thousand Arrows into Eelevate");
 
-// Gordie W180 (#648): the Tera the foe's own pick was made before, and the bench slot it names.
+// Gordie W180 (#648): the Tera the foe's own pick was made before, and the bench mon it is coming for too.
 {
   const row = name => cards.teraFails.rows.find(r => r.name === name);
   const coal = row("Coalossal");
@@ -209,7 +209,7 @@ assert.deepEqual(trapsOf("eelevateArrows", "Garchomp", "Eelektross"), { slot: []
   assert.deepEqual(coal.weak.filter(([t]) => ["Water", "Grass"].includes(t)), [["Water", ""], ["Grass", ""]],
     "Tera Rock is Water ×2 and Grass ×2, not the Water ×4 its Fire/Rock read at");
   const bench = row("Centiskorch");
-  assert.equal(bench.tera, "Rock", "a bench slot in instantTeras carries the Tera it comes in at");
+  assert.equal(bench.tera, "Rock", "a bench mon the trainer Teras on entry carries the Tera it comes in at");
   assert.deepEqual(bench.types, ["Rock"], "and its row shows that typing, not the one it is sitting on the bench as");
   assert.deepEqual(bench.weak.filter(([t]) => ["Water", "Grass", "Rock"].includes(t)), [["Water", ""], ["Grass", ""]],
     "with Tera Rock's weaknesses: Water ×2 and Grass ×2, and no Rock ×4 of its own");

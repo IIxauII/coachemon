@@ -369,24 +369,32 @@ assert.equal(plan.approxDoubles, false);
       `nothing is spent for nothing before Raichu acts ${where}: ${JSON.stringify(plan.steps.map(x => x.send.name))}`);
   }
 }
-// A bench the trainer Teras the moment it comes in (#648, Gordie W180): Coalossal's slot is in `instantTeras`, so the
-// plan prices it at Tera Rock from its entry — Water ×2, not the ×4 its Fire/Rock reads at.
+// A bench the trainer Teras the moment it comes in (#648, Gordie W180): Coalossal's team index is in `instantTeras`,
+// so the plan prices it at Tera Rock from its entry — Water ×2, not the ×4 its Fire/Rock reads at. `instantTeras` names
+// team indexes and a switch has already pulled those apart from the party slots, so Coalossal sits in slot 1 carrying
+// team index 5 — the W180 party's T5 order — and only `shouldTera`, the game's own test, finds it (game-code.md §7).
 {
   const water = mon("Blastoise", 100, ["Water"], "Torrent", [300,200,260,230,270,180], [["Hydro Pump","Water",110,"S"]], true);
   const lead = mon("Barbaracle", 100, ["Rock","Water"], "Tough Claws", [300,240,200,120,160,180], [["Razor Shell","Water",75,"P"]], true);
   const coal = mon("Coalossal", 100, ["Fire","Rock"], "Steam Engine", [300,180,240,180,240,100], [["Heat Crash","Fire",100,"P"]], false);
   const base = coal.getTypes();
   Object.assign(coal, { getTeraType: () => TY.indexOf("Rock"), getTypes: () => (coal.isTerastallized ? [TY.indexOf("Rock")] : base) });
-  const pricedAt = instantTeras => {
+  Object.assign(lead, { initialTeamIndex: 0 });
+  Object.assign(coal, { initialTeamIndex: 5 });
+  const instantTeras = [5];
+  const pricedAt = teras => {
     const { scene: s } = run("CommandPhase", { party: [water], foes: [lead, coal] });
-    s.currentBattle.trainer.config.trainerAI = instantTeras ? { instantTeras: [1] } : null;
+    Object.assign(s.currentBattle.trainer, {
+      config: { ...s.currentBattle.trainer.config, trainerAI: { instantTeras } },
+      shouldTera: m => teras && !m.isTerastallized && instantTeras.includes(m.initialTeamIndex),
+    });
     const T = globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpTables(turn, [water], [coal], false));
     return T.ours[0][0].e;
   };
   const [plainE, teraE] = [pricedAt(false), pricedAt(true)];
   console.log(`== an instant Tera on the bench (#648)\nHydro Pump into Coalossal: ×${plainE} as Fire/Rock, ×${teraE} at Tera Rock`);
   assert.equal(plainE, 4, "Fire/Rock takes Water ×4");
-  assert.equal(teraE, 2, "its slot in instantTeras prices it at Tera Rock from the bench");
+  assert.equal(teraE, 2, "its team index in instantTeras prices it at Tera Rock from the bench, slot 1 and all");
   assert.equal(coal.isTerastallized, undefined, "and the flag is off again afterwards");
 }
 console.log("ok");

@@ -832,7 +832,6 @@ export const HUD: Area = {
     { name: "ignoreAbilities", kind: "field", at: ["src/field/arena.ts#Arena.ignoreAbilities"] },
     { name: "ignoringEffectSource", kind: "field", at: ["src/field/arena.ts#Arena.ignoringEffectSource"] },
     { name: "info", kind: "method", at: ["test/mocks/mock-console/mock-console.ts#MockConsole.info"] },
-    { name: "instantTeras", kind: "field", at: ["src/data/trainers/trainer-config.ts#TrainerAI.instantTeras"] },
     { name: "intrinsicMultiHitType", kind: "field", at: ["src/data/moves/move.ts#MultiHitAttr.intrinsicMultiHitType"] },
     {
       name: "invert",
@@ -1476,7 +1475,6 @@ export const HUD: Area = {
       kind: "field",
       at: ["src/@types/biomes.ts#Biome.trainerPool", "src/field/arena.ts#Arena.trainerPool"],
     },
-    { name: "trainerAI", kind: "field", at: ["src/data/trainers/trainer-config.ts#TrainerConfig.trainerAI"] },
     { name: "trainerSlot", kind: "field", at: ["src/field/pokemon.ts#EnemyPokemon.trainerSlot"] },
     {
       name: "trainerType",

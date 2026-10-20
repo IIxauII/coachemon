@@ -356,14 +356,15 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
 const turnKeyOf = (env, facts) => [facts.wave, facts.turn, facts.enemySwitchCounter, facts.decision,
   ...[...env.playerParty, ...env.foes].map(p => p && `${p.id}:${p.hp}:${p.bossSegmentIndex ?? ""}:${p.isOnField?.() ? 1 : 0}:${p.isTerastallized ? 1 : 0}`)].join("|");
 
-// The enemy party slots the trainer Terastallizes the moment they come in (game-code.md §7). It is known up front, and
-// the Tera then stays for the rest of the battle: a bench mon named here is priced at its Tera type from its entry on,
-// so the fight plan and its row see the typing it will actually fight at (#648).
+// The bench mons the trainer Terastallizes the moment they come in. `shouldTera` is the game's own test, and the only
+// thing that reads `instantTeras` against the right index: it names *team* indexes, which a switch has already pulled
+// apart from the party slots (game-code.md §7). It is known up front, and the Tera then stays for the rest of the
+// battle, so a bench mon it says yes to is priced at its Tera type from its entry on, and the fight plan and its row
+// see the typing it will actually fight at (#648).
 const instantTeraFoes = (env, turn) => {
-  const slots = tryDo(() => env.trainer?.config?.trainerAI?.instantTeras, null);
-  if (!Array.isArray(slots)) return [];
+  if (!env.trainer?.shouldTera) return [];
   const active = turn.activeFoes();
-  return slots.map(i => env.foes[i]).filter(e => e && e.hp > 0 && !active.includes(e));
+  return env.foes.filter(e => e && e.hp > 0 && !active.includes(e) && tryDo(() => env.trainer.shouldTera(e), false));
 };
 
 const predictedTeras = (env, turn) => [

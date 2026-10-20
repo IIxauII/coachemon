@@ -345,15 +345,26 @@ for (const [slot0Best, expect] of [[10, ["e0"]], [1, ["e1"]]]) {
 // on entry are all priced at the typing the foe will actually fight at (#648).
 {
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A", target: -10 }] });
+  // `instantTeras` names *team* indexes, and a switch has already pulled those apart from the party slots: the bench
+  // mon it names sits in slot 1 carrying team index 5, and slot 5 holds team index 1 — the order the real Gordie W180
+  // party is in at T5 (game-code.md §7). So the fake trainer keys its `shouldTera` the way the game keys it.
   const bench = mkMon({ id: "b", player: false });
+  const other = mkMon({ id: "o", player: false });
+  const filler = [2, 3, 4].map(i => Object.assign(mkMon({ id: `f${i}`, player: false }), { initialTeamIndex: i }));
   e.getTeraType = () => 8; // Steel
-  bench.getTeraType = () => 5; // Rock, the slot the trainer Teras the moment it comes in
+  bench.getTeraType = () => 5; // Rock, the type it comes in at
+  other.getTeraType = () => 14; // Ice — read back from this one, and the slot indexing it would come from is the bug
+  Object.assign(e, { initialTeamIndex: 0 });
+  Object.assign(bench, { initialTeamIndex: 5 });
+  Object.assign(other, { initialTeamIndex: 1 });
   const me = foe();
+  const instantTeras = [0, 5];
   const trainer = {
-    config: { isBoss: false, trainerAI: { instantTeras: [1] } }, shouldTera: m => m.id === "e",
+    config: { isBoss: false, trainerAI: { instantTeras } },
+    shouldTera: m => !m.isTerastallized && instantTeras.includes(m.initialTeamIndex),
     getPartyMemberMatchupScores: () => [[1, 1]], getSortedPartyMemberMatchupScores: sc => sc, getNextSummonIndex: () => 1,
   };
-  const ai = setup({ player: [me], enemy: [e, bench], trainer });
+  const ai = setup({ player: [me], enemy: [e, bench, ...filler, other], trainer });
 
   const seen = { pick: [], switch: [], replay: [], sendIn: [] };
   // The switch check comes first of all: predicting the Tera asks it, before any flag is on.
@@ -370,7 +381,8 @@ for (const [slot0Best, expect] of [[10, ["e0"]], [1, ["e1"]]]) {
   assert.deepEqual([...new Set(seen.replay)], [true], "a turn after this one is replayed with the Tera on");
   assert.deepEqual([...new Set(seen.sendIn)], [true], "and the send-in score sees it too");
 
-  assert.equal(ai.teraOf(bench), "Rock", "a benched foe in instantTeras carries the Tera type it comes in at");
+  assert.equal(ai.teraOf(bench), "Rock", "the benched foe whose team index is in instantTeras carries its Tera type");
+  assert.equal(ai.teraOf(other), null, "the foe merely sitting in that party slot carries none");
   assert.equal(bench.isTerastallized, undefined, "flag restored on the bench too");
 }
 
