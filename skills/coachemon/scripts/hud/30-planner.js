@@ -515,9 +515,9 @@ const drawValues = (stacks, value) => {
 // `lost`: what the holder's turn ends lose by it (negative where the berry healed); `eaten`: what the eater gains at
 // once, from `hp`; `byCount[k]`: the holder's turn-end HP change after k berries gone, for a uniform draw;
 // `eatenAt[k]` / `eatenFirst[k]`: the eater's gain from the (k+1)-th draw, uncapped / capped at the room `hp` leaves;
-// `supply`: the berries it can lose in all.
+// `supply`: the berries it can lose in all. `steals`: a `byCount` already worked out for this holder and `heal`.
 // @only tests: berryGone
-export const berryGone = (holder, heal, { berry = null, eater = null, hp = 0 } = {}) => {
+export const berryGone = (holder, heal, { berry = null, eater = null, hp = 0, steals = null } = {}) => {
   const held = heldBerries(holder);
   const types = berry == null ? held.map(m => m.berryType) : held.some(m => m.berryType === berry) ? [berry] : [];
   if (!types.length) return null;
@@ -526,7 +526,7 @@ export const berryGone = (holder, heal, { berry = null, eater = null, hp = 0 } =
     return { types, byCount: null, eatenAt: null, eatenFirst: null, supply: held.reduce((t, m) => t + stackOf(m), 0),
       lost: heal(lessBerry(holder, berry)) - heal(holder), eaten: eatenNow(eater, berry, room) };
   }
-  const byCount = afterSteals(holder, heal, isBerry);
+  const byCount = steals ?? afterSteals(holder, heal, isBerry);
   const stacks = held.map(stackOf);
   const eatenFirst = drawValues(stacks, types.map(b => eatenNow(eater, b, room)));
   return {
@@ -786,9 +786,11 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   // follow up with — so the course still reads the theft when this move steals none.
   const stole = Math.min(1, opts.stole ?? 0);
   const eats = mine?.expected > 0 && stealsBerry(mine, foe, me);
-  const theft = eats || stole > 0
-    ? berryGone(foe, p => healAtEnd(turn, p, t?.expected ?? 0), { eater: me, hp })
-    : null;
+  const theft = eats || stole > 0 ? (() => {
+    const dealt = t?.expected ?? 0, heal = p => healAtEnd(turn, p, dealt);
+    const steals = berryTypesOf(foe).length ? turn.memo(`berries:${foe.id}:${dealt}`, () => afterSteals(foe, heal, isBerry)) : null;
+    return berryGone(foe, heal, { eater: me, hp, steals });
+  })() : null;
   const lands = eats ? j => (j === 1 ? now : steady) * (mine.acc ?? 1) : () => 0;
   const counts = theft ? berryCounts(lands, theft.supply, stole) : null;
   if (mine?.expected > 0) {
