@@ -1400,10 +1400,13 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     };
   };
   const worse = (a, b) => (!a ? b : b && RANK[b.level] > RANK[a.level] ? b : a);
-  const nowThreat = me => attackers.reduce((w, f) => worse(w, tagOf(threatFrom(turn, f, me), me.hp, false)), null);
+  // `pm`: the move the slot is going to use, so the order is the one the pick actually gets — a priority move taken
+  // against no move of ours read as a knockout "before it can act" (#650). A mon leaving the field has no pick to take
+  // it against, and passes none.
+  const nowThreat = (me, pm = null) => attackers.reduce((w, f) => worse(w, tagOf(threatFrom(turn, f, me, pm), me.hp, false)), null);
   const slotThreat = (p, entering) => {
     const faced = typeof p.target === "number" ? [active[p.target]] : active;
-    let tag = entering ? null : nowThreat(p.me);
+    let tag = entering ? null : nowThreat(p.me, p.move?.pm ?? null);
     for (const f of faced) {
       if (entering || !attackers.includes(f)) tag = worse(tag, tagOf(threatFrom(turn, f, p.me, p.move?.pm ?? null, { next: true }), entering ? p.hp : p.me.hp, true));
     }
