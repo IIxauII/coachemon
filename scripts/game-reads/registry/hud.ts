@@ -1305,6 +1305,7 @@ export const HUD: Area = {
       at: ["src/data/mystery-encounters/mystery-encounter-requirements.ts#MoneyRequirement.scalingMultiplier"],
     },
     { name: "score", kind: "field", at: [], from: "ours", note: "our enemy-AI pick and combo rows" },
+    { name: "se", kind: "field", at: [], from: "ours", note: "our damage point's super-effective share, which feeds an Enigma Berry" },
     { name: "seed", kind: "field", at: ["src/battle-scene.ts#BattleScene.seed"] },
     { name: "seedOffsetWaveIndex", kind: "field", at: ["src/battle.ts#FixedBattleConfig.seedOffsetWaveIndex"] },
     { name: "segments", kind: "field", at: ["src/@types/daily-run.ts#DailySeedBoss.segments"] },
