@@ -44,7 +44,7 @@ test("a player's solve of a continued run carries its save, holding the scene to
 
 const totals = (items: SessionSave["modifiers"]) => {
   const out: Record<string, number> = {};
-  for (const { typeId, stackCount } of items) out[typeId] = (out[typeId] ?? 0) + stackCount;
+  for (const { typeId, stackCount } of items ?? []) out[typeId] = (out[typeId] ?? 0) + stackCount;
   return out;
 };
 
