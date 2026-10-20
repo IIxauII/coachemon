@@ -2049,13 +2049,13 @@ export const HUD: Area = {
     },
     { ours: "skills/coachemon/scripts/hud/30-planner.js#para-act-chance", of: ["src/phases/move-phase.ts#MovePhase.checkPara"] },
     {
-      ours: "skills/coachemon/scripts/hud/35-team-plan.js#tp-send-base",
+      ours: "skills/coachemon/scripts/hud/30-planner.js#send-in-base",
       of: [
         "src/field/pokemon.ts#Pokemon.getMatchupScore",
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/35-team-plan.js#tp-send-score",
+      ours: "skills/coachemon/scripts/hud/30-planner.js#send-in-at",
       of: [
         "src/field/pokemon.ts#Pokemon.getMatchupScore",
       ],

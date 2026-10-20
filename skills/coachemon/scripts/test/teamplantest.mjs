@@ -1,7 +1,8 @@
 // The boss Weavile outspeeds and KOs all four of ours.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
-import { onGame } from "./game-proto.mjs";
+import { benchMatchupScore, onGame } from "./game-proto.mjs";
+import { fakeTurn } from "./fake-turn.mjs";
 
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
@@ -150,6 +151,25 @@ assert.equal(plan.approxDoubles, false);
   const T = { send: [[{ base: 3, outspeed: false }], [{ base: 3, outspeed: true }]], foeMax: [100, 100], ourMax: [200] };
   const at = (ourHp, fi) => Math.round(tpSendScore(T, { oh: [ourHp], fh: [30, 30] }, fi, 0) * 1000) / 1000;
   assert.deepEqual([at(200, 0), at(20, 0), at(200, 1), at(20, 1)], [0.45, 1.8, 1.125, 3], "the HP factor follows the simulated HP");
+}
+// The plan's send-in score at any HP it reaches is the game's there (#464): a slower foe at 30 % HP is halved once.
+{
+  const { tpTables, tpSendScore } = globalThis.__tp;
+  const { sceneSendInScore } = globalThis.__hud["20-enemy-ai"];
+  const me = mon("Blastoise", 100, ["Water"], "Torrent", [200,200,260,230,270,180], [["Hydro Pump","Water",110,"S"]], true);
+  const foe = (name, spe, hp) => Object.assign(mon(name, 100, ["Normal"], "x", [300,200,200,200,200,spe], [["Tackle","Normal",40,"P"]], false, hp),
+    { typeScore: 2.5, getMatchupScore: benchMatchupScore });
+  const foes = [foe("Slow30", 120, 90), foe("Fast30", 240, 90), foe("Slow60", 120, 180), foe("Slow15", 120, 45)];
+  const turn = fakeTurn({ party: [me], foes, sendIn: (f, p) => sceneSendInScore(null, f, p) });
+  const T = tpTables(turn, [me], foes);
+  for (const ourHp of [100, 200]) {
+    const st = { oh: [ourHp], fh: foes.map(f => f.hp) };
+    for (const [fi, f] of foes.entries()) {
+      const want = f.getMatchupScore(Object.assign(Object.create(me), { hp: ourHp }));
+      const got = tpSendScore(T, st, fi, 0);
+      assert.ok(Math.abs(got - want) < 1e-9, `${f.name} against our ${ourHp / 2} %: plan ${got}, game ${want}`);
+    }
+  }
 }
 // Speed order and rolls as chances: a mirror match at a speed tie with a coin-flip KO is a coin flip, not a sure win.
 {
