@@ -360,4 +360,11 @@ Fight plan likely lost
 ⚔ Dragonite ⚠ Dragon ×2 100% {Rayquaza's Outrage: ~100% of current HP} Normal Extreme Speed → Rayquaza 3 hits
 ⤵ Dragonite falls this turn › Raichu in free
 ⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
+== an Enigma Berry fed by a super-effective hit (#652)
+Meteor Mash ×2, no berry: 300 HP bar 1 (10%) · 150 HP bar 0 (73%) · 150 HP bar 0 (6%) · 150 HP bar 0 (6%) · 150 HP bar 0 (6%)
+Meteor Mash ×2, Enigma:   300 HP bar 1 (10%) · 225 HP bar 0 (68%) · 225 HP bar 0 (11%) · 225 HP bar 0 (6%) · 225 HP bar 0 (6%)
+Aura Wheel ×1, Enigma:    212 HP bar 1 (25%) · 216 HP bar 1 (25%) · 219 HP bar 1 (25%) · 223 HP bar 1 (25%)
+Knock Off ×2 into us, no berry: 112 HP (19%) · 117 HP (31%) · 124 HP (31%) · 130 HP (19%)
+Knock Off ×2 into us, Enigma:   174 HP (19%) · 179 HP (31%) · 186 HP (31%) · 192 HP (19%)
+Triple Axel ×½ into us, Enigma: 207 HP (30%) · 209 HP (24%) · 212 HP (42%) · 250 HP (5%)
 ok
