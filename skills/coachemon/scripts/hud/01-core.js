@@ -197,6 +197,16 @@ export const awaitingDecision = s => {
   return null;
 };
 
+// The member a `LearnMovePhase` asks to forget a move for, or null: the phase also runs for a learn into a free slot, and
+// stays current once the move is taken (game-code.md §17, #525). Allocates nothing, as the watch's detector reads it each
+// frame.
+export const learnAsked = (party, ph) => {
+  const pk = party?.[ph.partyMemberIndex], ms = pk?.moveset;
+  if (!ms || ms.length < 4) return null;
+  for (let i = 0; i < ms.length; i++) if (ms[i] && ms[i].moveId === ph.moveId) return null;
+  return pk;
+};
+
 // The sandbox restores `turnData` only when the refresh ends, so without this the next call in the same refresh reads
 // the hitCount, hitsLeft or Tera Shell effectiveness the last one left (game-code.md §0).
 export const keepTurnData = (mons, fn) => {

@@ -1,5 +1,6 @@
 // Which decision (CONTEXT.md, `Decision`) the game is waiting on, looked at every frame from fields the game already shows and
 // never by hooking it (#518, #537). Allocates nothing per frame, and keeps nothing between frames.
+import { learnAsked } from "./01-core.js";
 const CARD_OF = {
   command: "battle", "free-switch": "battle", replacement: "battle", reward: "rewards", fusion: "fusion",
   learn: "learn", biome: "biome", encounter: "encounter", starter: "starters",
@@ -15,10 +16,6 @@ const set = (kind, k1, k2, k3, k4, ready, input) => {
 };
 const none = () => set(null, null, null, null, null, false, false);
 const enemyFree = b => b.turnCommands[BattlerIndex.ENEMY] == null && b.turnCommands[BattlerIndex.ENEMY_2] == null;
-const knows = (moveset, id) => {
-  for (let i = 0; i < moveset.length; i++) if (moveset[i] && moveset[i].moveId === id) return true;
-  return false;
-};
 // Order-free, so the game re-sorting its modifiers is no change; a transfer moves a stack between holders, which is.
 const heldItems = mods => {
   let sig = 0;
@@ -73,11 +70,9 @@ export const detect = s => {
       return set("reward", ph, s.money, s.lockModifierTiers === true, members,
         mode === UiMode.MODIFIER_SELECT && (h?.options?.length || h?.shopOptionsRows?.length) > 0, h?.awaitingActionInput === true);
     }
-    case "LearnMovePhase": {
-      const ms = s.getPlayerParty()[ph.partyMemberIndex]?.moveset;
-      if (!ms || ms.length < 4 || knows(ms, ph.moveId)) return none();
+    case "LearnMovePhase":
+      if (!learnAsked(s.getPlayerParty(), ph)) return none();
       return set("learn", ph, null, null, null, true, mode === UiMode.CONFIRM || mode === UiMode.SUMMARY);
-    }
     case "SelectBiomePhase": {
       const h = ui.getHandler();
       return set("biome", ph, null, null, null, mode === UiMode.OPTION_SELECT && (h?.config?.options?.length ?? 0) > 0, !h?.blockInput);
