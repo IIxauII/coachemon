@@ -104,11 +104,7 @@ test("an option list reads its cursor as the option under it, counting selectabl
   assert.equal(menu.cursor, 2);
 });
 
-/**
- * A party handler's options window as `PartyUiHandler` draws it: options bottom-up, each name a text at
- * `-22 - 16 * o`, and a Memory Mushroom move's prefix (a level text or a TM sprite) 8 lower, in both the
- * container and `optionPrefixes`.
- */
+/** A party handler's options window, laid out as `PartyUiHandler` draws it (game-code.md §17). */
 function partyOptions(partyUiMode: number, rows: { name: string; prefix?: { level: number } | { tm: string } }[], optionsCursor: number) {
   const list: Record<string, unknown>[] = [{ width: 94 }];
   const optionPrefixes: (Record<string, unknown> | null)[] = [];
@@ -126,33 +122,33 @@ function partyOptions(partyUiMode: number, rows: { name: string; prefix?: { leve
   return { ui: { mode: UiMode.PARTY, handlers: { [UiMode.PARTY]: h } } };
 }
 
-test("a Memory Mushroom's move list reads one row per move plus Cancel, its levels not rows of their own (#528)", t => {
+test("a Memory Mushroom's move list reads one row per move plus Cancel, its learn levels not rows of their own (#528)", t => {
   const rows = [{ name: "Wrap", prefix: { level: 1 } }, { name: "Leer", prefix: { level: 1 } }, { name: "Twister", prefix: { level: 5 } }, { name: "Cancel" }];
   onPage(t, partyOptions(PartyUiMode.REMEMBER_MOVE_MODIFIER, rows, 2));
   const menu = send("menu", {});
   assert.deepEqual(menu.options, [
-    { i: 0, label: "Wrap", level: 1 },
-    { i: 1, label: "Leer", level: 1 },
-    { i: 2, label: "Twister", level: 5 },
+    { i: 0, label: "Wrap", learnLevel: 1 },
+    { i: 1, label: "Leer", learnLevel: 1 },
+    { i: 2, label: "Twister", learnLevel: 5 },
     { i: 3, label: "Cancel" },
   ]);
   assert.equal(menu.cursor, 2);
 });
 
-test("a Memory Mushroom list mixing a level move and a TM move reads one row each, the level on its own move (#528)", t => {
+test("a Memory Mushroom list mixing a level move and a TM move reads one row each, the learn level on its own move (#528)", t => {
   const rows = [{ name: "Ember", prefix: { level: 9 } }, { name: "Flamethrower", prefix: { tm: "tm_fire" } }, { name: "Scratch", prefix: { level: 1 } }, { name: "Cancel" }];
   onPage(t, partyOptions(PartyUiMode.REMEMBER_MOVE_MODIFIER, rows, 3));
   const menu = send("menu", {});
   assert.deepEqual(menu.options, [
-    { i: 0, label: "Ember", level: 9 },
+    { i: 0, label: "Ember", learnLevel: 9 },
     { i: 1, label: "Flamethrower" },
-    { i: 2, label: "Scratch", level: 1 },
+    { i: 2, label: "Scratch", learnLevel: 1 },
     { i: 3, label: "Cancel" },
   ]);
   assert.equal(menu.cursor, 3);
 });
 
-test("a faint switch's options read as before, with no prefixes to leave out (#528)", t => {
+test("a faint switch's options read one row per option", t => {
   const rows = [{ name: "Send Out" }, { name: "Summary" }, { name: "Cancel" }];
   onPage(t, partyOptions(PartyUiMode.FAINT_SWITCH, rows, 0));
   const menu = send("menu", {});

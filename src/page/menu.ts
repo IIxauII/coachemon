@@ -143,15 +143,15 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
         out.cursor = disc.optionsMode ? h.optionsCursor : h.cursor;
       } else if (disc.optionsMode) {
         // Sorted by `y` ascending; descending selects the wrong option (#6, v1-tool-surface.md §7).
-        // A Memory Mushroom move's prefix (its level text, or a TM sprite) shares the container. `optionPrefixes` holds
-        // one entry per option, bottom-up, null where there is none (#528).
+        // A Memory Mushroom move's learn level is a text of its own in the container, so each level move read as two
+        // rows and every pick past the first landed on the wrong one (#528, game-code.md §17).
         const prefixes: any[] = Array.isArray(h.optionPrefixes) ? h.optionPrefixes : [];
         const kids = __kids(h.optionsContainer).filter((k: any) => typeof k.text === "string" && prefixes.indexOf(k) < 0);
         kids.sort((a: any, b: any) => a.y - b.y);
         const rowPrefixes = prefixes.length === kids.length ? prefixes.slice().reverse() : [];
         out.options = kids.map((k: any, i: number) => {
-          const level = Number(__txt(rowPrefixes[i]) ?? NaN);
-          return opt(i, __strip(k.text), Number.isInteger(level) ? { level } : undefined);
+          const learnLevel = Number(__txt(rowPrefixes[i]) ?? NaN);
+          return opt(i, __strip(k.text), Number.isInteger(learnLevel) ? { learnLevel } : undefined);
         });
         out.cursor = h.optionsCursor;
       } else {

@@ -2063,6 +2063,13 @@ guaranteed Mysterious Challengers / Weird Dream reward. Taking it costs nothing 
 re-queues a copy of the reward phase (`src/phases/select-modifier-phase.ts:276`). The rewards card gives it to the
 member whose relearn list holds the biggest learn-card upgrade.
 
+**The relearn list on screen.** `PartyUiHandler.updateOptionsWindow` draws the options last to first, each name a text
+in `optionsContainer` (`src/ui/handlers/party-ui-handler.ts:1626-1627`, `:1700-1701`). In `REMEMBER_MOVE_MODIFIER` mode
+a move gets a prefix beside it in the same container: its learn level as a separate text for a `LEVEL` or
+`FUSION_LEVEL` source, an item sprite for every other source (`:1704-1716`). Every option, Cancel and the scroll arrows
+included, pushes one entry to `optionPrefixes`, the prefix or `null`, so that array runs bottom-up, one entry per option
+text (`:1717-1719`). It is reset at the top of each draw (`:1623`) and by `clearOptions` (`:1951`).
+
 **The learn-move prompt.** `LearnMovePhase` keeps only `moveId` (`src/phases/learn-move-phase.ts:23`) and the inherited
 `partyMemberIndex` (`src/phases/party-member-pokemon-phase.ts:6`). The Move itself (`allMoves[moveId]`, `src/phases/learn-move-phase.ts:45`) lives in
 the prompt's closures until `forgetMoveProcess` opens the summary screen in `LEARN_MOVE` mode with it (`:116-120`).
