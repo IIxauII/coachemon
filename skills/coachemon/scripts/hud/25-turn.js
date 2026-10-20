@@ -22,27 +22,35 @@ const withPredictedTera = (mons, fn) => {
   }
   try { return fn(); } finally { for (const e of fresh) { teraOn(e, false); teraSaved.delete(e); } }
 };
-const beforeTera = fn => {
-  const on = [...teraSaved.keys()];
-  for (const e of on) teraOn(e, false);
-  try { return fn(); } finally { for (const e of on) teraOn(e, true); }
+// Takes `e`'s predicted Tera off and returns the undo, which puts back whatever it found: the calls nest.
+const teraOff = e => {
+  const was = e.isTerastallized, added = e.summonData?.addedType;
+  teraOn(e, false);
+  return () => { e.isTerastallized = was; if (e.summonData) e.summonData.addedType = added; };
 };
+const preTera = (mons, fn) => {
+  const undo = mons.filter(e => teraSaved.has(e)).map(teraOff);
+  try { return fn(); } finally { for (const f of undo.reverse()) f(); }
+};
+const beforeTera = fn => preTera([...teraSaved.keys()], fn);
 const teraTypeOf = e => { try { return teraSaved.has(e) ? TYPES[e.getTeraType?.()] ?? null : null; } catch { return null; } };
 
-// Patches: `{ mon, stages: { [stat 1–5]: change } }`, `{ mon, status }`, `{ mon, types }` and `{ mon, addedType }`,
-// written onto the live mons for one synchronous call (game-code.md §14). `patchKey` is part of the derived turn's
-// key, so no hypothetical answer is ever read from a real memo slot.
-const patchKey = patches => patches.map(({ mon, stages, status, types, addedType }) => [
+// Patches: `{ mon, stages: { [stat 1–5]: change } }`, `{ mon, status }`, `{ mon, types }`, `{ mon, addedType }` and
+// `{ mon, tera: false }` (its predicted Tera off), written onto the live mons for one synchronous call (game-code.md
+// §14). `patchKey` is part of the derived turn's key, so no hypothetical answer is ever read from a real memo slot.
+const patchKey = patches => patches.map(({ mon, stages, status, types, addedType, tera }) => [
   stages ? `${mon.id}s${Object.entries(stages).map(([i, n]) => `${i}:${n}`).join(",")}` : null,
   status ? `${mon.id}x${status.effect}` : null,
   types ? `${mon.id}t${types.join(",")}` : null,
   addedType != null ? `${mon.id}+${addedType}` : null,
+  tera === false ? `${mon.id}-tera` : null,
 ].filter(Boolean).join(";")).filter(Boolean).join("|");
 // @only tests: withPatches
 export const withPatches = (patches, fn) => {
   const undo = [];
   try {
-    for (const { mon, stages, status, types, addedType } of patches) {
+    for (const { mon, stages, status, types, addedType, tera } of patches) {
+      if (tera === false && teraSaved.has(mon)) undo.push(teraOff(mon));
       if (stages && Array.isArray(mon.summonData?.statStages)) {
         const prev = mon.summonData.statStages;
         const next = [...prev];
@@ -221,13 +229,13 @@ const monRecord = (env, live, p) => {
       }
       return !typesOf(p).some(ty => TYPE_STATUS_IMMUNE[effect]?.includes(ty));
     },
-    // A Stealth Rock layer's share of its max HP.
-    rockChip: (() => {
+    // A Stealth Rock layer's share of its max HP, at the typing `p` has when asked.
+    rockChip: () => {
       if (tryDo(() => !!p.hasAbilityWithAttr?.("BlockNonDirectDamageAbAttr"), false)) return 0;
       const e = live ? tryDo(() => p.getAttackTypeEffectiveness(PokemonType.ROCK, { ignoreStrongWinds: true }), null) : null;
       // @mirrors stealth-rock-chip
       return 0.125 * (e ?? effectiveness("Rock", p));
-    })(),
+    },
     bars: (st, n, offence = false) => barBreakFactors(p, st, n, offence, trainer),
     // An override (Mega Sol) beats suppression; only the live weather is suppressible (game-code.md §14).
     weather: (() => {
@@ -262,13 +270,10 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
     if (!m.has(k)) m.set(k, fn());
     return m.get(k);
   };
-  // Every game call below goes through one of these. Only this turn's `EnemyCommandPhase` — the switch check and the
-  // move pick — happens before the Tera, so only `asCommandAi` turns the predicted flags off. Every other AI call is
-  // about a turn after this one (`replayAI`), a mon coming in later (`sendInScore`) or a move of ours landing on the
-  // foe it will have become, so it sees the Tera like the damage calls do (#648).
+  // Every game call below goes through one of these. This turn's `EnemyCommandPhase` reads, the switch check and the
+  // move pick, come before any Tera (game-code.md §7).
   const asDamage = fn => (patches.length ? withPatches(patches, fn) : fn());
-  const asAi = fn => asDamage(fn);
-  const asCommandAi = fn => beforeTera(() => asDamage(fn));
+  const asCommand = fn => beforeTera(() => asDamage(fn));
 
   const turn = {
     live, key, facts,
@@ -312,21 +317,25 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
     teraNow: foe => memo("tera", foe, () => !turn.switches().get(foe) && !!tryDo(() => env.trainer?.shouldTera?.(foe), false)),
     // Whatever the exact call said: later turns are played from it, and it is that call's oracle at a pin bump (#183).
     enemyDistribution: foe => memo("dist", foe, () => (live
-      ? tryDo(() => asCommandAi(() => sceneDistribution(env, foe)), null) ?? approxDistribution(foe, (e, o) => turn.outcomes(e, o))
+      ? tryDo(() => asCommand(() => sceneDistribution(env, foe)), null) ?? approxDistribution(foe, (e, o) => turn.outcomes(e, o))
       : approxDistribution(foe, (e, o) => turn.outcomes(e, o)))),
     // All slots at once: each decision moves the counter the next reads (game-code.md §7).
-    switches: () => memo("switches", "", () => (live ? asCommandAi(() => sceneSwitches(env, turn.activeFoes())) : new Map())),
+    switches: () => memo("switches", "", () => (live ? asCommand(() => sceneSwitches(env, turn.activeFoes())) : new Map())),
     activeFoes: () => memo("activeFoes", "", () => {
       const out = env.foes.filter(p => p.isOnField?.());
       return (out.length ? out : env.foes).slice(0, env.double ? 2 : 1);
     }),
     replayAI: (foe, target, opts = {}) => memo("replay", `${foe.id}|${target.id}|${opts.hp ?? ""}|${opts.bi ?? ""}|${opts.afterLock ? 1 : ""}`,
-      () => (live ? tryDo(() => asAi(() => sceneReplayAI(env, foe, target, opts)), null) : null)),
-    sendInScore: (f, me) => memo("sendIn", `${f.id}|${me.id}`, () => (live ? tryDo(() => asAi(() => sceneSendInScore(env, f, me)), null) : null)),
+      () => (live ? tryDo(() => asDamage(() => sceneReplayAI(env, foe, target, opts)), null) : null)),
+    sendInScore: (f, me) => memo("sendIn", `${f.id}|${me.id}`, () => (live ? tryDo(() => turn.atEntry([f], () => asDamage(() => sceneSendInScore(env, f, me))), null) : null)),
+    // A benched foe the trainer Teras at its first FIGHT command on the field, not on entry (game-code.md §7).
+    teraLater: foe => !!shared.teraLater?.has(foe),
+    // `fn` with those of `mons` at the typing they come in at.
+    atEntry: (mons, fn) => preTera(mons.filter(turn.teraLater), fn),
     // Step 7's score for a move of ours (game-code.md §6), as one number; 0 without game code, so nothing is nudged.
     benefit: (atk, def, mv) => memo("benefit", `${atk.id}|${def.id}|${mv?.id ?? mv?.name}`, () => {
       if (!live || !mv) return 0;
-      const n = tryDo(() => asAi(() => (aiTargetScore(env, atk, mv, def.getBattlerIndex?.() ?? BattlerIndex.ENEMY, def) ?? [])
+      const n = tryDo(() => asDamage(() => (aiTargetScore(env, atk, mv, def.getBattlerIndex?.() ?? BattlerIndex.ENEMY, def) ?? [])
         .reduce((t, b) => t + b.score * b.p, 0)), 0);
       return Number.isFinite(n) ? n : 0;
     }),
@@ -356,20 +365,16 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
 const turnKeyOf = (env, facts) => [facts.wave, facts.turn, facts.enemySwitchCounter, facts.decision,
   ...[...env.playerParty, ...env.foes].map(p => p && `${p.id}:${p.hp}:${p.bossSegmentIndex ?? ""}:${p.isOnField?.() ? 1 : 0}:${p.isTerastallized ? 1 : 0}`)].join("|");
 
-// The bench mons the trainer Terastallizes the moment they come in. `shouldTera` is the game's own test, and the only
-// thing that reads `instantTeras` against the right index: it names *team* indexes, which a switch has already pulled
-// apart from the party slots (game-code.md §7). It is known up front, and the Tera then stays for the rest of the
-// battle, so a bench mon it says yes to is priced at its Tera type from its entry on, and the fight plan and its row
-// see the typing it will actually fight at (#648).
-const instantTeraFoes = (env, turn) => {
-  const active = turn.activeFoes();
-  return env.foes.filter(e => e && e.hp > 0 && !active.includes(e) && tryDo(() => env.trainer.shouldTera(e), false));
-};
-
-// An active foe goes through `teraNow`, which also drops one the trainer withdraws this turn: it never gets there.
+// `now`: the foes on the field that Tera this turn, less any the trainer withdraws (`teraNow`). `later`: the bench
+// mons it Teras at their first FIGHT command once sent in (game-code.md §7). Only `shouldTera` reads `instantTeras`
+// right: it names team indexes, which a switch pulls apart from the party slots (#648).
 const predictedTeras = (env, turn) => {
-  if (!env.trainer?.shouldTera) return [];
-  return [...turn.activeFoes().filter(e => tryDo(() => turn.teraNow(e), false)), ...instantTeraFoes(env, turn)];
+  if (!env.trainer?.shouldTera) return { now: [], later: [] };
+  const active = turn.activeFoes();
+  return {
+    now: active.filter(e => tryDo(() => turn.teraNow(e), false)),
+    later: env.foes.filter(e => e && e.hp > 0 && !active.includes(e) && tryDo(() => env.trainer.shouldTera(e), false)),
+  };
 };
 
 // The turn is dead once `fn` returns. `estimate` never asks the game, decision or not.
@@ -386,11 +391,16 @@ const readOpened = (s, fn, estimate) => {
   const live = !estimate && !!s && awaitingDecision(s) !== null;
   note({ turnRead: live ? "live" : "estimate" });
   const facts = sceneFacts(s, env, live);
-  const turn = makeTurn(env, { live, facts, baseKey: turnKeyOf(env, facts), shared: {} });
+  const shared = {};
+  const turn = makeTurn(env, { live, facts, baseKey: turnKeyOf(env, facts), shared });
   const finish = () => { try { return fn(turn); } finally { turn.__close(); } };
   open = true;
   try {
     // The Tera prediction is itself an AI answer, so it is read (inside the sandbox) before the flags go on.
-    return live ? sandbox(s, () => withPredictedTera(predictedTeras(env, turn), finish)) : finish();
+    return live ? sandbox(s, () => {
+      const { now, later } = predictedTeras(env, turn);
+      shared.teraLater = new Set(later);
+      return withPredictedTera([...now, ...later], finish);
+    }) : finish();
   } finally { open = false; }
 };
