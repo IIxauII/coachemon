@@ -1466,6 +1466,195 @@ Object.assign(TABLE, {
   assert.ok(Math.abs(steelix - (1 + 71 / 162)) < 1e-9, `the entry hit ran it down: Fire Blast from the first use (${steelix})`);
 }
 
+// ---- Bug Bite and Pluck eat one of the target's berries (#646): the user gets the berry's effect at once, and the foe
+// is one short of it at every later turn end. The draw is uniform over the berry TYPES held, so a stack of two is one
+// entry that leaves one behind, and a berry the turn-end model prices at nothing still takes its share of the draw.
+// Shuckle's 280 HP and a Sitrus healing 70 a turn: Bug Bite (138.1 a use) needs 4 turns through the heal, 3 once the
+// berry is gone. Beedrill at 200/400 eats the quarter it is missing room for, 100.
+Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pound>Shuckle": [[150], 1, 1], "Shuckle>Brine>Beedrill": [[20], 1, 1] });
+{
+  const BERRY = { SITRUS: 0, LUM: 1, ENIGMA: 2, LIECHI: 3 };
+  const berryItem = (berryType, n = 1) => Object.assign(new ({ BerryModifier: class { getStackCount() { return this.n; } } }).BerryModifier(), { berryType, n, isTransferable: true });
+  // What the turn-end model prices for a held berry (10-damage.js's `endOfTurnSteps`): a Sitrus heals a quarter, once a
+  // holder however tall its stack. No other berry here heals at all.
+  const sitrusHeal = p => (p.getHeldItems().some(m => m.constructor.name === "BerryModifier" && m.berryType === BERRY.SITRUS) ? Math.floor(p.getMaxHp() / 4) : 0);
+  // The outcome stub fabricates traits, so carry the move's own attr names as 07-move-traits does.
+  const withAttrs = (a, d, pm, o) => {
+    const x = outcome(a, d, pm, o);
+    return x && { ...x, traits: { ...x.traits, attrNames: new Set(pm.getMove().attrs.map(at => at.constructor.name)) } };
+  };
+  const BUG_BITE = ["Bug Bite", "Bug", 60, "P", 0, { attrs: ["StealEatBerryAttr"] }];
+  const beedrill = hp => mon("Beedrill", 80, ["Bug", "Poison"], [400, 180, 90, 100, 100, 200], [BUG_BITE, ["Pound", "Normal", 40, "P"]], true, hp);
+  const shuckle = (items, extra, maxHp) => mon("Shuckle", 80, ["Bug", "Rock"], [maxHp, 10, 230, 10, 230, 5], [["Brine", "Water", 65, "S"]], true, undefined,
+    { getHeldItems: () => items, ...extra });
+  // `move`: 0 Bug Bite, 1 Pound. `stole`: a berry an earlier turn of a depth-2 line already ate.
+  const bite = (items, { hp = 200, move = 0, stole = 0, foeHp = 280, ...extra } = {}) => {
+    const me = beedrill(hp), foe = shuckle(items, extra, foeHp);
+    const { scene } = render({ party: [me], foes: [foe], live: true, switches: () => new Map(), stubOutcome: withAttrs,
+      heal: sitrusHeal, dist: () => [{ name: "Brine", type: "Water", p: 1, score: 10, targets: [0] }] });
+    const x = globalThis.__planner.exchange(scene, me, me.moveset[move], foe, { stole });
+    return { turnsWe: x.turnsWe, hp: x.expectedHpLeft, stole: Math.round(x.stole * 1e4) / 1e4 };
+  };
+  // The heal we eat, on its own. A 160 HP Shuckle falls to the second use whether its Sitrus heals or not, so the whole
+  // difference between Bug Bite and the plain Pound beside it is the berry we ate.
+  const gain = (items, opts = {}) => {
+    const [stolen, asPlain] = [0, 1].map(move => bite(items, { ...opts, move, foeHp: 160 }));
+    assert.equal(stolen.turnsWe, asPlain.turnsWe, `the knockout turn has to match to isolate the heal (${stolen.turnsWe} vs ${asPlain.turnsWe})`);
+    return stolen.hp - asPlain.hp;
+  };
+  const row = (label, r) => console.log(`${label.padEnd(26)} turnsWe ${r.turnsWe} · our HP ${r.hp} · P(steal) ${r.stole}`);
+  console.log("== bug bite eats a berry");
+
+  // A Sitrus-only holder, our Bug Bite user missing HP: the heal is ours now, and the foe's turn ends lose it. `plain`
+  // is the same hit with no steal on it — Pound's 150 into the same Shuckle — which is how Bug Bite was priced before.
+  const plain = bite([berryItem(BERRY.SITRUS)], { move: 1 });
+  const sitrus = bite([berryItem(BERRY.SITRUS)]);
+  row("Sitrus x1, Pound instead", plain);
+  row("Sitrus x1", sitrus);
+  assert.equal(sitrus.stole, 1, "a sure hit on a berry holder is a sure steal");
+  assert.equal(plain.turnsWe - sitrus.turnsWe, 1, "the foe's later Sitrus heals go with the berry");
+  console.log(`we eat: Sitrus ${gain([berryItem(BERRY.SITRUS)])} · at 350/400 ${gain([berryItem(BERRY.SITRUS)], { hp: 350 })}`
+    + ` · beside a Lum ${gain([berryItem(BERRY.SITRUS), berryItem(BERRY.LUM)])} · a Sitrus x2 beside a Lum ${gain([berryItem(BERRY.SITRUS, 2), berryItem(BERRY.LUM)])}`
+    + ` · beside a Liechi ${gain([berryItem(BERRY.SITRUS), berryItem(BERRY.LIECHI)])}`);
+  assert.equal(gain([berryItem(BERRY.SITRUS)]), 100, "we eat the quarter we had room for");
+  // …capped by the room we have: 50 missing, not the quarter.
+  assert.equal(gain([berryItem(BERRY.SITRUS)], { hp: 350 }), 50, "no heal above max HP");
+
+  // Two berry types are one half each, whatever the stacks.
+  const twoTypes = bite([berryItem(BERRY.SITRUS), berryItem(BERRY.LUM)]);
+  const stacked = bite([berryItem(BERRY.SITRUS, 2), berryItem(BERRY.LUM)]);
+  const diluted = bite([berryItem(BERRY.SITRUS), berryItem(BERRY.LIECHI)]);
+  row("Sitrus x1 + Lum x1", twoTypes);
+  row("Sitrus x2 + Lum x1", stacked);
+  row("Sitrus x1 + Liechi x1", diluted);
+  assert.equal(gain([berryItem(BERRY.SITRUS), berryItem(BERRY.LUM)]), 50, "one draw in two is the Sitrus: half the heal");
+  assert.equal(gain([berryItem(BERRY.SITRUS, 2), berryItem(BERRY.LUM)]), 50, "a stack of two is still one entry in the draw, not two");
+  assert.equal(gain([berryItem(BERRY.SITRUS), berryItem(BERRY.LIECHI)]), 50, "a berry the model prices at nothing still dilutes the draw");
+  assert.deepEqual(diluted, twoTypes, "Liechi and Lum dilute the same: neither is worth anything to either side");
+
+  // Sticky Hold, no berry and a target behind a substitute are each priced exactly as a hit of the same damage that
+  // steals nothing.
+  const none = bite([]);
+  const sticky = bite([berryItem(BERRY.SITRUS)], { hasAbilityWithAttr: a => a === "BlockItemTheftAbAttr" });
+  const behind = bite([berryItem(BERRY.SITRUS)], { getTag: t => (t === "SUBSTITUTE" ? { tagType: t } : null) });
+  const exposed = bite([berryItem(BERRY.SITRUS)], { getTag: () => null });
+  row("nothing held", none);
+  row("Sitrus x1, Sticky Hold", sticky);
+  row("Sitrus x1, behind a sub", behind);
+  assert.deepEqual(none, bite([], { move: 1 }), "no berry: priced as the plain hit it is");
+  assert.deepEqual(sticky, plain, "Sticky Hold keeps the berry, even on a knockout");
+  assert.deepEqual(behind, plain, "the substitute is hit, so the berry is never reached");
+  assert.deepEqual(exposed, sitrus, "…and no substitute steals as before");
+
+  // Depth 2: the second Bug Bite of a line draws from what the first left, and the first steal is never counted twice.
+  // A Sitrus x1 holder has nothing left to lose, so the follow-up gains nothing and its turn ends are already short of
+  // the heal — the same baseline a repeated non-stealing move sees, which is what `deeper` compares against.
+  const again = bite([berryItem(BERRY.SITRUS)], { stole: 1 });
+  const repeat = bite([berryItem(BERRY.SITRUS)], { move: 1, stole: 1 });
+  row("Sitrus x1, one already ate", again);
+  row("…and Pound follows it", repeat);
+  assert.equal(gain([berryItem(BERRY.SITRUS)], { stole: 1 }), 0, "the berry turn 1 ate is not eaten again");
+  assert.equal(again.turnsWe, sitrus.turnsWe, "nor is its loss counted twice in the foe's turn ends");
+  assert.deepEqual([repeat.turnsWe, repeat.hp], [again.turnsWe, again.hp], "`deeper`'s repeat baseline reads the same steal");
+  // A Sitrus x2 holder has one left: the second steal is what eats it.
+  row("Sitrus x2", bite([berryItem(BERRY.SITRUS, 2)]));
+  row("Sitrus x2, one already ate", bite([berryItem(BERRY.SITRUS, 2)], { stole: 1 }));
+  assert.equal(gain([berryItem(BERRY.SITRUS, 2)], { stole: 1 }), 100, "the second steal eats the second Sitrus");
+
+  // What the holder's own turn ends lose, read off the course the exchange builds for it — with the count pinned to
+  // exactly k berries gone, so the single draw's expectation shows plainly. A Sitrus x2 holder keeps a turn-end Sitrus
+  // after one steal and loses it on the second; two types are one half each; a Liechi dilutes like a Lum.
+  const { berryGone, turnEndCourse } = globalThis.__planner;
+  const { scene: courseScene } = render({ party: [beedrill(200)], foes: [shuckle([berryItem(BERRY.SITRUS)], {}, 280)], live: true,
+    switches: () => new Map(), stubOutcome: withAttrs, heal: sitrusHeal, dist: () => [{ name: "Brine", type: "Water", p: 1, score: 10, targets: [0] }] });
+  const atTurn = (items, k) => {
+    const foe = shuckle(items, {}, 280);
+    const eaten = { byCount: berryGone(foe, sitrusHeal).byCount, counts: () => Array.from({ length: k + 1 }, (_, i) => (i === k ? 1 : 0)) };
+    return turnEndCourse(courseScene, foe, null, -1, 0, eaten).at(1);
+  };
+  const turnEnd = (label, items) => console.log(`${label.padEnd(26)} turn end: none gone ${atTurn(items, 0)} · one gone ${atTurn(items, 1)} · two gone ${atTurn(items, 2)}`);
+  turnEnd("Sitrus x1", [berryItem(BERRY.SITRUS)]);
+  turnEnd("Sitrus x2", [berryItem(BERRY.SITRUS, 2)]);
+  turnEnd("Sitrus x1 + Lum x1", [berryItem(BERRY.SITRUS), berryItem(BERRY.LUM)]);
+  turnEnd("Sitrus x2 + Lum x1", [berryItem(BERRY.SITRUS, 2), berryItem(BERRY.LUM)]);
+  turnEnd("Sitrus x1 + Liechi x1", [berryItem(BERRY.SITRUS), berryItem(BERRY.LIECHI)]);
+  assert.equal(atTurn([berryItem(BERRY.SITRUS)], 1), 0, "the only Sitrus gone: no turn-end heal");
+  assert.equal(atTurn([berryItem(BERRY.SITRUS, 2)], 1), 70, "a Sitrus x2 holder keeps one turn-end Sitrus after one steal");
+  assert.equal(atTurn([berryItem(BERRY.SITRUS, 2)], 2), 0, "…and loses it on the second");
+  assert.equal(atTurn([berryItem(BERRY.SITRUS), berryItem(BERRY.LUM)], 1), 35, "two types, one half each");
+  assert.equal(atTurn([berryItem(BERRY.SITRUS), berryItem(BERRY.LIECHI)], 1), 35, "a Liechi takes its share of the draw and gives nothing back");
+  assert.equal(atTurn([berryItem(BERRY.SITRUS, 2), berryItem(BERRY.LUM)], 1), 70, "Sitrus x2 beside a Lum: one half each, and neither draw costs the heal");
+  assert.equal(atTurn([berryItem(BERRY.SITRUS)], 0), 70, "nothing gone yet, nothing lost");
+
+  // `berryGone` on its own, the form #647 will call for a berry it can name. The uniform draw averages over the types;
+  // a named berry prices that one only, and nothing at all when the holder doesn't hold it.
+  const holder = items => ({ name: "holder", hp: 280, getMaxHp: () => 280, getHeldItems: () => items });
+  const gone = (items, opts) => berryGone(holder(items), sitrusHeal, { eater: holder([]), hp: 180, ...opts });
+  const show = (label, g) => console.log(`${label.padEnd(26)} ${g ? `types ${g.types.join()} · supply ${g.supply} · lost ${g.lost} · eaten ${Math.round(g.eaten * 100) / 100}` : "nothing to lose"}`);
+  show("draw: Sitrus x1", gone([berryItem(BERRY.SITRUS)]));
+  show("draw: Sitrus x2", gone([berryItem(BERRY.SITRUS, 2)]));
+  show("draw: Sitrus + Liechi", gone([berryItem(BERRY.SITRUS), berryItem(BERRY.LIECHI)]));
+  show("named: Sitrus of a x2", gone([berryItem(BERRY.SITRUS, 2)], { berry: BERRY.SITRUS }));
+  show("named: Liechi beside it", gone([berryItem(BERRY.SITRUS), berryItem(BERRY.LIECHI)], { berry: BERRY.LIECHI }));
+  show("named: a Lum it lacks", gone([berryItem(BERRY.SITRUS)], { berry: BERRY.LUM }));
+  assert.deepEqual(gone([berryItem(BERRY.SITRUS)]), { types: [BERRY.SITRUS], byCount: [70, 0, 0, 0, 0, 0, 0, 0, 0, 0], supply: 1, lost: -70, eaten: 70 });
+  assert.equal(gone([berryItem(BERRY.SITRUS, 2)]).lost, 0, "a stack of two keeps the heal");
+  assert.equal(gone([berryItem(BERRY.SITRUS, 2)]).supply, 2, "…and has two to lose in all");
+  assert.deepEqual(gone([berryItem(BERRY.SITRUS), berryItem(BERRY.LIECHI)]).lost, -35, "half the draw takes the Sitrus");
+  assert.equal(gone([berryItem(BERRY.SITRUS, 2)], { berry: BERRY.SITRUS }).lost, 0, "the named berry off a stack of two");
+  assert.equal(gone([berryItem(BERRY.SITRUS), berryItem(BERRY.LIECHI)], { berry: BERRY.SITRUS }).eaten, 70, "a named Sitrus is the whole heal");
+  assert.equal(gone([berryItem(BERRY.SITRUS), berryItem(BERRY.LIECHI)], { berry: BERRY.LIECHI }).eaten, 0, "a named Liechi is worth nothing here");
+  assert.equal(gone([berryItem(BERRY.SITRUS)], { berry: BERRY.LUM }), null, "a berry it doesn't hold");
+  assert.equal(gone([]), null, "no berry at all");
+}
+
+// ---- Gordie W180 T7, rebuilt: Leavanny at 320/497 with Sp. Atk at −2 meets the Carracosta Gordie just sent in, which
+// holds six berry types at one stack each (`src/solver/fixtures/gordie-w180.t5.json`): Leppa, Ganlon, Enigma, Starf,
+// Liechi and Petaya. Only the Enigma is one the model gives a value, and only on the eater's side — the planner's
+// turn-end model never claims a super-effective hit, so the Enigma Carracosta keeps heals it nothing either way. So the
+// steal is worth a sixth of the quarter Leavanny has room for, 20.7 HP, and nothing to Carracosta's turn ends.
+// The damage table is stubbed around the card of that turn (Leaf Storm 4× for a two-use knockout, Bug Bite a neutral
+// chip, Rock Slide 4× back). Whether it flips the ⚔ call is recorded below; it does not have to.
+Object.assign(TABLE, {
+  "Leavanny>Leaf Storm>Carracosta": [[520], 0.9, 4], "Leavanny>Bug Bite>Carracosta": [[90], 1, 1],
+  "Carracosta>Rock Slide>Leavanny": [[180], 0.9, 4], "Carracosta>Brine>Leavanny": [[60], 1, 1],
+});
+{
+  const berryItem = berryType => Object.assign(new ({ BerryModifier: class { getStackCount() { return 1; } } }).BerryModifier(), { berryType, isTransferable: true });
+  const CARRACOSTA_BERRIES = [10, 4, 2, 9, 3, 5];
+  const call = steals => {
+    const leavanny = mon("Leavanny", 174, ["Bug", "Grass"], [497, 373, 337, 295, 335, 413],
+      [["Leaf Storm", "Grass", 130, "S"], ["Bug Bite", "Bug", 60, "P", 0, { attrs: steals ? ["StealEatBerryAttr"] : [] }]], true, 320,
+      {}, { statStages: [0, 0, -2, 0, 0, 0, 0], types: [] });
+    const carracosta = mon("Carracosta", 169, ["Water", "Rock"], [467, 412, 533, 302, 314, 180],
+      [["Rock Slide", "Rock", 75, "P"], ["Brine", "Water", 65, "S"]], true, undefined,
+      { getHeldItems: () => CARRACOSTA_BERRIES.map(berryItem), hasTrainer: () => true });
+    const withAttrs = (a, d, pm, o) => {
+      const x = outcome(a, d, pm, o);
+      return x && { ...x, traits: { ...x.traits, attrNames: new Set(pm.getMove().attrs.map(at => at.constructor.name)) } };
+    };
+    // No `heal`: Carracosta holds no Sitrus, and `turnEndHp` is never asked with a super-effective hit behind it, so
+    // its Enigma is worth nothing at turn end — the steal shows up only as the quarter Leavanny eats.
+    const { field, scene } = render({ party: [leavanny], foes: [carracosta], live: true, switches: () => new Map(), stubOutcome: withAttrs,
+      dist: () => [{ name: "Rock Slide", type: "Rock", p: 1, score: 10, targets: [0] }] });
+    const line = lineOf(field, "Leavanny");
+    const score = pm => {
+      const x = globalThis.__planner.exchange(scene, leavanny, pm, carracosta);
+      return { name: pm.getName(), turnsWe: x.turnsWe, turnsThey: x.turnsThey, eTurnsThey: +x.eTurnsThey.toFixed(3), stole: x.stole ?? 0 };
+    };
+    return { pick: /Bug Bite/.test(line) ? "Bug Bite" : /Leaf Storm/.test(line) ? "Leaf Storm" : line,
+      rows: leavanny.moveset.map(score) };
+  };
+  const priced = call(true), asPlainDamage = call(false);
+  const show = r => `${r.pick} (${r.rows.map(x => `${x.name}: we need ${x.turnsWe}, they need ${x.turnsThey} (${x.eTurnsThey}), P(steal) ${x.stole}`).join(" · ")})`;
+  console.log(`== gordie w180 t7: Leavanny into the incoming Carracosta\nas plain damage: ${show(asPlainDamage)}\nwith the steal:  ${show(priced)}`);
+  console.log(`the ⚔ call ${priced.pick === asPlainDamage.pick ? `does not flip: still ${priced.pick}` : `flips to ${priced.pick}`}`);
+  assert.deepEqual(priced.rows[0], asPlainDamage.rows[0], "Leaf Storm, which steals nothing, must be priced the same either way");
+  assert.equal(asPlainDamage.rows[1].stole, 0, "without the attr there is no steal to price");
+  assert.equal(priced.rows[1].stole, 1, "Bug Bite lands for sure here, so its one draw is certain");
+  assert.ok(priced.rows[1].eTurnsThey > asPlainDamage.rows[1].eTurnsThey, `the sixth of a quarter Leavanny eats must buy it turns: ${priced.rows[1].eTurnsThey} vs ${asPlainDamage.rows[1].eTurnsThey}`);
+}
+
 // ---- The one gate: with no exact enemy answer, the card, the fight plan and the catch advice stop together (#183)
 {
   const party = [mon("Morpeko", 80, ["Electric", "Dark"], [220, 150, 90, 120, 100, 170], [["Aura Wheel", "Electric", 110, "P"]], true, 180)];

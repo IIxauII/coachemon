@@ -107,6 +107,7 @@ export const HUD: Area = {
         "src/phases/pokemon-phase.ts#PokemonPhase.battlerIndex",
       ],
     },
+    { name: "berry", kind: "field", at: [], from: "ours", note: "our berryGone() options (the berry type that goes)" },
     {
       name: "berryItemsMap",
       kind: "field",
@@ -1954,6 +1955,12 @@ export const HUD: Area = {
       of: [
         "src/modifier/modifier.ts#ContactHeldItemTransferChanceModifier",
         "src/modifier/modifier.ts#TurnHeldItemTransferModifier",
+      ],
+    },
+    {
+      ours: "skills/coachemon/scripts/hud/30-planner.js#stolen-berry-heal",
+      of: [
+        "src/data/berry.ts#getBerryEffectFunc",
       ],
     },
     {

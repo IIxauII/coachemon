@@ -124,6 +124,33 @@ assert.equal(plan.approxDoubles, false);
   const held = Object.assign(new ({ BerryModifier: class { berryType = 0; getStackCount() { return 1; } } }).BerryModifier(), {});
   assert.deepEqual(globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpHealProfile(turn, Object.assign(zard, { getHeldItems: () => [held] }))), { base: -6, sitrus: 24, enigma: 0 }, "Sitrus after the chip");
 }
+// A pairing whose pick eats a berry off its target reads that foe's heal profile after the steal (#646). The draw is
+// uniform over the berry types held, so a lone Sitrus is sure to go and two types each take half.
+{
+  const steal = new ({ StealEatBerryAttr: class {} }).StealEatBerryAttr();
+  const berry = (berryType, n = 1) => Object.assign(new ({ BerryModifier: class { getStackCount() { return n; } } }).BerryModifier(), { berryType, isTransferable: true });
+  const biter = bites => {
+    const p = mon("Beedrill", 100, ["Bug","Poison"], "Swarm", [260,300,120,100,120,250], [["Bug Bite","Bug",60,"P"]], true);
+    const mv = p.moveset[0].getMove();
+    p.moveset[0].getMove = () => ({ ...mv, attrs: bites ? [steal] : [] });
+    return p;
+  };
+  const holder = items => Object.assign(mon("Snorlax", 100, ["Normal"], "Thick Fat", [400,200,160,120,160,60], [["Tackle","Normal",40,"P"]], true), { getHeldItems: () => items });
+  const at = (bites, items) => {
+    const me = biter(bites), f = holder(items);
+    const { scene: s } = run(null, { party: [me], foes: [f] });
+    const T = globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpTables(turn, [me], [f]));
+    return { kept: T.foeHeal[0], after: T.foeHealAt[0][0] };
+  };
+  const sitrus = at(true, [berry(0)]);
+  console.log(`== a bug bite pairing's foe heal profile\nit keeps ${JSON.stringify(sitrus.kept)} · after the steal ${JSON.stringify(sitrus.after)}`);
+  assert.equal(sitrus.kept.sitrus, 100, "a 400 HP Snorlax heals a quarter off a held Sitrus");
+  assert.deepEqual(sitrus.after, { base: 0, sitrus: 0, enigma: 0 }, "its one berry is sure to go, so the profile loses that heal");
+  assert.equal(at(false, [berry(0)]).after, null, "a pick that steals nothing leaves the profile alone");
+  assert.equal(at(true, []).after, null, "and so does a foe with no berry");
+  assert.equal(at(true, [berry(0), berry(1)]).after.sitrus, 50, "beside a Lum, half the draw takes the Sitrus");
+  assert.equal(at(true, [berry(0, 2)]).after.sitrus, 100, "a stack of two keeps one turn-end Sitrus");
+}
 // Item thieves and wave status tokens carry through the exchange: a long Blastoise–Snorlax fight.
 {
   const item = (name, props = {}, n = 1) => Object.assign(new ({ [name]: class { isTransferable = true; getStackCount() { return n; } } })[name](), props);
