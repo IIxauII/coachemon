@@ -101,8 +101,8 @@ trainer 🎯 W89 · Tester Gyarados Gyarados Waterfall → Coalossal · 2 hits
 ⚔ Gyarados Water Waterfall → Coalossal 2 hits
 Foes
 foes weak to: Water ×2
-Coalossal Coalossal L80 Rock TERA 100% ▲ Water ↯ Fire Burn Up → Gyarados fails · moves after
-Centiskorch Centiskorch L80 Rock TERA 100% ▲ Water ↯ Fire Fire Lash → Gyarados moves after ➜ Gyarados Water Waterfall ~99% · 2 hits later
+Coalossal Coalossal L80 Rock TERA 100% ▲ Water Grass ↯ Fire Burn Up → Gyarados fails · moves after
+Centiskorch Centiskorch L80 Rock TERA 100% ▲ Water Grass ↯ Fire Fire Lash → Gyarados moves after ➜ Gyarados Water Waterfall ~99% · 2 hits later
 winnable · Gyarados
 Fight plan winnable
 ➜ 1. Gyarados Water Waterfall → Coalossal KO · 100% left
