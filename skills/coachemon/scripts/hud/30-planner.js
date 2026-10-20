@@ -609,6 +609,7 @@ const lockCarry = (turn, me, mine, foe, afterKo) => {
 // attempt a status we gave it leaves standing); `field` and `fieldAct(i)` (in a double, the foe whose hits price the
 // race when that isn't the target, #320). `cost`: our max HP the move spends, plus a little for a lock-in.
 // `turn1`: P(we KO first), P(they do), and the HP branches each side stands on if neither does, each summing to 1.
+// `pActs`: the chance our mon gets this move off at all before it falls (#650).
 export const exchange = (turn, me, pm, foe, opts = {}) => {
   const hp = opts.hp ?? me.hp;
   const after = opts.after ?? null;
@@ -744,6 +745,10 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   // After turn 1 the two sides' KO hazards are taken as independent; on a turn both would KO, the order decides.
   const hazard = (F, j) => (F(j - 1) >= 1 ? 1 : Math.max(0, (F(j) - F(j - 1)) / (1 - F(j - 1))));
   let pWe = weFirst, pThey = theyFirst, standing = Math.max(0, 1 - weFirst - theyFirst);
+  // The knockouts of ours this move never went off before: of turn 1's, the ones where the foe moved first, and of a
+  // later turn's only while a charging or delayed move still has no use behind it (#650).
+  const unused = j => (usesBy(j - 1) >= 1 ? 0 : 1 - (usesBy(j) >= 1 ? pLast : 0));
+  let never = theyFirst - (usesBy(1) >= 1 ? pFField * (1 - qWe) * qThey : 0);
   const afterKo = new Map();
   // The lock as it stood where use n knocked out.
   const knockedOut = (p, n) => {
@@ -755,7 +760,9 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     const ko = standing * a * (1 - b + b * pLast);
     pWe += ko;
     knockedOut(ko, usesBy(j));
-    pThey += standing * b * (1 - a + a * (1 - pLast));
+    const down = standing * b * (1 - a + a * (1 - pLast));
+    pThey += down;
+    never += down * unused(j);
     standing *= (1 - a) * (1 - b);
   }
   // Expected turns, for scoring; `turnsWe` / `turnsThey` are the likely ones the panel shows.
@@ -772,6 +779,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     pWeKoFirst: Math.min(1, Math.round(pWe * 1e9) / 1e9), pTheyKoFirst: Math.min(1, Math.round(pThey * 1e9) / 1e9),
     expectedHpLeft: Math.round(hpLeft),
     turnsWe, turnsThey, pFirst, hitsWe,
+    pActs: Math.max(0, 1 - Math.round(never * 1e9) / 1e9),
     eTurnsWe: expTurns(weBy), eTurnsThey: expTurns(theyBy),
     cost: Math.min(1, (selfSpent + selfKo * Math.max(0, hp - selfSpent)) / maxHp) + (mt.lock ? 0.1 + lockCarry(turn, me, mine, foe, afterKo) : 0),
     turn1: (() => {
@@ -870,10 +878,16 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     const last = entering ? null : lastMoveOf(me);
     const cost = o => -(o.benefit ?? 0) * AI_POINT - (last != null && o.pm?.moveId === last ? KEEP_BONUS : 0);
     const feed = f => feedCost(f, party.length - 1);
+    // What a move costs us in turns: its own pace, plus — for the share of the time our mon falls with the move never
+    // off — the foe's whole bar at `FOE_BAR`, left standing for the rest of the team (#650). A race the move never
+    // lives to run earns nothing for the KO turn it was running for. The penalty is the same wherever a mon aims, as a
+    // field threat must be (CONTEXT.md, `Field threat`): what separates its targets is still their own pace.
+    const spentOn = x => x.eTurnsWe + (1 - (x.pActs ?? 1)) * FOE_BAR;
     const one = (o, fi) => {
       const x = trade(o, active[fi]);
       const turns = x.turnsWe + lost;
-      return { me, move: o, target: fi, turns, hits: x.turnsWe, score: lasts - x.eTurnsWe - lost + (x.pWeKoFirst - x.pTheyKoFirst) - (x.cost ?? 0) - cost(o) - feed(active[fi]) * x.pTheyKoFirst, hp, trade: x };
+      const score = lasts - spentOn(x) - lost + (x.pWeKoFirst - x.pTheyKoFirst) - (x.cost ?? 0) - cost(o) - feed(active[fi]) * x.pTheyKoFirst;
+      return { me, move: o, target: fi, turns, hits: x.turnsWe, score, hp, trade: x };
     };
     // The redirect (CONTEXT.md, `Spare hit`; game-code.md §18): `redirScore` is what the hit is worth on the survivor,
     // and `mix` prices the blend (#236). A move the survivor is immune to scores the empty turn.
@@ -1587,6 +1601,9 @@ const STATUS_COST = 0.2;
 const STATUS_CANDS = 2;
 // Turns of ours a whole HP bar of a mon still to come is worth.
 const HAZARD_TURNS = 2;
+// Turns of ours a whole bar of the foe in front of us is worth: what a mon that falls without ever landing a move
+// leaves for the rest of the team to pay (#650). Twice a bar still on the bench — this one is already swinging.
+const FOE_BAR = 2 * HAZARD_TURNS;
 const FEED_COST = 0.5;
 
 // What a status move of `me`'s does to a fight with `f`, if the planner can price it (game-code.md §14): a `setup`,
