@@ -43,15 +43,26 @@ const SPECIES = [
   [657, "Frogadier", ["Water"], [54,63,52,83,56,97]],
   // Invented: no species in the game holds a form-change ability hidden, and Greninja's is Protean.
   [658, "Greninja", ["Water","Dark"], [72,95,67,103,71,122], undefined, [], 37, AbilityId.BATTLE_BOND],
+  [479, "Rotom", ["Electric","Ghost"], [50,50,77,95,77,91], 3, [], 41],
 ];
-const ABILITY_NAMES = { 11: "Chlorophyll", 13: "Solar Power", 15: "Rain Dish", 17: "Big Pecks", 19: "Guts", 21: "Lightning Rod", 23: "Moxie", 25: "Multiscale", 27: "Huge Power", 29: "Rough Skin", 31: "Synchronize", 24: "Rattled", 30: "Rough Skin (H)", 33: "Intimidate", 34: "Sand Force", [AbilityId.BATTLE_BOND]: "Battle Bond" };
+// Each form's [types, base stats, passive]; form 0 is the species' own.
+const FORMS = {
+  479: [[["Electric","Ghost"], [50,50,77,95,77,91], 41], [["Electric","Fire"], [50,65,107,105,107,86], 42],
+    [["Electric","Water"], [50,60,107,100,107,86], 43]],
+};
+const ABILITY_NAMES = { 11: "Chlorophyll", 13: "Solar Power", 15: "Rain Dish", 17: "Big Pecks", 19: "Guts", 21: "Lightning Rod", 23: "Moxie", 25: "Multiscale", 27: "Huge Power", 29: "Rough Skin", 31: "Synchronize", 41: "Levitate", 42: "Flame Body", 43: "Water Absorb", 24: "Rattled", 30: "Rough Skin (H)", 33: "Intimidate", 34: "Sand Force", [AbilityId.BATTLE_BOND]: "Battle Bond" };
 
 const byId = new Map();
+const formData = (id, types, stats, hidden) => ({
+  speciesId: id, type1: TY.indexOf(types[0]), type2: types[1] ? TY.indexOf(types[1]) : null, baseStats: stats,
+  baseTotal: stats.reduce((a, b) => a + b, 0), abilityHidden: hidden ?? 0,
+});
 for (const [id, name, types, stats, cost, evos = [], passive, hidden] of SPECIES) {
   const sp = {
-    speciesId: id, name, type1: TY.indexOf(types[0]), type2: types[1] ? TY.indexOf(types[1]) : null, baseStats: stats,
-    baseTotal: stats.reduce((a, b) => a + b, 0), abilityHidden: hidden ?? 0, cost, evos,
-    getPassiveAbility: () => passive, getIconAtlasKey: () => "pokemon_icons_1", getIconId: () => String(id),
+    ...formData(id, types, stats, hidden), name, cost, evos,
+    forms: (FORMS[id] ?? []).map(([t, st]) => formData(id, t, st, hidden)),
+    getPassiveAbility: (f = 0) => FORMS[id]?.[f]?.[2] ?? passive,
+    getIconAtlasKey: () => "pokemon_icons_1", getIconId: () => String(id),
   };
   byId.set(id, sp);
 }
@@ -78,12 +89,12 @@ const tables = {
 
 const STARTERS = [1, 4, 7, 16, 19, 25, 129, 147, 298, 443, 151];
 // Off the classic grid, so only a challenge's `valid` list offers them.
-const YANMA = 193, DIPPLIN = 1011, FROAKIE = 656;
+const YANMA = 193, DIPPLIN = 1011, FROAKIE = 656, ROTOM = 479;
 // Every starter caught but Mew; Magikarp has its passive and rare egg move, Rattata perfect IVs, Squirtle a variant-3
-// shiny, Pikachu Pokérus, Gible its passive, Froakie its hidden ability.
+// shiny, Pikachu Pokérus, Gible its passive, Froakie its hidden ability, Rotom its passive and forms 1 and 2 but not 0.
 const account = () => {
   const dexData = {}, starterData = {};
-  for (const id of [...STARTERS, YANMA, DIPPLIN, FROAKIE]) {
+  for (const id of [...STARTERS, YANMA, DIPPLIN, FROAKIE, ROTOM]) {
     dexData[id] = { caughtAttr: 1n | 4n | 16n | 128n, ivs: [10, 10, 10, 10, 10, 10] };
     starterData[id] = { abilityAttr: 1, passiveAttr: 0, eggMoves: 0, valueReduction: 0 };
   }
@@ -92,6 +103,8 @@ const account = () => {
   dexData[7].caughtAttr |= 2n | 64n;
   starterData[443] = { ...starterData[443], passiveAttr: 1, abilityAttr: 1 | 4 };
   starterData[FROAKIE] = { ...starterData[FROAKIE], abilityAttr: 1 | 4 };
+  dexData[ROTOM].caughtAttr = 1n | 4n | 16n | (128n << 1n) | (128n << 2n);
+  starterData[ROTOM] = { ...starterData[ROTOM], passiveAttr: 1 };
   delete dexData[151];
   return { dexData, starterData };
 };
@@ -107,24 +120,30 @@ const freshStart = {
 };
 // `valid`: the grid's challenge-filtered ids, which a challenge run's candidates come from; the other modes take the
 // registry's starters.
-const mount = ({ limit = 10, chosen = [], valid = STARTERS, challenges = [], withTables = true, looking = null, onGrid = true, picking = true }) => {
+// `getSpeciesDefaultDexAttrProps`' form (game-code.md §23).
+const defaultForm = caught => { for (let i = 0; i < 32; i++) if (caught & (128n << BigInt(i))) return i; return 0; };
+// `forms`: a saved form preference per species id.
+const mount = ({ limit = 10, chosen = [], valid = STARTERS, challenges = [], withTables = true, looking = null, onGrid = true, picking = true, forms = {} }) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const { dexData, starterData } = account();
   const species = id => byId.get(id);
   const shown = valid.slice(0, 81);
   const containers = shown.map(id => ({ species: species(id), cost: species(id).cost, icon: { texture: { key: "pokemon_icons_1" }, frame: { name: String(id) } } }));
+  const starterPreferences = Object.fromEntries(Object.entries(forms).map(([id, formIndex]) => [id, { formIndex }]));
+  const props = id => ({ formIndex: starterPreferences[id]?.formIndex ?? defaultForm(dexData[id].caughtAttr), shiny: false, variant: 0, female: false });
   const handler = {
+    starterPreferences,
     starterSelectCallback: picking ? () => {} : null,
     valueLimitLabel: { text: `${chosen.reduce((t, id) => t + species(id).cost, 0)}/${limit}` },
     partyStarterIds: chosen,
-    partyStarters: chosen.map(id => ({ speciesId: id, passive: (starterData[id].passiveAttr & 3) === 3, abilityIndex: 0, formIndex: 0 })),
+    partyStarters: chosen.map(id => ({ speciesId: id, passive: (starterData[id].passiveAttr & 3) === 3, abilityIndex: 0, formIndex: props(id).formIndex })),
     filteredStarterIds: valid,
     starterContainers: containers,
     pokerusSpeciesIds: [25],
     lastStarterId: looking ?? shown[0],
     cursorObj: { visible: looking !== null && onGrid },
-    getStarterDexAttrPropsFromPreferences: () => ({ formIndex: 0, shiny: false, variant: 0, female: false }),
+    getStarterDexAttrPropsFromPreferences: props,
   };
   const scene = {
     ui: { handlers: { 10: handler }, mode: 10, getHandler: () => handler },
@@ -145,7 +164,7 @@ const mount = ({ limit = 10, chosen = [], valid = STARTERS, challenges = [], wit
     globalThis.__hud["04-game-tables"].setGameTables(tables);
     globalThis.__hud["98-watch"].rebuild();
   }
-  return { el, model: globalThis.__coachHud.last(), summary: globalThis.__coachHud.summary() };
+  return { el, handler, model: globalThis.__coachHud.last(), summary: globalThis.__coachHud.summary() };
 };
 
 const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
@@ -287,6 +306,44 @@ const yanmaUnder = value => ({ challenges: [{ id: 11, value }], valid: [...START
   assert.ok(!off.noCarry && off.members.some(x => x.role === "carry"), JSON.stringify(off));
   const m = show("Moveset Randomizer, bulky starters", { challenges: [{ id: 11, value: 1 }], valid: [1, 7] });
   assert.ok(m.picks[0].noCarry && !m.picks[0].members.some(x => x.role === "carry"), JSON.stringify(m.picks[0]));
+}
+
+// Rotom alone on the grid: an idle challenge makes `valid` the candidates.
+const rotom = opts => ({ challenges: [{ id: 11, value: 0 }], valid: [ROTOM], looking: ROTOM, ...opts });
+
+// ---- Without form 0 caught, Rotom is valued as Heat Rotom, the lowest form caught.
+{
+  const m = show("Rotom, form 0 uncaught", rotom());
+  const why = m.viewing.why.join(" · ");
+  assert.ok(m.viewing.why.includes("BST 520 from L5") && /final BST 520/.test(why), why);
+  assert.ok(m.viewing.why.includes("passive Flame Body"), why);
+  // Electric/Fire hits Water, Flying, Grass, Ice, Bug and Steel; Electric/Ghost would hit four.
+  assert.equal(m.picks[0].covers, 6, JSON.stringify(m.picks[0]));
+}
+
+// ---- A saved preference for another caught form wins: Wash Rotom.
+{
+  const m = show("Rotom, Wash saved", rotom({ forms: { [ROTOM]: 2 } }));
+  const why = m.viewing.why.join(" · ");
+  assert.ok(m.viewing.why.includes("BST 510 from L5"), why);
+  assert.ok(m.viewing.why.includes("passive Water Absorb"), why);
+  // Electric/Water hits Water, Flying, Fire, Ground and Rock.
+  assert.equal(m.picks[0].covers, 5, JSON.stringify(m.picks[0]));
+}
+
+// ---- Cycling the form on the grid saves the preference, and the card follows it.
+{
+  const { handler } = mount(rotom());
+  handler.starterPreferences[ROTOM] = { formIndex: 2 };
+  globalThis.__hud["98-watch"].rebuild();
+  const why = globalThis.__coachHud.last().viewing.why;
+  assert.ok(why.includes("passive Water Absorb"), why.join(" · "));
+}
+
+// ---- On the team, Rotom is the form its grid entry was added as, its passive unlocked but not switched on.
+{
+  const m = show("Rotom picked as Wash", rotom({ chosen: [ROTOM], forms: { [ROTOM]: 2 } }));
+  assert.ok(m.chosen[0].why.includes("but Water Absorb is off"), m.chosen[0].why.join(" · "));
 }
 
 // ---- Off the grid the last species looked at is no cursor line, though the handler still holds its id.
