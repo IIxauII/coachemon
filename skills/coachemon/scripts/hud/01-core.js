@@ -198,12 +198,12 @@ export const awaitingDecision = s => {
 };
 
 // The member a `LearnMovePhase` asks to forget a move for, or null: the phase also runs for a learn into a free slot, and
-// stays current once the move is taken (game-code.md §17, #525). Allocates nothing, as the watch's detector reads it each
-// frame.
+// stays current over "X learned Y!" once the move is taken (game-code.md §17, #525). Allocates nothing, as the watch's
+// detector reads it each frame.
 export const learnAsked = (party, ph) => {
-  const pk = party?.[ph.partyMemberIndex], ms = pk?.moveset;
+  const pk = party?.[ph.partyMemberIndex], ms = pk?.getMoveset?.() ?? pk?.moveset;
   if (!ms || ms.length < 4) return null;
-  for (let i = 0; i < ms.length; i++) if (ms[i] && ms[i].moveId === ph.moveId) return null;
+  if (ph.moveId !== MoveId.SKETCH) for (let i = 0; i < ms.length; i++) if (ms[i] && ms[i].moveId === ph.moveId) return null;
   return pk;
 };
 

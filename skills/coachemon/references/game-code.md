@@ -2068,9 +2068,13 @@ member whose relearn list holds the biggest learn-card upgrade.
 the prompt's closures until `forgetMoveProcess` opens the summary screen in `LEARN_MOVE` mode with it (`:116-120`).
 `new PokemonMove(id).getMove()` is `allMoves[id]` (`src/data/moves/pokemon-move.ts:85-87`).
 
-**Answering it.** `start` ends at once on a move the mon already knows or one unimplemented
+**Answering it.** `start` ends at once on a move the mon already knows, Sketch excepted, or one unimplemented
 (`src/phases/learn-move-phase.ts:48-57`), and learns into the next slot unasked while the mon knows fewer than four
-(`:62-63`). With four, it asks in `UiMode.CONFIRM` whether to forget one (`:78-100`). Yes opens the summary screen in
+(`:62-63`). Both checks read `getMoveset()`, which is the Transform or Mimic moveset in `summonData` while one is set
+(`src/field/pokemon.ts:1882`); `setMove` writes the new move into both (`:2016-2018`). The phase stays current after
+the move is taken: `learnMove` calls `setMove` before its "learned" message and ends only once that message is
+dismissed (`src/phases/learn-move-phase.ts:211-229`). A decline likewise ends only after its "did not learn" message
+(`:156-157`, `:166-167`). With four, it asks in `UiMode.CONFIRM` whether to forget one (`:78-100`). Yes opens the summary screen in
 `SummaryUiMode.LEARN_MOVE`, whose cursor picks the move to forget, 0 to 3 in moveset order, the new move taking that
 slot (`:113-136`, `:211`); cursor 4 is the new move itself, and declines (`:122-125`). No declines too (`:94-97`). A
 decline asks once more, in a second `CONFIRM`, whether to stop teaching the move, but only under the

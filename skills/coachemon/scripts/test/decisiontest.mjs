@@ -24,7 +24,7 @@ globalThis.clearTimeout = () => {};
 const TY = ["Normal", "Fighting", "Flying", "Poison", "Ground", "Rock", "Bug", "Ghost", "Steel", "Fire", "Water", "Grass", "Electric", "Psychic", "Ice", "Dragon"];
 const MOVES = {
   10: ["Scratch", "Normal", 40, 0], 22: ["Vine Whip", "Grass", 45, 0], 33: ["Tackle", "Normal", 40, 0], 45: ["Growl", "Normal", 0, 2],
-  52: ["Ember", "Fire", 40, 1], 53: ["Flamethrower", "Fire", 90, 1], 225: ["Dragon Breath", "Dragon", 60, 1],
+  52: ["Ember", "Fire", 40, 1], 53: ["Flamethrower", "Fire", 90, 1], 166: ["Sketch", "Normal", 0, 2], 225: ["Dragon Breath", "Dragon", 60, 1],
 };
 // A class, because `learnState` builds the offered move through its moveset's own constructor.
 class Move {
@@ -278,7 +278,12 @@ scene = game;
   const taken = full.moveset[3];
   full.moveset[3] = new Move(53);
   assert.deepEqual(asks(0, 53), [false, false, false], "the move just taken, the phase still current");
+  full.moveset[3] = new Move(166);
+  assert.deepEqual(asks(0, 166), [true, true, true], "Sketch, asked even when known");
   full.moveset[3] = taken;
+  three.getMoveset = () => full.moveset;
+  assert.deepEqual(asks(1, 53), [true, true, true], "three moves of its own, four transformed");
+  delete three.getMoveset;
   [g.phase, g.mode, g.handler] = was;
 }
 
