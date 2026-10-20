@@ -602,6 +602,14 @@ const lockCarry = (turn, me, mine, foe, afterKo) => {
   return lockSteps(afterKo.values(), { relock: false, immune }).reduce((t, s) => t + s.go * forced + s.self * selfHit, 0);
 };
 
+// `me` paralysed, for the order to be asked again at half Speed. The id is part of the clone so `turn`'s own caches
+// don't hand back the unslowed answer.
+export const paralysed = me => {
+  const slowed = { id: { value: `${me.id}~paralysed` }, status: { value: { effect: StatusEffect.PARALYSIS } } };
+  if (typeof me.getEffectiveStat !== "function") slowed.getStat = { value: i => me.getStat(i) / (i === Stat.SPD ? 2 : 1) };
+  return Object.create(me, slowed);
+};
+
 // One-on-one from now: `me` repeats `pm` into `foe` while `foe` answers with its likely moves. Turn 1 is exact; later
 // turns race the two `koCurve`s. Options: `hp` (ours after an incoming hit); `after` (an earlier exchange's `turn1`,
 // both curves starting from its branches, where the exact odds don't hold); `free` (the foe switches in and doesn't
@@ -609,6 +617,7 @@ const lockCarry = (turn, me, mine, foe, afterKo) => {
 // attempt a status we gave it leaves standing); `field` and `fieldAct(i)` (in a double, the foe whose hits price the
 // race when that isn't the target, #320). `cost`: our max HP the move spends, plus a little for a lock-in.
 // `turn1`: P(we KO first), P(they do), and the HP branches each side stands on if neither does, each summing to 1.
+// `pNeverUsed`: the chance our mon falls before this move goes off at all (#650).
 export const exchange = (turn, me, pm, foe, opts = {}) => {
   const hp = opts.hp ?? me.hp;
   const after = opts.after ?? null;
@@ -729,9 +738,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   let pLast = pFirstField;
   const pPara = acts && turnsWe < 9 ? acts.para(turnsWe - 1) : 0;
   if (pPara > 0) {
-    const slowed = { id: { value: `${me.id}~paralysed` }, status: { value: { effect: StatusEffect.PARALYSIS } } };
-    if (typeof me.getEffectiveStat !== "function") slowed.getEffectiveStat = { value: i => stat(me, i) / (i === Stat.SPD ? 2 : 1) };
-    const tp = threatFrom(turn, fieldFoe, Object.create(me, slowed), pm, tOpts);
+    const tp = threatFrom(turn, fieldFoe, paralysed(me), pm, tOpts);
     pLast = (1 - pPara) * pFirstField + pPara * (tp ? 1 - (tp.pKo > 0 ? tp.koFirst : tp.first) : pFirstField);
   }
   const speedUp = tThey?.boost?.[Stat.SPD] ?? 0;
@@ -744,6 +751,10 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   // After turn 1 the two sides' KO hazards are taken as independent; on a turn both would KO, the order decides.
   const hazard = (F, j) => (F(j - 1) >= 1 ? 1 : Math.max(0, (F(j) - F(j - 1)) / (1 - F(j - 1))));
   let pWe = weFirst, pThey = theyFirst, standing = Math.max(0, 1 - weFirst - theyFirst);
+  // The share of turn `j`'s knockouts of ours that come before this move's first use: all of them while a charging or
+  // delayed move has none yet, those with the foe moving first on the turn it would have its first (#650).
+  const unused = j => (usesBy(j - 1) >= 1 ? 0 : usesBy(j) >= 1 ? 1 - pLast : 1);
+  let never = theyFirst - (usesBy(1) >= 1 ? pFField * (1 - qWe) * qThey : 0);
   const afterKo = new Map();
   // The lock as it stood where use n knocked out.
   const knockedOut = (p, n) => {
@@ -756,6 +767,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     pWe += ko;
     knockedOut(ko, usesBy(j));
     pThey += standing * b * (1 - a + a * (1 - pLast));
+    never += standing * b * unused(j);
     standing *= (1 - a) * (1 - b);
   }
   // Expected turns, for scoring; `turnsWe` / `turnsThey` are the likely ones the panel shows.
@@ -772,6 +784,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     pWeKoFirst: Math.min(1, Math.round(pWe * 1e9) / 1e9), pTheyKoFirst: Math.min(1, Math.round(pThey * 1e9) / 1e9),
     expectedHpLeft: Math.round(hpLeft),
     turnsWe, turnsThey, pFirst, hitsWe,
+    pNeverUsed: Math.min(1, Math.round(never * 1e9) / 1e9),
     eTurnsWe: expTurns(weBy), eTurnsThey: expTurns(theyBy),
     cost: Math.min(1, (selfSpent + selfKo * Math.max(0, hp - selfSpent)) / maxHp) + (mt.lock ? 0.1 + lockCarry(turn, me, mine, foe, afterKo) : 0),
     turn1: (() => {
@@ -870,10 +883,14 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     const last = entering ? null : lastMoveOf(me);
     const cost = o => -(o.benefit ?? 0) * AI_POINT - (last != null && o.pm?.moveId === last ? KEEP_BONUS : 0);
     const feed = f => feedCost(f, party.length - 1);
+    // The foe's whole bar left to the rest of the team, for the share of the time our mon falls before landing a hit:
+    // every scorer below pays it, or the one that skips it wins a lost race (#650).
+    const unlanded = never => never * FOE_BAR;
     const one = (o, fi) => {
       const x = trade(o, active[fi]);
       const turns = x.turnsWe + lost;
-      return { me, move: o, target: fi, turns, hits: x.turnsWe, score: lasts - x.eTurnsWe - lost + (x.pWeKoFirst - x.pTheyKoFirst) - (x.cost ?? 0) - cost(o) - feed(active[fi]) * x.pTheyKoFirst, hp, trade: x };
+      const score = lasts - x.eTurnsWe - unlanded(x.pNeverUsed) - lost + (x.pWeKoFirst - x.pTheyKoFirst) - (x.cost ?? 0) - cost(o) - feed(active[fi]) * x.pTheyKoFirst;
+      return { me, move: o, target: fi, turns, hits: x.turnsWe, score, hp, trade: x };
     };
     // The redirect (CONTEXT.md, `Spare hit`; game-code.md §18): `redirScore` is what the hit is worth on the survivor,
     // and `mix` prices the blend (#236). A move the survivor is immune to scores the empty turn.
@@ -909,7 +926,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
         const eTurns = 1 + (1 - t1.we) * x2.eTurnsWe;
         const edge = t1.we + standing * x2.pWeKoFirst - (t1.they + standing * x2.pTheyKoFirst);
         const spent = Math.min(1, (o.self ?? 0) / (me.getMaxHp?.() || hp)) + (x2.cost ?? 0);
-        return lasts - eTurns - lost + edge - spent - cost(o) - feed(f) * (t1.they + standing * x2.pTheyKoFirst);
+        return lasts - eTurns - unlanded(x.trade.pNeverUsed) - lost + edge - spent - cost(o) - feed(f) * (t1.they + standing * x2.pTheyKoFirst);
       };
       const score = scoreOf(best);
       const { y, x2 } = best;
@@ -929,7 +946,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const hits = Math.max(...hit.map(({ x }) => x.turnsWe));
       if (hits + lost >= 9) return null;
       const edge = Math.min(...xs.flatMap((x, i) => (x ? [x.pWeKoFirst - x.pTheyKoFirst - (x.cost ?? 0) - feed(active[i]) * x.pTheyKoFirst] : [])));
-      const slow = Math.max(...hit.map(({ x }) => x.eTurnsWe));
+      const slow = Math.max(...hit.map(({ x }) => x.eTurnsWe + unlanded(x.pNeverUsed)));
       const rep = hit[0].o;
       const both0 = hit.length > 1 ? { ...rep, benefit: Math.max(...hit.map(({ o }) => o.benefit ?? 0)) } : rep;
       return { me, move: rep, target: "both", turns: hits + lost, hits, each,
@@ -999,7 +1016,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const missed = landed && w < 1 ? follow(null) : null;
       if (!landed || (w < 1 && !missed)) return null;
       const mix = k => w * landed.x2[k] + (missed ? (1 - w) * missed.x2[k] : 0);
-      const eTurns = 1 + mix("eTurnsWe");
+      const eTurns = 1 + mix("eTurnsWe") + unlanded(they + standing * mix("pNeverUsed"));
       const edge = standing * (mix("pWeKoFirst") - mix("pTheyKoFirst")) - they - feed(f) * (they + standing * mix("pTheyKoFirst"));
       const spent = (play.hpCost ?? 0) / maxHp + mix("cost");
       const bonus = play.kind === "hazard" ? play.value * works : 0;
@@ -1007,7 +1024,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const hits = Math.min(9, 1 + landed.x2.turnsWe);
       return {
         me, move: { name: info.name, type: info.type, cat: "status", pm, expected: 0, notes: [] }, target: fi, self: !!play.self,
-        turns: hits + lost, hits, score: lasts - eTurns - lost + edge - spent + start.keep + bonus + nudge - STATUS_COST, hp, then: landed.y,
+        turns: hits + lost, hits, score: lasts - eTurns - lost + edge - spent + start.keep + bonus + nudge - STATUS_COST, hp, then: landed.y && (planOutcomes(turn, me, f).find(z => z.name === landed.y.name) ?? landed.y),
         effect: start.effect,
       };
     };
@@ -1123,7 +1140,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   const planValueOf = picks => {
     if (!team || slots !== 1 || !picks[0]) return null;
     const mi = party.indexOf(picks[0].me);
-    return mi < 0 ? null : team.at({ mi, free: freeSwitch })?.val ?? null;
+    return mi < 0 ? null : team.at({ mi, outcome: picks[0].move, then: picks[0].then, free: freeSwitch })?.val ?? null;
   };
   // Per pick: `ally`, what a move that hits every other pokémon does to our partner; `spare`, the pair's other hit
   // already does all this one does, so a move with a drawback gives way to one without (CONTEXT.md, `Spare hit`).
@@ -1386,10 +1403,14 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     };
   };
   const worse = (a, b) => (!a ? b : b && RANK[b.level] > RANK[a.level] ? b : a);
-  const nowThreat = me => attackers.reduce((w, f) => worse(w, tagOf(threatFrom(turn, f, me), me.hp, false)), null);
-  const slotThreat = (p, entering) => {
+  // `pm`: the move the slot is going to use, so the order is the one the pick actually gets — a priority move taken
+  // against no move of ours read as a knockout "before it can act" (#650). A mon leaving the field has no pick to take
+  // it against, and passes none.
+  const nowThreat = (me, pm = null) => attackers.reduce((w, f) => worse(w, tagOf(threatFrom(turn, f, me, pm), me.hp, false)), null);
+  // `guarded`: the slot Protects this turn, so this turn's hits are no danger to it (#650).
+  const slotThreat = (p, entering, guarded = false) => {
     const faced = typeof p.target === "number" ? [active[p.target]] : active;
-    let tag = entering ? null : nowThreat(p.me);
+    let tag = entering || guarded ? null : nowThreat(p.me, p.move?.pm ?? null);
     for (const f of faced) {
       if (entering || !attackers.includes(f)) tag = worse(tag, tagOf(threatFrom(turn, f, p.me, p.move?.pm ?? null, { next: true }), entering ? p.hp : p.me.hp, true));
     }
@@ -1506,7 +1527,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   // in slot 0, so the pin is the slot aimed there: its step 1 is then an action the player is actually told to take.
   const chosen = slots === 1 ? best.picks[0]
     : best.picks.find(p => !p.play && (p.target === 0 || p.target === "both")) ?? best.picks.find(p => !p.play) ?? best.picks[0];
-  const pin = team && chosen ? { mi: party.indexOf(chosen.me), outcome: chosen.move, free: freeSwitch } : null;
+  const pin = team && chosen ? { mi: party.indexOf(chosen.me), outcome: chosen.move, then: chosen.then, free: freeSwitch } : null;
   const ahead = pin && pin.mi >= 0 ? team.after(pin) : null;
   // A plan step is a whole exchange, so its free entry is this turn's news only when the mon goes down on this one —
   // counting the pick's own trade, since a foe switching in is not an `attackers` threat yet.
@@ -1538,7 +1559,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
           ko: sup || each ? 0 : helped && typeof p.target === "number" ? 1 : p.hits <= 3 ? p.hits : 0,
           helped,
           koEach: sup || p.target !== "both" || !p.each ? null : p.each.map(n => (n <= 3 ? n : 0)),
-          threat: slotThreat(p, enter),
+          threat: slotThreat(p, enter, sup?.kind === "protect"),
           // A slot with nothing left to do says which restriction emptied its pool.
           stopped: sup || p.move || !active[0] ? [] : turn.stopped(p.me, active[0]),
           traps: sup ? [] : trapsOn(p, active),
@@ -1587,6 +1608,7 @@ const STATUS_COST = 0.2;
 const STATUS_CANDS = 2;
 // Turns of ours a whole HP bar of a mon still to come is worth.
 const HAZARD_TURNS = 2;
+const FOE_BAR = 2 * HAZARD_TURNS;
 const FEED_COST = 0.5;
 
 // What a status move of `me`'s does to a fight with `f`, if the planner can price it (game-code.md §14): a `setup`,
