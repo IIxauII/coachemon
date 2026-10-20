@@ -213,7 +213,6 @@ export const PAGE: Area = {
       kind: "field",
       at: ["src/ui/handlers/form-modal-ui-handler.ts#FormModalUiHandler.formLabels"],
     },
-    { name: "fromCommand", kind: "field", at: ["src/ui/handlers/fight-ui-handler.ts#FightUiHandler.fromCommand"] },
     {
       name: "frame",
       kind: "field",
@@ -223,6 +222,7 @@ export const PAGE: Area = {
         "test/mocks/mocks-container/mock-sprite.ts#MockSprite.frame",
       ],
     },
+    { name: "fromCommand", kind: "field", at: ["src/ui/handlers/fight-ui-handler.ts#FightUiHandler.fromCommand"] },
     {
       name: "game",
       kind: "field",

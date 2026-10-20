@@ -5,7 +5,7 @@ import path from "node:path";
 import { test, type TestContext } from "node:test";
 import { Driver } from "./driver.ts";
 import { KEPT_ENDED, type JobKinds, type JobWork } from "./jobs.ts";
-import { ArenaTagSide, Button, GameModes, MoveCategory, PokemonType, StatusEffect, UiMode } from "./enums/generated.ts";
+import { ArenaTagSide, Button, Command, GameModes, MoveCategory, PokemonType, StatusEffect, UiMode } from "./enums/generated.ts";
 import { Refusal } from "./envelope.ts";
 import { readAtPin } from "./escape-ladder/at-pin.ts";
 import { PINNED_GAME_VERSION } from "./escape-ladder/lookup.ts";
@@ -715,10 +715,7 @@ test("a cursor walk whose Screen changes under it stops as screen_changed, count
   assert.deepEqual(presses, [Button.DOWN], "nothing committed on the new screen");
 });
 
-/**
- * COMMAND with `CommandUiHandler.processInput`'s cursor rules: the Tera button, `Command.TERA` (4), sits LEFT of Fight
- * and Pokémon while `canTera`, and ACTION on it opens FIGHT in Tera mode (#642).
- */
+/** COMMAND moving its cursor as `CommandUiHandler.processInput` does (#642, game-code.md §25). */
 function teraCommandTab(start: number, canTera = true) {
   let cursor = start;
   let fromCommand: number | null = null;
@@ -732,10 +729,10 @@ function teraCommandTab(start: number, canTera = true) {
   const menu = (): MenuRead => {
     if (onFight()) {
       const options = ["Hydro Pump", "Waterfall", "Dragon Dance", "Bounce"].map((label, i) => ({ i, label }));
-      return { readable: true, mode: UiMode.FIGHT, screen: "FIGHT", family: "fight", cursor: 0, text: null, messagePending: false, extra: { fieldIndex: 0, tera: fromCommand === 4 }, options };
+      return { readable: true, mode: UiMode.FIGHT, screen: "FIGHT", family: "fight", cursor: 0, text: null, messagePending: false, extra: { fieldIndex: 0, tera: fromCommand === Command.TERA }, options };
     }
     const options: MenuRead["options"] = ["Fight", "Ball", "Pokémon", "Run"].map((label, i) => ({ i, label }));
-    if (canTera) options.push({ i: 4, label: "Tera", synthetic: true });
+    if (canTera) options.push({ i: Command.TERA, label: "Tera", synthetic: true });
     return { readable: true, mode: UiMode.COMMAND, screen: "COMMAND", family: "command", cursor, text: null, messagePending: false, extra: { fieldIndex: 0, catchable: false }, options };
   };
   const onPress = (b: Button) => {
@@ -743,10 +740,10 @@ function teraCommandTab(start: number, canTera = true) {
     if (b === Button.UP && (cursor === 2 || cursor === 3)) cursor -= 2;
     else if (b === Button.DOWN && (cursor === 0 || cursor === 1)) cursor += 2;
     else if (b === Button.LEFT && (cursor === 1 || cursor === 3)) cursor -= 1;
-    else if (b === Button.LEFT && (cursor === 0 || cursor === 2) && canTera) cursor = 4;
+    else if (b === Button.LEFT && (cursor === 0 || cursor === 2) && canTera) cursor = Command.TERA;
     else if (b === Button.RIGHT && (cursor === 0 || cursor === 2)) cursor += 1;
-    else if (b === Button.RIGHT && cursor === 4) cursor = 0;
-    else if (b === Button.ACTION && (cursor === 0 || cursor === 4)) fromCommand = cursor;
+    else if (b === Button.RIGHT && cursor === Command.TERA) cursor = 0;
+    else if (b === Button.ACTION && (cursor === 0 || cursor === Command.TERA)) fromCommand = cursor;
   };
   return { ...drive({ read, menu, onPress }), presses };
 }
@@ -764,7 +761,7 @@ for (const start of [0, 1, 2, 3]) {
 }
 
 test("select_option Fight from the Tera button walks back RIGHT and opens FIGHT out of Tera mode (#642)", async () => {
-  const tab = teraCommandTab(4);
+  const tab = teraCommandTab(Command.TERA);
   const r = await outcome(tab.driver.selectOption("Fight", undefined, undefined, {}));
   assert.equal(r.error, undefined, JSON.stringify(r));
   assert.deepEqual(tab.presses, [Button.RIGHT, Button.ACTION]);
