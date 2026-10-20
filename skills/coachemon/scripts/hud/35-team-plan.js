@@ -3,7 +3,7 @@
 // one foe at a time.
 import { iconOf, squeezeDist } from "./01-core.js";
 import { hitOn, koCurve, koTurns, useOf } from "./10-damage.js";
-import { actionOrder, afterSteals, attemptsLost, hitsOn, koBoost, koBoostText, koStageFactor, sendInAt, sendInBase, stealCounts, stealRates, threatFrom, tokenOdds, tokenShift } from "./30-planner.js";
+import { actionOrder, afterSteals, attemptsLost, berryTypesOf, hitsOn, koBoost, koBoostText, koStageFactor, lessBerry, sendInAt, sendInBase, stealCounts, stealRates, threatFrom, tokenOdds, tokenShift } from "./30-planner.js";
 
 // @only tests: tpHealProfile, tpSendScore, tpFight, tpTables, tpActs
 const TP_BEAM = 24;
@@ -24,7 +24,7 @@ const tpFastest = (turn, list, target, turns = o => tpTurns(turn, o, target), dm
 const tpMoveOf = (o, extra) => {
   const use = useOf(o);
   return { name: o.name, type: o.type, cat: o.cat, e: o.e, priority: o.priority ?? 0, dmg: use.reduce((t, x) => t + x.d * x.p, 0), use: tpSpread(use), drain: o.drain ?? 0,
-    self: o.self ?? 0,
+    self: o.self ?? 0, acc: o.acc ?? 1, steals: !!o.traits?.attrNames?.has("StealEatBerryAttr"),
     charge: !!o.traits?.charge, recharge: !!o.traits?.recharge || !!o.traits?.noRepeat, semiCharge: !!o.traits?.charge && !!o.traits?.semiCharge, ...extra };
 };
 
@@ -100,6 +100,17 @@ export const tpHealProfile = (turn, p) => {
   const base = at(Math.ceil(max * 0.75), false);
   return { base, sitrus: Math.max(0, at(Math.floor(max * 0.4), false) - base), enigma: Math.max(0, at(Math.ceil(max * 0.75), true) - base) };
 };
+// `f`'s profile once our `pick` has eaten a berry off it (#646): the draw is uniform over the berry types it holds, and
+// only the share of uses that land takes one. Null where the pick steals nothing or there is nothing to take.
+const tpHealAfterSteal = (turn, f, pick) => {
+  const types = pick?.steals ? berryTypesOf(f) : [];
+  if (!types.length) return null;
+  const kept = tpHealProfile(turn, f);
+  const gone = types.map(b => tpHealProfile(turn, lessBerry(f, b)));
+  const q = Math.max(0, Math.min(1, pick.acc ?? 1));
+  const mix = k => kept[k] * (1 - q) + (q * gone.reduce((t, prof) => t + prof[k], 0)) / gone.length;
+  return { base: mix("base"), sitrus: mix("sitrus"), enigma: mix("enigma") };
+};
 
 export const tpTables = (turn, party, foes, double = false) => {
   const ours = party.map(me => foes.map(f => tpOurMove(turn, me, f)));
@@ -115,6 +126,8 @@ export const tpTables = (turn, party, foes, double = false) => {
     foeState: foes.map(f => turn.mon(f).state),
     ourMax: party.map(p => p.getMaxHp()), foeMax: foes.map(f => f.getMaxHp()),
     ourHeal: party.map(p => tpHealProfile(turn, p)), foeHeal: foes.map(p => tpHealProfile(turn, p)),
+    // `foeHealAt[mi][fi]`: the foe's profile for the pairings whose pick eats a berry off it, else nothing.
+    foeHealAt: party.map((me, mi) => foes.map((f, fi) => tpHealAfterSteal(turn, f, ours[mi][fi]))),
     foeStart: foes.map(f => f.hp),
     // `koMult`: the factor both sides' on-KO boosts put on a hit, after `atkN` and `defN` KOs, at physical share `phys`.
     ourKo: party.map(koBoost), foeKo: foes.map(koBoost),
@@ -208,7 +221,7 @@ export const tpFight = (T, st, mi, fi, entry, over = null) => {
   };
   const endTurn = b => {
     [b.mh, b.mb] = tpHeal(b.mh, T.ourMax[mi], T.ourHeal[mi], b.mb, them.e >= 2, (tok ? tok.shift * by(turns) : 0) + tpStolen(T.ourItems?.[mi], b.od, b.og));
-    [b.fh, b.fb] = tpHeal(b.fh, T.foeMax[fi], T.foeHeal[fi], b.fb, (us?.e ?? 1) >= 2, tpStolen(T.foeItems?.[fi], b.fd, b.fg));
+    [b.fh, b.fb] = tpHeal(b.fh, T.foeMax[fi], T.foeHealAt?.[mi]?.[fi] ?? T.foeHeal[fi], b.fb, (us?.e ?? 1) >= 2, tpStolen(T.foeItems?.[fi], b.fd, b.fg));
     if (robUs && b.fh >= 1) b.od += robUs.perTurn;
     if (robFoe && b.mh >= 1) b.fd += robFoe.perTurn;
   };
