@@ -119,10 +119,10 @@ assert.equal(plan.approxDoubles, false);
   const { scene: s } = run(null);
   const zard = mon("Charizard", 30, ["Fire","Flying"], "Blaze", [96,60,55,80,60,75], [["Flamethrower","Fire",90,"S"]], true);
   s.arena = { weather: { weatherType: 3 } };
-  assert.deepEqual(globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpHealProfile(turn, zard)), { base: -6, sitrus: 0, enigma: 0 }, "sandstorm chip in the profile");
+  assert.deepEqual(globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpHealProfile(turn, zard)), { base: -6, sitrus: 0, enigma: 0, enigmas: 0 }, "sandstorm chip in the profile");
   // A Sitrus is read at the HP after the chip (game-code.md §21): 38/96, chipped to 32, heals a quarter of max.
   const held = Object.assign(new ({ BerryModifier: class { berryType = 0; getStackCount() { return 1; } } }).BerryModifier(), {});
-  assert.deepEqual(globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpHealProfile(turn, Object.assign(zard, { getHeldItems: () => [held] }))), { base: -6, sitrus: 24, enigma: 0 }, "Sitrus after the chip");
+  assert.deepEqual(globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpHealProfile(turn, Object.assign(zard, { getHeldItems: () => [held] }))), { base: -6, sitrus: 24, enigma: 0, enigmas: 0 }, "Sitrus after the chip");
 }
 // Item thieves and wave status tokens carry through the exchange: a long Blastoise–Snorlax fight.
 {
@@ -369,14 +369,13 @@ assert.equal(plan.approxDoubles, false);
       `nothing is spent for nothing before Raichu acts ${where}: ${JSON.stringify(plan.steps.map(x => x.send.name))}`);
   }
 }
-// The move pick sees the Enigma Berry its own hit would feed (#652, Ivy W145 T11–13). Rayquaza holds one on the
-// second of three bars, and a hit of any size here breaks one bar a turn, so Moonblast ×2 and Thunderbolt ×1 fell it in
-// the same two turns. Attempt 2 took the bigger hit: Moonblast broke the bar to 143 and the berry put the last bar back
-// to 250. Among moves at the same pace the one that feeds nothing wins, so Thunderbolt is the pick.
+// The move pick's pace counts the Enigma Berry a super-effective hit feeds (#652, Ivy W145 T11–13).
 {
-  // "attacker>move>defender": [max damage, effectiveness]. One hit, always lands, 16 rolls at 85–100 %. Thunderbolt is
-  // ×1 into Dragon/Flying as the W145 rows above have it.
-  const T11 = { "Raichu>Moonblast>Rayquaza": [350, 2], "Raichu>Thunderbolt>Rayquaza": [200, 1], "Rayquaza>Outrage>Raichu": [437, 1] };
+  // "attacker>move>defender": [max damage, effectiveness]. One hit, always lands, 16 rolls at 85–100 %.
+  const T11 = {
+    "Raichu>Moonblast>Rayquaza": [240, 2], "Raichu>Thunderbolt>Rayquaza": [200, 1], "Rayquaza>Outrage>Raichu": [437, 1],
+    "Raichu>Moonblast>Garchomp": [200, 2], "Raichu>Thunderbolt>Garchomp": [170, 1], "Garchomp>Outrage>Raichu": [437, 1],
+  };
   const stub = (atk, def, pm) => {
     const row = T11[`${atk.name}>${pm.getName()}>${def.name}`];
     if (!row) return null;
@@ -393,43 +392,65 @@ assert.equal(plan.approxDoubles, false);
       expected, uncapped, max: Math.min(max, def.hp), pKo,
       traits: { charge: false, semiCharge: false, recharge: false, noRepeat: false }, costs: [], notes: [] };
   };
+  const { sceneTurnEndHp, koCurve, koTurns, useOf } = globalThis.__hud["10-damage"];
+  const enigma = Object.assign(new ({ BerryModifier: class {} }).BerryModifier(), { berryType: 2, getStackCount: () => 1 });
   const raichu = mon("Raichu", 80, ["Electric"], "Static", [240,120,100,160,110,220],
     [["Moonblast","Fairy",95,"S"],["Thunderbolt","Electric",90,"S"]], true);
-  // 428 over three bars: 143 on the bar Moonblast breaks, and a quarter of 428 is the 107 the berry puts back.
-  const ray = mon("Rayquaza", 80, ["Dragon","Flying"], "Air Lock", [428,250,120,250,120,200], [["Outrage","Dragon",120,"P"]], true, 285, 3);
-  Object.assign(ray, { bossSegmentIndex: 1, getOpponents: () => [raichu] });
-  const holders = new Set();
-  const turnFor = () => fakeTurn({
-    live: true, wave: 145, turn: 11, party: [raichu], foes: [ray],
-    trainer: { getName: () => "Ivy", config: { isBoss: false }, isDouble: () => false },
-    outcome: stub,
-    heal: (p, o) => {
-      if (!holders.has(p.name) || !o?.tookSuperEffective) return 0;
-      const max = p.getMaxHp(), at = o.hp ?? p.hp;
-      return Math.min(max, at + Math.floor(max / 4)) - at;
-    },
-    moves: e => [{ name: e.moveset[0].getName(), type: TY[e.moveset[0].getMove().type], p: 1, score: 10, targets: [0] }],
-  });
-  const { koCurve, koTurns, useOf } = globalThis.__hud["10-damage"];
-  const pick = () => {
-    const turn = turnFor();
-    const T = globalThis.__tp.tpTables(turn, [raichu], [ray], false);
-    const pace = Object.fromEntries(turn.outcomes(raichu, ray).map(o => [o.name, koTurns(koCurve(turn.mon(ray), useOf(o)).by)]));
-    return { move: T.ours[0][0], fed: T.foeHeal[0].enigma, pace };
+  const pick = (foe, held) => {
+    const f = Object.assign(Object.create(foe), { getHeldItems: () => (held ? [enigma] : []), getOpponents: () => [raichu] });
+    const turn = fakeTurn({
+      live: true, wave: 145, turn: 11, party: [raichu], foes: [f],
+      trainer: { getName: () => "Ivy", config: { isBoss: false }, isDouble: () => false },
+      outcome: stub, heal: (p, o) => sceneTurnEndHp({ field: [] }, p, o),
+      moves: e => [{ name: e.moveset[0].getName(), type: TY[e.moveset[0].getMove().type], p: 1, score: 10, targets: [0] }],
+    });
+    const T = globalThis.__tp.tpTables(turn, [raichu], [f], false);
+    const fed = T.foeHeal[0].enigma;
+    const pace = Object.fromEntries(turn.outcomes(raichu, f).map(o => [o.name, koTurns(koCurve(turn.mon(f), useOf(o)).by)]));
+    return { move: T.ours[0][0], fed, pace };
   };
-  const bare = pick();
-  holders.add("Rayquaza");
-  const fed = pick();
-  console.log(`== the move pick sees the Enigma Berry it feeds (#652)\n` +
-    `both fell Rayquaza in ${fed.pace.Moonblast} turns: Moonblast ×2, Thunderbolt ×1\n` +
-    `no berry: ${bare.move.name} ×${bare.move.e} (${Math.round(bare.move.dmg)})\n` +
-    `Enigma:   ${fed.move.name} ×${fed.move.e} (${Math.round(fed.move.dmg)}), the berry would pay ${fed.fed}`);
-  assert.equal(fed.pace.Moonblast, fed.pace.Thunderbolt, `the two are at the same pace: ${JSON.stringify(fed.pace)}`);
-  assert.equal(bare.move.name, "Moonblast", "with nothing to feed, the bigger hit wins the tie");
-  assert.equal(bare.fed, 0, "and there is no heal to price");
-  assert.equal(fed.fed, 107, "a quarter of Rayquaza's 428");
-  assert.equal(fed.move.name, "Thunderbolt", "the ×1 move breaks the bar just as fast and hands the berry nothing");
-  assert.ok(fed.move.dmg < bare.move.dmg, "it is the smaller hit, so only the heal can have moved the pick");
+  const show = x => `${x.move.name} ×${x.move.e} (${Math.round(x.move.dmg)})`;
+  // Rayquaza: 428 over three bars, 285 on the second. Either move breaks a bar a turn, and 143 + 107 is out of one
+  // Moonblast's reach.
+  const ray = mon("Rayquaza", 80, ["Dragon","Flying"], "Air Lock", [428,250,120,250,120,200], [["Outrage","Dragon",120,"P"]], true, 285, 3);
+  Object.assign(ray, { bossSegmentIndex: 1 });
+  // Garchomp, no boss: Moonblast fells its 300 in two sure turns and Thunderbolt in two most of the time.
+  const chomp = mon("Garchomp", 80, ["Dragon","Ground"], "Rough Skin", [300,250,120,250,120,200], [["Outrage","Dragon",120,"P"]], true);
+  for (const [foe, why] of [[ray, "bars"], [chomp, "no bars"]]) {
+    const bare = pick(foe, false), fed = pick(foe, true);
+    console.log(`== the move pick sees the Enigma Berry it feeds (#652), ${why}\n` +
+      `pace with nothing fed: ${Object.entries(bare.pace).map(([k, v]) => `${k} ${v.toFixed(2)}`).join(", ")}\n` +
+      `no berry: ${show(bare)}\nEnigma:   ${show(fed)}, the berry would pay ${fed.fed}`);
+    assert.equal(bare.move.name, "Moonblast", `with nothing to feed, Moonblast is at least as fast (${why})`);
+    assert.equal(fed.fed, Math.floor(foe.getMaxHp() / 4), "a quarter of its max HP");
+    assert.equal(fed.move.name, "Thunderbolt", `the ×1 move hands the berry nothing and is now the faster (${why})`);
+  }
+}
+// The plan eats an Enigma Berry as the game does (#652): on a landed super-effective hit, one a turn while any is left,
+// capped before the chip.
+{
+  const { tpFight } = globalThis.__tp;
+  const st = (fh = 200) => ({ oh: [400], ob: [0], fh: [fh], fs: [0], fb: [0] });
+  const T = (us, them, foeHeal) => ({ ours: [[us]], theirs: [[them]], first: [[0]], ourMax: [400], foeMax: [200], ourHeal: [null], foeHeal: [foeHeal] });
+  const enigma = (n, base = 0) => ({ base, sitrus: 0, enigma: 50, enigmas: n });
+  // 70 a turn into 200: 130 → 180 → 110 → 40 → down on turn 4 with one berry; the second puts 50 back on turn 2.
+  const [one, two] = [1, 2].map(n => tpFight(T({ dmg: 70, e: 2 }, { dmg: 1, e: 1 }, enigma(n)), st(), 0, 0, "free"));
+  console.log(`== the plan's Enigma Berry\none berry: down on turn ${one.turns} · two: turn ${two.turns}`);
+  assert.deepEqual([one.turns, two.turns], [4, 5], "the second berry is eaten on the second super-effective turn");
+  const missed = tpFight(T({ dmg: 70, e: 2, use: [{ r: 0, p: 1 }] }, { dmg: 1, e: 1 }, enigma(1)), st(100), 0, 0, "free");
+  assert.equal(missed.fh, 100, `a super-effective move that never lands feeds nothing: ${missed.fh}`);
+  // We move first and fall to its reply: one turn, 200 → 190 → 200 with the berry, then 25 of chip.
+  const capped = tpFight({ ...T({ dmg: 10, e: 2 }, { dmg: 1000, e: 1 }, enigma(1, -25)) }, st(), 0, 0, "free");
+  assert.equal(capped.ends.loss.fh, 175, "the berry caps at max HP before the chip, not after");
+}
+// The profile's Enigma is the berry's own quarter, whatever heals after it at the turn end.
+{
+  const { scene: s } = run(null);
+  const zard = mon("Charizard", 30, ["Fire","Flying"], "Blaze", [96,60,55,80,60,75], [["Flamethrower","Fire",90,"S"]], true);
+  const item = (name, fields = {}) => Object.assign(new ({ [name]: class { getStackCount() { return 1; } } })[name](), fields);
+  const held = [item("BerryModifier", { berryType: 2 }), item("TurnHealModifier")];
+  const prof = globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpHealProfile(turn, Object.assign(zard, { getHeldItems: () => held })));
+  assert.equal(prof.enigma, 24, `a quarter of 96, though Leftovers would top 72 + 24 past max: ${JSON.stringify(prof)}`);
 }
 // A bench the trainer Teras the moment it comes in (#648, Gordie W180): Coalossal's team index is in `instantTeras`,
 // so the plan prices it at Tera Rock from its entry — Water ×2, not the ×4 its Fire/Rock reads at. `instantTeras` names
