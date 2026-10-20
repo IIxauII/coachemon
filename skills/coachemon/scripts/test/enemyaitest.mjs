@@ -432,6 +432,21 @@ const planner = () => globalThis.__hud["30-planner"];
   assert.ok(t1.later, "and the uses after the first are priced off those");
 }
 
+// ---- A replayed pick whose own condition fails at the Tera reads `fails`, whichever turn it is replayed for (#648).
+{
+  const { e, bench, me, ai } = instantTera();
+  // Burn Up's shape: its user must still be Fire, which the Tera takes away. Scored far above the other move, so the
+  // AI, which skips that condition (game-code.md §6), names it either side of the Tera.
+  const burnUp = p => [mkMove({ id: 1, name: "Burn", target: 100, cond: () => !p.isTerastallized }), mkMove({ id: 2, name: "Rock", target: 1 })];
+  bench.moveset = burnUp(bench);
+  e.moveset = burnUp(e);
+  const outs = [{ name: "Rock", live: true, expected: 10 }];
+  const fails = rows => rows.map(r => [r.name, !!r.fails]);
+  const rows = ai.ask(t => ({ first: planner().likelyMoves(t, bench, me, outs, true), later: planner().likelyMoves(t, e, me, outs, true) }));
+  assert.deepEqual(fails(rows.first), [["Burn", true]], "a bench foe's first pick");
+  assert.deepEqual(fails(rows.later), [["Burn", true]], "a Tera'd foe's next turn");
+}
+
 // ---- Entry hazards land on summon, so a benched instant-Tera foe takes Stealth Rock at its base type (#648).
 {
   const { e, bench, me, ai } = instantTera();

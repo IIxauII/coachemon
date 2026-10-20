@@ -119,12 +119,8 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
     const dist = turn.enemyAction(foe, { ranges }).moves;
     if (dist?.length) {
       const idx = me.isOnField?.() ? me.getBattlerIndex?.() : null;
-      // The AI picks before the predicted Tera and the damage layer prices after it, so a move it named can have no
-      // row left at all: it is not missing, it goes off and fails (#648).
-      const failing = turn.failing(foe, me);
-      return dist.map(d => {
+      return withFails(turn, foe, me, dist.map(d => {
         const o = outs.find(x => x.name === d.name) ?? null;
-        const fails = !o && failing.includes(d.name);
         // The share that lands on `me`; a bench mon coming in takes an average slot's.
         const ts = d.targetDist?.length ? d.targetDist : d.targets ?? [];
         let tp = 1;
@@ -136,8 +132,8 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
         const reroll = turn.facts.double && idx != null && o?.pm?.getMove?.()?.moveTarget === MoveTarget.RANDOM_NEAR_ENEMY;
         const later = reroll ? 1 / Math.max(1, opponentCount(foe)) : tp;
         // The outcome's type is the one the move lands with (Tera Blast); the AI's row can carry the base type.
-        return { o, name: d.name, type: o?.type ?? d.type, p: d.p * tp, ...(fails ? { fails: true } : {}), ...(later !== tp ? { pLater: d.p * later } : {}) };
-      });
+        return { o, name: d.name, type: o?.type ?? d.type, p: d.p * tp, ...(later !== tp ? { pLater: d.p * later } : {}) };
+      }));
     }
   }
   if (live && outs.some(o => o.live)) {
@@ -167,10 +163,16 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
 
 const replayMoves = (turn, foe, me, outs, opts) => {
   const rows = turn.replayAI(foe, me, opts);
-  return rows?.length ? rows.map(d => {
+  return rows?.length ? withFails(turn, foe, me, rows.map(d => {
     const o = outs.find(x => x.name === d.name) ?? null;
     return { o, name: d.name, type: o?.type ?? d.type, p: d.p };
-  }) : null;
+  })) : null;
+};
+// A damaging move the AI names with no outcome behind it goes off and fails: the AI skips the move's own condition
+// (game-code.md §6), and a Tera can turn it against the user (#648).
+const withFails = (turn, foe, me, rows) => {
+  let failing = null;
+  return rows.map(r => (!r.o && (failing ??= turn.failing(foe, me)).includes(r.name) ? { ...r, fails: true } : r));
 };
 
 // A foe's lock still running: `left` uses, its queued one included (game-code.md §5).
@@ -1870,7 +1872,6 @@ export const battleModel = (baseTurn, { team = null } = {}) => {
         confidence: t.confidence ?? "estimate",
         at: aimedAt(turn, t, foe),
         first: Math.round(t.first * 100), hits: t.move.hits,
-        // It was picked before the foe's Tera and goes off after it: no damage follows (#648).
         ...(t.move.fails ? { fails: true } : {}),
       } : null,
       pick: p?.mine ? {

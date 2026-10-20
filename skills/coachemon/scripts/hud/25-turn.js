@@ -5,7 +5,7 @@ import { TYPES, awaitingDecision, closeRead, effectiveness, openRead, sandbox, s
 import { note } from "./01-meter.js";
 import { challengeOn, waveKind } from "./03-calendar.js";
 import { moveTraits } from "./07-move-traits.js";
-import { approxOutcome, approxOutcomes, barBreakFactors, sceneFailing, sceneOutcome, sceneOutcomes, sceneStatusMoves, sceneStopped, sceneTurnEndHp, stateOf, targetFacts } from "./10-damage.js";
+import { approxOutcome, approxOutcomes, barBreakFactors, sceneOutcome, sceneOutcomes, sceneRefused, sceneStatusMoves, sceneTurnEndHp, stateOf, targetFacts } from "./10-damage.js";
 import { aiTargetScore, approxDistribution, sceneDistribution, sceneExactMoves, sceneReplayAI, sceneSendInScore, sceneSwitches, skipsTurn } from "./20-enemy-ai.js";
 
 // Predicted Terastallization (game-code.md §7).
@@ -274,6 +274,8 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
   // move pick, come before any Tera (game-code.md §7).
   const asDamage = fn => (patches.length ? withPatches(patches, fn) : fn());
   const asCommand = fn => beforeTera(() => asDamage(fn));
+  const refused = (atk, def) => memo("refused", `${atk.id}|${def.id}`,
+    () => (live ? asDamage(() => sceneRefused(env, atk, def)) : { stopped: [], failing: [] }));
 
   const turn = {
     live, key, facts,
@@ -284,11 +286,8 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
       () => (live ? asDamage(() => sceneOutcomes(env, atk, def)) : approxOutcomes(env, atk, def))),
     statusMoves: (atk, def) => memo("statusMoves", `${atk.id}|${def.id}`,
       () => (live ? asDamage(() => sceneStatusMoves(env, atk, def)) : [])),
-    stopped: (atk, def) => memo("stopped", `${atk.id}|${def.id}`,
-      () => (live ? asDamage(() => sceneStopped(env, atk, def)) : [])),
-    // `asDamage`, so the predicted Tera is on: the move the AI named before it is exactly the one that can fail after.
-    failing: (atk, def) => memo("failing", `${atk.id}|${def.id}`,
-      () => (live ? asDamage(() => sceneFailing(env, atk, def)) : [])),
+    stopped: (atk, def) => refused(atk, def).stopped,
+    failing: (atk, def) => refused(atk, def).failing,
     // Answered live or not, since it decides nothing. Not memoised: callers ask about made-up HP, statuses and item
     // stacks on `Object.create` clones.
     turnEndHp: (p, opts = {}) => { guard(); return asDamage(() => sceneTurnEndHp(env, p, opts)); },
