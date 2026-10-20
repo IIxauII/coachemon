@@ -506,8 +506,8 @@ Plasma Grunts' W62, at our partner, T3  held
 == W62 T3, Pollen Puff on Rayquaza
 strip | trainer ⚔ ~ T3/3 · Rayquaza Dragon Ascent ; Blissey Pollen Puff → our Rayquaza
     ⚔ T3 Rayquaza Flying Dragon Ascent ; Blissey Bug Pollen Puff → our Rayquaza → ~ Rayquaza 360/400 · Blissey 600/600
-W62 T1, Behemoth Blade at battler 0     held
+W62 T1, Behemoth Blade at Rayquaza      held
 scored T1/3 match
-W62 T1, Behemoth Blade at battler 2     held
+W62 T1, Behemoth Blade at Liepard       held
 scored T1/3 miss Liepard 120/300 · 20/300
 writes to the game: none

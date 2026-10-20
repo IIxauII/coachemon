@@ -972,20 +972,19 @@ const pairAt = (seed, turn, opts = {}) => eternaAt(seed, turn, { cp: PAIR_CP[tur
   assert.equal(now("W62 T3, Pollen Puff on Rayquaza", scene).act.summary,
     "⚔ ~ T3/3 · Rayquaza Dragon Ascent ; Blissey Pollen Puff → our Rayquaza");
 
-  // Behemoth Blade pressed at `blade`, then the next decision standing as `cp`.
-  const pressed = (blade, cp) => {
+  const pressed = (name, blade, cp) => {
     scene = pairAt(seed, 1);
-    hand(`W62 T1, Behemoth Blade at battler ${blade}`, partnerLine());
+    hand(`W62 T1, Behemoth Blade at ${name}`, partnerLine());
     oracleLineSeen(pairAt(seed, 1, { phase: { phaseName: "MovePhase" },
       cmds: [{ move: "DRAGON_ASCENT", targets: [BattlerIndex.ENEMY_2] }, { move: "BEHEMOTH_BLADE", targets: [blade] }] }));
     scored = oracleLineCheck(pairAt(seed, 2, { cp }));
     console.log(`scored ${scoredText(scored)}`);
   };
-  pressed(BattlerIndex.PLAYER, PAIR_CP[1]);
+  pressed("Rayquaza", BattlerIndex.PLAYER, PAIR_CP[1]);
   assert.deepEqual([scored.turn, scored.misses], [1, []], "Behemoth Blade into Rayquaza is the step as said");
   const liepardHit = structuredClone(PAIR_CP[1]);
   liepardHit.foes[0].hp = 20;
-  pressed(BattlerIndex.ENEMY, liepardHit);
+  pressed("Liepard", BattlerIndex.ENEMY, liepardHit);
   assert.equal(scored.wrong, false, "a foe hit where the step aims at our partner is the player's input");
 }
 

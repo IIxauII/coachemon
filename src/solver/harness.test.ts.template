@@ -166,10 +166,7 @@ function choices(active: any, move: MoveId): number[] {
   return targets.length > 1 && !multiple ? targets : [];
 }
 
-/**
- * Each mon of ours the game lets the move aim at is named (#794), and a foe only where there is a choice of foes: a lone
- * foe goes unnamed, as `issue` aims at it.
- */
+/** A lone foe goes unnamed: `issue` aims at it (#794). */
 function targetsOf(active: any, move: string): (Target | undefined)[] {
   if (!double()) return [undefined];
   const all = choices(active, MoveId[move as keyof typeof MoveId]);
