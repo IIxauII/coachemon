@@ -250,6 +250,53 @@ test("a foe's stat raises count for nothing, so a hit that breaks a boss's bar o
   assert.deepEqual(result.kind === "found" && result.inputs.map(named), ["HIT", "HIT"]);
 });
 
+/** One move per child: each names the HP and stat stages it leaves, and `wins` the move a win follows from. */
+function staged(root: Pick<Position, "hp" | "stages">, children: Record<string, Pick<Position, "hp" | "stages">>, wins: string) {
+  const at = (sig: string, s: Pick<Position, "hp" | "stages">): Position => ({ sig, ...s, legal: Object.keys(children).map(move), forkPoint: sig });
+  const pool: Pool = {
+    size: 1,
+    async expand(forkPoint, inputs) {
+      return inputs.map((input): Child => {
+        if (forkPoint === "root") return { input, end: "on", at: at(named(input), children[named(input)]) };
+        return { input, end: forkPoint === wins ? "won" : "lost", hp: { foes: [0, 0], ours: [1] } };
+      });
+    },
+  };
+  return { root: at("root", root), pool };
+}
+
+test("a foe's drops go with it when it faints, but never outweigh the HP of the KO (#813)", async () => {
+  // Foe 0 is at a tenth of its HP and -3; FINISH knocks it out, CHIP takes less off foe 1.
+  const { root, pool } = staged(
+    { hp: { foes: [0.1, 1], ours: [1] }, stages: { foes: [[-3], []], ours: [[]] } },
+    {
+      FINISH: { hp: { foes: [0, 1], ours: [1] }, stages: { foes: [[], []], ours: [[]] } },
+      CHIP: { hp: { foes: [0.1, 0.98], ours: [1] }, stages: { foes: [[-3], []], ours: [[]] } },
+    },
+    "FINISH",
+  );
+
+  const result = await search({ root, pool, validate: replaysAll().validate, budget: BUDGET, lds: null, portfolio: [{ width: 1, ours: 1 }] });
+
+  assert.equal(result.kind === "found" && named(result.inputs[0]), "FINISH");
+});
+
+test("our mon's drops go with it when it faints, but never make its faint score better than its HP kept (#813)", async () => {
+  // Our mon is at -2 on a sliver of HP; FALL lets it faint, HOLD keeps it, and only HOLD wins.
+  const { root, pool } = staged(
+    { hp: { foes: [1, 1], ours: [0.08] }, stages: { foes: [[], []], ours: [[-2]] } },
+    {
+      FALL: { hp: { foes: [1, 1], ours: [0] }, stages: { foes: [[], []], ours: [[]] } },
+      HOLD: { hp: { foes: [1, 1], ours: [0.08] }, stages: { foes: [[], []], ours: [[-2]] } },
+    },
+    "HOLD",
+  );
+
+  const result = await search({ root, pool, validate: replaysAll().validate, budget: BUDGET, lds: null, portfolio: [{ width: 1, ours: 1 }] });
+
+  assert.equal(result.kind === "found" && named(result.inputs[0]), "HOLD");
+});
+
 test("a beam whose foes lose no HP for 6 turns stalls (#662)", async () => {
   const { root, pool } = fight(["SPLASH"], () => ({ foeLost: 0.1, ours: 1 }));
 

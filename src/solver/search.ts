@@ -9,10 +9,10 @@ export type Action = Input | null;
 export type Hp = { ours: readonly number[]; foes: readonly number[] };
 
 /** Each mon's seven stat stages, none off the field or fainted (#813). */
-export type Stages = { ours: readonly (readonly number[])[]; foes: readonly (readonly number[])[] };
+export type StatStages = { ours: readonly (readonly number[])[]; foes: readonly (readonly number[])[] };
 
 /** A decision the search can fork from. Two positions with one `sig` are one to the search. */
-export type Position = { sig: string; hp: Hp; stages: Stages; legal: readonly Action[]; forkPoint: string };
+export type Position = { sig: string; hp: Hp; stages: StatStages; legal: readonly Action[]; forkPoint: string };
 
 /**
  * One action played from a fork point; `input` names the faint replacement and the learn picks the turn took, where it
@@ -122,14 +122,20 @@ const failure = (e: unknown): NoAnswer =>
     : noAnswer({ code: "harness_failed", why: `the search's worker failed: ${e instanceof Error ? e.message : String(e)}` });
 
 // (#813)
-const STAGE = 0.1;
+const STAT_STAGE = 0.2;
+
+/** Each mon's stat stages that `counts`, each times the HP share it has left. */
+const staged = (stages: StatStages["ours"], hp: readonly number[], counts: (stage: number) => boolean) =>
+  sum(stages.map((mon, i) => hp[i] * sum(mon.filter(counts))));
 
 /**
- * In mons' whole HP, a stat stage counting `STAGE` of one: each of ours, and each of a foe's drops. A foe's raises count
- * for nothing: a boss's come with its bars breaking, and would cancel the HP its hits take (#813).
+ * In mons' whole HP, a stat stage counting `STAT_STAGE` of one at full HP: each of ours, and each of a foe's drops; a
+ * foe's raises count for nothing (#813).
  */
 const worth = ({ hp, stages }: Pick<Position, "hp" | "stages">, ours: number) =>
-  foeLost(hp) + ours * sum(hp.ours) + STAGE * (sum(stages.ours.flat()) - sum(stages.foes.flat().filter(s => s < 0)));
+  foeLost(hp) +
+  ours * sum(hp.ours) +
+  STAT_STAGE * (staged(stages.ours, hp.ours, () => true) - staged(stages.foes, hp.foes, stage => stage < 0));
 
 /** Of a double's two field slots' commands, which one the action names; a single's and a queued turn's name none. */
 const slotKey = (action: Action, field: 0 | 1): string | null =>
