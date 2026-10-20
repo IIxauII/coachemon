@@ -137,8 +137,9 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
     }
   }
   if (live && outs.some(o => o.live)) {
-    // This turn's pick, and a benched foe's first, come before its predicted Tera (game-code.md §7).
-    const rows = replayMoves(turn, foe, me, outs, { preTera: (!next && !!foe.isOnField?.()) || turn.teraLater(foe) });
+    // This turn's pick comes before every predicted Tera, and a benched foe's first before its own (game-code.md §7).
+    const now = !next && !!foe.isOnField?.();
+    const rows = replayMoves(turn, foe, me, outs, { preTera: now ? "command" : turn.teraLater(foe) ? "entry" : null });
     if (rows) return rows;
   }
   const pool = outs.filter(o => o.expected > 0).sort((a, b) => b.expected - a.expected);

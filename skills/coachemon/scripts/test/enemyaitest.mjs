@@ -447,6 +447,27 @@ const planner = () => globalThis.__hud["30-planner"];
   assert.deepEqual(fails(rows.later), [["Burn", true]], "a Tera'd foe's next turn");
 }
 
+// ---- This turn's replayed pick is made with every predicted Tera off: both slots command before any Tera (#648).
+{
+  const player = [foe(), mkMon({ id: "me2", player: true, fieldIndex: 1 })];
+  const a = mkMon({ id: "a", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A", target: -10 }] });
+  const b = mkMon({ id: "b", player: false, fieldIndex: 1 });
+  b.getTeraType = () => 2;
+  const trainer = {
+    config: { isBoss: false }, shouldTera: m => m === b && !m.isTerastallized,
+    getPartyMemberMatchupScores: () => [], getSortedPartyMemberMatchupScores: sc => sc, getNextSummonIndex: () => 0,
+  };
+  const ai = setup({ player, enemy: [a, b], double: true, trainer });
+  const seen = [];
+  a.getMoveType = mv => (seen.push(!!b.isTerastallized), mv.type);
+  ai.ask(t => {
+    assert.equal(b.isTerastallized, true, "the partner's Tera is predicted");
+    a.getOpponents = () => [];
+    planner().likelyMoves(t, a, player[0], [{ name: "A", live: true, expected: 10 }], false);
+  });
+  assert.deepEqual([...new Set(seen)], [false]);
+}
+
 // ---- Entry hazards land on summon, so a benched instant-Tera foe takes Stealth Rock at its base type (#648).
 {
   const { e, bench, me, ai } = instantTera();
