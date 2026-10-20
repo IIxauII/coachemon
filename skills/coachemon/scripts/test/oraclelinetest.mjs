@@ -681,10 +681,10 @@ const rolandPlayed = (seed, inputs, answer, { at = 3, to = 3, asked = true } = {
 // Eternatus's W200 (#788): Rayquaza alone until Eternatus's last bar breaks on T2, then Eternamax, back at full HP behind
 // five bars, against Rayquaza and Zacian. Rayquaza falls on T4 and Blissey takes its field slot; Snorlax stays benched.
 const ETERNA = { RAYQUAZA: ["Rayquaza", ["DRAGON_ASCENT"], "FLYING"], ZACIAN: ["Zacian", ["BEHEMOTH_BLADE", "CLOSE_COMBAT"], "STEEL"],
-  BLISSEY: ["Blissey", ["SEISMIC_TOSS"]], SNORLAX: ["Snorlax", []], ETERNATUS: ["Eternatus", []],
+  BLISSEY: ["Blissey", ["SEISMIC_TOSS", "POLLEN_PUFF"]], SNORLAX: ["Snorlax", []], ETERNATUS: ["Eternatus", []],
   LIEPARD: ["Liepard", []], GARBODOR: ["Garbodor", []], SCRAGGY: ["Scraggy", []] };
 const ETERNA_MOVES = { DRAGON_ASCENT: ["Dragon Ascent", "FLYING"], BEHEMOTH_BLADE: ["Behemoth Blade", "STEEL"],
-  CLOSE_COMBAT: ["Close Combat", "FIGHTING"], SEISMIC_TOSS: ["Seismic Toss", "FIGHTING"] };
+  CLOSE_COMBAT: ["Close Combat", "FIGHTING"], SEISMIC_TOSS: ["Seismic Toss", "FIGHTING"], POLLEN_PUFF: ["Pollen Puff", "BUG"] };
 const keyOf = id => Object.keys(SpeciesId).find(k => SpeciesId[k] === id);
 const state = (key, slot, onField, hp, maxHp, more = {}) => ({ slot, species: SpeciesId[key], onField, hp, maxHp, status: 0, statStages: NONE, tera: false, ...more });
 const eternaCp = (ours, eterna) => ({ ours, foes: [state("ETERNATUS", 0, eterna.bossBars > 0, ...eterna.hp, { bossBars: eterna.bossBars })] });
@@ -951,6 +951,41 @@ const pairAt = (seed, turn, opts = {}) => eternaAt(seed, turn, { cp: PAIR_CP[tur
   pairDecide(3, snorlax);
   assert.equal(scored.wrong, false, "the pick at the switch-out prompt was the player's");
   assert.deepEqual(scored.misses.map(m => `${m.name} ${m.expected} · ${m.came}`), ["Blissey in front · benched", "Snorlax benched · in front"]);
+}
+
+// ---- A double's step aimed at our own partner names it as ours, and only that press follows it (#794)
+{
+  const seed = "a W62 run, aimed at our partner";
+  const PUFF = { kind: "move", move: MoveId.POLLEN_PUFF, tera: false };
+  const partnerLine = () => {
+    const line = pairLine(seed);
+    line.steps[0] = { ...line.steps[0], input: double([{ ...ASCENT, ...aimed("foes", 1) }, { ...BLADE, ...aimed("ours", 0) }]) };
+    line.steps[2] = { ...line.steps[2], input: double([ASCENT, { ...PUFF, ...aimed("ours", 0) }]) };
+    return line;
+  };
+  scene = pairAt(seed, 1);
+  assert.equal(hand("Plasma Grunts' W62, at our partner", partnerLine()).ok, true);
+  assert.equal(now("W62 T1, Behemoth Blade into Rayquaza", scene).act.summary,
+    "⚔ ~ T1/3 · Rayquaza Dragon Ascent → Garbodor ; Zacian Behemoth Blade → our Rayquaza");
+  scene = pairAt(seed, 3);
+  hand("Plasma Grunts' W62, at our partner, T3", partnerLine());
+  assert.equal(now("W62 T3, Pollen Puff on Rayquaza", scene).act.summary,
+    "⚔ ~ T3/3 · Rayquaza Dragon Ascent ; Blissey Pollen Puff → our Rayquaza");
+
+  const pressed = (name, blade, cp) => {
+    scene = pairAt(seed, 1);
+    hand(`W62 T1, Behemoth Blade at ${name}`, partnerLine());
+    oracleLineSeen(pairAt(seed, 1, { phase: { phaseName: "MovePhase" },
+      cmds: [{ move: "DRAGON_ASCENT", targets: [BattlerIndex.ENEMY_2] }, { move: "BEHEMOTH_BLADE", targets: [blade] }] }));
+    scored = oracleLineCheck(pairAt(seed, 2, { cp }));
+    console.log(`scored ${scoredText(scored)}`);
+  };
+  pressed("Rayquaza", BattlerIndex.PLAYER, PAIR_CP[1]);
+  assert.deepEqual([scored.turn, scored.misses], [1, []], "Behemoth Blade into Rayquaza is the step as said");
+  const liepardHit = structuredClone(PAIR_CP[1]);
+  liepardHit.foes[0].hp = 20;
+  pressed("Liepard", BattlerIndex.ENEMY, liepardHit);
+  assert.equal(scored.wrong, false, "a foe hit where the step aims at our partner is the player's input");
 }
 
 // ---- Neither a handoff nor a card drawn from it writes to the game

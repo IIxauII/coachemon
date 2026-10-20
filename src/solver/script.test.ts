@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { test } from "node:test";
+import { describeInput } from "./describe.ts";
 import type { MonState, Replay } from "./oracle-line.ts";
 import { misses, readScript } from "./script.ts";
 
@@ -84,6 +85,17 @@ test("a double turn reads a command per field slot, its faint replacements by th
   ];
 
   assert.deepEqual(readScript(JSON.stringify({ inputs })).inputs, inputs);
+});
+
+test("a double's command may aim at our own partner, and says so when described (#794)", () => {
+  const puff = { kind: "move", move: "POLLEN_PUFF", tera: false, target: { side: "ours", field: 1 } } as const;
+  const inputs = [{ kind: "double", commands: [puff, { kind: "move", move: "BODY_SLAM", tera: false }] }] as const;
+
+  assert.deepEqual(readScript(JSON.stringify({ inputs })).inputs, inputs);
+  assert.equal(
+    describeInput(inputs[0], [{ slot: 0, species: "RESHIRAM" }, { slot: 1, species: "SNORLAX" }]),
+    "Reshiram: Pollen Puff → our field 1 · Snorlax: Body Slam",
+  );
 });
 
 test("a double turn that names nothing, sends both field slots to one party slot or terastallizes both doesn't read (#788)", () => {

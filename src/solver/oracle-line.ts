@@ -72,7 +72,10 @@ export type FieldCommand =
   | { kind: "move"; move: keyof typeof MoveId; tera: boolean; target?: Target }
   | { kind: "switch"; to: PartySlot };
 
-/** A single-target move's target where it has a choice; absent where it has none (one foe on the field). */
+/**
+ * A single-target move's target where it has a choice: a foe among two, or a mon of ours the move can aim at, our partner
+ * included (#794). Absent where it has none, and on the lone foe the move would hit anyway.
+ */
 export type Target = { side: "foes" | "ours"; field: 0 | 1 };
 
 export type FieldReplacement = PartySlot & { field: 0 | 1 };

@@ -280,9 +280,9 @@ export const oracleLineModel = s => {
       if (!c) return null;
       const by = at("ours", f), who = by == null ? null : named(ours({ species: by, slot: f }), by);
       if (c.kind === "switch") return { kind: "switch", by: who, to: named(ours(c.to), c.to.species) };
-      const tg = c.target && at(c.target.side, c.target.field);
-      const side = c.target?.side === "foes" ? theirs : ours;
-      return { ...moveAct(c, by, f), target: tg == null ? null : named(side({ species: tg, slot: c.target.field }), tg) };
+      const tg = c.target && at(c.target.side, c.target.field), ourSide = c.target?.side === "ours";
+      return { ...moveAct(c, by, f),
+        target: tg == null ? null : { ...named((ourSide ? ours : theirs)({ species: tg, slot: c.target.field }), tg), ourSide } };
     };
     const act = !input ? null
       : double ? { kind: "double", slots: input.commands.map(slotAct).filter(Boolean) }
@@ -340,7 +340,7 @@ export const oracleLineUnasked = m => {
 const expectText = after => after.map(x => `${x.name} ${x.hp}/${x.maxHp}`).join(" · ");
 const actText = a => (a.kind === "double" ? a.slots.map(actText).join(" ; ")
   : a.kind === "switch" ? (a.by ? `switch ${a.by.name} for ${a.to.name}` : `switch to ${a.to.name}`)
-  : [a.by?.name, ...(a.tera ? [`Tera ${a.tera.type ?? ""}`.trim(), "+"] : []), a.move, a.target ? `→ ${a.target.name}` : null].filter(Boolean).join(" "));
+  : [a.by?.name, ...(a.tera ? [`Tera ${a.tera.type ?? ""}`.trim(), "+"] : []), a.move, a.target ? `→ ${a.target.ourSide ? "our " : ""}${a.target.name}` : null].filter(Boolean).join(" "));
 const sendWords = x => `send ${x.name}${x.for ? ` for ${x.for.name}` : ""}`;
 // The replacements a faint prompt leaves to come, or every one before it.
 export const sendsToCome = (m, st) => (m.sending ? st.sends.slice(st.sends.findIndex(x => x.field === m.sending.field) + 1) : st.sends);
