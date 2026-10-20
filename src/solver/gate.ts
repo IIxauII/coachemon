@@ -39,7 +39,7 @@ export function refuse(
   }
   // The drops a save shows before a load; a throw inside the item's type, or a clamped stack, shows only after one
   // (game-code.md §28).
-  const dropped = [...save.modifiers, ...save.enemyModifiers].filter(
+  const dropped = [...(save.modifiers ?? []), ...(save.enemyModifiers ?? [])].filter(
     item => !MODIFIER_TYPE_IDS.has(item.typeId) || !MODIFIER_CLASSES.has(item.className),
   );
   if (dropped.length > 0) return noAnswer({ code: "dropped_item", items: dropped.map(item => item.typeId) });

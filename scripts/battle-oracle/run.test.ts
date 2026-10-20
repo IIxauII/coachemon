@@ -57,7 +57,7 @@ test("oracle:battle answers no answer, never a crash's exit code, when the expor
 });
 
 test("oracle:battle says the solver failed, not that the export was unreadable, when the solver throws (#659)", () => {
-  const run = oracle({ save: { ...drayton, enemyModifiers: null } });
+  const run = oracle({ save: { ...drayton, enemyModifiers: {} } });
 
   assert.match(run.stdout, /^no answer: the solver failed: /);
   assert.equal(run.status, 2);

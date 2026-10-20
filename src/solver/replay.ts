@@ -209,14 +209,19 @@ function loadHygiene(hygiene: Hygiene, save: Pick<SolveInput["save"], "modifiers
   return off.length > 0 ? broke("item_totals", off.join(", ")) : null;
 }
 
-function tally(items: readonly SavedItem[]): Record<string, number> {
+function tally(items: readonly SavedItem[] | null): Record<string, number> {
   const out: Record<string, number> = {};
-  for (const { typeId, stackCount } of items) out[typeId] = (out[typeId] ?? 0) + stackCount;
+  for (const { typeId, stackCount } of items ?? []) out[typeId] = (out[typeId] ?? 0) + stackCount;
   return out;
 }
 
 // (#636)
-const UNCOMPARED_AT_TOP = new Set(["playTime", "timestamp"]);
+const UNCOMPARED_AT = new Set([
+  "playTime",
+  "timestamp",
+  // A load re-rolls a `hasDouble` trainer's partner name, so it never matches a fresh wave's (#829).
+  "trainer.partnerNameKey",
+]);
 const UNCOMPARED = new Set(["abilitiesApplied"]);
 // How a load reads a fresh wave's scene (game-code.md §29).
 // @mirrors load-defaults
@@ -261,8 +266,9 @@ function describePath(path: string, live: SessionSave): string {
 function paths(loaded: unknown, live: unknown, at = ""): [string, unknown, unknown][] {
   if (isRecord(loaded) && isRecord(live)) {
     return keysOf(loaded, live)
-      .filter(key => !UNCOMPARED.has(key) && !(at === "" && UNCOMPARED_AT_TOP.has(key)))
-      .flatMap(key => paths(loaded[key], live[key], at ? `${at}.${key}` : key));
+      .map(key => [key, at ? `${at}.${key}` : key] as const)
+      .filter(([key, path]) => !UNCOMPARED.has(key) && !UNCOMPARED_AT.has(path))
+      .flatMap(([key, path]) => paths(loaded[key], live[key], path));
   }
   if (Array.isArray(loaded) && Array.isArray(live) && loaded.length === live.length) {
     return loaded.flatMap((item, i) => paths(item, live[i], `${at}[${i}]`));

@@ -26,8 +26,9 @@ export type SessionSave = {
   trainer?: { trainerType: number; variant: TrainerVariant } | null;
   party: readonly unknown[];
   enemyParty: readonly unknown[];
-  modifiers: readonly SavedItem[];
-  enemyModifiers: readonly SavedItem[];
+  // A load writes `null` for a side holding no items, and the game's own reviver reads it as none (#821).
+  modifiers: readonly SavedItem[] | null;
+  enemyModifiers: readonly SavedItem[] | null;
 };
 
 export type SavedItem = { typeId: string; className: string; stackCount: number };

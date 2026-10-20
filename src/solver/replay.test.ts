@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { GameModes } from "../enums/generated.ts";
+import { GameModes, TrainerVariant } from "../enums/generated.ts";
 import { readExtras } from "./extras.ts";
 import type { Battle, MidFightExtras, SessionSave } from "./input.ts";
 import type { Checkpoint, Input, ReplayResult } from "./oracle-line.ts";
@@ -26,7 +26,7 @@ const atTurn = (hp: number): Checkpoint => ({
 
 const totals = (items: SessionSave["modifiers"]) => {
   const out: Record<string, number> = {};
-  for (const { typeId, stackCount } of items) out[typeId] = (out[typeId] ?? 0) + stackCount;
+  for (const { typeId, stackCount } of items ?? []) out[typeId] = (out[typeId] ?? 0) + stackCount;
   return out;
 };
 
@@ -212,6 +212,41 @@ test("a terrain still up on the live arena is still held to the loaded one (#673
   const { result } = await ask(clean(), { liveExport });
 
   assert.match(reason(result).message, /arena\.terrain: loaded nothing, live \{"terrainType":1/);
+});
+
+const partnered = (export_: SessionSave, partnerNameKey: string) => ({
+  ...structuredClone(export_),
+  trainer: { ...export_.trainer!, variant: TrainerVariant.DOUBLE, partnerNameKey },
+});
+
+test("a trainer double whose partner's name the load re-rolled matches the live one (#829)", async () => {
+  const report = clean();
+  report.scene = partnered(drayton.liveExport, "trainersCommon:swimmer.female.3");
+  const liveExport = partnered(drayton.liveExport, "trainersCommon:swimmer.female.65");
+  const { result } = await ask(report, { liveExport });
+
+  assert.equal(result.kind, "replayed");
+});
+
+test("a trainer double's other fields are still compared, with the partner's name skipped (#829)", async () => {
+  const report = clean();
+  report.scene = partnered(drayton.liveExport, "trainersCommon:swimmer.female.3");
+  report.scene.trainer.variant = TrainerVariant.FEMALE;
+  const liveExport = partnered(drayton.liveExport, "trainersCommon:swimmer.female.65");
+  const { result } = await ask(report, { liveExport });
+  const { reason: why, message } = reason(result);
+
+  assert.equal(why.code, "scene_mismatch");
+  assert.match(message, /trainer\.variant: loaded 1, live 2/);
+  assert.doesNotMatch(message, /partnerNameKey/);
+});
+
+test("a save whose side holds no items, written null by a load, replays (#821)", async () => {
+  const report = clean();
+  report.hygiene.items = { ours: {}, foes: {} };
+  const { result } = await ask(report, { save: { ...drayton.save, modifiers: null, enemyModifiers: null } });
+
+  assert.equal(result.kind, "replayed");
 });
 
 test("a play time or timestamp below the top of the export is compared like any other field (#661)", async () => {
@@ -468,7 +503,7 @@ const carriedReport = () => {
   const renamed = (save: SessionSave) => ({
     ...structuredClone(save),
     money: 48000,
-    modifiers: save.modifiers.map(item => (item.typeId === "EXP_SHARE" ? { ...item, typeId: "EXP_ALL" } : item)),
+    modifiers: save.modifiers!.map(item => (item.typeId === "EXP_SHARE" ? { ...item, typeId: "EXP_ALL" } : item)),
   });
   const migrated = { save: renamed(drayton.save), liveExport: renamed(drayton.liveExport) };
   return {
