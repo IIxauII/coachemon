@@ -33,6 +33,8 @@ export const fakeTurn = ({
   outcomes = null,
   statusMoves = () => [],
   stopped = () => [],
+  // The damaging moves whose own condition says no: `likelyMoves` reads it for the ↯ row's `fails`.
+  failing = () => [],
   heal = () => 0,
   moves = () => [],
   switchTo = () => null,
@@ -81,7 +83,7 @@ export const fakeTurn = ({
         },
         setup: mv => hud()["25-turn"]?.setupStages(p, mv) ?? null,
         canTake: effect => !(p.getTypes?.() ?? []).some(t => TYPE_STATUS_IMMUNE[effect]?.includes(core?.TYPES?.[t])),
-        rockChip: 0.125 * (core ? core.effectiveness("Rock", p) : 1),
+        rockChip: () => 0.125 * (core ? core.effectiveness("Rock", p) : 1),
         bars: (st, n, offence) => (dmg ? dmg.barBreakFactors(p, st, n, offence, p.hasTrainer?.() ?? !!trainer) : Array(Math.max(1, n)).fill(1)),
         weather,
         hasAbility: () => false,
@@ -101,6 +103,8 @@ export const fakeTurn = ({
     }),
     statusMoves: (atk, def) => as(() => statusMoves(atk, def)),
     stopped: (atk, def) => as(() => stopped(atk, def)),
+    failing: (atk, def) => as(() => failing(atk, def) ?? []),
+    teraFailing: () => [],
     turnEndHp: (p, opts = {}) => as(() => heal(p, opts) ?? 0),
     // `exact`: the gate (#183). `{ ok: false, reason }` is what the panel sees on a build past the pin.
     exact: () => exact,
@@ -116,6 +120,8 @@ export const fakeTurn = ({
         exact: ex, confidence: ex ? (ranges.length ? "replay" : "exact") : "estimate" };
     }),
     teraNow: () => false,
+    teraLater: () => false,
+    atEntry: (_mons, fn) => fn(),
     enemyDistribution: foe => (live ? as(() => moves(foe)) : null)
       ?? hud()["20-enemy-ai"]?.approxDistribution(foe, (e, o) => t.outcomes(e, o)) ?? [],
     switches: () => new Map(live ? active().flatMap(f => { const to = switchTo(f); return to ? [[f, { to, ratio: 1 }]] : []; }) : []),
@@ -128,7 +134,7 @@ export const fakeTurn = ({
     assuming: more => fakeTurn({
       live, exact, wave, turn: turnNo, enemySwitchCounter, double, trainer, decision, party, foes, field, command,
       trickRoom, weather, modifiers, enemyModifiers, hazards, balls, mode, battleType, mysteryEncounter, biomeId,
-      outcome, outcomes, statusMoves, stopped, heal, moves, switchTo, replay, sendIn, benefit, speedTie, mon,
+      outcome, outcomes, statusMoves, stopped, failing, heal, moves, switchTo, replay, sendIn, benefit, speedTie, mon,
       patches: [...patches, ...more],
     }),
   };

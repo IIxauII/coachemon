@@ -44,4 +44,6 @@ Close Combat at 1 leaves 300 · Mach Punch at 0 leaves 214
 ➜ 2. Raichu free Thunderbolt → Rayquaza falls · foe at 60%
 ➜ 3. Tentacruel free Surf → Rayquaza falls · foe at 60%
 ➜ 4. Crawdaunt free Crabhammer → Rayquaza falls · foe at 60%
+== an instant Tera on the bench (#648)
+Hydro Pump into Coalossal: ×4 as Fire/Rock, ×2 at Tera Rock
 ok
