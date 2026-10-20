@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
+import { MoveFlags } from "../../../../src/enums/generated.ts";
 
 class ModifierType {}
 class PokemonModifierType extends ModifierType {}
@@ -16,7 +17,7 @@ const move = (name, type, power, category, accuracy = 100, f = {}) => {
   const id = nextId++;
   MOVES[id] = { id, name, type: TY.indexOf(type), power, category, accuracy, moveTarget: f.moveTarget ?? 3, priority: f.priority ?? 0, chance: -1,
     isChargingMove: () => false, attrs: (f.attrs ?? []).map(([n, a]) => Object.assign({ constructor: { name: n } }, a)),
-    chargeAttrs: [], restrictions: [], conditions: [], hasFlag: () => false };
+    chargeAttrs: [], restrictions: [], conditions: [], hasFlag: fl => !!((f.flags ?? 0) & fl) };
   return id;
 };
 const stat = (stats, stages, moveTarget, selfTarget) => ({ attrs: [["StatStageChangeAttr", { stats, stages, selfTarget }]], moveTarget });
@@ -39,9 +40,11 @@ const M = {
   meteorMash: move("Meteor Mash", "Steel", 90, 0, 90), hammerArm: move("Hammer Arm", "Fighting", 100, 0, 90),
   surf: move("Surf", "Water", 90, 1), soak: move("Soak", "Water", -1, 2, 100, { attrs: [["ChangeTypeAttr", { type: TY.indexOf("Water") }]] }), aquaTail: move("Aqua Tail", "Water", 90, 0, 90),
   playRough: move("Play Rough", "Fairy", 90, 0, 90), synthesis: move("Synthesis", "Grass", -1, 2, -1, { attrs: [["VariableHealAttr", {}]], moveTarget: 0 }),
-  gigaDrain: move("Giga Drain", "Grass", 75, 1), petalDance: move("Petal Dance", "Grass", 120, 1, 100, { attrs: [["AddBattlerTagAttr", { tagType: "FRENZY", selfTarget: true }]] }),
+  gigaDrain: move("Giga Drain", "Grass", 75, 1, 100, { flags: MoveFlags.HEALING_MOVE }), petalDance: move("Petal Dance", "Grass", 120, 1, 100, { attrs: [["AddBattlerTagAttr", { tagType: "FRENZY", selfTarget: true }]] }),
   boomburst: move("Boomburst", "Normal", 140, 1, 100, { moveTarget: 4 }), hyperDrill: move("Hyper Drill", "Normal", 120, 0),
   drillRun: move("Drill Run", "Ground", 80, 0, 95), blizzard: move("Blizzard", "Ice", 110, 1, 70, { moveTarget: 6 }),
+  pollenPuff: move("Pollen Puff", "Bug", 90, 1, 100, { flags: MoveFlags.HEALING_MOVE }),
+  recover: move("Recover", "Normal", -1, 2, -1, { attrs: [["HealAttr", { healRatio: 0.5, selfTarget: true }]], moveTarget: 0, flags: MoveFlags.HEALING_MOVE }),
 };
 class PokemonMove {
   constructor(id) { this.moveId = id; this.ppUsed = 0; }
@@ -236,6 +239,22 @@ const scenarios = {
       const t = a.findings.map(f => f.text);
       assert.equal(t.filter(x => x === "Flygon (W165) has one answer: Dudunsparce Blizzard (70%)").length, 1, t.join("\n"));
     } };
+}
+
+// A Triage Comfey's Giga Drain goes before Flygon (game-code.md §17), so the party is not short of priority (#474).
+{
+  const guzma = scenarios["wave 164 guzma"];
+  const triage = (...swap) => () => guzma.party().map(p => (p.name !== "Comfey" ? p
+    : { ...p, getAbility: () => ({ name: "Triage" }), moveset: p.moveset.map(pm => new PokemonMove(swap.find(([from]) => from === pm.moveId)?.[1] ?? pm.moveId)) }));
+  const speed = a => a.findings.filter(f => f.kind === "speed").map(f => f.text);
+  scenarios["wave 164 guzma, Triage Giga Drain"] = { ...guzma, party: triage(),
+    expect: a => assert.deepEqual(speed(a), [], "Triage's Giga Drain is a +3 attack") };
+  // Pollen Puff counts through its flag.
+  scenarios["wave 164 guzma, Triage Pollen Puff"] = { ...guzma, party: triage([M.gigaDrain, M.pollenPuff]),
+    expect: a => assert.deepEqual(speed(a), [], "Triage's Pollen Puff is a +3 attack") };
+  // Recover carries the flag too, but it is no attack: the party is still short of priority.
+  scenarios["wave 164 guzma, Triage Recover"] = { ...guzma, party: triage([M.gigaDrain, M.recover]),
+    expect: a => assert.deepEqual(speed(a), ["only Crobat outspeeds Flygon (Spe 404) at W165 · no priority attack"]) };
 }
 
 for (const [label, sc] of Object.entries(scenarios)) {

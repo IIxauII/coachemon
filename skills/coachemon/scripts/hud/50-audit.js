@@ -1,6 +1,6 @@
 // A finding (CONTEXT.md, `Team audit`; game-code.md §17) is `{ kind, level, text, mon? }`: `level` "high" for what
 // loses fights, "low" for what only costs tempo.
-import { TYPES, abilitiesOf, effectiveness, typesOf, vs } from "./01-core.js";
+import { TYPES, abilitiesOf, effectiveness, moveHasFlag, typesOf, vs } from "./01-core.js";
 import { gameTables } from "./04-game-tables.js";
 import { partyAtFight } from "./08-party.js";
 import { weakestMember } from "./12-value.js";
@@ -146,16 +146,22 @@ const onStat = (p, mv) => {
 const answersTo = (p, foe) => typedAttacks(p).filter(mv => effectiveness(TYPES[mv.type], foe, mv) >= 2 && onStat(p, mv))
   .map(mv => ({ name: nameOf(mv), acc: mv.accuracy > 0 ? mv.accuracy : 100 }));
 
-// Gale Wings only: Triage's draining attacks move first too (game-code.md §17) and aren't counted yet (#474).
+// Gale Wings and Triage move an attack first (game-code.md §17). Gale Wings' full-HP condition is not read, and a
+// healing status move never counts: `typedAttacks` holds attacks only.
 // @mirrors priority-abilities
-const PRIORITY_ABILITIES = new Set(["Gale Wings"]);
+const PRIORITY_ABILITIES = new Map([
+  ["Gale Wings", mv => TYPES[mv.type] === "Flying"],
+  ["Triage", mv => moveHasFlag(mv, MoveFlags.HEALING_MOVE)],
+]);
 const speedCheck = (party, foes, wave) => {
   const fastest = foes.reduce((a, f) => ((f.stats?.[Stat.SPD] ?? 0) > (a?.stats?.[Stat.SPD] ?? -1) ? f : a), null);
   const spe = fastest?.stats?.[Stat.SPD];
   if (!spe) return [];
   const faster = party.filter(p => tryDo(() => p.getStat(Stat.SPD), 0) > spe);
-  const priority = party.filter(p => typedAttacks(p).some(mv => (mv.priority ?? 0) > 0)
-    || (tryDo(() => abilitiesOf(p), []).some(a => PRIORITY_ABILITIES.has(a)) && typedAttacks(p).some(mv => TYPES[mv.type] === "Flying")));
+  const priority = party.filter(p => {
+    const priorityTests = tryDo(() => abilitiesOf(p), []).map(a => PRIORITY_ABILITIES.get(a)).filter(Boolean);
+    return typedAttacks(p).some(mv => (mv.priority ?? 0) > 0 || priorityTests.some(test => test(mv)));
+  });
   if (faster.length >= 2 || priority.length) return [];
   return [{ kind: "speed", level: "high",
     text: `${faster.length ? `only ${faster[0].name} outspeeds` : "nobody outspeeds"} ${fastest.name} (Spe ${spe}) at W${wave} · no priority attack` }];
