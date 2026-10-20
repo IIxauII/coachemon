@@ -476,9 +476,7 @@ export const lessBerry = (p, b) => {
   });
   return took ? Object.create(p, { getHeldItems: { value: () => held } }) : p;
 };
-// What eating berry `b` heals `eater` at once (game-code.md §3): the berries the turn-end model prices (10-damage.js)
-// heal a quarter, and Cheek Pouch adds a third for any berry. Any other berry heals nothing and still takes its share
-// of the draw.
+// What eating berry `b` heals `eater` at once (game-code.md §3).
 // @mirrors stolen-berry-heal
 const EATEN_QUARTER = [BerryType.SITRUS, BerryType.ENIGMA];
 const eatenNow = (eater, b) => {
@@ -909,20 +907,21 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   const usesBefore = after ? 1 : 0;
   const landed = i => threatUse(tThey, i + usesBefore).expected * (tThey.lockAct ? tThey.lockAct(i + usesBefore) : 1);
   const hitOn = i => (tThey ? landed(i) * Math.min(1, taken - i) * defUp * boosted : 0);
-  const hitsTaken = Array.from({ length: Math.ceil(taken) }, (_, i) => hitOn(i)).reduce((sum, x) => sum + x, 0);
+  const hitsTaken = () => Array.from({ length: Math.ceil(taken) }, (_, i) => hitOn(i)).reduce((sum, x) => sum + x, 0);
   // A stolen berry's heal is capped at max HP turn by turn, eaten before the turn's hit when we move first (#646).
   const stepped = () => {
     const drainTurns = Math.min(taken, turnsWe), cost = selfSpent / taken;
     let h = hp;
-    for (let i = 0; i < Math.ceil(taken); i++) {
+    for (let i = 0; i < Math.ceil(taken) && h > 0; i++) {
       const share = Math.min(1, taken - i), back = i < drainTurns ? (drained + eatenBy(i + 1, theft.eatenAt)) * Math.min(1, drainTurns - i) : 0;
+      const first = i === 0 ? pFField : pLast;
       h -= cost * share;
-      h = pFField * (Math.min(maxHp, h + back) - hitOn(i)) + (1 - pFField) * Math.min(maxHp, h - hitOn(i) + back);
+      h = Math.max(0, first * (Math.min(maxHp, h + back) - hitOn(i)) + (1 - first) * Math.min(maxHp, h - hitOn(i) + back));
     }
     return h;
   };
   const hpLeft = Math.max(0, Math.min(maxHp, stealing && taken > 0 ? stepped()
-    : hp - hitsTaken - selfSpent + drainTotal(ourDrain, Math.min(taken, turnsWe)))) * (1 - selfKo);
+    : hp - hitsTaken() - selfSpent + drainTotal(ourDrain, Math.min(taken, turnsWe)))) * (1 - selfKo);
   return {
     pWeKoFirst: Math.min(1, Math.round(pWe * 1e9) / 1e9), pTheyKoFirst: Math.min(1, Math.round(pThey * 1e9) / 1e9),
     expectedHpLeft: Math.round(hpLeft),
