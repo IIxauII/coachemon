@@ -94,8 +94,8 @@ const scenarios = {
     mon("Charizard", 66, ["Fire","Flying"], "Blaze", [190,125,118,160,128,120], [["Flamethrower","Fire",90,"S"],["Air Slash","Flying",75,"S"]], true, 120)],
     foes: [teraMon("Lycanroc", 70, ["Rock"], "Keen Eye", [200,190,100,80,90,140], [["Stone Edge","Rock",100,"P"]], true, "Steel")] },
   // Gordie W180 (#648). Coalossal Teras to Rock before it moves, so Burn Up — picked while it was still Fire — goes
-  // off and fails. The trainer's `shouldTera` says yes to Centiskorch on the bench as well, which comes in at its
-  // Fire/Bug and Teras at its first FIGHT command (game-code.md §7).
+  // off and fails. The trainer's `shouldTera` says yes to Centiskorch on the bench as well: it comes in at its
+  // Fire/Bug, but Teras at its first FIGHT command, before any hit of ours after a faint send-in (game-code.md §7).
   teraFails: { double: false, trainer: { isBoss: false }, teras: ["Coalossal", "Centiskorch"], bench: [], party: [
     mon("Gyarados", 80, ["Water","Flying"], "Intimidate", [260,170,130,120,150,140], [["Waterfall","Water",80,"P"]], true),
     mon("Venusaur", 80, ["Grass","Poison"], "Overgrow", [260,140,140,160,160,120], [["Power Whip","Grass",120,"P"]], false)],
@@ -254,9 +254,9 @@ assert.deepEqual(trapsOf("eelevateArrows", "Garchomp", "Eelektross"), { slot: []
     "Tera Rock is Water ×2 and Grass ×2, not the Water ×4 its Fire/Rock read at");
   const bench = row("Centiskorch");
   assert.equal(bench.tera, "Rock", "a bench mon the trainer Teras names the Tera it will take");
-  assert.deepEqual(bench.types, ["Fire", "Bug"], "but its row shows the typing it comes in at");
-  assert.deepEqual(bench.weak.filter(([t]) => ["Water", "Grass", "Rock"].includes(t)), [["Rock", "×4"], ["Water", ""]],
-    "with Fire/Bug's weaknesses: Rock ×4 and Water ×2");
+  assert.deepEqual(bench.types, ["Rock"], "and its row shows the typing our hits meet");
+  assert.deepEqual(bench.weak.filter(([t]) => ["Water", "Grass", "Rock"].includes(t)), [["Water", ""], ["Grass", ""]],
+    "with Tera Rock's weaknesses, not Fire/Bug's Rock ×4");
 }
 
 // A predicted switch-in takes this turn's hit at the typing it comes in at, whatever it Teras to later (#648).
@@ -265,7 +265,7 @@ assert.deepEqual(trapsOf("eelevateArrows", "Garchomp", "Eelektross"), { slot: []
   const [tera, plain] = [row("teraSwitchIn", "Coalossal"), row("plainSwitchIn", "Coalossal")];
   assert.equal(tera.pick.pct, plain.pick.pct, "this turn's Hydro Pump lands at Fire/Rock's ×4");
   assert.ok(tera.pick.ko === 0 || tera.pick.ko > plain.pick.ko, "and the hits after it at Tera Rock's ×2");
-  assert.deepEqual([tera.types, tera.tera], [["Fire", "Rock"], "Rock"], "its row: the typing it comes in at, and the Tera it will take");
+  assert.deepEqual([tera.types, tera.tera], [["Rock"], "Rock"], "its row: the Tera every later hit meets");
 }
 
 // The same against the real party (#648): Gordie W180 at T5, rebuilt from the solver fixture. `instantTeras` is `[5]`,

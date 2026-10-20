@@ -1845,8 +1845,8 @@ export const battleModel = (baseTurn, { team = null } = {}) => {
 
   const teamWeak = {};
   const rows = foes.map(foe => {
-    // The typing a bench mon comes in at; `tera` names one it takes later.
-    const { types, eff } = turn.atEntry([foe], () => ({ types: typesOf(foe), eff: TYPES.map(t => effectiveness(t, foe)) }));
+    // A bench mon's predicted Tera: after a faint send-in it Teras before any hit of ours lands (game-code.md §7).
+    const types = typesOf(foe), eff = TYPES.map(t => effectiveness(t, foe));
     const weak = [], avoid = [];
     for (const [i, t] of TYPES.entries()) {
       const e = eff[i];

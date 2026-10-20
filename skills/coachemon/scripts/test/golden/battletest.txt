@@ -102,7 +102,7 @@ trainer 🎯 W89 · Tester Gyarados Gyarados Waterfall → Coalossal · 2 hits
 Foes
 foes weak to: Water ×2
 Coalossal Coalossal L80 Rock TERA 100% ▲ Water Grass ↯ Fire Burn Up → Gyarados fails · moves after
-Centiskorch Centiskorch L80 Fire Bug TERA 100% ▲ Water ▼ Grass ×¼ ↯ Fire Fire Lash → Gyarados moves after ➜ Gyarados Water Waterfall ~99% · 2 hits later
+Centiskorch Centiskorch L80 Rock TERA 100% ▲ Water Grass ↯ Fire Fire Lash → Gyarados moves after ➜ Gyarados Water Waterfall ~99% · 2 hits later
 winnable · Gyarados
 Fight plan winnable
 ➜ 1. Gyarados Water Waterfall → Coalossal KO · 100% left
@@ -117,7 +117,7 @@ trainer 🎯 W89 · Tester Gyarados Gyarados Hydro Pump → Coalossal · 3 hits
 ↺ if it stays: Gyarados Water Hydro Pump → Barbaracle
 Foes
 Barbaracle Barbaracle L80 Rock Water 100% ▲ —
-Coalossal Coalossal L80 Fire Rock TERA 100% ▲ Water ×4 ↯ Rock Rock Slide → Gyarados moves after
+Coalossal Coalossal L80 Rock TERA 100% ▲ Water ↯ Rock Rock Slide → Gyarados moves after
 likely lost · 💀 Coalossal KOs 1/1 · nobody KOs Coalossal 1-on-1 — maximise damage before it comes in, chip it with Gyarados
 Fight plan likely lost
 💀 Coalossal Coalossal KOs 1/1 · win condition
