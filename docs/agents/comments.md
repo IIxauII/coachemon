@@ -100,7 +100,7 @@ question.
 
 A name says what holds now; only a scar says what broke. A test earns both.
 
-A golden file earns nothing per file: `run.mjs`'s header states the rule once for all 27.
+A golden file earns nothing per file: `run.mjs`'s header states the rule once for every golden.
 
 ## Markers
 
