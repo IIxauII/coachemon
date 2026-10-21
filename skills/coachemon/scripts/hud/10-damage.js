@@ -505,7 +505,9 @@ const endOfTurnSteps = (env, p, { hp = p.hp, dealt = 0 } = {}) => {
   if (cur > 0 && !unnerved(env, p) && Math.round((cur / max) * 100) / 100 < 0.5
     && items(p).some(m => m.constructor.name === "BerryModifier" && m.berryType === BerryType.SITRUS)) queued(berryQuarter(p));
 
-  // A held Lum cures the status first (game-code.md §3).
+  // A held Lum cures the status first (game-code.md §3). Gotcha: nothing here spends it, so a Lum + Toxic Orb holder
+  // reads the orb's fresh toxic every turn of a course, flat at 1/16, where in game the Lum goes after one cure and the
+  // count grows; `status &&` below is what restarts that count.
   const status = !unnerved(env, p) && lumsHeld(p) ? 0 : p.status?.effect || 0;
   // A status orb is counted a turn early: in game its status lands after this chip (game-code.md §21).
   const orb = status ? null : items(p).find(m => m.constructor.name === "TurnStatusEffectModifier" && !types.some(t => ORB_SPARED[m.effect]?.includes(t)));

@@ -290,7 +290,6 @@ const assertNoImmediateScrafty = field => {
   assert.equal(gyaradosVs("Morpeko vs tokens"), 2, "poison tokens chip over the fight");
   assert.equal(exchange(s, { ...morpeko, id: "burned Morpeko", status: { effect: 6 } }, morpeko.moveset[0], { ...gyarados, id: "Gyarados vs burned" }, { hp: 150 }).turnsThey, 3,
     "a statused mon can't be poisoned");
-  // Lum holders against one hit a turn at 50 % (#834): none by turn 1, .25 by turn 2.
   const { tokenOdds, tokenShift } = globalThis.__planner;
   const lumItem = new ({ BerryModifier: class { berryType = 1; isTransferable = true; getStackCount() { return 1; } } }).BerryModifier();
   const lumMorpeko = id => ({ ...morpeko, id, getHeldItems: () => [lumItem] });
@@ -1917,7 +1916,6 @@ Object.assign(TABLE, { "Machamp>Close Combat>Vileplume": [[40], 1, 1], "Vileplum
   assert.deepEqual([twice.patches.length, twice.foeAct, twice.again], [1, null, null], `a Lum x2 holder opens nothing for next turn: ${shape(twice)}`);
   assert.deepEqual(berryTypesOf(lessBerry(held, BERRY.LUM)), [BERRY.LUM], "burning one of two leaves the second, so two statuses are needed before one sticks");
 
-  // A `lessBerry` patch (#834).
   const { withPatches } = globalThis.__hud["25-turn"];
   const stacks = p => p.getHeldItems().map(m => `${m.berryType}x${m.getStackCount()}`).join(",");
   const lumSitrus = machamp([berryItem(BERRY.SITRUS), berryItem(BERRY.LUM, 2)]);
@@ -2028,7 +2026,6 @@ Object.assign(TABLE, { "Machamp>Close Combat>Vileplume": [[40], 1, 1], "Vileplum
     const { field } = render({ party, foes, live: true, double: true, dist: aimAtBoth, switches: () => new Map(), benefit: (atk, mv, def) => AI[def.name]?.[mv.name] ?? 0 });
     return lineOf(field, "Breloom");
   };
-  // Toxic Spikes into a Lum holder (#834).
   const { hazardValue } = globalThis.__hud["30-planner"];
   const spikesFor = items => {
     const lead = mon("Machamp", 80, ["Fighting"], [300, 200, 110, 60, 110, 50], [["Close Combat", "Fighting", 120, "P"]], true);
