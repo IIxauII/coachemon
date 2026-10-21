@@ -2366,4 +2366,83 @@ Object.assign(TABLE, {
   assert.ok(t.later?.expected > 0, "the uses after it are Dragon Claw, picked against the Tera");
 }
 
+// ---- Protect is a priced status play in a single battle: picked where blocking the hit wins the race (#861, #850 §6).
+// #749's turns: Salamence locked into Outrage at Vaporeon, which can Ice Beam or Protect. `outrage`, `own`: max damage
+// a hit of Outrage, and of the Fire Blast Salamence picks itself once the lock is spent; `ours`: Ice Beam's. `left`:
+// Outrage's uses still to come, this turn's included; `lock` false: no lock, and Fire Blast every turn. `last`: our last
+// move's record; `bypass`: Salamence's moves ignore Protect; `endure`: Vaporeon has Endure too.
+const PROTECT = ["Protect", "Normal", 0, "X", 4, { target: 0, attrs: ["ProtectAttr"], id: 182 }];
+const ENDURE = ["Endure", "Normal", 0, "X", 4, { target: 0, attrs: [["ProtectAttr", { tagType: "ENDURING" }]], id: 203 }];
+const lockTurn = ({ myHp = 250, mySpe = 80, foeHp = 300, foeSpe = 120, outrage, own, ours, left = 1, lock = true, last = null, bypass = false, endure = false }) => {
+  Object.assign(TABLE, {
+    "Vaporeon>Ice Beam>Salamence": [[ours], 1, 4],
+    "Salamence>Outrage>Vaporeon": [[outrage], 1, 1], "Salamence>Fire Blast>Vaporeon": [[own], 1, 1],
+  });
+  const vaporeon = mon("Vaporeon", 80, ["Water"], [myHp, 100, 100, 100, 100, mySpe], [["Ice Beam", "Ice", 90, "S"], PROTECT, ...(endure ? [ENDURE] : [])], true, undefined,
+    last ? { getLastXMoves: () => [last] } : {});
+  const salamence = mon("Salamence", 80, ["Dragon", "Flying"], [foeHp, 200, 100, 100, 100, foeSpe],
+    [["Outrage", "Dragon", 120, "P", 0, { target: 7, id: 200 }], ["Fire Blast", "Fire", 110, "S", 0, { id: 126 }]], true, undefined,
+    lock ? { getTag: t => (t === "FRENZY" ? { turnCount: left } : null), getMoveQueue: () => [{ move: 200, targets: [0], useMode: 2 }] } : {});
+  const now = lock ? "Outrage" : "Fire Blast";
+  return render({
+    party: [vaporeon], foes: [salamence], live: true, switches: () => new Map(),
+    stubOutcome: (a, d, pm, o) => {
+      const x = outcome(a, d, pm, o);
+      return x && bypass && a === salamence ? { ...x, bypassProtect: true } : x;
+    },
+    dist: () => [{ name: now, type: lock ? "Dragon" : "Fire", p: 1, score: 10, targets: [0], exact: true }],
+    replay: (_e, _t, opts) => [{ name: !lock || opts?.afterLock || left === 0 ? "Fire Blast" : "Outrage", type: "Dragon", p: 1 }],
+  });
+};
+{
+  const line = lineOf(lockTurn({ outrage: 150, own: 60, ours: 110 }).field, "Vaporeon");
+  console.log(`== protect: case 1, foe faster, Outrage 150, we 3HKO (live)\n${line}`);
+  assert.match(line, /Protect blocks Outrage's last use .*then Ice Beam/, `Protect, then attack:\n${line}`);
+  // #749's other turns. With no lock Protect only puts the same duel off a turn, so it never pays.
+  const HELD = { move: 182, targets: [0], result: 1 };
+  const cases = [
+    ["3 · Outrage KOs (300)", { outrage: 300, own: 60, ours: 110 }, true],
+    ["8 · foe faster, Outrage 130, we 4HKO", { outrage: 130, own: 60, ours: 80 }, true],
+    ["9 · we slower and 1HKO, both its hits KO", { foeHp: 100, outrage: 300, own: 300, ours: 110 }, true],
+    ["2 · as 1, foe slower", { foeSpe: 60, outrage: 150, own: 60, ours: 110 }, false],
+    ["4 · we faster and 1HKO", { mySpe: 140, foeHp: 100, outrage: 150, own: 60, ours: 110 }, false],
+    ["5 · we slower, 1HKO, Outrage 150", { foeHp: 100, outrage: 150, own: 60, ours: 110 }, false],
+    ["6 · Outrage resisted (40)", { outrage: 40, own: 60, ours: 110 }, false],
+    ["7 · its own pick as strong (150)", { outrage: 150, own: 150, ours: 110 }, false],
+    ["3 after a Protect that held", { outrage: 300, own: 60, ours: 110, last: HELD }, false],
+    ["no lock, Fire Blast 150", { outrage: 0, own: 150, ours: 110, lock: false }, false],
+    ["no lock, Fire Blast KOs (300)", { outrage: 0, own: 300, ours: 110, lock: false }, false],
+    ["no lock, Fire Blast 60", { outrage: 0, own: 60, ours: 110, lock: false }, false],
+  ];
+  for (const [label, sc, protects] of cases) {
+    const l = lineOf(lockTurn(sc).field, "Vaporeon");
+    console.log(`== protect: case ${label} (live)\n${l}`);
+    assert.match(l, protects ? /Protect (\d hits )?blocks Outrage's last use .*then Ice Beam/ : /Ice Beam → Salamence/, `case ${label}:\n${l}`);
+    // The hit it blocks is no danger this turn (#650's `guarded`).
+    if (protects) assert.ok(!/⚠|💀/.test(l), `no threat tag for the hit Protect blocks:\n${l}`);
+  }
+}
+// The play itself: what it blocks, and where it is not offered.
+{
+  const playOf = (sc, move = "Protect") => {
+    const { scene: s } = lockTurn({ outrage: 300, own: 60, ours: 110, ...sc });
+    const [me] = s.facts.party, [foe] = s.facts.foes;
+    const info = s.statusMoves(me, foe).find(x => x.name === move);
+    return globalThis.__planner.statusPlay(s, me, foe, info);
+  };
+  const last = playOf({});
+  assert.deepEqual([last.kind, last.self, last.patches, last.skip0], ["protect", true, null, 1], `the hit this turn is cancelled: ${JSON.stringify(last)}`);
+  assert.equal(last.note, "blocks Outrage's last use");
+  assert.equal(playOf({ left: 2 }).note, "blocks Outrage", "a lock with uses still to come");
+  assert.equal(playOf({ lock: false }).note, "blocks Fire Blast", "no lock: the foe's own pick");
+  // The game's streak counts a Quick Guard or Wide Guard that held as a Protect (`ProtectAttr.getCondition`).
+  assert.equal(playOf({ last: { move: 501, targets: [0], result: 1 } }), null, "not straight after a Quick Guard that held");
+  assert.equal(playOf({ last: { move: 469, targets: [0], result: 1 } }), null, "not straight after a Wide Guard that held");
+  assert.equal(playOf({ last: { move: 182, targets: [0], result: 2 } })?.kind, "protect", "a Protect that failed starts no streak");
+  // A move that ignores Protect (`IGNORE_PROTECT`, or contact from an Unseen Fist user) is not blocked.
+  assert.equal(playOf({ bypass: true }), null, "not into a move that ignores Protect");
+  // Endure carries `ProtectAttr` too, and only survives the hit.
+  assert.equal(playOf({ endure: true }, "Endure"), null, "Endure is no Protect play");
+}
+
 console.log("ok");

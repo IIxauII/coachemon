@@ -488,4 +488,30 @@ Fight plan likely lost
 ➜ 2. Gyarados Water Hydro Pump → Carracosta falls · foe at 61%
 ⚠ likely lost: nothing we have hurts Carracosta — maximise damage before it comes in
 == our Tera Flying: this turn Earthquake for 0, then 139 a turn
+== protect: case 1, foe faster, Outrage 150, we 3HKO (live)
+⚔ Vaporeon Normal Protect blocks Outrage's last use · then Ice Beam
+== protect: case 3 · Outrage KOs (300) (live)
+⚔ Vaporeon Normal Protect blocks Outrage's last use · then Ice Beam
+== protect: case 8 · foe faster, Outrage 130, we 4HKO (live)
+⚔ Vaporeon Normal Protect blocks Outrage's last use · then Ice Beam
+== protect: case 9 · we slower and 1HKO, both its hits KO (live)
+⚔ Vaporeon Normal Protect 2 hits blocks Outrage's last use · then Ice Beam
+== protect: case 2 · as 1, foe slower (live)
+⚔ Vaporeon Ice Ice Beam → Salamence 3 hits
+== protect: case 4 · we faster and 1HKO (live)
+⚔ Vaporeon Ice Ice Beam → Salamence 1 hit
+== protect: case 5 · we slower, 1HKO, Outrage 150 (live)
+⚔ Vaporeon Ice Ice Beam → Salamence 1 hit
+== protect: case 6 · Outrage resisted (40) (live)
+⚔ Vaporeon Ice Ice Beam → Salamence 3 hits
+== protect: case 7 · its own pick as strong (150) (live)
+⚔ Vaporeon Ice Ice Beam → Salamence 3 hits
+== protect: case 3 after a Protect that held (live)
+⚔ Vaporeon 💀 Dragon 100% {Salamence's Outrage: ~100% of current HP, before it can act} Ice Ice Beam → Salamence 3 hits
+== protect: case no lock, Fire Blast 150 (live)
+⚔ Vaporeon Ice Ice Beam → Salamence 3 hits
+== protect: case no lock, Fire Blast KOs (300) (live)
+⚔ Vaporeon 💀 Fire 100% {Salamence's Fire Blast: ~100% of current HP, before it can act} Ice Ice Beam → Salamence 3 hits
+== protect: case no lock, Fire Blast 60 (live)
+⚔ Vaporeon Ice Ice Beam → Salamence 3 hits
 ok

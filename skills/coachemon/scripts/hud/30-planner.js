@@ -215,6 +215,14 @@ const lockOf = foe => {
   const pm = tag && q ? foe.moveset?.find(m => m?.moveId === q.move) : null;
   return pm ? { name: pm.getName(), left: Math.max(1, tag.turnCount ?? 1) } : null;
 };
+// Protect's streak, by move id rather than any moveset (game-code.md §14).
+const protectedLast = me => {
+  const last = me.getLastXMoves?.(1)?.[0];
+  if (!last || last.result !== MoveResult.SUCCESS) return false;
+  if (last.move === MoveId.QUICK_GUARD || last.move === MoveId.WIDE_GUARD) return true;
+  const mv = gameTables()?.moves?.[last.move] ?? (me.getMoveset?.() ?? me.moveset).find(pm => pm?.moveId === last.move)?.getMove();
+  return !!mv && moveTraits(mv).protect;
+};
 
 // P(`p` gets to use `mv` this turn, or next turn with `next`): sleep, freeze, paralysis and confusion as game-code.md
 // §8 has them.
@@ -306,11 +314,12 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
   // ran the lock, never confused, or was confused under every confusion length, and with no relock the state after a
   // use is the same whether it went off.
   const lockChain = steps ? i => ({ from: steps[i + spent].at, step: s => lockStep(s, lockRule) }) : null;
-  let pKo = 0, first = 0, koFirst = 0, worst = null, likely = null, drained = 0;
+  let pKo = 0, first = 0, koFirst = 0, worst = null, likely = null, drained = 0, unblocked = 0;
   const kos = [], boost = {};
   for (const m of moves) {
     if (!likely || m.p > likely.p) likely = m;
     if (!(m.p > 0)) continue;
+    if (m.o?.bypassProtect) unblocked += m.p;
     const pm = m.o?.pm ?? foe.moveset.find(x => x?.getName() === m.name) ?? NO_MOVE_INFO;
     const order = actionOrder(turn, foe, pm, me, myPm ?? NO_MOVE_INFO, { thisTurn: !next });
     first += m.p * order;
@@ -339,6 +348,8 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
     boost: Object.keys(boost).length ? boost : null,
     // HP its drain moves give it back a turn; negative into Liquid Ooze.
     drain: drained,
+    // The share of its picks that a Protect of ours does not stop (`IGNORE_PROTECT`, Unseen Fist's contact).
+    unblocked: Math.min(1, unblocked),
     // P(its i-th use from now goes off) as its lock's confusion leaves it, and `koCurve`'s `chain` of the lock from
     // that use on; `own` lands from use `ownFrom` on.
     lockAct, lockChain, own, ownFrom,
@@ -1343,6 +1354,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const hits = Math.min(9, 1 + landed.x2.turnsWe);
       return {
         me, move: { name: info.name, type: info.type, cat: "status", pm, expected: 0, notes: [] }, target: fi, self: !!play.self,
+        guarded: play.kind === "protect",
         turns: hits + lost, hits, score: lasts - eTurns - lost + edge - spent - hpSpent(kept) + start.keep + bonus + nudge - STATUS_COST, hp,
         then: landed.y && (planOutcomes(turn, me, f).find(z => z.name === landed.y.name) ?? landed.y),
         effect: start.effect,
@@ -1741,7 +1753,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   // against no move of ours read as a knockout "before it can act" (#650). A mon leaving the field has no pick to take
   // it against, and passes none.
   const nowThreat = (me, pm = null, at = turn) => attackers.reduce((w, f) => worse(w, tagOf(threatFrom(at, f, me, pm), me.hp, false)), null);
-  // `guarded`: the slot Protects this turn, so this turn's hits are no danger to it (#650).
+  // `guarded`: the slot Protects this turn, so this turn's hits are no danger to it (#650, #861).
   const slotThreat = (p, entering, guarded = false) => {
     const faced = typeof p.target === "number" ? [active[p.target]] : active;
     const at = p.at ?? turn;
@@ -1810,14 +1822,6 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   // Support moves, conservative because the planner only scores damage: Protect for a slot likely KO'd before it moves
   // whose partner likely KOs that foe first anyway; Helping Hand when it turns a likely survivor into a likely KO.
   const usablePm = pm => pm && (pm.getMovePp?.() ?? 1) - (pm.ppUsed ?? 0) > 0;
-  // Protect's streak, by move id rather than any moveset (game-code.md §14).
-  const protectedLast = me => {
-    const last = me.getLastXMoves?.(1)?.[0];
-    if (!last || last.result !== MoveResult.SUCCESS) return false;
-    if (last.move === MoveId.QUICK_GUARD || last.move === MoveId.WIDE_GUARD) return true;
-    const mv = gameTables()?.moves?.[last.move] ?? (me.getMoveset?.() ?? me.moveset).find(pm => pm?.moveId === last.move)?.getMove();
-    return !!mv && moveTraits(mv).protect;
-  };
   const boostedKo = (b, X) => {
     if (bossBarsLeft(X) > 1) return 0;
     const o = b.target === "both" ? planOutcomes(turn, b.me, X).find(x => x.name === b.move.name) : b.move;
@@ -1899,7 +1903,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
           accPct: sup || !(p.move?.acc < 1) ? null : Math.min(99, Math.round(p.move.acc * 100)),
           helped,
           koEach: sup || p.target !== "both" || !p.each ? null : p.each.map(n => (n <= 3 ? n : 0)),
-          threat: slotThreat(p, enter, sup?.kind === "protect"),
+          threat: slotThreat(p, enter, sup?.kind === "protect" || !!p.guarded),
           // A slot with nothing left to do says which restriction emptied its pool.
           stopped: sup || p.move || !active[0] ? [] : turn.stopped(p.me, active[0]),
           traps: sup ? [] : trapsOn(p, active),
@@ -1952,8 +1956,9 @@ const FOE_BAR = 2 * HAZARD_TURNS;
 const FEED_COST = 0.5;
 
 // What a status move of `me`'s does to a fight with `f`, if the planner can price it (game-code.md §14): a `setup`,
-// `status`, `heal`, `hazard` or `types` play, its effect as `patches` for the game's own code to price; else null.
-// This turn's hit meets the state as it stands: only a sleep or paralysis that lands first cancels it (`skip0`).
+// `status`, `heal`, `hazard`, `types` or `protect` play, its effect as `patches` for the game's own code to price; else
+// null. This turn's hit meets the state as it stands: only a sleep or paralysis that lands first, or a Protect in a
+// single battle, cancels it (`skip0`).
 // `cured`: a status a held Lum cures this turn, whose patches take only the Lum; `again`: the same move a turn later,
 // once that took the last Lum.
 // @only tests: statusPlay
@@ -1961,6 +1966,16 @@ export const statusPlay = (turn, me, f, info) => {
   const mv = info.pm.getMove?.();
   if (!mv || info.blocked) return null;
   const t = moveTraits(mv, me, { target: f });
+  if (t.protect) {
+    // A double prices Protect through `supportFor` only, until its own status-play pricing lands (#850 §6).
+    if (!t.blocks || turn.facts.double || protectedLast(me)) return null;
+    const th = threatFrom(turn, f, me, info.pm);
+    const hit = th?.move?.name, skip0 = 1 - (th?.unblocked ?? 0);
+    if (!hit || skip0 < 0.05) return null;
+    const lock = lockOf(f);
+    const last = lock?.name === hit && lock.left === 1;
+    return { kind: "protect", self: true, patches: null, skip0, foeAct: null, note: `blocks ${hit}${last ? "'s last use" : ""}` };
+  }
   if (t.inflicts.some(x => x.self)) return null;
   const up = turn.mon(me).setup(mv);
   if (up) {

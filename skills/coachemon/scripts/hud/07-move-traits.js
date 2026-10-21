@@ -136,6 +136,8 @@ export const moveTraits = (mv, user = null, { party = null, target = null } = {}
     flinches: attrsNamed(mv, "FlinchAttr").length > 0,
     stages, inflicts, tags, heal, hazard: trap ? { tag: trap.tagType } : null,
     protect: attrsNamed(mv, "ProtectAttr").length > 0,
+    // Cancels the hit it meets: every `ProtectAttr` but Endure's, which only survives it.
+    blocks: attrsNamed(mv, "ProtectAttr").some(a => a.tagType !== "ENDURING"),
     cutHp: cut ? { ratio: cut.cutRatio ?? 2 } : null,
     drain: drainAttr ? { ratio: drainAttr.healRatio ?? 0.5 } : null,
     // Concrete class names, where `isAttr` counts subclasses: a `LeechSeedAttr` is not also a bare
