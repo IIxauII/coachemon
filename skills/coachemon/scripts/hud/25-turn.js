@@ -37,10 +37,11 @@ const teraTypeOf = e => { try { return teraSaved.has(e) ? TYPES[e.getTeraType?.(
 
 // Patches: `{ mon, stages: { [stat 1–5]: change } }`, `{ mon, status }`, `{ mon, types }`, `{ mon, addedType }`,
 // `{ mon, tera: false }` (its predicted Tera off), `{ mon, tera: true }` (our own Tera on, as `TeraPhase.end` writes it),
-// `{ mon, waveTurnCount }` and `{ mon, lessBerry }` (one berry of that `BerryType` off, as `lessOneBerry` takes it),
-// written onto the live mons for one synchronous call (game-code.md §5, §14). `patchKey` is part of the derived turn's
-// key, so no hypothetical answer is ever read from a real memo slot.
-const patchKey = patches => patches.map(({ mon, stages, status, types, addedType, tera, waveTurnCount, lessBerry }) => [
+// `{ mon, waveTurnCount }`, `{ mon, lessBerry }` (one berry of that `BerryType` off, as `lessOneBerry` takes it) and
+// `{ mon, delayedAttack }` (one queued on its slot, or with `false` none), written onto the live mons and the arena for
+// one synchronous call (game-code.md §5, §14). `patchKey` is part of the derived turn's key, so no hypothetical answer
+// is ever read from a real memo slot.
+const patchKey = patches => patches.map(({ mon, stages, status, types, addedType, tera, waveTurnCount, lessBerry, delayedAttack }) => [
   stages ? `${mon.id}s${Object.entries(stages).map(([i, n]) => `${i}:${n}`).join(",")}` : null,
   status ? `${mon.id}x${status.effect}` : null,
   types ? `${mon.id}t${types.join(",")}` : null,
@@ -48,6 +49,7 @@ const patchKey = patches => patches.map(({ mon, stages, status, types, addedType
   tera === false ? `${mon.id}-tera` : tera === true ? `${mon.id}+tera` : null,
   waveTurnCount != null ? `${mon.id}w${waveTurnCount}` : null,
   lessBerry != null ? `${mon.id}-b${lessBerry}` : null,
+  delayedAttack != null ? `${mon.id}@${delayedAttack ? "delayed" : "clear"}` : null,
 ].filter(Boolean).join(";")).filter(Boolean).join("|");
 // `p` as `patches`' `lessBerry` entries leave its held items, for a read outside the game calls; `p` itself when none
 // names it. `views` keeps one per mon, so a caller may key on it.
@@ -61,11 +63,12 @@ export const heldView = (patches, views, p) => {
   }
   return views.get(p);
 };
+const DELAYED_ATTACK = "DELAYED_ATTACK";
 // @only tests: withPatches
-export const withPatches = (patches, fn) => {
+export const withPatches = (patches, fn, s = null) => {
   const undo = [];
   try {
-    for (const { mon, stages, status, types, addedType, tera, waveTurnCount, lessBerry } of patches) {
+    for (const { mon, stages, status, types, addedType, tera, waveTurnCount, lessBerry, delayedAttack } of patches) {
       if (tera === false && teraSaved.has(mon)) undo.push(teraOff(mon));
       if (tera === true) {
         const was = mon.isTerastallized, added = mon.summonData?.addedType;
@@ -105,6 +108,13 @@ export const withPatches = (patches, fn) => {
         const prev = mon.summonData.waveTurnCount;
         mon.summonData.waveTurnCount = waveTurnCount;
         undo.push(() => { mon.summonData.waveTurnCount = prev; });
+      }
+      const queue = delayedAttack != null ? s?.arena?.positionalTagManager : null;
+      if (Array.isArray(queue?.tags)) {
+        const prev = queue.tags, at = mon.getBattlerIndex();
+        queue.tags = delayedAttack ? [...prev, { tagType: DELAYED_ATTACK, targetIndex: at }]
+          : prev.filter(t => !(t.tagType === DELAYED_ATTACK && t.targetIndex === at));
+        undo.push(() => { queue.tags = prev; });
       }
     }
     return fn();
@@ -312,9 +322,9 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
   };
   // Every game call below goes through `asDamage`, the patches on. This turn's `EnemyCommandPhase` reads, the switch
   // check and the move pick, come before any Tera, our own included (`asCommand`; game-code.md §7).
-  const asDamage = fn => (patches.length ? withPatches(patches, fn) : fn());
+  const asDamage = fn => (patches.length ? withPatches(patches, fn, env.s) : fn());
   const picked = patches.filter(x => x.tera !== true);
-  const asPicked = fn => (picked.length ? withPatches(picked, fn) : fn());
+  const asPicked = fn => (picked.length ? withPatches(picked, fn, env.s) : fn());
   const asCommand = fn => beforeTera(() => asPicked(fn));
   const refused = (atk, def) => memo("refused", `${atk.id}|${def.id}`,
     () => (live ? asDamage(() => sceneRefused(env, atk, def)) : { stopped: [], failing: [] }));
@@ -391,6 +401,9 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
         .reduce((t, b) => t + b.score * b.p, 0)), 0);
       return Number.isFinite(n) ? n : 0;
     }),
+    // The turns left on a delayed attack queued on `p`'s slot, 0 where none (game-code.md §5).
+    delayedOn: p => memo("delayedOn", p, () => tryDo(() => Math.max(0, ...(env.s.arena.positionalTagManager.tags ?? [])
+      .filter(t => t.tagType === DELAYED_ATTACK && t.targetIndex === p.getBattlerIndex()).map(t => t.turnCount ?? 0)), 0)),
     // This turn is a hypothesis with our `p`'s Tera on (#649).
     ourTeraOn: p => patches.some(x => x.mon === p && x.tera === true),
     // `{ type }` of the Tera `p` may take with this command, null where there is none to take (#649).

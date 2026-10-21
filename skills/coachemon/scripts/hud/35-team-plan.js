@@ -3,7 +3,7 @@
 // one foe at a time.
 import { iconOf, squeezeDist } from "./01-core.js";
 import { berryPouch, hitOn, koCurve, koTurns, useOf } from "./10-damage.js";
-import { actionOrder, afterSteals, attemptsLost, berryTypesOf, berryWalk, entryOutcomes, hitsOn, koBoost, koBoostText, koStageFactor, lessBerry, ourTeraTurn, overWalk, paralysed, sendInAt, sendInBase, stealCounts, stealRates, stealsBerry, stolenDraws, threatFrom, tokenOdds, tokenShift, unnervedBy } from "./30-planner.js";
+import { actionOrder, afterSteals, attemptsLost, berryTypesOf, berryWalk, entryOutcomes, hitsOn, koBoost, koBoostText, koStageFactor, laterUse, lessBerry, ourTeraTurn, overWalk, paralysed, sendInAt, sendInBase, stealCounts, stealRates, stealsBerry, stolenDraws, threatFrom, tokenOdds, tokenShift, unnervedBy } from "./30-planner.js";
 
 // @only tests: tpHealProfile, tpSendScore, tpFight, tpTables, tpActs
 const TP_BEAM = 24;
@@ -63,8 +63,8 @@ const tpTheirMove = (turn, f, me) => {
       const t = threatFrom(turn, f, me, null, { next });
       if (Number.isFinite(t?.expected)) {
         const now = next && f.isOnField?.() ? threatFrom(turn, f, me) : t;
-        // `dmg` and `use` are a turn after this one (`threatFrom`'s `later`); `entry` is this turn's.
-        const per = t.later ?? t;
+        // `dmg` and `use` are a turn after this one (`laterUse`); `entry` is this turn's.
+        const per = laterUse(t) ?? t;
         const mean = (per.use ?? []).reduce((sum, x) => sum + x.d * x.p, 0);
         const moved = t.moves.reduce((sum, m) => sum + m.p, 0);
         return {

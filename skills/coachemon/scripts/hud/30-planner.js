@@ -75,6 +75,8 @@ const entryOutcome = (turn, me, foe, name) => entryOutcomes(turn, me, foe)?.find
 export const ourTeraTurn = (turn, me) => turn.memo(`ourTera:${me.id}`, () => turn.assuming([{ mon: me, tera: true }]));
 
 const NO_MOVE_INFO = { priority: 0 };
+// The moveset entry behind a likely-move row.
+const rowMove = (foe, m) => m.o?.pm ?? foe.moveset.find(x => x?.getName() === m.name) ?? NO_MOVE_INFO;
 // Quick Claw and Quick Draw (game-code.md §5).
 // @mirrors quick-chance
 const quickChance = (p, category) => {
@@ -140,7 +142,8 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
         const reroll = turn.facts.double && idx != null && o?.pm?.getMove?.()?.moveTarget === MoveTarget.RANDOM_NEAR_ENEMY;
         const later = reroll ? 1 / Math.max(1, opponentCount(foe)) : tp;
         // The outcome's type is the one the move lands with (Tera Blast); the AI's row can carry the base type.
-        return { o, name: d.name, type: o?.type ?? d.type, p: d.p * tp, ...(later !== tp ? { pLater: d.p * later } : {}) };
+        // `pick`: the chance it is picked at all, where `p` is its share on `me`.
+        return { o, name: d.name, type: o?.type ?? d.type, p: d.p * tp, ...(tp !== 1 ? { pick: d.p } : {}), ...(later !== tp ? { pLater: d.p * later } : {}) };
       }));
     }
   }
@@ -181,11 +184,12 @@ const replayMoves = (turn, foe, me, outs, opts, now = false) => {
 };
 // A damaging move the AI names with no outcome behind it goes off and fails: the AI skips the move's own condition
 // (game-code.md §6), and a Tera can turn it against the user (#648). Only this turn's pick (`now`) is judged on the
-// state now. A later one is judged on what the foe's Tera does, which lasts, and on a first-turn-only move, which
-// `turn` is already the turn of (`useTurns`).
+// state now. A later one is judged on what the foe's Tera does, which lasts, and on a first-turn-only move or one its
+// own use fails, which `turn` is already the turn of (`useTurns`, `spentTurn`).
 const withFails = (turn, foe, me, now, rows) => {
   let failing = null;
-  const lasting = () => [...turn.teraFailing(foe, me), ...turn.failing(foe, me).filter(n => onceNames(foe).includes(n))];
+  const own = [...onceNames(foe), ...spendsOf(foe).map(x => x.name)];
+  const lasting = () => [...turn.teraFailing(foe, me), ...turn.failing(foe, me).filter(n => own.includes(n))];
   const fails = name => (failing ??= now ? turn.failing(foe, me) : lasting()).includes(name);
   return rows.map(r => (!r.o && fails(r.name) ? { ...r, fails: true } : r));
 };
@@ -208,6 +212,108 @@ const useTurns = (turn, foe, next) => {
 };
 // `outs`, read on `turn`, or the same records read on `at`.
 const outcomesOn = (turn, at, foe, me, outs) => (at === turn ? outs : planOutcomes(at, foe, me));
+
+// The moves a foe's own use fails later (#844, game-code.md §5): `{ name, type }`, the type it strips off the user, or
+// `{ name, delayed: true }`.
+const spendsOf = foe => (foe.moveset ?? []).flatMap(pm => {
+  const t = pm ? moveTraits(pm.getMove()) : null;
+  return t?.removedType != null ? [{ name: pm.getName(), type: t.removedType }] : t?.delayed ? [{ name: pm.getName(), delayed: true }] : [];
+});
+// What `foe`'s earlier uses left behind: `gone`, the types they stripped, and `wait`, its uses at `me` still to come
+// that the delayed attack on `me`'s slot blocks.
+const UNSPENT = { gone: [], wait: 0 };
+const stateKey = state => `${state.gone.join(",")}/${state.wait}`;
+// `at` with `state` written over the field as it stands, whose own delayed attack on `me`'s slot has `real` turns left.
+const spentTurn = (at, foe, me, state, real) => {
+  const queued = state.wait > 0;
+  if (!state.gone.length && queued === real > 0) return at;
+  return at.memo(`spent:${foe.id}>${me.id}:${state.gone.join(",")}:${queued ? 1 : 0}`, () => at.assuming([
+    ...(state.gone.length ? [{ mon: foe, types: typesWithout(foe, state.gone) }] : []),
+    ...(queued === real > 0 ? [] : [{ mon: me, delayedAttack: queued }]),
+  ]));
+};
+// As `RemoveTypeAttr` leaves them (game-code.md §5).
+const typesWithout = (foe, gone) => {
+  const left = (foe.getTypes?.({ includeTeraType: false }) ?? []).filter(t => !gone.includes(t));
+  return left.length ? left : [PokemonType.UNKNOWN];
+};
+// The states one use takes `dist` (key → `{ state, p }`) to. `picksOf(state)`: `[{ m, pick, atMe }]`, a row with the
+// chance it is picked and the chance it is picked at `me`.
+const spendStep = (foe, spends, dist, picksOf, next) => {
+  const out = new Map();
+  const add = (state, p) => {
+    if (!(p > 0)) return;
+    const k = stateKey(state);
+    if (out.has(k)) out.get(k).p += p;
+    else out.set(k, { state, p });
+  };
+  for (const { state, p } of dist.values()) {
+    const ticked = { gone: state.gone, wait: Math.max(0, state.wait - 1) };
+    let rest = 1;
+    for (const { m, pick, atMe } of picksOf(state)) {
+      const spend = m.o ? spends.find(x => x.name === m.name) : null;
+      if (!spend) continue;
+      const goes = actChance(foe, rowMove(foe, m).getMove?.() ?? null, next);
+      if (spend.delayed) {
+        add({ gone: state.gone, wait: 2 }, p * atMe * goes);
+        rest -= atMe * goes;
+      } else {
+        add({ gone: [...new Set([...state.gone, spend.type])].sort((a, b) => a - b), wait: ticked.wait }, p * pick * goes);
+        rest -= pick * goes;
+      }
+    }
+    add(ticked, p * Math.max(0, rest));
+  }
+  return out;
+};
+// The `{ expected, use }` of `parts`' landings, each at its `p`.
+const mixLanding = parts => ({
+  expected: parts.reduce((t, { x, p }) => t + p * x.expected, 0),
+  use: squeezeDist(parts.flatMap(({ x, p }) => x.use.map(u => ({ ...u, p: u.p * p }))), 12),
+});
+const SPEND_USES = 9;
+// A foe with a move its own use fails later, use by use (#844): `first`, the rows of its next use, where one this turn
+// may have spent it already; `later[i]`, the `{ expected, use }` of the use after `i` more. Null for any other foe.
+// `onMe(m)`: a later use's row's chance of landing on `me`.
+const spendChain = (turn, foe, me, { outs, moves, next, turns, onMe }) => {
+  const spends = spendsOf(foe);
+  if (!spends.length) return null;
+  const real = spends.some(x => x.delayed) ? turn.delayedOn(me) : 0;
+  const rows = new Map();
+  const replayOn = (at, state) => {
+    const k = `${at.key}|${stateKey(state)}`;
+    if (!rows.has(k)) {
+      const t = spentTurn(at, foe, me, state, real);
+      rows.set(k, replayMoves(t, foe, me, outcomesOn(turn, t, foe, me, outs)));
+    }
+    return rows.get(k);
+  };
+  const unspent = replayOn(turns.later, UNSPENT);
+  if (!unspent) return null;
+  const laterRows = state => replayOn(turns.later, state) ?? unspent;
+  // `moves` already are the rows of the field as it stands.
+  const firstRows = state => (spentTurn(turns.first, foe, me, state, real) === turns.first ? moves : replayOn(turns.first, state) ?? moves);
+  const asNow = list => list.map(m => ({ m, pick: m.pick ?? m.p, atMe: m.p }));
+  const asLater = list => list.map(m => ({ m, pick: m.p, atMe: onMe(m) }));
+  // The real one blocks this turn's use and each after it until it lands; a benched foe's first comes a turn on at least.
+  const start = { gone: [], wait: next && !foe.isOnField?.() ? Math.max(0, real - 1) : real };
+  let dist = new Map([[stateKey(start), { state: start, p: 1 }]]);
+  if (next && foe.isOnField?.()) dist = spendStep(foe, spends, dist, () => asNow(likelyMoves(turn, foe, me, outs, false)), false);
+  const first = [...dist.values()].flatMap(({ state, p }) => firstRows(state).map(m => (p === 1 ? m : { ...m, p: m.p * p, ...(m.pick != null ? { pick: m.pick * p } : {}) })));
+  dist = spendStep(foe, spends, dist, state => asNow(firstRows(state)), next);
+  const lands = new Map();
+  const landOf = state => {
+    const k = stateKey(state);
+    if (!lands.has(k)) lands.set(k, landing(foe, laterRows(state), onMe, next));
+    return lands.get(k);
+  };
+  const later = [];
+  for (let i = 0; i < SPEND_USES; i++) {
+    later.push(mixLanding([...dist.values()].map(({ state, p }) => ({ x: landOf(state), p }))));
+    dist = spendStep(foe, spends, dist, state => asLater(laterRows(state)), next);
+  }
+  return { first, later };
+};
 
 // A foe's lock still running: `left` uses, its queued one included (game-code.md §5).
 const lockOf = foe => {
@@ -258,7 +364,7 @@ const landing = (foe, moves, pOf, next) => {
   for (const m of moves) {
     const q = m.o ? pOf(m) : 0;
     if (!(q > 0)) continue;
-    const pm = m.o.pm ?? foe.moveset.find(x => x?.getName() === m.name) ?? NO_MOVE_INFO;
+    const pm = rowMove(foe, m);
     const p = q * actChance(foe, pm.getMove?.() ?? null, next);
     expected += p * m.o.expected;
     for (const x of useOf(m.o)) use.push({ d: x.d, p: x.p * p, n: x.n ?? 1, se: x.d > 0 && (m.o.e ?? 1) >= 2 ? 1 : 0 });
@@ -293,19 +399,23 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
   const ownAt = ownFrom > 0 ? turns.later : turns.first;
   const ownMoves = ownFrom != null && live ? replayMoves(ownAt, foe, me, outcomesOn(turn, ownAt, foe, me, outs), { afterLock: true }) : null;
   if (ownMoves && ownFrom <= 0) moves = ownMoves;
+  // This turn's rows carry their share of the target, and a replay at `me` none: in a double each of ours takes the
+  // uses after this one alike, as a re-drawn target's (`likelyMoves`).
+  const share = !next && foe.isOnField?.() && turn.facts.double ? 1 / Math.max(1, opponentCount(foe)) : 1;
+  const onMe = m => m.p * (m.o?.spread ? 1 : share);
+  const chain = live && !lockedRow ? spendChain(turn, foe, me, { outs, moves, next, turns, onMe }) : null;
+  if (chain) moves = chain.first;
   const { expected, use } = landing(foe, moves, m => m.p, next);
   const own = ownMoves && ownFrom > 0 ? landing(foe, ownMoves, m => m.p, next) : null;
   // A benched foe's picks after its first are made at the Tera it takes then (game-code.md §7), a first-turn-only
   // move's on a turn past its first (#824), and every pick after this turn's against our own Tera (#649).
-  const laterPicks = live && (turn.teraLater(foe) || turns.later !== turns.first || (!next && !!turn.ourTeraOn?.(me)))
+  const laterPicks = !chain && live && (turn.teraLater(foe) || turns.later !== turns.first || (!next && !!turn.ourTeraOn?.(me)))
     ? replayMoves(turns.later, foe, me, outcomesOn(turn, turns.later, foe, me, outs)) : null;
-  // This turn's rows carry their share of the target, and a replay at `me` none: in a double each of ours takes the
-  // uses after this one alike, as a re-drawn target's (`likelyMoves`).
-  const share = !next && foe.isOnField?.() && turn.facts.double ? 1 / Math.max(1, opponentCount(foe)) : 1;
   // `later`: the uses after this one, where a re-drawn target (`likelyMoves`) lands on `me` otherwise, the next is the
   // foe's own pick, the foe has Tera'd since, or its first turn on the field is behind it; null where none.
   const later = own && ownFrom === 1 ? own
-    : laterPicks ? landing(foe, laterPicks, m => m.p * (m.o?.spread ? 1 : share), next)
+    : chain ? chain.later[0]
+    : laterPicks ? landing(foe, laterPicks, onMe, next)
     : moves.some(m => m.pLater != null) ? landing(foe, moves, m => m.pLater ?? m.p, next) : null;
   const lockRule = { relock: false, immune };
   const steps = lockedRow ? lockSteps([{ s: lockState(lock.left, 0), p: 1 }], lockRule) : null;
@@ -315,12 +425,15 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
   // use is the same whether it went off.
   const lockChain = steps ? i => ({ from: steps[i + spent].at, step: s => lockStep(s, lockRule) }) : null;
   let pKo = 0, first = 0, koFirst = 0, worst = null, likely = null, drained = 0, unblocked = 0;
+  // A spend chain's rows name a move once per state it may be picked in.
+  const pOf = new Map();
+  for (const m of moves) pOf.set(m.name, (pOf.get(m.name) ?? 0) + m.p);
   const kos = [], boost = {};
   for (const m of moves) {
-    if (!likely || m.p > likely.p) likely = m;
+    if (!likely || pOf.get(m.name) > pOf.get(likely.name) || (m.name === likely.name && m.p > likely.p)) likely = m;
     if (!(m.p > 0)) continue;
     if (m.o?.bypassProtect) unblocked += m.p;
-    const pm = m.o?.pm ?? foe.moveset.find(x => x?.getName() === m.name) ?? NO_MOVE_INFO;
+    const pm = rowMove(foe, m);
     const order = actionOrder(turn, foe, pm, me, myPm ?? NO_MOVE_INFO, { thisTurn: !next });
     first += m.p * order;
     if (!m.o) {
@@ -340,7 +453,7 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
   const brief = m => m && { name: m.name, type: m.type, e: m.o?.e ?? null, p: m.p, hits: hitCounts(m.o), ...(m.fails ? { fails: true } : {}) };
   return {
     expected, worst: worst?.o.max ?? 0, pKo, first, koFirst: pKo > 0 ? koFirst / pKo : first,
-    move: brief(likely), worstMove: brief(worst), moves: kos, hp: me.hp, from: foe.name, live, use, later,
+    move: brief(likely && { ...likely, p: pOf.get(likely.name) }), worstMove: brief(worst), moves: kos, hp: me.hp, from: foe.name, live, use, later,
     exact: !!exactRow, confidence: exactRow ? action.confidence : "estimate",
     // Battler indices: the game's own answer, not a share.
     targets: exactRow ? [...(exactRow.targets ?? [])] : null,
@@ -353,10 +466,18 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
     // P(its i-th use from now goes off) as its lock's confusion leaves it, and `koCurve`'s `chain` of the lock from
     // that use on; `own` lands from use `ownFrom` on.
     lockAct, lockChain, own, ownFrom,
+    // The `{ expected, use }` of its i-th use from now, i ≥ 1, where those differ use to use; `later` is its first.
+    laterAt: chain ? i => chain.later[Math.min(i, chain.later.length) - 1] : null,
   };
 });
 // The `{ expected, use }` of `t`'s i-th use from now.
-const threatUse = (t, i) => (t?.own && i >= t.ownFrom ? t.own : i && t?.later ? t.later : t);
+const threatUse = (t, i) => (t?.own && i >= t.ownFrom ? t.own : i && t?.laterAt ? t.laterAt(i) : i && t?.later ? t.later : t);
+// The `{ expected, use }` one turn after this stands for: `later`, or the mean of the uses after this one where those
+// differ use to use; null where neither is there.
+// @only 35-team-plan, tests: laterUse
+export const laterUse = t => (t?.laterAt
+  ? mixLanding(Array.from({ length: SPEND_USES }, (_, i) => ({ x: t.laterAt(i + 1), p: 1 / SPEND_USES })))
+  : t?.later ?? null);
 
 // The stat stages `p` gains a KO (game-code.md §18): { up: { [stat 1–5]: stages }, ability, any }, `any` when every
 // faint counts and not only its own KOs. Speed is in `up` for the note; the damage factors leave it out.

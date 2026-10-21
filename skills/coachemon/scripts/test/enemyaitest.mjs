@@ -13,10 +13,10 @@ class FirstMoveCondition {}
 const mkMove = m => {
   const mv = {
     id: m.id, name: m.name, type: m.type ?? 0, category: m.category ?? 0, moveTarget: m.moveTarget ?? 3, power: m.power ?? 80,
-    attrs: [], hasAttr: n => (m.attrs ?? []).includes(n), getAttrs: () => [], is: n => n === "AttackMove" && (m.category ?? 0) !== 2,
+    attrs: m.attrObjs ?? [], hasAttr: n => (m.attrs ?? []).includes(n), getAttrs: () => [], is: n => n === "AttackMove" && (m.category ?? 0) !== 2,
     getUserBenefitScore: spy("getUserBenefitScore", u => (typeof m.user === "function" ? m.user(u) : m.user ?? 0)),
     getTargetBenefitScore: spy("getTargetBenefitScore", (u, t) => (typeof m.target === "function" ? m.target(t.getBattlerIndex()) : m.target ?? 0)),
-    applyConditions: spy("applyConditions", (u, t) => (m.cond ? m.cond(scene, u) : true)),
+    applyConditions: spy("applyConditions", (u, t) => (m.cond ? m.cond(scene, u, t) : true)),
     // `once`: a first-turn-only move, its `FirstMoveCondition` where Fake Out keeps it (game-code.md §5).
     ...(m.once ? { conditionsSeq3: [new FirstMoveCondition()] } : {}),
   };
@@ -59,7 +59,10 @@ const setup = ({ player, enemy, double = false, phase = "CommandPhase", trainer 
     phaseManager: { getCurrentPhase: () => (phase ? { phaseName: phase } : null), queueMessage() {} },
     getField: active => (active ? field.filter(Boolean) : field),
     getPlayerParty: () => player, getEnemyParty: () => enemy,
-    arena: { isMoveWeatherCancelled: () => false, isMoveTerrainCancelled: () => false },
+    arena: {
+      isMoveWeatherCancelled: () => false, isMoveTerrainCancelled: () => false,
+      positionalTagManager: { tags: [], canAddTag(type, i) { return !this.tags.some(t => t.tagType === type && t.targetIndex === i); } },
+    },
     currentBattle: {
       waveIndex: 10, turn: 3, double, enemySwitchCounter: counter, trainer, battleSeedState: "seed0",
       randSeedInt(range, min = 0) { this.battleSeedState += "+"; return min; }, ...battle,
@@ -741,6 +744,154 @@ for (const [stale, why] of [[3, "withdrawn earlier"], [1, "never sent in"]]) {
   const t = ai.ask(t => ({ me: planner().threatFrom(t, e, me), sub: planner().threatFrom(t, e, sub) }));
   near(t.me.later?.expected ?? 0, 27.3125 / 2, "half of Tackle's 30, rolled");
   near(t.sub.later?.expected ?? 0, 27.3125 / 2, "a bench mon coming in takes the same half");
+}
+
+// Burn Up as the game builds it (game-code.md §5).
+class RemoveTypeAttr { constructor(t) { this.removedType = t; } }
+const FIRE = 9;
+const BURN_UP = { id: 682, name: "Burn Up", type: FIRE, target: -30, attrObjs: [new RemoveTypeAttr(FIRE)], cond: (_, u) => u.getTypes().includes(FIRE) };
+// A mon whose typing reads its `summonData.types` first, as `getTypes` does (game-code.md §5).
+const typed = (p, base) => {
+  const types = () => (p.summonData.types?.length ? p.summonData.types : base);
+  return Object.assign(p, { getTypes: () => types(), isOfType: t => types().includes(t) });
+};
+const burnUpFoe = (o = {}, moves = [BURN_UP, TACKLE]) => typed(mkMon({ id: "e", player: false, fieldIndex: 0, ...o, moves }), [FIRE]);
+const BU = { e: { 682: 40, 33: 30 } };
+
+// ---- A foe that Burns Up now is priced at Tackle on every use after it (#844).
+{
+  const e = burnUpFoe();
+  const me = foe({ dmg: BU });
+  const ai = setup({ player: [me], enemy: [e] });
+  const got = ai.ask(t => ({ now: names(planner().likelyMoves(t, e, me, planner().planOutcomes(t, e, me), false)), t: planner().threatFrom(t, e, me) }));
+  assert.deepEqual(got.now, [["Burn Up", 100, "dmg"]], "this turn's pick");
+  near(got.t.later?.expected ?? 0, 27.3125, "Tackle's 30, rolled, once Burn Up has gone off");
+  assert.equal(e.summonData.types, undefined, "the typing is put back");
+}
+
+// ---- A bench mon of ours coming in meets the foe after this turn's Burn Up.
+{
+  const e = burnUpFoe();
+  const me = foe({ dmg: BU });
+  const sub = mkMon({ id: "sub", player: true, fieldIndex: null, dmg: BU });
+  const ai = setup({ player: [me, sub], enemy: [e] });
+  const t = ai.ask(t => planner().threatFrom(t, e, sub, null, { next: true }));
+  assert.deepEqual([t.move.name, t.move.p], ["Tackle", 1], "its pick then");
+  near(t.expected, 27.3125, "Tackle's");
+}
+
+// ---- Where this turn's pick is only likely, the read after it weighs both: a move named either way counts once.
+{
+  const e = burnUpFoe();
+  const me = foe({ dmg: BU });
+  const sub = mkMon({ id: "sub", player: true, fieldIndex: null, dmg: BU });
+  const ai = setup({ player: [me, sub], enemy: [e], phase: "CheckSwitchPhase" });
+  const t = ai.ask(t => planner().threatFrom(t, e, sub, null, { next: true }));
+  const [bu, tk] = [36.625, 27.3125];
+  near(t.expected, 0.89 * tk + 0.11 * (0.89 * bu + 0.11 * tk), "Tackle after a Burn Up, else either");
+  assert.equal(t.move.name, "Tackle");
+  near(t.move.p, 0.89 + 0.11 * 0.11, "Tackle's chance, both ways");
+}
+
+// ---- A foe with Burn Up alone names it again and fails, dealing nothing after its first.
+{
+  const e = burnUpFoe({}, [BURN_UP]);
+  const me = foe({ dmg: BU });
+  const sub = mkMon({ id: "sub", player: true, fieldIndex: null, dmg: BU });
+  const ai = setup({ player: [me, sub], enemy: [e] });
+  const got = ai.ask(t => ({ now: planner().threatFrom(t, e, me), next: planner().threatFrom(t, e, sub, null, { next: true }) }));
+  assert.ok(got.now.expected > 0, "this turn's lands");
+  assert.equal(got.now.later?.expected, 0, "the ones after it don't");
+  assert.deepEqual([got.next.move.name, got.next.move.p, !!got.next.move.fails], ["Burn Up", 1, true], "the next-turn read names it failing");
+  assert.equal(got.next.expected, 0);
+}
+
+// ---- A benched foe that may Burn Up on entry keeps it for later only as often as it didn't.
+{
+  // Burn Up scores 30 ×1.5 STAB against Tackle's 10: SMART advances round(10/45·50) % = 11 %.
+  const e = mkMon({ id: "x", player: false, fieldIndex: 0, moves: [TACKLE] });
+  const bench = burnUpFoe({ id: "b", fieldIndex: null });
+  const me = foe({ dmg: { b: BU.e } });
+  const ai = setup({ player: [me], enemy: [e, bench] });
+  const t = ai.ask(t => planner().threatFrom(t, bench, me, null, { next: true }));
+  const [bu, tk] = [36.625, 27.3125];
+  const fresh = 0.89 * bu + 0.11 * tk;
+  near(t.expected, fresh, "its entry use");
+  near(t.later.expected, 0.89 * tk + 0.11 * fresh, "the next: Tackle once Burn Up went off");
+  near(t.laterAt(2).expected, (1 - 0.11 * 0.11) * tk + 0.11 * 0.11 * fresh, "the one after");
+}
+
+// Future Sight as the game builds it (game-code.md §5).
+class DelayedAttackAttr {}
+const FUTURE_SIGHT = { id: 248, name: "Future Sight", type: 13, target: -30, attrObjs: [new DelayedAttackAttr()],
+  cond: (s, _, t) => s.arena.positionalTagManager.canAddTag("DELAYED_ATTACK", t.getBattlerIndex()) };
+
+// ---- A foe that uses Future Sight now fails it on its next two uses, and has it back on the third.
+{
+  const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [FUTURE_SIGHT, TACKLE] });
+  const me = foe({ dmg: { e: { 248: 40, 33: 30 } } });
+  const ai = setup({ player: [me], enemy: [e] });
+  const t = ai.ask(t => planner().threatFrom(t, e, me));
+  const [fs, tk] = [36.625, 27.3125];
+  // Future Sight 30 against Tackle's 10: SMART advances round(10/30·50) % = 17 %.
+  const fresh = 0.83 * fs + 0.17 * tk;
+  near(t.expected, fs, "this turn's");
+  near(t.laterAt(1).expected, tk, "the next: Tackle");
+  near(t.laterAt(2).expected, tk, "and the one after");
+  near(t.laterAt(3).expected, fresh, "then Future Sight is back");
+  near(t.laterAt(4).expected, 0.83 * tk + 0.17 * fresh, "and blocked again as often as it went off");
+  assert.equal(scene.arena.positionalTagManager.tags.length, 0, "the arena is put back");
+}
+
+// ---- A turn after this one stands for every use after it: Future Sight's averages its blocked and open turns.
+{
+  const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [FUTURE_SIGHT, TACKLE] });
+  const me = foe({ dmg: { e: { 248: 40, 33: 30 } } });
+  const ai = setup({ player: [me], enemy: [e] });
+  const got = ai.ask(t => planner().laterUse(planner().threatFrom(t, e, me)).expected);
+  // Uses 1–9: blocked, blocked, open (83 % Future Sight), then blocked as often as it went off.
+  near(got, 29.96984752515679, "the mean of its next nine");
+}
+
+// ---- A Future Sight already queued on our slot blocks the foe's only until it lands.
+for (const [left, blocked] of [[1, 0], [2, 1]]) {
+  const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [FUTURE_SIGHT, TACKLE] });
+  const me = foe({ dmg: { e: { 248: 40, 33: 30 } } });
+  const ai = setup({ player: [me], enemy: [e] });
+  scene.arena.positionalTagManager.tags = [{ tagType: "DELAYED_ATTACK", targetIndex: 0, turnCount: left }];
+  const t = ai.ask(t => planner().threatFrom(t, e, me));
+  const [fs, tk] = [36.625, 27.3125];
+  const fresh = 0.83 * fs + 0.17 * tk;
+  for (let i = 1; i <= blocked; i++) near(t.laterAt(i).expected, tk, `${left} left: use ${i} still blocked`);
+  near(t.laterAt(blocked + 1).expected, fresh, `${left} left: Future Sight is back once it has landed`);
+  assert.equal(scene.arena.positionalTagManager.tags.length, 1, "the queued one is put back");
+}
+
+// ---- The KO curve takes one Burn Up and Tackles after it: 40 + 30 + 30 leaves 100 HP standing until the fourth.
+{
+  const e = burnUpFoe();
+  const me = foe({ dmg: BU });
+  const ai = setup({ player: [me], enemy: [e] });
+  const by = ai.ask(t => planner().foeCurve(t, planner().threatFrom(t, e, me), me, 100, { foe: e }).by);
+  assert.ok(by[2] < 0.05, `three uses rarely reach 100: ${by[2]}`);
+  assert.ok(by[3] > 0.5, `four do: ${by[3]}`);
+}
+
+// ---- In a double, a Burn Up at either of ours spends it, and a Future Sight blocks only the slot it went at.
+{
+  const [fs, tk] = [36.625, 27.3125];
+  const field = moves => {
+    const dmg = { e: { 682: 40, 248: 40, 33: 30 } };
+    const me = foe({ dmg }), me2 = mkMon({ id: "me2", player: true, fieldIndex: 1, dmg });
+    const x = mkMon({ id: "x", player: false, fieldIndex: 1, moves: [TACKLE] });
+    const e = burnUpFoe({}, moves);
+    const ai = setup({ player: [me, me2], enemy: [e, x], double: true });
+    return ai.ask(t => [me, me2].map(m => planner().threatFrom(t, e, m).later.expected));
+  };
+  for (const got of field([BURN_UP, TACKLE])) near(got, tk / 2, "Tackle's, split over ours, on each");
+  const fresh = 0.83 * fs + 0.17 * tk;
+  assert.deepEqual(field([FUTURE_SIGHT, TACKLE]).map(x => Math.round(x * 1e6)).sort((a, b) => a - b),
+    [tk / 2, fresh / 2].map(x => Math.round(x * 1e6)).sort((a, b) => a - b), "the slot it went at Tackles, the other has it");
 }
 
 console.log("enemy AI: all assertions passed");

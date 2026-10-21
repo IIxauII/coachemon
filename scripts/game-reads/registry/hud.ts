@@ -1172,6 +1172,7 @@ export const HUD: Area = {
         "src/data/balance/biomes/wasteland.ts#pokemonPool",
       ],
     },
+    { name: "positionalTagManager", kind: "field", at: ["src/field/arena.ts#Arena.positionalTagManager"] },
     {
       name: "pokerus",
       kind: "field",
@@ -1240,6 +1241,7 @@ export const HUD: Area = {
     },
     { name: "randSeedInt", kind: "method", at: ["src/battle.ts#Battle.randSeedInt"] },
     { name: "recoil", kind: "field", at: ["src/data/abilities/ab-attrs.ts#FormBlockDamageAbAttr.recoil"] },
+    { name: "removedType", kind: "field", at: ["src/data/moves/move.ts#RemoveTypeAttr.removedType"] },
     {
       name: "removeEventListener",
       kind: "method",
@@ -1429,6 +1431,7 @@ export const HUD: Area = {
       ],
     },
     { name: "tag", kind: "field", at: ["src/data/abilities/ab-attrs.ts#PreApplyBattlerTagAbAttrParams.tag"] },
+    { name: "targetIndex", kind: "field", at: ["src/data/positional-tags/positional-tag.ts#PositionalTag.targetIndex"] },
     {
       name: "teamTransformations",
       kind: "field",
