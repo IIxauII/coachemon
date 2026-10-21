@@ -321,7 +321,8 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
     return sit && room > 1e-12 ? Math.max(0, Math.min(1, (goneBy(n + 1) - goneBy(n)) / room)) : 0;
   };
   // Takes `rate` of `b`'s Sitrus Berries, a fraction of one at that chance, changing `b` in place; what stands goes onto
-  // `out`.
+  // `out`. Gotcha: the take scales with `b`'s own count, but the game draws a stack, whatever its count (game-code.md
+  // §8), so a stack eaten down from two loses its last at about half the game's rate.
   const steal = (b, rate, out) => {
     const x = b.sitrus * rate;
     if (!(x > 0)) { out.push(b); return; }
@@ -504,9 +505,9 @@ const opponentsOf = (env, p) => {
   try { return (env?.field ?? []).filter(q => q && q !== p && q.isPlayer?.() !== p.isPlayer?.()); } catch { return []; }
 };
 const tagsOf = p => { try { return p.summonData?.tags ?? []; } catch { return []; } };
-// The Sitrus Berry's trigger. `getHpRatio` rounds to a whole percent, so it wants hp/max < 0.495 (game-code.md §21).
+// The Sitrus Berry's trigger: `getHpRatio` rounds to a whole percent (game-code.md §21).
 const belowHalf = (hp, max) => Math.round((hp / max) * 100) / 100 < 0.5;
-const berryQuarter = p =>Math.max(1, Math.floor(p.getMaxHp() / 4)) * (ability(p, "DoubleBerryEffectAbAttr") ? 2 : 1);
+const berryQuarter = p => Math.max(1, Math.floor(p.getMaxHp() / 4)) * (ability(p, "DoubleBerryEffectAbAttr") ? 2 : 1);
 const unnerved = (env, p) => opponentsOf(env, p).some(q => ability(q, "PreventBerryUseAbAttr"));
 // One Sitrus or Enigma Berry's heal before the max-HP cap, how many `p` holds, and the chance `keep` that a Berry Pouch
 // leaves one it eats held; null under Heal Block. An opposing Unnerve is the reader's to ask, since it turns on who

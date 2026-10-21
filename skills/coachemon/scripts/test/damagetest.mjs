@@ -493,7 +493,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   console.log(`from full, 70 a use: ${above.map(x => x.toFixed(2)).join(" ")} · unnerved ${unnerved.map(x => x.toFixed(2)).join(" ")}`);
   assert.deepEqual(above.slice(0, 4), [0, 0, 0, 1], "a holder starting above half eats once the hits take it below");
   assert.deepEqual(unnerved.slice(0, 3), [0, 0, 1], "`sitrus` null eats none");
-  // 80 taking 30: 50 eats (100), 70, 40, 10, down on use 5 — one heal, not one a turn.
+  // 80 taking 30: 50 eats (100), 70, 40, 10, down on use 5.
   const below = curve(80, 30, { sitrus: 0 });
   assert.deepEqual(below.by.slice(0, 5), [0, 0, 0, 0, 1], "a holder starting below half heals once, not every turn");
   assert.deepEqual(below.after1.map(x => [x.hp, x.sitrus]), [[100, 0]], "each branch carries the Sitrus it still holds");
@@ -513,7 +513,6 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   near(halfStolen.find(x => x.hp === 100)?.p ?? 0, 0.5, "half the branches still had it to eat");
   // Half gone by use 1, all by use 2: use 2's steal takes it off every branch that kept it, none left to eat.
   assert.deepEqual(curve(200, 70, { sitrus: n => Math.min(1, n / 2) }).by.slice(0, 3), [0, 0, 1], "a steal is counted against what is still held");
-  // An unnerved curve eats none, so its branches still hold it for a later curve that may.
   assert.deepEqual(curve(200, 70).after1.map(x => x.sitrus), [1], "a curve that eats none leaves it held");
 }
 
