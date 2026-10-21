@@ -1,7 +1,7 @@
 == cyrus (live)
 ⇄ Gyarados → Weavile switches — moves aimed at it
 now: ⇄ Morpeko out › Metagross in
-next: ⚔ Metagross ⚠ Dark ×2 56% {next turn: Weavile's Knock Off: ~56% of current HP} Steel Meteor Mash → Weavile 2 hits boss: 2 bars — no 1HKO
+next: ⚔ Metagross ⚠ Dark ×2 56% {next turn: Weavile's Knock Off: ~56% of current HP} Steel Meteor Mash → Weavile 2 hits · 90% boss: 2 bars — no 1HKO
 ↺ if it stays: Morpeko Electric Aura Wheel → Gyarados
 foes weak to: Electric ×1 Fighting ×1
 Gyarados Gyarados L82 Water Flying 100% ▲ Electric ×4
@@ -146,7 +146,7 @@ Fight plan steps approximate winnable
 ➜ 1.~ Garchomp Dragon Dragon Claw → Hydreigon KO · 100% left
 ➜ 2.~ Lucario Fighting Aura Sphere → Snorlax KO · 60% left
 == doubles spare hit: focus, the partner's KO is not certain (live)
-⚔ Garchomp Dragon Dragon Claw → Hydreigon 1 hit spare hit — KO without it
+⚔ Garchomp Dragon Dragon Claw → Hydreigon 1 hit · 50% spare hit — KO without it
 ⚔ Lucario Fighting Aura Sphere → Hydreigon 1 hit
 · focus Hydreigon : KO before it moves
 foes weak to: Fighting ×2 Dragon ×1
@@ -451,4 +451,7 @@ Fire Fang ×2 into us at 100, Enigma: 150 HP (6%) · 151 HP (50%) · 152 HP (38%
 Fire Fang ×2 into us at full in hail, Enigma: 250 HP (81%) · 250 HP (6%) · 250 HP (6%) · 250 HP (6%)
 Fire Punch at 50% beside Knock Off: the berry pays 46.5
 Aura Wheel ×4 into a Gyarados that survives at 1, Enigma: 63 HP bar 0 (100%)
+== inaccurate pick
+⚔ Quaquaval Normal Mega Kick → Rayquaza 2 hits · 75%
+Quaquaval Mega Kick → Rayquaza · 2 hits · 75%
 ok
