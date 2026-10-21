@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { mountHud } from "./fake-page.mjs";
-import { wholeCard } from "./panel.mjs";
 import { GAME_PROTO } from "./game-proto.mjs";
 import { Challenges, PartyMemberStrength, PokemonType, SpeciesId } from "../../../../src/enums/generated.ts";
 import { cat, TY } from "./fake-mon.mjs";
@@ -58,9 +57,6 @@ const typeReq = types => make("TypeRequirement", { queryParty: party => party.fi
 // `met`: force the requirement answer (a scene requirement the mock doesn't evaluate).
 const option = ({ mode = 0, requirements = [], primary = [], met } = {}) => ({ optionMode: mode, requirements, primaryPokemonRequirements: primary, primaryPokemon: undefined, met });
 
-const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
-const lines = el => wholeCard(el)
-  .map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
 
 
 // Scripted fork draws: `draws[offset]` is the sequence a fork sown at that offset yields (taken modulo the range);
@@ -131,14 +127,14 @@ const mount = ({ type, labels, options, party = team(), wave = 30, money = 5000,
     Object.assign(scene.currentBattle, { turn: 1, double: false, battleType: 0, enemySwitchCounter: 0,
       getBattlerCount: () => 1, trainer: null });
   }
-  const { el } = mountHud({ scene, rnd });
+  const { card } = mountHud({ scene, rnd });
   // The chunk scan finds nothing under node: `tables` stands in for what it would have found, and the card is drawn
   // again.
   if (tables) {
     globalThis.__hud["04-game-tables"].setGameTables(tables);
     globalThis.__hud["98-watch"].rebuild();
   }
-  return { el, scene, forks, model: () => globalThis.__coachHud.last(), rnd };
+  return { card, scene, forks, model: () => globalThis.__coachHud.last(), rnd };
 };
 // BattleScene.getWaveMoneyAmount.
 function waveMoney(waveIndex, mult) {
@@ -147,7 +143,7 @@ function waveMoney(waveIndex, mult) {
 }
 const show = (title, args) => {
   const r = mount(args);
-  console.log(`== ${title}\n${lines(r.el)}`);
+  console.log(`== ${title}\n${r.card()}`);
   console.log(`summary ${globalThis.__coachHud.summary().encounter}`);
   assert.equal(globalThis.__coachHud.stats().breaches, 0, `${title}: sandbox restored`);
   assert.equal(r.rnd.state(), "!rnd,live", `${title}: live stream untouched`);

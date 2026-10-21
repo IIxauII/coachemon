@@ -1,6 +1,7 @@
 == classic, 10 points
-⌃ ×
-🌱 Starters 0/10 pts best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
+card starters W- best: Gible (carry) + Magikarp + Squirtle
+strip 🌱 Starters 0/10 pts
+best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
 Proposals
 ★ best 10 pts · SE vs 10 types
 Gible Gible 6 carry final BST 600 (Garchomp) · passive Rough Skin
@@ -21,8 +22,9 @@ Azurill Azurill 1 final BST 420 (Azumarill) · but evolves by item or condition
 · cursor: Rattata Rattata 1 pts · #9 of 10 IVs 186/186 · final BST 413 (Raticate)
 summary best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
 == Gible picked
-⌃ ×
-🌱 Starters 6/10 pts best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Magikarp: Gible (carry) + Squirtle + Pikachu · 10/10 pts; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
+card starters W- best: Gible (carry) + Magikarp + Squirtle
+strip 🌱 Starters 6/10 pts
+best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Magikarp: Gible (carry) + Squirtle + Pikachu · 10/10 pts; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
 ✓ picked: Gible
 Proposals
 ★ best 10 pts · SE vs 10 types
@@ -41,8 +43,9 @@ Pidgey Pidgey 1 final BST 479 (Pidgeot)
 Azurill Azurill 1 final BST 420 (Azumarill) · but evolves by item or condition
 summary best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Magikarp: Gible (carry) + Squirtle + Pikachu · 10/10 pts; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
 == no tables
-⌃ ×
-🌱 Starters 0/10 pts best: Squirtle (carry) + Bulbasaur + Charmander + Azurill · 10/10 pts; without Squirtle: Bulbasaur (carry) + Charmander + Magikarp + Azurill + Rattata · 9/10 pts; trio: Squirtle (carry) + Bulbasaur + Charmander · 9/10 pts
+card starters W- best: Squirtle (carry) + Bulbasaur + Charmander + Azurill
+strip 🌱 Starters 0/10 pts
+best: Squirtle (carry) + Bulbasaur + Charmander + Azurill · 10/10 pts; without Squirtle: Bulbasaur (carry) + Charmander + Magikarp + Azurill + Rattata · 9/10 pts; trio: Squirtle (carry) + Bulbasaur + Charmander · 9/10 pts
 Proposals
 ★ best 10 pts · SE vs 12 types
 Squirtle Squirtle 3 carry final BST ~534 · luck +3
@@ -63,8 +66,9 @@ Notes
 final forms estimated until the game's tables load
 summary best: Squirtle (carry) + Bulbasaur + Charmander + Azurill · 10/10 pts; without Squirtle: Bulbasaur (carry) + Charmander + Magikarp + Azurill + Rattata · 9/10 pts; trio: Squirtle (carry) + Bulbasaur + Charmander · 9/10 pts
 == single type, 1 point
-⌃ ×
-🌱 Starters 0/1 pts best: Magikarp (carry) · 1/1 pts
+card starters W- best: Magikarp (carry)
+strip 🌱 Starters 0/1 pts
+best: Magikarp (carry) · 1/1 pts
 Proposals
 ★ best 1 pts · SE vs 6 types
 Magikarp Magikarp 1 carry final BST 540 (Gyarados) · passive Intimidate (Gyarados)
@@ -72,8 +76,9 @@ Notes
 single type: shared weaknesses not counted
 summary best: Magikarp (carry) · 1/1 pts
 == Fresh Start
-⌃ ×
-🌱 Starters 0/10 pts best: Dratini (carry) + Charmander + Magikarp + Pikachu + Azurill · 10/10 pts · weak Rock; without Dratini: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts; trio: Gible (carry) + Charmander + Magikarp · 10/10 pts
+card starters W- best: Dratini (carry) + Charmander + Magikarp + Pikachu + Azurill
+strip 🌱 Starters 0/10 pts
+best: Dratini (carry) + Charmander + Magikarp + Pikachu + Azurill · 10/10 pts · weak Rock; without Dratini: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts; trio: Gible (carry) + Charmander + Magikarp · 10/10 pts
 Proposals
 ★ best 10 pts · SE vs 12 types · weak Rock
 Dratini Dratini 4 carry final BST 600 (Dragonite)
@@ -96,8 +101,9 @@ Notes
 Fresh Start: no passives, egg moves or luck
 summary best: Dratini (carry) + Charmander + Magikarp + Pikachu + Azurill · 10/10 pts · weak Rock; without Dratini: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts; trio: Gible (carry) + Charmander + Magikarp · 10/10 pts
 == Ability Randomizer 1
-⌃ ×
-🌱 Starters 0/10 pts 🔀 randomized best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
+card starters W- best: Gible (carry) + Magikarp + Squirtle randomized
+strip 🌱 Starters 0/10 pts 🔀 randomized
+best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
 Proposals
 ★ best 10 pts · SE vs 10 types
 Gible Gible 6 carry final BST 600 (Garchomp) · passive Rough Skin
@@ -118,8 +124,9 @@ Azurill Azurill 1 final BST 420 (Azumarill) · but evolves by item or condition
 · cursor: Gible Gible 6 pts · #1 of 10 · in best final BST 600 (Garchomp) · passive Rough Skin · IVs 60/186
 summary best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
 == Ability Randomizer 2
-⌃ ×
-🌱 Starters 0/10 pts 🔀 randomized best: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; without Dratini: Gible (carry) + Magikarp + Squirtle · 10/10 pts
+card starters W- best: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey randomized
+strip 🌱 Starters 0/10 pts 🔀 randomized
+best: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; without Dratini: Gible (carry) + Magikarp + Squirtle · 10/10 pts
 Proposals
 ★ best 10 pts · SE vs 9 types · weak Rock
 Dratini Dratini 4 carry final BST 600 (Dragonite)
@@ -134,8 +141,9 @@ Squirtle Squirtle 3 final BST 530 (Blastoise) · luck +3
 · cursor: Gible Gible 6 pts · #1 of 10 · in without Dratini final BST 600 (Garchomp) · random passive · IVs 60/186
 summary best: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; without Dratini: Gible (carry) + Magikarp + Squirtle · 10/10 pts
 == Moveset Randomizer 1
-⌃ ×
-🌱 Starters 0/10 pts 🔀 randomized best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
+card starters W- best: Gible (carry) + Magikarp + Squirtle randomized
+strip 🌱 Starters 0/10 pts 🔀 randomized
+best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
 Proposals
 ★ best 10 pts · SE vs 10 types
 Gible Gible 6 carry final BST 600 (Garchomp) · passive Rough Skin
@@ -156,8 +164,9 @@ Azurill Azurill 1 final BST 420 (Azumarill) · but evolves by item or condition
 · cursor: Yanma Yanma 3 pts · #10 of 11 BST 390 from L5 · IVs 60/186 · but Yanmega needs a move it likely won't learn
 summary best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
 == Moveset Randomizer 2
-⌃ ×
-🌱 Starters 0/10 pts 🔀 randomized best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
+card starters W- best: Gible (carry) + Magikarp + Squirtle randomized
+strip 🌱 Starters 0/10 pts 🔀 randomized
+best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
 Proposals
 ★ best 10 pts · SE vs 10 types
 Gible Gible 6 carry final BST 600 (Garchomp) · passive Rough Skin
@@ -178,8 +187,9 @@ Azurill Azurill 1 final BST 420 (Azumarill) · but evolves by item or condition
 · cursor: Yanma Yanma 3 pts · #7 of 11 final BST 515 (Yanmega) · BST 390 from L5 · IVs 60/186
 summary best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
 == Moveset Randomizer, bulky starters
-⌃ ×
-🌱 Starters 0/10 pts 🔀 randomized best: Squirtle + Bulbasaur · 6/10 pts; without Squirtle: Bulbasaur · 3/10 pts
+card starters W- best: Squirtle + Bulbasaur randomized
+strip 🌱 Starters 0/10 pts 🔀 randomized
+best: Squirtle + Bulbasaur · 6/10 pts; without Squirtle: Bulbasaur · 3/10 pts
 Proposals
 ★ best 6 pts · SE vs 6 types · no carry
 Squirtle Squirtle 3 final BST 530 (Blastoise) · luck +3
@@ -188,53 +198,60 @@ Bulbasaur Bulbasaur 3 final BST 525 (Venusaur)
 Bulbasaur Bulbasaur 3 final BST 525 (Venusaur)
 summary best: Squirtle + Bulbasaur · 6/10 pts; without Squirtle: Bulbasaur · 3/10 pts
 == Rotom, form 0 uncaught
-⌃ ×
-🌱 Starters 0/10 pts best: Rotom (carry) · 3/10 pts
+card starters W- best: Rotom (carry)
+strip 🌱 Starters 0/10 pts
+best: Rotom (carry) · 3/10 pts
 Proposals
 ★ best 3 pts · SE vs 6 types
 Rotom Rotom 3 carry final BST 520 · BST 520 from L5
 · cursor: Rotom Rotom 3 pts · #1 of 1 · in best final BST 520 · BST 520 from L5 · passive Flame Body
 summary best: Rotom (carry) · 3/10 pts
 == Rotom, Wash saved
-⌃ ×
-🌱 Starters 0/10 pts best: Rotom (carry) · 3/10 pts
+card starters W- best: Rotom (carry)
+strip 🌱 Starters 0/10 pts
+best: Rotom (carry) · 3/10 pts
 Proposals
 ★ best 3 pts · SE vs 5 types
 Rotom Rotom 3 carry final BST 510 · BST 510 from L5
 · cursor: Rotom Rotom 3 pts · #1 of 1 · in best final BST 510 · BST 510 from L5 · passive Water Absorb · immune to Water
 summary best: Rotom (carry) · 3/10 pts
 == Rotom picked as Wash
-⌃ ×
-🌱 Starters 3/10 pts no caught starter fits
+card starters W- no caught starter fits
+strip 🌱 Starters 3/10 pts
+no caught starter fits
 ✓ picked: Rotom
 summary no caught starter fits
 == Seel, rare egg move
-⌃ ×
-🌱 Starters 0/10 pts best: Seel (carry) · 2/10 pts
+card starters W- best: Seel (carry)
+strip 🌱 Starters 0/10 pts
+best: Seel (carry) · 2/10 pts
 Proposals
 ★ best 2 pts · SE vs 6 types · no carry
 Seel Seel 2 carry final BST 475 (Dewgong) · rare egg move Bouncy Bubble (60 Water special · STAB)
 · cursor: Seel Seel 2 pts · #1 of 1 · in best final BST 475 (Dewgong) · rare egg move Bouncy Bubble (60 Water special · STAB) · IVs 60/186
 summary best: Seel (carry) · 2/10 pts
 == Minun, ally-only passive
-⌃ ×
-🌱 Starters 0/10 pts best: Minun (carry) · 1/10 pts
+card starters W- best: Minun (carry)
+strip 🌱 Starters 0/10 pts
+best: Minun (carry) · 1/10 pts
 Proposals
 ★ best 1 pts · SE vs 2 types · no carry
 Minun Minun 1 carry rare egg move Encore (status) · final BST 405
 · cursor: Minun Minun 1 pts · #1 of 1 · in best rare egg move Encore (status) · BST 405 from L5 · IVs 60/186 · passive Friend Guard · ally-only, nothing in singles
 summary best: Minun (carry) · 1/10 pts
 == Bronzor, Levitate
-⌃ ×
-🌱 Starters 0/10 pts best: Bronzor (carry) · 2/10 pts
+card starters W- best: Bronzor (carry)
+strip 🌱 Starters 0/10 pts
+best: Bronzor (carry) · 2/10 pts
 Proposals
 ★ best 2 pts · SE vs 5 types
 Bronzor Bronzor 2 carry final BST 500 (Bronzong) · passive Levitate · immune to Ground, its weakness
 · cursor: Bronzor Bronzor 2 pts · #1 of 1 · in best final BST 500 (Bronzong) · passive Levitate · immune to Ground, its weakness · IVs 60/186
 summary best: Bronzor (carry) · 2/10 pts
 == Vulpix, Drought
-⌃ ×
-🌱 Starters 0/10 pts best: Vulpix (carry) · 2/10 pts
+card starters W- best: Vulpix (carry)
+strip 🌱 Starters 0/10 pts
+best: Vulpix (carry) · 2/10 pts
 Proposals
 ★ best 2 pts · SE vs 4 types
 Vulpix Vulpix 2 carry final BST 505 (Ninetales) · passive Drought · sun boosts its Fire · but evolves by item or condition

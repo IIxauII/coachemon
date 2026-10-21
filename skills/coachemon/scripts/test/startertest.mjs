@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { mountHud } from "./fake-page.mjs";
-import { wholeCard } from "./panel.mjs";
 import { AbilityId, EvoCondKey, MoveCategory, MoveTarget, Stat, TerrainType, WeatherType } from "../../../../src/enums/generated.ts";
 import { TY } from "./fake-mon.mjs";
 
@@ -197,7 +196,7 @@ const mount = ({ limit = 10, chosen = [], valid = STARTERS, challenges = [], wit
     gameMode: { challenges, modeId: challenges.length ? 4 : 0 }, // `GameModes.CHALLENGE`, `GameModes.CLASSIC`
     currentBattle: null, getPlayerParty: () => [], getEnemyParty: () => [], modifiers: [],
   };
-  const { el } = mountHud({ scene });
+  const { card } = mountHud({ scene });
   // Under node the chunk scan finds no tables: hand them over and draw again, or the card stays the first tick's
   // estimate.
   if (withTables) {
@@ -206,16 +205,12 @@ const mount = ({ limit = 10, chosen = [], valid = STARTERS, challenges = [], wit
     globalThis.__hud["04-game-tables"].setGameTables({ ...tables, eggMoves });
     globalThis.__hud["98-watch"].rebuild();
   }
-  return { el, handler, model: globalThis.__coachHud.last(), summary: globalThis.__coachHud.summary() };
+  return { card, handler, model: globalThis.__coachHud.last(), summary: globalThis.__coachHud.summary() };
 };
-
-const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
-const lines = el => wholeCard(el)
-  .map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
 
 const show = (label, opts) => {
   const last = mount(opts);
-  console.log(`== ${label}\n${lines(last.el)}`);
+  console.log(`== ${label}\n${last.card()}`);
   console.log(`summary ${last.summary?.starters}`);
   return last.model;
 };

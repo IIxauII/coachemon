@@ -1,57 +1,64 @@
 == easy
-⌃ {Hide the drawer} × {Close}
-easy 🎯 W89 Charizard Heat Wave → Rattata · 1 hit
+card battle W89 easy
+strip easy 🎯 W89
+Charizard Heat Wave → Rattata · 1 hit
 ⚔ Charizard Fire Heat Wave → Rattata 1 hit
-we're weak to Flying ×2 · Electric ×2
+Foes: we're weak to Flying ×2 · Electric ×2
 Rattata Rattata L20 Normal 100% ▲ Fighting ↯ Normal Tackle → Charizard moves after
 summary easy | Charizard Heat Wave → Rattata · 1 hit
 == easyDouble
-⌃ {Hide the drawer} × {Close}
-easy 🎯 W89 Charizard Heat Wave → both · 1 hit ; Venusaur Power Whip → Rattata · 1 hit
+card battle W89 easy
+strip easy 🎯 W89
+Charizard Heat Wave → both · 1 hit ; Venusaur Power Whip → Rattata · 1 hit
 ⚔ Charizard Fire Heat Wave → both 1 hit
 ⚔ Venusaur Grass Power Whip → Rattata 1 hit spare hit — KO without it
-we're weak to Flying ×2 · Electric ×2
+Foes: we're weak to Flying ×2 · Electric ×2
 Rattata Rattata L20 Normal 100% ▲ Fighting ↯ Normal Tackle → Venusaur moves after
 Pidgey Pidgey L20 Normal Flying 100% ▲ — ↯ Flying Gust → Charizard moves after
 summary easy | Charizard Heat Wave → both · 1 hit ; Venusaur Power Whip → Rattata · 1 hit
 == double
-⌃ {Hide the drawer} × {Close}
-fight 🎯 W89 Charizard Heat Wave → both · 3 hits ; Venusaur Power Whip → Nidoqueen · 2 hits
+card battle W89 fight
+strip fight 🎯 W89
+Charizard Heat Wave → both · 3 hits ; Venusaur Power Whip → Nidoqueen · 2 hits
 ⚔ Charizard Fire Heat Wave → both Bisharp 1 hit · Nidoqueen 3 hits
 ⚔ Venusaur Grass Power Whip → Nidoqueen 2 hits
-we're weak to Flying ×2 · Electric ×2
+Foes: we're weak to Flying ×2 · Electric ×2
 Bisharp Bisharp L60 Dark Steel 100% ▲ Fighting ×4 Fire ↯ Steel Iron Head → Charizard moves after
 Nidoqueen Nidoqueen L64 Poison Ground 100% ▲ Water ↯ Poison Sludge Bomb → Venusaur moves after
 summary fight | Charizard Heat Wave → both · 3 hits ; Venusaur Power Whip → Nidoqueen · 2 hits
 == lastFoe
-⌃ {Hide the drawer} × {Close}
-easy 🎯 W89 Charizard Heat Wave → Nidoqueen · 2 hits ; Venusaur Power Whip → Nidoqueen · 2 hits
+card battle W89 easy
+strip easy 🎯 W89
+Charizard Heat Wave → Nidoqueen · 2 hits ; Venusaur Power Whip → Nidoqueen · 2 hits
 ⚔ Charizard Fire Heat Wave → Nidoqueen 2 hits
 ⚔ Venusaur Grass Power Whip → Nidoqueen 2 hits
 · focus Nidoqueen : KO before it moves
-we're weak to Flying ×2 · Electric ×2
+Foes: we're weak to Flying ×2 · Electric ×2
 Nidoqueen Nidoqueen L64 Poison Ground 100% ▲ Water ↯ Poison Sludge Bomb → Charizard moves after
 summary easy | Charizard Heat Wave → Nidoqueen · 2 hits ; Venusaur Power Whip → Nidoqueen · 2 hits
 == threat
-⌃ {Hide the drawer} × {Close}
-danger 🎯 W89 Charizard Flamethrower → Lycanroc · 3 hits
+card battle W89 danger
+strip danger 🎯 W89
+Charizard Flamethrower → Lycanroc · 3 hits
 ⚔ Charizard 💀 Rock ×4 567% {Lycanroc's Stone Edge: ~567% of current HP, before it can act} Fire Flamethrower → Lycanroc 3 hits
 ⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
-💀 Charizard ← Lycanroc Stone Edge
+Foes: 💀 Charizard ← Lycanroc Stone Edge
 Lycanroc Lycanroc L70 Rock 100% ▲ Water ↯ Rock Stone Edge → Charizard moves first
 summary danger | Charizard Flamethrower → Lycanroc · 3 hits | 💀 Charizard
 == switchin
-⌃ {Hide the drawer} × {Close}
-danger 🎯 W89 Charizard Flamethrower → Lycanroc
+card battle W89 danger
+strip danger 🎯 W89
+Charizard Flamethrower → Lycanroc
 ⚔ Charizard 💀 Rock ×4 636% {Lycanroc's Stone Edge: ~636% of current HP, before it can act} Fire Flamethrower → Lycanroc
 ⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
-💀 Charizard ← Lycanroc Stone Edge
+Foes: 💀 Charizard ← Lycanroc Stone Edge
 Lycanroc Lycanroc L90 Rock 100% ▲ Water ↯ Rock Stone Edge → Charizard moves first
 summary danger | Charizard Flamethrower → Lycanroc | 💀 Charizard
 queued during prediction: 0; queueMessage restored: true
 == predict
-⌃ {Hide the drawer} × {Close}
-trainer 🎯 W89 · Tester Venusaur Venusaur Power Whip → Ludicolo · 2 hits
+card battle W89 trainer
+strip trainer 🎯 W89 · Tester Venusaur
+Venusaur Power Whip → Ludicolo · 2 hits
 ⇄ Arcanine → Ludicolo switches — moves aimed at it
 now: ⇄ Blastoise out › Venusaur in
 next: ⚔ Venusaur Grass Power Whip → Ludicolo 2 hits
@@ -60,34 +67,37 @@ Foes
 foes weak to: Water ×1
 Arcanine Arcanine L80 Fire 100% ▲ Water
 Ludicolo Ludicolo L80 Water Grass 100% ▲ — ▼ Water ×¼ ↯ Water Surf → Venusaur moves after
-winnable · Venusaur › Blastoise
+Plan: winnable · Venusaur › Blastoise
 Fight plan winnable
 ➜ 1. Venusaur ⇄ Grass Power Whip → Ludicolo switch in · KO · 80% left
 ➜ 2. Blastoise ⇄ Water Wave Crash → Arcanine switch in, takes a hit · KO · 13% left
 summary trainer | Venusaur Power Whip → Ludicolo · 2 hits | plan: winnable · Venusaur › Blastoise
 == risk
-⌃ {Hide the drawer} × {Close}
-danger 🎯 W89 Venusaur Power Whip → Aurorus · 1 hit
+card battle W89 danger
+strip danger 🎯 W89
+Venusaur Power Whip → Aurorus · 1 hit
 ⚔ Venusaur ⚠ Ice ×2 87% {Aurorus's Ice Beam: ~87% of current HP} Grass Power Whip → Aurorus 1 hit
 Foes
 Aurorus Aurorus L66 Rock Ice 100% ▲ Grass ↯ Ice Ice Beam → Venusaur moves after
 summary danger | Venusaur Power Whip → Aurorus · 1 hit
 == single
-⌃ {Hide the drawer} × {Close}
-fight 🎯 W89 Charizard Air Slash → Ninetales · 3 hits
+card battle W89 fight
+strip fight 🎯 W89
+Charizard Air Slash → Ninetales · 3 hits
 ⚔ Charizard Flying Air Slash → Ninetales 3 hits
 ⇄ Charizard out › Blastoise in · optional · takes ~23% · resists Flamethrower
-we're weak to Flying ×2 · Electric ×2
+Foes: we're weak to Flying ×2 · Electric ×2
 Ninetales Ninetales L72 Fire 100% ✦ Flash Fire ▲ Water ▼ Fire ×0 ↯ Fire Flamethrower → Charizard moves after
 summary fight | Charizard Air Slash → Ninetales · 3 hits
 queued during prediction: 0; queueMessage restored: true
 == tera
-⌃ {Hide the drawer} × {Close}
-trainer 🎯 W89 · Tester Charizard Charizard Flamethrower → Lycanroc · 1 hit
+card battle W89 trainer
+strip trainer 🎯 W89 · Tester Charizard
+Charizard Flamethrower → Lycanroc · 1 hit
 ⚔ Charizard 💀 Rock ×4 378% {Lycanroc's Stone Edge: ~378% of current HP, before it can act} Fire Flamethrower → Lycanroc 1 hit
-💀 Charizard ← Lycanroc Stone Edge
+Foes: 💀 Charizard ← Lycanroc Stone Edge
 Lycanroc Lycanroc L70 Steel TERA 100% ▲ Fire ↯ Rock Stone Edge → Charizard moves first
-likely lost · 💀 Lycanroc KOs 1/1 · nobody outspeeds Lycanroc and it KOs 1 of 1 — maximise damage before it comes in, keep Charizard healthy
+Plan: likely lost · 💀 Lycanroc KOs 1/1 · nobody outspeeds Lycanroc and it KOs 1 of 1 — maximise damage before it comes in, keep Charizard healthy
 Fight plan likely lost
 💀 Lycanroc Lycanroc KOs 1/1 · win condition
 ⤵ Charizard save for Lycanroc ~100%/turn · KO'd first
@@ -96,29 +106,31 @@ Fight plan likely lost
 summary trainer | Charizard Flamethrower → Lycanroc · 1 hit | 💀 Charizard | plan: likely lost · 💀 Lycanroc KOs 1/1 · nobody outspeeds Lycanroc and it KOs 1 of 1 — maximise damage before it comes in, keep Charizard healthy
 queued during prediction: 0; queueMessage restored: true
 == teraFails
-⌃ {Hide the drawer} × {Close}
-trainer 🎯 W89 · Tester Gyarados Gyarados Waterfall → Coalossal · 2 hits
+card battle W89 trainer
+strip trainer 🎯 W89 · Tester Gyarados
+Gyarados Waterfall → Coalossal · 2 hits
 ⚔ Gyarados Water Waterfall → Coalossal 2 hits
 Foes
 foes weak to: Water ×2
 Coalossal Coalossal L80 Rock TERA 100% ▲ Water Grass ↯ Fire Burn Up → Gyarados fails · moves after
 Centiskorch Centiskorch L80 Rock TERA 100% ▲ Water Grass ↯ Fire Fire Lash → Gyarados moves after ➜ Gyarados Water Waterfall ~99% · 2 hits later
-winnable · Gyarados
+Plan: winnable · Gyarados
 Fight plan winnable
 ➜ 1. Gyarados Water Waterfall → Coalossal KO · 100% left
 ➜ 2. Gyarados Water Waterfall → Centiskorch KO · 86% left
 summary trainer | Gyarados Waterfall → Coalossal · 2 hits | plan: winnable · Gyarados
 queued during prediction: 0; queueMessage restored: true
 == teraSwitchIn
-⌃ {Hide the drawer} × {Close}
-trainer 🎯 W89 · Tester Gyarados Gyarados Hydro Pump → Coalossal · 3 hits
+card battle W89 trainer
+strip trainer 🎯 W89 · Tester Gyarados
+Gyarados Hydro Pump → Coalossal · 3 hits
 ⇄ Barbaracle → Coalossal switches — moves aimed at it
 ⚔ Gyarados ⚠ Rock ×2 86% {next turn: Coalossal's Rock Slide: ~86% of current HP} Water Hydro Pump → Coalossal 3 hits
 ↺ if it stays: Gyarados Water Hydro Pump → Barbaracle
 Foes
 Barbaracle Barbaracle L80 Rock Water 100% ▲ —
 Coalossal Coalossal L80 Rock TERA 100% ▲ Water ↯ Rock Rock Slide → Gyarados moves after
-likely lost · 💀 Coalossal KOs 1/1 · nobody KOs Coalossal 1-on-1 — maximise damage before it comes in, chip it with Gyarados
+Plan: likely lost · 💀 Coalossal KOs 1/1 · nobody KOs Coalossal 1-on-1 — maximise damage before it comes in, chip it with Gyarados
 Fight plan likely lost
 💀 Coalossal Coalossal KOs 1/1 · win condition
 ⤵ Gyarados save for Coalossal ~26%/turn
@@ -128,32 +140,34 @@ Fight plan likely lost
 summary trainer | Gyarados Hydro Pump → Coalossal · 3 hits | plan: likely lost · 💀 Coalossal KOs 1/1 · nobody KOs Coalossal 1-on-1 — maximise damage before it comes in, chip it with Gyarados
 queued during prediction: 0; queueMessage restored: true
 == plainSwitchIn
-⌃ {Hide the drawer} × {Close}
-trainer 🎯 W89 · Tester Gyarados Gyarados Hydro Pump → Coalossal · 2 hits
+card battle W89 trainer
+strip trainer 🎯 W89 · Tester Gyarados
+Gyarados Hydro Pump → Coalossal · 2 hits
 ⇄ Barbaracle → Coalossal switches — moves aimed at it
 ⚔ Gyarados ⚠ Rock ×2 86% {next turn: Coalossal's Rock Slide: ~86% of current HP} Water Hydro Pump → Coalossal 2 hits
 ↺ if it stays: Gyarados Water Hydro Pump → Barbaracle
 Foes
 Barbaracle Barbaracle L80 Rock Water 100% ▲ —
 Coalossal Coalossal L80 Fire Rock 100% ▲ Water ×4 ↯ Rock Rock Slide → Gyarados moves after
-winnable · Gyarados
+Plan: winnable · Gyarados
 Fight plan winnable
 ➜ 1. Gyarados Water Hydro Pump → Coalossal KO · 100% left
 ➜ 2. Gyarados Water Hydro Pump → Barbaracle KO · 34% left
 summary trainer | Gyarados Hydro Pump → Coalossal · 2 hits | plan: winnable · Gyarados
 queued during prediction: 0; queueMessage restored: true
 == w180
-⌃ {Hide the drawer} × {Close}
-trainer 🎯 W89 · Tester Leavanny › Gyarados Leavanny Leaf Storm → Coalossal · 2 hits
+card battle W89 trainer
+strip trainer 🎯 W89 · Tester Leavanny › Gyarados
+Leavanny Leaf Storm → Coalossal · 2 hits
 ⚔ Leavanny Grass Leaf Storm → Coalossal 2 hits
-we're weak to Rock ×2
+Foes: we're weak to Rock ×2
 foes weak to: Grass ×5
 Coalossal Coalossal L179 Rock TERA 92% ▲ Water Grass ↯ Fire Burn Up → Leavanny fails · moves after
 Tyranitar Tyranitar L169 Rock Dark 100% ▲ Bug Water Grass ↯ Dark Crunch → Gyarados moves after ➜ Gyarados Water Hydro Pump ~54% · 2 hits later
 Stonjourner Stonjourner L172 Rock 100% ▲ Water Grass ↯ Normal Body Slam → Gyarados moves after ➜ Gyarados Water Hydro Pump ~100% · 1 hit later
 Barbaracle Barbaracle L172 Rock Water 100% ▲ Grass ×4 ↯ Rock Stone Edge → Leavanny moves after ➜ Leavanny Grass Leaf Storm ~100% · 1 hit later
 Carracosta Carracosta L169 Water Rock 100% ✦ Solid Rock ▲ Grass ↯ Rock Rock Slide → Leavanny moves after ➜ Leavanny Grass Leaf Storm ~100% · 1 hit later
-winnable · Leavanny
+Plan: winnable · Leavanny
 Fight plan winnable
 ➜ 1. Leavanny Grass Leaf Storm → Coalossal KO · 77% left
 ➜ 2. Leavanny Grass Leaf Storm → Tyranitar KO · 7% left
@@ -162,156 +176,171 @@ Fight plan winnable
 ➜ 5. Leavanny Grass Leaf Storm → Carracosta KO · 7% left
 summary trainer | Leavanny Leaf Storm → Coalossal · 2 hits | plan: winnable · Leavanny
 == ourTera
-⌃ {Hide the drawer} × {Close}
-easy 🎯 W180 Gyarados Tera Water + Waterfall → Lycanroc · 2 hits
+card battle W180 easy
+strip easy 🎯 W180
+Gyarados Tera Water + Waterfall → Lycanroc · 2 hits
 ⚔ Gyarados Tera Water + Water Waterfall → Lycanroc 2 hits
 Foes
 Lycanroc Lycanroc L80 Rock 100% ▲ Water ↯ Rock Stone Edge → Gyarados moves after
-boss in 10 (W190)
+Road: boss in 10 (W190)
 Next big fight boss in 10 W190
 ✓ full heal entering W181 — HP, status, PP, revives, Tera
 · luck 0 (D) — 3.1% tier upgrade per reward
 summary easy | Gyarados Tera Water + Waterfall → Lycanroc · 2 hits
 == teraSpent
-⌃ {Hide the drawer} × {Close}
-danger 🎯 W180 Gyarados Waterfall → Lycanroc · 2 hits
+card battle W180 danger
+strip danger 🎯 W180
+Gyarados Waterfall → Lycanroc · 2 hits
 ⚔ Gyarados ⚠ Rock ×2 141% {Lycanroc's Stone Edge: ~141% of current HP} Water Waterfall → Lycanroc 2 hits
 ⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
-⚠ Gyarados ← Lycanroc Stone Edge
+Foes: ⚠ Gyarados ← Lycanroc Stone Edge
 Lycanroc Lycanroc L80 Rock 100% ▲ Water ↯ Rock Stone Edge → Gyarados moves after
-boss in 10 (W190)
+Road: boss in 10 (W190)
 Next big fight boss in 10 W190
 ✓ full heal entering W181 — HP, status, PP, revives, Tera
 · luck 0 (D) — 3.1% tier upgrade per reward
 summary danger | Gyarados Waterfall → Lycanroc · 2 hits | ⚠ Gyarados
 == noTeraOrb
-⌃ {Hide the drawer} × {Close}
-danger 🎯 W180 Gyarados Waterfall → Lycanroc · 2 hits
+card battle W180 danger
+strip danger 🎯 W180
+Gyarados Waterfall → Lycanroc · 2 hits
 ⚔ Gyarados ⚠ Rock ×2 141% {Lycanroc's Stone Edge: ~141% of current HP} Water Waterfall → Lycanroc 2 hits
 ⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
-⚠ Gyarados ← Lycanroc Stone Edge
+Foes: ⚠ Gyarados ← Lycanroc Stone Edge
 Lycanroc Lycanroc L80 Rock 100% ▲ Water ↯ Rock Stone Edge → Gyarados moves after
-boss in 10 (W190)
+Road: boss in 10 (W190)
 Next big fight boss in 10 W190
 ✓ full heal entering W181 — HP, status, PP, revives, Tera
 · luck 0 (D) — 3.1% tier upgrade per reward
 summary danger | Gyarados Waterfall → Lycanroc · 2 hits | ⚠ Gyarados
 == teraMega
-⌃ {Hide the drawer} × {Close}
-danger 🎯 W180 Gyarados Waterfall → Lycanroc · 2 hits
+card battle W180 danger
+strip danger 🎯 W180
+Gyarados Waterfall → Lycanroc · 2 hits
 ⚔ Gyarados ⚠ Rock ×2 141% {Lycanroc's Stone Edge: ~141% of current HP} Water Waterfall → Lycanroc 2 hits
 ⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
-⚠ Gyarados ← Lycanroc Stone Edge
+Foes: ⚠ Gyarados ← Lycanroc Stone Edge
 Lycanroc Lycanroc L80 Rock 100% ▲ Water ↯ Rock Stone Edge → Gyarados moves after
-boss in 10 (W190)
+Road: boss in 10 (W190)
 Next big fight boss in 10 W190
 ✓ full heal entering W181 — HP, status, PP, revives, Tera
 · luck 0 (D) — 3.1% tier upgrade per reward
 summary danger | Gyarados Waterfall → Lycanroc · 2 hits | ⚠ Gyarados
 == teraOgerpon
-⌃ {Hide the drawer} × {Close}
-danger 🎯 W180 Gyarados Waterfall → Lycanroc · 2 hits
+card battle W180 danger
+strip danger 🎯 W180
+Gyarados Waterfall → Lycanroc · 2 hits
 ⚔ Gyarados ⚠ Rock ×2 141% {Lycanroc's Stone Edge: ~141% of current HP} Water Waterfall → Lycanroc 2 hits
 ⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
-⚠ Gyarados ← Lycanroc Stone Edge
+Foes: ⚠ Gyarados ← Lycanroc Stone Edge
 Lycanroc Lycanroc L80 Rock 100% ▲ Water ↯ Rock Stone Edge → Gyarados moves after
-boss in 10 (W190)
+Road: boss in 10 (W190)
 Next big fight boss in 10 W190
 ✓ full heal entering W181 — HP, status, PP, revives, Tera
 · luck 0 (D) — 3.1% tier upgrade per reward
 summary danger | Gyarados Waterfall → Lycanroc · 2 hits | ⚠ Gyarados
 == teraBossAhead
-⌃ {Hide the drawer} × {Close}
-danger 🎯 W175 Gyarados Waterfall → Lycanroc · 2 hits
+card battle W175 danger
+strip danger 🎯 W175
+Gyarados Waterfall → Lycanroc · 2 hits
 ⚔ Gyarados ⚠ Rock ×2 141% {Lycanroc's Stone Edge: ~141% of current HP} Water Waterfall → Lycanroc 2 hits
 ⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
-⚠ Gyarados ← Lycanroc Stone Edge
+Foes: ⚠ Gyarados ← Lycanroc Stone Edge
 Lycanroc Lycanroc L80 Rock 100% ▲ Water ↯ Rock Stone Edge → Gyarados moves after
-boss in 5 (W180)
+Road: boss in 5 (W180)
 Next big fight boss in 5 W180
 ✓ full heal entering W181 — HP, status, PP, revives, Tera
 · luck 0 (D) — 3.1% tier upgrade per reward
 summary danger | Gyarados Waterfall → Lycanroc · 2 hits | ⚠ Gyarados
 == teraLastBigBehind
-⌃ {Hide the drawer} × {Close}
-easy 🎯 W175 Gyarados Tera Water + Waterfall → Lycanroc · 2 hits
+card battle W175 easy
+strip easy 🎯 W175
+Gyarados Tera Water + Waterfall → Lycanroc · 2 hits
 ⚔ Gyarados Tera Water + Water Waterfall → Lycanroc 2 hits
 Foes
 Lycanroc Lycanroc L80 Rock 100% ▲ Water ↯ Rock Stone Edge → Gyarados moves after
-final boss in 25 (W200)
+Road: final boss in 25 (W200)
 Next big fight final boss in 25 W200
 ✓ full heal entering W181 — HP, status, PP, revives, Tera
 · luck 0 (D) — 3.1% tier upgrade per reward
 summary easy | Gyarados Tera Water + Waterfall → Lycanroc · 2 hits
 == teraTerapagos
-⌃ {Hide the drawer} × {Close}
-easy 🎯 W45 Gyarados Tera Water + Waterfall → Lycanroc · 2 hits
+card battle W45 easy
+strip easy 🎯 W45
+Gyarados Tera Water + Waterfall → Lycanroc · 2 hits
 ⚔ Gyarados Tera Water + Water Waterfall → Lycanroc 2 hits
 Foes
 Lycanroc Lycanroc L80 Rock 100% ▲ Water ↯ Rock Stone Edge → Gyarados moves after
-gym leader in 5 (W50)
+Road: gym leader in 5 (W50)
 Next big fight gym leader in 5 W50
 ✓ full heal entering W51 — HP, status, PP, revives, Tera
 · luck 0 (D) — 3.1% tier upgrade per reward
 summary easy | Gyarados Tera Water + Waterfall → Lycanroc · 2 hits
 == trap
-⌃ {Hide the drawer} × {Close}
-easy 🎯 W89 Charizard Flamethrower → Swinub · 1 hit
+card battle W89 easy
+strip easy 🎯 W89
+Charizard Flamethrower → Swinub · 1 hit
 ⚔ Charizard Fire Flamethrower → Swinub 1 hit
 Foes
 Swinub Swinub L20 Ice Ground 100% ✦ Thick Fat ▲ — ↯ Normal Tackle → Charizard moves after
 summary easy | Charizard Flamethrower → Swinub · 1 hit
 == fieldTrap
-⌃ {Hide the drawer} × {Close}
-easy 🎯 W89 Charizard Flamethrower → Druddigon · 2 hits ; Blastoise Hydro Pump → Krookodile · 1 hit
+card battle W89 easy
+strip easy 🎯 W89
+Charizard Flamethrower → Druddigon · 2 hits ; Blastoise Hydro Pump → Krookodile · 1 hit
 ⚔ Charizard Fire Flamethrower → Druddigon 2 hits
 ⚔ Blastoise Water Hydro Pump → Krookodile 1 hit
-we're weak to Electric ×2
+Foes: we're weak to Electric ×2
 Druddigon Druddigon L40 Dragon 100% ▲ — ↯ Normal Tackle → Charizard moves after
 Krookodile Krookodile L40 Ground Dark 100% ✦ Moxie ▲ Water ↯ Dark Crunch → Blastoise moves after
 summary easy | Charizard Flamethrower → Druddigon · 2 hits ; Blastoise Hydro Pump → Krookodile · 1 hit
 == contactTrap
-⌃ {Hide the drawer} × {Close}
-easy 🎯 W89 Charizard Flare Blitz → Krookodile · 2 hits ; Blastoise Hydro Pump → Krookodile · 1 hit
+card battle W89 easy
+strip easy 🎯 W89
+Charizard Flare Blitz → Krookodile · 2 hits ; Blastoise Hydro Pump → Krookodile · 1 hit
 ⚔ Charizard Fire Flare Blitz → Krookodile 2 hits spare hit — KO without it
 ⚔ Blastoise Water Hydro Pump → Krookodile 1 hit
 · focus Krookodile : KO before it moves
-we're weak to Electric ×2
+Foes: we're weak to Electric ×2
 Druddigon Druddigon L40 Dragon 100% ✦ Rough Skin ▲ — ↯ Normal Tackle → Blastoise moves after
 Krookodile Krookodile L40 Ground Dark 100% ✦ Moxie ▲ Water ↯ Dark Crunch → Charizard moves after
 summary easy | Charizard Flare Blitz → Krookodile · 2 hits ; Blastoise Hydro Pump → Krookodile · 1 hit
 == auraGuard
-⌃ {Hide the drawer} × {Close}
-easy 🎯 W89 Scrafty Brick Break → Lucario · 1 hit
+card battle W89 easy
+strip easy 🎯 W89
+Scrafty Brick Break → Lucario · 1 hit
 ⚔ Scrafty Fighting Brick Break → Lucario 1 hit
 Foes
 Lucario Lucario L40 Fighting Steel 100% ✦ Aura Guard ▲ Fighting ↯ Normal Tackle → Scrafty moves first
 summary easy | Scrafty Brick Break → Lucario · 1 hit
 == auraGuardNoContact
-⌃ {Hide the drawer} × {Close}
-easy 🎯 W89 Garchomp Earthquake → Lucario · 1 hit
+card battle W89 easy
+strip easy 🎯 W89
+Garchomp Earthquake → Lucario · 1 hit
 ⚔ Garchomp Ground Earthquake → Lucario 1 hit
 Foes
 Lucario Lucario L40 Fighting Steel 100% ▲ Ground ↯ Normal Tackle → Garchomp moves after
 summary easy | Garchomp Earthquake → Lucario · 1 hit
 == modelled
-⌃ {Hide the drawer} × {Close}
-easy 🎯 W89 Scrafty Brick Break → Pineco · 1 hit
+card battle W89 easy
+strip easy 🎯 W89
+Scrafty Brick Break → Pineco · 1 hit
 ⚔ Scrafty Fighting Brick Break → Pineco 1 hit
 Foes
 Pineco Pineco L20 Bug 100% ▲ — ↯ Normal Tackle → Scrafty moves after
 summary easy | Scrafty Brick Break → Pineco · 1 hit
 queued during prediction: 0; queueMessage restored: true
 == intimidateIn
-⌃ {Hide the drawer} × {Close}
-trainer 🎯 W89 · Tester Blastoise Blastoise Wave Crash → Arcanine · 2 hits
+card battle W89 trainer
+strip trainer 🎯 W89 · Tester Blastoise
+Blastoise Wave Crash → Arcanine · 2 hits
 ⇄ Ludicolo → Arcanine switches — moves aimed at it
 ⚔ Blastoise Water Wave Crash → Arcanine 2 hits
 ↺ if it stays: Blastoise Water Wave Crash → Ludicolo
 Foes
 Ludicolo Ludicolo L80 Water Grass 100% ▲ — ▼ Water ×¼
 Arcanine Arcanine L80 Fire 100% ✦ Intimidate ▲ Water ↯ Fire Flare Blitz → Blastoise moves first
-likely lost · 💀 Ludicolo KOs 1/1 · nothing we have hurts Ludicolo — maximise damage before it comes in
+Plan: likely lost · 💀 Ludicolo KOs 1/1 · nothing we have hurts Ludicolo — maximise damage before it comes in
 Fight plan likely lost
 💀 Ludicolo Ludicolo KOs 1/1 · win condition
 ➜ 1. Blastoise Water Wave Crash → Arcanine KO · 78% left
@@ -319,8 +348,9 @@ Fight plan likely lost
 ⚠ likely lost: nothing we have hurts Ludicolo — maximise damage before it comes in
 summary trainer | Blastoise Wave Crash → Arcanine · 2 hits | plan: likely lost · 💀 Ludicolo KOs 1/1 · nothing we have hurts Ludicolo — maximise damage before it comes in
 == soundproof
-⌃ {Hide the drawer} × {Close}
-easy 🎯 W89 Exploud Hyper Voice → both · 1 hit ; Venusaur Power Whip → Whismur · 1 hit
+card battle W89 easy
+strip easy 🎯 W89
+Exploud Hyper Voice → both · 1 hit ; Venusaur Power Whip → Whismur · 1 hit
 ⚔ Exploud Normal Hyper Voice → both Rattata 1 hit
 ⚔ Venusaur Grass Power Whip → Whismur 1 hit
 Foes
@@ -328,41 +358,46 @@ Whismur Whismur L30 Normal 100% ✦ Soundproof ▲ — ↯ Normal Pound → Venu
 Rattata Rattata L30 Normal 100% ▲ — ↯ Normal Tackle → Exploud moves after
 summary easy | Exploud Hyper Voice → both · 1 hit ; Venusaur Power Whip → Whismur · 1 hit
 == eelevate
-⌃ {Hide the drawer} × {Close}
-easy 🎯 W89 Garchomp Land's Wrath → both · 1 hit ; Venusaur Power Whip → Eelektross · 1 hit
+card battle W89 easy
+strip easy 🎯 W89
+Garchomp Land's Wrath → both · 1 hit ; Venusaur Power Whip → Eelektross · 1 hit
 ⚔ Garchomp Ground Land's Wrath → both Rattata 1 hit
 ⚔ Venusaur Grass Power Whip → Eelektross 1 hit
-we're weak to Ice ×2
+Foes: we're weak to Ice ×2
 Eelektross Eelektross L40 Electric 100% ✦ Eelevate ▲ — ▼ Ground ×0 ↯ Electric Spark → Venusaur moves after
 Rattata Rattata L30 Normal 100% ▲ — ↯ Normal Tackle → Garchomp moves after
 summary easy | Garchomp Land's Wrath → both · 1 hit ; Venusaur Power Whip → Eelektross · 1 hit
 == eelevateArrows
-⌃ {Hide the drawer} × {Close}
-easy 🎯 W89 Garchomp Thousand Arrows → both · 1 hit ; Venusaur Power Whip → Eelektross · 1 hit
+card battle W89 easy
+strip easy 🎯 W89
+Garchomp Thousand Arrows → both · 1 hit ; Venusaur Power Whip → Eelektross · 1 hit
 ⚔ Garchomp Ground Thousand Arrows → both 1 hit
 ⚔ Venusaur Grass Power Whip → Eelektross 1 hit spare hit — KO without it
-we're weak to Ice ×2
+Foes: we're weak to Ice ×2
 Eelektross Eelektross L40 Electric 100% ▲ — ▼ Ground ×0 ↯ Electric Spark → Venusaur moves after
 Rattata Rattata L30 Normal 100% ▲ — ↯ Normal Tackle → Garchomp moves after
 summary easy | Garchomp Thousand Arrows → both · 1 hit ; Venusaur Power Whip → Eelektross · 1 hit
 == deadEnd
-⌃ {Hide the drawer} × {Close}
-fight 🎯 W89 Exploud nothing it can do
+card battle W89 fight
+strip fight 🎯 W89
+Exploud nothing it can do
 ⚔ Exploud nothing it can do
 Foes
 Whismur Whismur L30 Normal 100% ✦ Soundproof ▲ —
 summary fight | Exploud nothing it can do
 == intimidate
-⌃ {Hide the drawer} × {Close}
-easy 🎯 W89 Scrafty Brick Break → Granbull · 2 hits
+card battle W89 easy
+strip easy 🎯 W89
+Scrafty Brick Break → Granbull · 2 hits
 ⚔ Scrafty Fighting Brick Break → Granbull 2 hits
 Foes
 Granbull Granbull L30 Fairy 100% ▲ — ↯ Normal Tackle → Scrafty moves after
 summary easy | Scrafty Brick Break → Granbull · 2 hits
 queued during prediction: 0; queueMessage restored: true
 == doubleReturn
-⌃ {Hide the drawer} × {Close}
-trainer 🎯 W89 · Tester Blastoise › Venusaur Blastoise Flash Cannon → Arcanine, then Wave Crash · 2 hits ; Venusaur Power Whip → Gyarados · 3 hits
+card battle W89 trainer
+strip trainer 🎯 W89 · Tester Blastoise › Venusaur
+Blastoise Flash Cannon → Arcanine, then Wave Crash · 2 hits ; Venusaur Power Whip → Gyarados · 3 hits
 ⇄ Arcanine → Gyarados switches — moves aimed at it
 ⇄ Ludicolo → Arcanine returns from the other slot — moves aimed at it
 ⚔ Blastoise Steel Flash Cannon → Arcanine 2 hits then Wave Crash
@@ -373,7 +408,7 @@ foes weak to: Water ×1
 Arcanine Arcanine L80 Fire 100% ▲ Water
 Ludicolo Ludicolo L80 Water Grass 100% ▲ Poison ▼ Water ×¼
 Gyarados Gyarados L80 Water Flying 100% ✦ Intimidate ▲ — ↯ Water Waterfall → Venusaur moves first
-winnable · Venusaur › Blastoise
+Plan: winnable · Venusaur › Blastoise
 Fight plan steps approximate winnable
 ➜ 1.~ Venusaur Grass Power Whip → Gyarados KO · 69% left
 ➜ 2.~ Blastoise Water Wave Crash → Arcanine KO · 42% left
