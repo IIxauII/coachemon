@@ -10,10 +10,10 @@ Fight plan likely lost
 💀 Weavile Weavile 👑 KOs 3/3 · win condition
 ⤵ Scrafty save for Weavile ~100%/turn
 ⤵ Metagross save for Weavile ~69%/turn
-➜ 1. Metagross ⇄ Steel Meteor Mash → Weavile switch in, takes a hit · falls · foe at 89%
-➜ 2. Morpeko free Electric Aura Wheel → Weavile falls · foe at 69%
-➜ 3. Scrafty free Fighting High Jump Kick → Weavile falls · foe at 68%
-≈ prefers: let Scrafty fall → Metagross in free (+55)
+➜ 1. Metagross ⇄ Steel Meteor Mash → Weavile switch in · falls (77%) · foe at 55%
+➜ 2. Scrafty free Fighting High Jump Kick → Weavile falls · foe at 55%
+➜ 3. Morpeko free Electric Aura Wheel → Weavile falls · foe at 35%
+≈ prefers: let Morpeko fall → Metagross in free (+41)
 ⚠ likely lost: nobody KOs Weavile 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Scrafty, Metagross
 == cyrus, no Metagross (live)
 ⇄ Gyarados → Weavile switches — moves aimed at it
@@ -28,8 +28,8 @@ Fight plan likely lost
 💀 Weavile Weavile 👑 KOs 2/2 · win condition
 ⤵ Scrafty save for Weavile ~100%/turn
 ⤵ Morpeko save for Weavile ~28%/turn
-➜ 1. Morpeko Electric Aura Wheel → Weavile falls · foe at 78%
-➜ 2. Scrafty free Fighting High Jump Kick → Weavile falls · foe at 76%
+➜ 1. Morpeko Electric Aura Wheel → Weavile falls · foe at 55%
+➜ 2. Scrafty free Fighting High Jump Kick → Weavile falls · foe at 55%
 ⚠ likely lost: nobody KOs Weavile 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Scrafty, Morpeko
 == building blocks ok
 == cyrus (fallback)
@@ -105,7 +105,7 @@ Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
 Ferrothorn Ferrothorn L80 Grass Steel 100% ▲ Fighting ↯ Steel Gyro Ball → Garchomp 100% likely · moves after
 Fight plan steps approximate winnable
-➜ 1.~ Garchomp Dragon Dragon Claw → Ferrothorn KO · 18% left
+➜ 1.~ Garchomp Dragon Dragon Claw → Ferrothorn KO · 37% left
 ➜ 2.~ Garchomp Dragon Dragon Claw → Hydreigon falls · foe at 45%
 ➜ 3.~ Lucario Fighting Aura Sphere → Hydreigon KO · 100% left
 ➜ 4.~ Lucario Fighting Aura Sphere → Snorlax KO · 60% left

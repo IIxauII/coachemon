@@ -165,6 +165,22 @@ assert.equal(plan.approxDoubles, false);
   assert.equal(switched.ends.win.turns, 2, "the Sitrus eaten at the entry turn's end takes a second Bug Bite");
   assert.equal(free.ends.win.turns, 1, "with no entry turn, the first Bug Bite fells it");
 }
+// A foe switching in spends its first turn coming in (#846). It outspeeds us and two of its hits fell our 150 HP;
+// two of ours fell its 200.
+{
+  const { tpFight } = globalThis.__tp;
+  const T = { ours: [[{ dmg: 100 }]], theirs: [[{ dmg: 100, entry: 100, e: 1 }]], first: [[1]], ourMax: [150], foeMax: [200], ourHeal: [null], foeHeal: [null] };
+  const st = () => ({ oh: [150], ob: [0], fh: [200], fs: [0], fb: [0] });
+  const fight = (entry, entering) => tpFight(T, st(), 0, 0, entry, null, entering);
+  const [stays, enters] = [false, true].map(e => fight("stay", e));
+  console.log(`== a foe's entry turn\nstay: ${stays.pWin} win at ${stays.mh} · into a switch-in: ${enters.pWin} win at ${enters.mh}`);
+  assert.equal(stays.pLoss, 1, "a foe already out hits first on turn 1 and wins the race");
+  assert.equal(enters.pWin, 1, "against a switch-in our first hit is free, so we win it");
+  assert.equal(enters.mh, 50, "having taken one hit, not two");
+  const both = fight("switch", true), free = fight("free", false);
+  assert.deepEqual([both.pWin, both.mh], [free.pWin, free.mh], "switching in as it does costs no entry hit: both sides spend the turn");
+  assert.equal(fight("switch", false).mh, 0, "where a foe already out does hit the entry");
+}
 // Item thieves and wave status tokens carry through the exchange: a long Blastoise–Snorlax fight.
 {
   const item = (name, props = {}, n = 1) => Object.assign(new ({ [name]: class { isTransferable = true; getStackCount() { return n; } } })[name](), props);

@@ -267,6 +267,13 @@ assert.deepEqual(trapsOf("eelevateArrows", "Garchomp", "Eelektross"), { slot: []
   assert.deepEqual([tera.types, tera.tera], [["Rock"], "Rock"], "its row: the Tera every later hit meets");
 }
 
+// The fight plan's first exchange against a switch-in gives us the turn it spends coming in (#846): Gyarados outspeeds
+// Coalossal and KOs it in two Hydro Pumps, the first of them free, so no Rock Slide ever lands.
+{
+  const [first] = cards.plainSwitchIn.teamPlan.steps;
+  assert.deepEqual([first.vs.name, first.foeHp, first.hp], ["Coalossal", 0, 100], `step 1 KOs it untouched: ${first.why}`);
+}
+
 // The same against the real party (#648): Gordie W180 at T5, rebuilt from the solver fixture. `instantTeras` is `[5]`,
 // a *team* index — and at T5 team index 5 is Coalossal in party slot 0, while party slot 5 holds Carracosta.
 {
