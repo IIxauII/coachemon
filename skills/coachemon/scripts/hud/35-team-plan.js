@@ -3,7 +3,7 @@
 // one foe at a time.
 import { iconOf, squeezeDist } from "./01-core.js";
 import { hitOn, koCurve, koTurns, useOf } from "./10-damage.js";
-import { actionOrder, afterSteals, attemptsLost, berryTypesOf, berryWalk, entryOutcome, hitsOn, koBoost, koBoostText, koStageFactor, lessBerry, overWalk, paralysed, sendInAt, sendInBase, stealCounts, stealRates, stealsBerry, stolenDraws, threatFrom, tokenOdds, tokenShift, unnervedBy } from "./30-planner.js";
+import { actionOrder, afterSteals, attemptsLost, berryTypesOf, berryWalk, entryOutcomes, hitsOn, koBoost, koBoostText, koStageFactor, lessBerry, overWalk, paralysed, sendInAt, sendInBase, stealCounts, stealRates, stealsBerry, stolenDraws, threatFrom, tokenOdds, tokenShift, unnervedBy } from "./30-planner.js";
 
 // @only tests: tpHealProfile, tpSendScore, tpFight, tpTables, tpActs
 const TP_BEAM = 24;
@@ -188,12 +188,14 @@ export const tpTables = (turn, party, foes, double = false, facing = null, enter
   const thieves = party.map(me => foes.map(f => tpCanSteal(turn, me, f)));
   const walks = foes.map((f, fi) => (party.some((_, mi) => thieves[mi][fi]) ? berryWalk(f) : null));
   const steals = party.map((me, mi) => foes.map((f, fi) => (thieves[mi][fi] ? tpStealHeal(turn, me, f, walks[fi]) : null)));
+  // In a double both field mons are out, so neither pays an entry hit to act (#113).
+  const slots = double && party.length >= 2 ? 2 : 1;
   return {
-    ours, theirs, first,
-    // In a double both field mons are out, so neither pays an entry hit to act (#113).
-    slots: double && party.length >= 2 ? 2 : 1,
+    ours, theirs, first, slots,
     firstBy: party.map((me, mi) => foes.map((f, fi) => (faced(f) ? tpFirstBy(turn, me, f, ours[mi][fi], theirs[fi][mi]) : {}))),
-    ourEntry: party.map(me => foes.map(f => (entering && f === facing ? tpAtEntry(turn, me, f) : null))),
+    // A bench mon switching in spends the entry turn too, so only one out, or filling an empty slot, hits it then.
+    ourEntry: party.map(me => foes.map(f => (entering && f === facing && (me.isOnField?.() || party.filter(p => p.isOnField?.()).length < slots)
+      ? tpAtEntry(turn, me, f) : null))),
     send: foes.map(f => party.map(me => sendInBase(turn, f, me))),
     memo: new Map(),
     // Every hit overrides its `hp` and `bar` with the ones the fight carries.
@@ -221,8 +223,8 @@ export const tpTables = (turn, party, foes, double = false, facing = null, enter
 };
 
 const tpAtEntry = (turn, me, f) => {
-  const outs = turn.outcomes(me, f).map(o => entryOutcome(turn, me, f, o.name)).filter(Boolean);
-  return outs.length ? Object.fromEntries(outs.map(o => [o.name, tpMoveOf(o)])) : null;
+  const outs = entryOutcomes(turn, me, f);
+  return outs?.length ? Object.fromEntries(outs.map(o => [o.name, tpMoveOf(o)])) : null;
 };
 
 // Wave status tokens and item thieves (30-planner.js). `fromUs[fi][mi]` is what foe `fi` steals from our `mi`, and
@@ -309,10 +311,10 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
       st = hitOn(st, mv.dmg * o.r * usMul / n);
       b.fg += robFoe?.perHit ?? 0;
     }
-    if (us.drain && b.mh >= 1) b.mh = Math.min(T.ourMax[mi], b.mh + (b.fh - st.hp) * us.drain);
+    if (mv.drain && b.mh >= 1) b.mh = Math.min(T.ourMax[mi], b.mh + (b.fh - st.hp) * mv.drain);
     b.fse = (mv.e ?? 1) >= 2;
     // Recoil is paid whether or not the hit finished the foe.
-    if (us.self) b.mh -= us.self;
+    if (mv.self) b.mh -= mv.self;
     // A landed steal takes the next berry even on a knockout, and its heal comes after our own chip (game-code.md §3).
     const draws = (b.fb && T.stealHealAfter?.[mi]?.[fi]?.get(b.fb)) || stealHeal;
     if (us.steals && draws && b.fl < draws.length) {

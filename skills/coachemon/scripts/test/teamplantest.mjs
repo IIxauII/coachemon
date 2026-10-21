@@ -252,6 +252,8 @@ assert.equal(plan.approxDoubles, false);
   console.log(`== a tera switch-in's entry hit\nat its tera: ${plain.pWin} win, foe at ${plain.fh} · at its entry typing: ${priced.pWin} win at ${priced.mh}`);
   assert.deepEqual([plain.pLoss, plain.fh], [1, 50], "priced at its Tera, four uses are one too many");
   assert.deepEqual([priced.pWin, priced.mh], [1, 50], "the entry turn's 100 then two uses at 50 win, after one hit taken");
+  const recoil = tpFight({ ...T({ Surf: { ...entry.Surf, self: 10 } }), ours: [[{ name: "Surf", dmg: 50, self: 5 }]] }, st(), 0, 0, "stay", null, true);
+  assert.equal(recoil.mh, 30, "recoil follows the damage: 10 off the entry hit, 5 off each use after");
   for (const [kind, entering, over] of [["stay", false, null], ["switch", true, null], ["stay", true, { name: "Muddy Water", dmg: 50 }]]) {
     assert.deepEqual(tpFight(T(entry), st(), 0, 0, kind, over, entering), tpFight(T(null), st(), 0, 0, kind, over, entering),
       `no entry price for ${kind}${entering ? " into a switch-in" : ""}${over ? ` pinned to ${over.name}` : ""}`);
