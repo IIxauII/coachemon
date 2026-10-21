@@ -60,13 +60,15 @@ export const planOutcomes = (turn, atk, def) => turn.memo(`o:${atk.id}>${def.id}
   });
 });
 
-// Our hit on a foe the turn it switches in, where a bench mon the trainer Teras takes it at the typing it comes in at
+// Our hits on a foe the turn it switches in, where a bench mon the trainer Teras takes them at the typing it comes in at
 // (game-code.md §7); null for any other foe.
-const entryOutcome = (turn, me, foe, name) => {
+// @only 35-team-plan: entryOutcomes
+export const entryOutcomes = (turn, me, foe) => {
   if (!turn.teraLater(foe)) return null;
   const at = turn.memo(`entry:${foe.id}`, () => turn.assuming([{ mon: foe, tera: false }]));
-  return planOutcomes(at, me, foe).find(o => o.name === name) ?? null;
+  return planOutcomes(at, me, foe);
 };
+const entryOutcome = (turn, me, foe, name) => entryOutcomes(turn, me, foe)?.find(o => o.name === name) ?? null;
 
 const NO_MOVE_INFO = { priority: 0 };
 // Quick Claw and Quick Draw (game-code.md §5).

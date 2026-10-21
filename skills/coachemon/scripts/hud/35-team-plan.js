@@ -3,7 +3,7 @@
 // one foe at a time.
 import { iconOf, squeezeDist } from "./01-core.js";
 import { hitOn, koCurve, koTurns, useOf } from "./10-damage.js";
-import { actionOrder, afterSteals, attemptsLost, berryTypesOf, berryWalk, hitsOn, koBoost, koBoostText, koStageFactor, lessBerry, overWalk, paralysed, sendInAt, sendInBase, stealCounts, stealRates, stealsBerry, stolenDraws, threatFrom, tokenOdds, tokenShift, unnervedBy } from "./30-planner.js";
+import { actionOrder, afterSteals, attemptsLost, berryTypesOf, berryWalk, entryOutcomes, hitsOn, koBoost, koBoostText, koStageFactor, lessBerry, overWalk, paralysed, sendInAt, sendInBase, stealCounts, stealRates, stealsBerry, stolenDraws, threatFrom, tokenOdds, tokenShift, unnervedBy } from "./30-planner.js";
 
 // @only tests: tpHealProfile, tpSendScore, tpFight, tpTables, tpActs
 const TP_BEAM = 24;
@@ -175,8 +175,9 @@ const tpStealHeal = (turn, me, f, walk) => {
   return { now: draws(f, walk), after };
 };
 
-// `facing`: the foe the first exchange is against, the only one a pinned move's own order is read for.
-export const tpTables = (turn, party, foes, double = false, facing = null) => {
+// `facing`: the foe the first exchange is against, the only one a pinned move's own order is read for. `entering`: it
+// is switching in, so `ourEntry[mi][fi]` holds our moves by name at the typing it comes in at, where it Teras later.
+export const tpTables = (turn, party, foes, double = false, facing = null, entering = false) => {
   const faced = f => !foes.includes(facing) || f === facing;
   // The foe's side first: which move of ours is worth using against it turns on the order it would get (#650).
   const theirs = foes.map(f => party.map(me => tpTheirMove(turn, f, me)));
@@ -187,11 +188,14 @@ export const tpTables = (turn, party, foes, double = false, facing = null) => {
   const thieves = party.map(me => foes.map(f => tpCanSteal(turn, me, f)));
   const walks = foes.map((f, fi) => (party.some((_, mi) => thieves[mi][fi]) ? berryWalk(f) : null));
   const steals = party.map((me, mi) => foes.map((f, fi) => (thieves[mi][fi] ? tpStealHeal(turn, me, f, walks[fi]) : null)));
+  // In a double both field mons are out, so neither pays an entry hit to act (#113).
+  const slots = double && party.length >= 2 ? 2 : 1;
   return {
-    ours, theirs, first,
-    // In a double both field mons are out, so neither pays an entry hit to act (#113).
-    slots: double && party.length >= 2 ? 2 : 1,
+    ours, theirs, first, slots,
     firstBy: party.map((me, mi) => foes.map((f, fi) => (faced(f) ? tpFirstBy(turn, me, f, ours[mi][fi], theirs[fi][mi]) : {}))),
+    // A bench mon switching in spends the entry turn too, so only one out, or filling an empty slot, hits it then.
+    ourEntry: party.map(me => foes.map(f => (entering && f === facing && (me.isOnField?.() || party.filter(p => p.isOnField?.()).length < slots)
+      ? tpAtEntry(turn, me, f) : null))),
     send: foes.map(f => party.map(me => sendInBase(turn, f, me))),
     memo: new Map(),
     // Every hit overrides its `hp` and `bar` with the ones the fight carries.
@@ -216,6 +220,11 @@ export const tpTables = (turn, party, foes, double = false, facing = null) => {
     party, foes,
     ...wear,
   };
+};
+
+const tpAtEntry = (turn, me, f) => {
+  const outs = entryOutcomes(turn, me, f);
+  return outs?.length ? Object.fromEntries(outs.map(o => [o.name, tpMoveOf(o)])) : null;
 };
 
 // Wave status tokens and item thieves (30-planner.js). `fromUs[fi][mi]` is what foe `fi` steals from our `mi`, and
@@ -262,7 +271,7 @@ const tpHeal = (hp, max, prof, used, se, extra = 0) => {
 // state with `pWin`, `pLoss`, `pStall` and all three `ends`. `over` pins our move for this exchange only (#113), and is
 // never memoised: the key names the pair, not the move.
 // `entering`: the foe spends this exchange's first turn switching in and does not attack, so a switch of ours made that
-// turn costs no entry hit (#846).
+// turn costs no entry hit (#846), and our hit that turn is `T.ourEntry`'s where it has one (#825).
 export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => {
   const faints = st.oh.filter(hp => hp < 1).length + st.fh.filter(hp => hp < 1).length;
   const nUs = T.ourKo?.[mi] ? (T.ourKo[mi].any ? faints : st.ok?.[mi] ?? 0) : 0;
@@ -290,21 +299,22 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
   const ox0 = st.ox?.[mi] ?? 0;
   const entryHit = entry === "switch" && !entering;
   const foeIdle = entering && entry !== "switch";
+  const atEntry = foeIdle && us ? T.ourEntry?.[mi]?.[fi]?.[us.name] ?? null : null;
   let turns = 0;
   // P(token status by the end of turn `t`); `t` 0 is before this exchange.
   const by = t => (!tok ? 0 : tok.odds.by(ox0 + (entryHit ? them.hits ?? 0 : 0) + (them.hits ?? 0) * Math.max(0, t - (foeIdle ? 1 : 0))));
   // Drain wins back its share of the HP the hits actually took, after the bars and the foe's HP have cut them.
-  const hitFoe = (b, o) => {
+  const hitFoe = (b, o, mv = us) => {
     const n = Math.max(1, Math.round(o.n ?? 1));
     let st = { ...foeState, hp: b.fh, bar: b.fs };
     for (let k = 0; k < n && st.hp >= 1; k++) {
-      st = hitOn(st, us.dmg * o.r * usMul / n);
+      st = hitOn(st, mv.dmg * o.r * usMul / n);
       b.fg += robFoe?.perHit ?? 0;
     }
-    if (us.drain && b.mh >= 1) b.mh = Math.min(T.ourMax[mi], b.mh + (b.fh - st.hp) * us.drain);
-    b.fse = (us.e ?? 1) >= 2;
+    if (mv.drain && b.mh >= 1) b.mh = Math.min(T.ourMax[mi], b.mh + (b.fh - st.hp) * mv.drain);
+    b.fse = (mv.e ?? 1) >= 2;
     // Recoil is paid whether or not the hit finished the foe.
-    if (us.self) b.mh -= us.self;
+    if (mv.self) b.mh -= mv.self;
     // A landed steal takes the next berry even on a knockout, and its heal comes after our own chip (game-code.md §3).
     const draws = (b.fb && T.stealHealAfter?.[mi]?.[fi]?.get(b.fb)) || stealHeal;
     if (us.steals && draws && b.fl < draws.length) {
@@ -354,7 +364,9 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
     const act = tok ? 1 - attemptsLost(tok.odds, by, turns, pFoe) : 1;
     const hits = !!us && (us.charge ? turns % 2 === 0 : us.recharge ? turns % 2 === 1 : true);
     const hidden = !!us && !hits && !!us.semiCharge;
-    const ours = hits ? [...(act < 1 ? [{ r: 0, p: 1 - act }] : []), ...ourUse.map(x => ({ ...x, p: x.p * act }))] : [{ r: 0, p: 1 }];
+    const mv = atEntry && turns === 1 ? atEntry : us;
+    const use = mv === us ? ourUse : mv.use ?? [{ r: 1, p: 1 }];
+    const ours = hits ? [...(act < 1 ? [{ r: 0, p: 1 - act }] : []), ...use.map(x => ({ ...x, p: x.p * act }))] : [{ r: 0, p: 1 }];
     const next = [];
     for (const b of standing) {
       for (const [foeFirst, w] of [[false, 1 - pFoe], [true, pFoe]]) {
@@ -362,14 +374,14 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
         for (const o of ours) {
           if (!foeFirst) {
             const a = { ...b, p: b.p * w * o.p };
-            if (o.r > 0) hitFoe(a, o);
+            if (o.r > 0) hitFoe(a, o, mv);
             if (a.fh < 1 || hidden || foeIdleNow) { endTurn(a); settle(a, next); continue; }
             for (const t of theirUse) { const c = { ...a, p: a.p * t.p }; foeHit(c, t.r, t.se); endTurn(c); settle(c, next); }
           } else {
             for (const t of theirUse) {
               const c = { ...b, p: b.p * w * o.p * t.p };
               foeHit(c, t.r, t.se);
-              if (c.mh >= 1 && o.r > 0) hitFoe(c, o);
+              if (c.mh >= 1 && o.r > 0) hitFoe(c, o, mv);
               endTurn(c);
               settle(c, next);
             }
@@ -656,7 +668,7 @@ export const teamPlanner = turn => {
   if (!trainer || !party.length || !foes.length) return null;
   // The searches read only the tables `tpTables` builds, never the live game.
   const { foe: facing, entering } = tpFacing(turn, foes);
-  return tpModel(tpTables(turn, party, foes, double, facing), double, party, foes, facing, entering);
+  return tpModel(tpTables(turn, party, foes, double, facing, entering), double, party, foes, facing, entering);
 };
 
 export const teamPlan = turn => teamPlanner(turn)?.view(null) ?? null;
