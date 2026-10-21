@@ -123,13 +123,13 @@ summary best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: D
 Proposals
 ★ best 10 pts · SE vs 9 types · weak Rock
 Dratini Dratini 4 carry final BST 600 (Dragonite)
-Magikarp Magikarp 1 final BST 540 (Gyarados) · rare egg move Dragon Dance
+Magikarp Magikarp 1 final BST 540 (Gyarados) · rare egg move Dragon Dance (setup +1 Atk/Spe)
 Squirtle Squirtle 3 final BST 530 (Blastoise) · luck +3
 Pikachu Pikachu 1 final BST 485 (Raichu) · Pokérus 1.5× EXP · but evolves by item or condition
 Pidgey Pidgey 1 final BST 479 (Pidgeot)
 · without Dratini 10 pts · SE vs 10 types
 Gible Gible 6 carry final BST 600 (Garchomp) · random passive
-Magikarp Magikarp 1 final BST 540 (Gyarados) · rare egg move Dragon Dance
+Magikarp Magikarp 1 final BST 540 (Gyarados) · rare egg move Dragon Dance (setup +1 Atk/Spe)
 Squirtle Squirtle 3 final BST 530 (Blastoise) · luck +3
 · cursor: Gible Gible 6 pts · #1 of 10 · in without Dratini final BST 600 (Garchomp) · random passive · IVs 60/186
 summary best: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; without Dratini: Gible (carry) + Magikarp + Squirtle · 10/10 pts
@@ -201,12 +201,44 @@ summary best: Rotom (carry) · 3/10 pts
 Proposals
 ★ best 3 pts · SE vs 5 types
 Rotom Rotom 3 carry final BST 510 · BST 510 from L5
-· cursor: Rotom Rotom 3 pts · #1 of 1 · in best final BST 510 · BST 510 from L5 · passive Water Absorb
+· cursor: Rotom Rotom 3 pts · #1 of 1 · in best final BST 510 · BST 510 from L5 · passive Water Absorb · immune to Water
 summary best: Rotom (carry) · 3/10 pts
 == Rotom picked as Wash
 ⌃ ×
 🌱 Starters 3/10 pts no caught starter fits
 ✓ picked: Rotom
 summary no caught starter fits
+== Seel, rare egg move
+⌃ ×
+🌱 Starters 0/10 pts best: Seel (carry) · 2/10 pts
+Proposals
+★ best 2 pts · SE vs 6 types · no carry
+Seel Seel 2 carry final BST 475 (Dewgong) · rare egg move Bouncy Bubble (60 Water special · STAB)
+· cursor: Seel Seel 2 pts · #1 of 1 · in best final BST 475 (Dewgong) · rare egg move Bouncy Bubble (60 Water special · STAB) · IVs 60/186
+summary best: Seel (carry) · 2/10 pts
+== Minun, ally-only passive
+⌃ ×
+🌱 Starters 0/10 pts best: Minun (carry) · 1/10 pts
+Proposals
+★ best 1 pts · SE vs 2 types · no carry
+Minun Minun 1 carry rare egg move Encore (status) · final BST 405
+· cursor: Minun Minun 1 pts · #1 of 1 · in best rare egg move Encore (status) · BST 405 from L5 · IVs 60/186 · passive Friend Guard · ally-only, nothing in singles
+summary best: Minun (carry) · 1/10 pts
+== Bronzor, Levitate
+⌃ ×
+🌱 Starters 0/10 pts best: Bronzor (carry) · 2/10 pts
+Proposals
+★ best 2 pts · SE vs 5 types
+Bronzor Bronzor 2 carry final BST 500 (Bronzong) · passive Levitate · immune to Ground, its weakness
+· cursor: Bronzor Bronzor 2 pts · #1 of 1 · in best final BST 500 (Bronzong) · passive Levitate · immune to Ground, its weakness · IVs 60/186
+summary best: Bronzor (carry) · 2/10 pts
+== Vulpix, Drought
+⌃ ×
+🌱 Starters 0/10 pts best: Vulpix (carry) · 2/10 pts
+Proposals
+★ best 2 pts · SE vs 4 types
+Vulpix Vulpix 2 carry final BST 505 (Ninetales) · passive Drought · sun boosts its Fire · but evolves by item or condition
+· cursor: Vulpix Vulpix 2 pts · #1 of 1 · in best final BST 505 (Ninetales) · passive Drought · sun boosts its Fire · but evolves by item or condition
+summary best: Vulpix (carry) · 2/10 pts
 == not choosing a team
 kind null

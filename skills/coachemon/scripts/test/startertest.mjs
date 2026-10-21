@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { wholeCard } from "./panel.mjs";
-import { AbilityId, EvoCondKey } from "../../../../src/enums/generated.ts";
+import { AbilityId, EvoCondKey, MoveCategory, MoveTarget, Stat, TerrainType, WeatherType } from "../../../../src/enums/generated.ts";
 import { TY } from "./fake-mon.mjs";
 
 // Test fixtures, not game data: [id, name, types, base stats, cost,
@@ -44,13 +44,36 @@ const SPECIES = [
   // Invented: no species in the game holds a form-change ability hidden, and Greninja's is Protean.
   [658, "Greninja", ["Water","Dark"], [72,95,67,103,71,122], undefined, [], 37, AbilityId.BATTLE_BOND],
   [479, "Rotom", ["Electric","Ghost"], [50,50,77,95,77,91], 3, [], 41],
+  [86, "Seel", ["Water"], [65,45,55,45,70,45], 2, [[87, 34]], 51],
+  [87, "Dewgong", ["Water","Ice"], [90,70,80,70,95,70]],
+  [56, "Mankey", ["Fighting"], [40,80,35,35,45,70], 2, [[57, 28]], 53],
+  [57, "Primeape", ["Fighting"], [65,105,60,60,70,95]],
+  [312, "Minun", ["Electric"], [60,40,50,75,85,95], 1, [], 55],
+  [263, "Zigzagoon", ["Normal"], [38,30,41,30,41,60], 1, [[264, 20]], 57],
+  [264, "Linoone", ["Normal"], [78,70,61,50,61,100], undefined, [], 57],
+  [436, "Bronzor", ["Steel","Psychic"], [57,24,86,24,86,23], 2, [[437, 33]], 41],
+  [437, "Bronzong", ["Steel","Psychic"], [67,89,116,79,116,33], undefined, [], 41],
+  [37, "Vulpix", ["Fire"], [38,41,40,50,65,65], 2, [[38, 1, true]], 60],
+  [38, "Ninetales", ["Fire"], [73,76,75,81,100,100], undefined, [], 60],
+  [587, "Emolga", ["Electric","Flying"], [55,75,60,75,60,103], 2, [], 62],
 ];
 // Each form's [types, base stats, passive]; form 0 is the species' own.
 const FORMS = {
   479: [[["Electric","Ghost"], [50,50,77,95,77,91], 41], [["Electric","Fire"], [50,65,107,105,107,86], 42],
     [["Electric","Water"], [50,60,107,100,107,86], 43]],
 };
-const ABILITY_NAMES = { 11: "Chlorophyll", 13: "Solar Power", 15: "Rain Dish", 17: "Big Pecks", 19: "Guts", 21: "Lightning Rod", 23: "Moxie", 25: "Multiscale", 27: "Huge Power", 29: "Rough Skin", 31: "Synchronize", 41: "Levitate", 42: "Flame Body", 43: "Water Absorb", 24: "Rattled", 30: "Rough Skin (H)", 33: "Intimidate", 34: "Sand Force", [AbilityId.BATTLE_BOND]: "Battle Bond" };
+const ABILITY_NAMES = { 11: "Chlorophyll", 13: "Solar Power", 15: "Rain Dish", 17: "Big Pecks", 19: "Guts", 21: "Lightning Rod", 23: "Moxie", 25: "Multiscale", 27: "Huge Power", 29: "Rough Skin", 31: "Synchronize", 41: "Levitate", 42: "Flame Body", 43: "Water Absorb", 24: "Rattled", 30: "Rough Skin (H)", 33: "Intimidate", 34: "Sand Force", [AbilityId.BATTLE_BOND]: "Battle Bond",
+  51: "Thick Fat", 53: "Anger Point", 55: "Friend Guard", 57: "Pickup", 60: "Drought", 62: "Electric Surge" };
+// The card knows an attribute by its class name (game-code.md §22), so each fixture attribute is an instance of a class
+// named like the game's.
+const attr = (name, fields = {}) => Object.assign(new ({ [name]: class {} })[name](), fields);
+const ABILITY_ATTRS = {
+  33: [attr("PostSummonStatStageChangeAbAttr")],
+  55: [attr("AlliedFieldDamageReductionAbAttr")],
+  57: [attr("PostBattleLootAbAttr")],
+  60: [attr("PostSummonWeatherChangeAbAttr", { weatherType: WeatherType.SUNNY }), attr("PostBiomeChangeWeatherChangeAbAttr")],
+  62: [attr("PostSummonTerrainChangeAbAttr", { terrainType: TerrainType.ELECTRIC }), attr("PostBiomeChangeTerrainChangeAbAttr")],
+};
 
 const byId = new Map();
 const formData = (id, types, stats, hidden) => ({
@@ -80,21 +103,39 @@ const registry = {
   getEvolutions: id => (direct[id] ?? []).map(to => ({ speciesId: to, level: evoLevel[to][0], item: evoLevel[to][1] ? 1 : 0,
     condition: evoLevel[to][2] ? { data: evoLevel[to][2] } : null, evoLevelThreshold: evoLevel[to][3] })),
 };
+const move = (name, type, category, power, moveTarget = MoveTarget.NEAR_OTHER, attrs = []) =>
+  ({ name, type: TY.indexOf(type), category, power, moveTarget, chance: -1, attrs });
 const tables = {
   species: registry,
-  abilities: Object.assign([], Object.fromEntries(Object.entries(ABILITY_NAMES).map(([k, v]) => [k, { name: v }]))),
-  moves: Object.assign([], { 101: { name: "Dragon Dance" }, 102: { name: "Aqua Jet" }, 103: { name: "Extreme Speed" } }),
-  eggMoves: { 129: [102, 102, 102, 101], 19: [103, 103, 103, 103] },
+  abilities: Object.assign([], Object.fromEntries(Object.entries(ABILITY_NAMES).map(([k, v]) => [k, { name: v, attrs: ABILITY_ATTRS[k] ?? [] }]))),
+  moves: Object.assign([], {
+    101: move("Dragon Dance", "Dragon", MoveCategory.STATUS, -1, MoveTarget.USER, [attr("StatStageChangeAttr", { stats: [Stat.ATK, Stat.SPD], stages: 1, selfTarget: true })]),
+    102: move("Aqua Jet", "Water", MoveCategory.PHYSICAL, 40),
+    103: move("Extreme Speed", "Normal", MoveCategory.PHYSICAL, 80),
+    104: move("Bouncy Bubble", "Water", MoveCategory.SPECIAL, 60),
+    105: move("Ice Beam", "Ice", MoveCategory.SPECIAL, 90),
+    106: move("Encore", "Normal", MoveCategory.STATUS, -1),
+    107: move("Seismic Toss", "Fighting", MoveCategory.PHYSICAL, -1, MoveTarget.NEAR_OTHER, [attr("LevelDamageAttr")]),
+    108: move("Techno Blast", "Normal", MoveCategory.SPECIAL, 120, MoveTarget.NEAR_OTHER, [attr("TechnoBlastTypeAttr")]),
+    109: move("Gyro Ball", "Steel", MoveCategory.PHYSICAL, -1, MoveTarget.NEAR_OTHER, [attr("GyroBallPowerAttr")]),
+    // The game marks a move it has not implemented with this suffix on its name.
+    110: move("Bitter Malice (N)", "Ghost", MoveCategory.SPECIAL, 75),
+  }),
+  eggMoves: { 129: [102, 102, 102, 101], 19: [103, 103, 103, 103], 86: [102, 102, 102, 104], 56: [102, 102, 102, 105], 312: [102, 102, 102, 106] },
 };
 
 const STARTERS = [1, 4, 7, 16, 19, 25, 129, 147, 298, 443, 151];
 // Off the classic grid, so only a challenge's `valid` list offers them.
 const YANMA = 193, DIPPLIN = 1011, FROAKIE = 656, ROTOM = 479;
+const SEEL = 86, MANKEY = 56, MINUN = 312, ZIGZAGOON = 263, BRONZOR = 436, VULPIX = 37, EMOLGA = 587;
+const OFF_GRID = [YANMA, DIPPLIN, FROAKIE, ROTOM, SEEL, MANKEY, MINUN, ZIGZAGOON, BRONZOR, VULPIX, EMOLGA];
 // Every starter caught but Mew; Magikarp has its passive and rare egg move, Rattata perfect IVs, Squirtle a variant-3
 // shiny, Pikachu Pokérus, Gible its passive, Froakie its hidden ability, Rotom its passive and forms 1 and 2 but not 0.
+// Seel and Mankey have their rare egg move, Minun its passive and rare egg move, and Zigzagoon, Bronzor, Vulpix and
+// Emolga their passive.
 const account = () => {
   const dexData = {}, starterData = {};
-  for (const id of [...STARTERS, YANMA, DIPPLIN, FROAKIE, ROTOM]) {
+  for (const id of [...STARTERS, ...OFF_GRID]) {
     dexData[id] = { caughtAttr: 1n | 4n | 16n | 128n, ivs: [10, 10, 10, 10, 10, 10] };
     starterData[id] = { abilityAttr: 1, passiveAttr: 0, eggMoves: 0, valueReduction: 0 };
   }
@@ -105,6 +146,9 @@ const account = () => {
   starterData[FROAKIE] = { ...starterData[FROAKIE], abilityAttr: 1 | 4 };
   dexData[ROTOM].caughtAttr = 1n | 4n | 16n | (128n << 1n) | (128n << 2n);
   starterData[ROTOM] = { ...starterData[ROTOM], passiveAttr: 1 };
+  for (const id of [SEEL, MANKEY]) starterData[id].eggMoves = 8;
+  starterData[MINUN] = { ...starterData[MINUN], passiveAttr: 1, eggMoves: 8 };
+  for (const id of [ZIGZAGOON, BRONZOR, VULPIX, EMOLGA]) starterData[id].passiveAttr = 1;
   delete dexData[151];
   return { dexData, starterData };
 };
@@ -123,10 +167,13 @@ const freshStart = {
 // `getSpeciesDefaultDexAttrProps`' form (game-code.md §23).
 const defaultForm = caught => { for (let i = 0; i < 32; i++) if (caught & (128n << BigInt(i))) return i; return 0; };
 // `forms`: a saved form preference per species id.
-const mount = ({ limit = 10, chosen = [], valid = STARTERS, challenges = [], withTables = true, looking = null, onGrid = true, picking = true, forms = {} }) => {
+// `unlocks`: starter data laid over the account's, by species id. `rare`: a rare egg move id in place of the table's,
+// by species id.
+const mount = ({ limit = 10, chosen = [], valid = STARTERS, challenges = [], withTables = true, looking = null, onGrid = true, picking = true, forms = {}, unlocks = {}, rare = {} }) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const { dexData, starterData } = account();
+  for (const [id, st] of Object.entries(unlocks)) Object.assign(starterData[id], st);
   const species = id => byId.get(id);
   const shown = valid.slice(0, 81);
   const containers = shown.map(id => ({ species: species(id), cost: species(id).cost, icon: { texture: { key: "pokemon_icons_1" }, frame: { name: String(id) } } }));
@@ -161,7 +208,9 @@ const mount = ({ limit = 10, chosen = [], valid = STARTERS, challenges = [], wit
   // Under node the chunk scan finds no tables: hand them over and draw again, or the card stays the first tick's
   // estimate.
   if (withTables) {
-    globalThis.__hud["04-game-tables"].setGameTables(tables);
+    const eggMoves = { ...tables.eggMoves };
+    for (const [id, move] of Object.entries(rare)) eggMoves[id] = [...(eggMoves[id] ?? [102, 102, 102]).slice(0, 3), move];
+    globalThis.__hud["04-game-tables"].setGameTables({ ...tables, eggMoves });
     globalThis.__hud["98-watch"].rebuild();
   }
   return { el, handler, model: globalThis.__coachHud.last(), summary: globalThis.__coachHud.summary() };
@@ -326,7 +375,7 @@ const rotom = opts => ({ challenges: [{ id: 11, value: 0 }], valid: [ROTOM], loo
   const m = show("Rotom, Wash saved", rotom({ forms: { [ROTOM]: 2 } }));
   const why = m.viewing.why.join(" · ");
   assert.ok(m.viewing.why.includes("BST 510 from L5"), why);
-  assert.ok(m.viewing.why.includes("passive Water Absorb"), why);
+  assert.ok(m.viewing.why.includes("passive Water Absorb · immune to Water"), why);
   // Electric/Water hits Water, Flying, Fire, Ground and Rock.
   assert.equal(m.picks[0].covers, 5, JSON.stringify(m.picks[0]));
 }
@@ -337,13 +386,79 @@ const rotom = opts => ({ challenges: [{ id: 11, value: 0 }], valid: [ROTOM], loo
   handler.starterPreferences[ROTOM] = { formIndex: 2 };
   globalThis.__hud["98-watch"].rebuild();
   const why = globalThis.__coachHud.last().viewing.why;
-  assert.ok(why.includes("passive Water Absorb"), why.join(" · "));
+  assert.ok(why.includes("passive Water Absorb · immune to Water"), why.join(" · "));
 }
 
 // ---- On the team, Rotom is the form its grid entry was added as, its passive unlocked but not switched on.
 {
   const m = show("Rotom picked as Wash", rotom({ chosen: [ROTOM], forms: { [ROTOM]: 2 } }));
   assert.ok(m.chosen[0].why.includes("but Water Absorb is off"), m.chosen[0].why.join(" · "));
+}
+
+// One species alone on the grid, under the cursor.
+const alone = (id, opts) => ({ challenges: [{ id: 11, value: 0 }], valid: [id], looking: id, ...opts });
+
+// ---- A setup rare egg move names its stages.
+{
+  const why = mount({ looking: 129 }).model.viewing.why;
+  assert.ok(why.includes("rare egg move Dragon Dance (setup +1 Atk/Spe)"), why.join(" · "));
+}
+
+// ---- A damaging one names its power, type and category, and STAB and stat fit on the final form.
+{
+  const seel = show("Seel, rare egg move", alone(SEEL)).viewing.why;
+  assert.ok(seel.includes("rare egg move Bouncy Bubble (60 Water special · STAB)"), seel.join(" · "));
+  // Primeape's Atk 105 against SpA 60: a special move is off its weaker attacking stat.
+  const mankey = mount(alone(MANKEY)).model.viewing.why;
+  assert.ok(mankey.includes("rare egg move Ice Beam (90 Ice special · weak SpA)"), mankey.join(" · "));
+}
+
+// ---- Fixed damage, a power or type the move works out in battle, and an unimplemented move each say so.
+{
+  const rare = (id, move) => mount(alone(id, { rare: { [id]: move }, unlocks: { [id]: { eggMoves: 8 } } })).model.viewing.why;
+  const toss = rare(MANKEY, 107);
+  assert.ok(toss.includes("rare egg move Seismic Toss (Fighting physical · fixed damage)"), toss.join(" · "));
+  const techno = rare(SEEL, 108);
+  assert.ok(techno.includes("rare egg move Techno Blast (120 special · type varies)"), techno.join(" · "));
+  const gyro = rare(BRONZOR, 109);
+  assert.ok(gyro.includes("rare egg move Gyro Ball (Steel physical · power varies · STAB)"), gyro.join(" · "));
+  const malice = rare(SEEL, 110);
+  assert.ok(malice.includes("rare egg move Bitter Malice (not implemented)"), malice.join(" · "));
+}
+
+// ---- Any other status move is named as one.
+{
+  const why = mount(alone(MINUN)).model.viewing.why;
+  assert.ok(why.includes("rare egg move Encore (status)"), why.join(" · "));
+}
+
+// ---- A passive that does nothing in a single battle weighs 1 and says why; any other keeps its 8.
+{
+  const m = show("Minun, ally-only passive", alone(MINUN));
+  assert.ok(m.viewing.why.includes("passive Friend Guard · ally-only, nothing in singles"), m.viewing.why.join(" · "));
+  const off = mount(alone(MINUN, { unlocks: { [MINUN]: { passiveAttr: 0 } } })).model.viewing.value;
+  assert.equal(m.viewing.value - off, 1);
+  const zig = mount(alone(ZIGZAGOON)).model.viewing;
+  assert.ok(zig.why.includes("passive Pickup · no effect on a fight"), zig.why.join(" · "));
+  const zigOff = mount(alone(ZIGZAGOON, { unlocks: { [ZIGZAGOON]: { passiveAttr: 0 } } })).model.viewing.value;
+  assert.equal(zig.value - zigOff, 1);
+  const bronzor = mount(alone(BRONZOR)).model.viewing.value;
+  const bronzorOff = mount(alone(BRONZOR, { unlocks: { [BRONZOR]: { passiveAttr: 0 } } })).model.viewing.value;
+  assert.equal(bronzor - bronzorOff, 8);
+}
+
+// ---- An immunity names the type, and whether the final form is weak to it.
+{
+  const why = show("Bronzor, Levitate", alone(BRONZOR)).viewing.why;
+  assert.ok(why.includes("passive Levitate · immune to Ground, its weakness"), why.join(" · "));
+}
+
+// ---- A weather or terrain setter names what it boosts on the final form; terrain boosts only a grounded user.
+{
+  const vulpix = show("Vulpix, Drought", alone(VULPIX)).viewing.why;
+  assert.ok(vulpix.includes("passive Drought · sun boosts its Fire"), vulpix.join(" · "));
+  const emolga = mount(alone(EMOLGA)).model.viewing.why;
+  assert.ok(emolga.includes("passive Electric Surge · sets Electric Terrain"), emolga.join(" · "));
 }
 
 // ---- Off the grid the last species looked at is no cursor line, though the handler still holds its id.
