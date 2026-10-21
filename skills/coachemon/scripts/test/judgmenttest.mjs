@@ -1377,7 +1377,6 @@ const rowOf = (id, level, moves, ability) => {
 // ---- A big fight on the wave the run stands on counts until it is won, and every judgment reads the same one (#587)
 {
   const nc = () => mon(OURS.swampert, CAP, [M.surf, M.earthquake], { ability: "Torrent" });
-  // A fixed battle on 25, and a preview that reaches the boss on 30 and nothing else.
   const roster = wave => (wave === 30
     ? { wave, name: "Boss W30", confidence: "exact", foes: [rowOf(135, 30, ["Thunderbolt", "Shadow Ball"], "Volt Absorb")] }
     : null);

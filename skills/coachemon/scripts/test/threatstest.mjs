@@ -259,6 +259,14 @@ for (const fight of [10, 30, 50, 70, 100, 150]) {
   assert.equal(here.wave, 44);
   assert.equal(here.level, levelCapAt(scene, 44));
   console.log(`no fight: wave ${here.wave}, level ${here.level}, band ${here.band.centre}, ${here.threats.length} threats`);
+  const fixed = { ...scene, seed: "seed-4", currentBattle: { waveIndex: 25 },
+    gameMode: { isBoss: w => w % 10 === 0, isFixedBattle: w => w === 25 } };
+  const unstated = globalThis.__hud["26-run"].readRun(fixed, run => standardThreats(run));
+  assert.match(unstated.unavailable ?? "", /never said whether wave 25 is cleared/,
+    "a run read that never stated its standing refuses rather than judging the wave on screen");
+  assert.deepEqual(unstated.threats, []);
+  assert.equal(readRun(fixed, run => standardThreats(run, { fight: 30 })).unavailable, undefined,
+    "and a fight the caller names is still answered");
 }
 
 // ---- The band's own arithmetic

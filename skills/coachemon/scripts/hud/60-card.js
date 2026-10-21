@@ -213,21 +213,22 @@ const encounterCall = s => {
 
 // Every kind the panel can show has a row, and one without `event` is never streamed. A battle keys on the wave alone:
 // its foes drop out of the list as they faint. `cleared` is where the run stands on that card (CONTEXT.md, `Next big
-// fight`), and null where the card judges no fight.
+// fight`), and null where the card asks no judgment of `run.nextFight`: the learn card reads its fight off the road
+// (49-ahead.js, `learnRoster`).
 const wave = card => `${card.wave ?? null}`;
 const KINDS = {
-  battle: { event: "battle", key: wave, call: s => s.verdict, cleared: false },
+  battle: { event: "battle", cleared: false, key: wave, call: s => s.verdict },
   learn: { event: "learn", cleared: null, key: card => `${wave(card)}|${card.name ?? ""}|${card.move?.name ?? ""}`,
     call: (s, card) => oracleLearnCall(card.oracleLine) ?? leading(s.learn) },
   // A reroll changes the offers, so the rewards screen is a new decision under the same wave.
   rewards: { event: "reward", cleared: true, key: card => `${wave(card)}|${(card.free ?? []).map(f => f.name).join(",")}`, call: s => leading(s.rewards) },
-  biome: { event: "biome", key: wave, call: s => biomePick(s.biome), cleared: true },
+  biome: { event: "biome", cleared: true, key: wave, call: s => biomePick(s.biome) },
   // A continuous encounter asks again on the same wave under the same name: the mon in front of you and the two
   // stages are what make a minigame turn its own decision, so they key it (`46-encounter.js`).
-  encounter: { event: "encounter", call: s => encounterCall(s.encounter), cleared: true,
+  encounter: { event: "encounter", cleared: true, call: s => encounterCall(s.encounter),
     key: card => `${wave(card)}|${card.name ?? ""}${card.minigame ? `|${card.minigame.mon}|${card.minigame.left}|${card.minigame.catchStage},${card.minigame.fleeStage}` : ""}` },
-  starters: { event: null, key: wave, call: s => leading(s.starters), cleared: null },
-  fusion: { event: null, key: wave, call: s => leading(s.fusion), cleared: true },
+  starters: { event: null, cleared: null, key: wave, call: s => leading(s.starters) },
+  fusion: { event: null, cleared: true, key: wave, call: s => leading(s.fusion) },
 };
 // @only tests: clearedOn
 export const clearedOn = kind => KINDS[kind]?.cleared ?? null;

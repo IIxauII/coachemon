@@ -132,14 +132,17 @@ const UNREADY = "the game's species table hasn't been read yet";
  * (26-run.js, `nextFight`) and the wave the run stands on where there is no fight to read.
  *
  * The game's tables land partway through a run; an answer taken before they do says `unavailable` and is never
- * memoised, so the next read asks again.
+ * memoised, so the next read asks again. A run read that never stated its standing names no fight, and says so in
+ * `unavailable` the same way.
  */
 export const standardThreats = (run, { fight = null } = {}) => {
   const s = run?.scene ?? null;
   const here = Math.max(1, Math.floor(run?.facts?.wave ?? 0) || 1);
+  const unstated = fight == null ? run?.nextFight?.unavailable ?? null : null;
   const wave = Math.max(1, Math.floor(fight ?? run?.nextFight?.fight ?? here) || 1);
   const ready = typeof tryDo(() => gameTables().species.getAllSpecies) === "function" && !!tryDo(() => gameTables().moves);
-  if (!ready) return { wave, level: levelCapAt(s, wave), band: bandAt(wave), threats: [], confidence: "exact", unavailable: UNREADY };
+  const unavailable = unstated ?? (ready ? null : UNREADY);
+  if (unavailable) return { wave, level: levelCapAt(s, wave), band: bandAt(wave), threats: [], confidence: "exact", unavailable };
   return run.memo("threats", String(wave), () => buildThreats(s, wave));
 };
 

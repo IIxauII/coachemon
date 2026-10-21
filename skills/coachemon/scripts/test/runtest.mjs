@@ -93,8 +93,7 @@ const keyOf = s => readRun(s, run => run.key);
 
 // ---- The next big fight is the one the run still has to win, which the caller says by its standing (#587)
 {
-  // A fixed battle on 25 and a boss every tenth wave. The game mode is not in the run key, so another calendar takes
-  // a seed of its own or is served the first one's memo.
+  // The game mode is not in the run key, so another calendar takes a seed of its own or is served the first one's memo.
   const fixed = { isBoss: w => w % 10 === 0, isFixedBattle: w => w === 25 };
   const at = (wave, opts, gameMode = fixed) => readRun(scene({ currentBattle: { waveIndex: wave }, gameMode,
     seed: gameMode === fixed ? "seed-1" : "seed-other" }), run => run.nextFight, opts);

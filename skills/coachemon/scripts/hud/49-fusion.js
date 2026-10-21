@@ -98,7 +98,7 @@ export const fusionOptions = (run, { allowed = () => null } = {}) => {
   const party = (run.facts?.party ?? []).filter(Boolean);
   const spliced = !!s?.gameMode?.isSplicedOnly;
   const pickable = party.filter(p => !p.fusionSpecies && tryDo(() => allowed(p), null) == null);
-  const unread = run.nextFight?.unavailable ?? standardThreats(run).unavailable ?? null;
+  const unread = standardThreats(run).unavailable ?? null;
   if (unread) return { spliced, options: [], pickable: pickable.length, unread };
   const key = JSON.stringify([run.nextFight?.fight ?? null, spliced, pickable.map(p => p.id), party.map(p => [p.id, p.species?.speciesId, p.formIndex,
     p.fusionSpecies?.speciesId ?? null, p.abilityIndex, p.level, p.hp > 0, p.nature, (p.moveset ?? []).map(m => m?.moveId)])]);
