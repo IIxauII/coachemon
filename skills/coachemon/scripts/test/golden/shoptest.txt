@@ -422,9 +422,10 @@ Team audit
 ⌃ ×
 🛒 $100 nothing affordable take Grip Claw → Jolteon
 ★ Grip Claw Jolteon 10% to steal an item when it attacks
-2 issues: Wobbuffet: no attacking move; nothing hits Ground/Rock/Bug/Ghost +9 super-effectively
+3 issues: Wobbuffet: no attacking move; Wobbuffet: Calm Mind does little (+1 SpA/SpD); nothing hits Ground/Rock/Bug/Ghost +9 super-effectively
 Team audit
 ✗ Wobbuffet: no attacking move
+· Wobbuffet: Calm Mind does little (+1 SpA/SpD)
 · nothing hits Ground/Rock/Bug/Ghost +9 super-effectively
 == daily level cap
 ⌃ ×

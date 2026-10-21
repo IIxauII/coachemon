@@ -266,6 +266,52 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.deepEqual([call.learn, call.kind], [null, "status"], "an unscorable status move is still the user's call");
 }
 
+// ---- A setup move is worth the damage its boosts add to the mon's own attacks (#849)
+// Names off the randbats table, so no prior nudges the price.
+const DRAGON_DANCE = ["Dragon Dance","Dragon",-1,"X",-1,[statChange([1, 5], 1, true)],false,0];
+{
+  const chomp = mon("Chompish", ["Dragon","Ground"], 142, 92, [["Bite","Dark",60,"P"],["Slash","Normal",70,"P"],["Dragon Claw","Dragon",80,"P"],["Dig","Ground",80,"P",100,[],true]]);
+  const dd = run(chomp, DRAGON_DANCE);
+  show("Chompish ← Dragon Dance", dd);
+  assert.equal(dd.model.decision, "learn", `Dragon Dance on a physical attacker: ${dd.model.verdict} (${dd.model.gain})`);
+  assert.ok(["Bite", "Slash"].includes(dd.model.moves[dd.model.forget]?.name), "it takes a weak attack's slot");
+
+  const QUIVER_DANCE = ["Quiver Dance","Bug",-1,"X",-1,[statChange([3, 4, 5], 1, true)],false,0];
+  const galv = mon("Galvantish", ["Bug","Electric"], 89, 109, [["Signal Beam","Bug",75,"S"],["Leech Life","Bug",80,"P"],["Discharge","Electric",80,"S",100,[],false,6],["Gastro Acid","Poison",-1,"X",100]]);
+  const qd = run(galv, QUIVER_DANCE);
+  show("Galvantish ← Quiver Dance", qd);
+  assert.equal(qd.model.decision, "learn", `Quiver Dance on a special attacker: ${qd.model.verdict} (${qd.model.gain})`);
+}
+// ---- A second setup move adds little: Victory Dance beside Swords Dance stays below a strong attack (#849)
+{
+  const SWORDS_DANCE = ["Swords Dance","Normal",-1,"X",-1,[statChange([1], 2, true)],false,0];
+  const VICTORY_DANCE = ["Victory Dance","Fighting",-1,"X",-1,[statChange([1, 2, 5], 1, true)],false,0];
+  const leav = () => mon("Leavannish", ["Bug","Grass"], 123, 90, [["X-Scissor","Bug",80,"P"],["Entrainment","Normal",-1,"X",100],SWORDS_DANCE,["Leaf Storm","Grass",130,"S",90]]);
+  const vd = run(leav(), VICTORY_DANCE);
+  const blade = run(leav(), ["Bitter Blade","Fire",90,"P",100,[["HitHealAttr",{}]]]);
+  show("Leavannish ← Victory Dance", vd);
+  assert.notEqual(vd.model.decision, "learn", `a second setup move: ${vd.model.verdict} (${vd.model.gain})`);
+  assert.ok(vd.model.move.value < blade.model.move.value, `Victory Dance ${vd.model.move.value} < Bitter Blade ${blade.model.move.value}`);
+  assert.ok(byName(vd.model, "Swords Dance").value > byName(vd.model, "X-Scissor").value, "the setup it already has is worth keeping");
+}
+// ---- Shell Smash outranks a STAB nuke, and a charging setup move pays for its second turn (#849)
+{
+  const cloy = () => mon("Cloystish", ["Water","Ice"], 107, 97, [["Whirlpool","Water",35,"S",85],["Brine","Water",65,"S"],["Icicle Crash","Ice",85,"P",90],["Ice Beam","Ice",90,"S"]]);
+  const SHELL_SMASH = ["Shell Smash","Normal",-1,"X",-1,[statChange([1, 3, 5], 2, true), statChange([2, 4], -1, true)],false,0];
+  const smash = run(cloy(), SHELL_SMASH);
+  const nuke = run(cloy(), ["Hydro Pump","Water",110,"S",80]);
+  show("Cloystish ← Shell Smash", smash);
+  assert.equal(smash.model.decision, "learn");
+  assert.ok(smash.model.gain > nuke.model.gain, `Shell Smash +${smash.model.gain} over Hydro Pump +${nuke.model.gain}`);
+
+  const alc = mon("Alcremish", ["Fairy"], 72, 122, [["Dazzling Gleam","Fairy",80,"S",100,[],false,6],["Recover","Normal",-1,"X",-1,[["HealAttr",{ healRatio: 0.5 }]],false,0],["Draining Kiss","Fairy",50,"S"],FILLER]);
+  const boosts = [statChange([3, 4, 5], 2, true)];
+  const geo = globalThis.__lm.learnAdvice(alc, mv(["Geomancy","Fairy",-1,"X",-1,boosts,true,0]), { party: [alc] });
+  const plain = globalThis.__lm.learnAdvice(alc, mv(["Geomancyish","Fairy",-1,"X",-1,boosts,false,0]), { party: [alc] });
+  assert.ok(geo.plan.incoming.value < plain.plan.incoming.value, `the charge turn costs a turn of hits (${geo.plan.incoming.value} < ${plain.plan.incoming.value})`);
+  assert.equal(geo.kind, "learn", "+2 SpA/SpD/Spe is still worth its two turns");
+}
+
 // ---- The moveset prior (05-randbats.js): a nudge and a note, never a veto
 {
   // Randbats has no sets for the unevolved Houndour, so Houndoom's stand in, and count for less.

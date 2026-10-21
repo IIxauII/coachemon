@@ -117,10 +117,10 @@ Team
 team: +SE Fairy
 == Houndoom ← Nasty Plot (TM)
 🎓 Houndoom learns Houndoom Atk 120 / SpA 160 Learn → forget Howl
-✓ Dark Nasty Plot +2 SpA · set move (Fast Attacker) power 72 +69 power
+✓ Dark Nasty Plot +2 SpA · set move (Fast Attacker) power 281 +281 power
 Moves
 · Dark Crunch 2nd Dark move · weak Atk power 68
-✗ Normal Howl +1 Atk power 3
+✗ Normal Howl +1 Atk power 0
 · Dark Snarl 2nd Dark move power 59
 · Fire Incinerate SE on Bug/Steel/Grass… power 117
 == Fletchinder ← Roost
@@ -141,12 +141,46 @@ Moves
 · Normal Sing sleep · 3 status moves · 55% acc power 23
 Team
 team: +SE Flying/Ground/Grass…
+== Chompish ← Dragon Dance
+🎓 Chompish learns Chompish Atk 142 / SpA 92 Learn → forget Slash
+✓ Dragon Dragon Dance +1 Atk/Spe power 91 +21 power
+Moves
+· Dark Bite SE on Ghost/Psychic power 76
+✗ Normal Slash power 70
+· Dragon Dragon Claw SE on Dragon power 142
+· Ground Dig SE on Poison/Rock/Steel… · charge turn power 78
+== Galvantish ← Quiver Dance
+🎓 Galvantish learns Galvantish Atk 89 / SpA 109 Learn → forget Leech Life
+✓ Bug Quiver Dance +1 SpA/SpD/Spe power 108 +35 power
+Moves
+· Bug Signal Beam 2nd Bug move power 84
+✗ Bug Leech Life 2nd Bug move · weak Atk power 73
+· Electric Discharge SE on Flying/Water power 156
+· Poison Gastro Acid status
+== Leavannish ← Victory Dance
+🎓 Leavannish learns Leavannish Atk 123 / SpA 90 Skip — not an upgrade over Leaf Storm
+✓ Fighting Victory Dance +1 Atk/Def/Spe · 3 status moves · weak fit power 19 −148 power
+Moves
+· Bug X-Scissor SE on Grass/Psychic/Dark power 156
+· Normal Entrainment status
+· Normal Swords Dance +2 Atk power 268
+★ Grass Leaf Storm SE on Ground/Rock/Water · weak SpA power 167
+Team
+team: −SE Ground/Rock/Water
+== Cloystish ← Shell Smash
+🎓 Cloystish learns Cloystish Atk 107 / SpA 97 Learn → forget Icicle Crash
+✓ Normal Shell Smash +2 Atk/SpA/Spe power 358 +272 power
+Moves
+· Water Whirlpool 2nd Water move power 30
+· Water Brine 2nd Water move power 66
+✗ Ice Icicle Crash 2nd Ice move power 86
+· Ice Ice Beam 2nd Ice move power 92
 == Houndour ← Nasty Plot
 🎓 Houndour learns Houndour Atk 60 / SpA 80 Learn → forget Howl
-✓ Dark Nasty Plot +2 SpA · set move (Fast Attacker, evolved) power 67 +64 power
+✓ Dark Nasty Plot +2 SpA · set move (Fast Attacker, evolved) power 262 +262 power
 Moves
 · Dark Bite SE on Ghost/Psychic · weak Atk power 88
-✗ Normal Howl +1 Atk power 3
+✗ Normal Howl +1 Atk power 0
 · Normal Leer foe Def −1 power 4
 · Fire Incinerate SE on Bug/Steel/Grass… power 117
 == Azumarill (Huge Power) ← Liquidation
