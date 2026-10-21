@@ -422,4 +422,14 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   console.log(`== switched in ${party[0].name}: road served from the memo`);
 }
 
+// ---- On a cleared wave the road's next fight is the run read's next big fight, around Rival 2 on 25 (#587, #877)
+for (const [wave, fight] of [[24, 25], [25, 30], [26, 30]]) {
+  const { scene } = mount({ wave, party: team() });
+  const { aheadModel } = globalThis.__hud["49-ahead"];
+  const [road, next] = globalThis.__hud["26-run"].readRun(scene, run => [aheadModel(run).next.wave, run.nextFight.fight],
+    { cleared: true });
+  assert.equal(road, fight, `W${wave}: the road's next fight`);
+  assert.equal(next, road, `W${wave}: the fight the team audit's "first to replace" is judged at is the judgments' own`);
+}
+
 console.log("ok");

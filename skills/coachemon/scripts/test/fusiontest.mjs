@@ -123,8 +123,10 @@ const potion = () => Object.assign(new PokemonHpRestoreModifierType(), { name: "
 
 const HARDCORE = 9; // `Challenges`, which only the bundle's prelude holds
 
-// `screen`: "party" or "rewards". `partyUiMode` 9 is SPLICE.
-const mount = ({ screen = "party", spliced = false, members = party(spliced), picked = null, partyUiMode = 9, hardcore = false, free = [] }) => {
+// `screen`: "party" or "rewards". `partyUiMode` 9 is SPLICE. `asked`, where given, collects every wave the threat set
+// asks a roster for.
+const mount = ({ screen = "party", spliced = false, members = party(spliced), picked = null, partyUiMode = 9, hardcore = false, free = [],
+  wave = 52, asked = null }) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const filter = p => (p.fusionSpecies || (hardcore && p.hp <= 0) ? "no effect" : null);
@@ -135,14 +137,15 @@ const mount = ({ screen = "party", spliced = false, members = party(spliced), pi
     // Wave 52, so the next big fight is wave 60 and the level cap there is 48: the party below straddles it rather
     // than standing twelve levels over it, which is what leaves the duels behind the judgment close enough that
     // *which* pair the Splicer makes moves the team value at all (`CLAMP` is ±3 a threat).
-    money: 500, pokeballCounts: {}, modifiers: [], currentBattle: { waveIndex: 52, double: false },
+    money: 500, pokeballCounts: {}, modifiers: [], currentBattle: { waveIndex: wave, double: false },
     ui: { mode: (screen === "party" ? 8 : 6), getHandler: () => handler },
     phaseManager: { getCurrentPhase: () => ({ phaseName: "SelectModifierPhase" }) },
     getPlayerParty: () => members, getEnemyParty: () => [],
     // The challenge list is what the judgment reads Hardcore off, through the shared predicate (03-calendar), so the
     // id has to be the real one: with any other number a fainted member finds a shop before wave 60 and is counted
     // at full health, and the case labelled Hardcore would judge the same party as the others (#589).
-    gameMode: { isSplicedOnly: spliced, challenges: hardcore ? [{ id: HARDCORE, value: 1 }] : [] },
+    gameMode: { isSplicedOnly: spliced, challenges: hardcore ? [{ id: HARDCORE, value: 1 }] : [],
+      isBoss: w => w % 10 === 0, isFixedBattle: w => w === 25 },
   };
   globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
   const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
@@ -150,11 +153,13 @@ const mount = ({ screen = "party", spliced = false, members = party(spliced), pi
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   eval(bundle("hud", { expose: true }));
+  if (asked) globalThis.__hud["11-threats"].setRosterRead((run, w) => { asked.push(w); return null; });
   // The chunk scan finds nothing under node, so hand over the tables it would have found and tick again: without
   // them there is no threat set, and the judgment every pair is ranked by has nothing to judge against (#589).
   globalThis.__hud["04-game-tables"].setGameTables({ species: registry, moves: threatMoves() });
   globalThis.__hud["98-watch"].rebuild();
-  globalThis.__ft = { readRun: globalThis.__hud["26-run"].readRun, fusionOptions: globalThis.__hud["49-fusion"].fusionOptions };
+  globalThis.__ft = { readRun: (s, fn) => globalThis.__hud["26-run"].readRun(s, fn, { cleared: true }),
+    fusionOptions: globalThis.__hud["49-fusion"].fusionOptions };
   return { el, scene, model: globalThis.__coachHud.last(), summary: globalThis.__coachHud.summary() };
 };
 
@@ -287,5 +292,21 @@ let best;
   const sp = m.free.find(f => f.name === "DNA Splicers");
   assert.ok(sp.v < 0, sp.why);
   assert.match(sp.why, /no fusion worth a member · best Garchomp ← Magikarp/);
+}
+// ---- After a fixed battle, the Splicer judges a pair at the next big fight and not at the fight just won (#587, #877).
+{
+  for (const [wave, fight] of [[24, 25], [25, 30], [26, 30]]) {
+    for (const screen of ["party", "rewards"]) {
+      const asked = [];
+      const { model: m } = mount({ screen, wave, asked, free: screen === "rewards" ? [potion(), splicers()] : [] });
+      const waves = [...new Set(asked)];
+      console.log(`== W${wave} ${screen}: rosters asked for ${waves.join(", ")}`);
+      assert.deepEqual(waves, [fight], `W${wave} ${screen}: the threat set reads the roster of W${fight}`);
+      if (screen === "rewards" && wave === 25) {
+        const first = m.audit.findings.find(f => /first to replace/.test(f.text));
+        assert.match(first.text, / at W30 /, "the team audit on the same card judges at the same fight");
+      }
+    }
+  }
 }
 console.log("ok");

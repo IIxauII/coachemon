@@ -66,7 +66,7 @@ const lines = el => wholeCard(el)
 // Scripted fork draws: `draws[offset]` is the sequence a fork sown at that offset yields (taken modulo the range);
 // a fork at an unscripted offset yields 0s. `forks` records every offset sown.
 // `gameMode`: left out, the run calendar reads no next big fight and the party at it is everyone a challenge allows.
-// `{ isFixedBattle: () => false }` is enough for `bigFightsAhead`; `challenges` carries Hardcore (id 9) and Limited
+// `{ isFixedBattle: () => false }` is enough for the run calendar; `challenges` carries Hardcore (id 9) and Limited
 // Support (id 8).
 // `field`: the party's lead and the first enemy stand on the field of a wild single battle, so the catch card's turn
 // read can be taken off the same scene as the encounter card.
@@ -164,9 +164,8 @@ const verdicts = m => m.options.map(o => o.verdict);
 // What the Dark Deal's "your weakest link" is reading, which no row of the card prints in full: the whole party
 // ranked weakest first, with what each would cost the team to lose, dead weight ahead of everyone at zero (#582).
 // Read at the fight the card reads it at, so the ladder is the card's own answer and not a second question.
-const ladder = sc => globalThis.__hud["26-run"].readRun(sc, run => globalThis.__hud["12-value"].weakestMember(run,
-  { fight: globalThis.__hud["03-calendar"].bigFightsAhead(sc, sc.currentBattle.waveIndex + 1)[0]?.wave ?? null }))
-  .ranked.map(r => `${r.name}${r.dead ? ` ${r.dead}` : ""} ${turns(r.cost)}`).join(" · ");
+const ladder = sc => globalThis.__hud["26-run"].readRun(sc, run => globalThis.__hud["12-value"].weakestMember(run),
+  { cleared: true }).ranked.map(r => `${r.name}${r.dead ? ` ${r.dead}` : ""} ${turns(r.cost)}`).join(" · ");
 // A cost rounds to a tenth of a turn, and one just under zero rounds to zero rather than to a minus sign.
 const turns = n => (n.toFixed(1) === "-0.0" ? "0.0" : n.toFixed(1));
 
@@ -640,7 +639,8 @@ const threatTables = () => {
   };
   const case_ = (title, wave, gameMode) => {
     const r = show(`dark deal, ${title}`, downed(wave, gameMode));
-    const fight = globalThis.__hud["03-calendar"].bigFightsAhead(r.scene, wave + 1)[0] ?? null;
+    const next = globalThis.__hud["26-run"].readRun(r.scene, run => run.nextFight, { cleared: true });
+    const fight = next.fight == null ? null : { wave: next.fight, kind: next.kind };
     console.log(`next big fight  ${fight ? `${fight.kind} ${fight.wave}` : "none"} · weakest first  ${ladder(r.scene)}`);
     return { m: r.model(), fight };
   };
@@ -1088,7 +1088,7 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
     const { readTurn } = globalThis.__hud["25-turn"], { catchAdvice, catchLand } = globalThis.__hud["45-catch"];
     const advice = readTurn(sc, turn => catchAdvice(turn, globalThis.__hud["98-watch"].accountRead(sc)));
     assert.ok(advice?.targets?.length, `the turn read finds a catch target: ${JSON.stringify(advice)}`);
-    const landed = globalThis.__hud["26-run"].readRun(sc, run => catchLand(run, advice));
+    const landed = globalThis.__hud["26-run"].readRun(sc, run => catchLand(run, advice), { cleared: false });
     return landed.targets.find(t => t.id === foe.id);
   };
 
@@ -1144,7 +1144,7 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   const dancing = (party, mon, extra = {}) => ({ type: 22, tier: GREAT, labels: ["Battle", "Learn", "Dance"],
     catchAllowed: true, options: [option(), option(), option({ mode: 3, primary: [moveReq(["SWORDS_DANCE"])] })],
     configs: [{ pokemonConfigs: [{ species: species(741, "Oricorio", ["Fire", "Flying"], 476), isBoss: true }] }],
-    enemy: [mon], party, tables: threatTables(), gameMode: fight, field: true, ...extra });
+    enemy: [mon], party, tables: threatTables(), gameMode: fight, field: true, wave: 32, ...extra });
   // A party with room and little in it: the team wants the dancer, and the row says so ahead of the dex reason.
   const wantMon = oricorio();
   const wanted = show("dancing lessons, judged, the team wants it",
@@ -1154,7 +1154,7 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   assert.ok(dance.options[2].why.startsWith("team: take"), `the dance row leads with it: ${dance.options[2].why}`);
   // A viewer following in plain text gets the same call off the summary, reasons and all (story 40).
   assert.ok(globalThis.__coachHud.summary().encounter.endsWith(
-    " · Oricorio: take, a backup to Fighting at last, a backup to Flying at last"),
+    " · Oricorio: take, an answer to Bug at last, Poison now beats 2 of 3, down from 2 of 2"),
   `the summary carries the verdict and the reasons it was read off: ${globalThis.__coachHud.summary().encounter}`);
   // The same mon, through the catch card's own entry: one answer, down to the reasons and the confidence.
   const landed = catchCard(wanted.scene, wantMon);
@@ -1171,7 +1171,7 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
     { dex: { 741: { caughtAttr: 255n } } })).model());
   assert.equal(sameSpecies.offers[0].account.value, 0, "the account is done with this species");
   assert.equal(sameSpecies.offers[0].verdict, "take");
-  assert.equal(sameSpecies.options[2].why, "team: take, a backup to Fighting at last, a backup to Flying at last",
+  assert.equal(sameSpecies.options[2].why, "team: take, an answer to Bug at last, Poison now beats 2 of 3, down from 2 of 2",
     "the team's call and its reasons, and nothing of the account's");
   assert.equal(verdicts(sameSpecies)[2], "take", "a mon the team wants is wanted whatever the dex says");
   // A full party: the call names the member the swap costs, and it is the same name on both cards.
@@ -1300,7 +1300,7 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   assert.equal(forced.offers[0].gives, "Garchomp", "the member the game lists the offer against");
   const weakest = ladder(carry.scene).split(" ")[0];
   const free = globalThis.__hud["26-run"].readRun(carry.scene, run => globalThis.__hud["12-value"]
-    .judgeNewcomer(run, { species: salamence().species, level: one[0].level }));
+    .judgeNewcomer(run, { species: salamence().species, level: one[0].level }), { cleared: true });
   assert.equal(free.replaced.name, weakest,
     "the slot the same newcomer's own search empties is the member the party loses least by");
   assert.notEqual(weakest, "Garchomp", "which is not the carry: the trade is forced past the search");

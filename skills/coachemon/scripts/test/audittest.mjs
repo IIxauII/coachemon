@@ -108,7 +108,8 @@ const threatTables = () => {
 // Display only: a cost of a hair below zero prints as "-0.0" otherwise.
 const turns = n => (n.toFixed(1) === "-0.0" ? "0.0" : n.toFixed(1));
 const ladder = (scene, fight) =>
-  globalThis.__hud["26-run"].readRun(scene, run => globalThis.__hud["12-value"].weakestMember(run, { fight }))
+  globalThis.__hud["26-run"].readRun(scene, run => globalThis.__hud["12-value"].weakestMember(run, { fight }),
+    { cleared: true })
     .ranked.map(r => `${r.name}${r.dead ? ` ${r.dead}` : ""} ${turns(r.cost)}`).join(" · ");
 
 const whitneyParty = ({ diglett = {} } = {}) => [
@@ -286,8 +287,8 @@ for (const [label, sc] of Object.entries(scenarios)) {
   const { readRun } = globalThis.__hud["26-run"];
   globalThis.__slotScores = globalThis.__hud["40-learn"].slotScores;
   assert.ok(!el.textContent, `${label}: panel error ${el.textContent}`);
-  const m = readRun(scene, run => rewardsModel(run, handler));
-  if (sc.ahead) m.audit = readRun(scene, run => teamAudit(run, sc.ahead));
+  const m = readRun(scene, run => rewardsModel(run, handler), { cleared: true });
+  if (sc.ahead) m.audit = readRun(scene, run => teamAudit(run, sc.ahead), { cleared: true });
   const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
   console.log(`== ${label}\n` + drawRewards({ ...m, wave: sc.wave, preview: readRun(scene, previewNext) }).flatMap(pane)
     .map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n"));

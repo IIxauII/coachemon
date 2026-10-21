@@ -21,7 +21,7 @@ globalThis.setInterval = () => 0;
 globalThis.clearInterval = () => {};
 globalThis.localStorage = { getItem: () => "full", setItem() {} };
 eval(bundle("hud", { expose: true }));
-const { waveKind, isBossWave, bigFightsAhead, nextHeal, healRevives, reviveBefore, challengeOn, trainerOdds, hasTrainers,
+const { waveKind, isBossWave, bigFightsAhead, fightsAhead, nextHeal, healRevives, reviveBefore, challengeOn, trainerOdds, hasTrainers,
   kindIsRolled, isGruntWave, poolAnchorWave, arenaRebuiltBetween } = globalThis.__hud["03-calendar"];
 
 const row = (label, cells) => console.log(`${label.padEnd(26)}${cells.join("  ")}`);
@@ -119,6 +119,22 @@ const kinds = (s, waves) => waves.map(w => `${w}:${waveKind(s, w) ?? "—"}`);
   // No game mode at all: the schedule stands down rather than walking thirty waves of fallbacks.
   assert.deepEqual(bigFightsAhead({ gameMode: { isClassic: true } }, 1, 30), []);
   assert.deepEqual(bigFightsAhead(null, 1, 30), []);
+}
+
+// ---- A run standing on a big fight's wave still has it ahead until it is cleared (#587, #877)
+{
+  const s = scene("classic", { only: { isClassic: true, isWaveFinal: w => w === 200, isBoss: w => w % 10 === 0,
+    isFixedBattle: w => w === 25 } });
+  const first = (wave, cleared) => fightsAhead(s, wave, { cleared })[0] ?? null;
+  for (const cleared of [false, true]) {
+    assert.deepEqual(first(24, cleared), { wave: 25, kind: "fixed" }, "a fixed battle the run has yet to reach");
+    assert.equal(first(26, cleared).wave, 30, "and one already behind it");
+  }
+  assert.equal(first(25, false).wave, 25, "on its own wave, before it is won");
+  assert.deepEqual(first(25, true), { wave: 30, kind: "boss" }, "and the next one once it is");
+  assert.deepEqual(first(200, false), { wave: 200, kind: "final" });
+  assert.deepEqual(fightsAhead(s, 200, { cleared: true }), [], "nothing is left once the last wave is won");
+  assert.throws(() => fightsAhead(s, 25, {}), /say whether wave 25 is cleared/);
 }
 
 // ---- Heals come at every X1, never under Limited Support 1 or 3, and revive no one under Hardcore

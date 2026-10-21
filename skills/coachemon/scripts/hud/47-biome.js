@@ -1,7 +1,7 @@
 // Biome route advisor: when the game offers a choice of next biome (the party holds a Map), which one suits the party.
 // Mystery Encounter waves are not modelled.
 import { TYPES, effectiveness } from "./01-core.js";
-import { bigFightsAhead, poolAnchorWave, trainerOdds, waveKind } from "./03-calendar.js";
+import { poolAnchorWave, trainerOdds, waveKind } from "./03-calendar.js";
 import { gameEvents, gameTables } from "./04-game-tables.js";
 // No `partyReasons`: the judgment replaced the covers/upgrade/hole tags here (#587), and the function is gone (#593).
 import { partyAtFight, partyLuck, partyProfile, typesOfSpecies } from "./08-party.js";
@@ -302,21 +302,19 @@ const rootOfSpecies = sp => tryDo(() => sp.getRootSpeciesId(true), sp?.speciesId
  * answer here as the mon would get on the catch card.
  *
  * The threat set is the standard half alone: the next gym's biome is the thing being chosen, so there is no previewed
- * roster to read (#567, story 34). `fightWave` is the big fight ahead of the waves this biome decides, which is the
- * wave the party is judged at too.
+ * roster to read (#567, story 34).
  *
  * `null` where the judgment cannot be reached or says skip. A species that would not help the team is no catch to
  * sell a biome on, which is the whole of the story: the old test was a covers/upgrade/hole tag, and it asked nothing
  * about what the team loses.
  */
-const catchJudgment = (run, sp, fightWave) => {
-  const team = tryDo(() => teamVerdict(run, { species: sp }, { fight: fightWave, roster: false }));
+const catchJudgment = (run, sp) => {
+  const team = tryDo(() => teamVerdict(run, { species: sp }, { roster: false }));
   if (!team || team.unavailable) return null;
   return team.verdict === "take" || team.verdict === "swap" ? team : null;
 };
 
-// `fightWave` is the judgment's wave, which is not this biome's `fight` below: that one is the gym *in* the biome.
-const judge = (run, id, profile, level, wave, luck, fightWave) => {
+const judge = (run, id, profile, level, wave, luck) => {
   const s = run.scene;
   const party = profile.members;
   const biome = tryDo(() => readTables().biomes.get(id));
@@ -390,7 +388,7 @@ const judge = (run, id, profile, level, wave, luck, fightWave) => {
     // A species already on the team is no catch at all — the one thing the dropped `partyReasons` call had left to
     // say here, and a tally rather than a score, so the profile's own roots say it (CONTEXT.md, `Party profile`).
     if (profile.roots.has(rootOfSpecies(e.sp))) continue;
-    const team = catchJudgment(run, e.sp, fightWave);
+    const team = catchJudgment(run, e.sp);
     if (!team) continue;
     const fresh = !big(dex[e.sp.speciesId]?.caughtAttr); // the species met, after evolving
     // The species' tier still weights how likely the catch is, and the team's **net value** — ΔV less what the
@@ -459,30 +457,28 @@ const edgeOver = (a, b) => {
 // card first drew, and a model built without them has to be rebuilt (#381).
 export const biomeModel = (run, h) => {
   const s = run.scene;
-  const wave = run.facts.wave;
   const tables = readTables();
   const labels = h.config.options.map(o => String(o.label ?? ""));
   const everyone = run.facts.party;
   // The party at the next big fight (CONTEXT.md, `Dead weight`): a heal or a shop on the way is a way back, so the
   // old "everyone when heals revive, else standing" special case is gone (#570).
-  const fight = bigFightsAhead(s, wave + 1)[0]?.wave ?? null;
-  const party = partyAtFight(s, everyone, { from: wave, fight }).members;
-  const key = JSON.stringify([tablesPresent(tables), labels, party.map(p => [p.id, p.moveset.filter(Boolean).map(m => m.moveId ?? tryDo(() => m.getName()))]),
+  const party = partyAtFight(s, everyone, run.nextFight).members;
+  const key = JSON.stringify([run.nextFight.fight, tablesPresent(tables), labels, party.map(p => [p.id, p.moveset.filter(Boolean).map(m => m.moveId ?? tryDo(() => m.getName()))]),
     (s.gameMode?.challenges ?? []).map(c => [c.id, c.value])]);
-  const value = run.memo("biome", key, () => build(run, tables, labels, everyone, party, fight));
+  const value = run.memo("biome", key, () => build(run, tables, labels, everyone, party));
   if (value.kind) return value;
   // Never a kind-less card: the panel can't draw one.
   return { kind: "biome", from: null, options: labels.map(label => ({ label, id: null })), pick: -1,
     data: !!tables, trainers: false, fainted: 0, unread: value.unavailable };
 };
-const build = (run, tables, labels, everyone, party, fightWave) => {
+const build = (run, tables, labels, everyone, party) => {
   const s = run.scene;
   const wave = run.facts.wave;
   const level = Math.max(1, ...everyone.map(p => p.level ?? 1));
   const luck = partyLuck(everyone, s, gameEvents());
   const profile = partyProfile(party);
   const ids = tables ? resolveOptions(s, labels) : labels.map(() => null);
-  const options = labels.map((label, i) => ({ label, id: ids[i], ...(ids[i] != null && party.length ? judge(run, ids[i], profile, level, wave, luck, fightWave) ?? {} : {}) }));
+  const options = labels.map((label, i) => ({ label, id: ids[i], ...(ids[i] != null && party.length ? judge(run, ids[i], profile, level, wave, luck) ?? {} : {}) }));
   const scored = options.filter(o => o.score != null);
   const ranked = [...scored].sort((a, b) => b.raw - a.raw || b.bossFit - a.bossFit || b.defense - a.defense);
   const best = ranked[0] ?? null;
