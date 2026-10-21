@@ -670,7 +670,6 @@ const tpModel = (T, double, party, foes, facing, entering, teraOf = () => T) => 
   // A pin runs the ⚔ move, else its follow-up: a first-turn-only or foe-dependent move would repeat in a table
   // exchange as though it always worked (#650).
   const pinned = pin => [pin.outcome, pin.then].find(o => o?.expected > 0 && !o.traits?.once && !o.traits?.needsAttack) ?? null;
-  // `teraMi`: the mon taking the Tera, `mi` itself unless a double's partner takes it.
   const teraMiOf = pin => (pin?.tera ? pin.teraMi ?? pin.mi : null);
   const keyOf = pin => (pin && pin.mi != null && pin.mi >= 0 ? `${pin.mi}|${pinned(pin)?.name ?? ""}|${pin.free ? "f" : ""}|${pin.tera ?? ""}@${teraMiOf(pin) ?? ""}` : "");
   const teraMemo = new Map();

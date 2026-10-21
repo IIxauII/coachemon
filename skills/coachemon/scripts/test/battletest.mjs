@@ -50,7 +50,7 @@ const ourTera = ({ wave = 180, used = 0, modifiers = [ORB], mode = CLASSIC, mega
 };
 // The same in a double, Gyarados in slot 0 and Tera-Steel Lucario in slot 1, both on one charge. `locked`: slot 1's
 // prompt, slot 0 having pressed the Tera for Waterfall into Lycanroc.
-const ourTeraDouble = ({ locked = false } = {}) => {
+const ourTeraDouble = ({ locked = false, used = 0 } = {}) => {
   const at = (p, bi) => Object.assign(p, { getBattlerIndex: () => bi });
   const party = [
     at(teraMon("Gyarados", 80, ["Water","Flying"], "Intimidate", [260,170,130,120,150,140], [["Waterfall","Water",80,"P"]], true, "Water"), 0),
@@ -60,7 +60,7 @@ const ourTeraDouble = ({ locked = false } = {}) => {
     at(mon("Lycanroc", 80, ["Rock"], "Keen Eye", [240,200,120,80,100,120], [["Stone Edge","Rock",100,"P"]], true), 2),
     at(mon("Golem", 80, ["Rock","Ground"], "Sturdy", [250,180,200,60,80,60], [["Rock Slide","Rock",75,"P",11]], true), 3),
   ];
-  return { double: true, game: { wave: 180, arena: { playerTerasUsed: 0 }, modifiers: [ORB], gameMode: CLASSIC }, party, foes,
+  return { double: true, game: { wave: 180, arena: { playerTerasUsed: used }, modifiers: [ORB], gameMode: CLASSIC }, party, foes,
     ...(locked ? { fieldIndex: 1, turnCommands: [{ command: Command.FIGHT, cursor: 0, move: { move: 1, targets: [2], useMode: 0 }, targets: [2] }],
       preTurnCommands: [{ command: Command.TERA, targets: [0] }] } : {}) };
 };
@@ -164,6 +164,7 @@ const scenarios = {
   // A double: each slot may take the Tera, and slot 1 none once slot 0 pressed it.
   teraDouble: ourTeraDouble(),
   teraDoubleLocked: ourTeraDouble({ locked: true }),
+  teraDoubleSpent: ourTeraDouble({ used: 1 }),
   // A trap the planned move runs into goes on the foe row's ✦: Fire into Thick Fat.
   trap: { double: false, party: [
     mon("Charizard", 66, ["Fire","Flying"], "Blaze", [190,125,118,160,128,148], [["Flamethrower","Fire",90,"S"]], true)],
@@ -347,11 +348,12 @@ assert.deepEqual(trapsOf("eelevateArrows", "Garchomp", "Eelektross"), { slot: []
   assert.equal(teraOf("teraTerapagos"), "Water", "with a Terapagos, the gym leader's cleanup refills it first");
 }
 
-// In a double the two slots share the one charge (#649): at slot 0's prompt one of them takes it, and at slot 1's,
+// In a double the two slots share the one charge (game-code.md §17): at slot 0's prompt one of them takes it, and at slot 1's,
 // after slot 0 pressed the Tera button, slot 0's move lands at its Tera and slot 1 has none to take.
 {
   const slots = label => cards[label].field.slots.map(sl => [sl.name, sl.tera]);
   assert.deepEqual(slots("teraDouble"), [["Gyarados", "Water"], ["Lucario", null]], "one slot Teras, though both could");
   assert.deepEqual(slots("teraDoubleLocked"), [["Gyarados", "Water"], ["Lucario", null]], "slot 0's pressed Tera, and none for slot 1");
   assert.ok(cards.teraDoubleLocked.field.slots[0].locked, "slot 0's command is the locked one");
+  assert.deepEqual(slots("teraDoubleSpent"), [["Gyarados", null], ["Lucario", null]], "with the charge spent, neither slot has one");
 }

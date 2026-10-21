@@ -203,7 +203,7 @@ const sceneFacts = (s, env, live) => {
     command: b.double && (ph?.phaseName === "CommandPhase" || ph?.phaseName === "SelectTargetPhase") && ph.fieldIndex === 1
       && cmd && !cmd.skip
       ? { kind: cmd.command, cursor: cmd.cursor, move: cmd.move, targets: cmd.targets?.length ? cmd.targets : cmd.move?.targets ?? [],
-        // Pressed with the Tera button: the command is a FIGHT, its pre-turn command the Tera (game-code.md §17).
+        // A Tera press's command is a plain FIGHT (game-code.md §17).
         tera: b.preTurnCommands?.[0]?.command === Command.TERA }
       : null,
   };
@@ -414,8 +414,7 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
       if (!memo("teraOpen", "", () => live && facts.decision === "command" && ourTeraLeft(env.s, env, facts.wave ?? 0))) return null;
       return turn.ourTeraType(p);
     }),
-    // `{ type }` of the Tera `p` would take, charge or not: a mon of ours on the field, not Tera'd yet, in a form that
-    // can take it; null otherwise.
+    // `ourTera` without the charge: the Tera slot 0 already pressed is priced whatever the charge reads now.
     ourTeraType: p => memo("ourTeraType", p, () => {
       if (!env.playerParty.includes(p) || p.isTerastallized || !p.isOnField?.()) return null;
       // `canSpeciesTera`'s forms (game-code.md §17). A Tera that changes the form (`SpeciesFormChangeTeraTrigger`) is

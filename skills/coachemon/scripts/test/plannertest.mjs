@@ -2516,12 +2516,12 @@ Object.assign(TABLE, {
   };
   const slotOf = (c, name) => c.card.field.slots.find(sl => sl.name === name);
 
-  const gya = teraDouble({ teras: { Gyarados: "Water" } });
-  console.log(`== doubles, Gyarados may Tera Water\n${gya.lines.join("\n")}`);
-  assert.equal(slotOf(gya, "Gyarados").tera, "Water", `a double's slot takes the Tera it wins with:\n${gya.field.join("\n")}`);
-  assert.match(lineOf(gya.field, "Gyarados"), /⚔ Gyarados Tera Water \+ Water Hydro Pump/);
-  assert.ok(!slotOf(gya, "Gyarados").threat || slotOf(gya, "Gyarados").threat.e === 1, "Stone Edge is ×1 into Tera Water");
-  assert.equal(slotOf(gya, "Lucario").tera, null, "and its partner has none to take");
+  const gyaTera = teraDouble({ teras: { Gyarados: "Water" } });
+  console.log(`== doubles, Gyarados may Tera Water\n${gyaTera.lines.join("\n")}`);
+  assert.equal(slotOf(gyaTera, "Gyarados").tera, "Water", `a double's slot takes the Tera it wins with:\n${gyaTera.field.join("\n")}`);
+  assert.match(lineOf(gyaTera.field, "Gyarados"), /⚔ Gyarados Tera Water \+ Water Hydro Pump/);
+  assert.equal(slotOf(gyaTera, "Gyarados").threat, null, "Stone Edge at ×1 into Tera Water is no longer a danger");
+  assert.equal(slotOf(gyaTera, "Lucario").tera, null, "and its partner has none to take");
 
   const plain = teraDouble();
   assert.ok(!plain.lines.some(l => /Tera/.test(l)), "no Tera anywhere on a double with none to take");
@@ -2564,14 +2564,14 @@ Object.assign(TABLE, {
     return render({ party, foes, live: true, double: true, dist: aimAtBoth, switches: () => new Map(), stubOutcome: teraKeyed,
       ourTera: p => (tera && p.name === "Gyarados" ? { type: "Water" } : null) });
   };
-  const pt = partnerTera(true), pp = partnerTera(false);
-  console.log(`== doubles, the Tera on the pinned slot's partner\n${pt.lines.join("\n")}\n== and with none to take\n${pp.lines.join("\n")}`);
-  assert.equal(slotOf(pt, "Gyarados").tera, "Water", `Gyarados takes the Tera:\n${pt.field.join("\n")}`);
-  assert.match(lineOf(pt.field, "Gyarados"), /→ Snorlax/, "aimed at the second foe");
-  assert.match(lineOf(pt.field, "Lucario"), /→ Tyranitar/, "its partner takes the first, so the plan is pinned to it");
-  const [first] = pt.card.teamPlan.steps;
+  const withTera = partnerTera(true), noTera = partnerTera(false);
+  console.log(`== doubles, the Tera on the pinned slot's partner\n${withTera.lines.join("\n")}\n== and with none to take\n${noTera.lines.join("\n")}`);
+  assert.equal(slotOf(withTera, "Gyarados").tera, "Water", `Gyarados takes the Tera:\n${withTera.field.join("\n")}`);
+  assert.match(lineOf(withTera.field, "Gyarados"), /→ Snorlax/, "aimed at the second foe");
+  assert.match(lineOf(withTera.field, "Lucario"), /→ Tyranitar/, "its partner takes the first, so the plan is pinned to it");
+  const [first] = withTera.card.teamPlan.steps;
   assert.deepEqual([first.send.name, first.tera], ["Lucario", null], "the pinned partner's step 1 presses no Tera of its own");
-  assert.ok(!pt.lines.some(l => /^· input:/.test(l)), "and no step carries the Tera's input: the ⚔ line does");
+  assert.ok(!withTera.lines.some(l => /^· input:/.test(l)), "and no step carries the Tera's input: the ⚔ line does");
 }
 
 // ---- A single battle's Protect is a priced status play, picked where blocking the hit wins the race (#861).

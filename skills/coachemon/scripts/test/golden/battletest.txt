@@ -305,6 +305,20 @@ Next big fight boss in 10 W190
 ✓ full heal entering W181 — HP, status, PP, revives, Tera
 · luck 0 (D) — 3.1% tier upgrade per reward
 summary fight | Gyarados Tera Water + Waterfall → Lycanroc · 2 hits ; Lucario Vacuum Wave → Lycanroc
+== teraDoubleSpent
+card battle W180 danger
+strip danger 🎯 W180
+Gyarados Waterfall → Golem · 1 hit ; Lucario Vacuum Wave → Lycanroc
+⚔ Gyarados ⚠ Rock ×2 141% {Lycanroc's Stone Edge: ~141% of current HP} Water Waterfall → Golem 1 hit
+⚔ Lucario Fighting Vacuum Wave → Lycanroc
+Foes: ⚠ Gyarados ← Lycanroc Stone Edge
+Lycanroc Lycanroc L80 Rock 100% ▲ Fighting Water ↯ Rock Stone Edge → Gyarados moves after
+Golem Golem L80 Rock Ground 100% ▲ Fighting Water ×4 ↯ Rock Rock Slide → Gyarados moves after
+Road: boss in 10 (W190)
+Next big fight boss in 10 W190
+✓ full heal entering W181 — HP, status, PP, revives, Tera
+· luck 0 (D) — 3.1% tier upgrade per reward
+summary danger | Gyarados Waterfall → Golem · 1 hit ; Lucario Vacuum Wave → Lycanroc | ⚠ Gyarados
 == trap
 card battle W89 easy
 strip easy 🎯 W89
