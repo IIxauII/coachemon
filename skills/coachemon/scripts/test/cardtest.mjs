@@ -159,6 +159,8 @@ const verdictOf = m => cardSummary(m).verdict;
     [shop({}), null],
     [{ kind: "biome", wave: 30, options: [{ label: "Construction Site", score: 55, verdict: "keep", reasons: [] },
       { label: "Swamp", score: 85, verdict: "pick", reasons: [{ text: "2 mons hit SE" }] }] }, "Swamp"],
+    [{ kind: "biome", wave: 30, options: [{ label: "Construction Site", score: -8, verdict: "keep", reasons: [] },
+      { label: "Swamp", score: -3, verdict: "pick", reasons: [{ text: "x" }] }] }, "Swamp"],
     [{ kind: "biome", wave: 30, options: [{ label: "Swamp", score: null, verdict: null, reasons: [] }] }, null],
     [encounter({ name: "Safari Zone", minigame: { mon: "Nidorina", shiny: true, left: 2, catchStage: 0, fleeStage: 0 },
       options: [{ label: "Throw a ball", verdict: "take", outcome: "37% to catch it now" }, { label: "Flee", verdict: "avoid" }] }), "take Throw a ball"],

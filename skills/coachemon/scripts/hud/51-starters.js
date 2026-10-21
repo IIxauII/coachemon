@@ -453,12 +453,12 @@ const viewed = (h, m) => {
 export const ptsText = x => `${Math.round(x * 100) / 100}`;
 
 const pickHead = t => `${t.label}: ${t.members.map(x => `${x.name}${x.role === "carry" ? " (carry)" : ""}`).join(" + ")}`;
-const nothingFits = m => (m.full || m.room <= 0 ? "nothing to add" : "no caught starter fits");
+const fallbackCall = m => (m.full || m.room <= 0 ? "nothing to add" : "no caught starter fits");
 // The card event's verdict, and the leading call this module's summary writes (extension-distribution.md §11.1).
 // @only 60-card: startersLeadingCall
-export const startersLeadingCall = m => (m.picks[0] ? pickHead(m.picks[0]) : nothingFits(m));
+export const startersLeadingCall = m => (m.picks[0] ? pickHead(m.picks[0]) : fallbackCall(m));
 
 // Never empty: it is the card's `act` summary, and `act` is the one group that is never empty (#349).
 export const startersSummary = m =>
   m.picks.map(t => `${pickHead(t)} · ${ptsText(t.cost)}/${m.limit} pts${t.weak.length ? ` · weak ${t.weak.join("/")}` : ""}`).join("; ")
-  || nothingFits(m);
+  || fallbackCall(m);

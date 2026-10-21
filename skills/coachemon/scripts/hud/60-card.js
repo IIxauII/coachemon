@@ -200,7 +200,8 @@ export const summaryKeys = () => Object.keys(EMPTY);
 // its foes drop out of the list as they faint. `cleared` is where the run stands on that card (CONTEXT.md, `Next big
 // fight`), and null where the card asks no judgment of `run.nextFight`: the learn card reads its fight off the road
 // (49-ahead.js, `learnRoster`). `call` is the card event's verdict (extension-distribution.md §11.1), asked of each
-// kind's own model; `cardtest.mjs` holds it to the summary's leading call.
+// kind's own model but a battle's, which reads its summary's verdict; `cardtest.mjs` holds every other kind to its
+// summary's leading call.
 const wave = card => `${card.wave ?? null}`;
 const KINDS = {
   battle: { event: "battle", cleared: false, key: wave, call: card => cardSummary(card).verdict },
