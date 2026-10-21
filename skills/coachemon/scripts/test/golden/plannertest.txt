@@ -648,4 +648,18 @@ Fight plan likely lost
 ⚔ Vaporeon 💀 Fire 100% {Salamence's Fire Blast: ~100% of current HP, before it can act} Ice Ice Beam → Salamence 3 hits
 == protect: case no lock, Fire Blast 60 (live)
 ⚔ Vaporeon Ice Ice Beam → Salamence 3 hits
+== future sight, none pending (live)
+⚔ Snorlax Normal Body Slam → Slowking
+Slowking Slowking L80 Water Psychic 100% ▲ — ↯ Psychic Future Sight → Snorlax 83% likely · moves first
+Fight plan likely lost
+💀 Slowking Slowking KOs 1/1 · win condition
+➜ 1. Snorlax Normal Body Slam → Slowking falls (56%) · foe at 13%
+⚠ likely lost: nothing we have hurts Slowking — maximise damage before it comes in
+== future sight, one landing in 2 turns (live)
+⚔ Snorlax Normal Body Slam → Slowking
+Slowking Slowking L80 Water Psychic 100% ▲ — ↯ Water Scald → Snorlax 100% likely · moves first
+Fight plan likely lost
+💀 Slowking Slowking KOs 1/1 · win condition
+➜ 1. Snorlax Normal Body Slam → Slowking falls (62%) · foe at 14%
+⚠ likely lost: nothing we have hurts Slowking — maximise damage before it comes in
 ok

@@ -2,7 +2,8 @@
 // borrows the bundle's own code wherever the game isn't needed, `withPatches` included, so without an eval'd bundle a
 // hypothesis patches nothing.
 const hud = () => globalThis.__hud ?? {};
-const writePatches = (patches, fn) => (hud()["25-turn"]?.withPatches ?? ((_, f) => f()))(patches, fn);
+const writePatches = (patches, fn, s) => (hud()["25-turn"]?.withPatches ?? ((_, f) => f()))(patches, fn, s);
+const DELAYED_ATTACK = "DELAYED_ATTACK";
 
 const STAT_SPD = 5;
 const BRACKET_NORMAL = 1; // MovePriorityInBracket.NORMAL
@@ -21,32 +22,36 @@ const plainFacts = (p, over = {}, enemyModifiers = []) => {
   };
 };
 
-export const fakeTurn = ({
-  live = true,
-  exact = { ok: true },
-  wave = 1, turn: turnNo = 1, enemySwitchCounter = 0, double = false, trainer = null, decision = "command",
-  party = [], foes = [], field = null, command = null,
-  trickRoom = false, weather = 0, modifiers = [], enemyModifiers = [], hazards = () => 0, balls = () => 0,
-  mode = {}, battleType = 0, mysteryEncounter = null, biomeId = null,
-  // The answers. Each takes the same arguments as the op it stands behind.
-  outcome = () => null,
-  outcomes = null,
-  statusMoves = () => [],
-  stopped = () => [],
-  // The damaging moves whose own condition says no: `likelyMoves` reads it for the ↯ row's `fails`.
-  failing = () => [],
-  heal = () => 0,
-  moves = () => [],
-  switchTo = () => null,
-  replay = () => null,
-  sendIn = () => null,
-  benefit = () => 0,
-  speedTie = () => null,
-  // `{ type }` of the Tera a mon of ours may take with this command.
-  ourTera = () => null,
-  mon = () => ({}),
-  patches = [],
-} = {}) => {
+export const fakeTurn = (opts = {}) => {
+  const {
+    live = true,
+    exact = { ok: true },
+    wave = 1, turn: turnNo = 1, enemySwitchCounter = 0, double = false, trainer = null, decision = "command",
+    party = [], foes = [], field = null, command = null,
+    trickRoom = false, weather = 0, modifiers = [], enemyModifiers = [], hazards = () => 0, balls = () => 0,
+    mode = {}, battleType = 0, mysteryEncounter = null, biomeId = null,
+    // The scene's arena, for its delayed attacks: `positionalTagManager.tags` as the game's. A hypothesis adds or
+    // clears one there for the calls it wraps, so an answer that reads it sees what the planner assumed.
+    arena = null,
+    // The answers. Each takes the same arguments as the op it stands behind.
+    outcome = () => null,
+    outcomes = null,
+    statusMoves = () => [],
+    stopped = () => [],
+    // The damaging moves whose own condition says no: `likelyMoves` reads it for the ↯ row's `fails`.
+    failing = () => [],
+    heal = () => 0,
+    moves = () => [],
+    switchTo = () => null,
+    replay = () => null,
+    sendIn = () => null,
+    benefit = () => 0,
+    speedTie = () => null,
+    // `{ type }` of the Tera a mon of ours may take with this command.
+    ourTera = () => null,
+    mon = () => ({}),
+    patches = [],
+  } = opts;
   const caches = new Map();
   const memo = (bucket, k, fn) => {
     let m = caches.get(bucket);
@@ -54,7 +59,7 @@ export const fakeTurn = ({
     if (!m.has(k)) m.set(k, fn());
     return m.get(k);
   };
-  const as = fn => (patches.length ? writePatches(patches, fn) : fn());
+  const as = fn => (patches.length ? writePatches(patches, fn, { arena }) : fn());
   const heldViews = new WeakMap();
   const mark = o => o && { live, ...o };
   const facts = {
@@ -133,16 +138,15 @@ export const fakeTurn = ({
     sendInScore: (f, me) => sendIn(f, me),
     benefit: (atk, def, mv) => benefit(atk, def, mv) ?? 0,
     speedTie: (a, b) => speedTie(a, b),
+    // The turns left on a delayed attack queued on `p`'s slot, 0 where none. Read off the arena as it stands, never
+    // under this turn's hypothesis, as the real one reads it.
+    delayedOn: p => Math.max(0, ...(arena?.positionalTagManager?.tags ?? [])
+      .filter(x => x.tagType === DELAYED_ATTACK && x.targetIndex === p.getBattlerIndex?.()).map(x => x.turnCount ?? 0)),
     ourTera: p => ourTera(p),
     ourTeraOn: p => patches.some(x => x.mon === p && x.tera === true),
     held: p => hud()["25-turn"]?.heldView(patches, heldViews, p) ?? p,
     memo: (k, fn) => memo("caller", k, fn),
-    assuming: more => fakeTurn({
-      live, exact, wave, turn: turnNo, enemySwitchCounter, double, trainer, decision, party, foes, field, command,
-      trickRoom, weather, modifiers, enemyModifiers, hazards, balls, mode, battleType, mysteryEncounter, biomeId,
-      outcome, outcomes, statusMoves, stopped, failing, heal, moves, switchTo, replay, sendIn, benefit, speedTie, ourTera, mon,
-      patches: [...patches, ...more],
-    }),
+    assuming: more => fakeTurn({ ...opts, patches: [...patches, ...more] }),
   };
   return t;
 };
