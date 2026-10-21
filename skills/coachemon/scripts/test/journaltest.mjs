@@ -56,7 +56,7 @@ delete globalThis.__coachHud;
 globalThis.Phaser = { Math: { RND: {} }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => null } } } }] } } } };
 const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
 globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: node,
-  getElementById: () => ({ dataset: { uiMode: "MYSTERY_ENCOUNTER" } }) };
+  getElementById: () => ({ dataset: { uiMode: "MYSTERY_ENCOUNTER" } }), addEventListener() {}, removeEventListener() {} };
 globalThis.setInterval = () => 0;
 globalThis.clearInterval = () => {};
 Object.defineProperty(globalThis, "localStorage", { get: () => store, configurable: true });

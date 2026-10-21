@@ -232,7 +232,7 @@ const stop = () => {
   live = false;
   try { cancelAnimationFrame(raf); } catch {}
   for (const o of Object.values(observers)) o?.disconnect();
-  document.removeEventListener?.("visibilitychange", onVisibility);
+  document.removeEventListener("visibilitychange", onVisibility);
   if (window.__coachMeter === meter) delete window.__coachMeter;
 };
 const drain = () => { const s = meterStats(); reset(); return s; };
@@ -240,4 +240,4 @@ const meter = { stats: meterStats, reset, drain, driver, stop };
 window.__coachMeter?.stop?.();
 window.__coachMeter = meter;
 if (typeof requestAnimationFrame === "function") raf = requestAnimationFrame(frame);
-document.addEventListener?.("visibilitychange", onVisibility);
+document.addEventListener("visibilitychange", onVisibility);

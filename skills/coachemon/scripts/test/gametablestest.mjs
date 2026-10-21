@@ -63,6 +63,8 @@ globalThis.document = {
   documentElement: { dataset: {}, appendChild(n) { n.attached = true; if (n.tag === "script") injected.push(n); return n; } },
   body: { appendChild() {} },
   createElement: node,
+  addEventListener() {},
+  removeEventListener() {},
 };
 globalThis.Phaser = { Math: { RND: { state: () => "!rnd,0" } },
   Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => ({ gameMode: {} }) } } } }] } } } };
