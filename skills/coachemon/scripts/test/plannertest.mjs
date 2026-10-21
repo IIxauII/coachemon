@@ -1131,6 +1131,66 @@ Object.assign(TABLE, {
   assert.match(lineOf(field, "Venusaur"), /Giga Drain → Snorlax/, `the drain keeps more HP for the same race:\n${field.join("\n")}`);
 }
 
+// ---- Tera switch-in (#823): our drain and Shell Bell come off the entry hit on our first use, the Tera'd move's after.
+// Venusaur on 200 of 280 takes Body Slam (68–80); Giga Drain (42–50) lands at one typing and does 0 at the other.
+{
+  const venusaur = id => mon("Venusaur", 80, ["Grass", "Poison"], [280, 100, 120, 180, 120, 100], [["Giga Drain", "Grass", 75, "S"]], true, 200, { id });
+  const snorlax = (id, hp, spe = 30) => mon("Snorlax", 80, ["Normal"], [900, 150, 110, 80, 150, spe], [["Body Slam", "Normal", 85, "P"]], true, hp, { id });
+  const bodySlam = () => [{ name: "Body Slam", type: "Normal", p: 1, score: 10, targets: [0] }];
+  const { scene: s } = render({ party: [venusaur("V")], foes: [snorlax("S")], live: true, dist: bodySlam, switches: () => new Map() });
+  const { exchange } = globalThis.__planner;
+  const gigaDrain = (dmg, drain) => {
+    const at = outcomeFrom({ "Venusaur>Giga Drain>Snorlax": [[dmg], 1, dmg ? 1 : 0], "Snorlax>Body Slam>Venusaur": [[80], 1, 1] });
+    return (a, d, pm, o) => { const x = at(a, d, pm, o); return x && pm.getName() === "Giga Drain" ? { ...x, drain } : x; };
+  };
+  // `teraLater` true for `foe`, whose base typing takes `entry`; the turn itself prices the Tera'd typing.
+  const teraTurn = (foe, entry) => {
+    const base = s.assuming([]);
+    const withEntry = fn => { const keep = globalThis.__stub.outcome; globalThis.__stub.outcome = entry; try { return fn(); } finally { globalThis.__stub.outcome = keep; } };
+    const atBase = { ...base, outcomes: (a, d) => withEntry(() => base.outcomes(a, d)) };
+    return { ...s, teraLater: f => f === foe, assuming: () => atBase };
+  };
+  let n = 0;
+  // `entry` / `tera`: Giga Drain's damage at the base typing and at the Tera; `tera` alone is a foe that never Teras.
+  const race = ({ entry = null, tera, drain = 0, field = false, free = true, heal = null, foeHp, fieldSpe }) => {
+    const id = `#823 ${n++}`, foe = snorlax(`Snorlax ${id}`, foeHp), me = venusaur(`Venusaur ${id}`);
+    const keep = { outcome: globalThis.__stub.outcome, heal: globalThis.__stub.heal };
+    Object.assign(globalThis.__stub, { outcome: gigaDrain(tera, drain), heal });
+    const turn = entry == null ? s : teraTurn(foe, gigaDrain(entry, drain));
+    try {
+      return exchange(turn, me, me.moveset[0], foe, { free, ...(field ? { field: snorlax(`field Snorlax ${id}`, undefined, fieldSpe) } : {}) });
+    } finally {
+      Object.assign(globalThis.__stub, keep);
+    }
+  };
+  const e = x => Math.round(x.eTurnsThey * 100) / 100;
+  for (const field of [false, true]) {
+    const kind = field ? "double" : "single";
+    const plain = [0, 0.5].map(drain => e(race({ tera: 50, drain, field })));
+    const tera = [0, 0.5].map(drain => e(race({ entry: 50, tera: 0, drain, field })));
+    console.log(`== Tera switch-in drain (${kind})\nno Tera ${plain.join(" / ")}, Tera ${tera.join(" / ")}`);
+    assert.deepEqual(plain, field ? [3, 4] : [4, 5], `${kind}: the move's drain every turn without a Tera`);
+    assert.equal(tera[0], plain[0], `${kind}: no drain, no change`);
+    assert.ok(tera[1] > tera[0], `${kind}: the entry hit's drain buys time on turn 1 (${tera})`);
+    assert.ok(tera[1] < plain[1], `${kind}: the Tera'd move drains nothing after turn 1 (${tera[1]} vs ${plain[1]})`);
+    // Shell Bell is a turn-end heal on what we dealt: half of it prices exactly as a drain of 0.5 does.
+    const bell = (p, o) => (p.name === "Venusaur" ? Math.floor((o?.dealt ?? 0) / 2) : 0);
+    const belled = e(race({ entry: 50, tera: 0, field, heal: bell }));
+    assert.equal(belled, tera[1], `${kind}: Shell Bell heals on the entry hit's damage on turn 1 and the Tera'd move's after`);
+    // Reverse: the base typing is immune, the Tera'd one takes the hit.
+    const rev = [0, 0.5].map(drain => e(race({ entry: 0, tera: 50, drain, field })));
+    assert.equal(rev[0], plain[0], `${kind}: reverse, no drain`);
+    assert.ok(rev[1] > rev[0] && rev[1] < plain[1], `${kind}: no drain on turn 1, the move's from turn 2 (${rev} vs ${plain})`);
+    assert.equal(e(race({ entry: 0, tera: 50, field, heal: bell })), rev[1], `${kind}: no Shell Bell dealt on turn 1`);
+  }
+  // The expected HP left takes the entry hit's drain: it knocks out a Snorlax on 40 after a faster field foe hits us.
+  const left = drain => race({ entry: 50, tera: 0, drain, field: true, foeHp: 40, fieldSpe: 200 }).expectedHpLeft;
+  assert.equal(left(0.5) - left(0), 20, "half the 40 the entry hit deals comes back");
+  // Not a free switch-in: no entry hit, the Tera'd move all the way.
+  const paid = drain => e(race({ entry: 50, tera: 0, drain, free: false }));
+  assert.equal(paid(0.5), paid(0), "a paid switch-in prices the Tera'd move on every use");
+}
+
 // ---- On-KO boosts (#90): a foe with Beast Boost gets stronger for every KO we feed it.
 // Read off the ability (game-code.md §18).
 {
