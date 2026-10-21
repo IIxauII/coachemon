@@ -22,8 +22,7 @@ if (named.length && !update) {
 const rewrites = f => update && (!named.length || named.includes(f));
 let failed = 0;
 for (const f of tests) {
-  const out = execFileSync(process.execPath, ["--no-warnings", dir + f], { encoding: "utf8" })
-    .split("\n").filter(l => !/localstorage/i.test(l)).join("\n");
+  const out = execFileSync(process.execPath, ["--no-warnings", dir + f], { encoding: "utf8" });
   const golden = `${dir}golden/${f.replace(".mjs", ".txt")}`;
   if (rewrites(f)) { writeFileSync(golden, out); console.log(`updated ${f}`); continue; }
   if (!existsSync(golden)) {
