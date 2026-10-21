@@ -33,7 +33,7 @@ jobs:
 
       - run: npm run typecheck
 
-      # `npm test` is both suites: `node --test "src/**/*.test.ts"` and then the 24 HUD goldens
+      # `npm test` is both suites: `node --test "src/**/*.test.ts"` and then the 36 HUD goldens
       # (`skills/coachemon/scripts/test/run.mjs`, ~16s). They are one command on purpose — as separate commands,
       # nothing in CI ran the goldens at all. A *link* break was already caught on a PR, because `extension.yml`'s
       # `build:all` calls `bundle("hud")` (`extension/wxt.config.ts`); what went ungated everywhere was a golden
