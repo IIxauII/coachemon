@@ -3,7 +3,7 @@
 // one foe at a time.
 import { iconOf, squeezeDist } from "./01-core.js";
 import { hitOn, koCurve, koTurns, useOf } from "./10-damage.js";
-import { actionOrder, afterSteals, attemptsLost, berryTypesOf, berryWalk, entryOutcomes, hitsOn, koBoost, koBoostText, koStageFactor, lessBerry, overWalk, paralysed, sendInAt, sendInBase, stealCounts, stealRates, stealsBerry, stolenDraws, threatFrom, tokenOdds, tokenShift, unnervedBy } from "./30-planner.js";
+import { actionOrder, afterSteals, attemptsLost, berryTypesOf, berryWalk, entryOutcomes, hitsOn, koBoost, koBoostText, koStageFactor, lessBerry, ourTeraTurn, overWalk, paralysed, sendInAt, sendInBase, stealCounts, stealRates, stealsBerry, stolenDraws, threatFrom, tokenOdds, tokenShift, unnervedBy } from "./30-planner.js";
 
 // @only tests: tpHealProfile, tpSendScore, tpFight, tpTables, tpActs
 const TP_BEAM = 24;
@@ -132,14 +132,15 @@ const tpHealAt = (turn, p, hp = Math.ceil(p.getMaxHp() * 0.75), beforeBerries = 
   try { return turn.turnEndHp(Object.create(p, { hp: { value: hp } }), { hp, beforeBerries }) || 0; } catch { return 0; }
 };
 // `base` recurs every turn, negative when chip outweighs the heals, and `pre` is its part ahead of the berries; `sitrus`
-// is one-shot, and `enigma` heals once for each of the `enigmas` it holds.
+// is one-shot, and `enigma` heals once for each of the `enigmas` it holds, each staying held at a Berry Pouch's `keep`,
+// present only under a Pouch.
 export const tpHealProfile = (turn, p) => {
   const max = p.getMaxHp();
   const at = hp => tpHealAt(turn, p, hp);
   const base = at(Math.ceil(max * 0.75));
   const enigma = turn.mon(p).facts.enigma;
   return { base, pre: tpHealAt(turn, p, Math.ceil(max * 0.75), true), sitrus: Math.max(0, at(Math.floor(max * 0.4)) - base),
-    enigma: enigma?.heal ?? 0, enigmas: enigma?.left ?? 0 };
+    enigma: enigma?.heal ?? 0, enigmas: enigma?.left ?? 0, ...(enigma?.keep ? { keep: enigma.keep } : {}) };
 };
 const tpCanSteal = (turn, me, f) => turn.outcomes(me, f).some(o => stealsBerry(o, f, me));
 // `by[k]`: `f`'s profile after k berries stolen, k from 0 (`kept`) up to all it holds or 9 (#646, #833); `walk`: its
@@ -151,11 +152,14 @@ const tpHealBy = (turn, f, kept, walk) => {
     if (!profiles.has(p)) profiles.set(p, tpHealProfile(turn, p));
     return profiles.get(p);
   };
-  const by = Object.fromEntries(Object.keys(kept).map(key => [key, overWalk(walk, p => prof(p)[key])]));
-  return Array.from({ length: supply + 1 }, (_, k) => (k === 0 ? kept : Object.fromEntries(Object.keys(kept).map(key => [key, by[key][k]]))));
+  // A Pouch is the side's, so `keep` stays as it was: a walked mon with no Enigma left carries no `keep`, and mixing it
+  // in would give NaN.
+  const by = Object.fromEntries(Object.keys(kept).map(key => [key, key === "keep" ? null : overWalk(walk, p => prof(p)[key])]));
+  return Array.from({ length: supply + 1 }, (_, k) => (k === 0 ? kept : Object.fromEntries(Object.keys(kept).map(key => [key, key === "keep" ? kept.keep : by[key][k]]))));
 };
 // What each steal of `me`'s off `f` heals it, as `stealHeal` holds it, from what `f` holds. `stealHealAfter`'s `Map`
-// gives the same once `f` has eaten berries of its own, by `tpHeal`'s `used` bits: its Sitrus, and each Enigma (#833).
+// gives the same once `f` has eaten berries of its own, by `tpEatenKey` of `tpHeal`'s `used` bits: its Sitrus, and each
+// Enigma (#833).
 const tpStealHeal = (turn, me, f, walk) => {
   const draws = (holder, w) => {
     const d = stolenDraws(holder, { eater: me, turn, walk: w });
@@ -227,6 +231,22 @@ const tpAtEntry = (turn, me, f) => {
   return outs?.length ? Object.fromEntries(outs.map(o => [o.name, tpMoveOf(o)])) : null;
 };
 
+// `T` with our `mi` at the Tera it takes on step 1, read off `U`, the tables of that mon alone on the Tera's turn (#649).
+const tpWithTera = (T, U, mi) => {
+  const row = (rows, mine) => rows.map((r, i) => (i === mi ? mine[0] : r));
+  const col = (rows, mine) => rows.map((r, fi) => r.map((x, i) => (i === mi ? mine[fi][0] : x)));
+  return {
+    ...T, memo: new Map(),
+    ours: row(T.ours, U.ours), first: row(T.first, U.first), firstBy: row(T.firstBy, U.firstBy), ourEntry: row(T.ourEntry, U.ourEntry),
+    theirs: col(T.theirs, U.theirs), send: col(T.send, U.send), fromUs: col(T.fromUs, U.fromUs),
+    ourHeal: row(T.ourHeal, U.ourHeal), tok: row(T.tok, U.tok),
+    stealHeal: row(T.stealHeal, U.stealHeal), stealHealAfter: row(T.stealHealAfter, U.stealHealAfter),
+    foeHealBy: T.foeHealBy.map((by, fi) => by ?? U.foeHealBy[fi]),
+    firstPara: row(T.firstPara, U.firstPara), firstParaBy: row(T.firstParaBy, U.firstParaBy),
+    fromFoe: row(T.fromFoe, U.fromFoe), ourItems: row(T.ourItems, U.ourItems),
+  };
+};
+
 // Wave status tokens and item thieves (30-planner.js). `fromUs[fi][mi]` is what foe `fi` steals from our `mi`, and
 // `fromFoe[mi][fi]` the reverse; `ourItems` / `foeItems` are each mon's turn-end HP change after k steals.
 const tpWear = (turn, party, foes, ours, faced = () => true) => {
@@ -253,14 +273,24 @@ const tpWear = (turn, party, foes, ours, faced = () => true) => {
 // The turn-end HP change `fixed` sure steals and Grip Claw's `mean` make, against none; `byCount[k]` is after k.
 const tpStolen = (byCount, fixed, mean) => (byCount ? stealCounts(fixed, mean).reduce((t, p, k) => t + p * (byCount[k] - byCount[0]), 0) : 0);
 
-// `used`: bit 0 the Sitrus Berry eaten, and the Enigma Berries eaten counted from bit 1 up. `se`: a super-effective
-// hit landed this turn. The berries heal, capped, between `pre` and the rest of the turn end (game-code.md §21).
+// `used`: bit 0 the Sitrus Berry eaten, and the Enigma Berries eaten counted from bit 1 up, in `ENIGMA_PART`s of one.
+// `se`: a super-effective hit landed this turn. The berries heal, capped, between `pre` and the rest of the turn end
+// (game-code.md §21).
+const ENIGMA_PART = 100;
+// `used` as `stealHealAfter` keys it. Exact without a Berry Pouch; under one, a part-eaten Enigma reads as gone or held.
+const tpEatenKey = used => (used & 1) | (Math.round((used >> 1) / ENIGMA_PART) << 1);
 const tpHeal = (hp, max, prof, used, se, extra = 0) => {
   if (!prof || hp < 1) return [hp, used];
   const pre = prof.pre ?? 0, at = Math.min(max, hp + pre);
   let berries = 0;
   if (at < max / 2 && !(used & 1) && prof.sitrus) { berries += prof.sitrus; used |= 1; }
-  if (se && prof.enigma && used >> 1 < (prof.enigmas ?? 1)) { berries += prof.enigma; used += 2; }
+  // Under a Berry Pouch the count eaten is an expectation, and `left` stands for the chance a berry is still held (#822).
+  const keep = prof.keep ?? 0, eaten = (used >> 1) / ENIGMA_PART, held = prof.enigmas ?? 1;
+  const left = keep > 0 ? Math.max(0, Math.min(1, held - eaten)) : eaten < held ? 1 : 0;
+  if (se && prof.enigma && left > 0) {
+    berries += prof.enigma * left;
+    used += 2 * Math.max(1, Math.round(ENIGMA_PART * left * (1 - keep)));
+  }
   if (!berries) return [Math.min(max, hp + prof.base + extra), used];
   return [at < 1 ? at : Math.min(max, Math.min(max, at + berries) + prof.base - pre + extra), used];
 };
@@ -316,7 +346,7 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
     // Recoil is paid whether or not the hit finished the foe.
     if (mv.self) b.mh -= mv.self;
     // A landed steal takes the next berry even on a knockout, and its heal comes after our own chip (game-code.md §3).
-    const draws = (b.fb && T.stealHealAfter?.[mi]?.[fi]?.get(b.fb)) || stealHeal;
+    const draws = (b.fb && T.stealHealAfter?.[mi]?.[fi]?.get(tpEatenKey(b.fb))) || stealHeal;
     if (us.steals && draws && b.fl < draws.length) {
       if (b.mh >= 1) b.mh = Math.min(T.ourMax[mi], b.mh + draws[b.fl]);
       b.fl++;
@@ -550,10 +580,11 @@ const tpFacing = (turn, foes) => {
 const TP_PREFER = 20;
 const TP_HOLD = 10;
 
-// ⚔ owns the turn and this model the rest of the fight (#113). `pin` is `{ mi, outcome?, then?, free? }`: `at(pin)`
-// re-searches with it as step 1, `after(pin)` reads what that plan says comes next, and `view(pin)` renders it.
-// `entering`: `facing` is the foe switching in this turn.
-const tpModel = (T, double, party, foes, facing, entering) => {
+// ⚔ owns the turn and this model the rest of the fight (#113). `pin` is `{ mi, outcome?, then?, free?, tera? }`:
+// `at(pin)` re-searches with it as step 1, `after(pin)` reads what that plan says comes next, and `view(pin)` renders
+// it. `entering`: `facing` is the foe switching in this turn. `teraOf(mi)`: the tables with our `mi` Tera'd from step 1
+// on, for a pin whose `tera` names the type (#649).
+const tpModel = (T, double, party, foes, facing, entering, teraOf = () => T) => {
   const ref = p => ({ icon: iconOf(p), name: p.name });
   const pctOf = (hp, max) => Math.round(hp / max * 100);
   const fcur = foes.indexOf(facing);
@@ -624,14 +655,20 @@ const tpModel = (T, double, party, foes, facing, entering) => {
   // A pin runs the ⚔ move, else its follow-up: a first-turn-only or foe-dependent move would repeat in a table
   // exchange as though it always worked (#650).
   const pinned = pin => [pin.outcome, pin.then].find(o => o?.expected > 0 && !o.traits?.once && !o.traits?.needsAttack) ?? null;
-  const keyOf = pin => (pin && pin.mi != null && pin.mi >= 0 ? `${pin.mi}|${pinned(pin)?.name ?? ""}|${pin.free ? "f" : ""}` : "");
+  const keyOf = pin => (pin && pin.mi != null && pin.mi >= 0 ? `${pin.mi}|${pinned(pin)?.name ?? ""}|${pin.free ? "f" : ""}|${pin.tera ?? ""}` : "");
+  const teraMemo = new Map();
+  const tablesOf = pin => {
+    if (!pin?.tera) return T;
+    if (!teraMemo.has(pin.mi)) teraMemo.set(pin.mi, teraOf(pin.mi));
+    return teraMemo.get(pin.mi);
+  };
   const atMemo = new Map();
   const at = pin => {
     const k = keyOf(pin);
     if (!k) return base;
     if (!atMemo.has(k)) {
       const o = pinned(pin);
-      atMemo.set(k, tpSearch(T, start, hold, { mi: pin.mi, move: o ? tpMoveOf(o) : null, free: !!pin.free }) ?? base);
+      atMemo.set(k, tpSearch(tablesOf(pin), start, hold, { mi: pin.mi, move: o ? tpMoveOf(o) : null, free: !!pin.free }) ?? base);
     }
     return atMemo.get(k);
   };
@@ -651,7 +688,8 @@ const tpModel = (T, double, party, foes, facing, entering) => {
   const viewMemo = new Map();
   const view = pin => {
     const k = keyOf(pin);
-    if (!viewMemo.has(k)) viewMemo.set(k, tpView({ T, party, foes, double, start, win, kills, alive, answers, only, onlyBy, reserve, base, ref, pctOf }, at(pin), !!k));
+    const tera = k && pin.tera ? { mi: pin.mi, type: pin.tera, T: tablesOf(pin) } : null;
+    if (!viewMemo.has(k)) viewMemo.set(k, tpView({ T, party, foes, double, start, win, kills, alive, answers, only, onlyBy, reserve, base, ref, pctOf }, at(pin), !!k, tera));
     return viewMemo.get(k);
   };
   const holdFor = mi => {
@@ -668,14 +706,18 @@ export const teamPlanner = turn => {
   if (!trainer || !party.length || !foes.length) return null;
   // The searches read only the tables `tpTables` builds, never the live game.
   const { foe: facing, entering } = tpFacing(turn, foes);
-  return tpModel(tpTables(turn, party, foes, double, facing, entering), double, party, foes, facing, entering);
+  const T = tpTables(turn, party, foes, double, facing, entering);
+  const teraOf = mi => tpWithTera(T, tpTables(ourTeraTurn(turn, party[mi]), [party[mi]], foes, double, facing, entering), mi);
+  return tpModel(T, double, party, foes, facing, entering, teraOf);
 };
 
 export const teamPlan = turn => teamPlanner(turn)?.view(null) ?? null;
 
-const tpView = (M, plan, pinned) => {
-  const { T, party, foes, double, start, win, kills, alive, answers, only, onlyBy, reserve, base, ref, pctOf } = M;
+// `tera`: `{ mi, type, T }`, the pin's Tera, its step 1 pressing it, and the tables the plan was searched on.
+const tpView = (M, plan, pinned, tera = null) => {
+  const { party, foes, double, start, win, kills, alive, answers, only, onlyBy, reserve, base, ref, pctOf } = M;
   if (!plan) return null;
+  const T = tera?.T ?? M.T;
   const beats = party.map((_, mi) => foes.filter((_, fi) => tpFight(T, start, mi, fi, "free").fh < 1).length);
   const lowValue = mi => !reserve.includes(mi) && (start.oh[mi] / T.ourMax[mi] < 0.35 || beats[mi] === 0);
 
@@ -693,6 +735,7 @@ const tpView = (M, plan, pinned) => {
     if (fed) why.push(`feeds ${fed.ability} ${koBoostText(fed)}`);
     return {
       vs: ref(foes[x.fi]), send: ref(party[x.mi]), entry: x.entry,
+      tera: i === 0 && tera && x.mi === tera.mi ? tera.type : null,
       move: us?.name ?? null, type: us?.type ?? null,
       hp: pctOf(x.hp, T.ourMax[x.mi]), foeHp: pctOf(x.foeHp, T.foeMax[x.fi]),
       sacrifice, why: why.join(" · "),
@@ -729,7 +772,7 @@ const tpView = (M, plan, pinned) => {
     if (!a) return null;
     const what = a.hp < 1 && nxt?.entry === "free" ? `let ${party[a.mi].name} fall → ${party[nxt.mi].name} in free`
       : a.entry === "switch" ? `${party[a.mi].name} in`
-      : `${party[a.mi].name} ${T.ours[a.mi][a.fi]?.name ?? "—"} → ${foes[a.fi].name}`;
+      : `${party[a.mi].name} ${M.T.ours[a.mi][a.fi]?.name ?? "—"} → ${foes[a.fi].name}`;
     return { text: what, gain: Math.round(gain), flips: plan.result !== "win" && base.result === "win" };
   })();
 

@@ -70,6 +70,10 @@ export const entryOutcomes = (turn, me, foe) => {
 };
 const entryOutcome = (turn, me, foe, name) => entryOutcomes(turn, me, foe)?.find(o => o.name === name) ?? null;
 
+// `turn` with our `me` Terastallized (#649): its hits land at the Tera, while this turn's enemy pick stays the one made
+// against the typing it had (`25-turn.js`, `asCommand`).
+export const ourTeraTurn = (turn, me) => turn.memo(`ourTera:${me.id}`, () => turn.assuming([{ mon: me, tera: true }]));
+
 const NO_MOVE_INFO = { priority: 0 };
 // Quick Claw and Quick Draw (game-code.md §5).
 // @mirrors quick-chance
@@ -283,9 +287,9 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
   if (ownMoves && ownFrom <= 0) moves = ownMoves;
   const { expected, use } = landing(foe, moves, m => m.p, next);
   const own = ownMoves && ownFrom > 0 ? landing(foe, ownMoves, m => m.p, next) : null;
-  // A benched foe's picks after its first are made at the Tera it takes then (game-code.md §7), and a first-turn-only
-  // move's on a turn past its first (#824).
-  const laterPicks = live && (turn.teraLater(foe) || turns.later !== turns.first)
+  // A benched foe's picks after its first are made at the Tera it takes then (game-code.md §7), a first-turn-only
+  // move's on a turn past its first (#824), and every pick after this turn's against our own Tera (#649).
+  const laterPicks = live && (turn.teraLater(foe) || turns.later !== turns.first || (!next && !!turn.ourTeraOn?.(me)))
     ? replayMoves(turns.later, foe, me, outcomesOn(turn, turns.later, foe, me, outs)) : null;
   // This turn's rows carry their share of the target, and a replay at `me` none: in a double each of ours takes the
   // uses after this one alike, as a re-drawn target's (`likelyMoves`).
@@ -687,18 +691,33 @@ const berryCounts = (land, supply, before = 0) => {
   };
 };
 
-// A threat's `koCurve` on `me` from `hp`, turn-end included. `dealt`: what we deal a turn (Shell Bell); `mult(j)`: its
-// damage on turn j against the expected; `act(i)`: the chance its i-th attack goes off; `drain`: what our drain moves
-// win back a turn, negative into Liquid Ooze; `preHeal`: as `koCurve` takes it.
+// A threat's `koCurve` on `me` from `hp`, turn-end included. `dealt`: what we deal a turn (Shell Bell), or a function of
+// the turn; `mult(j)`: its damage on turn j against the expected; `act(i)`: the chance its i-th attack goes off;
+// `drain`: what our drain moves win back a turn, negative into Liquid Ooze; `preHeal`: as `koCurve` takes it.
 export const foeCurve = (turn, t, me, hp, { dealt = 0, foe = null, mult = null, act = () => 1, start = null, drain = 0, preHeal = null } = {}) => {
-  const course = turnEndCourse(turn, me, foe, t ? hitsOn(t) : -1, dealt);
+  const courseOf = d => turnEndCourse(turn, me, foe, t ? hitsOn(t) : -1, d);
+  let heal, pre;
+  if (typeof dealt === "function") {
+    const courses = new Map();
+    const at = j => {
+      const d = dealt(j);
+      if (!courses.has(d)) courses.set(d, courseOf(d));
+      return courses.get(d);
+    };
+    heal = j => at(j).at(j);
+    pre = j => at(j).pre;
+  } else {
+    const course = courseOf(dealt);
+    heal = course.flat ? course.base : course.at;
+    pre = course.pre;
+  }
   const ramp = setupRamp(foe, t);
   const useOn = x => (x?.expected > 0 ? x.use ?? [{ d: x.expected, p: 1 }] : [{ d: 0, p: 1 }]);
   // A curve from `start` has no use of this turn's.
   const usesBefore = start ? 1 : 0;
   return koCurve(turn.mon(me), useOn(threatUse(t, usesBefore)), {
-    hp, start, act, turnEnd: withDrain(course.flat ? course.base : course.at, drain), chain: t?.lockChain?.(usesBefore),
-    beforeBerry: withDrain(course.pre, drain), se: foe && unnervedBy(turn, me, foe) ? null : 0,
+    hp, start, act, turnEnd: withDrain(heal, drain), chain: t?.lockChain?.(usesBefore),
+    beforeBerry: withDrain(pre, drain), se: foe && unnervedBy(turn, me, foe) ? null : 0,
     scale: mult || ramp ? i => (mult ? mult(i + 1) : 1) * (ramp ? ramp(i + 1) : 1) : undefined,
     firstKo: t?.expected > 0 && !start ? threatKoAt(t, hp) * act(0) * (t.lockAct ? t.lockAct(0) : 1) : null,
     useAt: t?.later || t?.own ? i => useOn(threatUse(t, i + usesBefore)) : null, preHeal,
@@ -870,7 +889,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   const bars = bossBarsLeft(foe);
   const trainerBoss = foe.hasTrainer?.() ?? !!turn.facts.trainer;
   let turnsWe = 9, hitsWe = 9, delay = 0, selfSpent = 0, defUp = 1, foeMult = null, foeAfter1 = after?.foe ?? null;
-  let weBy = () => 0, qWe = 0, usesBy = () => 0, downAt = [];
+  let weBy = () => 0, qWe = 0, usesBy = () => 0, downAt = [], opener = mine;
   // An exchange `after` another follows a turn on another move, so this lock starts at its first use.
   const ourLock = mt.lock ? OUR_LOCK : null;
   // The berry a landed Bug Bite / Pluck eats (#646): the landing odds are the hit's own, and a knockout still eats.
@@ -909,6 +928,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     const nowUse = !mt.charge && delay === 0;
     const first = nowUse && entry ? entry : mine;
     const rest = first !== mine ? useOf(mine) : null;
+    opener = first;
     qWe = nowUse ? (first.pKo ?? 0) * now : 0;
     const curve = koCurve(turn.mon(foe), useOf(first), {
       scale, turnEnd: heal, beforeBerry: withDrain(course.pre, t?.drain ?? 0), cat: mine.cat,
@@ -957,7 +977,12 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   const theirAct = aimedAtField ? foeAct : i => (opts.fieldAct ? opts.fieldAct(i) : 1);
   const mult = (aimedAtField && foeMult) || defUp !== 1 ? j => (aimedAtField && foeMult ? foeMult(j) : 1) * defUp : null;
   const myStart = after?.me.map(x => ({ ...x, hp: x.revived ? x.hp : x.hp - selfSpent })).filter(x => x.hp > 0);
-  const drained = (mine?.drain ?? 0) * (mine?.expected ?? 0) * steady;
+  // Our first use is the entry hit where a Tera switch-in takes one, so turn 1 drains and deals what it does (#823).
+  // `perUse(f)`: `f` of our move's record, or a function of the turn where the first use's record differs.
+  const perUse = f => (opener === mine ? f(mine) : j => f(j === 1 ? opener : mine));
+  const drainOf = x => (x?.drain ?? 0) * (x?.expected ?? 0) * steady;
+  const drained = drainOf(mine), ourDrained = perUse(drainOf);
+  const drainedAt = typeof ourDrained === "function" ? ourDrained : () => drained;
   // P(we move first) on the turns after this one.
   let pLast = pFirstField;
   const pPara = acts && turnsWe < 9 ? acts.para(turnsWe - 1) : 0;
@@ -976,11 +1001,11 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   // (#646). A thief that moves first eats it before the turn's hit, so it fills only the room already there (#833).
   const eatenBy = (j, at) => lands(j) * counts(j - 1).reduce((sum, p, k) => sum + p * at[Math.min(9, k)], 0);
   const stealing = eats && theft?.eatenAt?.some(v => v > 0);
-  const ourDrain = !stealing ? drained
-    : j => drained + (j === 1 ? pFField * eatenBy(1, theft.eatenFirst) + (1 - pFField) * eatenBy(1, theft.eatenAt) : 0);
+  const ourDrain = !stealing ? ourDrained
+    : j => drainedAt(j) + (j === 1 ? pFField * eatenBy(1, theft.eatenFirst) + (1 - pFField) * eatenBy(1, theft.eatenAt) : 0);
   const preHeal = stealing ? i => (i > 0 ? { p: pLast, heal: eatenBy(i + 1, theft.eatenAt) } : null) : null;
   const theirs = budget > 0 ? foeCurve(turn, foeT, me, budget, {
-    dealt: mine?.uncapped ?? mine?.expected ?? 0, foe: fieldFoe, mult, act: theirAct, start: myStart?.length ? myStart : null, drain: ourDrain, preHeal,
+    dealt: perUse(x => x?.uncapped ?? x?.expected ?? 0), foe: fieldFoe, mult, act: theirAct, start: myStart?.length ? myStart : null, drain: ourDrain, preHeal,
   }) : null;
   const turnsFoe = theirs ? koTurn(theirs.by) : Math.max(1, Math.min(turnsWe, 9));
   const lag = freeThey ? 1 : 0;
@@ -1031,7 +1056,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     const drainTurns = Math.min(taken, turnsWe), cost = selfSpent / taken;
     let hs = new Map([[hp, 1]]);
     for (let i = 0; i < Math.ceil(taken); i++) {
-      const share = Math.min(1, taken - i), back = i < drainTurns ? (drained + eatenBy(i + 1, theft.eatenAt)) * Math.min(1, drainTurns - i) : 0;
+      const share = Math.min(1, taken - i), back = i < drainTurns ? (drainedAt(i + 1) + eatenBy(i + 1, theft.eatenAt)) * Math.min(1, drainTurns - i) : 0;
       const first = i === 0 ? pFField : pLast;
       const next = new Map();
       const add = (h, p) => { if (p > 0) next.set(h, (next.get(h) ?? 0) + p); };
@@ -1122,11 +1147,11 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
 
   // `entering`: switched in by choice this turn, so it takes the incoming hit and moves next turn. `mine`: slot 0's
   // locked command, when `me` is that slot.
-  const options = (me, entering, mine = null, hyp = null) => {
+  const options = (me, entering, mine = null, hyp = null, teraAt = null) => {
     // `hyp`: `at`, the state written on; `bump`, the HP a heal puts back; `lost`, the attempts the status costs each
     // foe, index 0 this turn's. Under it the search stops at this turn, and `incoming` stays on the real turn: the
-    // entry hit lands before the status does.
-    const turn = turnOf(hyp);
+    // entry hit lands before the status does. `teraAt`: the turn our Tera lands on, which the search runs on whole.
+    const turn = teraAt ?? turnOf(hyp);
     const assumed = !!hyp;
     const inc = entering ? incoming(me) : { dmg: 0, ko: 0 };
     const hp = Math.min(me.getMaxHp?.() ?? Infinity, me.hp - inc.dmg + (hyp?.bump ?? 0));
@@ -1333,7 +1358,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       };
     };
     const plays = fi => {
-      if (assumed || entering || !turn.live) return [];
+      if (assumed || entering || !turn.live || teraAt) return [];
       const f = active[fi];
       // A game read that fails on a written-on state drops that option, not the panel.
       return turn.statusMoves(me, f).map(info => {
@@ -1407,11 +1432,18 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     if (!out.length) out.push({ me, move: null, target: null, turns: 9, hits: 9, score: lasts - 9, hp });
     return out;
   };
+  // Our Tera (#649): every attack again on the turn it lands on, each carrying it. Single battles only.
+  const teraOptions = (me, entering, mine, hyp) => {
+    const tera = slots === 1 && !entering && !mine && !hyp && me.isOnField?.() ? turn.ourTera?.(me) ?? null : null;
+    if (!tera) return [];
+    const at = ourTeraTurn(turn, me);
+    return options(me, false, null, null, at).filter(x => x.move?.expected > 0).map(x => ({ ...x, tera: tera.type, at }));
+  };
   const cache = new Map();
   const opt = (me, entering, hyp = null) => {
     const mine = lock && !lock.switchIn && me === lock.me ? lock : null;
     const k = `${party.indexOf(me)}|${entering}|${!!mine}|${hyp?.key ?? ""}`;
-    if (!cache.has(k)) cache.set(k, options(me, entering, mine, hyp));
+    if (!cache.has(k)) cache.set(k, [...options(me, entering, mine, hyp), ...teraOptions(me, entering, mine, hyp)]);
     return cache.get(k);
   };
 
@@ -1425,7 +1457,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   const planValueOf = picks => {
     if (!team || slots !== 1 || !picks[0]) return null;
     const mi = party.indexOf(picks[0].me);
-    return mi < 0 ? null : team.at({ mi, outcome: picks[0].move, then: picks[0].then, free: freeSwitch })?.val ?? null;
+    return mi < 0 ? null : team.at({ mi, outcome: picks[0].move, then: picks[0].then, free: freeSwitch, tera: picks[0].tera ?? null })?.val ?? null;
   };
   // Per pick: `ally`, what a move that hits every other pokémon does to our partner; `spare`, the pair's other hit
   // already does all this one does, so a move with a drawback gives way to one without (CONTEXT.md, `Spare hit`).
@@ -1650,13 +1682,15 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   const bestStay = top(plans.filter(p => p.swaps === 0));
   // A mon going down this turn whatever we do has nothing left to lose: switching it out trades its last action for an
   // entry hit, while letting it fall brings the next mon in free (#170).
+  // `at`: the turn the pick plays on, our Tera's for one that carries it.
   const doomedMemo = new Map();
-  const doomedNowOf = me => {
-    if (!doomedMemo.has(me)) {
-      const ko = 1 - attackers.reduce((keep, f) => keep * (1 - threatKoAt(threatFrom(turn, f, me), me.hp)), 1);
-      doomedMemo.set(me, me.hp + healAtEnd(turn, me) <= 0 || ko >= DOOMED);
+  const doomedNowOf = (me, at = turn) => {
+    const k = `${me.id}|${at.key}`;
+    if (!doomedMemo.has(k)) {
+      const ko = 1 - attackers.reduce((keep, f) => keep * (1 - threatKoAt(threatFrom(at, f, me), me.hp)), 1);
+      doomedMemo.set(k, me.hp + healAtEnd(at, me) <= 0 || ko >= DOOMED);
     }
-    return doomedMemo.get(me);
+    return doomedMemo.get(k);
   };
   // Failing too: a field the fight plan needs elsewhere, since spending the only answer to a foe still to come is not a
   // near-equal turn for the margin to protect (#170).
@@ -1666,7 +1700,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   // faint buys (#170).
   const dying = plan => plan.picks.filter(p => !p.locked && (!p.move || p.score < 0));
   const lastStand = !!bestStay && (bestStay.planCost ?? 0) < PLAN_FAIL
-    && dying(bestStay).length > 0 && dying(bestStay).every(p => current.includes(p.me) && doomedNowOf(p.me));
+    && dying(bestStay).length > 0 && dying(bestStay).every(p => current.includes(p.me) && doomedNowOf(p.me, p.at));
   const stay = !!bestStay && (failing(bestStay) && !lastStand ? bestAny.score <= bestStay.score : bestAny.score - bestStay.score < margin);
   const best = stay ? bestStay : bestAny;
   const alt = stay && bestAny !== bestStay && bestAny.swaps > 0 ? bestAny : null;
@@ -1691,13 +1725,14 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   // `pm`: the move the slot is going to use, so the order is the one the pick actually gets — a priority move taken
   // against no move of ours read as a knockout "before it can act" (#650). A mon leaving the field has no pick to take
   // it against, and passes none.
-  const nowThreat = (me, pm = null) => attackers.reduce((w, f) => worse(w, tagOf(threatFrom(turn, f, me, pm), me.hp, false)), null);
+  const nowThreat = (me, pm = null, at = turn) => attackers.reduce((w, f) => worse(w, tagOf(threatFrom(at, f, me, pm), me.hp, false)), null);
   // `guarded`: the slot Protects this turn, so this turn's hits are no danger to it (#650).
   const slotThreat = (p, entering, guarded = false) => {
     const faced = typeof p.target === "number" ? [active[p.target]] : active;
-    let tag = entering || guarded ? null : nowThreat(p.me, p.move?.pm ?? null);
+    const at = p.at ?? turn;
+    let tag = entering || guarded ? null : nowThreat(p.me, p.move?.pm ?? null, at);
     for (const f of faced) {
-      if (entering || !attackers.includes(f)) tag = worse(tag, tagOf(threatFrom(turn, f, p.me, p.move?.pm ?? null, { next: true }), entering ? p.hp : p.me.hp, true));
+      if (entering || !attackers.includes(f)) tag = worse(tag, tagOf(threatFrom(at, f, p.me, p.move?.pm ?? null, { next: true }), entering ? p.hp : p.me.hp, true));
     }
     return tag;
   };
@@ -1815,11 +1850,11 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   // in slot 0, so the pin is the slot aimed there: its step 1 is then an action the player is actually told to take.
   const chosen = slots === 1 ? best.picks[0]
     : best.picks.find(p => !p.play && (p.target === 0 || p.target === "both")) ?? best.picks.find(p => !p.play) ?? best.picks[0];
-  const pin = team && chosen ? { mi: party.indexOf(chosen.me), outcome: chosen.move, then: chosen.then, free: freeSwitch } : null;
+  const pin = team && chosen ? { mi: party.indexOf(chosen.me), outcome: chosen.move, then: chosen.then, free: freeSwitch, tera: chosen.tera ?? null } : null;
   const ahead = pin && pin.mi >= 0 ? team.after(pin) : null;
   // A plan step is a whole exchange, so its free entry is this turn's news only when the mon goes down on this one —
   // counting the pick's own trade, since a foe switching in is not an `attackers` threat yet.
-  const doomedNow = !!chosen && (doomedNowOf(chosen.me) || (chosen.trade?.pTheyKoFirst ?? 0) >= 0.5);
+  const doomedNow = !!chosen && (doomedNowOf(chosen.me, chosen.at) || (chosen.trade?.pTheyKoFirst ?? 0) >= 0.5);
 
   return {
     picks, // live objects for the per-foe rows; not part of the JSON-safe view
@@ -1841,6 +1876,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
         const helped = helps.has(p);
         return {
           icon: iconOf(p.me), name: p.me.name, out: !!p.me.isOnField?.(), enter,
+          tera: sup ? null : p.tera ?? null,
           move: sup ? pmName(sup.pm) : p.move?.name ?? null, type: sup ? TYPES[mv.type] ?? null : p.move?.type ?? null, cat: sup ? "status" : p.move?.cat ?? null,
           target: sup || p.target === null || p.self ? null : p.target === "both" ? "both" : { icon: iconOf(active[p.target]), name: active[p.target].name },
           then: sup ? null : p.then?.name ?? null,
@@ -2088,6 +2124,8 @@ export const battleModel = (baseTurn, { team = null } = {}) => {
   // Foes on the field take their pick from the field plan, so the rows never contradict it; any other foe gets the
   // best 1-v-1 pick, preferring members not already busy.
   const used = new Set(plan?.picks.map(p => p.me) ?? []);
+  // A mon the ⚔ line Teras meets every foe at its Tera.
+  const atOf = me => plan?.picks.find(p => p.me === me && p.tera)?.at ?? turn;
   const pickFor = foe => {
     // A foe predicted to switch out shares its switch-in's pick: that's who the move lands on.
     const target = switching(foe) ? predicted.get(foe).to : foe;
@@ -2098,13 +2136,13 @@ export const battleModel = (baseTurn, { team = null } = {}) => {
       // A status move's row shows the damage of the attack it sets up.
       const then = slot.move.cat === "status" ? slot.then ?? null : null;
       // A switch-in takes this turn's hit (`entryOutcome`).
-      const entry = !then && !active.includes(target) ? entryOutcome(turn, slot.me, target, slot.move.name) : null;
+      const entry = !then && !active.includes(target) ? entryOutcome(slot.at ?? turn, slot.me, target, slot.move.name) : null;
       const dmg = entry?.expected ?? (both ? planOutcomes(turn, slot.me, target).find(x => x.name === slot.move.name)?.expected ?? 0 : (then ?? slot.move).expected);
       // The slot's own KO turns, so the row and the ⚔ line agree.
-      return { me: slot.me, mine: { ...slot.move, dmg, then }, myTurns: both ? slot.each?.[ai] ?? koTurn(koCurve(turn.mon(target), [{ d: dmg, p: 1 }]).by) : slot.hits, score: slot.score, later: false, vs: target };
+      return { me: slot.me, mine: { ...slot.move, dmg, then }, myTurns: both ? slot.each?.[ai] ?? koTurn(koCurve(turn.mon(target), [{ d: dmg, p: 1 }]).by) : slot.hits, score: slot.score, later: false, vs: target, at: slot.at };
     }
     const paired = (plan?.picks.length ?? 0) === 2;
-    const ranked = party.map(me => duel(turn, me, foe, paired && ai >= 0 && plan.picks.some(p => p.me === me)))
+    const ranked = party.map(me => ({ ...duel(atOf(me), me, foe, paired && ai >= 0 && plan.picks.some(p => p.me === me)), at: atOf(me) }))
       .map(m => ({ ...m, rank: m.score - (used.has(m.me) ? 1 : 0) }))
       .sort((x, y) => y.rank - x.rank);
     const pick = ranked[0];
@@ -2130,9 +2168,9 @@ export const battleModel = (baseTurn, { team = null } = {}) => {
     // `✦` marks an ability that changes one of our options: a field trap always, a move trap when it bites the damaging
     // pool of the mons we put in front of it, not only the ⚔ line's move.
     const ourside = [...new Set([...(plan?.picks.map(q => q.me) ?? []), ...(p?.me ? [p.me] : [])])];
-    const pool = ourside.flatMap(me => planOutcomes(turn, me, foe));
+    const pool = ourside.flatMap(me => planOutcomes(atOf(me), me, foe));
     const traps = abilitiesOf(foe).filter(a => FIELD_TRAPS.has(a) || (MOVE_TRAPS.has(a) && pool.some(o => bites(a, foe, o))));
-    const t = p?.mine && !switching(foe) ? threatFrom(turn, foe, p.me, p.mine.pm ?? null, { next: !p.me.isOnField?.() || !foe.isOnField?.() }) : null;
+    const t = p?.mine && !switching(foe) ? threatFrom(p.at ?? turn, foe, p.me, p.mine.pm ?? null, { next: !p.me.isOnField?.() || !foe.isOnField?.() }) : null;
     const bars = bossBarsLeft(vs);
     const n = p?.mine ? hitCounts(p.mine) : null;
     return {
