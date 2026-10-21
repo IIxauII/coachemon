@@ -91,6 +91,40 @@ const keyOf = s => readRun(s, run => run.key);
   assert.equal(readRun(null, run => run.facts.wave), 0, "no scene: facts default, no sandbox");
 }
 
+// ---- The next big fight is the one the run still has to win, which the caller says by its standing (#587)
+{
+  // A fixed battle on 25 and a boss every tenth wave. The game mode is not in the run key, so another calendar takes
+  // a seed of its own or is served the first one's memo.
+  const fixed = { isBoss: w => w % 10 === 0, isFixedBattle: w => w === 25 };
+  const at = (wave, opts, gameMode = fixed) => readRun(scene({ currentBattle: { waveIndex: wave }, gameMode,
+    seed: gameMode === fixed ? "seed-1" : "seed-other" }), run => run.nextFight, opts);
+  const pick = f => [f.from, f.fight, f.kind];
+  assert.deepEqual(pick(at(24, { cleared: false })), [24, 25, "fixed"]);
+  assert.deepEqual(pick(at(24, { cleared: true })), [24, 25, "fixed"]);
+  assert.deepEqual(pick(at(25, { cleared: false })), [25, 25, "fixed"]);
+  assert.deepEqual(pick(at(25, { cleared: true })), [25, 30, "boss"]);
+  assert.deepEqual(pick(at(26, { cleared: false })), [26, 30, "boss"]);
+  assert.deepEqual(pick(at(26, { cleared: true })), [26, 30, "boss"]);
+  for (const wave of [25, 44]) {
+    const unstated = at(wave);
+    assert.equal(unstated.fight, null);
+    assert.equal(unstated.cleared, null);
+    assert.equal(unstated.unavailable,
+      `this run read never said whether wave ${wave} is cleared: open it with readRun(s, fn, { cleared })`);
+  }
+  assert.deepEqual(at(25, { cleared: true }, { isBoss: w => w % 10 === 0 }),
+    { from: 25, fight: null, kind: null, cleared: true, unavailable: null }, "a calendar with nothing to read names no fight");
+  // The standing is not in the run key, so one run state read both ways answers each its own.
+  const s = scene({ currentBattle: { waveIndex: 25 }, gameMode: fixed });
+  assert.equal(readRun(s, run => run.nextFight.fight, { cleared: false }), 25);
+  assert.equal(readRun(s, run => run.nextFight.fight, { cleared: true }), 30);
+  let run;
+  const f = readRun(s, r => { run = r; return r.nextFight; }, { cleared: true });
+  assert.ok(Object.isFrozen(f));
+  assert.throws(() => run.nextFight, /after its callback returned/);
+  assert.equal(at(0, { cleared: false }).from, 1, "a run on no wave yet stands on the first");
+}
+
 // ---- Dead after the callback; never nested with a turn read, in either order.
 {
   let run;

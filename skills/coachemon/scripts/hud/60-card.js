@@ -105,7 +105,7 @@ export const readRoad = (s, card) => readRun(s, run => {
   // The rewards card has already built its own.
   card.ahead ??= aheadModel(run);
   if (card.catch) { catchLand(run, card.catch); card.verdict = verdictOf(card); }
-});
+}, { cleared: clearedOn(card.kind) });
 export const keepRoad = (from, to) => {
   to.preview = from.preview;
   to.ahead = from.ahead;
@@ -130,14 +130,15 @@ export const readCard = (s, account, { road = true, estimate = false } = {}) => 
     readOracleLine(s, card);
   } else if (spliceScreen(s, handler)) {
     // Inside a run read, like the learn card above: the fusion judgment runs there and nowhere else (#589).
-    card = readRun(s, run => fusionModel(run, handler));
+    card = readRun(s, run => fusionModel(run, handler), { cleared: KINDS.fusion.cleared });
   } else if (rewards) {
-    card = stage("shop.run", () => readRun(s, run => stage("shop.model", () => rewardsModel(run, rewards))));
+    card = stage("shop.run", () => readRun(s, run => stage("shop.model", () => rewardsModel(run, rewards)),
+      { cleared: KINDS.rewards.cleared }));
     shopNote(s, card);
   } else if (biomeScreen(s, handler)) {
-    card = readRun(s, run => biomeModel(run, handler));
+    card = readRun(s, run => biomeModel(run, handler), { cleared: KINDS.biome.cleared });
   } else if (encounterScreen(s, handler)) {
-    card = readRun(s, run => encounterModel(run, handler, account));
+    card = readRun(s, run => encounterModel(run, handler, account), { cleared: KINDS.encounter.cleared });
   } else {
     const b = s.currentBattle;
     const foes = s.getEnemyParty().filter(p => p.hp > 0);
@@ -211,22 +212,25 @@ const encounterCall = s => {
 };
 
 // Every kind the panel can show has a row, and one without `event` is never streamed. A battle keys on the wave alone:
-// its foes drop out of the list as they faint.
+// its foes drop out of the list as they faint. `cleared` is where the run stands on that card (CONTEXT.md, `Next big
+// fight`), and null where the card judges no fight.
 const wave = card => `${card.wave ?? null}`;
 const KINDS = {
-  battle: { event: "battle", key: wave, call: s => s.verdict },
-  learn: { event: "learn", key: card => `${wave(card)}|${card.name ?? ""}|${card.move?.name ?? ""}`,
+  battle: { event: "battle", key: wave, call: s => s.verdict, cleared: false },
+  learn: { event: "learn", cleared: null, key: card => `${wave(card)}|${card.name ?? ""}|${card.move?.name ?? ""}`,
     call: (s, card) => oracleLearnCall(card.oracleLine) ?? leading(s.learn) },
   // A reroll changes the offers, so the rewards screen is a new decision under the same wave.
-  rewards: { event: "reward", key: card => `${wave(card)}|${(card.free ?? []).map(f => f.name).join(",")}`, call: s => leading(s.rewards) },
-  biome: { event: "biome", key: wave, call: s => biomePick(s.biome) },
+  rewards: { event: "reward", cleared: true, key: card => `${wave(card)}|${(card.free ?? []).map(f => f.name).join(",")}`, call: s => leading(s.rewards) },
+  biome: { event: "biome", key: wave, call: s => biomePick(s.biome), cleared: true },
   // A continuous encounter asks again on the same wave under the same name: the mon in front of you and the two
   // stages are what make a minigame turn its own decision, so they key it (`46-encounter.js`).
-  encounter: { event: "encounter", call: s => encounterCall(s.encounter),
+  encounter: { event: "encounter", call: s => encounterCall(s.encounter), cleared: true,
     key: card => `${wave(card)}|${card.name ?? ""}${card.minigame ? `|${card.minigame.mon}|${card.minigame.left}|${card.minigame.catchStage},${card.minigame.fleeStage}` : ""}` },
-  starters: { event: null, key: wave, call: s => leading(s.starters) },
-  fusion: { event: null, key: wave, call: s => leading(s.fusion) },
+  starters: { event: null, key: wave, call: s => leading(s.starters), cleared: null },
+  fusion: { event: null, key: wave, call: s => leading(s.fusion), cleared: true },
 };
+// @only tests: clearedOn
+export const clearedOn = kind => KINDS[kind]?.cleared ?? null;
 
 // Derived, never spelled a second time (extension-distribution.md §11.1). `streamable` gates the stream on it, and the
 // relay keeps its own copy (`extension/src/relay/channel.ts`), pinned to this one by `cardtest.mjs`: a drift on the

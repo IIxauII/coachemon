@@ -83,23 +83,24 @@ const fusionOf = (a, b, j, spliced) => {
  *
  * It runs inside a run read, which is the only read that can ask the judgment at all, and the answers live in the
  * run's own memo rather than in a cache of this module's: the card's cache is gone (#589). The memo key holds what
- * varies within one run key (26-run.js) — which members the Splicer will take, and the form, ability, nature and
- * moveset the run key does not carry.
+ * varies within one run key (26-run.js) — the next big fight, which members the Splicer will take, and the form,
+ * ability, nature and moveset the run key does not carry.
  *
  * `unread` is what the judgment could not reach, for a card that has no pair to show and has to say why rather than
- * go quiet: the game's species table lands partway through a run, and until it does there is no threat set to judge
- * a fusion against. It is asked *before* the memo and never memoised with the pairs, exactly as 11-threats refuses
- * to memoise an answer taken before the tables landed — the party screen opens on the same run key either side of
- * that moment, and a memo filled in from the earlier side would answer for the rest of the run.
+ * go quiet: a run read that never said where the run stands has no fight to judge at, and the game's species table
+ * lands partway through a run, and until it does there is no threat set to judge a fusion against. It is asked
+ * *before* the memo and never memoised with the pairs, exactly as 11-threats refuses to memoise an answer taken before
+ * the tables landed — the party screen opens on the same run key either side of that moment, and a memo filled in
+ * from the earlier side would answer for the rest of the run.
  */
 export const fusionOptions = (run, { allowed = () => null } = {}) => {
   const s = run.scene;
   const party = (run.facts?.party ?? []).filter(Boolean);
   const spliced = !!s?.gameMode?.isSplicedOnly;
   const pickable = party.filter(p => !p.fusionSpecies && tryDo(() => allowed(p), null) == null);
-  const unread = standardThreats(run).unavailable ?? null;
+  const unread = run.nextFight?.unavailable ?? standardThreats(run).unavailable ?? null;
   if (unread) return { spliced, options: [], pickable: pickable.length, unread };
-  const key = JSON.stringify([spliced, pickable.map(p => p.id), party.map(p => [p.id, p.species?.speciesId, p.formIndex,
+  const key = JSON.stringify([run.nextFight?.fight ?? null, spliced, pickable.map(p => p.id), party.map(p => [p.id, p.species?.speciesId, p.formIndex,
     p.fusionSpecies?.speciesId ?? null, p.abilityIndex, p.level, p.hp > 0, p.nature, (p.moveset ?? []).map(m => m?.moveId)])]);
   const value = run.memo("fusion", key, () => build(run, party, pickable, spliced));
   // The memo hands a throw back as `{ unavailable }` (26-run.js), so what comes back is not always a pair list, and

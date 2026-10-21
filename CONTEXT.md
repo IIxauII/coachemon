@@ -18,6 +18,10 @@ One encounter within a run — a battle, or a between-battle screen such as a sh
 
 What a run's wave numbers alone decide, before any roll: which waves are the final boss, a fixed battle, a gym leader or a boss, where the party heals, and the odds of a trainer on each wave. The game mode and challenges shape it; a roll never does. Not to be confused with a **preview**, which reads what the run seed has already rolled.
 
+## Next big fight
+
+The first final wave, fixed battle, gym leader or boss on the **run calendar** the party still has to win, seen from the decision at hand. In a battle its own wave counts until it is won; every other decision stands past the wave on screen — a reward, a fusion and a biome pick come once that wave is won, and a mystery encounter takes its wave's place. The **threat set**, the **level projection**, **dead weight** and the weakest member are all read at the same one, so two cards of one **run read** never judge against different fights. The `road` a card shows starts past the wave on screen, so in a battle on a big-fight wave it starts at the one after.
+
 ## Party
 
 The pokémon the player controls in the current run. The **active pokémon** is the one currently on the field; the rest are on the bench. Distinct from account-level collection data.

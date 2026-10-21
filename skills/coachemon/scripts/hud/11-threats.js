@@ -1,7 +1,6 @@
 // The threat set (CONTEXT.md, `Threat set`). The wave alone decides the standard half — the run itself is read for
 // nothing but its level cap — so that half is *exact*, where the roster half carries its preview's confidence.
 import { TYPES, weakestConfidence } from "./01-core.js";
-import { bigFightsAhead } from "./03-calendar.js";
 import { gameTables } from "./04-game-tables.js";
 import { RANDBATS } from "./05-randbats.js";
 import { combatantOf, previewFoeOf } from "./09-combatant.js";
@@ -129,8 +128,8 @@ const buildThreats = (s, wave) => {
 const UNREADY = "the game's species table hasn't been read yet";
 
 /**
- * The standard threats for the big fight on wave `fight`, the next big fight ahead of the run where the caller names
- * none and the wave the run stands on where there is no fight to read.
+ * The standard threats for the big fight on wave `fight`, the run read's next big fight where the caller names none
+ * (26-run.js, `nextFight`) and the wave the run stands on where there is no fight to read.
  *
  * The game's tables land partway through a run; an answer taken before they do says `unavailable` and is never
  * memoised, so the next read asks again.
@@ -138,7 +137,7 @@ const UNREADY = "the game's species table hasn't been read yet";
 export const standardThreats = (run, { fight = null } = {}) => {
   const s = run?.scene ?? null;
   const here = Math.max(1, Math.floor(run?.facts?.wave ?? 0) || 1);
-  const wave = Math.max(1, Math.floor(fight ?? bigFightsAhead(s, here)[0]?.wave ?? here) || 1);
+  const wave = Math.max(1, Math.floor(fight ?? run?.nextFight?.fight ?? here) || 1);
   const ready = typeof tryDo(() => gameTables().species.getAllSpecies) === "function" && !!tryDo(() => gameTables().moves);
   if (!ready) return { wave, level: levelCapAt(s, wave), band: bandAt(wave), threats: [], confidence: "exact", unavailable: UNREADY };
   return run.memo("threats", String(wave), () => buildThreats(s, wave));

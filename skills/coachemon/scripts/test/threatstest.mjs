@@ -144,7 +144,7 @@ eval(bundle("hud", { expose: true }));
 const { ARCHETYPES, BAND, bandAt, standardThreats } = globalThis.__hud["11-threats"];
 const { RANDBATS } = globalThis.__hud["05-randbats"];
 const { levelCapAt } = globalThis.__hud["09-projection"];
-const { readRun } = globalThis.__hud["26-run"];
+const readRun = (s, fn) => globalThis.__hud["26-run"].readRun(s, fn, { cleared: false });
 const { sandboxBreachCount } = globalThis.__hud["01-core"];
 const setTables = t => globalThis.__hud["04-game-tables"].setGameTables(t);
 

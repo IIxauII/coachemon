@@ -215,7 +215,9 @@ const { BACKUP, CATCH_LEVEL, CLAMP, EXPOSURE, MARGIN, MAX_REASONS, PARTY_SIZE, R
   judgeFusionPair, judgeNewcomer, teamValue, weakestMember } = globalThis.__hud["12-value"];
 const { combatantOf } = globalThis.__hud["09-combatant"];
 const { levelCapAt } = globalThis.__hud["09-projection"];
-const { readRun } = globalThis.__hud["26-run"];
+// A battle's standing, where the wave on screen is still to win; `{}` opens a read that never says.
+const readRun = (s, fn, opts = { cleared: false }) => globalThis.__hud["26-run"].readRun(s, fn, opts);
+const { teamVerdict } = globalThis.__hud["45-catch"];
 const { sandboxBreachCount } = globalThis.__hud["01-core"];
 
 const MOVES = [null];
@@ -275,9 +277,9 @@ const M = {
 // ---- The run the judgment reads: wave 44, every tenth wave a boss, so the next big fight ahead is wave 50.
 // `roster` is the preview the fake run carries: what 49-ahead hands the threat set for the fight on a wave, or null.
 // 49-ahead's own read needs a replay this fake has none of, so it is stood in for; aheadtest reads the real one.
-const sceneOf = (party, { challenges = [], modifiers = [], wave = 44, seed = "judge-1", roster = null } = {}) => ({
+const sceneOf = (party, { challenges = [], modifiers = [], wave = 44, seed = "judge-1", roster = null, fixed = [] } = {}) => ({
   seed, modifiers, enemyModifiers: [], currentBattle: { waveIndex: wave }, arena: { biomeId: 3 }, roster,
-  gameMode: { isBoss: w => w % 10 === 0, isFixedBattle: () => false, hasTrainers: true, challenges },
+  gameMode: { isBoss: w => w % 10 === 0, isFixedBattle: w => fixed.includes(w), hasTrainers: true, challenges },
   getPlayerParty: () => party, getEnemyParty: () => [], game: { config: { gameVersion: "1.12.0.11" } },
 });
 const expShare = stacks => ({ constructor: { name: "ExpShareModifier" }, getStackCount: () => stacks });
@@ -1273,22 +1275,23 @@ const GRASSES = () => [
   assert.ok(none.every(x => x.delta < 0), "every pair of them worth less to the team than the three as they stand");
 }
 
+const idOf = name => {
+  const id = MOVES.findIndex(mv => mv?.name === name);
+  assert.ok(id > 0, `${name} is a move the table knows`);
+  return id;
+};
+// A preview row as 48-preview reads one off the mon its replay built: the stats the game left on it, HP first, its
+// typing by name and its moves by id (#574). Built off the species at that level, so the foe duels as it would.
+const rowOf = (id, level, moves, ability) => {
+  const sp = SPECIES.getSpecies(id);
+  const c = combatantOf({ species: sp, level, moves: moves.map(idOf), player: false });
+  return { name: sp.name, level, types: c.getTypes().map(t => TY[t]), ability, passive: null, stats: [...c.stats],
+    segments: 0, moves, moveIds: moves.map(idOf) };
+};
+
 // ---- The roster half: the next big fight's previewed foes have the same say as the standard threats (#592)
 {
   const { threatSet } = globalThis.__hud["11-threats"];
-  const idOf = name => {
-    const id = MOVES.findIndex(mv => mv?.name === name);
-    assert.ok(id > 0, `${name} is a move the table knows`);
-    return id;
-  };
-  // A preview row as 48-preview reads one off the mon its replay built: the stats the game left on it, HP first, its
-  // typing by name and its moves by id (#574). Built off the species at that level, so the foe duels as it would.
-  const rowOf = (id, level, moves, ability) => {
-    const sp = SPECIES.getSpecies(id);
-    const c = combatantOf({ species: sp, level, moves: moves.map(idOf), player: false });
-    return { name: sp.name, level, types: c.getTypes().map(t => TY[t]), ability, passive: null, stats: [...c.stats],
-      segments: 0, moves, moveIds: moves.map(idOf) };
-  };
   // An Electric gym on wave 50, which an all-Water party has no answer to bar its one Grass.
   const GYM = [
     rowOf(135, 40, ["Thunderbolt", "Shadow Ball"], "Volt Absorb"),
@@ -1369,6 +1372,53 @@ const GRASSES = () => [
   assert.equal(fused.before.v, both.before.v);
   assert.equal(fused.roster.name, "Lt. Surge W50~");
   console.log(`  the weakest member against both halves is ${weakest.name}, at ${t1(weakest.cost)}`);
+}
+
+// ---- A big fight on the wave the run stands on counts until it is won, and every judgment reads the same one (#587)
+{
+  const nc = () => mon(OURS.swampert, CAP, [M.surf, M.earthquake], { ability: "Torrent" });
+  // A fixed battle on 25, and a preview that reaches the boss on 30 and nothing else.
+  const roster = wave => (wave === 30
+    ? { wave, name: "Boss W30", confidence: "exact", foes: [rowOf(135, 30, ["Thunderbolt", "Shadow Ball"], "Volt Absorb")] }
+    : null);
+  const sceneAt = (wave, cleared, party = WATERS()) =>
+    sceneOf(party, { wave, fixed: [25], roster, seed: `judge-standing-${wave}-${cleared}-${party[0].name}` });
+  const read = (wave, cleared, fn, party) => readRun(sceneAt(wave, cleared, party), fn, { cleared });
+  const all = run => ({ weakest: weakestMember(run), newcomer: judgeNewcomer(run, nc()),
+    fusion: judgeFusionPair(run, "Lanturn", "Politoed") });
+  console.log("== a fixed battle on 25: the fight each judgment reads, by where the run stands");
+  for (const [wave, cleared, fight] of [[24, false, 25], [25, false, 25], [25, true, 30], [26, false, 30], [26, true, 30]]) {
+    const j = read(wave, cleared, all);
+    console.log(`  W${wave} ${cleared ? "cleared" : "ahead  "}  ${Object.entries(j)
+      .map(([k, x]) => `${k} ${x.fight}/${x.wave}${x.roster ? ` ${x.roster.name}` : ""}`).join("  ")}`);
+    for (const [k, x] of Object.entries(j)) {
+      assert.equal(x.fight, fight, `W${wave}, ${cleared ? "cleared" : "still to win"}: ${k} judges at W${fight}`);
+      assert.equal(x.wave, fight, `W${wave}: ${k}'s threat set is W${fight}'s`);
+      assert.equal(x.roster?.wave ?? null, fight === 30 ? 30 : null, `W${wave}: ${k} reads the roster of W${fight} alone`);
+    }
+  }
+  assert.equal(read(25, false, run => teamVerdict(run, nc())).fight, 25,
+    "the catch card in the fixed battle itself judges at that battle");
+
+  const fainted = cleared => read(25, cleared, run => weakestMember(run), FAINTED())
+    .ranked.find(x => x.name === "Wailord").dead;
+  assert.equal(fainted(false), "fainted", "W25's own shop comes after its fight, so a member down for it stays down");
+  assert.equal(fainted(true), null, "and it is back for W30 off that same shop");
+
+  const unstated = readRun(sceneAt(25, null), run => ({ weakest: weakestMember(run), newcomer: judgeNewcomer(run, nc()),
+    fusion: judgeFusionPair(run, "Lanturn", "Politoed"), team: teamVerdict(run, nc()) }), {});
+  const why = "this run read never said whether wave 25 is cleared: open it with readRun(s, fn, { cleared })";
+  for (const k of ["weakest", "newcomer", "fusion", "team"]) assert.equal(unstated[k].unavailable, why, `${k} refuses`);
+  for (const k of ["weakest", "newcomer", "fusion"]) assert.equal(unstated[k].fight, null, `${k} names no fight`);
+  assert.equal(unstated.newcomer.verdict, "skip");
+  assert.equal(unstated.fusion.verdict, "skip");
+  assert.equal(unstated.team.text, null, "and the card says no verdict");
+  console.log(`  unstated: ${unstated.newcomer.unavailable}`);
+
+  for (const cleared of [false, true]) {
+    assert.equal(read(25, cleared, run => judgeNewcomer(run, nc(), { fight: 60 })).fight, 60,
+      "a fight the caller names wins over where the run stands");
+  }
 }
 
 // ---- The full swap search over six members, inside the cost budget

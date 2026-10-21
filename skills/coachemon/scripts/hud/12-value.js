@@ -3,7 +3,6 @@
 // read and nowhere else — `run.memo` carries the pair scores, so the cards of one run read share them — and it draws
 // nothing: every duel is the approx matrix over combatants the adapter built off the field.
 import { stat, weakestConfidence } from "./01-core.js";
-import { bigFightsAhead } from "./03-calendar.js";
 import { formOf, partyAtFight } from "./08-party.js";
 import { combatantOf, duelEnv, itemKeyOf, pricesItem } from "./09-combatant.js";
 import { levelCapAt, levelProjection } from "./09-projection.js";
@@ -135,7 +134,9 @@ export const teamValue = (run, set, members) => {
 };
 
 const waveOf = run => Math.max(1, Math.floor(run?.facts?.wave ?? 0) || 1);
-const nextBigFight = (s, here) => bigFightsAhead(s, here)[0]?.wave ?? null;
+// `{ from, fight, unavailable }`: the wave the judgment stands on and the one it judges at.
+const spanOf = (run, fight) => (fight != null ? { from: waveOf(run), fight, unavailable: null }
+  : run?.nextFight ?? { from: waveOf(run), fight: null, unavailable: null });
 
 /**
  * The party at the next big fight as combatants, one slot per member in party order: `combatant` is the member at
@@ -324,12 +325,16 @@ const releaseOf = (run, env, set, slot, stay) => {
  * dearer to lose for carrying items the party keeps either way.
  *
  * `ranked` is every slot weakest first, so a reader can name the next one along; `mon`, `name`, `dead` and `cost`
- * are the first of them, and `v` what the party is worth whole.
+ * are the first of them, and `v` what the party is worth whole. `fight` overrides the wave to judge at, which is
+ * otherwise the run read's next big fight (26-run.js, `nextFight`).
  */
 export const weakestMember = (run, { fight = null } = {}) => {
-  const s = run?.scene ?? null;
-  const here = waveOf(run);
-  const at = fight ?? nextBigFight(s, here);
+  const span = spanOf(run, fight);
+  if (span.unavailable) {
+    return { fight: null, wave: null, roster: null, mon: null, name: null, dead: null, cost: 0, v: 0, ranked: [],
+      confidence: null, unavailable: span.unavailable };
+  }
+  const at = span.fight, here = span.from;
   const set = threatSet(run, { fight: at ?? here });
   const party = slotsAt(run, at);
   const live = party.slots.filter(x => x.combatant);
@@ -446,7 +451,7 @@ const plainBarred = name => ({ kind: "barred", name,
  * Judge a newcomer by the team value its swap makes (#567). `newcomer` is a live mon, or a spec the combatant
  * adapter builds; `replace` forces the member that leaves, for a GTS offer where the traded member is the one going,
  * and skips the search — and with it the free-slot branch, since a member goes out whatever the party's size.
- * `fight` overrides the wave to judge at, which is otherwise the next big fight ahead.
+ * `fight` overrides the wave to judge at, which is otherwise the run read's next big fight (26-run.js, `nextFight`).
  *
  * The verdict is `take` for a free slot, `swap` with the member the search picked, or `skip`. `replaced` carries the
  * search's pick whether or not the swap clears the margin, so a card can say who would have gone. `release` is what
@@ -455,9 +460,14 @@ const plainBarred = name => ({ kind: "barred", name,
  * the standard half stood alone (11-threats.js, `threatSet`).
  */
 export const judgeNewcomer = (run, newcomer, { replace = null, fight = null, roster = true } = {}) => {
+  const span = spanOf(run, fight);
+  if (span.unavailable) {
+    return { fight: null, wave: null, roster: null, verdict: "skip", replaced: null, delta: 0, release: 0,
+      margin: MARGIN, net: 0, reasons: [], plain: null, before: null, after: null, newcomer: null, confidence: null,
+      unavailable: span.unavailable };
+  }
   const s = run?.scene ?? null;
-  const here = waveOf(run);
-  const at = fight ?? nextBigFight(s, here);
+  const at = span.fight, here = span.from;
   const set = threatSet(run, { fight: at ?? here, roster });
   const party = slotsAt(run, at);
   const live = party.slots.filter(x => x.combatant);
@@ -517,7 +527,8 @@ const slotRef = slot => (slot ? { mon: slot.mon, name: slot.name, dead: slot.dea
 /**
  * Judge a fusion pair (#567, story 24): ΔV = V(party − base − other half + fused) − V(party), with the freed slot
  * empty, and an improvement when ΔV less the other half's release cost clears the margin. `base` and `other` are
- * each a member or a member's name, as `judgeNewcomer`'s `replace` is; `fight` overrides the wave to judge at.
+ * each a member or a member's name, as `judgeNewcomer`'s `replace` is; `fight` overrides the wave to judge at, which is
+ * otherwise the run read's next big fight (26-run.js, `nextFight`).
  *
  * A fusion spends a member, so the party it leaves is one shorter: the base's slot carries the fused mon, the other
  * half's stands empty and nothing fills it. It is the one judgment that shrinks the party, which is why `after`'s
@@ -536,9 +547,14 @@ const slotRef = slot => (slot ? { mon: slot.mon, name: slot.name, dead: slot.dea
  * Flagged for review rather than decided here, no card reading this yet.
  */
 export const judgeFusionPair = (run, base, other, { fight = null } = {}) => {
+  const span = spanOf(run, fight);
+  if (span.unavailable) {
+    return { fight: null, wave: null, roster: null, verdict: "skip", base: null, other: null, delta: 0, release: 0,
+      margin: MARGIN, net: 0, reasons: [], plain: null, before: null, after: null, fused: null, confidence: null,
+      unavailable: span.unavailable };
+  }
   const s = run?.scene ?? null;
-  const here = waveOf(run);
-  const at = fight ?? nextBigFight(s, here);
+  const at = span.fight, here = span.from;
   const set = threatSet(run, { fight: at ?? here });
   const party = slotsAt(run, at);
   const live = party.slots.filter(x => x.combatant);

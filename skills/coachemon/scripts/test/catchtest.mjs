@@ -68,7 +68,7 @@ const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0,
   const advice = readTurn(scene, turn => catchAdvice(turn, accountRead(scene)));
   // The road the battle card owes, as 60-card's `readRoad` lands it: a *second*, separate read, which is the only
   // read that may ask the judgment (#584).
-  const land = () => readRun(scene, r => catchLand(r, advice));
+  const land = () => readRun(scene, r => catchLand(r, advice), { cleared: false });
   return { advice, scene, land };
 };
 

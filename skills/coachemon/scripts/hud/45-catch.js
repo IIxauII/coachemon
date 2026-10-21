@@ -284,12 +284,11 @@ const r1 = x => Math.round((x ?? 0) * 10) / 10;
  * rather than searching for the member to make. A GTS offer is the card that names it: the mon going out is the mon
  * the player trades away, and no other (#586, story 23).
  *
- * `fight` is the wave to judge at, for a card that already knows which big fight it is asking about: the biome card
- * reads the waves *after* the one the run stands on, so the fight it judges against is the one ahead of those and not
- * the boss the run has just finished (#587), and so passes `roster: false` too (11-threats.js, `threatSet`).
+ * `roster: false` judges on the standard threats alone, for a card that is choosing what the next fight will be
+ * (11-threats.js, `threatSet`).
  */
-export const teamVerdict = (run, foe, { replace = null, fight = null, roster = true } = {}) => {
-  const j = judgeNewcomer(run, foe, { replace, fight, roster });
+export const teamVerdict = (run, foe, { replace = null, roster = true } = {}) => {
+  const j = judgeNewcomer(run, foe, { replace, roster });
   const blank = { verdict: null, text: null, replaced: null, reasons: [], fight: j.fight ?? null,
     delta: 0, release: 0, net: 0, confidence: j.confidence ?? null };
   if (j.unavailable) return { ...blank, unavailable: j.unavailable };

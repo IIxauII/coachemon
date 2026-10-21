@@ -632,7 +632,7 @@ for (const [label, sc] of Object.entries(scenarios)) {
   const hud = globalThis.__hud;
   const { rerollArm, rerollCheck, rerollStats } = hud["50-reroll"];
   const { cardSummary } = hud["60-card"], { rebuild } = hud["98-watch"];
-  const rewardsModel = (s, h) => hud["26-run"].readRun(s, run => hud["52-shop"].rewardsModel(run, h));
+  const rewardsModel = (s, h) => hud["26-run"].readRun(s, run => hud["52-shop"].rewardsModel(run, h), { cleared: true });
   globalThis.__sm = rewardsModel;
   globalThis.__api = { learnAdvice: hud["40-learn"].learnAdvice, doubleOdds: hud["49-ahead"].doubleOdds, rewardsModel, rerollArm, rerollCheck, rerollStats, cardSummary,
     setRewardFns: hud["04-game-tables"].setRewardFns, rebuild, HELD: hud["51-items"].HELD, rewardContext: hud["51-items"].rewardContext };

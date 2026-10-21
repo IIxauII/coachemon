@@ -265,5 +265,12 @@
   Magnezone L41  Lanturn     s +3.0 backup Meganium    +1.3  beaten 4  row +1.0
   Ampharos L42   Meganium    s +1.7 backup Lanturn     +0.9  beaten 4  row -1.0
   the weakest member against both halves is Wailord, at -0.6
+== a fixed battle on 25: the fight each judgment reads, by where the run stands
+  W24 ahead    weakest 25/25  newcomer 25/25  fusion 25/25
+  W25 ahead    weakest 25/25  newcomer 25/25  fusion 25/25
+  W25 cleared  weakest 30/30 Boss W30  newcomer 30/30 Boss W30  fusion 30/30 Boss W30
+  W26 ahead    weakest 30/30 Boss W30  newcomer 30/30 Boss W30  fusion 30/30 Boss W30
+  W26 cleared  weakest 30/30 Boss W30  newcomer 30/30 Boss W30  fusion 30/30 Boss W30
+  unstated: this run read never said whether wave 25 is cleared: open it with readRun(s, fn, { cleared })
 == the full swap search over six members is inside the budget, cold and memoised
 judgment: ok
