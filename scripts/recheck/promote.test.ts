@@ -73,7 +73,7 @@ const refusedWith = async (out: Promise<unknown>, why: RegExp) => {
   assert.match(got.refused ?? "(promoted)", why);
 };
 
-test("promotion refuses a kept fight with no line file, naming why, and changes nothing (#787)", async () => {
+test("promotion refuses a kept fight with no oracle line file, naming why, and changes nothing (#787)", async () => {
   const { keptFile, fixtures, deps, known, rechecked } = setUp({ line: null });
 
   await refusedWith(promote(keptFile, deps()), /no oracle line file.*ended without an oracle line/);

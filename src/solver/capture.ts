@@ -18,14 +18,14 @@ export const withCapture =
     if (env.COACHEMON_CAPTURE !== "1" || input.extras !== undefined) return work(args, ctl);
     const dir = path.join(home, "fights");
     const stem = path.join(dir, fightKey(input.save));
-    const won = `${stem}${WIN_SCRIPT}`;
+    const scriptFile = `${stem}${WIN_SCRIPT}`;
     // An oracle line kept beside an earlier solve's input belongs to that solve, not this one.
-    drop(won);
+    drop(scriptFile);
     const { live, save, liveExport, cloneVersion, budget } = input;
     keep(`${stem}.json`, { live, save, liveExport, cloneVersion, budget });
     prune(dir);
     const result = (await work(args, ctl)) as SolveResult;
-    if (!ctl.signal.aborted && result?.kind === "oracle_line") keep(won, scriptOf(result.oracleLine));
+    if (!ctl.signal.aborted && result?.kind === "oracle_line") keep(scriptFile, scriptOf(result.oracleLine));
     return result;
   };
 

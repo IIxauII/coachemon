@@ -2,8 +2,8 @@ import { readFileSync } from "node:fs";
 import type { Carry } from "../../src/solver/gate.ts";
 import { andJoined } from "../../src/solver/no-answer.ts";
 import type { Input, Reason, ReplayResult } from "../../src/solver/oracle-line.ts";
-import { type CheckResult, readScript, type Script, type SolveInput } from "../../src/solver/solver.ts";
 import { WIN_SCRIPT } from "../../src/solver/script.ts";
+import { type CheckResult, readScript, type Script, type SolveInput } from "../../src/solver/solver.ts";
 import { printChecks } from "../battle-oracle/print.ts";
 import knownFights from "./known-fights.json" with { type: "json" };
 
