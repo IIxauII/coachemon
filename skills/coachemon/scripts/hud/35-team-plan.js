@@ -157,7 +157,8 @@ const tpHealBy = (turn, f, kept, walk) => {
   return Array.from({ length: supply + 1 }, (_, k) => (k === 0 ? kept : Object.fromEntries(Object.keys(kept).map(key => [key, key === "keep" ? kept.keep : by[key][k]]))));
 };
 // What each steal of `me`'s off `f` heals it, as `stealHeal` holds it, from what `f` holds. `stealHealAfter`'s `Map`
-// gives the same once `f` has eaten berries of its own, by `tpHeal`'s `used` bits: its Sitrus, and each Enigma (#833).
+// gives the same once `f` has eaten berries of its own, by `tpEatenKey` of `tpHeal`'s `used` bits: its Sitrus, and each
+// Enigma (#833).
 const tpStealHeal = (turn, me, f, walk) => {
   const draws = (holder, w) => {
     const d = stolenDraws(holder, { eater: me, turn, walk: w });
@@ -250,6 +251,8 @@ const tpStolen = (byCount, fixed, mean) => (byCount ? stealCounts(fixed, mean).r
 // `se`: a super-effective hit landed this turn. The berries heal, capped, between `pre` and the rest of the turn end
 // (game-code.md §21).
 const ENIGMA_PART = 100;
+// `used` as `stealHealAfter` keys it, with the Enigmas eaten rounded to whole berries.
+const tpEatenKey = used => (used & 1) | (Math.round((used >> 1) / ENIGMA_PART) << 1);
 const tpHeal = (hp, max, prof, used, se, extra = 0) => {
   if (!prof || hp < 1) return [hp, used];
   const pre = prof.pre ?? 0, at = Math.min(max, hp + pre);
@@ -316,7 +319,7 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
     // Recoil is paid whether or not the hit finished the foe.
     if (us.self) b.mh -= us.self;
     // A landed steal takes the next berry even on a knockout, and its heal comes after our own chip (game-code.md §3).
-    const draws = (b.fb && T.stealHealAfter?.[mi]?.[fi]?.get(b.fb)) || stealHeal;
+    const draws = (b.fb && T.stealHealAfter?.[mi]?.[fi]?.get(tpEatenKey(b.fb))) || stealHeal;
     if (us.steals && draws && b.fl < draws.length) {
       if (b.mh >= 1) b.mh = Math.min(T.ourMax[mi], b.mh + draws[b.fl]);
       b.fl++;

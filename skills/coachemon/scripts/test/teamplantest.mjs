@@ -161,6 +161,14 @@ assert.equal(plan.approxDoubles, false);
   assert.deepEqual([...two.after], [[1, [65]]], "…and a Sitrus x2 one berry");
   const enigma = at(true, [berry(2)]);
   assert.deepEqual([enigma.eats, [...enigma.after]], [[65], [[2, []]]], "an Enigma it ate itself is gone too");
+  {
+    const me = biter(true), f = holder([berry(2)]);
+    const { scene: s } = run(null, { party: [me], foes: [f] });
+    const pouch = Object.assign(new ({ PreserveBerryModifier: class { getStackCount() { return 1; } } }).PreserveBerryModifier());
+    s.modifiers = s.enemyModifiers = [pouch];
+    const by = globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpTables(turn, [me], [f])).foeHealBy[0];
+    assert.deepEqual(by.map(x => [x.enigmas, x.keep]), [[1, 0.3], [0, 0.3]], "a Berry Pouch is the side's, so a steal leaves its keep whole (#822)");
+  }
   assert.equal(at(true, [berry(0)], sticky).eats, null, "Sticky Hold blocks the steal, so the fight plays the heal it keeps");
   assert.deepEqual(at(true, [berry(0)], sticky, { hasAbilityWithAttr: a => a === "MoveAbilityBypassAbAttr" }).eats, sitrus.eats, "a Mold Breaker thief gets past it");
 }
@@ -175,6 +183,18 @@ assert.equal(plan.approxDoubles, false);
   console.log(`== bug bite after the foe ate its own Sitrus\nwe end on ${eaten} (${held} when it still held it)`);
   // Two Bug Bites fell it, and its one hit lands between them: 100 − 10, plus 50 for a Sitrus still there to steal.
   assert.deepEqual([held, eaten], [140, 90], "no heal for a berry already eaten");
+}
+// …and an Enigma it ate on an earlier exchange the same, read off the eaten bits that exchange left (#833, #822).
+{
+  const { tpFight } = globalThis.__tp;
+  const kept = { base: 0, pre: 0, sitrus: 0, enigma: 50, enigmas: 1 };
+  const base = { theirs: [[{ dmg: 10, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [null], foeHeal: [kept] };
+  // A super-effective 60 into 100 HP: it eats its Enigma at 40 and goes down on the third hit.
+  const fb = tpFight({ ...base, ours: [[{ dmg: 60, e: 2 }]] }, { oh: [100], ob: [0], fh: [100], fs: [0], fb: [0] }, 0, 0, "free").ends.win.fb;
+  const T = { ...base, ours: [[{ dmg: 50, steals: true }]], foeHealBy: [[kept, { ...kept, enigma: 0, enigmas: 0 }]], stealHeal: [[[50]]],
+    stealHealAfter: [[new Map([[2, []]])]] };
+  const won = bits => tpFight(T, { oh: [100], ob: [0], fh: [100], fs: [0], fb: [bits] }, 0, 0, "free").ends.win.mh;
+  assert.deepEqual([won(0), won(fb)], [140, 90], `no heal for an Enigma already eaten (fb ${fb})`);
 }
 // A switch-in's entry turn ends before our Bug Bite has gone off, so the foe still eats its own Sitrus then (#646).
 {
