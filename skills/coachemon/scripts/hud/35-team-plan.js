@@ -233,9 +233,11 @@ const tpWithTera = (T, U, mi) => {
   const col = (rows, mine) => rows.map((r, fi) => r.map((x, i) => (i === mi ? mine[fi][0] : x)));
   return {
     ...T, memo: new Map(),
-    ours: row(T.ours, U.ours), first: row(T.first, U.first), firstBy: row(T.firstBy, U.firstBy),
+    ours: row(T.ours, U.ours), first: row(T.first, U.first), firstBy: row(T.firstBy, U.firstBy), ourEntry: row(T.ourEntry, U.ourEntry),
     theirs: col(T.theirs, U.theirs), send: col(T.send, U.send), fromUs: col(T.fromUs, U.fromUs),
-    ourHeal: row(T.ourHeal, U.ourHeal), foeHealAt: row(T.foeHealAt, U.foeHealAt), tok: row(T.tok, U.tok),
+    ourHeal: row(T.ourHeal, U.ourHeal), tok: row(T.tok, U.tok),
+    stealHeal: row(T.stealHeal, U.stealHeal), stealHealAfter: row(T.stealHealAfter, U.stealHealAfter),
+    foeHealBy: T.foeHealBy.map((by, fi) => by ?? U.foeHealBy[fi]),
     firstPara: row(T.firstPara, U.firstPara), firstParaBy: row(T.firstParaBy, U.firstParaBy),
     fromFoe: row(T.fromFoe, U.fromFoe), ourItems: row(T.ourItems, U.ourItems),
   };
