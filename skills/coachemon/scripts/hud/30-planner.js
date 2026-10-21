@@ -1169,13 +1169,13 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   // `entering`: switched in by choice this turn, so it takes the incoming hit and moves next turn. `mine`: slot 0's
   // locked command, when `me` is that slot.
   const options = (me, entering, mine = null, hyp = null, teraAt = null) => {
-    // `hyp`: `at`, the state written on; `bump`, the HP a heal puts back; `lost`, the attempts the status costs each
-    // foe, index 0 this turn's. Under it the search stops at this turn, and `incoming` stays on the real turn: the
-    // entry hit lands before the status does. `teraAt`: the turn our Tera lands on, which the search runs on whole.
+    // `hyp`: `at`, the state written on; `lost`, the attempts the status costs each foe, index 0 this turn's. Under it
+    // the search stops at this turn, and `incoming` stays on the real turn: the entry hit lands before the status does.
+    // `teraAt`: the turn our Tera lands on, which the search runs on whole.
     const turn = teraAt ?? turnOf(hyp);
     const assumed = !!hyp;
     const inc = entering ? incoming(me) : { dmg: 0, ko: 0 };
-    const hp = Math.min(me.getMaxHp?.() ?? Infinity, me.hp - inc.dmg + (hyp?.bump ?? 0));
+    const hp = Math.min(me.getMaxHp?.() ?? Infinity, me.hp - inc.dmg);
     const beforeActing = hp <= 0 ? 1 : 1 - active.reduce((keep, f) => {
       const t = threatFrom(turn, f, me, null, { next: true, entered: true });
       return keep * (1 - threatKoAt(t, hp) * (t?.koFirst ?? 0));
@@ -1283,9 +1283,14 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     const playStart = (info, play, fi) => {
       const f = active[fi];
       const pm = info.pm, mv = pm.getMove();
-      const x1 = exchange(turn, me, pm, f, { hp, free: free(f), ...tOpts });
+      const x1 = exchange(turn, me, pm, f, { hp, free: free(f), ...tOpts, field: worst, fieldAct: actOn(hyp, worst) });
       const pF = free(f) ? 1 : x1.pFirst;
       const t = threatFrom(turn, f, me, pm, tOpts);
+      // `x1`'s race is the field foe's (#320): what the play does to its target's hits reaches it only when that is the
+      // target (#862). `race`: the race foe's threat `t` and P(we move first) `pF`.
+      const tRace = !worst || worst === f ? null : threatFrom(turn, worst, me, pm, tOpts);
+      const race = !tRace && (!worst || worst === f) ? { isTarget: true, t, pF }
+        : { isTarget: false, t: tRace, pF: tRace ? 1 - (tRace.pKo > 0 ? tRace.koFirst : tRace.first) : 1 };
       const aimed = !play.self;
       const guard = aimed && !info.bypassProtect && !free(f) && !next ? protectChance(turn, f) : 0;
       // @mirrors kings-rock
@@ -1293,27 +1298,26 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const works = actChance(me, mv, next) * (1 - kingsRock * (1 - pF)) * (aimed ? (1 - guard) * info.acc * (info.e > 0 && !info.bounce ? 1 : 0) : 1);
       if (!(works >= 0.05)) return null;
       return {
-        f, pm, mv, t, x1, pF, works, maxHp: me.getMaxHp?.() ?? hp,
+        f, pm, mv, x1, pF, works, race, maxHp: me.getMaxHp?.() ?? hp,
         keep: last != null && pm.moveId === last ? KEEP_BONUS : 0,
         // A play with nothing to say — a status a held Lum cures this same turn — shows no note and no tail.
         effect: play.note ? `${play.note}${aimed && works < 0.995 ? ` ${Math.round(works * 100)}%` : ""}` : "",
       };
     };
-    // A single battle's status play: turn 1 an `exchange` in which we deal nothing, then the best attack on the state
-    // the play makes (`turn.assuming`), scored like a depth-2 line less `STATUS_COST`.
-    const playOption = (info, play, fi) => {
-      const start = playStart(info, play, fi);
+    // A status play on its slot's own duel: turn 1 an `exchange` in which we deal nothing, then the best attack on the
+    // state the play makes (`turn.assuming`), scored like a depth-2 line less `STATUS_COST`.
+    const playOption = (info, play, fi, start = playStart(info, play, fi)) => {
       if (!start) return null;
-      const { f, pm, mv, t, x1, pF, works, maxHp } = start;
+      const { f, pm, mv, x1, pF, works, race, maxHp } = start;
       const t1 = x1.turn1;
       let they = t1.they, mine1 = t1.me;
       if (play.kind === "heal") {
         // Healed after its hit when it moves first, else before it, which can lift us out of this turn's KO.
         const room = Math.max(0, maxHp - hp);
-        they = (1 - pF) * t1.they + pF * (works * threatKoAt(t, Math.min(maxHp, hp + play.amount)) + (1 - works) * t1.they);
+        they = (1 - race.pF) * t1.they + race.pF * (works * threatKoAt(race.t, Math.min(maxHp, hp + play.amount)) + (1 - works) * t1.they);
         mine1 = t1.me.flatMap(b => [{ ...b, p: b.p * (1 - works) },
-          { ...b, hp: Math.min(maxHp, b.hp + pF * Math.min(play.amount, room) + (1 - pF) * play.amount), p: b.p * works }]);
-      } else if (play.skip0 > 0) {
+          { ...b, hp: Math.min(maxHp, b.hp + race.pF * Math.min(play.amount, room) + (1 - race.pF) * play.amount), p: b.p * works }]);
+      } else if (play.skip0 > 0 && race.isTarget) {
         const c1 = pF * works * play.skip0;
         they = t1.they * (1 - c1);
         const standing = Math.max(1e-9, 1 - they);
@@ -1332,7 +1336,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
         const cands = [...new Set([...[...pool].sort((a, b) => b.expected - a.expected).slice(0, 2), ...pool.filter(y => (y.priority ?? 0) > 0).slice(0, 1)])];
         let best = null;
         for (const y of cands.length ? cands : [null]) {
-          const x2 = exchange(t2, me, y?.pm ?? null, f, { hp: t1p.hp, after: t1p, outcome: y, next: true, foeAct: patches && play.foeAct ? play.foeAct(pF) : null });
+          const x2 = exchange(t2, me, y?.pm ?? null, f, { hp: t1p.hp, after: t1p, outcome: y, next: true, foeAct: patches && play.foeAct ? play.foeAct(pF) : null, field: worst });
           const v = x2.eTurnsThey - x2.eTurnsWe + edgeOf(x2.pWeKoFirst, x2.pTheyKoFirst) - (x2.cost ?? 0) - hpSpent(x2.hpKept);
           if (!best || v > best.v) best = { y, x2, v };
         }
@@ -1360,23 +1364,20 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
         effect: start.effect,
       };
     };
-    // A double's status play is priced by the field search against the partner's pick (#262), not by `follow()`, which
-    // would weigh it against one foe's whole damage. `hits` is filled in by the caller.
+    // A double's status play: scored on its own duel (`playOption`), and carrying the hypothesis its partner is scored on
+    // (#262, #862). `hits` is filled in by the caller.
     const playCandidate = (info, play, fi) => {
       const start = playStart(info, play, fi);
-      if (!start) return null;
-      const { f, mv, pF, works, maxHp } = start;
-      const benefit = turn.benefit(me, f, mv);
+      const own = playOption(info, play, fi, start);
+      if (!own) return null;
+      const { f, mv, pF, works } = start;
       // The attempts the status costs the foe, index 0 this turn's: `skip0` when we move first, `foeAct` after.
       const skipNow = pF * (play.skip0 ?? 0);
       const later = play.foeAct ? play.foeAct(pF) : null;
       const act = skipNow > 0 || later ? i => (i === 0 ? 1 - skipNow : later ? later(i - 1) : 1) : null;
       return {
-        me, move: { name: info.name, type: info.type, cat: "status", pm: start.pm, expected: 0, notes: [] }, target: fi, self: !!play.self,
-        play, works, rank: benefit * works, hp, turns: 9, hits: 9, foe: f, act,
-        heal: play.kind === "heal" ? Math.min(play.amount, Math.max(0, maxHp - hp)) : 0,
-        score: -1 - (play.hpCost ?? 0) / maxHp + start.keep + (play.kind === "hazard" ? play.value * works : 0) + benefit * AI_POINT - STATUS_COST,
-        effect: start.effect,
+        me, move: own.move, target: fi, self: !!play.self, play, works, rank: turn.benefit(me, f, mv) * works, hp, turns: 9, hits: 9,
+        foe: f, act, score: own.score, followUp: own.then, effect: start.effect,
       };
     };
     // `floor`: the best attack's score on `fi`. A cured play's `gain` is what its `again` scores above that, read at
@@ -1515,13 +1516,15 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       score: info.reduce((t, x) => t + x.score, 0) + (j?.value ?? 0) - flipsIn(picks) * FLIP_COST });
   };
   // A double's status plays as one exchange of the field (#262): the mix over which of them landed, each branch's
-  // effect written with `turn.assuming` before the partner slot is scored. A slot that played is worth its best move
-  // on that state, a turn later: the −1 already in the candidate's score.
+  // effect written with `turn.assuming` before the partner slot is scored. A slot that played keeps its own duel's
+  // score (#862).
   const statusField = (picks, payers, sps) => {
     const mons = picks.map(p => p.me);
     const parts = picks.map(() => 0);
     // Each slot is shown taking the option the likeliest branch scored.
     const shown = picks.slice();
+    // A play's own-duel follow-up felling the partner's target sends the partner's later hit to the survivor (#236).
+    const later = picks.map(p => (p.play ? 0 : Math.max(0, ...picks.map(q => followUpOdds(p, q, payers)))));
     let best = -1;
     let jv = 0;
     for (let m = 0; m < 1 << sps.length; m++) {
@@ -1531,34 +1534,29 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const patches = landed.flatMap(x => x.play.patches ?? []);
       const at = patches.length ? now.assuming(patches) : null;
       const lost = landed.filter(x => x.act).map(x => ({ mon: x.foe, act: x.act }));
-      const tag = `${at ? at.key : ""}|${landed.map(x => `${x.me.id}:${x.move.name}`).join()}`;
-      // A heal writes no state: it changes the HP the slot that played it is scored on.
-      const hyp = bump => ({ at, lost, bump, key: `${tag}|${bump}` });
+      const hyp = { at, lost, key: `${at ? at.key : ""}|${landed.map(x => `${x.me.id}:${x.move.name}>${x.target}`).join()}` };
       const hits = [];
       picks.forEach((p, i) => {
+        if (p.play) return;
         const entering = payers.includes(p.me);
-        if (p.play) {
-          const best = opt(p.me, entering, hyp(landed.includes(p) ? p.heal : 0))
-            .reduce((b, x) => (x.play || (b && b.score >= x.score) ? b : x), null);
-          parts[i] += w * (best?.score ?? -9);
-        } else {
-          // Where the hypothesis has taken the pick away, the score it had on the real turn.
-          const y = opt(p.me, entering, hyp(0)).find(x => !x.play && x.move?.name === p.move?.name && x.target === p.target) || p;
-          parts[i] += w * y.score;
-          if (w > best) shown[i] = y;
-          if (y.move?.pm && !entering) hits.push(y);
-        }
+        // Where the hypothesis has taken the pick away, the score it had on the real turn.
+        const y = opt(p.me, entering, hyp).find(x => !x.play && x.move?.name === p.move?.name && x.target === p.target) || p;
+        const r = later[i];
+        parts[i] += w * (r > 0 && y.redirScore != null ? r * y.redirScore + (1 - r) * y.score : y.score);
+        if (w > best) shown[i] = y;
+        if (y.move?.pm && !entering) hits.push(y);
       });
-      if (hits.length) jv += w * joint(hits, payers, mons, hyp(0)).value;
+      if (hits.length) jv += w * joint(hits, payers, mons, hyp).value;
       best = Math.max(best, w);
     }
     return { parts, jv, shown };
   };
-  // The picks carry the priced score, not their own: a status candidate's own is only the turn it spends, and the stay
-  // margin and the slot rows read a real one.
+  // The picks carry the priced score: a partner's is its mix over the hypotheses, and the stay margin and the slot rows
+  // read it. A play's `danger` credit is the joint's price for the hit it cancels this turn (#862).
   const addStatus = (picks, payers, sps) => {
     const { parts, jv, shown } = statusField(picks, payers, sps);
-    const raw = picks.map((p, i) => (p.play ? p.score : 0) + parts[i]);
+    const mons = picks.map(p => p.me);
+    const raw = picks.map((p, i) => (p.play ? p.score + (p.act ? p.works * (1 - p.act(0)) * danger(p.foe, mons) : 0) : parts[i]));
     const info = picks.map((p, i) => {
       const oi = picks.findIndex(q => q !== p);
       const ally = !p.play && oi >= 0 && !payers.includes(p.me) ? allyHit(p, picks[oi].me) : null;
@@ -1580,8 +1578,16 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     if (!pair || !q || p.redirScore == null || p.play || q.play) return 0;
     if (typeof p.target !== "number" || q.target !== p.target) return 0;
     if (!q.move?.pm || !p.move?.pm || payers.includes(p.me) || payers.includes(q.me)) return 0;
-    const qFirst = 1 - actionOrder(now, p.me, p.move.pm, q.me, q.move.pm);
-    return qFirst * landOf(q, active[p.target]) * (q.move.pKo ?? 0);
+    return fellsFirst(p, q);
+  };
+  const fellsFirst = (p, q) => (1 - actionOrder(now, p.me, p.move.pm, q.me, q.move.pm)) * landOf(q, active[p.target]) * (q.move.pKo ?? 0);
+  // The chance a status play `q`'s own-duel follow-up fells `p`'s target before `p`'s next hit, read off this turn's
+  // odds. It never reaches `info.redir`: the card's spare-hit note reads that, and shows only a redirect this turn can
+  // make (#862).
+  const followUpOdds = (p, q, payers) => {
+    if (!pair || q === p || !q.play || !q.followUp?.pm || p.play || typeof p.target !== "number" || q.target !== p.target) return 0;
+    if (!p.move?.pm || payers.includes(p.me) || payers.includes(q.me)) return 0;
+    return fellsFirst(p, { me: q.me, move: q.followUp });
   };
   // Nothing lost without `p`'s hit: its foes still go down, and the pair's value doesn't drop.
   const spareHit = (picks, payers, p, j) => {
