@@ -7,11 +7,10 @@ Desk research and prototype for #862, split from #850. Repo refs are to `origin/
   every switch off, every golden is byte-identical to master. `git apply` it from the repo root first.
 - `862-double-status-price/double-score.mjs`: #850's double (our lead with Ice Beam and Protect, Spore or Thunder Wave,
   beside Ally; Salamence locked into Outrage at the lead, beside Snorlax), run through the planner's own `fieldPlan`.
-  `--credit` sets the field's price of the lead's play beside its own-duel price, and `--terms` prints each plan's slots.
 - `862-double-status-price/sweep.mjs`: the same turn perturbed 144 ways, under the two designs §3 weighs.
 - `862-double-status-price/scene-trace.mjs`: a golden test run with the plan trace on, printing a scene's plans.
 - `862-double-status-price/blast.mjs`: #850's harness, every HUD golden under a set of switches.
-- `862-double-status-price/results.md`: the output, from `results.sh`.
+- `862-double-status-price/results.md`: the output, from `results.sh`. Every number below is in it.
 
 ## Short answer
 
@@ -25,14 +24,16 @@ lacks have to come with it, and neither is a singles price.**
 2. **#236's redirect charges a plan whose knockout comes first 3.72 turns** (§2), the partner's clock against the
    foe that survives. A play whose follow-up fells the target next turn never pays it. The fix is the same redirect,
    read off the play's follow-up.
-3. **A double does not take #860's singles prices** (§3). They put Protect where it belongs with a turn to spare, but
-   they flip three doubles calls by multiplying a race the redirect branch prices against a fallen foe. Instead the
-   double credits the hit a play cancels this turn at its **`danger`**, the joint value's own price for a foe's hit.
+3. **A double does not take #860's singles prices** (§3). They put Protect on target by about a turn, but they flip
+   three doubles calls by multiplying a race the redirect branch prices against a fallen foe. Instead the double
+   credits the hit a play cancels this turn at its **`danger`**, the joint value's own price for a foe's hit.
 4. **With those three, Protect is a priced play in a double**: picked in 1, 3, 8 and 9, not in 2, 4–7, 3p or with no
-   lock (§4). `supportFor`'s Protect stays for the case the priced play cannot see (§4).
+   lock (§4). It must be offered on the lock's **last** use only: with a use to come, the model picks it in case 2.
+   `supportFor`'s Protect stays for the case the priced play cannot see.
 
-**Judgement call for the owner:** #262's Spore scene and #647's "bare foe" copy of it flip from Spore to Seed Bomb by
-0.17 turns (§5). Both lines lose that turn. The old pick rested on 0.92 turns of the over-credit.
+**Judgement call for the owner, open:** #262's Spore scene and #647's "bare foe" copy of it flip from Spore to Seed
+Bomb by 0.17 turns (§5). Both lines lose that turn. The old pick rested on 0.92 turns of the over-credit. I recommend
+accepting the flip and moving both assertions onto a faster Breloom, where the proposal picks Spore by 3.55.
 
 ## 1. The over-credit in the field hypothesis
 
@@ -45,7 +46,7 @@ Against the slot's own duel (`playOption`, `:1172`, the singles price #850 valid
 
 | Play | Over-credit, range | Largest at | Of it, from `lasts` |
 | --- | --- | --- | --- |
-| Protect | 0.90 – 5.76 | 3 · Outrage KOs us | all of it in 1–6; 1.26 – 1.95 of 1.81 – 5.22 in 7–9 |
+| Protect | 0.90 – 5.76 | 3 · Outrage KOs us | all of it in 1–3 and 6; 2.51 of 2.57 in 4–5; 1.26 – 1.95 of 1.81 – 5.22 in 7–9 |
 | Spore (sleep) | 1.14 – 3.10 | 4 · we 1HKO it first | 1.14 – 3.04 |
 | Thunder Wave (paralysis) | 0.23 – 4.00 | 10 · no lock, we lose the race | 0 – 0.24 |
 
@@ -61,8 +62,8 @@ There are two sources, and they split by move.
   nearly all of its gap. In case 10 the field prices Thunder Wave at −3.51, its own duel at −7.51.
 
 **The partner's part is not measured here.** It is re-scored on the same hypothesis, so a partner that fells the foe
-first gains `lasts` the same way. In this scene the partner never fells it first (Ally +1.2 under Spore in cases 1
-and 7).
+first gains `lasts` the same way. In this scene the partner never fells it first. Under Spore, Ally gains +0.61 to
++1.21 (`results.md` §4, the Spore terms).
 
 ## 2. The redirect charge on a plan whose knockout comes first
 
@@ -79,39 +80,41 @@ is then worth its `redirScore`, its whole duel against Snorlax. That costs 0.63 
 than the 1.83 the joint credits for the knockout.
 
 **It is a clock charge, not a fallen foe's hits.** Ally's `lasts` is 7.59 against both foes. Only its own clock
-changes: 2.00 turns to fell Salamence, 7.90 to fell Snorlax. Every plan has to fell Snorlax eventually, but only the
-plan that fells Salamence *now* charges Ally for it. `redirectOdds` returns 0 when either slot plays (`:1431`), and
-`addStatus` sets `redir: 0` for every slot (`:1416`). So a play whose follow-up fells Salamence next turn dodges the
-charge, and so do sleep and paralysis.
+changes: 2.00 turns to fell Salamence, 7.90 to fell Snorlax (`results.md` §3, `--duel`). Every plan has to fell
+Snorlax eventually, but only the plan that fells Salamence *now* charges Ally for it. `redirectOdds` returns 0 when
+either slot plays (`:1431`), and `addStatus` sets `redir: 0` for every slot (`:1416`). So a play whose follow-up fells
+Salamence next turn dodges the charge, and so do sleep and paralysis.
 
 **Proposal: read the redirect off the play's follow-up too** (switch `redir: "then"`). When the play's own-duel
 follow-up aims at the partner's target, the partner takes the redirect at the follow-up's odds. The Protect plan's
-Ally drops 6.59 → 2.90, and in cases 4 and 5 the attack plan wins by 2.5 and 2.0. The odds are read off this turn
-(Ice Beam's 0.63 against a whole Salamence), so the charge is conservative. Next turn the partner's chip leaves less to
-fell.
+Ally drops 6.59 → 2.90. In cases 4 and 5 the attack plan then wins by 3.10 and 2.54 (by 2.54 and 1.99 with §3's
+credit). The odds are read off this turn (Ice Beam's 0.63 against a whole Salamence), so the charge is conservative.
+Next turn the partner's chip leaves less to fell.
 
 **Tried and rejected: the redirect branch scored without the fallen foe** (`surv`). #850 §5 saw Lucario pay P they
 0.93 to a fallen Hydreigon in #283's scene. Scoring the branch on the survivor alone breaks #236's spread scene,
-all five near-sure thresholds on #283's certainty axis, and "slot 1 is planned around Garchomp's Thunder Punch". The
-spread plan's race prices the fallen foe as well, so dropping it from one side tilts the comparison.
+all five near-sure thresholds on #283's certainty axis, and "slot 1 is planned around Garchomp's Thunder Punch"
+(`results.md` §7). The spread plan's race prices the fallen foe as well, so dropping it from one side tilts the
+comparison.
 
 ## 3. The singles prices in a double
 
 #860 prices our mon lost at `MON_LOST` (4 turns) and the HP a duel costs at 1 turn a bar, in singles. In a double,
-with §1 and §2 in place:
+with §1 and §2 in place (`results.md` §2, §3, §7):
 
-| Design | Protect off target | Margin, cases 1 / 8 | Doubles calls flipped |
+| Design | Protect off target | Plan margin, cases 1 / 8 | Doubles calls flipped |
 | --- | --- | --- | --- |
 | today's doubles prices | 1, 8 | −0.44 / −0.38 | — |
 | #860's prices in the double too | none | +1.09 / +0.93 | #283 at 0.55 and 0.5, #650's "the KO it may land", `battletest` W89 |
-| the hit a play cancels, at its `danger` | none | +0.12 / +0.09 | — |
+| the hit a play cancels, at its `danger` | none | +0.12 / +0.10 | — |
 
-**The singles prices flip three calls by multiplying a phantom.** In #283's scene at 0.5, the focus plan's Lucario
-carries Aura Sphere onto Snorlax in the redirect branch. That branch's race is priced against Hydreigon's hits, and
-Hydreigon has fallen in that branch. At `MON_LOST` 4 the branch's `redirScore` drops 0.96 → −1.41. Close Combat into
-Snorlax drops only 2.96 → 2.67, because it wins its race. Today the focus plan wins by 0.24; priced, the spread wins
-by 0.65 (`results.md` §6). §2 showed that removing the phantom from that branch alone breaks #236. So the price
-doesn't fix the double, it amplifies an inconsistency already in it.
+**The singles prices flip three calls by multiplying a phantom.** #850 §5 named two causes, double counting with
+`danger` and this redirect branch, and #860's criteria say "double counting". The trace points at the branch. In
+#283's scene at 0.5, the focus plan's Lucario carries Aura Sphere onto Snorlax in the redirect branch. That branch's
+race is priced against Hydreigon's hits, and Hydreigon has fallen in that branch. At `MON_LOST` 4 the branch's
+`redirScore` drops 0.96 → −1.41. Close Combat into Snorlax drops only 2.96 → 2.67, because it wins its race. Today
+the focus plan wins by 0.24; priced, the spread wins by 0.65 (`results.md` §6). §2 showed that removing the phantom
+from that branch alone breaks #236. So the price doesn't fix the double, it amplifies an inconsistency already in it.
 
 **The double's own price for a cancelled hit.** The joint value already charges a foe's hit this turn: `danger`
 (`:1445`) is its share of our bar, plus 0.5 per likely knockout. The joint credits it only to felling the foe before
@@ -124,11 +127,12 @@ it acts (`pBefore × d`, `:1508`). A play that cancels the hit without felling t
 It is a turn's price, so a play that lands after the foe has moved (Spore from the slower slot) earns nothing.
 
 **The thin margin is the cost.** Cases 1 and 8 clear by about a tenth of a turn, the margin #850 §2 called too coarse
-to rest on in singles. On 144 perturbed turns (`sweep.mjs`) the two designs agree on 138. In all six that differ, the
-singles prices protect and the credit attacks. Three are near-ties under the singles prices (+0.01 to +0.08). The
-other three are 4HKO races the credit misses by 0.05 to 0.12 (`results.md` §5). So the credit is the
-more conservative design, not a noisier one. I recommend it: it moves no doubles call, and it is priced in the
-double's own currency.
+to rest on in singles. On 144 perturbed turns (`sweep.mjs`, `results.md` §5) the two designs agree on 138. In all six
+that differ, the singles prices protect and the credit attacks. Three are near-ties under the singles prices (+0.01
+to +0.08). The other three are 4HKO races the credit misses by 0.05 to 0.12, and one of them is case 8 with a weaker
+own pick. So the credit picks Protect less often. Which design is right in those six has no ground truth here.
+
+I recommend the credit all the same. It moves no doubles call, and it is priced in the double's own currency.
 
 ## 4. Protect in a double
 
@@ -143,13 +147,19 @@ Protect in the double, per design (`results.md` §2):
 | + #860's singles prices in the double | none |
 | **+ the `danger` credit instead (proposed)** | **none** |
 
-Under the proposal, the lead's margin for Protect over attacking is:
+Under the proposal, the best plan with the lead protecting against the best with it attacking (`results.md` §2,
+`--left`):
 
 | Case | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Protect − attack | +0.12 | −0.48 | +6.30 | −2.54 | −1.98 | −1.05 | −0.54 | +0.09 | +2.02 |
+| Plan margin, last use | +0.12 | −0.48 | +6.30 | −2.54 | −1.99 | −1.05 | −0.53 | +0.10 | +2.02 |
+| Plan margin, one more use to come | −0.33 | **+0.19** | +0.30 | −2.54 | −1.61 | −1.05 | −0.78 | −0.86 | +0.24 |
 
 The card's line: `⚔ Lead Normal Protect blocks Outrage's last use · then Ice Beam`, with the partner's line unchanged.
+
+**On the last use only.** With a use to come the model goes wrong. It picks Protect in case 2 (foe slower), and case
+3's sure knockout keeps only +0.30. The follow-up assumes the lock runs on after the block, #850's known limit. The
+prototype offers Protect on any locked use queued at the slot, so the build must narrow it.
 
 **The own duel needs the field threat.** `playStart`'s exchange (`:1154`) and `playOption`'s `follow` pass no
 `field`. In a double a play's duel against a harmless foe then ignores the foe that threatens the slot, which `trade`
@@ -158,9 +168,9 @@ The card's line: `⚔ Lead Normal Protect blocks Outrage's last use · then Ice 
 
 **How `supportFor`'s Protect fits.** `supportFor` (`:1690`) is a rule on the chosen plan: Protect a slot likely felled
 before it moves when its partner likely fells that foe first. That is a joint fact the slot's own duel cannot see, and
-it needs no lock. The priced play covers the other case, a locked use queued at the slot, where the hit is known and
-the lock ends. They overlap only when both hold. There the priced play already picks Protect, because its own duel
-reads the lost race, like case 3. So:
+it needs no lock. The priced play covers the other case, a lock's last use queued at the slot, where the hit is known
+and the lock ends. They overlap only when both hold. There the priced play already picks Protect, because its own
+duel reads the lost race, like case 3. So:
 
 - `supportFor` skips a slot whose pick is already a Protect, keeping the play's note;
 - the priced Protect's slot gets `slotThreat`'s `guarded` (`:1606`), as #650 did for `supportFor`'s.
@@ -170,25 +180,42 @@ aims at this slot. That is a separate question.
 
 ## 5. Blast radius
 
-`blast.mjs --soft` over all 36 HUD golden tests:
+`blast.mjs --soft` over all 36 HUD golden tests (`results.md` §7):
 
 | Switches | Assertions that flip | Other golden lines |
 | --- | --- | --- |
 | all off | none | none |
-| #860's prices alone (`hp`, `loss`) | #90 "stay without the boost" (settled) | #647's Lum scores; Guzma w165's optional switch reads "no safe switch" (already in #869) |
-| **proposed** (`dplay`, `pfield`, `redir`, `dcredit`, Protect in doubles) | #262 "Spore is the double's turn line", #647 "a bare foe is still the double's Spore target" | that scene's fight-plan lines |
-| proposed, Protect not offered | the same two | the same |
-| #860's singles prices in the double too | + #283 at 0.55 and 0.5, #650 "the KO it may land beats a chip it may not", `battletest` W89 Heat Wave → focus | |
+| #860's prices alone (`hp`, `loss`) | #90 "stay without the boost" (settled) | #647's Lum scores; Guzma w165 (in #869) |
+| **proposed**: `dplay`, `pfield`, `redir`, `dcredit` | #262 "Spore is the double's turn line"; #647 "a bare foe…" | that scene's fight plan |
+| proposed, Protect offered in doubles | the same two | the same |
+| proposed with #860's prices | the union of the two rows above | |
+| #860's prices in the double too | + #283 at 0.55 and 0.5, #650 "the KO it may land…", `battletest` W89 | |
+
+Guzma w165's line is its optional switch, which now reads "no safe switch". #647's "a bare foe…" is "a bare foe is
+still the double's Spore target". `battletest` W89 goes from Heat Wave to a focus.
 
 **The flip: #262's Spore scene.** Machamp outspeeds both of ours and 1HKOs whichever it hits, and Breloom needs five
 Seed Bombs. One of ours falls this turn before acting, whatever we pick, and a Spore that lands after that cannot save
-the other. Both lines lose. Proposed, Spore → Machamp scores −5.84 against Seed Bomb's −5.67. The old pick rested on 0.92 turns of the over-credit (field −7.28 against own duel −8.20) (`results.md` §6).
+the other. Both lines lose. Proposed, Spore → Machamp scores −5.84 against Seed Bomb's −5.67. The old pick rested on
+0.92 turns of the over-credit: field −7.28 against own duel −8.20 (`results.md` §6).
 
-#320's scene is the same field with Breloom faster than Machamp. There Spore lands first: it is picked under the
-proposal, Machamp's danger is credited, and Spore → Machamp now beats Spore → Munchlax by 0.70, where today the two tie.
-The test's own point, that the partner is scored on the sleep, still passes.
+**The same field with Breloom faster** (speed 150 against Machamp's 140; `results.md` §6):
 
-**Recommendation:** accept the flip, and move both assertions onto #320's speeds, where Spore is right.
+- Spore lands first and earns the `danger` credit. Proposed, Spore → Machamp beats Seed Bomb by 3.55 (−0.09 against
+  −3.64), and Salamence keeps Munchlax.
+- "Spore is the double's turn line" and "a bare foe is still the double's Spore target" both pass there.
+- #647's Lum half, "a sleep a Lum cures is not worth the double's turn", fails there, today and proposed alike. The
+  Lum cures at turn's end, and `statusPlay`'s Lum branch keeps `skip0`. So a faster Spore still takes Machamp's attempt
+  this turn and is worth it.
+
+The Lum half has to stay on the slower Breloom. There the proposal doesn't pick Spore into a bare foe either, so that
+assertion no longer separates the Lum holder from the bare foe.
+
+#320's scene is a different field (its own damage table, Salamence on Machamp) with Breloom faster. Spore is picked
+there today and proposed. Proposed, Spore → Machamp beats Spore → Munchlax by 0.70, where today the two tie.
+
+**Recommendation:** accept the flip. Move "Spore is the double's turn line" and the bare-foe half onto a faster
+Breloom, and keep the Lum half on the slower one with an assertion that still tells the two foes apart.
 
 ## 6. Sleep and paralysis
 
@@ -196,19 +223,21 @@ The lead with Spore or Thunder Wave instead of Protect (`results.md` §4):
 
 | Play | Picked today | Picked, proposed |
 | --- | --- | --- |
-| Spore | every case but 11, including 4, 5 and 9, where Ice Beam 1HKOs | 1, 2, 7, 8: the close races |
+| Spore | every case but 11, including 4, 5 and 9, where Ice Beam 1HKOs | 1, 2, 6, 7, 8 |
 | Thunder Wave | 4 and 5, where Ice Beam 1HKOs | none |
 
 Today a double sleeps or paralyses a foe our lead fells this turn. Proposed, it does neither.
 
-**Spore's proposed picks are thin**: +0.32, +0.12, +0.05 and +0.08 over attacking in 1, 2, 7 and 8. Each rests on the
-partner's gain from the sleep (Ally +0.6 to +1.2), the part §1 leaves unmeasured. The lead's own duel puts Spore below
-Ice Beam in all four, `danger` credit included (only case 2's faster lead earns any, 0.56). So the build should test that no play lands on a
-foe the lead fells this turn, not that Spore is picked in 1, 2, 7 and 8.
+**Spore's proposed picks are thin**: +0.32, +0.12, +0.01, +0.05 and +0.08 over attacking in 1, 2, 6, 7 and 8. Each
+rests on the partner's gain from the sleep (Ally +0.61 to +1.21), the part §1 leaves unmeasured. The lead's own duel
+puts Spore below Ice Beam in all five, `danger` credit included. Only case 2's faster lead earns any credit: 0.56, its
+1.30 against the 0.74 own-duel price in §1. So the build should test that no play lands on a foe the lead fells this
+turn, not where Spore is picked.
 
 ## 7. Recommendation
 
-**Build it in two tickets, children of #862.**
+**Build it in two tickets, children of #862.** #862 asks for one. Two let the status-play pricing land without waiting
+on #861, and it changes sleep and paralysis on its own.
 
 1. **A double's status play priced on its slot's own duel.** `dplay`, `pfield`, `redir`, `dcredit`. Unblocked. It
    flips #262's Spore scene (owner's call, §5).
@@ -231,9 +260,12 @@ unchanged).
 - The play is credited with the share of this turn's attempt it cancels at that foe's `danger`: `1 − act(0)` against
   the field for a status, and against the protected mon alone for a Protect.
 - The double's per-slot prices are unchanged: no `MON_LOST` or HP price from #860 in a double.
-- Golden diffs are limited to #262's Spore scene and #647's "a bare foe is still the double's Spore target", which
-  pick Seed Bomb. Per the owner's decision, move both assertions onto #320's speeds (Breloom faster than Machamp),
-  where Spore → Machamp is picked. Every other golden is identical.
+- Golden diffs are limited to #262's Spore scene and #647's double pair (§5).
+  - **Owner's call, open; recommended: accept.** "Spore is the double's turn line" and "a bare foe is still the
+    double's Spore target" move onto a faster Breloom (speed 150), where Spore → Machamp is picked.
+  - "A sleep a Lum cures is not worth the double's turn" stays on the slower Breloom, with an assertion that still
+    separates the Lum holder from the bare foe there. Which assertion is unmeasured.
+  - Every other golden is identical.
 - New plannertest scenes: #850's double with Spore and with Thunder Wave. Neither is picked where the lead 1HKOs
   Salamence (cases 4, 5 and 9), and Thunder Wave is picked in none of #850's cases. Spore's picks in the close races
   are not asserted (§6).
@@ -242,13 +274,17 @@ unchanged).
 
 **2. Protect as a priced status play in a double**
 
-- `statusPlay`'s Protect play (#861) is offered in a double only on a foe's locked use queued at this slot. It is not
-  offered after a successful Protect, Quick Guard or Wide Guard (`protectedLast`), or against a move that ignores
-  Protect.
+- `statusPlay`'s Protect play (#861) is offered in a double only on a foe's locked **last** use queued at this slot.
+  It is not offered:
+  - with a use of the lock still to come (§4);
+  - after a successful Protect, Quick Guard or Wide Guard (`protectedLast`);
+  - against a move that ignores Protect.
 - Its cancelled hit applies to the protected slot only, never field-wide. It cancels no foe attempt on the
   hypothesis the partner is scored on.
-- Plannertest scenes for #850's double (`double-score.mjs` has them as stubs): Protect is picked in 1, 3, 8 and 9.
-  Attack is picked in 2, 4, 5, 6 and 7, in 3 after a Protect that held, and with no lock running.
+- Plannertest scenes for #850's double (`double-score.mjs` has them as stubs):
+  - Protect is picked in 1, 3, 8 and 9.
+  - Attack is picked in 2, 4, 5, 6 and 7, in 3 after a Protect that held, in 1–9 with a lock use still to come, and
+    with no lock running.
 - The Protect slot carries no threat tag for the hit it blocks (`slotThreat`'s `guarded`).
 - `supportFor` skips a slot whose pick is already a Protect, and its own Protect is otherwise unchanged.
 - Every other golden is identical.
@@ -258,11 +294,12 @@ Out of scope by owner decision (#749 → #850): a rule-based Protect gated on th
 ## Known limits
 
 - **The turns are stubs**, as in #850: single-hit damage tables, no boss bars, items, weather or field effects.
-- **Two scenes.** #850's lock double was perturbed 144 ways; #262's and #283's goldens were traced. No live corpus was
-  replayed.
-- **The margins in cases 1 and 8 are about a tenth of a turn** (§3).
+- **Few scenes.** #850's lock double was perturbed 144 ways. #262's, #283's and #320's goldens were traced, plus #262's
+  field with a faster Breloom. No live corpus was replayed.
+- **The margins in cases 1 and 8 are about a tenth of a turn** (§3), and the sweep has no ground truth.
 - **The follow-up redirect reads this turn's odds** (§2). It ignores the chip the partner lands first.
 - **The partner's part of the hypothesis keeps its `lasts` re-read** (§1). It is not measured here, and Spore's
   proposed picks rest on it (§6).
-- **Protect's edge cases are #861's**: Unseen Fist, Spiky Shield's chip, Protect breaking a lock early. In a double,
-  Wide Guard and Quick Guard as plays are not covered.
+- **A lock with uses to come is mispriced** (§4). The follow-up assumes the lock runs on after a block.
+- **Protect's edge cases are #861's**: Unseen Fist, Spiky Shield's chip. In a double, Wide Guard and Quick Guard as
+  plays are not covered.

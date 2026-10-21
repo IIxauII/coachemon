@@ -18,6 +18,7 @@ const r2 = v => (v == null ? "—" : (Math.round(v * 100) / 100).toFixed(2));
 const tgt = t => (typeof t === "number" ? `foe ${t}` : t ?? "");
 console.log = (...a) => {
   const line = String(a[0] ?? "");
+  if (line.startsWith("ASSERT FAIL")) log(line);
   const head = line.match(/^== (.*)/);
   if (head) {
     const title = head[1].split("\n")[0];

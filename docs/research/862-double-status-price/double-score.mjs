@@ -1,6 +1,8 @@
-// `double-score.mjs [--move protect|spore|twave] [--terms] [config…]`: #850's double scene (our lead and Ally against
-// Salamence and Snorlax) through `fieldPlan` under `prototype.patch`'s switches (a `CONFIGS` name or JSON). Prints the
-// card's ⚔ lines and, with `--terms`, the best plan with the lead playing against the best with it attacking.
+// `double-score.mjs [--move protect|spore|twave] [--terms [--hyp] | --credit | --left | --duel] [config…]`: #850's
+// double (our lead and Ally against Salamence and Snorlax) through `fieldPlan` under `prototype.patch`'s switches (a
+// `CONFIGS` name or JSON). Prints the card's ⚔ lines; `--terms` the best plan with the lead playing and the best with it
+// attacking; `--credit` the field's price of the lead's play beside its own duel's; `--left` Protect's margin with the
+// lock on its last use and with one more to come; `--duel` Ally's duel against each foe.
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -104,7 +106,6 @@ export const doubleScenario = ({ myHp = 250, mySpe = 80, foeHp = 300, foeSpe = 1
   return render({ party: [me, ally], foes: [foe, snorlax], dist, replay, cfg });
 };
 
-// #850's cases. The target for Protect: picked in 1, 3, 8 and 9; attack in 2, 4–7, 3p and 10–12.
 export const CASES = [
   ["1", "foe faster, Outrage 150 / own 60, we 3HKO", { outrage: 150, own: 60, ours: 110 }, true],
   ["2", "as 1, foe slower", { foeSpe: 60, outrage: 150, own: 60, ours: 110 }, false],
@@ -113,33 +114,28 @@ export const CASES = [
   ["5", "we slower, 1HKO, Outrage 150", { foeHp: 100, outrage: 150, own: 60, ours: 110 }, false],
   ["6", "Outrage resisted (40), own 60", { outrage: 40, own: 60, ours: 110 }, false],
   ["7", "own pick as strong (150)", { outrage: 150, own: 150, ours: 110 }, false],
-  ["9", "we slower and 1HKO, both its hits KO", { foeHp: 100, outrage: 300, own: 300, ours: 110 }, true],
   ["8", "foe faster, Outrage 130 / own 60, we 4HKO", { outrage: 130, own: 60, ours: 80 }, true],
+  ["9", "we slower and 1HKO, both its hits KO", { foeHp: 100, outrage: 300, own: 300, ours: 110 }, true],
   ["3p", "as 3, Protect held last turn", { outrage: 300, own: 60, ours: 110, protectedLast: true }, false],
   ["10", "no lock, Fire Blast 150 a turn, we 3HKO", { outrage: 0, own: 150, ours: 110, lock: false }, false],
   ["11", "no lock, Fire Blast KOs (300), we 3HKO", { outrage: 0, own: 300, ours: 110, lock: false }, false],
   ["12", "no lock, Fire Blast 60, we 3HKO", { outrage: 0, own: 60, ours: 110, lock: false }, false],
 ];
 
+// The designs the findings compare, by their switches: `today` is master with Protect offered. `proposed` is
+// "own + redirect" plus `dcredit`, not the singles prices.
 export const CONFIGS = {
-  // Today: Protect offered through #262's field hypothesis.
   today: { protect: true },
-  // #850's own-duel Protect.
   "own duel": { protect: true, dprotect: "own" },
-  // Every double status play priced on its slot's own duel, the race priced by the foe that threatens the slot most.
   own: { protect: true, dplay: "own", pfield: true },
-  // …and the partner redirected by the play's follow-up, as by an attack's knockout this turn.
   "own + redirect": { protect: true, dplay: "own", pfield: true, redir: "then" },
-  // Rejected: …with #860's singles prices in the double too.
   "own + redirect + singles prices": { protect: true, dplay: "own", pfield: true, redir: "then", hp: 1, loss: 4, scope: "all" },
-  // Recommended: …with the hit the play cancels credited at its `danger`, and the double's prices left as they are.
   proposed: { protect: true, dplay: "own", pfield: true, redir: "then", dcredit: true },
 };
 
 const r2 = v => (v == null ? "—" : (Math.round(v * 100) / 100).toFixed(2));
 const lines = field => field.filter(l => /^(now: )?[⚔⇄]/.test(l)).join(" ⏐ ").replace(/\|/g, "/");
 const plays = (field, name) => field.some(l => /^(now: )?⚔ Lead/.test(l) && l.includes(name));
-// The best plan with the lead playing, and the best with it attacking, from every plan the search scored.
 const bestOf = (plans, f) => plans.filter(f).reduce((b, p) => (!b || p.score > b.score ? p : b), null);
 const leadOf = p => p?.picks.find(q => q.me === "Lead");
 const allyOf = p => p?.picks.find(q => q.me === "Ally");
@@ -152,6 +148,32 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const move = mi >= 0 ? args[mi + 1] : "protect";
   const which = args.filter((a, i) => !a.startsWith("--") && !(mi >= 0 && i === mi + 1));
   const name = MOVES[move][0];
+  if (args.includes("--left") || args.includes("--duel")) {
+    const cfg = CONFIGS[which[0]] ?? JSON.parse(which[0] ?? "{}");
+    console.log(`\n### ${args.includes("--left") ? "Protect with a lock use to come" : "Ally's duel against each foe"} — \`${JSON.stringify(cfg)}\`\n`);
+    if (args.includes("--left")) {
+      console.log("| Case | Protect − attack, last use | …, one more use to come | Card, one more to come |\n| --- | --- | --- | --- |");
+      for (const [id, label, sc] of CASES.filter(c => !c[2].protectedLast && c[2].lock !== false)) {
+        const m = left => {
+          const r = doubleScenario({ ...sc, left }, cfg);
+          const pl = bestOf(r.plans, p => leadOf(p)?.move === name && p.swaps === 0), at = bestOf(r.plans, p => leadOf(p)?.move && leadOf(p).move !== name && p.swaps === 0);
+          return { d: pl && at ? pl.score - at.score : null, got: plays(r.field, name) };
+        };
+        const [a, b] = [m(1), m(2)];
+        console.log(`| ${id} · ${label} | ${r2(a.d)} | ${r2(b.d)} | ${b.got ? name : "attack"} |`);
+      }
+    } else {
+      console.log("| Case | Ally → | score | lasts | eTurns | P we / P they |\n| --- | --- | --- | --- | --- | --- |");
+      for (const [id, , sc] of CASES.filter(c => ["4", "5"].includes(c[0]))) {
+        const r = doubleScenario({ ...sc, move }, cfg);
+        for (const t of [0, 1]) {
+          const x = r.duel.find(d => d.me === "Ally" && d.kind === "attack" && !d.hyp && d.target === t);
+          if (x) console.log(`| ${id} | ${tgt(t)} | ${r2(x.score)} | ${r2(x.lasts)} | ${r2(x.eTurns)} | ${r2(x.we)} / ${r2(x.they)} |`);
+        }
+      }
+    }
+    process.exit(0);
+  }
   if (args.includes("--credit")) {
     // The lead's play as the field prices it (its −1.2 plus its attack re-read on the hypothesis), against the same
     // play on the slot's own duel (`playOption`, the singles price).

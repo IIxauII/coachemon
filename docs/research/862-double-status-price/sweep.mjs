@@ -1,6 +1,6 @@
 // `sweep.mjs`: the lock scene perturbed — Outrage's hit, the foe's own pick after it, our hit, who is faster — and
-// whether each design offers Protect there, with its margin over attacking. `singles` is the lead's own duel at
-// #860's prices, the same number singles would show; the others are the double's designs.
+// whether each design offers Protect there, with its plan's margin over attacking: `singles` is `double-score.mjs`'s
+// "own + redirect + singles prices", `credit` its `proposed`.
 import { doubleScenario, CONFIGS } from "./double-score.mjs";
 
 const DESIGNS = { singles: CONFIGS["own + redirect + singles prices"], credit: CONFIGS.proposed };

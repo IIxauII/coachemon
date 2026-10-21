@@ -1,4 +1,4 @@
-// `node docs/research/850-status-play-price/blast.mjs '<P850 json>' [test…]`: every HUD golden test run under one
+// `node docs/research/862-double-status-price/blast.mjs '<P850 json>' [test…]`: every HUD golden test run under one
 // set of `prototype.patch`'s switches. Unlike `test/run.mjs` it does not stop at the first failed assertion: each test
 // is run on its own, and the report gives its failed assertion (if any) and its diff against the golden. With `--soft`
 // a failed assertion is printed as an `ASSERT FAIL` line and the test runs on, so everything after it shows too: each
