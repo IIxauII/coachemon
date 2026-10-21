@@ -1003,7 +1003,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   };
   const hpLeft = Math.max(0, Math.min(maxHp, stealing && taken > 0 ? stepped()
     : hp - hitsTaken() - selfSpent + drainTotal(ourDrain, Math.min(taken, turnsWe)))) * (1 - selfKo);
-  // `hpKept`: the share of our bar the foe's hits leave, net of our drain. What our own move spends is `cost`'s.
+  // What our own move spends is `cost`'s, not `hpKept`'s.
   const hpKept = Math.max(0, Math.min(maxHp, hp - hitsTaken() + drainTotal(ourDrain, Math.min(taken, turnsWe)))) / maxHp;
   return {
     pWeKoFirst: Math.min(1, Math.round(pWe * 1e9) / 1e9), pTheyKoFirst: Math.min(1, Math.round(pThey * 1e9) / 1e9),
@@ -1111,11 +1111,12 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     // The foe's whole bar left to the rest of the team, for the share of the time our mon falls before landing a hit:
     // every scorer below pays it, or the one that skips it wins a lost race (#650).
     const unlanded = never => never * FOE_BAR;
-    // A single battle prices a race lost at `MON_LOST`, and the HP the duel costs this mon at a turn a whole bar from its
-    // HP before any entry hit (#850). A double's joint value prices both through `danger`, so its slots charge neither.
+    // The singles prices of a race lost and of the HP a duel costs (CONTEXT.md, `Turn score`; #850). `hpBefore` is the
+    // share of the bar before any entry hit. A double's joint value prices both through `danger`: charging them per
+    // slot as well counts them twice.
     const edgeOf = (we, they) => we - (double ? 1 : MON_LOST) * they;
-    const before = Math.min(1, me.hp / (me.getMaxHp?.() || me.hp || 1));
-    const hpSpent = kept => (double ? 0 : before - kept);
+    const hpBefore = Math.min(1, me.hp / (me.getMaxHp?.() || me.hp || 1));
+    const hpSpent = kept => (double ? 0 : hpBefore - kept);
     const one = (o, fi) => {
       const x = trade(o, active[fi]);
       const turns = x.turnsWe + lost;
@@ -1149,16 +1150,17 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       // `stole`: turn 1 already ate a berry off it, so a follow-up that steals again draws from what is left (#646).
       const value = y => {
         const x2 = exchange(turn, me, y.pm, f, { hp: t1.hp, after: t1, outcome: y, next: true, field: worst, stole: x.trade?.stole ?? 0 });
-        return { y, x2, v: x2.eTurnsThey - x2.eTurnsWe + edgeOf(x2.pWeKoFirst, x2.pTheyKoFirst) - (x2.cost ?? 0) };
+        return { y, x2, v: x2.eTurnsThey - x2.eTurnsWe + edgeOf(x2.pWeKoFirst, x2.pTheyKoFirst) - (x2.cost ?? 0) - hpSpent(x2.hpKept) };
       };
       const tried = cands.map(value);
       const best = tried.reduce((b, t) => (!b || t.v > b.v ? t : b), null);
       if (!best || best.y === o) return x;
       const scoreOf = ({ x2 }) => {
         const eTurns = 1 + (1 - t1.we) * x2.eTurnsWe;
-        const edge = edgeOf(t1.we + standing * x2.pWeKoFirst, t1.they + standing * x2.pTheyKoFirst);
+        const pThey = t1.they + standing * x2.pTheyKoFirst;
+        const edge = edgeOf(t1.we + standing * x2.pWeKoFirst, pThey);
         const spent = Math.min(1, (o.self ?? 0) / (me.getMaxHp?.() || hp)) + (x2.cost ?? 0);
-        return lasts - eTurns - unlanded(x.trade.pNeverUsed) - lost + edge - spent - cost(o) - feed(f) * (t1.they + standing * x2.pTheyKoFirst)
+        return lasts - eTurns - unlanded(x.trade.pNeverUsed) - lost + edge - spent - cost(o) - feed(f) * pThey
           - hpSpent(t1.we * x.trade.hpKept + standing * x2.hpKept);
       };
       const score = scoreOf(best);
@@ -1240,7 +1242,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
         let best = null;
         for (const y of cands.length ? cands : [null]) {
           const x2 = exchange(t2, me, y?.pm ?? null, f, { hp: t1p.hp, after: t1p, outcome: y, next: true, foeAct: patches && play.foeAct ? play.foeAct(pF) : null });
-          const v = x2.eTurnsThey - x2.eTurnsWe + edgeOf(x2.pWeKoFirst, x2.pTheyKoFirst) - (x2.cost ?? 0);
+          const v = x2.eTurnsThey - x2.eTurnsWe + edgeOf(x2.pWeKoFirst, x2.pTheyKoFirst) - (x2.cost ?? 0) - hpSpent(x2.hpKept);
           if (!best || v > best.v) best = { y, x2, v };
         }
         return best;
@@ -1251,7 +1253,8 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       if (!landed || (w < 1 && !missed)) return null;
       const mix = k => w * landed.x2[k] + (missed ? (1 - w) * missed.x2[k] : 0);
       const eTurns = 1 + mix("eTurnsWe") + unlanded(they + standing * mix("pNeverUsed"));
-      const edge = edgeOf(standing * mix("pWeKoFirst"), they + standing * mix("pTheyKoFirst")) - feed(f) * (they + standing * mix("pTheyKoFirst"));
+      const pThey = they + standing * mix("pTheyKoFirst");
+      const edge = edgeOf(standing * mix("pWeKoFirst"), pThey) - feed(f) * pThey;
       const spent = (play.hpCost ?? 0) / maxHp + mix("cost");
       // `hpCost` is in `spent`, so the HP kept is counted as if it were not paid.
       const kept = standing * Math.min(1, mix("hpKept") + (play.hpCost ?? 0) / maxHp);
