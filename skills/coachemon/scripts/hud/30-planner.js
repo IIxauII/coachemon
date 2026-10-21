@@ -1,6 +1,6 @@
 // Everything about the live battle is the turn's (`25-turn.js`): this opens no sandbox and keeps no cache but
 // `turn.memo`. Against an approximate turn every answer still comes back, labelled `live: false`.
-import { ABILITY_IMMUNE, ABILITY_IMMUNE_FLAG, CONTACT_PUNISH, FIELD_TRAPS, MOVE_TRAPS, SPREAD_TARGETS, STATUS_FRAMES, TYPES, UNGROUNDED, abilitiesOf, effectiveness, hitsUngrounded, iconOf, lessOneBerry, moveHasFlag, squeezeDist, stage, stat, typesOf, vs } from "./01-core.js";
+import { ABILITY_IMMUNE, ABILITY_IMMUNE_FLAG, CONTACT_PUNISH, FIELD_TRAPS, MOVE_TRAPS, SPREAD_TARGETS, STATUS_FRAMES, TYPES, UNGROUNDED, abilitiesOf, effectiveness, hitsUngrounded, iconOf, isBerry, lessOneBerry, lumsHeld, moveHasFlag, squeezeDist, stackOf, stage, stat, typesOf, vs } from "./01-core.js";
 import { gameTables } from "./04-game-tables.js";
 import { moveTraits } from "./07-move-traits.js";
 import { addShare, healingCharm, koChanceAt, koCurve, koTurn, koTurns, rawMax, shares, useOf } from "./10-damage.js";
@@ -406,10 +406,8 @@ const setupDanger = (foe, t, me) => {
 };
 
 const threatKoAt = (t, hp) => (!t ? 0 : hp <= 0 ? 1 : Math.min(1, t.moves.reduce((sum, m) => sum + m.p * koChanceAt(m, hp), 0)));
-// The Lums that cure a status landing on `p` by `by`, one a turn end: none while an opposing Unnerve stops the berry
-// (game-code.md §3).
-export const curingLums = (turn, p, by) => (unnervedBy(turn, p, by) ? 0
-  : (p.getHeldItems?.() ?? []).filter(m => isBerry(m) && m.berryType === BerryType.LUM).reduce((t, m) => t + stackOf(m), 0));
+// The Lums that cure a status landing on `p` by `by`, one a turn end (game-code.md §3).
+const curingLums = (turn, p, by) => (unnervedBy(turn, p, by) ? 0 : lumsHeld(p));
 // Wave status tokens (game-code.md §8).
 const statusTokens = (turn, foe, me) => {
   if (!foe || foe.isPlayer?.() || me.status?.effect) return [];
@@ -431,9 +429,11 @@ export const tokenOdds = (turn, foe, me) => {
   const perHit = 1 - tokens.reduce((keep, x) => keep * (1 - x.q), 1);
   const qSum = tokens.reduce((sum, x) => sum + x.q, 0);
   const lums = curingLums(turn, me, foe);
-  // P(more than `lums` of x hits land), x read on as a real number.
+  // P(more than `lums` of x hits land), x read on as a real number. The game spends a Lum a turn end, not a landing, so
+  // a turn of several hits reads the status lasting sooner than it does.
   const by = x => {
     const n = Math.max(0, x);
+    if (perHit >= 1) return n > lums ? 1 : 0;
     let below = 0, ways = 1;
     for (let k = 0; k <= lums; k++) {
       below += ways * perHit ** k * (1 - perHit) ** (n - k);
@@ -446,10 +446,11 @@ export const tokenOdds = (turn, foe, me) => {
     early: !!me.hasAbilityWithAttr?.("ReduceStatusEffectDurationAbAttr"),
   };
 };
-// The turn-end HP change a token's status adds to `me`, by the shares, read with its Lums gone: one that lasts has
-// eaten them. `heal(p)`: the turn-end HP change of `p`.
+// The turn-end HP change a token's status adds to `me`, by the shares, read with its `lums` gone. `heal(p)`: the
+// turn-end HP change of `p`.
 export const tokenShift = (odds, me, heal) => {
-  const p = odds.lums ? Object.create(me, { getHeldItems: { value: () => (me.getHeldItems?.() ?? []).filter(m => !(isBerry(m) && m.berryType === BerryType.LUM)) } }) : me;
+  let p = me;
+  for (let k = 0; k < (odds.lums ?? 0); k++) p = lessBerry(p, BerryType.LUM);
   const base = heal(p);
   return odds.tokens.reduce((sum, x) => sum + x.share * (heal(Object.create(p, { status: { value: { effect: x.effect, toxicTurnCount: 0 } } })) - base), 0);
 };
@@ -547,10 +548,8 @@ export const overWalk = (walk, value) => {
 export const afterSteals = (me, heal, takes) => overWalk(stealWalk(me, takes), heal);
 
 // A berry eaten off its holder (`StealEatBerryAttr`, game-code.md §3).
-const isBerry = m => m?.constructor?.name === "BerryModifier";
 // @only 35-team-plan: berryWalk
 export const berryWalk = holder => stealWalk(holder, isBerry);
-const stackOf = m => m.getStackCount?.() ?? m.stackCount ?? 1;
 const heldBerries = p => (p.getHeldItems?.() ?? []).filter(isBerry);
 // The distinct berry types `p` holds, in its own modifier order.
 export const berryTypesOf = p => heldBerries(p).map(m => m.berryType);
@@ -1366,7 +1365,8 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
         effect: start.effect,
       };
     };
-    // `floor`: the score of the best attack on `fi`, which a burnt Lum's worth is read against.
+    // `floor`: the best attack's score on `fi`. A cured play's `gain` is what its `again` scores above that, read at
+    // this turn's HP (#834).
     const plays = (fi, floor = null) => {
       if (assumed || entering || !turn.live || teraAt) return [];
       const f = active[fi];
@@ -1376,7 +1376,6 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
           const play = statusPlay(turn, me, f, info);
           if (!play) return null;
           if (slots !== 1) return playCandidate(info, play, fi);
-          // A burnt last Lum is worth what its `again` beats attacking by, a turn on (#834).
           const next = play.again && floor != null ? playOption(info, play.again, fi) : null;
           return playOption(info, next ? { ...play, gain: Math.max(0, next.score - floor) } : play, fi);
         } catch { return null; }
@@ -1438,7 +1437,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
         }
       });
       const soonest = Math.min(9, ...out.filter(x => x.move).map(x => x.hits));
-      // The game AI's `rank` can't see a Lum, so a play one cures this turn goes behind every play that lasts (#834).
+      // The game AI's `rank` can't see a Lum (#834).
       for (const x of cands.sort((a, b) => !!a.play.cured - !!b.play.cured || b.rank - a.rank).slice(0, STATUS_CANDS)) {
         out.push({ ...x, turns: Math.min(9, soonest + 1), hits: Math.min(9, soonest + 1) });
       }
@@ -2027,7 +2026,7 @@ export const hazardValue = (turn, me, tagType) => {
     if (tagType === "STEALTH_ROCK") return turn.mon(p).rockChip();
     if (!grounded(p)) return 0;
     if (tagType === "SPIKES") return guarded(p) ? 0 : spikes(layers + 1) - spikes(layers);
-    if (tagType === "TOXIC_SPIKES") return guarded(p) || !turn.mon(p).canTake(StatusEffect.POISON, me) ? 0 : layers ? 0.1 : 0.25;
+    if (tagType === "TOXIC_SPIKES") return guarded(p) || !turn.mon(p).canTake(StatusEffect.POISON, me) || curingLums(turn, p, me) ? 0 : layers ? 0.1 : 0.25;
     return 0;
   };
   // A hazard lands on summon, before an instant Tera (game-code.md §7).

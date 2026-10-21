@@ -290,8 +290,7 @@ const assertNoImmediateScrafty = field => {
   assert.equal(gyaradosVs("Morpeko vs tokens"), 2, "poison tokens chip over the fight");
   assert.equal(exchange(s, { ...morpeko, id: "burned Morpeko", status: { effect: 6 } }, morpeko.moveset[0], { ...gyarados, id: "Gyarados vs burned" }, { hp: 150 }).turnsThey, 3,
     "a statused mon can't be poisoned");
-  // A held Lum cures the first token status at its turn end, so one lasts only from the second landing on, and its
-  // chip is read off the mon with the Lum gone (#834). Against one hit a turn at 50 %: none by turn 1, .25 by turn 2.
+  // Lum holders against one hit a turn at 50 % (#834): none by turn 1, .25 by turn 2.
   const { tokenOdds, tokenShift } = globalThis.__planner;
   const lumItem = new ({ BerryModifier: class { berryType = 1; isTransferable = true; getStackCount() { return 1; } } }).BerryModifier();
   const lumMorpeko = id => ({ ...morpeko, id, getHeldItems: () => [lumItem] });
@@ -1861,7 +1860,7 @@ Object.assign(TABLE, { "Machamp>Close Combat>Vileplume": [[40], 1, 1], "Vileplum
   const machamp = items => mon("Machamp", 80, ["Fighting"], [300, 200, 110, 60, 110, 50], [["Close Combat", "Fighting", 120, "P"]], true, undefined,
     { getHeldItems: () => items });
   // `drain`: what Giga Drain deals. 0 leaves the slot with nothing that damages, so the status play is its only option.
-  const scene = (moves, items, spe, drain = 50, stubOutcome = outcome, ourAttr = null) => {
+  const scene = (moves, items, spe, { drain = 50, stubOutcome = outcome, ourAttr = null } = {}) => {
     TABLE["Vileplume>Giga Drain>Machamp"] = [[drain], 1, drain ? 1 : 0];
     const me = vileplume(moves, spe), foe = machamp(items);
     if (ourAttr) {
@@ -1874,7 +1873,7 @@ Object.assign(TABLE, { "Machamp>Close Combat>Vileplume": [[40], 1, 1], "Vileplum
   };
   // Machamp is slower at Vileplume's default 60 Speed and faster at 40.
   const playFor = (move, items, spe = 60, ourAttr = null) => {
-    const { s, me, foe } = scene([GIGA_DRAIN, move], items, spe, 50, outcome, ourAttr);
+    const { s, me, foe } = scene([GIGA_DRAIN, move], items, spe, { ourAttr });
     return globalThis.__planner.statusPlay(s, me, foe, s.statusMoves(me, foe).find(x => x.name === move[0]));
   };
   const shape = p => (!p ? "no play" : [`note ${p.note ?? "—"}`,
@@ -1900,7 +1899,6 @@ Object.assign(TABLE, { "Machamp>Close Combat>Vileplume": [[40], 1, 1], "Vileplum
   assert.equal(lumToxic.foeAct, null, "…and nothing of it reaches a later turn");
   assert.equal(lumToxic.skip0, 0, "Toxic costs the foe no attempt even on the turn it lands");
   assert.equal(lumToxic.note, null, "…so the play has no status note to show");
-  // The burnt Lum is worth what the same move does a turn later, once no Lum is left to cure it (#834): `again`.
   const { lessBerry, berryTypesOf } = globalThis.__planner;
   const held = machamp(lum(2));
   assert.equal(shape(lumToxic.again), "note toxic · patches Machamp less berry 1,Machamp status 2 · skip0 0 · foeAct — · gain 0",
@@ -1919,7 +1917,7 @@ Object.assign(TABLE, { "Machamp>Close Combat>Vileplume": [[40], 1, 1], "Vileplum
   assert.deepEqual([twice.patches.length, twice.foeAct, twice.again], [1, null, null], `a Lum x2 holder opens nothing for next turn: ${shape(twice)}`);
   assert.deepEqual(berryTypesOf(lessBerry(held, BERRY.LUM)), [BERRY.LUM], "burning one of two leaves the second, so two statuses are needed before one sticks");
 
-  // A `lessBerry` patch takes one berry off for the call, the way `lessBerry` does, and puts it back after (#834).
+  // A `lessBerry` patch (#834).
   const { withPatches } = globalThis.__hud["25-turn"];
   const stacks = p => p.getHeldItems().map(m => `${m.berryType}x${m.getStackCount()}`).join(",");
   const lumSitrus = machamp([berryItem(BERRY.SITRUS), berryItem(BERRY.LUM, 2)]);
@@ -1931,7 +1929,7 @@ Object.assign(TABLE, { "Machamp>Close Combat>Vileplume": [[40], 1, 1], "Vileplum
   // Scene 1: what the slot is actually told to do, and the score it was told it on. A play worth nothing loses to
   // Giga Drain.
   const picked = (move, items, spe, drain) => {
-    const { s, me, foe, field } = scene([GIGA_DRAIN, move], items, spe, drain);
+    const { s, me, foe, field } = scene([GIGA_DRAIN, move], items, spe, { drain });
     const [p] = globalThis.__planner.fieldPlan(s, [me], [foe], false).picks;
     return { name: p.move?.name ?? null, effect: p.effect ?? "", score: Math.round(p.score * 1e4) / 1e4, line: lineOf(field, "Vileplume") };
   };
@@ -1953,16 +1951,13 @@ Object.assign(TABLE, { "Machamp>Close Combat>Vileplume": [[40], 1, 1], "Vileplum
   assert.equal(by("Spore, Lum x2, slower than it").name, "Giga Drain", "a burnt Lum with a second behind it opens nothing");
   assert.equal(by("Spore, Sitrus only, slower").score, by("Spore, bare foe, slower than it").score, "a foe with no Lum prices exactly as before");
 
-  // The burnt Lum is worth what a lasting Toxic beats attacking by a turn later (#834). Against a Giga Drain of 40 a
-  // lasting Toxic wins by enough to pay for the turn the cured one spends, so a Lum x1 holder is Toxicked twice; a
-  // Lum x2 holder has a second Lum to cure that one too, so the call stays on Giga Drain.
+  // Against a Giga Drain of 40 a lasting Toxic wins by enough to pay for the turn a cured one spends (#834).
   const twiceOver = [lum(1), lum(2)].map(items => picked(TOXIC, items, 60, 40));
   console.log(`burnt: Lum x1 ${twiceOver[0].name} · score ${twiceOver[0].score} · Lum x2 ${twiceOver[1].name} · score ${twiceOver[1].score}`);
   assert.equal(twiceOver[0].name, "Toxic", "burning a lone Lum opens Machamp to the Toxic that sticks");
   assert.equal(twiceOver[1].name, "Giga Drain", "a second Lum cures that one too, so the first opens nothing");
 
-  // The follow-up after a cured play meets the foe without its Lum (#834). Knock Off's boost reads the target's held
-  // items, so with the Lum gone a plain Sludge Bomb is the better hit; beside a Sitrus Knock Off keeps it.
+  // The follow-up after a cured play (#834): Knock Off's 40 needs a held item, else it is 26 to Sludge Bomb's 32.
   const KNOCK_OFF = ["Knock Off", "Dark", 65, "P"], SLUDGE_BOMB = ["Sludge Bomb", "Poison", 90, "S"];
   TABLE["Vileplume>Sludge Bomb>Machamp"] = [[32], 1, 1];
   const knocks = (atk, def, pm, o) => {
@@ -1970,7 +1965,7 @@ Object.assign(TABLE, { "Machamp>Close Combat>Vileplume": [[40], 1, 1], "Vileplum
     return outcome(atk, def, pm, o);
   };
   const thenOf = items => {
-    const { s, me, foe } = scene([KNOCK_OFF, SLUDGE_BOMB, TOXIC], items, 60, 0, knocks);
+    const { s, me, foe } = scene([KNOCK_OFF, SLUDGE_BOMB, TOXIC], items, 60, { drain: 0, stubOutcome: knocks });
     const [p] = globalThis.__planner.fieldPlan(s, [me], [foe], false).picks;
     return `${p.move?.name} then ${p.then?.name ?? "—"}`;
   };
@@ -2013,9 +2008,8 @@ Object.assign(TABLE, { "Machamp>Close Combat>Vileplume": [[40], 1, 1], "Vileplum
   assert.match(bare, /Spore → Machamp .*sleep/, `a bare foe is still the double's Spore target:\n${bare}`);
   assert.ok(!/Spore/.test(lumHeld), `a sleep a Lum cures is not worth the double's turn:\n${lumHeld}`);
 
-  // A double keeps `STATUS_CANDS` status plays, and the game AI's benefit cannot see a Lum: here it ranks both of
-  // Breloom's plays into the Lum-holding Machamp first. Munchlax is the one hitting hard, so the sleep that lasts is
-  // the one worth the turn, and a cured play must not take its slot (#834).
+  // A double's `STATUS_CANDS` cut (#834): the game AI ranks both of Breloom's plays into the Lum-holding Machamp first,
+  // and Munchlax is the one hitting hard.
   Object.assign(TABLE, {
     "Breloom>Seed Bomb>Machamp": [[30], 1, 1], "Breloom>Seed Bomb>Munchlax": [[30], 1, 1],
     "Salamence>Dragon Claw>Machamp": [[200], 1, 1], "Salamence>Dragon Claw>Munchlax": [[60], 1, 1],
@@ -2034,6 +2028,17 @@ Object.assign(TABLE, { "Machamp>Close Combat>Vileplume": [[40], 1, 1], "Vileplum
     const { field } = render({ party, foes, live: true, double: true, dist: aimAtBoth, switches: () => new Map(), benefit: (atk, mv, def) => AI[def.name]?.[mv.name] ?? 0 });
     return lineOf(field, "Breloom");
   };
+  // Toxic Spikes into a Lum holder (#834).
+  const { hazardValue } = globalThis.__hud["30-planner"];
+  const spikesFor = items => {
+    const lead = mon("Machamp", 80, ["Fighting"], [300, 200, 110, 60, 110, 50], [["Close Combat", "Fighting", 120, "P"]], true);
+    const benched = mon("Snorlax", 80, ["Normal"], [400, 150, 110, 80, 150, 30], [["Body Slam", "Normal", 85, "P"]], false, undefined, { getHeldItems: () => items });
+    const t = fakeTurn({ live: true, trainer: {}, party: [vileplume([GIGA_DRAIN], 60)], foes: [lead, benched] });
+    return hazardValue(t, t.facts.party[0], "TOXIC_SPIKES")?.turns ?? 0;
+  };
+  console.log(`spikes: Toxic Spikes into a bare bench ${spikesFor([])} · a Lum holder ${spikesFor(lum(1))}`);
+  assert.deepEqual([spikesFor([]), spikesFor(lum(1))], [0.5, 0], "a Lum holder is never chipped by the poison it walks into");
+
   const [cutBare, cutLum] = [cut([]), cut(lum(1))];
   console.log(`== lum: three status plays in a double, bare Machamp (live)\n${cutBare}\n== lum: …and a Lum-holding one (live)\n${cutLum}`);
   assert.match(cutLum, /Spore → Munchlax .*sleep/, `the lasting sleep keeps its slot over the plays the Lum cures:\n${cutLum}`);

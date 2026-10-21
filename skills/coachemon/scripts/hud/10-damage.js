@@ -1,6 +1,6 @@
 // Calls game code but never decides when that is allowed: 25-turn opens the one sandbox, predicts Tera and keys every
 // answer before a `scene*` export runs, and `env` is its `sceneEnv`. Every other export is pure.
-import { SPREAD_TARGETS, TYPES, abilitiesOf, effectiveness, forcedRng, gameVersionOf, keepTurnData, squeezeDist, stage, stat, typesOf, versionAtLeast } from "./01-core.js";
+import { SPREAD_TARGETS, TYPES, abilitiesOf, effectiveness, forcedRng, gameVersionOf, keepTurnData, lumsHeld, squeezeDist, stage, stat, typesOf, versionAtLeast } from "./01-core.js";
 import { costNotes, moveTraits } from "./07-move-traits.js";
 
 const reliability = (mv, t = moveTraits(mv)) => {
@@ -505,13 +505,13 @@ const endOfTurnSteps = (env, p, { hp = p.hp, dealt = 0 } = {}) => {
   if (cur > 0 && !unnerved(env, p) && Math.round((cur / max) * 100) / 100 < 0.5
     && items(p).some(m => m.constructor.name === "BerryModifier" && m.berryType === BerryType.SITRUS)) queued(berryQuarter(p));
 
+  // A held Lum cures the status first (game-code.md §3).
+  const status = !unnerved(env, p) && lumsHeld(p) ? 0 : p.status?.effect || 0;
   // A status orb is counted a turn early: in game its status lands after this chip (game-code.md §21).
-  const orb = p.status?.effect ? null : items(p).find(m => m.constructor.name === "TurnStatusEffectModifier" && !types.some(t => ORB_SPARED[m.effect]?.includes(t)));
-  // A held Lum cures it in the same phase, ahead of the chip (game-code.md §3).
-  const lum = !unnerved(env, p) && items(p).some(m => m.constructor.name === "BerryModifier" && m.berryType === BerryType.LUM);
-  const effect = lum ? 0 : p.status?.effect || orb?.effect || 0;
+  const orb = status ? null : items(p).find(m => m.constructor.name === "TurnStatusEffectModifier" && !types.some(t => ORB_SPARED[m.effect]?.includes(t)));
+  const effect = status || orb?.effect || 0;
   if ([StatusEffect.POISON, StatusEffect.TOXIC, StatusEffect.BURN].includes(effect) && !guard && !abAttrs(p, "BlockStatusDamageAbAttr").some(a => (a.effects ?? []).includes(effect))) {
-    let d = effect === StatusEffect.POISON ? frac(max, 8) : effect === StatusEffect.TOXIC ? Math.max(1, Math.floor(max * ((p.status?.toxicTurnCount ?? 0) + 1) / 16)) : frac(max, 16);
+    let d = effect === StatusEffect.POISON ? frac(max, 8) : effect === StatusEffect.TOXIC ? Math.max(1, Math.floor(max * (((status && p.status?.toxicTurnCount) || 0) + 1) / 16)) : frac(max, 16);
     if (effect === StatusEffect.BURN) for (const a of abAttrs(p, "ReduceBurnDamageAbAttr")) d = Math.max(1, Math.floor(d * (a.multiplier ?? 0.5)));
     chip(d);
   }

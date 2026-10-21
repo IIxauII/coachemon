@@ -589,7 +589,9 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
     + ` · Toxic Orb ${endOfTurnHp(lumOrb, { s: at() })} · Unnerved toxic ${endOfTurnHp(lumToxic, { s: at(0, 0, { getField: () => [lumToxic, unnerve] }) })}`);
   assert.equal(endOfTurnHp(lumToxic, { s: at() }), 0, "a Lum cures the toxic before it chips");
   assert.equal(endOfTurnHp(lumSleeper, { s: at(0, 0, { getField: () => [lumSleeper, dreamer] }) }), 0, "…and the sleep before Bad Dreams reads it");
-  assert.equal(endOfTurnHp(lumOrb, { s: at() }), 0, "a Toxic Orb's status, counted a turn early, is cured the turn it would chip");
+  assert.equal(endOfTurnHp(lumOrb, { s: at() }), -10, "a Toxic Orb outlasts the one Lum: the orb's chip still counts a turn early");
+  const lumToxicOrb = m({ status: { effect: 2, toxicTurnCount: 2 }, items: [...lum, held("TurnStatusEffectModifier", { effect: 2 })] });
+  assert.equal(endOfTurnHp(lumToxicOrb, { s: at() }), -10, "a cured toxic is the orb's again from this turn's end");
   assert.equal(endOfTurnHp(lumToxic, { s: at(0, 0, { getField: () => [lumToxic, unnerve] }) }), -30, "an opposing Unnerve keeps the Lum uneaten");
 }
 

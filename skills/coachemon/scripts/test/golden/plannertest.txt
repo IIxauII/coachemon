@@ -428,6 +428,7 @@ follow: Lum x1 Toxic then Sludge Bomb · Sitrus + Lum Toxic then Knock Off
 ⚔ Breloom 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Grass Spore → Machamp sleep
 == lum: …and into a Lum holder (live)
 ⚔ Breloom 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Grass Seed Bomb → Machamp
+spikes: Toxic Spikes into a bare bench 0.5 · a Lum holder 0
 == lum: three status plays in a double, bare Machamp (live)
 ⚔ Breloom Grass Seed Bomb → Machamp
 == lum: …and a Lum-holding one (live)
