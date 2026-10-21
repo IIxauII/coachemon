@@ -132,14 +132,15 @@ const tpHealAt = (turn, p, hp = Math.ceil(p.getMaxHp() * 0.75), beforeBerries = 
   try { return turn.turnEndHp(Object.create(p, { hp: { value: hp } }), { hp, beforeBerries }) || 0; } catch { return 0; }
 };
 // `base` recurs every turn, negative when chip outweighs the heals, and `pre` is its part ahead of the berries; `sitrus`
-// is one-shot, and `enigma` heals once for each of the `enigmas` it holds.
+// is one-shot, and `enigma` heals once for each of the `enigmas` it holds, each staying held at a Berry Pouch's `keep`,
+// present only under a Pouch.
 export const tpHealProfile = (turn, p) => {
   const max = p.getMaxHp();
   const at = hp => tpHealAt(turn, p, hp);
   const base = at(Math.ceil(max * 0.75));
   const enigma = turn.mon(p).facts.enigma;
   return { base, pre: tpHealAt(turn, p, Math.ceil(max * 0.75), true), sitrus: Math.max(0, at(Math.floor(max * 0.4)) - base),
-    enigma: enigma?.heal ?? 0, enigmas: enigma?.left ?? 0 };
+    enigma: enigma?.heal ?? 0, enigmas: enigma?.left ?? 0, ...(enigma?.keep ? { keep: enigma.keep } : {}) };
 };
 const tpCanSteal = (turn, me, f) => turn.outcomes(me, f).some(o => stealsBerry(o, f, me));
 // `by[k]`: `f`'s profile after k berries stolen, k from 0 (`kept`) up to all it holds or 9 (#646, #833); `walk`: its
@@ -151,11 +152,14 @@ const tpHealBy = (turn, f, kept, walk) => {
     if (!profiles.has(p)) profiles.set(p, tpHealProfile(turn, p));
     return profiles.get(p);
   };
-  const by = Object.fromEntries(Object.keys(kept).map(key => [key, overWalk(walk, p => prof(p)[key])]));
-  return Array.from({ length: supply + 1 }, (_, k) => (k === 0 ? kept : Object.fromEntries(Object.keys(kept).map(key => [key, by[key][k]]))));
+  // A Pouch is the side's, so `keep` stays as it was: a walked mon with no Enigma left carries no `keep`, and mixing it
+  // in would give NaN.
+  const by = Object.fromEntries(Object.keys(kept).map(key => [key, key === "keep" ? null : overWalk(walk, p => prof(p)[key])]));
+  return Array.from({ length: supply + 1 }, (_, k) => (k === 0 ? kept : Object.fromEntries(Object.keys(kept).map(key => [key, key === "keep" ? kept.keep : by[key][k]]))));
 };
 // What each steal of `me`'s off `f` heals it, as `stealHeal` holds it, from what `f` holds. `stealHealAfter`'s `Map`
-// gives the same once `f` has eaten berries of its own, by `tpHeal`'s `used` bits: its Sitrus, and each Enigma (#833).
+// gives the same once `f` has eaten berries of its own, by `tpEatenKey` of `tpHeal`'s `used` bits: its Sitrus, and each
+// Enigma (#833).
 const tpStealHeal = (turn, me, f, walk) => {
   const draws = (holder, w) => {
     const d = stolenDraws(holder, { eater: me, turn, walk: w });
@@ -269,14 +273,24 @@ const tpWear = (turn, party, foes, ours, faced = () => true) => {
 // The turn-end HP change `fixed` sure steals and Grip Claw's `mean` make, against none; `byCount[k]` is after k.
 const tpStolen = (byCount, fixed, mean) => (byCount ? stealCounts(fixed, mean).reduce((t, p, k) => t + p * (byCount[k] - byCount[0]), 0) : 0);
 
-// `used`: bit 0 the Sitrus Berry eaten, and the Enigma Berries eaten counted from bit 1 up. `se`: a super-effective
-// hit landed this turn. The berries heal, capped, between `pre` and the rest of the turn end (game-code.md §21).
+// `used`: bit 0 the Sitrus Berry eaten, and the Enigma Berries eaten counted from bit 1 up, in `ENIGMA_PART`s of one.
+// `se`: a super-effective hit landed this turn. The berries heal, capped, between `pre` and the rest of the turn end
+// (game-code.md §21).
+const ENIGMA_PART = 100;
+// `used` as `stealHealAfter` keys it. Exact without a Berry Pouch; under one, a part-eaten Enigma reads as gone or held.
+const tpEatenKey = used => (used & 1) | (Math.round((used >> 1) / ENIGMA_PART) << 1);
 const tpHeal = (hp, max, prof, used, se, extra = 0) => {
   if (!prof || hp < 1) return [hp, used];
   const pre = prof.pre ?? 0, at = Math.min(max, hp + pre);
   let berries = 0;
   if (at < max / 2 && !(used & 1) && prof.sitrus) { berries += prof.sitrus; used |= 1; }
-  if (se && prof.enigma && used >> 1 < (prof.enigmas ?? 1)) { berries += prof.enigma; used += 2; }
+  // Under a Berry Pouch the count eaten is an expectation, and `left` stands for the chance a berry is still held (#822).
+  const keep = prof.keep ?? 0, eaten = (used >> 1) / ENIGMA_PART, held = prof.enigmas ?? 1;
+  const left = keep > 0 ? Math.max(0, Math.min(1, held - eaten)) : eaten < held ? 1 : 0;
+  if (se && prof.enigma && left > 0) {
+    berries += prof.enigma * left;
+    used += 2 * Math.max(1, Math.round(ENIGMA_PART * left * (1 - keep)));
+  }
   if (!berries) return [Math.min(max, hp + prof.base + extra), used];
   return [at < 1 ? at : Math.min(max, Math.min(max, at + berries) + prof.base - pre + extra), used];
 };
@@ -332,7 +346,7 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
     // Recoil is paid whether or not the hit finished the foe.
     if (mv.self) b.mh -= mv.self;
     // A landed steal takes the next berry even on a knockout, and its heal comes after our own chip (game-code.md §3).
-    const draws = (b.fb && T.stealHealAfter?.[mi]?.[fi]?.get(b.fb)) || stealHeal;
+    const draws = (b.fb && T.stealHealAfter?.[mi]?.[fi]?.get(tpEatenKey(b.fb))) || stealHeal;
     if (us.steals && draws && b.fl < draws.length) {
       if (b.mh >= 1) b.mh = Math.min(T.ourMax[mi], b.mh + draws[b.fl]);
       b.fl++;
