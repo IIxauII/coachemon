@@ -385,9 +385,14 @@ we eat from full HP, Sitrus x1: moving first 0 · moving second 18
 two Sitrus from full HP over a long fight: 328/400 after 6 turns
 eaten: plain 70 · Ripen 140 · Heal Block 0 · Cheek Pouch 163, off a Lum 93
 reach: sticky false,true,false · sub false,true,false
+the 10th draw off Sitrus x1 + Lum x11: 0.068359375
+eaten under Healing Charm x2: plain 84 · Cheek Pouch 195
+from full HP, chipped 30 by our own Bug Bite: down on turn 3 (2 Heal Blocked)
+a faster thief from full HP, Sitrus x2 into Brine: down on turn 6 (5 Heal Blocked)
+a slower thief one-shot before it moves: 0 HP left
 == gordie w180 t7: Leavanny into the incoming Carracosta
 as plain damage: Leaf Storm (Leaf Storm: we need 3, they need 2 (2.393), P(steal) 0 · Bug Bite: we need 6, they need 2 (2.393), P(steal) 0)
-with the steal:  Leaf Storm (Leaf Storm: we need 3, they need 2 (2.393), P(steal) 0 · Bug Bite: we need 6, they need 3 (3.126), P(steal) 1)
+with the steal:  Leaf Storm (Leaf Storm: we need 3, they need 2 (2.393), P(steal) 0 · Bug Bite: we need 6, they need 3 (3.333), P(steal) 1)
 the ⚔ call does not flip: still Leaf Storm
 play: Toxic, bare foe         note toxic · patches Machamp status 2 · skip0 0 · foeAct — · gain 0
 play: Toxic, Lum x1           note — · patches — · skip0 0 · foeAct — · gain 0

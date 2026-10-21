@@ -1964,6 +1964,7 @@ export const HUD: Area = {
         "src/data/berry.ts#getBerryEffectFunc",
         "src/data/moves/move.ts#StealEatBerryAttr",
         "src/data/abilities/ab-attrs.ts#HealFromBerryUseAbAttr",
+        "src/phases/pokemon-heal-phase.ts#PokemonHealPhase.getHealAmount",
       ],
     },
     {

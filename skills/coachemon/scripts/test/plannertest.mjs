@@ -1462,7 +1462,8 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
   const shuckle = (items, extra, maxHp, spe = 5) => mon("Shuckle", 80, ["Bug", "Rock"], [maxHp, 10, 230, 10, 230, spe], [["Brine", "Water", 65, "S"]], true, undefined,
     { getHeldItems: () => items, ...extra });
   // `move`: 0 Bug Bite, 1 Pound. `stole`: a berry an earlier turn of a depth-2 line already ate.
-  const bite = (items, { hp = 200, move = 0, stole = 0, foeHp = 280, foeSpe = 5, thiefAttr = null, thiefTag = null, ...extra } = {}) => {
+  // `self`: what each use of ours costs us; `full`: the whole exchange back.
+  const bite = (items, { hp = 200, move = 0, stole = 0, foeHp = 280, foeSpe = 5, thiefAttr = null, thiefTag = null, self = 0, full = false, ...extra } = {}) => {
     const me = beedrill(hp), foe = shuckle(items, extra, foeHp, foeSpe);
     if (thiefAttr) {
       const own = me.hasAbilityWithAttr?.bind(me);
@@ -1472,10 +1473,14 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
       const own = me.getTag?.bind(me);
       me.getTag = t => (t === thiefTag ? { tagType: t } : own?.(t) ?? null);
     }
-    const { scene } = render({ party: [me], foes: [foe], live: true, switches: () => new Map(), stubOutcome: withAttrs,
+    const stub = (a, d, pm, o) => {
+      const x = withAttrs(a, d, pm, o);
+      return x && self && a === me ? { ...x, self } : x;
+    };
+    const { scene } = render({ party: [me], foes: [foe], live: true, switches: () => new Map(), stubOutcome: stub,
       heal: sitrusHeal, dist: () => [{ name: "Brine", type: "Water", p: 1, score: 10, targets: [0] }] });
     const x = globalThis.__planner.exchange(scene, me, me.moveset[move], foe, { stole });
-    return { turnsWe: x.turnsWe, hp: x.expectedHpLeft, stole: Math.round(x.stole * 1e4) / 1e4 };
+    return full ? x : { turnsWe: x.turnsWe, hp: x.expectedHpLeft, stole: Math.round(x.stole * 1e4) / 1e4 };
   };
   // The heal we eat, on its own. A 160 HP Shuckle falls to the second use whether its Sitrus heals or not, so the whole
   // difference between Bug Bite and the plain Pound beside it is the berry we ate.
@@ -1663,6 +1668,39 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
   assert.deepEqual(reach, [false, true, false, false, true, false]);
   const breaker = bite([berryItem(BERRY.SITRUS)], { hasAbilityWithAttr: a => a === "BlockItemTheftAbAttr", thiefAttr: "MoveAbilityBypassAbAttr" });
   assert.deepEqual(breaker, sitrus, "a Mold Breaker Bug Bite eats a Sticky Hold foe's berry like any other");
+
+  // The game draws per berry type, so past the walk's nine draws too (#833): Sitrus x1 + Lum x11 keeps its Sitrus through
+  // nine coin flips, (1/2)^9, and the 10th draw is one more.
+  const tenth = gone([berryItem(BERRY.SITRUS), berryItem(BERRY.LUM, 11)]).eatenAt[9];
+  console.log(`the 10th draw off Sitrus x1 + Lum x11: ${tenth}`);
+  assert.equal(tenth, 70 / 1024, "a type-uniform draw, not the mean berry left");
+  // Healing Charm scales the eaten heal, through the heal phase it goes through (#833).
+  const charm = new ({ HealingBoosterModifier: class { multiplier = 1.1; getStackCount() { return 2; } } }).HealingBoosterModifier();
+  const charmed = attr => berryGone(holder([berryItem(BERRY.SITRUS)]), sitrusHeal, { eater: eater(attr), hp: 0, turn: { facts: { modifiers: [charm] } } }).eaten;
+  console.log(`eaten under Healing Charm x2: plain ${charmed(null)} · Cheek Pouch ${charmed("HealFromBerryUseAbAttr")}`);
+  assert.deepEqual([charmed(null), charmed("HealFromBerryUseAbAttr")], [84, 84 + 111], "70 and 93, each × 1.2 and floored");
+  // Turn 1's room, moving first, is what our own use has already cost us (#833): a contact chip of 30 from full HP.
+  const se = TABLE["Shuckle>Brine>Beedrill"];
+  try {
+    TABLE["Shuckle>Brine>Beedrill"] = [[140], 1, 1];
+    const chipped = thiefTag => bite([berryItem(BERRY.SITRUS)], { hp: 400, foeHp: 600, self: 30, thiefTag, full: true }).turnsThey;
+    const [ate, blocked] = [chipped(null), chipped("HEAL_BLOCK")];
+    console.log(`from full HP, chipped 30 by our own Bug Bite: down on turn ${ate} (${blocked} Heal Blocked)`);
+    // Four uses' chip off the top leaves the curve 280; 280 − 140 + 30 − 140 stands through turn 2.
+    assert.deepEqual([ate, blocked], [3, 2], "the 30 our chip opened is healed back, which buys a turn");
+    // A faster thief eats each later steal before the hit, so near full HP the heal fills only the room left (#833).
+    TABLE["Shuckle>Brine>Beedrill"] = [[89], 1, 1];
+    const late = thiefTag => bite([berryItem(BERRY.SITRUS, 2)], { hp: 400, foeHp: 2000, thiefTag, full: true }).turnsThey;
+    const [twice, none] = [late(null), late("HEAL_BLOCK")];
+    console.log(`a faster thief from full HP, Sitrus x2 into Brine: down on turn ${twice} (${none} Heal Blocked)`);
+    // Brine's rolls average 82, so five fell a 400 HP thief. The second Sitrus, eaten before turn 2's hit, refills only
+    // the 82 turn 1 took: one hit more. At the turn's end it would have refilled 100, and the curve read turn 7.
+    assert.deepEqual([twice, none], [6, 5], "the second Sitrus heals the room the first hit opened, not its quarter");
+    // A slower thief that Brine's every roll fells before it moves steals nothing (#833).
+    TABLE["Shuckle>Brine>Beedrill"] = [[140], 1, 1];
+    const felled = bite([berryItem(BERRY.SITRUS)], { hp: 100, foeHp: 120, foeSpe: 500 });
+    console.log(`a slower thief one-shot before it moves: ${felled.hp} HP left`);    assert.equal(felled.hp, 0, "no stolen heal lifts a thief that never moved");
+  } finally { TABLE["Shuckle>Brine>Beedrill"] = se; }
 }
 
 // ---- Gordie W180 T7: Leavanny's Bug Bite into the six-berry Carracosta, and whether the ⚔ call flips (#646)

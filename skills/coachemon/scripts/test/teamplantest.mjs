@@ -123,9 +123,9 @@ assert.equal(plan.approxDoubles, false);
   const held = Object.assign(new ({ BerryModifier: class { berryType = 0; getStackCount() { return 1; } } }).BerryModifier(), {});
   assert.deepEqual(globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpHealProfile(turn, Object.assign(zard, { getHeldItems: () => [held] }))), { base: -6, pre: -6, sitrus: 24, enigma: 0, enigmas: 0 }, "Sitrus after the chip");
 }
-// A pairing whose pick eats a berry off its target reads that foe's heal profile after the steal (#646). The draw is
-// uniform over the berry types held, so a lone Sitrus is sure to go and two types each take half. A blocked steal
-// (Sticky Hold) leaves the profile alone, exactly as a pick that steals nothing does.
+// A foe one of ours can eat a berry off gets its heal profile after each count of steals, and the thief what each draw
+// heals it (#646, #833). The draw is uniform over the berry types held, so a lone Sitrus is sure to go and two types
+// each take half; a stack of two loses its turn-end Sitrus only to the second steal.
 {
   const steal = new ({ StealEatBerryAttr: class {} }).StealEatBerryAttr();
   const berry = (berryType, n = 1) => Object.assign(new ({ BerryModifier: class { getStackCount() { return n; } } }).BerryModifier(), { berryType, isTransferable: true });
@@ -141,29 +141,88 @@ assert.equal(plan.approxDoubles, false);
     const me = Object.assign(biter(bites), thief), f = holder(items, extra);
     const { scene: s } = run(null, { party: [me], foes: [f] });
     const T = globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpTables(turn, [me], [f]));
-    return { kept: T.foeHeal[0], after: T.foeHealAt[0][0] };
+    return { kept: T.foeHeal[0], by: T.foeHealBy[0], eats: T.stealHeal[0][0], after: T.stealHealAfter[0][0] };
   };
   const sitrus = at(true, [berry(0)]);
-  console.log(`== a bug bite pairing's foe heal profile\nit keeps ${JSON.stringify(sitrus.kept)} · after the steal ${JSON.stringify(sitrus.after)}`);
+  console.log(`== a bug bite pairing's foe heal profile\nit keeps ${JSON.stringify(sitrus.kept)} · after the steal ${JSON.stringify(sitrus.by[1])} · we eat ${sitrus.eats}`);
   assert.equal(sitrus.kept.sitrus, 100, "a 400 HP Snorlax heals a quarter off a held Sitrus");
-  assert.deepEqual(sitrus.after, { base: 0, pre: 0, sitrus: 0, enigma: 0, enigmas: 0 }, "its one berry is sure to go, so the profile loses that heal");
-  assert.equal(at(false, [berry(0)]).after, null, "a pick that steals nothing leaves the profile alone");
-  assert.equal(at(true, []).after, null, "and so does a foe with no berry");
-  assert.equal(at(true, [berry(0), berry(1)]).after.sitrus, 50, "beside a Lum, half the draw takes the Sitrus");
-  assert.equal(at(true, [berry(0, 2)]).after.sitrus, 100, "a stack of two keeps one turn-end Sitrus");
-  assert.equal(at(true, [berry(0)], sticky).after, null, "Sticky Hold blocks the steal, so the fight plays the heal it keeps");
-  assert.deepEqual(at(true, [berry(0)], sticky, { hasAbilityWithAttr: a => a === "MoveAbilityBypassAbAttr" }).after, sitrus.after, "a Mold Breaker thief gets past it");
+  assert.deepEqual(sitrus.by, [sitrus.kept, { base: 0, pre: 0, sitrus: 0, enigma: 0, enigmas: 0 }], "its one berry is sure to go, so the profile loses that heal");
+  assert.deepEqual(sitrus.eats, [65], "a 260 HP thief eats a quarter of its own max HP");
+  const blunt = at(false, [berry(0)]);
+  assert.deepEqual([blunt.by, blunt.eats], [null, null], "nobody who can steal: no steal is priced");
+  const bare = at(true, []);
+  assert.deepEqual([bare.by, bare.eats], [null, null], "and nothing to steal: the same");
+  assert.equal(at(true, [berry(0), berry(1)]).by[1].sitrus, 50, "beside a Lum, half the draw takes the Sitrus");
+  const two = at(true, [berry(0, 2)]);
+  assert.deepEqual(two.by.map(x => x.sitrus), [100, 100, 0], "a stack of two keeps one turn-end Sitrus, and loses it to the second steal");
+  assert.deepEqual(two.eats, [65, 65], "…and feeds the thief twice");
+  // `after`, by the foe's own eaten-berry bits (`fb`): what is left to steal once it has eaten some itself.
+  assert.deepEqual([...sitrus.after], [[1, []]], "a foe that ate its one Sitrus has nothing left to steal");
+  assert.deepEqual([...two.after], [[1, [65]]], "…and a Sitrus x2 one berry");
+  const enigma = at(true, [berry(2)]);
+  assert.deepEqual([enigma.eats, [...enigma.after]], [[65], [[2, []]]], "an Enigma it ate itself is gone too");
+  assert.equal(at(true, [berry(0)], sticky).eats, null, "Sticky Hold blocks the steal, so the fight plays the heal it keeps");
+  assert.deepEqual(at(true, [berry(0)], sticky, { hasAbilityWithAttr: a => a === "MoveAbilityBypassAbAttr" }).eats, sitrus.eats, "a Mold Breaker thief gets past it");
+}
+// A foe that already ate its own Sitrus leaves our Bug Bite nothing to eat (#833).
+{
+  const { tpFight } = globalThis.__tp;
+  const kept = { base: 0, pre: 0, sitrus: 50, enigma: 0 };
+  const T = { ours: [[{ dmg: 50, steals: true }]], theirs: [[{ dmg: 10, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [null],
+    foeHeal: [kept], foeHealBy: [[kept, { ...kept, sitrus: 0 }]], stealHeal: [[[50]]], stealHealAfter: [[new Map([[1, []]])]] };
+  const won = fb => tpFight(T, { oh: [100], ob: [0], fh: [100], fs: [0], fb: [fb] }, 0, 0, "free").ends.win.mh;
+  const [held, eaten] = [won(0), won(1)];
+  console.log(`== bug bite after the foe ate its own Sitrus\nwe end on ${eaten} (${held} when it still held it)`);
+  // Two Bug Bites fell it, and its one hit lands between them: 100 − 10, plus 50 for a Sitrus still there to steal.
+  assert.deepEqual([held, eaten], [140, 90], "no heal for a berry already eaten");
 }
 // A switch-in's entry turn ends before our Bug Bite has gone off, so the foe still eats its own Sitrus then (#646).
 {
   const { tpFight } = globalThis.__tp;
+  const kept = { base: 0, sitrus: 50, enigma: 0 };
   const T = { ours: [[{ dmg: 100, steals: true }]], theirs: [[{ dmg: 10, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [null],
-    foeHeal: [{ base: 0, sitrus: 50, enigma: 0 }], foeHealAt: [[{ base: 0, sitrus: 0, enigma: 0 }]] };
+    foeHeal: [kept], foeHealBy: [[kept, { ...kept, sitrus: 0 }]], stealHeal: [[[0]]] };
   const st = { oh: [200], ob: [0], fh: [90], fs: [0], fb: [0] };
   const [switched, free] = ["switch", "free"].map(e => tpFight(T, st, 0, 0, e));
   console.log(`== a bug bite switch-in's entry turn\nswitch: won in ${switched.ends.win.turns} · free: won in ${free.ends.win.turns}`);
   assert.equal(switched.ends.win.turns, 2, "the Sitrus eaten at the entry turn's end takes a second Bug Bite");
   assert.equal(free.ends.win.turns, 1, "with no entry turn, the first Bug Bite fells it");
+}
+// A branch where our Bug Bite never went off keeps the foe's own Sitrus (#833)
+{
+  const { tpFight } = globalThis.__tp;
+  const kept = { base: 0, pre: 0, sitrus: 50, enigma: 0 }, gone = { ...kept, sitrus: 0 };
+  // The foe outspeeds; half its hits fell our 150 HP before we move, half take 50.
+  const T = { ours: [[{ dmg: 40, steals: true }]], theirs: [[{ dmg: 100, e: 1, use: [{ r: 2, p: 0.5 }, { r: 0.5, p: 0.5 }] }]], first: [[1]],
+    ourMax: [200], foeMax: [200], ourHeal: [null], foeHeal: [kept], foeHealBy: [[kept, gone]], stealHeal: [[[0]]] };
+  const r = tpFight(T, { oh: [150], ob: [0], fh: [90], fs: [0], fb: [0] }, 0, 0, "free");
+  console.log(`== bug bite that never went off\nlost with the foe on ${r.ends.loss.fh} on average`);
+  // Felled on turn 1 (½): it ate its Sitrus, 140. Felled on turn 2 (¼) or 3 (¼) after our steal: 50, then 10.
+  assert.equal(r.ends.loss.fh, 85, "the foe eats its own Sitrus where our Bug Bite never landed, and not where it did");
+}
+// A stealing move pinned on a pairing whose own pick steals nothing prices the steal (#113, #833)
+{
+  const { tpFight } = globalThis.__tp;
+  const kept = { base: 0, pre: 0, sitrus: 50, enigma: 0 }, gone = { ...kept, sitrus: 0 };
+  const T = { ours: [[{ dmg: 80, steals: false }]], theirs: [[{ dmg: 1, e: 1 }]], first: [[0]],
+    ourMax: [200], foeMax: [200], ourHeal: [null], foeHeal: [kept], foeHealBy: [[kept, gone]], stealHeal: [[[0]]] };
+  const fight = over => tpFight(T, { oh: [200], ob: [0], fh: [200], fs: [0], fb: [0] }, 0, 0, "free", over).ends.win.turns;
+  const [own, pinned] = [null, { dmg: 80, steals: true }].map(fight);
+  console.log(`== a pinned bug bite\nthe pairing's own pick wins in ${own} · a pinned Bug Bite in ${pinned}`);
+  assert.deepEqual([own, pinned], [4, 3], "200 → 120 → 40, and only the pinned steal keeps its Sitrus from bringing it back to 90");
+}
+// A Sitrus x2 holder loses both berries to two landed Bug Bites, and the thief eats each (#833)
+{
+  const { tpFight } = globalThis.__tp;
+  const kept = { base: 0, pre: 0, sitrus: 50, enigma: 0 }, gone = { ...kept, sitrus: 0 };
+  const T = { ours: [[{ dmg: 30, steals: true }]], theirs: [[{ dmg: 20, e: 1 }]], first: [[0]],
+    ourMax: [200], foeMax: [200], ourHeal: [null], foeHeal: [kept], foeHealBy: [[kept, kept, gone]], stealHeal: [[[30, 30]]] };
+  const r = tpFight(T, { oh: [150], ob: [0], fh: [200], fs: [0], fb: [0] }, 0, 0, "free");
+  console.log(`== bug bite into a Sitrus x2\nwon in ${r.ends.win.turns} on ${r.ends.win.mh} HP · ${r.fl} berries gone`);
+  assert.equal(r.ends.win.turns, 7, "two steals by turn 2, so the foe at 80 on turn 4 has no Sitrus left: seven 30s fell it");
+  // 150, +30 −20, +30 −20, then four more of its hits: 90.
+  assert.equal(r.ends.win.mh, 90, "each steal heals the thief");
+  assert.equal(r.fl, 2, "the count carries to the next exchange");
 }
 // A foe switching in spends its first turn coming in (#846). It outspeeds us and two of its hits fell our 150 HP;
 // two of ours fell its 200.
