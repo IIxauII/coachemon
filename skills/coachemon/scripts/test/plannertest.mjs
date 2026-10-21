@@ -634,9 +634,9 @@ const slotLines = field => field.filter(l => /^⚔/.test(l));
   assert.ok(!field.some(l => /^· focus Hydreigon/.test(l)), "no focus on the leaving Hydreigon");
 }
 
-// A status play in a double (#262). Machamp outspeeds and 1HKOs Breloom, and neither of ours dents it this turn;
-// Munchlax falls to one Dragon Claw. Spore is priced on the whole field at once — the sleep is written before
-// Salamence's slot is scored — so Breloom spends its turn on it and Salamence takes the foe it can actually finish.
+// A status play in a double (#262, #862). Neither of ours dents Machamp this turn, and Munchlax falls to one Dragon
+// Claw. Faster than Machamp, Breloom's Spore takes this turn's Close Combat, so Breloom spends its turn on it and
+// Salamence takes the foe it can actually finish.
 Object.assign(TABLE, {
   "Breloom>Seed Bomb>Machamp": [[60], 1, 1], "Breloom>Seed Bomb>Munchlax": [[60], 1, 1],
   "Salamence>Dragon Claw>Machamp": [[60], 1, 1], "Salamence>Dragon Claw>Munchlax": [[400], 1, 1],
@@ -644,8 +644,8 @@ Object.assign(TABLE, {
   "Munchlax>Body Slam>Breloom": [[30], 1, 1], "Munchlax>Body Slam>Salamence": [[30], 1, 1],
 });
 const SPORE = ["Spore", "Grass", 0, "X", 0, { id: 147, attrs: [["StatusEffectAttr", { effect: 4 }]] }];
-const sporeParty = () => [
-  mon("Breloom", 80, ["Grass", "Fighting"], [250, 200, 110, 60, 90, 100], [["Seed Bomb", "Grass", 80, "P"], SPORE], true, undefined, { getBattlerIndex: () => 0 }),
+const sporeParty = (spe = 100, moves = [["Seed Bomb", "Grass", 80, "P"], SPORE]) => [
+  mon("Breloom", 80, ["Grass", "Fighting"], [250, 200, 110, 60, 90, spe], moves, true, undefined, { getBattlerIndex: () => 0 }),
   mon("Salamence", 80, ["Dragon", "Flying"], [270, 200, 150, 120, 130, 130], [["Dragon Claw", "Dragon", 80, "P"]], true, undefined, { getBattlerIndex: () => 1 }),
 ];
 const sporeFoes = (sleeping = false) => [
@@ -654,7 +654,10 @@ const sporeFoes = (sleeping = false) => [
   foeAt(3, "Munchlax", 80, ["Normal"], [300, 150, 110, 80, 150, 40], [["Body Slam", "Normal", 85, "P"]]),
 ];
 {
-  const { lines, field } = render({ party: sporeParty(), foes: sporeFoes(), live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
+  const slower = render({ party: sporeParty(), foes: sporeFoes(), live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
+  console.log(`== doubles: a status play, slower than Machamp (live)\n${slower.lines.join("\n")}`);
+  assert.match(lineOf(slower.field, "Salamence"), /→ Munchlax/, `the partner keeps the foe it can finish:\n${slower.field.join("\n")}`);
+  const { lines, field } = render({ party: sporeParty(150), foes: sporeFoes(), live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
   console.log(`== doubles: a status play (live)\n${lines.join("\n")}`);
   assert.match(lineOf(field, "Breloom"), /Spore → Machamp .*sleep/, `Spore is the double's turn line:\n${field.join("\n")}`);
   assert.ok(!/then /.test(lineOf(field, "Breloom")), `no depth 2 in a double:\n${field.join("\n")}`);
@@ -1989,27 +1992,32 @@ Object.assign(TABLE, { "Machamp>Close Combat>Vileplume": [[40], 1, 1], "Vileplum
   assert.equal(alone(lum(2)).score, cured.score, "…and a Lum x2 holder is the same play again");
 
   // Doubles take the same shape: `playCandidate` reads the one-turn play off the same `statusPlay`. The field is
-  // #262's — Breloom's Spore into a Machamp neither of ours can dent, with Salamence finishing Munchlax — so a bare
-  // Machamp is still slept and a Lum-holding one is not worth the turn.
+  // #262's — Breloom's Spore into a Machamp neither of ours can dent, with Salamence finishing Munchlax. Faster than
+  // Machamp, a bare one is still slept. Slower, a Lum-holding one is not worth the turn, and with Spore its only move
+  // Breloom sleeps a bare Machamp but not a Lum holder (#862).
   Object.assign(TABLE, {
     "Breloom>Seed Bomb>Machamp": [[60], 1, 1], "Breloom>Seed Bomb>Munchlax": [[60], 1, 1],
     "Salamence>Dragon Claw>Machamp": [[60], 1, 1], "Salamence>Dragon Claw>Munchlax": [[400], 1, 1],
     "Machamp>Close Combat>Breloom": [[400], 1, 1], "Machamp>Close Combat>Salamence": [[300], 1, 1],
     "Munchlax>Body Slam>Breloom": [[30], 1, 1], "Munchlax>Body Slam>Salamence": [[30], 1, 1],
   });
-  const pair = items => {
+  const pair = (items, party = sporeParty()) => {
     const foes = [
       mon("Machamp", 80, ["Fighting"], [300, 200, 110, 60, 110, 140], [["Close Combat", "Fighting", 120, "P"]], true, undefined,
         { getBattlerIndex: () => 2, getHeldItems: () => items }),
       mon("Munchlax", 80, ["Normal"], [300, 150, 110, 80, 150, 40], [["Body Slam", "Normal", 85, "P"]], true, undefined, { getBattlerIndex: () => 3 }),
     ];
-    const { field } = render({ party: sporeParty(), foes, live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
+    const { field } = render({ party, foes, live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
     return lineOf(field, "Breloom");
   };
-  const [bare, lumHeld] = [pair([]), pair(lum(1))];
+  const [bare, lumHeld] = [pair([], sporeParty(150)), pair(lum(1))];
   console.log(`== lum: a double's status play, bare foe (live)\n${bare}\n== lum: …and into a Lum holder (live)\n${lumHeld}`);
   assert.match(bare, /Spore → Machamp .*sleep/, `a bare foe is still the double's Spore target:\n${bare}`);
   assert.ok(!/Spore/.test(lumHeld), `a sleep a Lum cures is not worth the double's turn:\n${lumHeld}`);
+  const [sporeBare, sporeLum] = [pair([], sporeParty(100, [SPORE])), pair(lum(1), sporeParty(100, [SPORE]))];
+  console.log(`== lum: a double's only move is Spore, bare foe (live)\n${sporeBare}\n== lum: …and a Lum holder (live)\n${sporeLum}`);
+  assert.match(sporeBare, /Spore → Machamp .*sleep/, `with nothing else to do, a bare foe is slept:\n${sporeBare}`);
+  assert.ok(!/→ Machamp/.test(sporeLum), `…and a Lum holder is not:\n${sporeLum}`);
 
   // A double's `STATUS_CANDS` cut (#834): the game AI ranks both of Breloom's plays into the Lum-holding Machamp first,
   // and Munchlax is the one hitting hard.
@@ -2044,6 +2052,60 @@ Object.assign(TABLE, { "Machamp>Close Combat>Vileplume": [[40], 1, 1], "Vileplum
   const [cutBare, cutLum] = [cut([]), cut(lum(1))];
   console.log(`== lum: three status plays in a double, bare Machamp (live)\n${cutBare}\n== lum: …and a Lum-holding one (live)\n${cutLum}`);
   assert.match(cutLum, /Spore → Munchlax .*sleep/, `the lasting sleep keeps its slot over the plays the Lum cures:\n${cutLum}`);
+}
+
+
+// ---- A double sleeps or paralyses no foe its lead fells this turn, and never paralyses in #850's double (#862).
+// Ally's Thunderbolt is too little to fell either foe first.
+{
+  const STATUS = {
+    Spore: SPORE,
+    "Thunder Wave": ["Thunder Wave", "Electric", 0, "X", 0, { id: 86, attrs: [["StatusEffectAttr", { effect: 3 }]] }],
+  };
+  const scene = (move, { myHp = 250, mySpe = 80, foeHp = 300, foeSpe = 120, outrage, own, ours, lock = true }) => {
+    Object.assign(TABLE, {
+      "Lead>Ice Beam>Salamence": [[ours], 1, 4], "Lead>Ice Beam>Snorlax": [[50], 1, 1],
+      "Ally>Thunderbolt>Salamence": [[60], 1, 1], "Ally>Thunderbolt>Snorlax": [[70], 1, 1],
+      "Salamence>Outrage>Lead": [[outrage], 1, 1], "Salamence>Fire Blast>Lead": [[own], 1, 1],
+      "Salamence>Outrage>Ally": [[outrage], 1, 1], "Salamence>Fire Blast>Ally": [[own], 1, 1],
+      "Snorlax>Body Slam>Lead": [[40], 1, 1], "Snorlax>Body Slam>Ally": [[40], 1, 1],
+    });
+    const party = [
+      mon("Lead", 80, ["Water"], [myHp, 100, 100, 100, 100, mySpe], [["Ice Beam", "Ice", 90, "S"], STATUS[move]], true, undefined, { getBattlerIndex: () => 0 }),
+      mon("Ally", 80, ["Electric"], [300, 100, 100, 100, 100, 70], [["Thunderbolt", "Electric", 90, "S"]], true, undefined, { getBattlerIndex: () => 1 }),
+    ];
+    const salamence = mon("Salamence", 80, ["Dragon", "Flying"], [foeHp, 200, 100, 100, 100, foeSpe],
+      [["Outrage", "Dragon", 120, "P", 0, { target: 7, id: 200 }], ["Fire Blast", "Fire", 110, "S", 0, { id: 126 }]], true, undefined,
+      lock ? { getTag: t => (t === "FRENZY" ? { turnCount: 1 } : null), getMoveQueue: () => [{ move: 200, targets: [0], useMode: 2 }], getBattlerIndex: () => 2 }
+        : { getBattlerIndex: () => 2 });
+    const foes = [salamence, foeAt(3, "Snorlax", 80, ["Normal"], [460, 150, 110, 80, 150, 40], [["Body Slam", "Normal", 85, "P"]])];
+    const dist = e => (e === salamence ? [{ name: lock ? "Outrage" : "Fire Blast", type: lock ? "Dragon" : "Fire", p: 1, score: 10, targets: [0], exact: lock }]
+      : [{ name: "Body Slam", type: "Normal", p: 1, score: 10, targets: [1] }]);
+    const replay = (e, _t, opts) => (e === salamence ? [{ name: !lock || opts?.afterLock ? "Fire Blast" : "Outrage", type: "Dragon", p: 1 }] : [{ name: "Body Slam", type: "Normal", p: 1 }]);
+    return lineOf(render({ party, foes, live: true, double: true, dist, replay, switches: () => new Map() }).field, "Lead");
+  };
+  const CASES = [
+    ["1", "foe faster, Outrage 150 / own 60, we 3HKO", { outrage: 150, own: 60, ours: 110 }],
+    ["2", "as 1, foe slower", { foeSpe: 60, outrage: 150, own: 60, ours: 110 }],
+    ["3", "foe faster, Outrage KOs (300), own 60, we 3HKO", { outrage: 300, own: 60, ours: 110 }],
+    ["4", "we faster and 1HKO", { mySpe: 140, foeHp: 100, outrage: 150, own: 60, ours: 110 }, true],
+    ["5", "we slower, 1HKO, Outrage 150", { foeHp: 100, outrage: 150, own: 60, ours: 110 }, true],
+    ["6", "Outrage resisted (40), own 60", { outrage: 40, own: 60, ours: 110 }],
+    ["7", "own pick as strong (150)", { outrage: 150, own: 150, ours: 110 }],
+    ["8", "foe faster, Outrage 130 / own 60, we 4HKO", { outrage: 130, own: 60, ours: 80 }],
+    ["9", "we slower and 1HKO, both its hits KO", { foeHp: 100, outrage: 300, own: 300, ours: 110 }, true],
+    ["10", "no lock, Fire Blast 150 a turn, we 3HKO", { outrage: 0, own: 150, ours: 110, lock: false }],
+    ["11", "no lock, Fire Blast KOs (300), we 3HKO", { outrage: 0, own: 300, ours: 110, lock: false }],
+    ["12", "no lock, Fire Blast 60, we 3HKO", { outrage: 0, own: 60, ours: 110, lock: false }],
+  ];
+  for (const move of Object.keys(STATUS)) {
+    for (const [id, label, sc, oneHit] of CASES) {
+      const line = scene(move, sc);
+      console.log(`== #850's double, ${move}, case ${id} · ${label}\n${line}`);
+      if (move === "Thunder Wave") assert.ok(!/Thunder Wave/.test(line), `no paralysis in #850's double, case ${id}:\n${line}`);
+      if (oneHit) assert.ok(!line.includes(move), `no ${move} into a foe the lead 1HKOs, case ${id}:\n${line}`);
+    }
+  }
 }
 
 // ---- The one gate: with no exact enemy answer, the card, the fight plan and the catch advice stop together (#183)

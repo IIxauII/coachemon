@@ -110,10 +110,20 @@ Fight plan steps approximate winnable
 ➜ 2.~ Garchomp Dragon Dragon Claw → Hydreigon falls · foe at 45%
 ➜ 3.~ Lucario Fighting Aura Sphere → Hydreigon KO · 100% left
 ➜ 4.~ Lucario Fighting Aura Sphere → Snorlax KO · 60% left
-== doubles: a status play (live)
-⚔ Breloom 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Grass Spore → Machamp sleep
+== doubles: a status play, slower than Machamp (live)
+⚔ Breloom 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Grass Seed Bomb → Machamp
 ⚔ Salamence ⚠ Fighting 100% {Machamp's Close Combat: ~100% of current HP, 34% KO} Dragon Dragon Claw → Munchlax 1 hit
 Machamp Machamp L80 Fighting 100% ▲ — ↯ Fighting Close Combat → Breloom 50% likely · 50% first
+Munchlax Munchlax L80 Normal 100% ▲ — ↯ Normal Body Slam → Salamence 50% likely · moves after
+Fight plan steps approximate likely lost
+💀 Machamp Machamp KOs 2/2 · win condition
+➜ 1.~ Breloom Grass Seed Bomb → Machamp falls · foe at 75%
+➜ 2.~ Salamence Dragon Dragon Claw → Machamp falls · foe at 42%
+⚠ likely lost: nothing we have hurts Machamp — maximise damage before it comes in
+== doubles: a status play (live)
+⚔ Breloom ⚠ Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO} Grass Spore → Machamp sleep
+⚔ Salamence ⚠ Fighting 100% {Machamp's Close Combat: ~100% of current HP, 34% KO} Dragon Dragon Claw → Munchlax 1 hit
+Machamp Machamp L80 Fighting 100% ▲ — ↯ Fighting Close Combat → Breloom 50% likely · moves after
 Munchlax Munchlax L80 Normal 100% ▲ — ↯ Normal Body Slam → Salamence 50% likely · moves after
 Fight plan steps approximate winnable
 💀 Machamp Machamp KOs 2/2 · win condition
@@ -426,14 +436,66 @@ follow: Lum x1 Toxic then Sludge Bomb · Sitrus + Lum Toxic then Knock Off
 == lum: …and for one that lasts (live)
 ⚔ Vileplume Grass Spore → Machamp sleep
 == lum: a double's status play, bare foe (live)
-⚔ Breloom 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Grass Spore → Machamp sleep
+⚔ Breloom ⚠ Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO} Grass Spore → Machamp sleep
 == lum: …and into a Lum holder (live)
 ⚔ Breloom 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Grass Seed Bomb → Machamp
+== lum: a double's only move is Spore, bare foe (live)
+⚔ Breloom 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Grass Spore → Machamp sleep
+== lum: …and a Lum holder (live)
+⚔ Breloom 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Grass Spore → Munchlax sleep
 spikes: Toxic Spikes into a bare bench 0.5 · a Lum holder 0
 == lum: three status plays in a double, bare Machamp (live)
 ⚔ Breloom Grass Seed Bomb → Machamp
 == lum: …and a Lum-holding one (live)
 ⚔ Breloom Grass Spore → Munchlax sleep
+== #850's double, Spore, case 1 · foe faster, Outrage 150 / own 60, we 3HKO
+⚔ Lead Grass Spore → Salamence sleep
+== #850's double, Spore, case 2 · as 1, foe slower
+⚔ Lead Grass Spore → Salamence sleep
+== #850's double, Spore, case 3 · foe faster, Outrage KOs (300), own 60, we 3HKO
+⚔ Lead 💀 Dragon 100% {Salamence's Outrage: ~100% of current HP, before it can act} Ice Ice Beam → Salamence 3 hits
+== #850's double, Spore, case 4 · we faster and 1HKO
+⚔ Lead Ice Ice Beam → Salamence 1 hit
+== #850's double, Spore, case 5 · we slower, 1HKO, Outrage 150
+⚔ Lead Ice Ice Beam → Salamence 1 hit
+== #850's double, Spore, case 6 · Outrage resisted (40), own 60
+⚔ Lead Grass Spore → Salamence sleep
+== #850's double, Spore, case 7 · own pick as strong (150)
+⚔ Lead Grass Spore → Salamence sleep
+== #850's double, Spore, case 8 · foe faster, Outrage 130 / own 60, we 4HKO
+⚔ Lead Grass Spore → Salamence sleep
+== #850's double, Spore, case 9 · we slower and 1HKO, both its hits KO
+⚔ Lead 💀 Dragon 100% {Salamence's Outrage: ~100% of current HP, before it can act} Ice Ice Beam → Salamence 1 hit
+== #850's double, Spore, case 10 · no lock, Fire Blast 150 a turn, we 3HKO
+⚔ Lead Ice Ice Beam → Salamence 3 hits
+== #850's double, Spore, case 11 · no lock, Fire Blast KOs (300), we 3HKO
+⚔ Lead 💀 Fire 100% {Salamence's Fire Blast: ~100% of current HP, before it can act} Ice Ice Beam → Salamence 3 hits
+== #850's double, Spore, case 12 · no lock, Fire Blast 60, we 3HKO
+⚔ Lead Ice Ice Beam → Salamence 3 hits
+== #850's double, Thunder Wave, case 1 · foe faster, Outrage 150 / own 60, we 3HKO
+⚔ Lead Ice Ice Beam → Salamence 3 hits
+== #850's double, Thunder Wave, case 2 · as 1, foe slower
+⚔ Lead Ice Ice Beam → Salamence 3 hits
+== #850's double, Thunder Wave, case 3 · foe faster, Outrage KOs (300), own 60, we 3HKO
+⚔ Lead 💀 Dragon 100% {Salamence's Outrage: ~100% of current HP, before it can act} Ice Ice Beam → Salamence 3 hits
+== #850's double, Thunder Wave, case 4 · we faster and 1HKO
+⚔ Lead Ice Ice Beam → Salamence 1 hit
+== #850's double, Thunder Wave, case 5 · we slower, 1HKO, Outrage 150
+⚔ Lead Ice Ice Beam → Salamence 1 hit
+== #850's double, Thunder Wave, case 6 · Outrage resisted (40), own 60
+⚔ Lead Ice Ice Beam → Salamence 3 hits
+== #850's double, Thunder Wave, case 7 · own pick as strong (150)
+⚔ Lead Ice Ice Beam → Salamence 3 hits
+== #850's double, Thunder Wave, case 8 · foe faster, Outrage 130 / own 60, we 4HKO
+⚔ Lead Ice Ice Beam → Salamence
+== #850's double, Thunder Wave, case 9 · we slower and 1HKO, both its hits KO
+⚔ Lead 💀 Dragon 100% {Salamence's Outrage: ~100% of current HP, before it can act} Ice Ice Beam → Salamence 1 hit
+== #850's double, Thunder Wave, case 10 · no lock, Fire Blast 150 a turn, we 3HKO
+⚔ Lead Ice Ice Beam → Salamence 3 hits
+== #850's double, Thunder Wave, case 11 · no lock, Fire Blast KOs (300), we 3HKO
+⚔ Lead 💀 Fire 100% {Salamence's Fire Blast: ~100% of current HP, before it can act} Ice Ice Beam → Salamence 3 hits
+== #850's double, Thunder Wave, case 12 · no lock, Fire Blast 60, we 3HKO
+⚔ Lead Ice Ice Beam → Salamence 3 hits
 == a lost race: only what lands counts (#650)
 ⚔ Dragonite ⚠ Dragon ×2 100% {Rayquaza's Outrage: ~100% of current HP} Normal Extreme Speed → Rayquaza 3 hits
 ⤵ Dragonite falls this turn › Raichu in free
