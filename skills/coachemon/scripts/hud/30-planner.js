@@ -904,8 +904,8 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   // `stole` is a berry an earlier turn of a depth-2 line already ate, which the target stays short of whatever we
   // follow up with — so the course still reads the theft when this move steals none.
   const stole = Math.min(1, opts.stole ?? 0);
-  // A Lum a cured status burnt (#834) is gone from what it can draw.
-  const holder = turn.held?.(foe) ?? foe;
+  // A berry a `lessBerry` patch took (a Lum a cured status burnt, #834) is gone from what it can draw.
+  const holder = turn.held(foe);
   const eats = mine?.expected > 0 && stealsBerry(mine, holder, me);
   const theft = (eats || stole > 0) && berryTypesOf(holder).length ? (() => {
     const dealt = t?.expected ?? 0, heal = p => healAtEnd(turn, p, dealt);
