@@ -152,7 +152,8 @@ const tpHealBy = (turn, f, kept, walk) => {
     if (!profiles.has(p)) profiles.set(p, tpHealProfile(turn, p));
     return profiles.get(p);
   };
-  // A Pouch is the side's, so a steal leaves its `keep` whole.
+  // A Pouch is the side's, so `keep` stays as it was: a walked mon with no Enigma left carries no `keep`, and mixing it
+  // in would give NaN.
   const by = Object.fromEntries(Object.keys(kept).map(key => [key, key === "keep" ? null : overWalk(walk, p => prof(p)[key])]));
   return Array.from({ length: supply + 1 }, (_, k) => (k === 0 ? kept : Object.fromEntries(Object.keys(kept).map(key => [key, key === "keep" ? kept.keep : by[key][k]]))));
 };
@@ -251,7 +252,7 @@ const tpStolen = (byCount, fixed, mean) => (byCount ? stealCounts(fixed, mean).r
 // `se`: a super-effective hit landed this turn. The berries heal, capped, between `pre` and the rest of the turn end
 // (game-code.md §21).
 const ENIGMA_PART = 100;
-// `used` as `stealHealAfter` keys it, with the Enigmas eaten rounded to whole berries.
+// `used` as `stealHealAfter` keys it. Exact without a Berry Pouch; under one, a part-eaten Enigma reads as gone or held.
 const tpEatenKey = used => (used & 1) | (Math.round((used >> 1) / ENIGMA_PART) << 1);
 const tpHeal = (hp, max, prof, used, se, extra = 0) => {
   if (!prof || hp < 1) return [hp, used];

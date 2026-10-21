@@ -164,7 +164,7 @@ assert.equal(plan.approxDoubles, false);
   {
     const me = biter(true), f = holder([berry(2)]);
     const { scene: s } = run(null, { party: [me], foes: [f] });
-    const pouch = Object.assign(new ({ PreserveBerryModifier: class { getStackCount() { return 1; } } }).PreserveBerryModifier());
+    const pouch = new (class PreserveBerryModifier { getStackCount() { return 1; } })();
     s.modifiers = s.enemyModifiers = [pouch];
     const by = globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpTables(turn, [me], [f])).foeHealBy[0];
     assert.deepEqual(by.map(x => [x.enigmas, x.keep]), [[1, 0.3], [0, 0.3]], "a Berry Pouch is the side's, so a steal leaves its keep whole (#822)");
