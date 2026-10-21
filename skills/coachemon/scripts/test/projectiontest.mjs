@@ -2,7 +2,7 @@
 // level cap makes over the decade ahead, the curve is `level³`, and a share is the game's own (game-code.md §15, §17).
 // Wave 62 is 8 waves short of the boss on 70, where the cap stands at 56.
 import assert from "node:assert/strict";
-import { bundle } from "../hud-bundle.mjs";
+import { mountHud } from "./fake-page.mjs";
 import { EvoCondKey } from "../../../../src/enums/generated.ts";
 import { movesetRandomizer } from "./fixtures/challenges.mjs";
 import { party, species, SPECIES } from "./fixtures/party.mjs";
@@ -53,19 +53,10 @@ const egg = (mon, id, n = 1) => ({ pokemonId: mon.id, type: { id }, getStackCoun
 
 const scene = { modifiers: [], enemyModifiers: [], gameMode: {}, game: { config: { gameVersion: "1.12.0.11" } } };
 let draws = 0;
-globalThis.window = globalThis;
-globalThis.Phaser = {
-  Math: { RND: { _s: "!rnd,live",
-    state(v) { if (v !== undefined) { draws++; this._s = v; } return this._s; },
-    integerInRange() { draws++; return 0; }, realInRange() { draws++; return 0; }, frac() { draws++; return 0; },
-    pick(a) { draws++; return a[0]; }, shuffle(a) { draws++; return a; } } },
-  Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } },
-};
-const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
-globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: node };
-globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
-globalThis.localStorage = { getItem: () => "full", setItem() {} };
-eval(bundle("hud", { expose: true }));
+mountHud({ scene, rnd: { _s: "!rnd,live",
+  state(v) { if (v !== undefined) { draws++; this._s = v; } return this._s; },
+  integerInRange() { draws++; return 0; }, realInRange() { draws++; return 0; }, frac() { draws++; return 0; },
+  pick(a) { draws++; return a[0]; }, shuffle(a) { draws++; return a; } } });
 const { levelCapAt, levelProjection } = globalThis.__hud["09-projection"];
 const { sandboxBreachCount } = globalThis.__hud["01-core"];
 

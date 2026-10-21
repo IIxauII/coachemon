@@ -1,7 +1,7 @@
 // The mock's `getAttackDamage` returns the move's power, ×1.5 on a crit, and reads the user's turnData as the game's
 // multi-hit attrs do: the numbers below are exact.
 import assert from "node:assert/strict";
-import { bundle } from "../hud-bundle.mjs";
+import { mountHud } from "./fake-page.mjs";
 import { HitResult, MoveId, MultiHitType } from "../../../../src/enums/generated.ts";
 import { GAME_PROTO } from "./game-proto.mjs";
 
@@ -75,16 +75,7 @@ const scene = {
   enemyModifiers: [], arena: { tags: [] },
   game: { config: { gameVersion: "1.12.0.11" } },
 };
-globalThis.window = globalThis;
-globalThis.Phaser = {
-  Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } },
-  Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } },
-};
-const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
-globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: node };
-globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
-globalThis.localStorage = { getItem: () => "full", setItem() {} };
-eval(bundle("hud", { expose: true }));
+mountHud({ scene });
 const D = globalThis.__hud["10-damage"];
 const { hitOn, koTurn, koTurns, useOf, koChanceAt } = D;
 const { gameVersionOf, versionAtLeast } = globalThis.__hud["01-core"];

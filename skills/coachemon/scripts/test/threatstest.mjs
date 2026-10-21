@@ -3,7 +3,7 @@
 // does in the page. What is not real is the move table: every move the snapshot names is given here, and only whether
 // it damages is — which is all the pick reads it for, the four slots going to the moves the duel can score.
 import assert from "node:assert/strict";
-import { bundle } from "../hud-bundle.mjs";
+import { mountHud } from "./fake-page.mjs";
 import { TY } from "./fake-mon.mjs";
 
 const STATUS = 2; // the game's `MoveCategory.STATUS`, which is all the pick asks a move about
@@ -128,19 +128,10 @@ const scene = { modifiers: [], enemyModifiers: [], gameMode: {}, currentBattle: 
 // wave 44 is wave 50.
 const BOSS_SCENE = { ...scene, seed: "seed-3", gameMode: { isBoss: w => w % 10 === 0, isFixedBattle: () => false } };
 let draws = 0, sets = 0;
-globalThis.window = globalThis;
-globalThis.Phaser = {
-  Math: { RND: { _s: "!rnd,live",
-    state(v) { if (v !== undefined) { sets++; this._s = v; } return this._s; },
-    integerInRange() { draws++; return 0; }, realInRange() { draws++; return 0; }, frac() { draws++; return 0; },
-    pick(a) { draws++; return a[0]; }, shuffle(a) { draws++; return a; } } },
-  Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } },
-};
-const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
-globalThis.document = { documentElement: { dataset: {}, appendChild() {} }, body: { appendChild() {} }, createElement: node };
-globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
-globalThis.localStorage = { getItem: () => "full", setItem() {} };
-eval(bundle("hud", { expose: true }));
+mountHud({ scene, rnd: { _s: "!rnd,live",
+  state(v) { if (v !== undefined) { sets++; this._s = v; } return this._s; },
+  integerInRange() { draws++; return 0; }, realInRange() { draws++; return 0; }, frac() { draws++; return 0; },
+  pick(a) { draws++; return a[0]; }, shuffle(a) { draws++; return a; } } });
 const { ARCHETYPES, BAND, bandAt, standardThreats } = globalThis.__hud["11-threats"];
 const { RANDBATS } = globalThis.__hud["05-randbats"];
 const { levelCapAt } = globalThis.__hud["09-projection"];
