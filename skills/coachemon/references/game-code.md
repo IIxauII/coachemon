@@ -596,7 +596,12 @@ move (`:60`) aimed at the removed mon (`:61`) by one of its opponents (`:62`), a
 **Move conditions, restrictions, miss effects and recoil.** A `Move` keeps its conditions in three private lists, `conditions`
 (`src/data/moves/move.ts:186`), `conditionsSeq2` (`:190`) and `conditionsSeq3` (`:227`), chosen by
 `condition(c, checkSequence)` (`:507-524`). Fake Out, First Impression and Mat Block each put a fresh
-`FirstMoveCondition` in `conditionsSeq3` (`:10215-10217`, `:11595-11596`, `:11281`). Gigaton Hammer and Blood Moon share
+`FirstMoveCondition` in `conditionsSeq3` (`:10215-10217`, `:11595-11596`, `:11281`). It passes only while the user's
+`summonData.waveTurnCount` is 1 (`src/data/moves/move-condition.ts:53-56`). The count starts at 1
+(`src/data/pokemon-data.ts:168`), and `resetSummonData` starts it afresh on the mon switched in and on the one switched
+out (`src/phases/switch-summon-phase.ts:134`, `:262`). `TurnEndPhase` adds one (§21), and `SwitchSummonPhase` takes one
+off for a command switch (`:238-245`). So a mon sent in by a command, after a faint, or on a reload reaches its first
+command at 1, and every command after it at 2 or more. Gigaton Hammer and Blood Moon share
 one `consecutiveUseRestriction` (`src/data/moves/move-condition.ts:292-295`), a `MoveRestriction` whose `i18nkey` is
 `"battle:moveDisabledConsecutive"`, pushed onto the private `restrictions` list (`move.ts:601`). Thrash, Petal Dance,
 Outrage and Raging Fury add a self `FRENZY` tag of 2–3 uses (`AddBattlerTagAttr(FRENZY, true, false, 2, 3)`,

@@ -35,21 +35,22 @@ const preTera = (mons, fn) => {
 const beforeTera = fn => preTera([...teraSaved.keys()], fn);
 const teraTypeOf = e => { try { return teraSaved.has(e) ? TYPES[e.getTeraType?.()] ?? null : null; } catch { return null; } };
 
-// Patches: `{ mon, stages: { [stat 1–5]: change } }`, `{ mon, status }`, `{ mon, types }`, `{ mon, addedType }` and
-// `{ mon, tera: false }` (its predicted Tera off), written onto the live mons for one synchronous call (game-code.md
-// §14). `patchKey` is part of the derived turn's key, so no hypothetical answer is ever read from a real memo slot.
-const patchKey = patches => patches.map(({ mon, stages, status, types, addedType, tera }) => [
+// Patches: `{ mon, stages: { [stat 1–5]: change } }`, `{ mon, status }`, `{ mon, types }`, `{ mon, addedType }`,
+// `{ mon, tera: false }` (its predicted Tera off) and `{ mon, waveTurnCount }`, written onto the live mons for one
+// synchronous call (game-code.md §5, §14). `patchKey` is part of the derived turn's key, so no hypothetical answer is ever read from a real memo slot.
+const patchKey = patches => patches.map(({ mon, stages, status, types, addedType, tera, waveTurnCount }) => [
   stages ? `${mon.id}s${Object.entries(stages).map(([i, n]) => `${i}:${n}`).join(",")}` : null,
   status ? `${mon.id}x${status.effect}` : null,
   types ? `${mon.id}t${types.join(",")}` : null,
   addedType != null ? `${mon.id}+${addedType}` : null,
   tera === false ? `${mon.id}-tera` : null,
+  waveTurnCount != null ? `${mon.id}w${waveTurnCount}` : null,
 ].filter(Boolean).join(";")).filter(Boolean).join("|");
 // @only tests: withPatches
 export const withPatches = (patches, fn) => {
   const undo = [];
   try {
-    for (const { mon, stages, status, types, addedType, tera } of patches) {
+    for (const { mon, stages, status, types, addedType, tera, waveTurnCount } of patches) {
       if (tera === false && teraSaved.has(mon)) undo.push(teraOff(mon));
       if (stages && Array.isArray(mon.summonData?.statStages)) {
         const prev = mon.summonData.statStages;
@@ -72,6 +73,11 @@ export const withPatches = (patches, fn) => {
         const prev = mon.summonData.addedType;
         mon.summonData.addedType = addedType;
         undo.push(() => { mon.summonData.addedType = prev; });
+      }
+      if (waveTurnCount != null && mon.summonData) {
+        const prev = mon.summonData.waveTurnCount;
+        mon.summonData.waveTurnCount = waveTurnCount;
+        undo.push(() => { mon.summonData.waveTurnCount = prev; });
       }
     }
     return fn();
