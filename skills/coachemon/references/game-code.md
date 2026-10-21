@@ -1059,7 +1059,7 @@ The **party** judged as a whole: type tallies, luck, and the set of the party th
   - A hazard adds `HAZARD_TURNS` (2) per whole HP bar it takes off the trainer's mons still to come.
   - Scored like a depth-2 line minus `STATUS_COST` (0.2) — in a **single battle**. A double is priced differently (below), because `follow()`'s 1-v-1 exchange would weigh the effect against the whole of one foe's damage where the field splits it.
 - Status plays in a **double** (#262): one exchange of the field, not two 1-v-1s.
-  - A slot carries at most `STATUS_CANDS` (2) status plays into the field search, best first by **effect value**: `turn.benefit` — the game's own score for the move against that foe — times how often the play works, so a sure Spore outranks a Hypnosis that misses two times in five. A self-targeted play is carried once, not once per foe.
+  - A slot carries at most `STATUS_CANDS` (2) status plays into the field search, a play that a held Lum cures behind every play that lasts, then best first by **effect value**: `turn.benefit` — the game's own score for the move against that foe — times how often the play works, so a sure Spore outranks a Hypnosis that misses two times in five. A self-targeted play is carried once, not once per foe.
   - A candidate has no standalone score: the field search prices it. Each play lands or it doesn't, so a field is the weighted mix over which of them landed; in each branch the effect is written with `turn.assuming` **before the partner slot is scored**, so Spore in slot 0 changes what slot 1's option is worth.
   - On that state: the slot that spent its turn is worth what its own best move is worth there, one turn later; the partner's own pick is re-scored there; and `joint` counts only the hits that still happen.
   - `getNextMove` picks a move whether or not the mon is asleep, so a written-on sleep changes no distribution. The attempts it costs ride separately, as `foeCurve`'s `act` / `exchange`'s `foeAct`: index 0 is this turn's attempt (cancelled by `skip0` when we move first), and every later one is #74's `foeAct`. `joint` discounts a silenced foe's `danger` and its chance of acting first by the same share.
@@ -2615,15 +2615,16 @@ Nothing in §21 is pure. RNG, by stream:
 summing it, because the order is what decides survival: the weather chip lands before the berry predicate reads the HP,
 and the berry before the status chip, so a mon that a chip-first reading buried walks away. The steps it carries, in
 order: the moves' own Shell Bell (`MoveEffectPhase.end`, before any turn-end phase), the weather chip and the two
-weather-lapse abilities, the berries (Sitrus on the *rounded* ratio, `< 0.495`; Enigma; an opposing Unnerve skips both),
-the status chip and the status orbs, the TURN_END tags (Leech Seed and its heal to the seeder — reversed by Liquid Ooze,
+weather-lapse abilities, the berries (Sitrus on the *rounded* ratio, `< 0.495`; Enigma; a Lum, which cures the status
+before its chip; an opposing Unnerve skips all three), the status chip and the status orbs, the TURN_END tags (Leech
+Seed and its heal to the seeder — reversed by Liquid Ooze,
 cancelled whole by Magic Guard — the binding moves, Nightmare, Curse, Salt Cure, Ingrain and Aqua Ring), then Leftovers,
 Grassy Terrain, the enemy's wave-heal token (whose `preventFullHeal` caps the amount, not the HP), Poison Heal and an opposing Bad
 Dreams. Every one of those heals is a queued `PokemonHealPhase`, so Heal Block cancels it and the healed mon's own side
 scales it by Healing Charm, floored — which is also what deepens a Liquid Ooze drain (§18).
 
 Deliberately left out, each either rare at a command prompt or not a change in HP: `PositionalTagPhase` (Future Sight,
-Wish), Perish Song's count and Yawn's sleep, Cheek Pouch and Cud Chew, the stat berries and Lum, the Shed Skin /
+Wish), Perish Song's count and Yawn's sleep, Cheek Pouch and Cud Chew, the stat berries, the Shed Skin /
 Hydration / Healer cures, Harvest and Moody, and the enemy's 2.5 % status cure. Two more come of the model being **one
 mon's turn end at a time**, not the field's: a Leech Seed's payout to the seeder is read off the seeded mon's HP as it
 stands, so a seed that this same turn's weather or status chip would fell the mon before it ever lapsed still pays; and

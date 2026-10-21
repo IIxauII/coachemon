@@ -290,6 +290,22 @@ const assertNoImmediateScrafty = field => {
   assert.equal(gyaradosVs("Morpeko vs tokens"), 2, "poison tokens chip over the fight");
   assert.equal(exchange(s, { ...morpeko, id: "burned Morpeko", status: { effect: 6 } }, morpeko.moveset[0], { ...gyarados, id: "Gyarados vs burned" }, { hp: 150 }).turnsThey, 3,
     "a statused mon can't be poisoned");
+  const { tokenOdds, tokenShift } = globalThis.__planner;
+  const lumItem = new ({ BerryModifier: class { berryType = 1; isTransferable = true; getStackCount() { return 1; } } }).BerryModifier();
+  const lumMorpeko = id => ({ ...morpeko, id, getHeldItems: () => [lumItem] });
+  const lumOdds = tokenOdds(s, { ...gyarados, id: "Gyarados vs Lum" }, lumMorpeko("Lum Morpeko"));
+  const unnervedOdds = tokenOdds(s, { ...gyarados, id: "Unnerve Gyarados", hasAbilityWithAttr: a => a === "PreventBerryUseAbAttr" }, lumMorpeko("Unnerved Lum Morpeko"));
+  const plainOdds = tokenOdds(s, { ...gyarados, id: "Gyarados vs bare" }, { ...morpeko, id: "bare Morpeko" });
+  console.log(`tokens: bare ${[1, 2].map(plainOdds.by)} · Lum ${[1, 2].map(lumOdds.by)} · Unnerved Lum ${[1, 2].map(unnervedOdds.by)}`);
+  assert.deepEqual([1, 2].map(lumOdds.by), [0, 0.25], "the Lum takes the first landing");
+  assert.deepEqual([1, 2].map(unnervedOdds.by), [1, 2].map(plainOdds.by), "an opposing Unnerve keeps the Lum uneaten");
+  globalThis.__stub.heal = p => (p.status?.effect === 1 && !p.getHeldItems?.().length ? -22 : 0);
+  assert.equal(tokenShift(lumOdds, lumMorpeko("Lum Morpeko, shift"), globalThis.__stub.heal), -22, "the poison that lasts chips a mon whose Lum is gone");
+  globalThis.__stub.heal = p => (p.status?.effect === 1 ? -22 : 0);
+  // At 160 HP two Waterfalls fall short by 12: the tokens' expected 11 + 16.5 make it up, the Lum's 5.5 does not.
+  const at160 = (id, me) => exchange(s, me, morpeko.moveset[0], { ...gyarados, id: `Gyarados vs ${id}` }, { hp: 160 }).turnsThey;
+  assert.deepEqual([at160("bare at 160", { ...morpeko, id: "bare Morpeko at 160" }), at160("Lum at 160", lumMorpeko("Lum Morpeko at 160"))], [2, 3],
+    "the Lum buys back the turn the tokens' chip took");
   s.facts.enemyModifiers = [];
   // Item thieves take one stack a steal. Leftovers healing Metagross 10 a turn makes Waterfall (55.1) take 6 turns; a
   // Mini Black Hole takes them at the end of turn 1, a 5-stack Grip Claw half the time each hit: 5 either way.
@@ -1539,8 +1555,9 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
   const shuckle = (items, extra, maxHp, spe = 5) => mon("Shuckle", 80, ["Bug", "Rock"], [maxHp, 10, 230, 10, 230, spe], [["Brine", "Water", 65, "S"]], true, undefined,
     { getHeldItems: () => items, ...extra });
   // `move`: 0 Bug Bite, 1 Pound. `stole`: a berry an earlier turn of a depth-2 line already ate.
-  // `self`: what each use of ours costs us; `full`: the whole exchange back.
-  const bite = (items, { hp = 200, move = 0, stole = 0, foeHp = 280, foeSpe = 5, thiefAttr = null, thiefTag = null, self = 0, full = false, ...extra } = {}) => {
+  // `self`: what each use of ours costs us; `full`: the whole exchange back; `burnt`: a berry type a `lessBerry` patch
+  // has already taken off the foe.
+  const bite = (items, { hp = 200, move = 0, stole = 0, foeHp = 280, foeSpe = 5, thiefAttr = null, thiefTag = null, self = 0, full = false, burnt = null, ...extra } = {}) => {
     const me = beedrill(hp), foe = shuckle(items, extra, foeHp, foeSpe);
     if (thiefAttr) {
       const own = me.hasAbilityWithAttr?.bind(me);
@@ -1556,7 +1573,8 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
     };
     const { scene } = render({ party: [me], foes: [foe], live: true, switches: () => new Map(), stubOutcome: stub,
       heal: sitrusHeal, dist: () => [{ name: "Brine", type: "Water", p: 1, score: 10, targets: [0] }] });
-    const x = globalThis.__planner.exchange(scene, me, me.moveset[move], foe, { stole });
+    const at = burnt == null ? scene : scene.assuming([{ mon: foe, lessBerry: burnt }]);
+    const x = globalThis.__planner.exchange(at, me, me.moveset[move], foe, { stole });
     return full ? x : { turnsWe: x.turnsWe, hp: x.expectedHpLeft, stole: Math.round(x.stole * 1e4) / 1e4 };
   };
   // The heal we eat, on its own. A 160 HP Shuckle falls to the second use whether its Sitrus heals or not, so the whole
@@ -1580,6 +1598,9 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
   console.log(`we eat: Sitrus ${gain([berryItem(BERRY.SITRUS)])} · at 350/400 ${gain([berryItem(BERRY.SITRUS)], { hp: 350 })}`
     + ` · beside a Lum ${gain([berryItem(BERRY.SITRUS), berryItem(BERRY.LUM)])} · a Sitrus x2 beside a Lum ${gain([berryItem(BERRY.SITRUS, 2), berryItem(BERRY.LUM)])}`
     + ` · beside a Liechi ${gain([berryItem(BERRY.SITRUS), berryItem(BERRY.LIECHI)])}`);
+  const [besideLum, lumBurnt] = [{}, { burnt: BERRY.LUM }].map(o => gain([berryItem(BERRY.SITRUS), berryItem(BERRY.LUM)], o));
+  console.log(`we eat beside a Lum: ${besideLum} · with that Lum burnt ${lumBurnt}`);
+  assert.equal(lumBurnt, gain([berryItem(BERRY.SITRUS)]), "a Lum a cured status burnt is not there to draw (#834)");
   assert.equal(gain([berryItem(BERRY.SITRUS)]), 100, "we eat the quarter we had room for");
   // …capped by the room we have: 50 missing, not the quarter.
   assert.equal(gain([berryItem(BERRY.SITRUS)], { hp: 350 }), 50, "no heal above max HP");
@@ -1843,24 +1864,24 @@ Object.assign(TABLE, { "Machamp>Close Combat>Vileplume": [[40], 1, 1], "Vileplum
   const machamp = items => mon("Machamp", 80, ["Fighting"], [300, 200, 110, 60, 110, 50], [["Close Combat", "Fighting", 120, "P"]], true, undefined,
     { getHeldItems: () => items });
   // `drain`: what Giga Drain deals. 0 leaves the slot with nothing that damages, so the status play is its only option.
-  const scene = (moves, items, spe, drain = 50) => {
+  const scene = (moves, items, spe, { drain = 50, stubOutcome = outcome, ourAttr = null } = {}) => {
     TABLE["Vileplume>Giga Drain>Machamp"] = [[drain], 1, drain ? 1 : 0];
     const me = vileplume(moves, spe), foe = machamp(items);
-    const { scene: s, field } = render({ party: [me], foes: [foe], live: true, switches: () => new Map(), heal: toxicChip,
+    if (ourAttr) {
+      const own = me.hasAbilityWithAttr?.bind(me);
+      me.hasAbilityWithAttr = a => a === ourAttr || !!own?.(a);
+    }
+    const { scene: s, field } = render({ party: [me], foes: [foe], live: true, switches: () => new Map(), heal: toxicChip, stubOutcome,
       dist: () => [{ name: "Close Combat", type: "Fighting", p: 1, score: 10, targets: [0] }] });
     return { s, me, foe, field };
   };
   // Machamp is slower at Vileplume's default 60 Speed and faster at 40.
   const playFor = (move, items, spe = 60, ourAttr = null) => {
-    const { s, me, foe } = scene([GIGA_DRAIN, move], items, spe);
-    if (ourAttr) {
-      const own = me.hasAbilityWithAttr?.bind(me);
-      me.hasAbilityWithAttr = a => a === ourAttr || !!own?.(a);
-    }
+    const { s, me, foe } = scene([GIGA_DRAIN, move], items, spe, { ourAttr });
     return globalThis.__planner.statusPlay(s, me, foe, s.statusMoves(me, foe).find(x => x.name === move[0]));
   };
   const shape = p => (!p ? "no play" : [`note ${p.note ?? "—"}`,
-    `patches ${p.patches ? p.patches.map(x => `${x.mon.name} status ${x.status.effect}`).join() : "—"}`,
+    `patches ${p.patches ? p.patches.map(x => (x.status ? `${x.mon.name} status ${x.status.effect}` : `${x.mon.name} less berry ${x.lessBerry}`)).join() : "—"}`,
     `skip0 ${Math.round((p.skip0 ?? 0) * 1e4) / 1e4}`, `foeAct ${p.foeAct ? "yes" : "—"}`, `gain ${p.gain ?? 0}`].join(" · "));
   const lum = n => [berryItem(BERRY.LUM, n)];
   for (const [what, move, items] of [
@@ -1874,20 +1895,18 @@ Object.assign(TABLE, { "Machamp>Close Combat>Vileplume": [[40], 1, 1], "Vileplum
   console.log(`play: ${"Toxic, Lum x1, Unnerve".padEnd(23)} ${shape(unnerved)}`);
   assert.equal(shape(unnerved), shape(playFor(TOXIC, [])), "an Unnerved Lum holder takes a lasting Toxic");
 
-  // A lasting status writes itself into the follow-up and keeps costing the foe attempts; a Lum-cured one writes
-  // nothing and asks nothing of any later turn.
+  // A lasting status writes itself into the follow-up and keeps costing the foe attempts; a Lum-cured one writes only
+  // the Lum it burnt and asks nothing of any later turn.
   const bareToxic = playFor(TOXIC, []), lumToxic = playFor(TOXIC, lum(1));
   assert.ok(bareToxic.patches?.length === 1 && bareToxic.note === "toxic", `a bare foe prices Toxic exactly as before: ${shape(bareToxic)}`);
-  assert.equal(lumToxic.patches, null, "a Lum holder takes no lasting status patch");
+  assert.equal(shape({ patches: lumToxic.patches }).split(" · ")[1], "patches Machamp less berry 1", "a Lum holder takes no status patch, only its Lum gone (#834)");
   assert.equal(lumToxic.foeAct, null, "…and nothing of it reaches a later turn");
   assert.equal(lumToxic.skip0, 0, "Toxic costs the foe no attempt even on the turn it lands");
   assert.equal(lumToxic.note, null, "…so the play has no status note to show");
-  // The burnt Lum, from #646's `berryGone` for a named berry. A Lum heals nothing at a turn end (10-damage.js prices
-  // Sitrus and Enigma only), so its `lost` is 0 and the gain here is too: the play is worth the move it costs, no more.
-  const { berryGone, lessBerry, berryTypesOf } = globalThis.__planner;
+  const { lessBerry, berryTypesOf } = globalThis.__planner;
   const held = machamp(lum(2));
-  assert.equal(berryGone(held, toxicChip, { berry: BERRY.LUM }).lost, 0, "a Lum is worth nothing to the turn-end model, so the burn prices at 0");
-  assert.equal(lumToxic.gain, 0, "…and that is the whole of the play's gain");
+  assert.equal(shape(lumToxic.again), "note toxic · patches Machamp less berry 1,Machamp status 2 · skip0 0 · foeAct — · gain 0",
+    "burning a lone Lum opens the foe to a lasting Toxic next turn");
   assert.equal(playFor(TOXIC, [berryItem(BERRY.SITRUS)]).patches?.length, 1, "a foe holding no Lum is priced as before");
 
   // Sleep keeps this turn's skipped attempt and drops the later ones.
@@ -1899,13 +1918,21 @@ Object.assign(TABLE, { "Machamp>Close Combat>Vileplume": [[40], 1, 1], "Vileplum
 
   // A Lum x2 holder is priced the same one-turn way, and one Lum is left standing for the next status.
   const twice = playFor(TOXIC, lum(2));
-  assert.deepEqual([twice.patches, twice.foeAct, twice.gain], [null, null, 0], `a Lum x2 holder takes the same one-turn price: ${shape(twice)}`);
+  assert.deepEqual([twice.patches.length, twice.foeAct, twice.again], [1, null, null], `a Lum x2 holder opens nothing for next turn: ${shape(twice)}`);
   assert.deepEqual(berryTypesOf(lessBerry(held, BERRY.LUM)), [BERRY.LUM], "burning one of two leaves the second, so two statuses are needed before one sticks");
+
+  const { withPatches } = globalThis.__hud["25-turn"];
+  const stacks = p => p.getHeldItems().map(m => `${m.berryType}x${m.getStackCount()}`).join(",");
+  const lumSitrus = machamp([berryItem(BERRY.SITRUS), berryItem(BERRY.LUM, 2)]);
+  const during = [BERRY.LUM, BERRY.SITRUS].map(b => withPatches([{ mon: lumSitrus, lessBerry: b }], () => stacks(lumSitrus)));
+  console.log(`patch: lessBerry Lum ${during[0]} · Sitrus ${during[1]} · after ${stacks(lumSitrus)}`);
+  assert.deepEqual(during, ["0x1,1x1", "1x2"], "a stack of two keeps one; the last one goes");
+  assert.equal(stacks(lumSitrus), "0x1,1x2", "the patch is undone after the call");
 
   // Scene 1: what the slot is actually told to do, and the score it was told it on. A play worth nothing loses to
   // Giga Drain.
   const picked = (move, items, spe, drain) => {
-    const { s, me, foe, field } = scene([GIGA_DRAIN, move], items, spe, drain);
+    const { s, me, foe, field } = scene([GIGA_DRAIN, move], items, spe, { drain });
     const [p] = globalThis.__planner.fieldPlan(s, [me], [foe], false).picks;
     return { name: p.move?.name ?? null, effect: p.effect ?? "", score: Math.round(p.score * 1e4) / 1e4, line: lineOf(field, "Vileplume") };
   };
@@ -1919,13 +1946,34 @@ Object.assign(TABLE, { "Machamp>Close Combat>Vileplume": [[40], 1, 1], "Vileplum
   // A lasting Toxic's chip wins a fight Giga Drain loses; a cured one deals nothing, so attacking is the call again.
   assert.equal(by("Toxic, bare foe").name, "Toxic", "a lasting Toxic is worth the turn it spends");
   assert.equal(by("Toxic, Lum x1").name, "Giga Drain", "a Toxic a Lum cures buys no chip and no later turn, so it loses to attacking");
-  // A sleep from a slower user is worth its later lost attempts and nothing else, so a Lum takes all of its value:
-  // nothing was skipped this turn, and the burnt Lum is worth nothing here.
+  // A sleep from a slower user skips nothing this turn, so a cured one is worth only its burnt Lum.
   assert.equal(by("Spore, bare foe, slower than it").name, "Spore", "a lasting sleep keeps costing the foe attempts");
-  assert.equal(by("Spore, Lum x1, slower than it").name, "Giga Drain",
-    "from a slower user nothing is skipped either, so the play is worth only the burnt Lum");
-  assert.equal(by("Spore, Lum x2, slower than it").score, by("Spore, Lum x1, slower than it").score, "a Lum x2 holder is priced the same one-turn way");
+  assert.equal(by("Spore, Lum x1, slower than it").name, "Spore", "burning the last Lum opens a lasting sleep a turn on");
+  assert.equal(by("Spore, Lum x2, slower than it").name, "Giga Drain", "a burnt Lum with a second behind it opens nothing");
   assert.equal(by("Spore, Sitrus only, slower").score, by("Spore, bare foe, slower than it").score, "a foe with no Lum prices exactly as before");
+
+  // Against a Giga Drain of 40 a lasting Toxic wins by enough to pay for the turn a cured one spends (#834).
+  const twiceOver = [lum(1), lum(2)].map(items => picked(TOXIC, items, 60, 40));
+  console.log(`burnt: Lum x1 ${twiceOver[0].name} · score ${twiceOver[0].score} · Lum x2 ${twiceOver[1].name} · score ${twiceOver[1].score}`);
+  assert.equal(twiceOver[0].name, "Toxic", "burning a lone Lum opens Machamp to the Toxic that sticks");
+  assert.equal(twiceOver[1].name, "Giga Drain", "a second Lum cures that one too, so the first opens nothing");
+
+  // The follow-up after a cured play (#834): Knock Off's 40 needs a held item, else it is 26 to Sludge Bomb's 32.
+  const KNOCK_OFF = ["Knock Off", "Dark", 65, "P"], SLUDGE_BOMB = ["Sludge Bomb", "Poison", 90, "S"];
+  TABLE["Vileplume>Sludge Bomb>Machamp"] = [[32], 1, 1];
+  const knocks = (atk, def, pm, o) => {
+    if (pm.getName() === "Knock Off") TABLE["Vileplume>Knock Off>Machamp"] = [[def.getHeldItems().length ? 40 : 26], 1, 1];
+    return outcome(atk, def, pm, o);
+  };
+  const thenOf = items => {
+    const { s, me, foe } = scene([KNOCK_OFF, SLUDGE_BOMB, TOXIC], items, 60, { drain: 0, stubOutcome: knocks });
+    const [p] = globalThis.__planner.fieldPlan(s, [me], [foe], false).picks;
+    return `${p.move?.name} then ${p.then?.name ?? "—"}`;
+  };
+  const [lumOnly, lumBesideSitrus] = [thenOf(lum(1)), thenOf([berryItem(BERRY.SITRUS), berryItem(BERRY.LUM)])];
+  console.log(`follow: Lum x1 ${lumOnly} · Sitrus + Lum ${lumBesideSitrus}`);
+  assert.equal(lumOnly, "Toxic then Sludge Bomb", "with its only item burnt, Knock Off has no boost left to find");
+  assert.equal(lumBesideSitrus, "Toxic then Knock Off", "a Sitrus still held keeps Knock Off's boost");
 
   // Scene 2: the slot has nothing that damages, so the status play is the call whatever it is worth, and the ⚔ line
   // is there to read. It keeps the play and drops the status note — no new line, no tail.
@@ -1960,6 +2008,40 @@ Object.assign(TABLE, { "Machamp>Close Combat>Vileplume": [[40], 1, 1], "Vileplum
   console.log(`== lum: a double's status play, bare foe (live)\n${bare}\n== lum: …and into a Lum holder (live)\n${lumHeld}`);
   assert.match(bare, /Spore → Machamp .*sleep/, `a bare foe is still the double's Spore target:\n${bare}`);
   assert.ok(!/Spore/.test(lumHeld), `a sleep a Lum cures is not worth the double's turn:\n${lumHeld}`);
+
+  // A double's `STATUS_CANDS` cut (#834): the game AI ranks both of Breloom's plays into the Lum-holding Machamp first,
+  // and Munchlax is the one hitting hard.
+  Object.assign(TABLE, {
+    "Breloom>Seed Bomb>Machamp": [[30], 1, 1], "Breloom>Seed Bomb>Munchlax": [[30], 1, 1],
+    "Salamence>Dragon Claw>Machamp": [[200], 1, 1], "Salamence>Dragon Claw>Munchlax": [[60], 1, 1],
+    "Machamp>Close Combat>Breloom": [[60], 1, 1], "Machamp>Close Combat>Salamence": [[60], 1, 1],
+    "Munchlax>Body Slam>Breloom": [[150], 1, 1], "Munchlax>Body Slam>Salamence": [[150], 1, 1],
+  });
+  const AI = { Machamp: { Spore: 10, Toxic: 9 }, Munchlax: { Spore: 2, Toxic: 1 } };
+  const cut = items => {
+    const party = sporeParty();
+    party[0].moveset.push(...mon("x", 1, ["Normal"], [1, 1, 1, 1, 1, 1], [TOXIC]).moveset);
+    const foes = [
+      mon("Machamp", 80, ["Fighting"], [300, 200, 110, 60, 110, 140], [["Close Combat", "Fighting", 120, "P"]], true, undefined,
+        { getBattlerIndex: () => 2, getHeldItems: () => items }),
+      mon("Munchlax", 80, ["Normal"], [300, 150, 110, 80, 150, 40], [["Body Slam", "Normal", 85, "P"]], true, undefined, { getBattlerIndex: () => 3 }),
+    ];
+    const { field } = render({ party, foes, live: true, double: true, dist: aimAtBoth, switches: () => new Map(), benefit: (atk, mv, def) => AI[def.name]?.[mv.name] ?? 0 });
+    return lineOf(field, "Breloom");
+  };
+  const { hazardValue } = globalThis.__hud["30-planner"];
+  const spikesFor = items => {
+    const lead = mon("Machamp", 80, ["Fighting"], [300, 200, 110, 60, 110, 50], [["Close Combat", "Fighting", 120, "P"]], true);
+    const benched = mon("Snorlax", 80, ["Normal"], [400, 150, 110, 80, 150, 30], [["Body Slam", "Normal", 85, "P"]], false, undefined, { getHeldItems: () => items });
+    const t = fakeTurn({ live: true, trainer: {}, party: [vileplume([GIGA_DRAIN], 60)], foes: [lead, benched] });
+    return hazardValue(t, t.facts.party[0], "TOXIC_SPIKES")?.turns ?? 0;
+  };
+  console.log(`spikes: Toxic Spikes into a bare bench ${spikesFor([])} · a Lum holder ${spikesFor(lum(1))}`);
+  assert.deepEqual([spikesFor([]), spikesFor(lum(1))], [0.5, 0], "a Lum holder is never chipped by the poison it walks into");
+
+  const [cutBare, cutLum] = [cut([]), cut(lum(1))];
+  console.log(`== lum: three status plays in a double, bare Machamp (live)\n${cutBare}\n== lum: …and a Lum-holding one (live)\n${cutLum}`);
+  assert.match(cutLum, /Spore → Munchlax .*sleep/, `the lasting sleep keeps its slot over the plays the Lum cures:\n${cutLum}`);
 }
 
 // ---- The one gate: with no exact enemy answer, the card, the fight plan and the catch advice stop together (#183)

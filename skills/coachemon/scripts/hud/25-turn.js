@@ -1,7 +1,7 @@
 // The one door between the coach engine and the live battle: `readTurn` decides once whether answers come from the
 // game's own code, opens the only sandbox, sets a predicted Tera, and hands callers a turn whose every answer is
 // memoised under one key. 10-damage and 20-enemy-ai know how to ask the game; this file decides when.
-import { TYPES, awaitingDecision, closeRead, effectiveness, openRead, sandbox, stat, typesOf } from "./01-core.js";
+import { TYPES, awaitingDecision, closeRead, effectiveness, lessOneBerry, openRead, sandbox, stat, typesOf } from "./01-core.js";
 import { note } from "./01-meter.js";
 import { challengeOn, teraSpendable, waveKind } from "./03-calendar.js";
 import { moveTraits } from "./07-move-traits.js";
@@ -36,21 +36,36 @@ const beforeTera = fn => preTera([...teraSaved.keys()], fn);
 const teraTypeOf = e => { try { return teraSaved.has(e) ? TYPES[e.getTeraType?.()] ?? null : null; } catch { return null; } };
 
 // Patches: `{ mon, stages: { [stat 1–5]: change } }`, `{ mon, status }`, `{ mon, types }`, `{ mon, addedType }`,
-// `{ mon, tera: false }` (its predicted Tera off), `{ mon, tera: true }` (our own Tera on, as `TeraPhase.end` writes it)
-// and `{ mon, waveTurnCount }`, written onto the live mons for one synchronous call (game-code.md §5, §14). `patchKey` is part of the derived turn's key, so no hypothetical answer is ever read from a real memo slot.
-const patchKey = patches => patches.map(({ mon, stages, status, types, addedType, tera, waveTurnCount }) => [
+// `{ mon, tera: false }` (its predicted Tera off), `{ mon, tera: true }` (our own Tera on, as `TeraPhase.end` writes it),
+// `{ mon, waveTurnCount }` and `{ mon, lessBerry }` (one berry of that `BerryType` off, as `lessOneBerry` takes it),
+// written onto the live mons for one synchronous call (game-code.md §5, §14). `patchKey` is part of the derived turn's
+// key, so no hypothetical answer is ever read from a real memo slot.
+const patchKey = patches => patches.map(({ mon, stages, status, types, addedType, tera, waveTurnCount, lessBerry }) => [
   stages ? `${mon.id}s${Object.entries(stages).map(([i, n]) => `${i}:${n}`).join(",")}` : null,
   status ? `${mon.id}x${status.effect}` : null,
   types ? `${mon.id}t${types.join(",")}` : null,
   addedType != null ? `${mon.id}+${addedType}` : null,
   tera === false ? `${mon.id}-tera` : tera === true ? `${mon.id}+tera` : null,
   waveTurnCount != null ? `${mon.id}w${waveTurnCount}` : null,
+  lessBerry != null ? `${mon.id}-b${lessBerry}` : null,
 ].filter(Boolean).join(";")).filter(Boolean).join("|");
+// `p` as `patches`' `lessBerry` entries leave its held items, for a read outside the game calls; `p` itself when none
+// names it. `views` keeps one per mon, so a caller may key on it.
+// @only tests: heldView
+export const heldView = (patches, views, p) => {
+  const gone = patches.filter(x => x.mon === p && x.lessBerry != null);
+  if (!gone.length) return p;
+  if (!views.has(p)) {
+    const items = gone.reduce((left, x) => lessOneBerry(left, x.lessBerry) ?? left, tryDo(() => p.getHeldItems(), []) ?? []);
+    views.set(p, Object.create(p, { getHeldItems: { value: () => items } }));
+  }
+  return views.get(p);
+};
 // @only tests: withPatches
 export const withPatches = (patches, fn) => {
   const undo = [];
   try {
-    for (const { mon, stages, status, types, addedType, tera, waveTurnCount } of patches) {
+    for (const { mon, stages, status, types, addedType, tera, waveTurnCount, lessBerry } of patches) {
       if (tera === false && teraSaved.has(mon)) undo.push(teraOff(mon));
       if (tera === true) {
         const was = mon.isTerastallized, added = mon.summonData?.addedType;
@@ -79,6 +94,12 @@ export const withPatches = (patches, fn) => {
         const prev = mon.summonData.addedType;
         mon.summonData.addedType = addedType;
         undo.push(() => { mon.summonData.addedType = prev; });
+      }
+      const held = lessBerry != null ? lessOneBerry(tryDo(() => mon.getHeldItems(), []) ?? [], lessBerry) : null;
+      if (held) {
+        const own = Object.prototype.hasOwnProperty.call(mon, "getHeldItems"), prev = mon.getHeldItems;
+        mon.getHeldItems = () => held;
+        undo.push(() => { if (own) mon.getHeldItems = prev; else delete mon.getHeldItems; });
       }
       if (waveTurnCount != null && mon.summonData) {
         const prev = mon.summonData.waveTurnCount;
@@ -276,7 +297,7 @@ const monRecord = (env, live, p) => {
 let open = false;
 const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
   const key = patches.length ? `${baseKey}#${patchKey(patches)}` : baseKey;
-  const caches = new Map();
+  const caches = new Map(), heldViews = new WeakMap();
   let closed = false;
   const guard = () => {
     if (closed) throw new Error("turn read after its callback returned");
@@ -390,6 +411,7 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
     // A caller's own memo, with this turn's lifetime; a derived turn keeps its own.
     memo: (k, fn) => memo("caller", k, fn),
     assuming: more => makeTurn(env, { live, facts, baseKey, patches: [...patches, ...more], shared }),
+    held: p => heldView(patches, heldViews, p),
     __close: () => { closed = true; },
   };
   // Only at a command prompt: at the free switch prompt or a faint's replacement the enemy decides later, against a

@@ -31,6 +31,7 @@ Fight plan likely lost
 ➜ 1. Morpeko Electric Aura Wheel → Weavile falls · foe at 55%
 ➜ 2. Scrafty free Fighting High Jump Kick → Weavile falls · foe at 55%
 ⚠ likely lost: nobody KOs Weavile 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Scrafty, Morpeko
+tokens: bare 0.5,0.75 · Lum 0,0.25 · Unnerved Lum 0.5,0.75
 == building blocks ok
 == cyrus (fallback)
 ⚔ Morpeko ⚠ Water 103% {Gyarados's Waterfall: ~103% of current HP} Electric Aura Wheel → Gyarados 1 hit
@@ -362,6 +363,7 @@ Fight plan likely lost
 Sitrus x1, Pound instead   turnsWe 4 · our HP 146 · P(steal) 0
 Sitrus x1                  turnsWe 3 · our HP 264 · P(steal) 1
 we eat: Sitrus 100 · at 350/400 50 · beside a Lum 50 · a Sitrus x2 beside a Lum 50 · beside a Liechi 50
+we eat beside a Lum: 50 · with that Lum burnt 100
 Sitrus x1 + Lum x1         turnsWe 3 · our HP 264 · P(steal) 1
 Sitrus x2 + Lum x1         turnsWe 3 · our HP 289 · P(steal) 1
 Sitrus x1 + Liechi x1      turnsWe 3 · our HP 264 · P(steal) 1
@@ -401,21 +403,24 @@ as plain damage: Leaf Storm (Leaf Storm: we need 3, they need 2 (2.393), P(steal
 with the steal:  Leaf Storm (Leaf Storm: we need 3, they need 2 (2.393), P(steal) 0 · Bug Bite: we need 6, they need 3 (3.333), P(steal) 1)
 the ⚔ call does not flip: still Leaf Storm
 play: Toxic, bare foe         note toxic · patches Machamp status 2 · skip0 0 · foeAct — · gain 0
-play: Toxic, Lum x1           note — · patches — · skip0 0 · foeAct — · gain 0
-play: Toxic, Lum x2           note — · patches — · skip0 0 · foeAct — · gain 0
+play: Toxic, Lum x1           note — · patches Machamp less berry 1 · skip0 0 · foeAct — · gain 0
+play: Toxic, Lum x2           note — · patches Machamp less berry 1 · skip0 0 · foeAct — · gain 0
 play: Toxic, Sitrus only      note toxic · patches Machamp status 2 · skip0 0 · foeAct — · gain 0
-play: Toxic, Sitrus + Lum     note — · patches — · skip0 0 · foeAct — · gain 0
+play: Toxic, Sitrus + Lum     note — · patches Machamp less berry 1 · skip0 0 · foeAct — · gain 0
 play: Spore, bare foe         note sleep · patches Machamp status 4 · skip0 1 · foeAct yes · gain 0
-play: Spore, Lum x1           note — · patches — · skip0 1 · foeAct — · gain 0
+play: Spore, Lum x1           note — · patches Machamp less berry 1 · skip0 1 · foeAct — · gain 0
 play: Thunder Wave, bare foe  note paralysis · patches Machamp status 3 · skip0 0.125 · foeAct — · gain 0
-play: Thunder Wave, Lum x1    note — · patches — · skip0 0.125 · foeAct — · gain 0
+play: Thunder Wave, Lum x1    note — · patches Machamp less berry 1 · skip0 0.125 · foeAct — · gain 0
 play: Toxic, Lum x1, Unnerve  note toxic · patches Machamp status 2 · skip0 0 · foeAct — · gain 0
+patch: lessBerry Lum 0x1,1x1 · Sitrus 1x2 · after 0x1,1x2
 pick: Toxic, bare foe                 Toxic · effect "toxic" · score 3.4109
 pick: Toxic, Lum x1                   Giga Drain · effect "" · score 0.1714
 pick: Spore, bare foe, slower than it Spore · effect "sleep" · score -2.8163
-pick: Spore, Lum x1, slower than it   Giga Drain · effect "" · score -4.6978
+pick: Spore, Lum x1, slower than it   Spore · effect "" · score -4.2681
 pick: Spore, Lum x2, slower than it   Giga Drain · effect "" · score -4.6978
 pick: Spore, Sitrus only, slower      Spore · effect "sleep" · score -2.8163
+burnt: Lum x1 Toxic · score 2.1957 · Lum x2 Giga Drain · score -6.874
+follow: Lum x1 Toxic then Sludge Bomb · Sitrus + Lum Toxic then Knock Off
 == lum: the ⚔ line for a sleep it cures (live)
 ⚔ Vileplume Grass Spore → Machamp
 == lum: …and for one that lasts (live)
@@ -424,6 +429,11 @@ pick: Spore, Sitrus only, slower      Spore · effect "sleep" · score -2.8163
 ⚔ Breloom 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Grass Spore → Machamp sleep
 == lum: …and into a Lum holder (live)
 ⚔ Breloom 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Grass Seed Bomb → Machamp
+spikes: Toxic Spikes into a bare bench 0.5 · a Lum holder 0
+== lum: three status plays in a double, bare Machamp (live)
+⚔ Breloom Grass Seed Bomb → Machamp
+== lum: …and a Lum-holding one (live)
+⚔ Breloom Grass Spore → Munchlax sleep
 == a lost race: only what lands counts (#650)
 ⚔ Dragonite ⚠ Dragon ×2 100% {Rayquaza's Outrage: ~100% of current HP} Normal Extreme Speed → Rayquaza 3 hits
 ⤵ Dragonite falls this turn › Raichu in free
