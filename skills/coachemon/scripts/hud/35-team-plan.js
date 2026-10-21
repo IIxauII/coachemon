@@ -152,8 +152,9 @@ const tpHealBy = (turn, f, kept, walk) => {
     if (!profiles.has(p)) profiles.set(p, tpHealProfile(turn, p));
     return profiles.get(p);
   };
-  const by = Object.fromEntries(Object.keys(kept).map(key => [key, overWalk(walk, p => prof(p)[key])]));
-  return Array.from({ length: supply + 1 }, (_, k) => (k === 0 ? kept : Object.fromEntries(Object.keys(kept).map(key => [key, by[key][k]]))));
+  // A Pouch is the side's, so a steal leaves its `keep` whole.
+  const by = Object.fromEntries(Object.keys(kept).map(key => [key, key === "keep" ? null : overWalk(walk, p => prof(p)[key])]));
+  return Array.from({ length: supply + 1 }, (_, k) => (k === 0 ? kept : Object.fromEntries(Object.keys(kept).map(key => [key, key === "keep" ? kept.keep : by[key][k]]))));
 };
 // What each steal of `me`'s off `f` heals it, as `stealHeal` holds it, from what `f` holds. `stealHealAfter`'s `Map`
 // gives the same once `f` has eaten berries of its own, by `tpHeal`'s `used` bits: its Sitrus, and each Enigma (#833).
