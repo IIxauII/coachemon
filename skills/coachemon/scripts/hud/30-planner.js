@@ -319,8 +319,10 @@ const spendChain = (turn, foe, me, { outs, moves, next, turns, onMe }) => {
 const lockOf = foe => {
   const tag = foe.getTag?.("FRENZY"), q = foe.getMoveQueue?.()?.[0];
   const pm = tag && q ? foe.moveset?.find(m => m?.moveId === q.move) : null;
-  return pm ? { name: pm.getName(), left: Math.max(1, tag.turnCount ?? 1) } : null;
+  return pm ? { name: pm.getName(), left: Math.max(1, tag.turnCount ?? 1), targets: q.targets ?? [] } : null;
 };
+// A double's pick that Protects: its own duel's, writing no hypothesis (#876).
+const protecting = p => p.play?.kind === "protect";
 // Protect's streak, by move id rather than any moveset (game-code.md §14).
 const protectedLast = me => {
   const last = me.getLastXMoves?.(1)?.[0];
@@ -1568,7 +1570,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const cands = [], seen = new Set();
       active.forEach((f, fi) => {
         for (const x of plays(fi)) {
-          if (x.blocks != null) { out.push(x); continue; }
+          if (protecting(x)) { out.push(x); continue; }
           const k = x.self ? `self|${x.move.name}` : `${fi}|${x.move.name}`;
           if (seen.has(k)) continue;
           seen.add(k);
@@ -1616,7 +1618,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   const swapsIn = picks => Math.max(0, picks.filter(p => !current.includes(p.me)).length - empty);
   const flipsIn = picks => current.filter(p => !picks.some(q => q.me === p) && cameInLastTurn(turn, p)).length;
   const add = (picks, payers) => {
-    const sps = slots === 2 ? picks.filter(p => p.play && p.blocks == null) : [];
+    const sps = slots === 2 ? picks.filter(p => p.play && !protecting(p)) : [];
     if (sps.length) return addStatus(picks, payers, sps);
     const j = slots === 2 || pair ? joint(picks, payers) : null;
     const swaps = swapsIn(picks);
@@ -1628,8 +1630,8 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       // Both slots on one foe: `redir` of the time this hit finds it gone and is worth its `redirScore` (#236); beside a
       // Protect, of the time its follow-up fells it first (#876).
       const redir = redirectOdds(p, partner, payers);
-      const r = redir || followUpOdds(p, partner, payers);
-      const mix = x => (r > 0 && x?.redirScore != null ? r * x.redirScore + (1 - r) * x.score : x?.score ?? 0);
+      const gone = redir || followUpOdds(p, partner, payers);
+      const mix = x => (gone > 0 && x?.redirScore != null ? gone * x.redirScore + (1 - gone) * x.score : x?.score ?? 0);
       // A KO'd partner is lost along with whatever it was going to do.
       let score = mix(p) + blockCredit(p) - (ally ? ally.share + ally.pKo * (MON_LOST + Math.max(0, partner.score)) : 0);
       if (spare && drawback(p.move)) {
@@ -1694,8 +1696,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       score: info.reduce((t, x) => t + x.score, 0) + jv - flipsIn(picks) * FLIP_COST,
     });
   };
-  // A Protect's `danger` credit is for the hit at its own slot alone, never the field's (#876).
-  const blockCredit = p => (p.blocks ? p.blocks * danger(p.foe, [p.me]) : 0);
+  const blockCredit = p => (protecting(p) ? p.blocks * danger(p.foe, [p.me]) : 0);
   const allyHit = (p, partner) => {
     if (!hitsAlly(p.move)) return null;
     const o = planOutcomes(turn, p.me, partner).find(x => x.name === p.move.name);
@@ -1972,7 +1973,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     plan.picks.forEach((a, i) => {
       const b = plan.picks[1 - i];
       // A slot already Protecting keeps its priced play and its note (#876).
-      if (a.locked || !a.move || a.blocks != null || !b.move?.pm || b.target == null || plan.payers.includes(a.me) || plan.payers.includes(b.me)) return;
+      if (a.locked || !a.move || protecting(a) || !b.move?.pm || b.target == null || plan.payers.includes(a.me) || plan.payers.includes(b.me)) return;
       const alone = joint([b], plan.payers, mons);
       const protect = a.me.moveset.find(pm => usablePm(pm) && moveTraits(pm.getMove()).protect);
       if (protect && !protectedLast(a.me) && plan.joint.value - alone.value < 0.5) {
@@ -2108,8 +2109,7 @@ export const statusPlay = (turn, me, f, info) => {
     if (!hit || th.unblocked > 0) return null;
     const lock = lockOf(f);
     const lastUse = lock?.name === hit && lock.left === 1;
-    // A double offers it only on a lock's last use queued at this slot (#876).
-    if (turn.facts.double && !(lastUse && f.getMoveQueue?.()?.[0]?.targets?.includes(me.getBattlerIndex?.()))) return null;
+    if (turn.facts.double && !(lastUse && lock.targets.includes(me.getBattlerIndex?.()))) return null;
     return { kind: "protect", self: true, patches: null, skip0: 1, foeAct: null, note: `blocks ${hit}${lastUse ? "'s last use" : ""}` };
   }
   if (t.inflicts.some(x => x.self)) return null;

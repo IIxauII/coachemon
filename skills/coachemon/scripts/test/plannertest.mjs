@@ -2055,15 +2055,15 @@ Object.assign(TABLE, { "Machamp>Close Combat>Vileplume": [[40], 1, 1], "Vileplum
 }
 
 
-// #850's double: our lead beside Ally, Salamence beside Snorlax. With `lock`, Outrage (`left` uses, this turn's included)
-// is queued at battler `at`; without, Salamence picks Fire Blast at the lead. Ally's Thunderbolt is too little to fell
-// either foe first unless `allyTb` raises its hit on Salamence. `lastMove`: the lead's last move's record; `bypass`:
-// Salamence's moves that ignore Protect.
 const LEAD_STATUS = {
   Spore: SPORE,
   "Thunder Wave": ["Thunder Wave", "Electric", 0, "X", 0, { id: 86, attrs: [["StatusEffectAttr", { effect: 3 }]] }],
   Protect: ["Protect", "Normal", 0, "X", 4, { target: 0, attrs: ["ProtectAttr"], id: 182 }],
 };
+// #850's double. With `lock`, Outrage (`left` uses, this turn's included) is queued at battler `at`; without, Salamence
+// picks Fire Blast at the lead. Ally's Thunderbolt is too little to fell either foe first unless `allyTb` (its max hit on
+// Salamence) and `allySpe` say otherwise. `lastMove`: the lead's last move's record; `bypass`: Salamence's moves that
+// ignore Protect; `more`: the lead's moves besides Ice Beam and `move`.
 const lockDouble = (move, { myHp = 250, mySpe = 80, foeHp = 300, foeSpe = 120, outrage, own, ours, lock = true, left = 1, at = 0, lastMove = null, bypass = [], allyTb = 60, allySpe = 70, more = [] }) => {
   Object.assign(TABLE, {
     "Lead>Ice Beam>Salamence": [[ours], 1, 4], "Lead>Ice Beam>Snorlax": [[50], 1, 1],
@@ -2141,13 +2141,11 @@ const LOCK_DOUBLE_CASES = [
     assert.match(l, protect ? /Protect (\d hits )?blocks Outrage's last use .*then Ice Beam/ : /Ice Beam → /, `case ${label}:\n${field.join("\n")}`);
     if (protect) assert.ok(!/⚠|💀/.test(l), `no threat tag for the hit Protect blocks, case ${label}:\n${l}`);
   }
-  // Case 3 with Ally faster and felling Salamence: `supportFor`'s Protect rule holds too, and leaves the play's note.
   const { field } = lockDouble("Protect", { outrage: 300, own: 60, ours: 110, allyTb: 400, allySpe: 130 });
   console.log(`== #850's double, Protect, case 3 with Ally felling Salamence first\n${slotLines(field).join("\n")}`);
   assert.match(lineOf(field, "Lead"), /Protect (\d hits )?blocks Outrage's last use .*then Ice Beam/, `the priced Protect keeps its note:\n${field.join("\n")}`);
   assert.ok(!/spare hit/.test(lineOf(field, "Lead")), `a Protect lands no hit to spare:\n${field.join("\n")}`);
   assert.ok(!field.some(l => /focus/.test(l)), `a Protect is no second hit on the foe:\n${field.join("\n")}`);
-  // With Helping Hand too, which would turn Ally's Thunderbolt into a knockout.
   const hh = lockDouble("Protect", { outrage: 300, own: 60, ours: 110, allyTb: 240, more: [["Helping Hand", "Normal", 0, "X", 5, { target: 10, id: 270 }]] });
   console.log(`== #850's double, Protect, case 3 with Helping Hand too\n${slotLines(hh.field).join("\n")}`);
   assert.match(lineOf(hh.field, "Lead"), /Protect (\d hits )?blocks Outrage's last use/, `the priced Protect stays a Protect:\n${hh.field.join("\n")}`);
