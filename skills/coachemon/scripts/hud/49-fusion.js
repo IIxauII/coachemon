@@ -183,5 +183,9 @@ export const fusionCall = m => {
   return m.picked ? `then pick ${top.other.name}` : `pick ${top.base.name} first, then ${top.other.name}`;
 };
 
-export const fusionSummary = m =>
-  [m.rows[0] ? `${m.rows[0].base.name} ← ${m.rows[0].other.name} (${inTurns(m.rows[0].value)})` : null, fusionCall(m)].filter(Boolean).join(" · ");
+const pairText = row => `${row.base.name} ← ${row.other.name} (${inTurns(row.value)})`;
+// The card event's verdict, and the leading call this module's summary writes (extension-distribution.md §11.1).
+// @only 60-card: fusionLeadingCall
+export const fusionLeadingCall = m => (m.rows[0] ? pairText(m.rows[0]) : fusionCall(m));
+
+export const fusionSummary = m => [m.rows[0] ? pairText(m.rows[0]) : null, fusionCall(m)].filter(Boolean).join(" · ");

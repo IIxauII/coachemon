@@ -98,8 +98,8 @@ export const rerollMark = r => (r.missed ? "!" : "~");
 export const rerollLabel = (r, roll) => (!r.canLock ? "reroll" : roll.lock === r.locked ? (roll.lock ? "reroll locked" : "reroll")
   : roll.lock ? "lock, reroll" : "unlock, reroll");
 
-export const rerollSummary = m => {
+export const rerollClauses = m => {
   const r = m.rerollAhead;
-  if (!r) return null;
-  return r.rolls.map(roll => `${rerollLabel(r, roll)} $${roll.cost} → ${roll.offers.map(f => f.name).join(", ")} (${roll.verdict}) [${rerollMark(r)}]`).join(" · ");
+  if (!r) return [];
+  return r.rolls.map(roll => `${rerollLabel(r, roll)} $${roll.cost} → ${roll.offers.map(f => f.name).join(", ")} (${roll.verdict}) [${rerollMark(r)}]`);
 };
