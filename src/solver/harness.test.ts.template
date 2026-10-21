@@ -906,6 +906,12 @@ const hp = () => {
   return { ours: s.getPlayerParty().map(share), foes: s.getEnemyParty().map(foe) };
 };
 
+const stages = () => {
+  const s = scene();
+  const of = (p: any): number[] => (p.isOnField() && !p.isFainted() ? [...p.getStatStages()] : []);
+  return { ours: s.getPlayerParty().map(of), foes: s.getEnemyParty().map(of) };
+};
+
 /** Leaves the draws out: of two paths it merges, the search keeps one's draws and drops the other's (#655). */
 function sig(): string {
   const s = scene();
@@ -946,6 +952,7 @@ function sig(): string {
 const position = () => ({
   sig: sig(),
   hp: hp(),
+  stages: stages(),
   legal: asksCommand() ? legal() : [null],
   forkPoint: forkPoint(),
 });

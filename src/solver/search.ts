@@ -8,8 +8,11 @@ export type Action = Input | null;
 /** Each mon's HP as a fraction of its max, 0 once fainted; the classic final boss's spans both its stages (#788). */
 export type Hp = { ours: readonly number[]; foes: readonly number[] };
 
+/** Each mon's seven stat stages, none off the field or fainted (#813). */
+export type StatStages = { ours: readonly (readonly number[])[]; foes: readonly (readonly number[])[] };
+
 /** A decision the search can fork from. Two positions with one `sig` are one to the search. */
-export type Position = { sig: string; hp: Hp; legal: readonly Action[]; forkPoint: string };
+export type Position = { sig: string; hp: Hp; stages: StatStages; legal: readonly Action[]; forkPoint: string };
 
 /**
  * One action played from a fork point; `input` names the faint replacement and the learn picks the turn took, where it
@@ -118,7 +121,21 @@ const failure = (e: unknown): NoAnswer =>
     ? e.answer
     : noAnswer({ code: "harness_failed", why: `the search's worker failed: ${e instanceof Error ? e.message : String(e)}` });
 
-const worth = (hp: Hp, ours: number) => foeLost(hp) + ours * sum(hp.ours);
+// (#813)
+const STAT_STAGE = 0.2;
+
+/** Each mon's stat stages that `counts`, each times the HP share it has left. */
+const staged = (stages: StatStages["ours"], hp: readonly number[], counts: (stage: number) => boolean) =>
+  sum(stages.map((mon, i) => hp[i] * sum(mon.filter(counts))));
+
+/**
+ * In mons' whole HP, a stat stage counting `STAT_STAGE` of one at full HP: each of ours, and each of a foe's drops; a
+ * foe's raises count for nothing (#813).
+ */
+const worth = ({ hp, stages }: Pick<Position, "hp" | "stages">, ours: number) =>
+  foeLost(hp) +
+  ours * sum(hp.ours) +
+  STAT_STAGE * (staged(stages.ours, hp.ours, () => true) - staged(stages.foes, hp.foes, stage => stage < 0));
 
 /** Of a double's two field slots' commands, which one the action names; a single's and a queued turn's name none. */
 const slotKey = (action: Action, field: 0 | 1): string | null =>
@@ -151,7 +168,7 @@ async function expandPruned(
     for (const { child } of first) {
       if (slotKey(child.input, other) !== fixed[other]) continue;
       const key = slotKey(child.input, f) as string;
-      const v = child.end === "won" ? Infinity : child.end === "on" ? worth(child.at.hp, ours) : -Infinity;
+      const v = child.end === "won" ? Infinity : child.end === "on" ? worth(child.at, ours) : -Infinity;
       value.set(key, Math.max(value.get(key) ?? -Infinity, v));
     }
     return new Set([...value].sort((a, b) => b[1] - a[1]).slice(0, paired).map(([key]) => key));
@@ -177,7 +194,7 @@ function scored(children: readonly Expanded[], ours: number, trail: Trail) {
       stalled++;
       continue;
     }
-    const score = worth(child.at.hp, ours);
+    const score = worth(child.at, ours);
     const same = kept.get(child.at.sig);
     if (same === undefined || score > same.score) kept.set(child.at.sig, { path, at: child.at, hist, score });
   }
