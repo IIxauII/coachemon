@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { wholeCard } from "./panel.mjs";
+import { TY } from "./fake-mon.mjs";
 
 class ModifierType {}
 class PokemonModifierType extends ModifierType {}
 class FusePokemonModifierType extends PokemonModifierType {}
 class PokemonHpRestoreModifierType extends PokemonModifierType {}
 
-const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const MOVES = {};
 let nextMove = 1;
 // A slot carries what a duel reads as well as what a card reads: the accuracy, PP, target and priority of the move,

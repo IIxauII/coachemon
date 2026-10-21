@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { ATTRS } from "./fixtures/party.mjs";
+import { cat as CAT, TY } from "./fake-mon.mjs";
 
 const hash = str => { let h = 2166136261; for (const c of str) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0; return h >>> 0; };
 const RND = {
@@ -21,7 +22,6 @@ const SPECIES = {
   1: ["Zubat", ["Poison", "Flying"], 245], 2: ["Geodude", ["Rock", "Ground"], 300], 3: ["Onix", ["Rock", "Ground"], 385],
   4: ["Machop", ["Fighting"], 305], 5: ["Gengar", ["Ghost", "Poison"], 500], 6: ["Steelix", ["Steel", "Ground"], 510],
 };
-const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const POOL = [1, 2, 3, 4];
 const SIGNATURE = [4, 2, 5];
 let destroyed = 0;
@@ -31,7 +31,6 @@ const species = id => ({ speciesId: id, name: SPECIES[id][0], baseTotal: SPECIES
 // A bare name is a move the preview can't read past its name — no id and no `getMove`; an array is one it can, in
 // `fixtures/party.mjs`'s form, and goes into `MOVES` under the id the game would give it, which is where a combatant
 // rebuilt from a preview row looks its moveset up (#574).
-const CAT = { P: 0, S: 1, X: 2 };
 const MOVES = [];
 const moveIds = new Map();
 const idOf = name => { if (!moveIds.has(name)) moveIds.set(name, moveIds.size + 1); return moveIds.get(name); };

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
-import { mon, species, TY } from "./fixtures/party.mjs";
+import { mon, species } from "./fixtures/party.mjs";
+import { cat as CAT, TY } from "./fake-mon.mjs";
 
 globalThis.window = globalThis;
 globalThis.Phaser = {
@@ -17,7 +18,6 @@ eval(bundle("hud", { expose: true }));
 const { leadAdvice } = globalThis.__hud["51-lead"];
 const { readRun } = globalThis.__hud["26-run"];
 
-const CAT = { P: 0, S: 1 };
 // `[name, type, power, category]`, by id from 1: what a preview row's `moveIds` index.
 const FOE_MOVES = [["Rock Slide", "Rock", 75, "P"], ["Earthquake", "Ground", 100, "P"], ["Energy Ball", "Grass", 90, "S"],
   ["Psychic", "Psychic", 90, "S"]];

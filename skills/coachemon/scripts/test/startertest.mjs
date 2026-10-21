@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { wholeCard } from "./panel.mjs";
 import { AbilityId, EvoCondKey } from "../../../../src/enums/generated.ts";
+import { TY } from "./fake-mon.mjs";
 
-const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 // Test fixtures, not game data: [id, name, types, base stats, cost,
 // evolutions [[id, level, item?, condition data?, evoLevelThreshold?]], passive, hidden].
 const SPECIES = [

@@ -2,9 +2,7 @@
 // Garchomp is weak to it and Lapras resists it. Normal, Fighting, Bug, Water, Ice, Dark and Fairy are holes. Magikarp
 // is the one member still to evolve, so its final BST, and a fusion's that takes it, is an estimate.
 
-export const TY = ["Normal", "Fighting", "Flying", "Poison", "Ground", "Rock", "Bug", "Ghost", "Steel", "Fire", "Water",
-  "Grass", "Electric", "Psychic", "Ice", "Dragon", "Dark", "Fairy"];
-const CAT = { P: 0, S: 1, X: 2 }; // MoveCategory: physical, special, status
+import { cat as CAT, TY } from "../fake-mon.mjs";
 
 // A move attribute the HUD recognises by its constructor name (`hasAttr`), so a fixture attr has to be a real class.
 class FixedDamageAttr {}

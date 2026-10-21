@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { wholeCard } from "./panel.mjs";
+import { TY } from "./fake-mon.mjs";
 class ModifierType {}
 class PokemonModifierType extends ModifierType {}
 class PokemonHpRestoreModifierType extends PokemonModifierType {}
@@ -56,7 +57,6 @@ const shopRows = [[
   opt(mk(PokemonHpRestoreModifierType, { name: "Hyper Potion", iconImage: "hyper_potion", restorePoints: 200, restorePercent: 50 }), 1064),
 ]];
 
-const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const MOVES = {};
 let nextId = 1;
 const move = (name, type, power, category, accuracy = 100, attrs = []) => {
