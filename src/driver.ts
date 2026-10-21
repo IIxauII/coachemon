@@ -21,6 +21,7 @@ import { matchLabel, normalizeLabel, optionAnswersTo } from "./labels.ts";
 import { planSelect, step, type Plan, type Walk } from "./menu-family.ts";
 import { isSettingsMode, modeName } from "./screen.ts";
 import { readSettings, writeSettings } from "./settings.ts";
+import { withCapture } from "./solver/capture.ts";
 import { CLONE_JOB, cloneJob } from "./solver/clone.ts";
 import { isOverwriteConfirm, planSlot, slotLabel } from "./slots.ts";
 import { CALL_BUDGET_MS, settle, type SettleResult } from "./settle.ts";
@@ -138,7 +139,7 @@ export class Driver {
 
   /** CDP unless `COACHEMON_TRANSPORT=hub` opts into the hub (extension-distribution.md §12.1). */
   static create(home: string = coachemonHome()): Driver {
-    const jobKinds = (fights?: FightPool) => ({ [CLONE_JOB]: cloneJob(home), [SOLVE_JOB]: solveJob(home, undefined, fights) });
+    const jobKinds = (fights?: FightPool) => ({ [CLONE_JOB]: cloneJob(home), [SOLVE_JOB]: withCapture(solveJob(home, undefined, fights), home) });
     if (usesHub()) {
       const hub = new HubLink({ port: hubPort(), version: PLUGIN_VERSION });
       const game = new LinkGame(hub, hub);

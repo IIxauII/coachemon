@@ -1,6 +1,6 @@
 // The oracle line handed to the overlay, drawn only for the one fight it was solved for (CONTEXT.md, `Oracle line`),
 // and scored at each decision against the checkpoint before it. It reads the game and writes nothing to it.
-import { iconOf, STAT_NAMES, STATUS_FRAMES, TYPES } from "./01-core.js";
+import { hasMove, iconOf, STAT_NAMES, STATUS_FRAMES, TYPES } from "./01-core.js";
 import { isReplacement } from "./02-decision.js";
 import { gameTables } from "./04-game-tables.js";
 import { learnMoveById } from "./40-learn.js";
@@ -194,7 +194,8 @@ const missesOf = (s, cp) => [[cp.ours, tryDo(() => s.getPlayerParty(), [])], [cp
     });
   }).filter(Boolean);
 
-const knows = (p, id) => !!tryDo(() => p.moveset.some(m => m?.moveId === id), false);
+// The moves the member keeps, not a Transform's or Mimic's copy: the learn writes into both (game-code.md §17).
+const knows = (p, id) => hasMove(p.moveset, id);
 // A later pick on the same mon that forgets this one's move, or learns back its forget, is what the moveset shows.
 const overtaken = (p, later) => later.some(q => q.species === p.species && (q.forget === p.move || q.move === p.forget));
 // The move prompts of steps `from` exclusive to `i` inclusive, read off the learner's moves. `asked`: the game put the
@@ -247,7 +248,7 @@ const inSlot = side => ({ species, slot }) => {
 const named = (p, id) => ({ icon: p ? iconOf(p) : null,
   name: p?.name ?? tryDo(() => gameTables().species.getSpecies(id).name, `#${id}`) });
 const moveOf = (party, id) => {
-  const known = party.find(p => p?.moveset?.some(m => m?.moveId === id));
+  const known = party.find(p => hasMove(p?.moveset, id));
   const mv = tryDo(() => known.moveset.find(m => m?.moveId === id).getMove()) ?? learnMoveById(party, id) ?? tryDo(() => gameTables().moves[id]);
   return { move: String(mv?.name ?? `#${id}`).replace(/ \(N\)$/, ""), type: TYPES[mv?.type] ?? null };
 };
