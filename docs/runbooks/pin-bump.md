@@ -5,7 +5,8 @@ The pin is the PokéRogue **game version** this repo reads the game's source at:
 all three. A live game past the pin gets no ladder, and no solving.
 
 Decisions: [ADR 0001](../adr/0001-escape-ladder-hand-curated-checked-at-pin-bump.md) (the drift check) and
-[ADR 0003](../adr/0003-solving-a-fight-is-an-opt-in-plugin-feature.md) (the version lock). Ticket:
+[ADR 0003](../adr/0003-solving-a-fight-is-an-opt-in-plugin-feature.md) (the version lock), and
+[ADR 0005](../adr/0005-the-games-declared-names-at-the-pin-are-checked-in.md) (the game's declared names). Ticket:
 [#665](https://github.com/IIxauII/coachemon/issues/665), [#711](https://github.com/IIxauII/coachemon/issues/711).
 
 ## The bump
@@ -29,7 +30,12 @@ npm run drift:check -- --version <new>
 the page, the HUD scripts, the harness template, its fake clock and its fast poll) is registered in
 `scripts/game-reads/registry/`. A read with no entry is **UNREGISTERED**, an entry nothing reads is **STALE**, and an
 entry that names no game ref (an empty `at` with no `from`, or a mirror with an empty `of`) or a mirror id that is not
-lower-kebab is **INVALID**. It runs inside `npm test` too.
+lower-kebab is **INVALID**. A name the game declares at the pin is UNREGISTERED without an entry even where our code,
+the DOM or Node declares it too, and the line says so: register it with the game's ref, or `from: "ours"` when the name is ours
+and the game only shares it. The game's declared names come from `scripts/game-reads/game-names.txt`, which the stamp
+writes ([ADR 0005](../adr/0005-the-games-declared-names-at-the-pin-are-checked-in.md)). A name any `lib.es*` type
+declares (`species`, `status`, `type`, `move` among them) is the one exception: neither check asks the game about it.
+It runs inside `npm test` too.
 
 `drift:check` clones `.cache/pokerogue/v<new>` and names every dep whose body **MOVED**, is **MISSING** or was never
 stamped (**UNREVIEWED**), each with the ladder entry, HUD module or registry entry that leans on it, and every ladder
@@ -42,6 +48,10 @@ entry whose mode or handler is **MISPLACED**. At the target version it also name
   (`npm run enums:gen -- --version <new> --source .cache/pokerogue/v<new>`) and re-read each user of the shifted
   member.
 - **UNREGISTERED**: a name our code reads that the game at `<new>` declares, but the registry lacks. Register it.
+  It is the same line `reads:check` gives at the pin, naming where `<new>` declares it.
+- **NAMES**: at the pinned version only, `game-names.txt` differs from what the game declares there.
+  `npm run drift:check -- --write-names` rewrites it at the pin and touches nothing else. At `<new>` drift prints the
+  count the stamp will write instead, which is no finding.
 
 Re-read each entry and fix what changed: screens in `src/escape-ladder/table.ts`, HUD modules in
 `skills/coachemon/scripts/hud/`, their deps in `scripts/hud-deps.ts`, the reads in `scripts/game-reads/registry/`.
@@ -112,11 +122,12 @@ it came from. A fight recorded on `<new>` itself replays as it always did.
 
 Each check's straight run must also end as live did. Any failure stops the stamp, which names the fight and the check
 that failed. When all of them pass, the stamp writes
-the pin, the hashes and `recheck: { "gameVersion": "<new>" }`. The solver's refusal gate reads that record, and solves
-on a version without it get "no answer". Players have no override.
+the pin, the hashes and `recheck: { "gameVersion": "<new>" }`, then the game's declared names at `<new>` into
+`scripts/game-reads/game-names.txt`. The solver's refusal gate reads that record, and solves on a version without it get
+"no answer". Players have no override.
 
-On 1.12.0.11 the whole stamp took about five minutes on the dev's Mac. Commit `reviewed.json` with the fixes; the release carries
-the new pin to players.
+On 1.12.0.11 the whole stamp took about five minutes on the dev's Mac. Commit `reviewed.json` and `game-names.txt` with the
+fixes; the release carries the new pin to players.
 
 ## The live run
 

@@ -45,7 +45,7 @@ const CLEAN: Registry = {
   },
 };
 
-const repo = (edit: Partial<Record<"page" | "hud" | "harness", string>> = {}): Repo => {
+const repo = (edit: Partial<Record<"page" | "hud" | "harness", string>> = {}, declared: Record<string, string[]> = {}): Repo => {
   const text = (name: "page" | "hud" | "harness", file: string) => edit[name] ?? fixture(file);
   const files: Record<AreaName, { file: string; text: string }[]> = {
     page: [{ file: `${FIXTURES}/page.ts`, text: text("page", "page.ts") }],
@@ -54,7 +54,14 @@ const repo = (edit: Partial<Record<"page" | "hud" | "harness", string>> = {}): R
     harness: [{ file: `${FIXTURES}/harness.ts.template`, text: text("harness", "harness.ts.template") }],
     templates: [],
   };
-  return { reads: scan(files, TABLES), own: new Set(["m", "scene", "result"]), builtin: new Set(["keys", "has", "getItem"]), tables: TABLES };
+  return {
+    reads: scan(files, TABLES),
+    own: new Set(["m", "scene", "result"]),
+    builtin: new Set(["keys", "has", "getItem"]),
+    language: new Set(["keys", "has"]),
+    game: { version: "1.0", names: new Map(Object.entries(declared)) },
+    tables: TABLES,
+  };
 };
 
 const problems = (r: Repo, registry: Registry = CLEAN) => check(r, registry).map(format);
@@ -68,6 +75,36 @@ test("a game read added to a fixture and left unregistered fails the check", () 
   assert.deepEqual(problems(repo({ page })), [
     `UNREGISTERED [page] property filteredStarterContainers (${FIXTURES}/page.ts:3)`,
   ]);
+});
+
+test('a name our code declares is UNREGISTERED when the game declares it too, naming the version and the from: "ours" fix', () => {
+  assert.deepEqual(problems(repo({}, { scene: [] })), [
+    `UNREGISTERED [page] property scene (${FIXTURES}/page.ts:4) — the game declares it at v1.0: register it with the ` +
+      'game\'s ref, or with from: "ours" if the name is ours and the game only shares it',
+  ]);
+});
+
+test("a DOM or Node name the game declares needs an entry; a language name never does", () => {
+  assert.deepEqual(
+    check(repo({}, { getItem: [], keys: [] }), CLEAN).map(p => `${p.what} (${p.where})`),
+    [`property getItem (${FIXTURES}/hud.js:3)`],
+  );
+});
+
+test('an entry, from: "ours" included, keeps a name the game declares from failing', () => {
+  const registry: Registry = { ...CLEAN, page: { reads: [...CLEAN.page.reads, { name: "scene", kind: "field", at: [], from: "ours" }] } };
+  assert.deepEqual(problems(repo({}, { scene: [] }), registry), []);
+});
+
+test("a name registered only as a storage key does not cover a property read of it", () => {
+  assert.deepEqual(check(repo({}, { prLang: [] }), CLEAN).map(p => p.what), []);
+  const page = fixture("page.ts").replace("cursor: h.cursor,", "cursor: h.cursor, lang: L.prLang,");
+  assert.deepEqual(check(repo({ page }, { prLang: [] }), CLEAN).map(p => p.what), ["property prLang"]);
+});
+
+test("the game's refs, where the source was read, are named three at most", () => {
+  const refs = ["a.ts#A.scene", "b.ts#B.scene", "c.ts#C.scene", "d.ts#D.scene", "e.ts#E.scene"];
+  assert.match(problems(repo({}, { scene: refs }))[0], /at v1\.0 \(a\.ts#A\.scene, b\.ts#B\.scene, c\.ts#C\.scene, \+2 more\): register/);
 });
 
 test("a registry entry no scanned file reads is STALE", () => {

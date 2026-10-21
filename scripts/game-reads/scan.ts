@@ -134,7 +134,7 @@ export function readsIn(file: string, text: string, tables: Tables, typed?: Type
 
 /**
  * Property names a file declares: object literal keys, class and type members, and any name it assigns, so a write to a
- * game object passes as ours here and only `drift:check` asks the game about it.
+ * game object passes as ours here unless the game declares the name too (0005-the-games-declared-names-at-the-pin-are-checked-in.md).
  */
 export function declaredIn(file: string, text: string): Set<string> {
   const sf = parse(file, text);
@@ -176,25 +176,26 @@ export function declaredIn(file: string, text: string): Set<string> {
 }
 
 /**
- * Every member and global the JavaScript, DOM and Node type libraries declare; with `languageOnly`, JavaScript's alone.
- * The DOM and Node declare names the game declares too (`level`, `cursor`, `text`), so only the language's are never
- * asked of the game.
+ * Every member and global the JavaScript, DOM and Node type libraries declare (`all`), and JavaScript's alone
+ * (`language`): the DOM and Node declare names the game declares too (`level`, `cursor`, `text`).
  */
-export function builtinNames(root: string, languageOnly = false): Set<string> {
-  const files: string[] = [];
+export function builtinNames(root: string): { all: Set<string>; language: Set<string> } {
+  const files: { file: string; language: boolean }[] = [];
   const lib = path.join(root, "node_modules/typescript/lib");
-  const keep = languageOnly ? /^lib\.(?:es|decorators).*\.d\.ts$/ : /^lib\..*\.d\.ts$/;
-  for (const f of readdirSync(lib)) if (keep.test(f)) files.push(path.join(lib, f));
+  for (const f of readdirSync(lib)) {
+    if (/^lib\..*\.d\.ts$/.test(f)) files.push({ file: path.join(lib, f), language: /^lib\.(?:es|decorators)/.test(f) });
+  }
   const walk = (dir: string) => {
     for (const f of readdirSync(dir)) {
       const abs = path.join(dir, f);
       if (statSync(abs).isDirectory()) walk(abs);
-      else if (f.endsWith(".d.ts")) files.push(abs);
+      else if (f.endsWith(".d.ts")) files.push({ file: abs, language: false });
     }
   };
-  if (!languageOnly) walk(path.join(root, "node_modules/@types/node"));
-  const out = new Set<string>();
-  for (const file of files) {
+  walk(path.join(root, "node_modules/@types/node"));
+  const all = new Set<string>();
+  const language = new Set<string>();
+  for (const { file, language: isLanguage } of files) {
     const sf = ts.createSourceFile(file, readFileSync(file, "utf8"), ts.ScriptTarget.Latest, false);
     const visit = (n: ts.Node): void => {
       if (
@@ -203,11 +204,14 @@ export function builtinNames(root: string, languageOnly = false): Set<string> {
         ts.isVariableDeclaration(n) || ts.isEnumMember(n) || ts.isClassDeclaration(n) || ts.isModuleDeclaration(n)
       ) {
         const name = n.name && nameText(n.name);
-        if (name) out.add(name);
+        if (name) {
+          all.add(name);
+          if (isLanguage) language.add(name);
+        }
       }
       ts.forEachChild(n, visit);
     };
     visit(sf);
   }
-  return out;
+  return { all, language };
 }

@@ -22,9 +22,10 @@ missing, added to a game set, shifted in the generated enums, or read without an
 ## Consequences
 
 - The static check works by syntax and needs no clone. A read passes when it is a JavaScript, DOM or Node builtin,
-  a name our own product code declares, or a registered name; in typed files only a read off an `any` counts. Our own
-  declarations can hide a game name, so drift also asks the target's source: a name a scanned file reads that the game
-  declares and no entry registers is UNREGISTERED, and the stamp refuses on it.
+  a name our own product code declares, or a registered name; in typed files only a read off an `any` counts. A name
+  the game declares at the pin passes only when registered, unless it is a JavaScript builtin: the check reads the
+  game's declared names from a checked-in file (ADR 0005). Drift asks the same of the target's source, so a name the
+  target declares and no entry registers is UNREGISTERED, and the stamp refuses on it.
 - An entry names where the game defines it (`file#Class.member`), and drift hashes each one. Fields hash their
   declaration, a class its shape, a data table its whole declaration, a library read the version the game asks for.
 - Drift also hashes the callees one level down of every hashed dep, so the ADR 0001 rejection of the full transitive

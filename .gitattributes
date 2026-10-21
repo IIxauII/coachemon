@@ -1,0 +1,2 @@
+# reads:check refuses game-names.txt in any form but the one scripts/drift.ts writes, CRLF included.
+scripts/game-reads/game-names.txt text eol=lf

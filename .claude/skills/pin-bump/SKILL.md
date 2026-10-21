@@ -70,8 +70,8 @@ writes the pin only when all pass. A failure goes back to the fix items, read th
 fails". A known fight that no longer carries has to be played again live (the runbook's "Record a known fight
 again"): that is the owner's account, so ask the owner before it.
 
-Done when the stamp has written `pinned.gameVersion: <new>` and `recheck.gameVersion: <new>`, and `npm test` and
-`npm run typecheck` pass with the new pin.
+Done when the stamp has written `pinned.gameVersion: <new>`, `recheck.gameVersion: <new>` and
+`scripts/game-reads/game-names.txt` at `<new>`, and `npm test` and `npm run typecheck` pass with the new pin.
 
 ## 5. Live run, on the owner's go
 
@@ -91,7 +91,7 @@ What it finds goes on the change list and back through step 4. Done when the run
 
 ## 6. PR
 
-Commit on the worktree's branch (`reviewed.json` with the fixes), push, and open the PR with `gh pr create` against
+Commit on the worktree's branch (`reviewed.json` and `game-names.txt` with the fixes), push, and open the PR with `gh pr create` against
 `master`. The body, from the change list:
 
 - **Upstream**: what changed in the game, per release, with the refs that mattered.
