@@ -89,9 +89,8 @@ export const weakFitNote = (mv, fit) => (fit < 0.9 ? (mv.category === MoveCatego
 
 const SETUP_TURNS = 3, SETUP_STAGE_CAP = 2;
 const stageWeight = i => (i === Stat.SPD ? 20 : i === Stat.DEF || i === Stat.SPDEF ? 10 : 3);
-// `value` is effective power summed over a fight, not one hit's worth: the Atk and SpA stages are what they add to
-// `current`'s best attack over SETUP_TURNS, less the turns spent setting up (#849).
-const setupOf = (pk, mv, current, double = 0, ctx = {}) => {
+// `value` is effective power summed over a fight, not one hit's worth (#849).
+const setupOf = (pk, mv, current, double, ctx) => {
   if (mv.category !== MoveCategory.STATUS) return null;
   const boosts = ownBoosts(mv, pk);
   if (!boosts.length) return null;
