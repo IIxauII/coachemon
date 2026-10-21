@@ -202,8 +202,9 @@ const sideModifiers = (env, p, name) => ((p?.isPlayer?.() === false ? env?.enemy
 // @only 30-planner: healingCharm
 export const healingCharm = (env, p) => sideModifiers(env, p, "HealingBoosterModifier")
   .reduce((t, m) => t * (1 + ((m.multiplier ?? 1.1) - 1) * (m.getStackCount?.() ?? 1)), 1);
-// Berry Pouch (game-code.md §3).
-const berryPouch = (env, p) => Math.min(10, 3 * sideModifiers(env, p, "PreserveBerryModifier")
+// Berry Pouch (game-code.md §3): the chance it leaves a berry `p` eats held.
+// @only 35-team-plan: berryPouch
+export const berryPouch = (env, p) => Math.min(10, 3 * sideModifiers(env, p, "PreserveBerryModifier")
   .reduce((t, m) => t + (m.getStackCount?.() ?? 1), 0)) / 10;
 const drainRatio = (env, atk, def, t) => {
   if (!t.drain) return 0;

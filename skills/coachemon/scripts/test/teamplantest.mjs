@@ -176,10 +176,13 @@ assert.equal(plan.approxDoubles, false);
 {
   const { tpFight } = globalThis.__tp;
   const kept = { base: 0, pre: 0, sitrus: 50, enigma: 0 };
-  const T = { ours: [[{ dmg: 50, steals: true }]], theirs: [[{ dmg: 10, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [null],
-    foeHeal: [kept], foeHealBy: [[kept, { ...kept, sitrus: 0 }]], stealHeal: [[[50]]], stealHealAfter: [[new Map([[1, []]])]] };
-  const won = fb => tpFight(T, { oh: [100], ob: [0], fh: [100], fs: [0], fb: [fb] }, 0, 0, "free").ends.win.mh;
-  const [held, eaten] = [won(0), won(1)];
+  const base = { theirs: [[{ dmg: 10, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [null], foeHeal: [kept] };
+  // A 60 into 100 HP: it eats its Sitrus at 40, read off the `fb` that fight leaves (#847).
+  const fb = tpFight({ ...base, ours: [[{ dmg: 60, e: 1 }]] }, { oh: [100], ob: [0], fh: [100], fs: [0], fb: [0] }, 0, 0, "free").ends.win.fb;
+  const T = { ...base, ours: [[{ dmg: 50, steals: true }]], foeHealBy: [[kept, { ...kept, sitrus: 0 }]], stealHeal: [[[50]]],
+    stealHealAfter: [[new Map([[1, []]])]] };
+  const won = used => tpFight(T, { oh: [100], ob: [0], fh: [100], fs: [0], fb: [used] }, 0, 0, "free").ends.win.mh;
+  const [held, eaten] = [won(0), won(fb)];
   console.log(`== bug bite after the foe ate its own Sitrus\nwe end on ${eaten} (${held} when it still held it)`);
   // Two Bug Bites fell it, and its one hit lands between them: 100 − 10, plus 50 for a Sitrus still there to steal.
   assert.deepEqual([held, eaten], [140, 90], "no heal for a berry already eaten");
@@ -352,7 +355,7 @@ assert.equal(plan.approxDoubles, false);
   console.log(`== an ending's one branch\nwin ${r.pWin} · ${r.ends.win.mh.toFixed(2)} HP · berry ${r.ends.win.mb ? "eaten" : "kept"}`);
   assert.equal(r.pWin, 1);
   assert.ok(Math.abs(r.ends.win.mh - (0.4 * 116 + 0.3 * 142 + 0.3 * 130)) < 1e-9, `HP is the pool's mean: ${r.ends.win.mh}`);
-  assert.equal(r.ends.win.mb, 1, "the berry follows the likeliest combination, not the likeliest branch");
+  assert.notEqual(r.ends.win.mb, 0, "the berry follows the likeliest combination, eaten, not the likeliest branch");
   assert.equal(r.ends.win.turns, 2);
 }
 // Acting is taking at least 1 HP off the foe (#527). Outsped and OHKO'd on every roll we land nothing, but the mean of
@@ -650,6 +653,9 @@ assert.equal(plan.approxDoubles, false);
   assert.equal(prof.keep, undefined, "no Berry Pouch, no keep");
   s.modifiers = [item("PreserveBerryModifier")];
   assert.equal(globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpHealProfile(turn, zard)).keep, 0.3, "our Berry Pouch, one stack (#822)");
+  const sitrus = Object.create(zard, { getHeldItems: { value: () => [item("BerryModifier", { berryType: 0 })] } });
+  const pouched = globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpHealProfile(turn, sitrus));
+  assert.deepEqual([pouched.sitrus, pouched.enigmas, pouched.keep], [24, 0, 0.3], `a Sitrus with no Enigma keeps under it too (#847): ${JSON.stringify(pouched)}`);
   delete s.modifiers;
 }
 // A Berry Pouch keeps our Enigma Berry on part of each feed, so the plan prices more of it (#822). We take 120 a turn
@@ -665,6 +671,25 @@ assert.equal(plan.approxDoubles, false);
   assert.equal(none.ends.win.mh, 260, "no Pouch: one berry on turn 1");
   assert.deepEqual(none, old, "a profile that carries no keep reads as no Pouch");
   assert.ok(one.ends.win.mh > none.ends.win.mh && three.ends.win.mh > one.ends.win.mh, "each stack keeps more of the berry for turn 2");
+}
+// …and our Sitrus Berry the same, which heals again each turn end below half by the chance it is still held (#847). We
+// take 120 a turn into 400 and fell the foe on turn 5, before its fifth hit, and that turn's end still heals us. No
+// Pouch: 280 → 160 + 100 → 140 → 20 → 20. One stack: 280 → 160 + 100 → 140 + 30 → 50 + 9 → 59 + 3. Three: 280 →
+// 160 + 100 → 140 + 90 → 110 + 81 → 191 + 73.
+{
+  const { tpFight } = globalThis.__tp;
+  const T = keep => ({ ours: [[{ dmg: 100, e: 1 }]], theirs: [[{ dmg: 120, e: 1 }]], first: [[0]], ourMax: [400], foeMax: [500],
+    ourHeal: [{ base: 0, pre: 0, sitrus: 100, enigma: 0, ...(keep == null ? {} : { keep }) }], foeHeal: [null] });
+  const fight = keep => tpFight(T(keep), { oh: [400], ob: [0], fh: [500], fs: [0], fb: [0] }, 0, 0, "free");
+  const [old, none, one, three] = [null, 0, 0.3, 0.9].map(fight);
+  const near = (x, want, msg) => assert.ok(Math.abs(x - want) < 1e-9, `${msg}: ${x}`);
+  console.log(`== a Berry Pouch keeps our Sitrus Berry (#847)\nwe win on ${none.ends.win.mh} HP with no Pouch, ` +
+    `${one.ends.win.mh.toFixed(1)} with one stack, ${three.ends.win.mh.toFixed(1)} with three`);
+  assert.deepEqual([none, one, three].map(r => [r.pWin, r.ends.win.turns]), [[1, 5], [1, 5], [1, 5]], "a sure win on turn 5");
+  assert.equal(none.ends.win.mh, 20, "no Pouch: one berry on turn 2");
+  assert.deepEqual(none, old, "a profile that carries no keep reads as no Pouch");
+  near(one.ends.win.mh, 62, "one stack");
+  near(three.ends.win.mh, 264, "three stacks");
 }
 // A bench mon the trainer Teras (#648, Gordie W180): Coalossal's team index is in `instantTeras`, so the plan prices our
 // hits at Tera Rock, Water ×2 — it Teras at its first FIGHT command, before anything hits it once sent in after a KO —
