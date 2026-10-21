@@ -503,6 +503,11 @@ export const spawnsFor = (s, id, wave, luck = 0) => {
 };
 export const formsFor = (id, level, kind = EvoLevelThresholdKind.WILD) => Object.fromEntries(formsAt(id, level, kind));
 
+const isPicked = o => o.score != null && o.verdict === "pick";
+// The card event's verdict, and the leading call this module's summary writes (extension-distribution.md §11.1).
+// @only 60-card: biomeLeadingCall
+export const biomeLeadingCall = m => m.options.find(isPicked)?.label ?? null;
+
 // `Swamp 72 pick — Garchomp resists, 3 mons hit SE · Construction Site 55`, for the watcher and the battle read.
 export const biomeSummary = m => m.options.map(o => (o.score == null ? o.label
-  : o.verdict === "pick" ? `${o.label} ${o.score} pick — ${o.reasons.slice(0, 3).map(r => r.text).join(", ")}` : `${o.label} ${o.score}`)).join(" · ");
+  : isPicked(o) ? `${o.label} ${o.score} pick — ${o.reasons.slice(0, 3).map(r => r.text).join(", ")}` : `${o.label} ${o.score}`)).join(" · ");

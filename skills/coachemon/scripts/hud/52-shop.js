@@ -7,7 +7,7 @@ import { learnAdvice, learnMoveById } from "./40-learn.js";
 import { previewNext } from "./48-preview.js";
 import { aheadModel, doubleOdds, learnRoster } from "./49-ahead.js";
 import { teamAudit } from "./50-audit.js";
-import { rerollPreview, rerollSummary } from "./50-reroll.js";
+import { rerollPreview, rerollClauses } from "./50-reroll.js";
 import { isA, rewardContext, rewardValue } from "./51-items.js";
 import { leadAdvice, leadSummary } from "./51-lead.js";
 
@@ -276,9 +276,13 @@ const rerollAdvice = (preview, judge, now, money, afterBuys) => {
   return { n: preview.n, canLock: preview.canLock, locked: preview.locked, missed: preview.missed, rolls, byLock: preview.byLock };
 };
 
-export const rewardsSummary = m => {
+const rewardsClauses = m => {
   const p = m.pick >= 0 ? m.free[m.pick] : null;
   const take = p ? `take ${p.name}${p.best ? ` → ${p.best.name}${p.best.forget ? ` (forget ${p.best.forget})` : ""}` : p.holder ? ` → ${p.holder.name}` : ""}` : null;
   const buys = m.buys.length ? `buy ${m.buys.map(x => x.name).join(", ")}` : null;
-  return [leadSummary(m.lead), take, buys, rerollSummary(m)].filter(Boolean).join(" · ") || null;
+  return [leadSummary(m.lead), take, buys, ...rerollClauses(m)].filter(Boolean);
 };
+// The card event's verdict, and the leading call this module's summary writes (extension-distribution.md §11.1).
+// @only 60-card: rewardsLeadingCall
+export const rewardsLeadingCall = m => rewardsClauses(m)[0] ?? null;
+export const rewardsSummary = m => rewardsClauses(m).join(" · ") || null;

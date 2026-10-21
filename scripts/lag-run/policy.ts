@@ -274,7 +274,7 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     mem.bounced = false;
     const line = act(live, "reward") ?? "";
     const clauses = line.split(" · ");
-    // `rerollSummary`'s clause, `reroll $250 → A, B, C (keep) [~]`: a `short` verdict is one the money can't pay.
+    // A `rerollClauses` clause (50-reroll.js), `reroll $250 → A, B, C (keep) [~]`: a `short` verdict is one the money can't pay.
     const payable = clauses.some(c => /reroll(?: locked)? \$\d+ → .*\((?!short\))[^)]*\) \[[~!]\]$/.test(c));
     const button = options.find(o => o.kind === "buttons" && /^reroll$/i.test(o.label ?? ""));
     if (mem.reroll && payable && button && !mem.tried.has(`${menu.wave}|reroll`)) {
