@@ -285,8 +285,8 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
   const laterPicks = live && (turn.teraLater(foe) || turns.later !== turns.first)
     ? replayMoves(turns.later, foe, me, outcomesOn(turn, turns.later, foe, me, outs)) : null;
   // This turn's rows carry their share of the target, and a replay at `me` none: in a double each of ours takes the
-  // uses after this one alike, as a re-drawn target's (`likelyMoves`).
-  const share = !next && foe.isOnField?.() && turn.facts.double && me.isOnField?.() ? 1 / Math.max(1, opponentCount(foe)) : 1;
+  // uses after this one alike, as a re-drawn target's, and a bench mon coming in an average slot's (`likelyMoves`).
+  const share = !next && foe.isOnField?.() && turn.facts.double ? 1 / Math.max(1, opponentCount(foe)) : 1;
   // `later`: the uses after this one, where a re-drawn target (`likelyMoves`) lands on `me` otherwise, the next is the
   // foe's own pick, the foe has Tera'd since, or its first turn on the field is behind it; null where none.
   const later = own && ownFrom === 1 ? own

@@ -736,9 +736,11 @@ for (const [stale, why] of [[3, "withdrawn earlier"], [1, "never sent in"]]) {
   const me = foe({ dmg: { e: { 252: 20, 33: 30 } } });
   const me2 = mkMon({ id: "me2", player: true, fieldIndex: 1, dmg: { e: { 252: 20, 33: 30 } } });
   const x = mkMon({ id: "x", player: false, fieldIndex: 1, moves: [TACKLE] });
-  const ai = setup({ player: [me, me2], enemy: [e, x], double: true });
-  const t = ai.ask(t => planner().threatFrom(t, e, me));
-  near(t.later?.expected ?? 0, 27.3125 / 2, "half of Tackle's 30, rolled");
+  const sub = mkMon({ id: "sub", player: true, fieldIndex: null, dmg: { e: { 252: 20, 33: 30 } } });
+  const ai = setup({ player: [me, me2, sub], enemy: [e, x], double: true });
+  const t = ai.ask(t => ({ me: planner().threatFrom(t, e, me), sub: planner().threatFrom(t, e, sub) }));
+  near(t.me.later?.expected ?? 0, 27.3125 / 2, "half of Tackle's 30, rolled");
+  near(t.sub.later?.expected ?? 0, 27.3125 / 2, "a bench mon coming in takes the same half");
 }
 
 console.log("enemy AI: all assertions passed");
