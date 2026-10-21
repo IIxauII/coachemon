@@ -473,4 +473,5 @@ Fight plan likely lost
 ➜ 1. Gyarados Water Hydro Pump → Tyranitar KO · 57% left
 ➜ 2. Gyarados Water Hydro Pump → Carracosta falls · foe at 61%
 ⚠ likely lost: nothing we have hurts Carracosta — maximise damage before it comes in
+== our Tera Flying: this turn Earthquake for 0, then 139 a turn
 ok

@@ -287,9 +287,9 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
   if (ownMoves && ownFrom <= 0) moves = ownMoves;
   const { expected, use } = landing(foe, moves, m => m.p, next);
   const own = ownMoves && ownFrom > 0 ? landing(foe, ownMoves, m => m.p, next) : null;
-  // A benched foe's picks after its first are made at the Tera it takes then (game-code.md §7), and a first-turn-only
-  // move's on a turn past its first (#824).
-  const laterPicks = live && (turn.teraLater(foe) || turns.later !== turns.first)
+  // A benched foe's picks after its first are made at the Tera it takes then (game-code.md §7), a first-turn-only
+  // move's on a turn past its first (#824), and every pick after this turn's against our own Tera (#649).
+  const laterPicks = live && (turn.teraLater(foe) || turns.later !== turns.first || (!next && !!turn.ourTeraOn?.(me)))
     ? replayMoves(turns.later, foe, me, outcomesOn(turn, turns.later, foe, me, outs)) : null;
   // This turn's rows carry their share of the target, and a replay at `me` none: in a double each of ours takes the
   // uses after this one alike, as a re-drawn target's (`likelyMoves`).
@@ -2103,6 +2103,8 @@ export const battleModel = (baseTurn, { team = null } = {}) => {
   // Foes on the field take their pick from the field plan, so the rows never contradict it; any other foe gets the
   // best 1-v-1 pick, preferring members not already busy.
   const used = new Set(plan?.picks.map(p => p.me) ?? []);
+  // A mon the ⚔ line Teras meets every foe at its Tera.
+  const atOf = me => plan?.picks.find(p => p.me === me && p.tera)?.at ?? turn;
   const pickFor = foe => {
     // A foe predicted to switch out shares its switch-in's pick: that's who the move lands on.
     const target = switching(foe) ? predicted.get(foe).to : foe;
@@ -2119,8 +2121,6 @@ export const battleModel = (baseTurn, { team = null } = {}) => {
       return { me: slot.me, mine: { ...slot.move, dmg, then }, myTurns: both ? slot.each?.[ai] ?? koTurn(koCurve(turn.mon(target), [{ d: dmg, p: 1 }]).by) : slot.hits, score: slot.score, later: false, vs: target, at: slot.at };
     }
     const paired = (plan?.picks.length ?? 0) === 2;
-    // A mon the ⚔ line Teras fights every later foe at its Tera.
-    const atOf = me => plan?.picks.find(p => p.me === me && p.tera)?.at ?? turn;
     const ranked = party.map(me => ({ ...duel(atOf(me), me, foe, paired && ai >= 0 && plan.picks.some(p => p.me === me)), at: atOf(me) }))
       .map(m => ({ ...m, rank: m.score - (used.has(m.me) ? 1 : 0) }))
       .sort((x, y) => y.rank - x.rank);
@@ -2147,7 +2147,7 @@ export const battleModel = (baseTurn, { team = null } = {}) => {
     // `✦` marks an ability that changes one of our options: a field trap always, a move trap when it bites the damaging
     // pool of the mons we put in front of it, not only the ⚔ line's move.
     const ourside = [...new Set([...(plan?.picks.map(q => q.me) ?? []), ...(p?.me ? [p.me] : [])])];
-    const pool = ourside.flatMap(me => planOutcomes(turn, me, foe));
+    const pool = ourside.flatMap(me => planOutcomes(atOf(me), me, foe));
     const traps = abilitiesOf(foe).filter(a => FIELD_TRAPS.has(a) || (MOVE_TRAPS.has(a) && pool.some(o => bites(a, foe, o))));
     const t = p?.mine && !switching(foe) ? threatFrom(p.at ?? turn, foe, p.me, p.mine.pm ?? null, { next: !p.me.isOnField?.() || !foe.isOnField?.() }) : null;
     const bars = bossBarsLeft(vs);

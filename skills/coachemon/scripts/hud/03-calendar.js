@@ -199,6 +199,7 @@ export const teraRefill = (s, from, terapagos = false) => {
 // Spending the charge on `wave` leaves no big fight before it refills (#649). The current fight never blocks it.
 export const teraSpendable = (s, wave, terapagos = false) => {
   if (typeof s?.gameMode?.isFixedBattle !== "function") return false;
+  if (runEndsAt(s, wave)) return true;
   const back = teraRefill(s, wave, terapagos);
   return !bigFightsAhead(s, wave + 1, back == null ? SPAN : back - wave - 1).length;
 };

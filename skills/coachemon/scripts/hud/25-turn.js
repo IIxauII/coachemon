@@ -155,12 +155,9 @@ const sceneFacts = (s, env, live) => {
   const b = s?.currentBattle ?? {};
   const ph = tryDo(() => s.phaseManager?.getCurrentPhase?.(), null);
   const cmd = b.turnCommands?.[0] ?? null;
-  const decision = s ? awaitingDecision(s) : null;
   return {
     wave: b.waveIndex ?? null, turn: b.turn ?? null, enemySwitchCounter: env.enemySwitchCounter,
-    double: env.double, trainer: env.trainer, decision,
-    // Offered in a single battle only (#649).
-    teraOpen: live && decision === "command" && !env.double && ourTeraLeft(s, env, b.waveIndex ?? 0),
+    double: env.double, trainer: env.trainer, decision: s ? awaitingDecision(s) : null,
     battleType: b.battleType, mysteryEncounter: env.mysteryEncounter,
     party: env.playerParty, foes: env.foes, field: env.field,
     trickRoom: !!tryDo(() => s.arena?.getTag?.("TRICK_ROOM"), false),
@@ -373,11 +370,17 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
         .reduce((t, b) => t + b.score * b.p, 0)), 0);
       return Number.isFinite(n) ? n : 0;
     }),
+    // This turn is a hypothesis with our `p`'s Tera on (#649).
+    ourTeraOn: p => patches.some(x => x.mon === p && x.tera === true),
     // `{ type }` of the Tera `p` may take with this command, null where there is none to take (#649).
     ourTera: p => memo("ourTera", p, () => {
-      if (!facts.teraOpen || !env.playerParty.includes(p) || p.isTerastallized || !p.isOnField?.()) return null;
-      // `canSpeciesTera`'s forms (game-code.md §17).
-      if (tryDo(() => !!(p.isMega?.() || p.isMax?.() || p.hasSpecies?.(SpeciesId.NECROZMA, "ultra")), true)) return null;
+      if (!env.playerParty.includes(p) || p.isTerastallized || !p.isOnField?.()) return null;
+      // A single battle's command only.
+      if (!memo("teraOpen", "", () => live && facts.decision === "command" && !env.double && ourTeraLeft(env.s, env, facts.wave ?? 0))) return null;
+      // `canSpeciesTera`'s forms (game-code.md §17). A Tera that changes the form (`SpeciesFormChangeTeraTrigger`) is
+      // one the patch can't price, so it is not offered.
+      if (tryDo(() => !!(p.isMega?.() || p.isMax?.() || p.hasSpecies?.(SpeciesId.NECROZMA, "ultra")
+        || p.hasSpecies?.(SpeciesId.OGERPON) || p.hasSpecies?.(SpeciesId.TERAPAGOS)), true)) return null;
       const t = tryDo(() => p.getTeraType(), null);
       const type = TYPES[t] ?? (t != null && t === PokemonType.STELLAR ? "Stellar" : null);
       return type ? { type } : null;

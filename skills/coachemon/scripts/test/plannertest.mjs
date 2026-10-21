@@ -2197,4 +2197,31 @@ Object.assign(TABLE, {
   assert.ok(tera.card.teamPlan.steps.slice(1).every(x => !x.tera), "only the step that presses it carries it");
 }
 
+// ---- After our Tera the foe re-picks against the new typing: only this turn's pick is the one made before it (#649)
+Object.assign(TABLE, {
+  "Raichu>Thunderbolt>Garchomp": [[60], 1, 0], "Raichu*>Thunderbolt>Garchomp": [[60], 1, 0],
+  "Garchomp>Earthquake>Raichu": [[400], 1, 2], "Garchomp>Earthquake>Raichu*": [[0], 1, 0],
+  "Garchomp>Dragon Claw>Raichu": [[150], 1, 1], "Garchomp>Dragon Claw>Raichu*": [[150], 1, 1],
+});
+{
+  const teraKeyed = (a, d, pm, o) => {
+    const as = p => (p.isTerastallized ? Object.create(p, { name: { value: `${p.name}*` } }) : p);
+    const x = outcome(as(a), as(d), pm, o);
+    return x && x.max > 0 ? { ...x, name: pm.getName() } : null;
+  };
+  const raichu = mon("Raichu", 100, ["Electric"], [300, 200, 150, 250, 150, 300], [["Thunderbolt", "Electric", 90, "S"]], true);
+  const garchomp = mon("Garchomp", 100, ["Dragon", "Ground"], [400, 300, 250, 200, 200, 250],
+    [["Earthquake", "Ground", 100, "P"], ["Dragon Claw", "Dragon", 80, "P"]], true);
+  // The AI's re-pick: Earthquake into the Electric typing, Dragon Claw once Raichu is Flying.
+  const replay = (_e, target) => [{ name: target.isTerastallized ? "Dragon Claw" : "Earthquake", type: "Dragon", p: 1 }];
+  const { scene } = render({ party: [raichu], foes: [garchomp], live: true, switches: () => new Map(), stubOutcome: teraKeyed, replay,
+    dist: () => [{ name: "Earthquake", type: "Ground", p: 1, score: 10, targets: [0] }] });
+  const { threatFrom, ourTeraTurn } = globalThis.__planner;
+  const t = threatFrom(ourTeraTurn(scene, raichu), garchomp, raichu);
+  console.log(`== our Tera Flying: this turn ${t.move.name} for ${Math.round(t.expected)}, then ${Math.round(t.later?.expected ?? t.expected)} a turn`);
+  assert.equal(t.move.name, "Earthquake", "this turn's pick was made before the Tera");
+  assert.equal(t.expected, 0, "and lands on Tera Flying for nothing");
+  assert.ok(t.later?.expected > 0, "the uses after it are Dragon Claw, picked against the Tera");
+}
+
 console.log("ok");

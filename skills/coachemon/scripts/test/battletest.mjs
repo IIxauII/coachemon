@@ -40,9 +40,10 @@ const switchIn = teras => ({ double: false, trainer: { isBoss: false }, teras, b
 // what the scene adds: the wave, the arena's count of Teras used, the modifiers and the calendar's mode.
 const ORB = { is: n => n === "TerastallizeAccessModifier" };
 const CLASSIC = { isClassic: true, isWaveFinal: w => w === 200, isBoss: w => w % 10 === 0, isFixedBattle: () => false, challenges: [] };
-const ourTera = ({ wave = 180, used = 0, modifiers = [ORB], mode = CLASSIC, mega = false, terapagos = false } = {}) => {
+const ourTera = ({ wave = 180, used = 0, modifiers = [ORB], mode = CLASSIC, mega = false, terapagos = false, species = null } = {}) => {
   const gyarados = teraMon("Gyarados", 80, ["Water","Flying"], "Intimidate", [260,170,130,120,150,140], [["Waterfall","Water",80,"P"]], true, "Water");
   if (mega) gyarados.isMega = () => true;
+  if (species != null) gyarados.hasSpecies = id => id === species;
   const bench = mon("Terapagos", 80, ["Normal"], "Tera Shift", [260,120,130,140,130,90], [["Tackle","Normal",40,"P"]], false);
   bench.hasSpecies = id => terapagos && id === SpeciesId.TERAPAGOS;
   return { double: false, game: { wave, arena: { playerTerasUsed: used }, modifiers, gameMode: mode }, party: [gyarados, bench],
@@ -139,6 +140,8 @@ const scenarios = {
   teraSpent: ourTera({ used: 1 }),
   noTeraOrb: ourTera({ modifiers: [] }),
   teraMega: ourTera({ mega: true }),
+  // A Tera that changes the form, which the hypothesis can't price: Ogerpon's mask.
+  teraOgerpon: ourTera({ species: SpeciesId.OGERPON }),
   teraBossAhead: ourTera({ wave: 175 }),
   // Offered again: past the biome's last big fight, and before a gym leader whose cleanup refills it for a Terapagos.
   teraLastBigBehind: ourTera({ wave: 175, mode: { ...CLASSIC, isBoss: w => w === 172 } }),
@@ -329,7 +332,7 @@ assert.deepEqual(trapsOf("eelevateArrows", "Garchomp", "Eelektross"), { slot: []
   const teraOf = label => cards[label].field.slots[0].tera;
   assert.equal(teraOf("ourTera"), "Water", "the boss wave itself, with the charge and the Tera Orb");
   assert.equal(cards.ourTera.field.slots[0].threat, null, "Stone Edge at ×1 into Tera Water is no longer a danger");
-  for (const label of ["teraSpent", "noTeraOrb", "teraMega", "teraBossAhead"]) assert.equal(teraOf(label), null, label);
+  for (const label of ["teraSpent", "noTeraOrb", "teraMega", "teraOgerpon", "teraBossAhead"]) assert.equal(teraOf(label), null, label);
   assert.equal(cards.teraBossAhead.field.slots[0].threat?.e, 2, "a Tera it would win the turn with is still kept for the boss");
   assert.equal(teraOf("teraLastBigBehind"), "Water", "a wild wave after the biome's last big fight");
   assert.equal(teraOf("teraTerapagos"), "Water", "with a Terapagos, the gym leader's cleanup refills it first");

@@ -208,6 +208,18 @@ Next big fight boss in 10 W190
 ✓ full heal entering W181 — HP, status, PP, revives, Tera
 · luck 0 (D) — 3.1% tier upgrade per reward
 summary danger | Gyarados Waterfall → Lycanroc · 2 hits | ⚠ Gyarados
+== teraOgerpon
+⌃ {Hide the drawer} × {Close}
+danger 🎯 W180 Gyarados Waterfall → Lycanroc · 2 hits
+⚔ Gyarados ⚠ Rock ×2 141% {Lycanroc's Stone Edge: ~141% of current HP} Water Waterfall → Lycanroc 2 hits
+⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
+⚠ Gyarados ← Lycanroc Stone Edge
+Lycanroc Lycanroc L80 Rock 100% ▲ Water ↯ Rock Stone Edge → Gyarados moves after
+boss in 10 (W190)
+Next big fight boss in 10 W190
+✓ full heal entering W181 — HP, status, PP, revives, Tera
+· luck 0 (D) — 3.1% tier upgrade per reward
+summary danger | Gyarados Waterfall → Lycanroc · 2 hits | ⚠ Gyarados
 == teraBossAhead
 ⌃ {Hide the drawer} × {Close}
 danger 🎯 W175 Gyarados Waterfall → Lycanroc · 2 hits

@@ -251,6 +251,8 @@ const kinds = (s, waves) => waves.map(w => `${w}:${waveKind(s, w) ?? "—"}`);
   assert.equal(spend(179), false, "the wave before the boss");
   assert.equal(spend(182), false, "the first Elite Four member, with three more and the champion before 191");
   assert.equal(spend(190), true, "the champion is the biome's last big fight");
+  assert.equal(spend(200), true, "the final boss: nothing comes after it");
+  assert.equal(teraSpendable(scene("daily"), 50), true, "nor after the Daily run's last wave");
   // Limited Support 1 takes the heal away; the new biome still refills it.
   assert.equal(teraRefill(scene("classic", { challenges: [{ id: LIMITED_SUPPORT, value: 1 }] }), 175), 181);
   // A wave after the biome's last big fight: the boss at 10 is behind wave 10's own fight.
