@@ -59,6 +59,8 @@ globalThis.document = {
   body: { appendChild: e => (el = e) },
   createElement: node,
   dispatchEvent: e => { events.push(e); return true; },
+  addEventListener() {},
+  removeEventListener() {},
 };
 globalThis.setInterval = fn => { ticker = fn; return 0; };
 globalThis.clearInterval = () => {};

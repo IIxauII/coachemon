@@ -77,7 +77,8 @@ export const mountHud = (opts = {}) => {
   delete globalThis.__coachHud;
   globalThis.Phaser = { Math: { RND: rnd }, Display: { Canvas: { CanvasPool: { pool: "scene" in opts
     ? [{ parent: { game: { scene: { getScene }, textures: { exists: () => false } } } }] : [] } } } };
-  globalThis.document = { documentElement: { dataset: {}, appendChild(n) { return n; } }, body: { appendChild: e => (el = e) }, createElement: node };
+  globalThis.document = { documentElement: { dataset: {}, appendChild(n) { return n; } }, body: { appendChild: e => (el = e) }, createElement: node,
+    addEventListener() {}, removeEventListener() {} };
   globalThis.setInterval = () => 0;
   globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: k => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)), removeItem: k => store.delete(k) };
