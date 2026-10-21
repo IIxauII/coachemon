@@ -1374,7 +1374,7 @@ const rowOf = (id, level, moves, ability) => {
   console.log(`  the weakest member against both halves is ${weakest.name}, at ${t1(weakest.cost)}`);
 }
 
-// ---- A big fight on the wave the run stands on counts until it is won, and every judgment reads the same one (#587)
+// ---- A big fight on the wave the run stands on counts until it is won, and every judgment reads the same one (#587, #877)
 {
   const nc = () => mon(OURS.swampert, CAP, [M.surf, M.earthquake], { ability: "Torrent" });
   const roster = wave => (wave === 30

@@ -91,7 +91,7 @@ const keyOf = s => readRun(s, run => run.key);
   assert.equal(readRun(null, run => run.facts.wave), 0, "no scene: facts default, no sandbox");
 }
 
-// ---- The next big fight is the one the run still has to win, which the caller says by its standing (#587)
+// ---- The next big fight is the one the run still has to win, which the caller says by its standing (#587, #877)
 {
   // The game mode is not in the run key, so another calendar takes a seed of its own or is served the first one's memo.
   const fixed = { isBoss: w => w % 10 === 0, isFixedBattle: w => w === 25 };

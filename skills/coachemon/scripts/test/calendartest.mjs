@@ -121,7 +121,7 @@ const kinds = (s, waves) => waves.map(w => `${w}:${waveKind(s, w) ?? "—"}`);
   assert.deepEqual(bigFightsAhead(null, 1, 30), []);
 }
 
-// ---- A run standing on a big fight's wave still has it ahead until it is cleared (#587)
+// ---- A run standing on a big fight's wave still has it ahead until it is cleared (#587, #877)
 {
   const s = scene("classic", { only: { isClassic: true, isWaveFinal: w => w === 200, isBoss: w => w % 10 === 0,
     isFixedBattle: w => w === 25 } });

@@ -293,7 +293,7 @@ let best;
   assert.ok(sp.v < 0, sp.why);
   assert.match(sp.why, /no fusion worth a member · best Garchomp ← Magikarp/);
 }
-// ---- After a fixed battle, the Splicer judges a pair at the next big fight and not at the fight just won (#587).
+// ---- After a fixed battle, the Splicer judges a pair at the next big fight and not at the fight just won (#587, #877).
 {
   for (const [wave, fight] of [[24, 25], [25, 30], [26, 30]]) {
     for (const screen of ["party", "rewards"]) {

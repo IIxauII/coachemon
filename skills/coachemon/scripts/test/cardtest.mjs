@@ -140,7 +140,7 @@ const verdictOf = m => cardSummary(m).verdict;
   assert.equal(rewardsScreen({ ui: { mode: 8, getHandler: () => shop } }), null);
 }
 
-// ---- Each card states where the run stands: a battle's wave is still to win, a card after it stands past it (#587)
+// ---- Each card states where the run stands: a battle's wave is still to win, a card after it stands past it (#587, #877)
 {
   const { clearedOn } = globalThis.__hud["60-card"];
   const standing = Object.fromEntries(["battle", "rewards", "biome", "encounter", "fusion", "learn", "starters"]

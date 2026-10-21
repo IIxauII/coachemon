@@ -81,8 +81,8 @@ export const readRun = (s, fn, { cleared = null } = {}) => {
        *
        * The standing is not in the run key, so a memo whose answer turns on the fight keys on `nextFight.fight`.
        *
-       * A Splicer after a fixed fight judged the pair against the fight just won, as the biome card had judged the
-       * boss just finished (#587).
+       * A Splicer after a fixed fight judged the pair against the fight just won (#877), as the biome card had judged
+       * the boss just finished (#587).
        */
       get nextFight() { return memo("next-fight", String(cleared), () => nextFightOf(s, facts.wave, cleared)); },
     };
