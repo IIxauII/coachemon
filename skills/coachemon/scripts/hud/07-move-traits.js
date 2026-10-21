@@ -120,6 +120,7 @@ export const moveTraits = (mv, user = null, { party = null, target = null } = {}
   // caller.
   const setType = firstAttr(mv, "ChangeTypeAttr"), addType = firstAttr(mv, "AddTypeAttr");
   const typeChange = setType ? { kind: "set", type: setType.type } : addType ? { kind: "add", type: addType.type } : null;
+  const removedType = firstAttr(mv, "RemoveTypeAttr")?.removedType ?? null;
   return {
     charge, semiCharge: charging && chargeAttrs.some(a => isAttr(a, "SemiInvulnerableAttr")),
     recharge: attrsNamed(mv, "RechargeAttr").length > 0,
@@ -131,7 +132,8 @@ export const moveTraits = (mv, user = null, { party = null, target = null } = {}
     recoil, halfSac: !guarded && attrsNamed(mv, "HalfSacrificialAttr").length > 0,
     crash: !guarded && !lock && attrsNamed(mv, "MissEffectAttr").length > 0,
     selfKo: attrsNamed(mv, "SacrificialAttrOnHit").length ? "onHit" : attrsNamed(mv, "SacrificialAttr").length ? "always" : null,
-    drops, removesType: attrsNamed(mv, "RemoveTypeAttr").length > 0, guarded, typeChange,
+    // `removedType` and `delayed` each fail a later use (game-code.md §5).
+    drops, removesType: attrsNamed(mv, "RemoveTypeAttr").length > 0, removedType, delayed: attrsNamed(mv, "DelayedAttackAttr").length > 0, guarded, typeChange,
     hits: hitShape(mv, user, party, target),
     flinches: attrsNamed(mv, "FlinchAttr").length > 0,
     stages, inflicts, tags, heal, hazard: trap ? { tag: trap.tagType } : null,
