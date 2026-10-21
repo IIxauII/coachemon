@@ -279,27 +279,31 @@ const tpStolen = (byCount, fixed, mean) => (byCount ? stealCounts(fixed, mean).r
 // Enigma Berries' in multiples of it. `se`: a super-effective hit landed this turn. The berries heal, capped, between
 // `pre` and the rest of the turn end (game-code.md §21).
 const BERRY_PART = 100, EATEN_SPAN = BERRY_PART + 1;
+const tpEaten = used => ({ sitrus: used % EATEN_SPAN, enigmas: Math.floor(used / EATEN_SPAN) });
 // `used` as `stealHealAfter` keys it: bit 0 the Sitrus, the Enigmas from bit 1 up. Exact without a Berry Pouch; under
 // one, a part-eaten berry reads as gone or held.
-const tpEatenKey = used => Math.round((used % EATEN_SPAN) / BERRY_PART) | (Math.round(Math.floor(used / EATEN_SPAN) / BERRY_PART) << 1);
+const tpEatenKey = used => {
+  const { sitrus, enigmas } = tpEaten(used);
+  return Math.round(sitrus / BERRY_PART) | (Math.round(enigmas / BERRY_PART) << 1);
+};
 // The chance one of `count` berries is still held once `parts` are eaten, and the parts a trigger at that chance eats.
 // Under a Berry Pouch the count eaten is an expectation, and a trigger heals by the chance and keeps `keep` of it
 // (#822, #847).
-const tpHeld = (parts, count, keep) => (keep > 0 ? Math.max(0, Math.min(1, count - parts / BERRY_PART)) : parts / BERRY_PART < count ? 1 : 0);
-const tpEats = (left, keep) => Math.max(1, Math.round(BERRY_PART * left * (1 - keep)));
+const tpHeldChance = (parts, count, keep) => (keep > 0 ? Math.max(0, Math.min(1, count - parts / BERRY_PART)) : parts / BERRY_PART < count ? 1 : 0);
+const tpPartsEaten = (left, keep) => Math.max(1, Math.round(BERRY_PART * left * (1 - keep)));
 const tpHeal = (hp, max, prof, used, se, extra = 0) => {
   if (!prof || hp < 1) return [hp, used];
   const pre = prof.pre ?? 0, at = Math.min(max, hp + pre), keep = prof.keep ?? 0;
-  let sitrus = used % EATEN_SPAN, enigmas = Math.floor(used / EATEN_SPAN), berries = 0;
-  const sitrusLeft = tpHeld(sitrus, 1, keep);
+  let { sitrus, enigmas } = tpEaten(used), berries = 0;
+  const sitrusLeft = tpHeldChance(sitrus, 1, keep);
   if (at < max / 2 && sitrusLeft > 0 && prof.sitrus) {
     berries += prof.sitrus * sitrusLeft;
-    sitrus += tpEats(sitrusLeft, keep);
+    sitrus += tpPartsEaten(sitrusLeft, keep);
   }
-  const enigmaLeft = tpHeld(enigmas, prof.enigmas ?? 1, keep);
+  const enigmaLeft = tpHeldChance(enigmas, prof.enigmas ?? 1, keep);
   if (se && prof.enigma && enigmaLeft > 0) {
     berries += prof.enigma * enigmaLeft;
-    enigmas += tpEats(enigmaLeft, keep);
+    enigmas += tpPartsEaten(enigmaLeft, keep);
   }
   used = sitrus + EATEN_SPAN * enigmas;
   if (!berries) return [Math.min(max, hp + prof.base + extra), used];

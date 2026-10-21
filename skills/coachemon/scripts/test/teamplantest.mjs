@@ -177,11 +177,11 @@ assert.equal(plan.approxDoubles, false);
   const { tpFight } = globalThis.__tp;
   const kept = { base: 0, pre: 0, sitrus: 50, enigma: 0 };
   const base = { theirs: [[{ dmg: 10, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [null], foeHeal: [kept] };
-  // A 60 into 100 HP: it eats its Sitrus at 40, read off the eaten bits that fight leaves (#847).
+  // A 60 into 100 HP: it eats its Sitrus at 40, read off the `fb` that fight leaves (#847).
   const fb = tpFight({ ...base, ours: [[{ dmg: 60, e: 1 }]] }, { oh: [100], ob: [0], fh: [100], fs: [0], fb: [0] }, 0, 0, "free").ends.win.fb;
   const T = { ...base, ours: [[{ dmg: 50, steals: true }]], foeHealBy: [[kept, { ...kept, sitrus: 0 }]], stealHeal: [[[50]]],
     stealHealAfter: [[new Map([[1, []]])]] };
-  const won = bits => tpFight(T, { oh: [100], ob: [0], fh: [100], fs: [0], fb: [bits] }, 0, 0, "free").ends.win.mh;
+  const won = used => tpFight(T, { oh: [100], ob: [0], fh: [100], fs: [0], fb: [used] }, 0, 0, "free").ends.win.mh;
   const [held, eaten] = [won(0), won(fb)];
   console.log(`== bug bite after the foe ate its own Sitrus\nwe end on ${eaten} (${held} when it still held it)`);
   // Two Bug Bites fell it, and its one hit lands between them: 100 − 10, plus 50 for a Sitrus still there to steal.
@@ -674,8 +674,8 @@ assert.equal(plan.approxDoubles, false);
 }
 // …and our Sitrus Berry the same, which heals again each turn end below half by the chance it is still held (#847). We
 // take 120 a turn into 400 and fell the foe on turn 5, before its fifth hit, and that turn's end still heals us. No
-// Pouch: 280 → 160 + 100 → 140 → 20 → 20. One stack: 260 → 140 + 30 → 50 + 9 → 59 + 3. Three: 260 → 140 + 90 →
-// 110 + 81 → 191 + 73.
+// Pouch: 280 → 160 + 100 → 140 → 20 → 20. One stack: 280 → 160 + 100 → 140 + 30 → 50 + 9 → 59 + 3. Three: 280 →
+// 160 + 100 → 140 + 90 → 110 + 81 → 191 + 73.
 {
   const { tpFight } = globalThis.__tp;
   const T = keep => ({ ours: [[{ dmg: 100, e: 1 }]], theirs: [[{ dmg: 120, e: 1 }]], first: [[0]], ourMax: [400], foeMax: [500],
@@ -688,8 +688,8 @@ assert.equal(plan.approxDoubles, false);
   assert.deepEqual([none, one, three].map(r => [r.pWin, r.ends.win.turns]), [[1, 5], [1, 5], [1, 5]], "a sure win on turn 5");
   assert.equal(none.ends.win.mh, 20, "no Pouch: one berry on turn 2");
   assert.deepEqual(none, old, "a profile that carries no keep reads as no Pouch");
-  near(one.ends.win.mh, 62, "one stack: 30 % of it again on turn 3, 9 % on turn 4, 3 % on turn 5");
-  near(three.ends.win.mh, 264, "three stacks: 90 % on turn 3, 81 % on turn 4, 73 % on turn 5");
+  near(one.ends.win.mh, 62, "one stack");
+  near(three.ends.win.mh, 264, "three stacks");
 }
 // A bench mon the trainer Teras (#648, Gordie W180): Coalossal's team index is in `instantTeras`, so the plan prices our
 // hits at Tera Rock, Water ×2 — it Teras at its first FIGHT command, before anything hits it once sent in after a KO —
