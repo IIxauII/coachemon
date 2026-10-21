@@ -1,18 +1,10 @@
 import assert from "node:assert/strict";
-import { bundle } from "../hud-bundle.mjs";
+import { mountHud } from "./fake-page.mjs";
 import { party, mon, species, SPECIES, ATTRS } from "./fixtures/party.mjs";
 import { TY } from "./fake-mon.mjs";
 
 // A bare scene with no `ui`, so the HUD's own tick draws nothing.
-globalThis.window = globalThis;
-globalThis.Phaser = { Math: { RND: { state: () => "!rnd,0" } },
-  Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => ({ gameMode: {} }) } } } }] } } } };
-const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
-globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: node };
-globalThis.setInterval = () => 0;
-globalThis.clearInterval = () => {};
-globalThis.localStorage = { getItem: () => "full", setItem() {} };
-eval(bundle("hud", { expose: true }));
+mountHud({ scene: { gameMode: {} } });
 const { partyAtFight, partyProfile, damagingTypes, finalBstOf, partyLuck } = globalThis.__hud["08-party"];
 
 const row = (label, cells) => console.log(`${label.padEnd(18)}${[].concat(cells).join("  ")}`);

@@ -1,20 +1,11 @@
 import assert from "node:assert/strict";
-import { bundle } from "../hud-bundle.mjs";
+import { mountHud } from "./fake-page.mjs";
 import { mon, species } from "./fixtures/party.mjs";
 import { cat as CAT, TY } from "./fake-mon.mjs";
 
-globalThis.window = globalThis;
-globalThis.Phaser = {
-  Math: { RND: { _s: "!rnd,live", state(v) { if (v !== undefined) this._s = v; return this._s; },
-    integerInRange() { return 0; }, realInRange() { return 0; }, frac() { return 0; }, pick(a) { return a[0]; },
-    shuffle(a) { return a; } } },
-  Display: { Canvas: { CanvasPool: { pool: [] } } },
-};
-const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
-globalThis.document = { documentElement: { dataset: {}, appendChild() {} }, body: { appendChild() {} }, createElement: node };
-globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
-globalThis.localStorage = { getItem: () => "full", setItem() {} };
-eval(bundle("hud", { expose: true }));
+mountHud({ rnd: { _s: "!rnd,live", state(v) { if (v !== undefined) this._s = v; return this._s; },
+  integerInRange() { return 0; }, realInRange() { return 0; }, frac() { return 0; }, pick(a) { return a[0]; },
+  shuffle(a) { return a; } } });
 const { leadAdvice } = globalThis.__hud["51-lead"];
 const { readRun } = globalThis.__hud["26-run"];
 
