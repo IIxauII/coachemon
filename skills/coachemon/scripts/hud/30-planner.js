@@ -1828,7 +1828,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
           target: sup || p.target === null || p.self ? null : p.target === "both" ? "both" : { icon: iconOf(active[p.target]), name: active[p.target].name },
           then: sup ? null : p.then?.name ?? null,
           ko: sup || each ? 0 : helped && typeof p.target === "number" ? 1 : p.hits <= 3 ? p.hits : 0,
-          acc: sup || !(p.move?.acc < 1) ? null : Math.min(99, Math.round(p.move.acc * 100)),
+          accPct: sup || !(p.move?.acc < 1) ? null : Math.min(99, Math.round(p.move.acc * 100)),
           helped,
           koEach: sup || p.target !== "both" || !p.each ? null : p.each.map(n => (n <= 3 ? n : 0)),
           threat: slotThreat(p, enter, sup?.kind === "protect"),
