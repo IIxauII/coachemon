@@ -2,8 +2,10 @@ import { readFileSync } from "node:fs";
 import type { Carry } from "../../src/solver/gate.ts";
 import { andJoined } from "../../src/solver/no-answer.ts";
 import type { Input, Reason, ReplayResult } from "../../src/solver/oracle-line.ts";
+import { WIN_SCRIPT } from "../../src/solver/script.ts";
 import { type CheckResult, readScript, type Script, type SolveInput } from "../../src/solver/solver.ts";
 import { printChecks } from "../battle-oracle/print.ts";
+import knownFights from "./known-fights.json" with { type: "json" };
 
 export type Given = Pick<SolveInput, "save" | "live" | "liveExport" | "cloneVersion">;
 
@@ -12,16 +14,14 @@ export type RecheckDeps = {
   checkForks(given: Given, inputs: readonly Input[], carry: Carry): Promise<CheckResult>;
 };
 
-/** The real lines that matched live at every checkpoint (#660). */
-const KNOWN_FIGHTS = [
-  { stem: "gordie-w180", name: "Gordie W180" },
-  { stem: "drayton-w188", name: "Drayton W188" },
-  { stem: "kieran-w190", name: "Kieran W190" },
-  { stem: "eternatus-w200", name: "Eternatus W200" },
-  { stem: "swimmers-w173", name: "Swimmers W173" },
-];
+export type KnownFight = { stem: string; name: string };
 
-const FIXTURES = new URL("../../src/solver/fixtures/", import.meta.url);
+/** The real lines that matched live at every checkpoint (#660), each a pair of files in `FIXTURES`. */
+export const KNOWN_FIGHTS: readonly KnownFight[] = knownFights;
+
+export const KNOWN_FIGHTS_FILE = new URL("./known-fights.json", import.meta.url);
+
+export const FIXTURES = new URL("../../src/solver/fixtures/", import.meta.url);
 
 /** The replays a new version's own rules can fail. */
 const PLAYED_OTHERWISE: ReadonlySet<Reason["code"]> = new Set(["scene_mismatch", "illegal_step", "known_turn_missed"]);
@@ -40,13 +40,14 @@ export async function recheck(
   version: string,
   deps: RecheckDeps,
   print: (line: string) => void = () => {},
+  known: readonly KnownFight[] = KNOWN_FIGHTS,
 ): Promise<{ failed: string[]; text: string }> {
-  const fights = KNOWN_FIGHTS.map(({ stem, name }) => {
+  const fights = known.map(({ stem, name }) => {
     const given = { ...JSON.parse(readFileSync(new URL(`${stem}.json`, FIXTURES), "utf8")), cloneVersion: version } as Given;
     return {
       name,
       given,
-      script: readScript(readFileSync(new URL(`${stem}.win.script.json`, FIXTURES), "utf8")),
+      script: readScript(readFileSync(new URL(`${stem}${WIN_SCRIPT}`, FIXTURES), "utf8")),
       carry: { carried: given.save.gameVersion !== version },
     };
   });

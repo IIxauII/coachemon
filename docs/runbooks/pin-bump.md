@@ -158,7 +158,7 @@ re-check hasn't passed. It exists for the dev only, and the plugin never passes 
 
 ## Record a known fight again
 
-A known fight is two files in `src/solver/fixtures/`, named in `KNOWN_FIGHTS` in `scripts/recheck/recheck.ts`:
+A known fight is two files in `src/solver/fixtures/`, named in `scripts/recheck/known-fights.json`:
 
 - **`<stem>.json`**: `{ live: { wave, battleSeed }, save, liveExport }`. The driver's `read_session` gives all three at
   the fight's first decision: `battle_wave` and `battle_seed`, `wave_start` and `export`.
@@ -168,12 +168,34 @@ A known fight is two files in `src/solver/fixtures/`, named in `KNOWN_FIGHTS` in
 
 The old fight can't be played again on `<new>`: pokerogue.net offers no session import (only a dev, beta or app build
 does, `src/ui/handlers/menu-ui-handler.ts` in the clone), and the extension reads pokerogue.net alone. So a fight that
-no longer carries is replaced by a new one, played live on pokerogue.net once it serves `<new>`:
+no longer carries is replaced by a new one, played live on pokerogue.net.
 
-1. Reach a fight like the one it replaces: a single trainer fight, a trainer double, or the classic final boss for
-   Eternatus W200. For Swimmers W173, a trainer double reached by a `Continue`, with no input since: its save's
-   `enemyModifiers` is `null`, and the load re-rolls its partner's name (#821, #829). Not a Daily or a Mystery Encounter, which the solver refuses.
-2. At the first decision, before any input, call `read_session`, and write `<stem>.json` from it.
-3. Play it to a win. After each turn, write down what live shows for the mons the line turns on.
-4. Write `<stem>.win.script.json`, and name the fight in `KNOWN_FIGHTS` in place of the one it replaces.
-5. Stamp again. The new fight replays on `<new>` without a carry.
+Whichever path records it, the fight is like the one it replaces: a single trainer fight, a trainer double, or the
+classic final boss for Eternatus W200. For Swimmers W173, a trainer double reached by a `Continue`, with no input since:
+its save's `enemyModifiers` is `null`, and the load re-rolls its partner's name (#821, #829). Not a Daily or a Mystery
+Encounter, which the solver refuses.
+
+### Capture it, then promote it
+
+The solver solves only on the pin (a newer save gets `version_mismatch`), so this path records fights while live serves
+the pin: ahead of a bump, or after the stamp, to replace a fight that only carries. A fight that stops carrying in the
+middle of a bump is recorded by hand (below).
+
+1. Start the plugin's server with `COACHEMON_CAPTURE=1` and solving on. Each solve from a fight's first turn keeps
+   `<home>/fights/<seed>-w<wave>-<fight>.json` (what it solved from) and, once it finds an oracle line,
+   `<seed>-w<wave>-<fight>.win.script.json` beside it, its `known` taken from the oracle line's checkpoints. A solve past the
+   first turn keeps nothing, and only the 12 latest fights stay.
+2. Solve the fight at its first decision, and win it live on that oracle line. Promoting is your word that you did: nothing
+   checks it.
+3. Run `npm run recheck:promote -- <home>/fights/<seed>-w<wave>-<fight>.json`. It copies the pair into
+   `src/solver/fixtures/` as `<fight>-w<wave>` (`--stem <name>` picks another), names it in `known-fights.json`, and
+   re-checks that fight at the pin without a carry. It refuses a fight with no oracle line file, a mid-fight file, a save from
+   another version than the pin, and a stem already taken. A failed re-check takes the fight back out.
+4. Remove the fight it replaces from `known-fights.json` and `src/solver/fixtures/`.
+
+### By hand
+
+1. At the first decision, before any input, call `read_session`, and write `<stem>.json` from it.
+2. Play it to a win. After each turn, write down what live shows for the mons the line turns on.
+3. Write `<stem>.win.script.json`, and name the fight in `known-fights.json` in place of the one it replaces.
+4. Stamp again. The new fight replays on `<new>` without a carry.

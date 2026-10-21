@@ -63,6 +63,7 @@ export const ENUMS: Record<string, string> = {
   TimeOfDay: "src/enums/time-of-day.ts",
   TrainerPoolTier: "src/enums/trainer-pool-tier.ts",
   TrainerSlot: "src/enums/trainer-slot.ts",
+  TrainerType: "src/enums/trainer-type.ts",
   TrainerVariant: "src/enums/trainer-variant.ts",
   WeatherType: "src/enums/weather-type.ts",
 };
