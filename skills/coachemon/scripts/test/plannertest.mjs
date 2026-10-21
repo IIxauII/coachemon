@@ -2112,5 +2112,27 @@ Object.assign(TABLE, {
   delete globalThis.__stub.heal;
 }
 
+// ---- An inaccurate pick's ⚔ line and act summary carry its accuracy; a sure-hit pick's carry none (#653).
+{
+  const pick = (move, per, acc) => {
+    const party = [mon("Quaquaval", 80, ["Water", "Fighting"], [280, 220, 160, 150, 140, 200], [[move, move === "Mega Kick" ? "Normal" : "Fighting", 120, "P"]], true)];
+    const foes = [mon("Rayquaza", 80, ["Dragon", "Flying"], [320, 250, 150, 250, 150, 180], [["Dragon Ascent", "Flying", 120, "P"]], true)];
+    const table = { [`Quaquaval>${move}>Rayquaza`]: [[per], acc, 1], "Rayquaza>Dragon Ascent>Quaquaval": [[60], 1, 1] };
+    const out = render({ party, foes, live: true, stubOutcome: outcomeFrom(table), dist: () => [{ name: "Dragon Ascent", type: "Flying", p: 1, score: 10, targets: [0] }] });
+    return { line: out.field.find(l => /^⚔ Quaquaval/.test(l)) ?? "", summary: globalThis.__planner.cardSummary(out.card).field };
+  };
+  const kick = pick("Mega Kick", 200, 0.75);
+  console.log(`== inaccurate pick\n${kick.line}\n${kick.summary}`);
+  assert.match(kick.line, /Mega Kick → Rayquaza 2 hits · 75%$/, "the ⚔ line's tail carries the accuracy after the hits");
+  assert.equal(kick.summary, "Quaquaval Mega Kick → Rayquaza · 2 hits · 75%", "the act summary carries the same");
+  const sure = pick("Close Combat", 200, 1);
+  assert.match(sure.line, /Close Combat → Rayquaza 2 hits$/, "a sure hit's line is unchanged");
+  assert.equal(sure.summary, "Quaquaval Close Combat → Rayquaza · 2 hits", "and so is its summary");
+  const slow = pick("Mega Kick", 40, 0.75);
+  assert.match(slow.line, /Mega Kick → Rayquaza 75%$/, `shown with no hits count: ${slow.line}`);
+  assert.equal(slow.summary, "Quaquaval Mega Kick → Rayquaza · 75%");
+  assert.match(pick("Mega Kick", 200, 0.996).summary, / · 99%$/, "a pick below 100% never reads 100%");
+}
+
 
 console.log("ok");
