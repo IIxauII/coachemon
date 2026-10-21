@@ -420,6 +420,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(endOfTurnHp(p, { s: scene, hp: 150 }), 12, "Sitrus waits for half HP");
   assert.equal(endOfTurnHp(p, { s: scene, hp: 195 }), 5, "capped at max HP");
   assert.equal(endOfTurnHp(p, { s: scene, hp: 0 }), 0);
+  assert.equal(endOfTurnHp(p, { s: scene, sitrus: false }), 12, "the KO curve's reading leaves the Sitrus to it (#883)");
 }
 
 // ---- An Enigma Berry is a target fact: a quarter for each berry held, none under Heal Block; Unnerve is the reader's (#652)
@@ -466,6 +467,53 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.deepEqual(bare.slice(0, 4), [0, 0, 0, 1], "no Pouch: down on hit 4");
   assert.ok(pouched.every((x, i) => x <= bare[i] + 1e-12), "the Pouch never brings the KO forward");
   assert.ok(pouched.some((x, i) => x < bare[i] - 1e-9), "and pushes it back somewhere");
+}
+
+// ---- A Sitrus Berry is a target fact like the Enigma: a quarter each, kept by a Pouch, none under Heal Block (#883)
+{
+  const sitrus = (n = 1) => held("BerryModifier", { berryType: 0 }, n);
+  const sitrusOf = (o, side = {}) => recOf(mon("sitrus", { hp: 100, maxHp: 200, ...o }), { ...scene, ...side }).facts.sitrus;
+  assert.deepEqual(sitrusOf({ items: [sitrus(2)] }), { heal: 50, left: 2, keep: 0 });
+  assert.deepEqual(sitrusOf({ items: [sitrus()], abilities: ["DoubleBerryEffectAbAttr"] }), { heal: 100, left: 1, keep: 0 }, "Ripen");
+  assert.equal(sitrusOf({ items: [sitrus()], tags: ["HEAL_BLOCK"] }), null, "Heal Block");
+  assert.equal(sitrusOf({ items: [held("BerryModifier", { berryType: 2 })] }), null, "an Enigma is no Sitrus");
+  assert.equal(sitrusOf({ items: [sitrus()] }, { modifiers: [held("PreserveBerryModifier", {}, 1)] }).keep, 0.3, "a Berry Pouch");
+  assert.equal(sitrusOf({ items: [sitrus()] }, { modifiers: [held("HealingBoosterModifier", { multiplier: 1.1 })] }).heal, 55, "Healing Charm");
+}
+
+// ---- The KO curve eats a held Sitrus Berry at the turn end the hits take it below half, once (#883, game-code.md §3)
+{
+  const sitrus = held("BerryModifier", { berryType: 0 });
+  const pouch = n => [held("PreserveBerryModifier", {}, n)];
+  const holder = (hp, side = {}) => recOf(mon("sitrus", { hp, maxHp: 200, items: [sitrus] }), { ...scene, ...side });
+  const curve = (hp, d, opts = {}, side = {}) => D.koCurve(holder(hp, side), [{ d, p: 1 }], opts);
+  console.log("== the KO curve eats a Sitrus (#883)");
+  // 200 taking 70: 130, then 60 eats (110), 40, down on use 4; uneaten, down on use 3.
+  const above = curve(200, 70, { sitrus: 0 }).by, unnerved = curve(200, 70).by;
+  console.log(`from full, 70 a use: ${above.map(x => x.toFixed(2)).join(" ")} · unnerved ${unnerved.map(x => x.toFixed(2)).join(" ")}`);
+  assert.deepEqual(above.slice(0, 4), [0, 0, 0, 1], "a holder starting above half eats once the hits take it below");
+  assert.deepEqual(unnerved.slice(0, 3), [0, 0, 1], "`sitrus` null eats none");
+  // 80 taking 30: 50 eats (100), 70, 40, 10, down on use 5.
+  const below = curve(80, 30, { sitrus: 0 });
+  assert.deepEqual(below.by.slice(0, 5), [0, 0, 0, 0, 1], "a holder starting below half heals once, not every turn");
+  assert.deepEqual(below.after1.map(x => [x.hp, x.sitrus]), [[100, 0]], "each branch carries the Sitrus it still holds");
+  // The berry reads the HP after `beforeBerry` and heals ahead of the rest: 110 − 10 is 100, half; 2 off first is 98.
+  assert.deepEqual(curve(110, 10, { sitrus: 0, turnEnd: -2 }).after1.map(x => x.hp), [98], "chip after the berry: 100 is no trigger");
+  assert.deepEqual(curve(110, 10, { sitrus: 0, turnEnd: -2, beforeBerry: -2 }).after1.map(x => x.hp), [148], "chip ahead of it: 98 is");
+  const kept = curve(80, 30, { sitrus: 0 }, { modifiers: pouch(1) }).after1;
+  assert.deepEqual(kept.map(x => [x.hp, x.sitrus]).sort((a, b) => a[1] - b[1]), [[100, 0], [100, 1]], "both shares healed");
+  near(kept.find(x => x.sitrus === 1).p, 0.3, "the kept share");
+  const pouched = curve(80, 30, { sitrus: 0 }, { modifiers: pouch(1) }).by;
+  assert.ok(pouched.every((x, i) => x <= below.by[i] + 1e-12) && pouched.some((x, i) => x < below.by[i] - 1e-9), "the Pouch pushes the KO back");
+  assert.deepEqual(curve(80, 30, { sitrus: 0, start: [{ hp: 50, p: 1, sitrus: 0 }] }).after1.map(x => x.hp), [20], "a start branch that ate it eats none");
+  // Steals take it off the branches still holding one, ahead of the berry (#646, #833).
+  assert.deepEqual(curve(200, 70, { sitrus: n => (n >= 1 ? 1 : 0) }).by.slice(0, 3), [0, 0, 1], "stolen on use 1: never eaten");
+  assert.deepEqual(curve(80, 30, { sitrus: 1 }).after1.map(x => [x.hp, x.sitrus]), [[50, 0]], "stolen before the curve starts");
+  const halfStolen = curve(80, 30, { sitrus: n => (n >= 1 ? 0.5 : 0) }).after1;
+  near(halfStolen.find(x => x.hp === 100)?.p ?? 0, 0.5, "half the branches still had it to eat");
+  // Half gone by use 1, all by use 2: use 2's steal takes it off every branch that kept it, none left to eat.
+  assert.deepEqual(curve(200, 70, { sitrus: n => Math.min(1, n / 2) }).by.slice(0, 3), [0, 0, 1], "a steal is counted against what is still held");
+  assert.deepEqual(curve(200, 70).after1.map(x => x.sitrus), [1], "a curve that eats none leaves it held");
 }
 
 // ---- The turn end's part ahead of the berries: Shell Bell and the weather (game-code.md §21)
