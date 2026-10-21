@@ -87,14 +87,28 @@ export const boostsText = boosts => boosts.map(a => `+${a.stages} ${a.stats.map(
 export const statFit = (mv, atk, spa) => (mv.category === MoveCategory.PHYSICAL ? atk : spa) / Math.max(atk, spa);
 export const weakFitNote = (mv, fit) => (fit < 0.9 ? (mv.category === MoveCategory.PHYSICAL ? "weak Atk" : "weak SpA") : null);
 
-const setupOf = (pk, mv, current) => {
+const SETUP_TURNS = 3, SETUP_STAGE_CAP = 2;
+const stageWeight = i => (i === Stat.SPD ? 20 : i === Stat.DEF || i === Stat.SPDEF ? 10 : 3);
+// `value` is effective power summed over a fight, not one hit's worth: the Atk and SpA stages are what they add to
+// `current`'s best attack over SETUP_TURNS, less the turns spent setting up (#849).
+const setupOf = (pk, mv, current, double = 0, ctx = {}) => {
   if (mv.category !== MoveCategory.STATUS) return null;
   const boosts = ownBoosts(mv, pk);
   if (!boosts.length) return null;
   const main = mainStats(pk);
-  const weight = i => (main.has(i) ? 30 : i === Stat.SPD ? 20 : i === Stat.DEF || i === Stat.SPDEF ? 10 : i === Stat.ATK || i === Stat.SPATK ? 5 : 3);
+  const up = {};
+  for (const a of boosts) for (const i of a.stats) up[i] = (up[i] ?? 0) + a.stages;
   let value = 0;
-  for (const a of boosts) for (const i of a.stats) value += weight(i) * a.stages;
+  for (const [i, n] of Object.entries(up)) if (+i !== Stat.ATK && +i !== Stat.SPATK) value += stageWeight(+i) * n;
+  const attacks = current.filter(o => o !== mv && isDamaging(o) && !isFixed(o));
+  const hits = attacks.map(o => ({
+    value: Math.max(0, moveScore(pk, o, current.filter(x => x !== o && x !== mv), double, ctx).value ?? 0),
+    stat: o.category === MoveCategory.PHYSICAL ? Stat.ATK : Stat.SPATK,
+  }));
+  const base = Math.max(0, ...hits.map(h => h.value));
+  const boosted = Math.max(0, ...hits.map(h => h.value * (1 + Math.min(SETUP_STAGE_CAP, up[h.stat] ?? 0) / 2)));
+  const spent = moveTraits(mv, pk).charge ? 2 : 1;
+  value += Math.max(0, SETUP_TURNS * (boosted - base) - spent * base);
   const boostsMain = boosts.some(a => a.stats.some(i => main.has(i)));
   const hasSetup = current.some(o => o !== mv && o.category === MoveCategory.STATUS
     && ownBoosts(o, pk).some(a => a.stats.some(i => main.has(i))));
@@ -366,7 +380,7 @@ const statusScore = (pk, mv, others, double, ctx) => {
       if (roster) fits.push([n, typeFit(pk, mv, tr.typeChange, name, roster, ours)]);
     }
   }
-  const setup = setupOf(pk, mv, others);
+  const setup = setupOf(pk, mv, others, double, ctx);
   if (setup) add(setup.value, setup.text);
   for (const x of tr.stages) {
     if (!aimedAtFoe(x) || x.stages >= 0) continue;
@@ -570,7 +584,7 @@ const learnPlan = (pk, mv, { double: flag = false, party = [pk], roster = null }
   const against = free || compare < 0 ? current : current.filter((_, j) => j !== compare);
   const incoming = info(pk, mv, moveScore(pk, mv, against, double, ctx));
   // `statusScore` has already noted the boost: this is only for the verdict line.
-  const setup = setupOf(pk, mv, current);
+  const setup = setupOf(pk, mv, current, double, ctx);
   if (setup) { incoming.setup = setup; if (!setup.fits) incoming.notes.push("weak fit"); }
   let kind, forget = -1, gain = 0;
   if (free) { kind = "free"; gain = incoming.value ?? 0; }
