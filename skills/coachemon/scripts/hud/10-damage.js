@@ -304,8 +304,8 @@ export const shares = (list, fallback) => {
 // and leaves `left` as it was. `preHeal(i)`: `{ p, heal }`, a heal the target takes before use i at share `p` of it, and
 // after it, ahead of the turn end, otherwise; null for none. `sitrus`: the target eats a Sitrus Berry (`facts.sitrus`)
 // at each turn end that finds it below half, where it eats the Enigma, a Pouch keeping it the same way; null eats none,
-// and otherwise it counts the Sitrus Berries steals have taken off the target by use n's turn end, n from 0: a number,
-// or a function of n. A branch's `sitrus` is the Sitrus Berries it still holds.
+// and otherwise it counts the Sitrus Berries steals have taken off the target by use n's turn end, n from 1 and 0 for
+// before the curve: a number, or a function of n. A branch's `sitrus` is the Sitrus Berries it still holds.
 export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 1, act = () => 1, turnEnd = 0, beforeBerry = 0, firstKo = null, cat = null, useAt = null, chain = null, se = null, preHeal = null, sitrus = null } = {}) => {
   const f = rec.facts;
   const berry = se != null && f.enigma?.heal > 0 ? f.enigma : null;
@@ -313,22 +313,29 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
   const seAt = i => (typeof se === "function" ? se(i) : se);
   const keep = berry?.keep ?? 0;
   const sit = sitrus != null && f.sitrus?.heal > 0 ? f.sitrus : null;
-  const sitHeld = sit?.left ?? 0;
+  const sitHeld = f.sitrus?.left ?? 0;
   const goneBy = n => (typeof sitrus === "function" ? sitrus(n) : sitrus ?? 0);
-  // `b` less the `x` Sitrus Berries a steal takes, a fraction of one taken at that chance; what stands goes onto `out`.
-  const steal = (b, x, out) => {
-    if (!(x > 0) || !(b.sitrus > 0)) { out.push(b); return; }
-    const sure = Math.min(b.sitrus, Math.floor(x)), q = b.sitrus > sure ? x - Math.floor(x) : 0;
+  // The share of the Sitrus Berries still unstolen after use n that use n + 1's steals take.
+  const stealRate = n => {
+    const room = sitHeld - goneBy(n);
+    return sit && room > 1e-12 ? Math.max(0, Math.min(1, (goneBy(n + 1) - goneBy(n)) / room)) : 0;
+  };
+  // Takes `rate` of `b`'s Sitrus Berries, a fraction of one at that chance, changing `b` in place; what stands goes onto
+  // `out`.
+  const steal = (b, rate, out) => {
+    const x = b.sitrus * rate;
+    if (!(x > 0)) { out.push(b); return; }
+    const sure = Math.floor(x), q = x - sure;
     if (q > 0) out.push({ ...b, p: b.p * q, sitrus: b.sitrus - sure - 1 });
     b.p *= 1 - q;
     b.sitrus -= sure;
     out.push(b);
   };
   // What a branch built from nothing holds: a curve without `start` begins with the steals made before it.
-  const gone0 = sit && !start?.length ? goneBy(0) : 0;
+  const rate0 = sit && !start?.length && sitHeld > 0 ? Math.max(0, Math.min(1, goneBy(0) / sitHeld)) : 0;
   const robbed = b => {
     const out = [];
-    steal(b, gone0, out);
+    steal(b, rate0, out);
     return out;
   };
   // The share `fed` of `b` eats a berry at this turn's end, and a Berry Pouch's `keep` of that heals with it still held.
@@ -436,7 +443,7 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
       if (!groups.has(key)) groups.set(key, { b, pts: [] });
       groups.get(key).pts.push({ d: b.hp, p: b.p });
     };
-    const stolen = sit ? goneBy(i + 1) - goneBy(i) : 0;
+    const stolen = stealRate(i);
     for (let b of hit) {
       if (b.late) b.hp = Math.min(f.maxHp, b.hp + pre.heal);
       if (!b.fed && !(sit && b.sitrus > 0)) {
@@ -450,8 +457,8 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
       const standing = [];
       steal(b, stolen, standing);
       for (const r of standing) {
-        // Both berries read the HP before either heals (game-code.md §3), on the rounded ratio (§21).
-        const eats = sit && r.sitrus > 0 && Math.round((r.hp / f.maxHp) * 100) / 100 < 0.5;
+        // Both berries read the HP before either heals (game-code.md §21).
+        const eats = sit && r.sitrus > 0 && belowHalf(r.hp, f.maxHp);
         const heal = (fed ? berry.heal : 0) + (eats ? sit.heal : 0);
         if (fed && !kept) r.left--;
         const out = [r];
@@ -497,7 +504,9 @@ const opponentsOf = (env, p) => {
   try { return (env?.field ?? []).filter(q => q && q !== p && q.isPlayer?.() !== p.isPlayer?.()); } catch { return []; }
 };
 const tagsOf = p => { try { return p.summonData?.tags ?? []; } catch { return []; } };
-const berryQuarter = p => Math.max(1, Math.floor(p.getMaxHp() / 4)) * (ability(p, "DoubleBerryEffectAbAttr") ? 2 : 1);
+// The Sitrus Berry's trigger. `getHpRatio` rounds to a whole percent, so it wants hp/max < 0.495 (game-code.md §21).
+const belowHalf = (hp, max) => Math.round((hp / max) * 100) / 100 < 0.5;
+const berryQuarter = p =>Math.max(1, Math.floor(p.getMaxHp() / 4)) * (ability(p, "DoubleBerryEffectAbAttr") ? 2 : 1);
 const unnerved = (env, p) => opponentsOf(env, p).some(q => ability(q, "PreventBerryUseAbAttr"));
 // One Sitrus or Enigma Berry's heal before the max-HP cap, how many `p` holds, and the chance `keep` that a Berry Pouch
 // leaves one it eats held; null under Heal Block. An opposing Unnerve is the reader's to ask, since it turns on who
@@ -547,8 +556,7 @@ const endOfTurnSteps = (env, p, { hp = p.hp, dealt = 0, sitrus = true } = {}) =>
   for (const a of abAttrs(p, "PostWeatherLapseHealAbAttr")) if (inWeather(a)) queued(frac(max, 16 / (a.healFactor ?? 1)));
 
   steps.berries = steps.length;
-  // `getHpRatio` rounds to a whole percent, so Sitrus wants hp/max < 0.495 (game-code.md §21).
-  if (sitrus && cur > 0 && !unnerved(env, p) && Math.round((cur / max) * 100) / 100 < 0.5
+  if (sitrus && cur > 0 && !unnerved(env, p) && belowHalf(cur, max)
     && items(p).some(m => m.constructor.name === "BerryModifier" && m.berryType === BerryType.SITRUS)) queued(berryQuarter(p));
 
   // A held Lum cures the status first (game-code.md §3). Gotcha: nothing here spends it, so a Lum + Toxic Orb holder

@@ -500,19 +500,21 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   // The berry reads the HP after `beforeBerry` and heals ahead of the rest: 110 − 10 is 100, half; 2 off first is 98.
   assert.deepEqual(curve(110, 10, { sitrus: 0, turnEnd: -2 }).after1.map(x => x.hp), [98], "chip after the berry: 100 is no trigger");
   assert.deepEqual(curve(110, 10, { sitrus: 0, turnEnd: -2, beforeBerry: -2 }).after1.map(x => x.hp), [148], "chip ahead of it: 98 is");
-  // A Berry Pouch heals and leaves it held on its `keep` share.
   const kept = curve(80, 30, { sitrus: 0 }, { modifiers: pouch(1) }).after1;
   assert.deepEqual(kept.map(x => [x.hp, x.sitrus]).sort((a, b) => a[1] - b[1]), [[100, 0], [100, 1]], "both shares healed");
   near(kept.find(x => x.sitrus === 1).p, 0.3, "the kept share");
   const pouched = curve(80, 30, { sitrus: 0 }, { modifiers: pouch(1) }).by;
   assert.ok(pouched.every((x, i) => x <= below.by[i] + 1e-12) && pouched.some((x, i) => x < below.by[i] - 1e-9), "the Pouch pushes the KO back");
-  // `start` branches hold what an earlier turn left them.
   assert.deepEqual(curve(80, 30, { sitrus: 0, start: [{ hp: 50, p: 1, sitrus: 0 }] }).after1.map(x => x.hp), [20], "a start branch that ate it eats none");
   // Steals take it off the branches still holding one, ahead of the berry (#646, #833).
   assert.deepEqual(curve(200, 70, { sitrus: n => (n >= 1 ? 1 : 0) }).by.slice(0, 3), [0, 0, 1], "stolen on use 1: never eaten");
   assert.deepEqual(curve(80, 30, { sitrus: 1 }).after1.map(x => [x.hp, x.sitrus]), [[50, 0]], "stolen before the curve starts");
   const halfStolen = curve(80, 30, { sitrus: n => (n >= 1 ? 0.5 : 0) }).after1;
   near(halfStolen.find(x => x.hp === 100)?.p ?? 0, 0.5, "half the branches still had it to eat");
+  // Half gone by use 1, all by use 2: use 2's steal takes it off every branch that kept it, none left to eat.
+  assert.deepEqual(curve(200, 70, { sitrus: n => Math.min(1, n / 2) }).by.slice(0, 3), [0, 0, 1], "a steal is counted against what is still held");
+  // An unnerved curve eats none, so its branches still hold it for a later curve that may.
+  assert.deepEqual(curve(200, 70).after1.map(x => x.sitrus), [1], "a curve that eats none leaves it held");
 }
 
 // ---- The turn end's part ahead of the berries: Shell Bell and the weather (game-code.md §21)

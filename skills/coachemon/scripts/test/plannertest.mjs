@@ -1723,8 +1723,7 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
   assert.equal(atTurn([berryItem(BERRY.SITRUS), berryItem(BERRY.LIECHI)], 1), 0.5, "a Liechi takes its share of the draw");
   assert.equal(atTurn([berryItem(BERRY.SITRUS)], 0), 0, "nothing gone yet, nothing lost");
   assert.equal(turnEndCourse(courseScene, shuckle([berryItem(BERRY.LUM)], {}, 280), null, -1, 0, null).gone, null, "no Sitrus, nothing to steal");
-  // A thief's item draws take the Sitrus too: Mini Black Hole's in `TurnEndPhase`, after the berries, Grip Claw's on
-  // the hit.
+  // A thief's item draws take the Sitrus too, each at its own time (game-code.md §8).
   const thiefWith = name => Object.assign(beedrill(200), { getHeldItems: () => [Object.assign(new ({ [name]: class { getStackCount() { return 1; } } })[name](), { chance: 0.1 })] });
   const sitrusHolder = shuckle([berryItem(BERRY.SITRUS)], {}, 280);
   const blackHole = turnEndCourse(courseScene, sitrusHolder, thiefWith("TurnHeldItemTransferModifier"), 1).gone;

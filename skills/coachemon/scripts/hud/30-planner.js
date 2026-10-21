@@ -871,7 +871,7 @@ export const foeCurve = (turn, t, me, hp, { dealt = 0, foe = null, mult = null, 
     };
     heal = j => at(j).at(j);
     pre = j => at(j).pre;
-    // Steals never turn on what we deal.
+    // A course's `gone` is the same whatever we deal.
     gone = at(1).gone;
   } else {
     const course = courseOf(dealt);
