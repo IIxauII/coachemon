@@ -302,6 +302,10 @@ Fight plan steps approximate winnable
 Meteor Mash into a draining Golisopod: 5 hits
 == hp kept
 ⚔ Venusaur Grass Giga Drain → Snorlax 3 hits
+== Tera switch-in drain (single)
+no Tera 4 / 5, Tera 4 / 4.61
+== Tera switch-in drain (double)
+no Tera 3 / 4, Tera 3 / 3.61
 == on-KO boost
 ⚔ Mamoswine Ground Earthquake → Buzzwole 3 hits KO feeds Buzzwole's Beast Boost (+1 Atk)
 now: ⇄ Mamoswine out › Crobat in · takes ~6% · resists Lunge

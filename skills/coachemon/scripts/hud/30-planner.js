@@ -685,18 +685,33 @@ const berryCounts = (land, supply, before = 0) => {
   };
 };
 
-// A threat's `koCurve` on `me` from `hp`, turn-end included. `dealt`: what we deal a turn (Shell Bell); `mult(j)`: its
-// damage on turn j against the expected; `act(i)`: the chance its i-th attack goes off; `drain`: what our drain moves
-// win back a turn, negative into Liquid Ooze; `preHeal`: as `koCurve` takes it.
+// A threat's `koCurve` on `me` from `hp`, turn-end included. `dealt`: what we deal a turn (Shell Bell), or a function of
+// the turn; `mult(j)`: its damage on turn j against the expected; `act(i)`: the chance its i-th attack goes off;
+// `drain`: what our drain moves win back a turn, negative into Liquid Ooze; `preHeal`: as `koCurve` takes it.
 export const foeCurve = (turn, t, me, hp, { dealt = 0, foe = null, mult = null, act = () => 1, start = null, drain = 0, preHeal = null } = {}) => {
-  const course = turnEndCourse(turn, me, foe, t ? hitsOn(t) : -1, dealt);
+  const courseOf = d => turnEndCourse(turn, me, foe, t ? hitsOn(t) : -1, d);
+  let heal, pre;
+  if (typeof dealt === "function") {
+    const courses = new Map();
+    const at = j => {
+      const d = dealt(j);
+      if (!courses.has(d)) courses.set(d, courseOf(d));
+      return courses.get(d);
+    };
+    heal = j => at(j).at(j);
+    pre = j => at(j).pre;
+  } else {
+    const course = courseOf(dealt);
+    heal = course.flat ? course.base : course.at;
+    pre = course.pre;
+  }
   const ramp = setupRamp(foe, t);
   const useOn = x => (x?.expected > 0 ? x.use ?? [{ d: x.expected, p: 1 }] : [{ d: 0, p: 1 }]);
   // A curve from `start` has no use of this turn's.
   const usesBefore = start ? 1 : 0;
   return koCurve(turn.mon(me), useOn(threatUse(t, usesBefore)), {
-    hp, start, act, turnEnd: withDrain(course.flat ? course.base : course.at, drain), chain: t?.lockChain?.(usesBefore),
-    beforeBerry: withDrain(course.pre, drain), se: foe && unnervedBy(turn, me, foe) ? null : 0,
+    hp, start, act, turnEnd: withDrain(heal, drain), chain: t?.lockChain?.(usesBefore),
+    beforeBerry: withDrain(pre, drain), se: foe && unnervedBy(turn, me, foe) ? null : 0,
     scale: mult || ramp ? i => (mult ? mult(i + 1) : 1) * (ramp ? ramp(i + 1) : 1) : undefined,
     firstKo: t?.expected > 0 && !start ? threatKoAt(t, hp) * act(0) * (t.lockAct ? t.lockAct(0) : 1) : null,
     useAt: t?.later || t?.own ? i => useOn(threatUse(t, i + usesBefore)) : null, preHeal,
@@ -868,7 +883,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   const bars = bossBarsLeft(foe);
   const trainerBoss = foe.hasTrainer?.() ?? !!turn.facts.trainer;
   let turnsWe = 9, hitsWe = 9, delay = 0, selfSpent = 0, defUp = 1, foeMult = null, foeAfter1 = after?.foe ?? null;
-  let weBy = () => 0, qWe = 0, usesBy = () => 0, downAt = [];
+  let weBy = () => 0, qWe = 0, usesBy = () => 0, downAt = [], opener = mine;
   // An exchange `after` another follows a turn on another move, so this lock starts at its first use.
   const ourLock = mt.lock ? OUR_LOCK : null;
   // The berry a landed Bug Bite / Pluck eats (#646): the landing odds are the hit's own, and a knockout still eats.
@@ -907,6 +922,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     const nowUse = !mt.charge && delay === 0;
     const first = nowUse && entry ? entry : mine;
     const rest = first !== mine ? useOf(mine) : null;
+    opener = first;
     qWe = nowUse ? (first.pKo ?? 0) * now : 0;
     const curve = koCurve(turn.mon(foe), useOf(first), {
       scale, turnEnd: heal, beforeBerry: withDrain(course.pre, t?.drain ?? 0), cat: mine.cat,
@@ -955,7 +971,12 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   const theirAct = aimedAtField ? foeAct : i => (opts.fieldAct ? opts.fieldAct(i) : 1);
   const mult = (aimedAtField && foeMult) || defUp !== 1 ? j => (aimedAtField && foeMult ? foeMult(j) : 1) * defUp : null;
   const myStart = after?.me.map(x => ({ ...x, hp: x.revived ? x.hp : x.hp - selfSpent })).filter(x => x.hp > 0);
-  const drained = (mine?.drain ?? 0) * (mine?.expected ?? 0) * steady;
+  // Our first use is the entry hit where a Tera switch-in takes one, so turn 1 drains and deals what it does (#823).
+  // `perUse(f)`: `f` of our move's record, or a function of the turn where the first use's record differs.
+  const perUse = f => (opener === mine ? f(mine) : j => f(j === 1 ? opener : mine));
+  const drainOf = x => (x?.drain ?? 0) * (x?.expected ?? 0) * steady;
+  const drained = drainOf(mine), ourDrained = perUse(drainOf);
+  const drainedAt = typeof ourDrained === "function" ? ourDrained : () => drained;
   // P(we move first) on the turns after this one.
   let pLast = pFirstField;
   const pPara = acts && turnsWe < 9 ? acts.para(turnsWe - 1) : 0;
@@ -974,11 +995,11 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   // (#646). A thief that moves first eats it before the turn's hit, so it fills only the room already there (#833).
   const eatenBy = (j, at) => lands(j) * counts(j - 1).reduce((sum, p, k) => sum + p * at[Math.min(9, k)], 0);
   const stealing = eats && theft?.eatenAt?.some(v => v > 0);
-  const ourDrain = !stealing ? drained
-    : j => drained + (j === 1 ? pFField * eatenBy(1, theft.eatenFirst) + (1 - pFField) * eatenBy(1, theft.eatenAt) : 0);
+  const ourDrain = !stealing ? ourDrained
+    : j => drainedAt(j) + (j === 1 ? pFField * eatenBy(1, theft.eatenFirst) + (1 - pFField) * eatenBy(1, theft.eatenAt) : 0);
   const preHeal = stealing ? i => (i > 0 ? { p: pLast, heal: eatenBy(i + 1, theft.eatenAt) } : null) : null;
   const theirs = budget > 0 ? foeCurve(turn, foeT, me, budget, {
-    dealt: mine?.uncapped ?? mine?.expected ?? 0, foe: fieldFoe, mult, act: theirAct, start: myStart?.length ? myStart : null, drain: ourDrain, preHeal,
+    dealt: perUse(x => x?.uncapped ?? x?.expected ?? 0), foe: fieldFoe, mult, act: theirAct, start: myStart?.length ? myStart : null, drain: ourDrain, preHeal,
   }) : null;
   const turnsFoe = theirs ? koTurn(theirs.by) : Math.max(1, Math.min(turnsWe, 9));
   const lag = freeThey ? 1 : 0;
@@ -1029,7 +1050,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     const drainTurns = Math.min(taken, turnsWe), cost = selfSpent / taken;
     let hs = new Map([[hp, 1]]);
     for (let i = 0; i < Math.ceil(taken); i++) {
-      const share = Math.min(1, taken - i), back = i < drainTurns ? (drained + eatenBy(i + 1, theft.eatenAt)) * Math.min(1, drainTurns - i) : 0;
+      const share = Math.min(1, taken - i), back = i < drainTurns ? (drainedAt(i + 1) + eatenBy(i + 1, theft.eatenAt)) * Math.min(1, drainTurns - i) : 0;
       const first = i === 0 ? pFField : pLast;
       const next = new Map();
       const add = (h, p) => { if (p > 0) next.set(h, (next.get(h) ?? 0) + p); };
