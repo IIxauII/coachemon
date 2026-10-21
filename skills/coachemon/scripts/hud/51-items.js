@@ -1,6 +1,6 @@
 // What a held item, mint, EXP item, candy, vitamin or evolution item is worth to *this* party, judged on the member
 // it would go to and on the rewards card's scale of 10 a tier. What each item does is the game's (game-code.md §15).
-import { TYPES, abilitiesOf, hasAttr, iconOf, natureOf, typesOf } from "./01-core.js";
+import { TYPES, abilitiesOf, hasAttr, hasMove, iconOf, natureOf, typesOf } from "./01-core.js";
 import { splicerReward } from "./49-fusion.js";
 import { relearnBest } from "./50-audit.js";
 
@@ -150,10 +150,10 @@ for (const id of Object.keys(ORB)) {
   HELD[id] = (p, c) => {
     if (c.holds(p, "TOXIC_ORB") || c.holds(p, "FLAME_ORB")) return null;
     const statusable = !typesSafe(p).some(t => o.immuneTypes.includes(t)) && !has(p, o.immuneAbilities);
-    const moves = (p.moveset ?? []).some(m => m?.moveId === MoveId.FACADE || m?.moveId === MoveId.PSYCHO_SHIFT);
-    const good = statusable && (has(p, o.specific) || (has(p, STATUS_ABILITIES) && !has(p, o.opposite)) || moves);
+    const facade = hasMove(p.moveset, MoveId.FACADE), statusMove = facade || hasMove(p.moveset, MoveId.PSYCHO_SHIFT);
+    const good = statusable && (has(p, o.specific) || (has(p, STATUS_ABILITIES) && !has(p, o.opposite)) || statusMove);
     const reason = abilitiesOf(p).find(a => o.specific.includes(a)) ?? abilitiesOf(p).find(a => STATUS_ABILITIES.includes(a))
-      ?? ((p.moveset ?? []).some(m => m?.moveId === MoveId.FACADE) ? "Facade" : "Psycho Shift");
+      ?? (facade ? "Facade" : "Psycho Shift");
     return good && [14, `${p.name} · ${reason} wants the status`];
   };
 }

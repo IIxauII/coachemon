@@ -70,7 +70,7 @@ const cyrus = withMetagross => {
 };
 
 // `fieldIndex`: whose command phase it is; `turnCommands`: the commands already chosen this turn.
-const render = ({ party, foes, live, arena, dist, switches, double = false, phase, fieldIndex = 0, turnCommands = [], stubOutcome = outcome, benefit = null, heal = null, stopped = null, replay = null, exact = { ok: true } }) => {
+const render = ({ party, foes, live, arena, dist, switches, double = false, phase, fieldIndex = 0, turnCommands = [], stubOutcome = outcome, benefit = null, heal = null, stopped = null, replay = null, exact = { ok: true }, tables = null }) => {
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const onField = () => party.filter(p => p.isOnField());
   for (const f of foes) { f.getOpponents = () => onField(); f.getMatchupScore = () => 1; }
@@ -88,6 +88,7 @@ const render = ({ party, foes, live, arena, dist, switches, double = false, phas
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   eval(bundle("hud", { expose: true }));
+  if (tables) globalThis.__hud["04-game-tables"].setGameTables(tables);
   const turn = stubTurn({ party, foes, live, double, trainer, arena, phase, fieldIndex, turnCommands, exact });
   globalThis.__planner = plannerApi(turn);
   const card = { ...globalThis.__hud["60-card"].composeBattleCard(turn, null), wave: 200 };
@@ -1041,6 +1042,21 @@ const hydreigonSnorlax = () => [
   assert.match(slots.find(l => /^⚔ Lucario/.test(l)) ?? "", /Protect .*Garchomp KOs Hydreigon first/, `Lucario protects:\n${field.join("\n")}`);
   assert.ok(!/before it can act|💀/.test(slots.find(l => /^⚔ Lucario/.test(l)) ?? ""), `Protect blocks the hit it would be tagged for (#650):\n${field.join("\n")}`);
   assert.match(slots.find(l => /^⚔ Garchomp/.test(l)) ?? "", /Dragon Claw → Hydreigon/);
+
+  // The turn after a Detect or a Quick Guard held, neither of them in Lucario's own moves: Protect is not offered.
+  const protectMove = party[1].moveset[1].getMove();
+  const tables = { moves: { 197: { ...protectMove, id: 197, name: "Detect" }, 501: { ...protectMove, id: 501, name: "Quick Guard", attrs: [] } } };
+  for (const [id, name] of [[197, "Detect"], [501, "Quick Guard"]]) {
+    party[1].getLastXMoves = () => [{ move: id, targets: [1], result: 1 }];
+    const after = render({ party, foes, live: true, double: true, dist, switches: () => new Map(), tables });
+    const lucario = slotLines(after.field).find(l => /^⚔ Lucario/.test(l)) ?? "";
+    assert.ok(!/Protect/.test(lucario), `no Protect straight after a ${name} that held:\n${after.field.join("\n")}`);
+  }
+  // Before the game's tables load, the move is looked up in the member's moves.
+  party[1].getLastXMoves = () => [{ move: 182, targets: [1], result: 1 }];
+  const early = render({ party, foes, live: true, double: true, dist, switches: () => new Map() });
+  assert.ok(!/Protect/.test(slotLines(early.field).find(l => /^⚔ Lucario/.test(l)) ?? ""), `no Protect straight after a Protect that held:\n${early.field.join("\n")}`);
+  delete party[1].getLastXMoves;
 }
 
 // Helping Hand: Dragon Claw alone leaves Hydreigon standing, ×1.5 KOs it; Clefable's own hit adds nothing.

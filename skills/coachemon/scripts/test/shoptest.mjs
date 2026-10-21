@@ -296,6 +296,13 @@ const scenarios = {
       assert.equal(m.free[0].best.forget, null, "free slot");
       assert.deepEqual(m.free[1].users, ["Arcanine"]);
     } },
+  // Morpeko Mimicked Fire Fang: the filter passes it on its own moves, but the learn would end on its battle moveset.
+  "tm known through Mimic": { wave: 26, money: 200, party: [
+      snorlax(),
+      Object.assign(pk("Morpeko", 120, 120, 0, [[M.spark, 0, 20], [M.bite, 0, 25], [M.tackle, 0, 35]], { types: ["Electric", "Dark"], atk: 95, spa: 70 }),
+        { getMoveset: () => [new PokemonMove(M.spark, 0, 20), new PokemonMove(M.bite, 0, 25), new PokemonMove(M.fireFang, 0, 5)] })],
+    free: [tm(M.fireFang, ["Snorlax", "Morpeko"], 1)],
+    expect: m => assert.deepEqual(m.free[0].users, ["Snorlax"], "Morpeko knows Fire Fang for this battle") },
   "tm nobody": { wave: 27, money: 200, party: [charizard()],
     free: [tm(M.nuzzle, [], 1), mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 })],
     expect: m => { assert.equal(m.free[0].tm, "skip"); assert.equal(m.pick, 1); assert.match(m.free[0].why, /nobody can learn it/); } },

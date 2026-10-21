@@ -1,6 +1,7 @@
 // Everything about the live battle is the turn's (`25-turn.js`): this opens no sandbox and keeps no cache but
 // `turn.memo`. Against an approximate turn every answer still comes back, labelled `live: false`.
 import { ABILITY_IMMUNE, ABILITY_IMMUNE_FLAG, CONTACT_PUNISH, FIELD_TRAPS, MOVE_TRAPS, SPREAD_TARGETS, STATUS_FRAMES, TYPES, UNGROUNDED, abilitiesOf, effectiveness, hitsUngrounded, iconOf, moveHasFlag, squeezeDist, stage, stat, typesOf, vs } from "./01-core.js";
+import { gameTables } from "./04-game-tables.js";
 import { moveTraits } from "./07-move-traits.js";
 import { addShare, koChanceAt, koCurve, koTurn, koTurns, rawMax, shares, useOf } from "./10-damage.js";
 
@@ -1669,10 +1670,13 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   // Support moves, conservative because the planner only scores damage: Protect for a slot likely KO'd before it moves
   // whose partner likely KOs that foe first anyway; Helping Hand when it turns a likely survivor into a likely KO.
   const usablePm = pm => pm && (pm.getMovePp?.() ?? 1) - (pm.ppUsed ?? 0) > 0;
-  // Protect's streak (game-code.md §14).
+  // Protect's streak, by move id rather than any moveset (game-code.md §14).
   const protectedLast = me => {
     const last = me.getLastXMoves?.(1)?.[0];
-    return !!last && last.result === MoveResult.SUCCESS && me.moveset.some(pm => pm?.moveId === last.move && moveTraits(pm.getMove()).protect);
+    if (!last || last.result !== MoveResult.SUCCESS) return false;
+    if (last.move === MoveId.QUICK_GUARD || last.move === MoveId.WIDE_GUARD) return true;
+    const mv = gameTables()?.moves?.[last.move] ?? (me.getMoveset?.() ?? me.moveset).find(pm => pm?.moveId === last.move)?.getMove();
+    return !!mv && moveTraits(mv).protect;
   };
   const boostedKo = (b, X) => {
     if (bossBarsLeft(X) > 1) return 0;
