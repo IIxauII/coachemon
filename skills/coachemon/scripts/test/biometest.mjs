@@ -1,6 +1,6 @@
 // The pools and trainers are invented, not the game's: shaped like its tables, small enough to count by hand.
 import assert from "node:assert/strict";
-import { bundle } from "../hud-bundle.mjs";
+import { mountHud } from "./fake-page.mjs";
 import { wholeCard } from "./panel.mjs";
 import { cat, TY } from "./fake-mon.mjs";
 
@@ -159,8 +159,6 @@ const lines = el => wholeCard(el)
 
 // `t`: what loadGameTables would have found; null is not loaded yet.
 const mount = ({ labels = ["Swamp", "Construction Site"], party = team(), wave = 30, from = 3, offset = 0, t = tables(), dex = {}, gameMode, roster = null } = {}) => {
-  let el;
-  globalThis.window = globalThis; delete globalThis.__coachHud;
   const handler = { config: { options: labels.map(label => ({ label, handler: () => true })) } };
   const scene = {
     phaseManager: { getCurrentPhase: () => ({ phaseName: "SelectBiomePhase" }) },
@@ -168,12 +166,7 @@ const mount = ({ labels = ["Swamp", "Construction Site"], party = team(), wave =
     ui: { mode: 15, getHandler: () => handler }, getPlayerParty: () => party, getEnemyParty: () => [],
     gameData: { dexData: dex },
   };
-  globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
-  const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
-  globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
-  globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
-  globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  eval(bundle("hud", { expose: true }));
+  const { el } = mountHud({ scene });
   // The chunk scan finds nothing under node, so hand over what it would have found and tick again.
   const { setGameTables } = globalThis.__hud["04-game-tables"];
   const { spawnsFor, formsFor, spawnTimeOfDay } = globalThis.__hud["47-biome"];

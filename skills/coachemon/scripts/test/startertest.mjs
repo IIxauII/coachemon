@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { bundle } from "../hud-bundle.mjs";
+import { mountHud } from "./fake-page.mjs";
 import { wholeCard } from "./panel.mjs";
 import { AbilityId, EvoCondKey, MoveCategory, MoveTarget, Stat, TerrainType, WeatherType } from "../../../../src/enums/generated.ts";
 import { TY } from "./fake-mon.mjs";
@@ -170,8 +170,6 @@ const defaultForm = caught => { for (let i = 0; i < 32; i++) if (caught & (128n 
 // `unlocks`: starter data laid over the account's, by species id. `rare`: a rare egg move id in place of the table's,
 // by species id.
 const mount = ({ limit = 10, chosen = [], valid = STARTERS, challenges = [], withTables = true, looking = null, onGrid = true, picking = true, forms = {}, unlocks = {}, rare = {} }) => {
-  let el;
-  globalThis.window = globalThis; delete globalThis.__coachHud;
   const { dexData, starterData } = account();
   for (const [id, st] of Object.entries(unlocks)) Object.assign(starterData[id], st);
   const species = id => byId.get(id);
@@ -199,12 +197,7 @@ const mount = ({ limit = 10, chosen = [], valid = STARTERS, challenges = [], wit
     gameMode: { challenges, modeId: challenges.length ? 4 : 0 }, // `GameModes.CHALLENGE`, `GameModes.CLASSIC`
     currentBattle: null, getPlayerParty: () => [], getEnemyParty: () => [], modifiers: [],
   };
-  globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
-  const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
-  globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
-  globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
-  globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  eval(bundle("hud", { expose: true }));
+  const { el } = mountHud({ scene });
   // Under node the chunk scan finds no tables: hand them over and draw again, or the card stays the first tick's
   // estimate.
   if (withTables) {

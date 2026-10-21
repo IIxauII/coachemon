@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { bundle } from "../hud-bundle.mjs";
+import { mountHud } from "./fake-page.mjs";
 import { wholeCard } from "./panel.mjs";
 import { MoveFlags, SpeciesId } from "../../../../src/enums/generated.ts";
 import { onGame } from "./game-proto.mjs";
@@ -230,8 +230,7 @@ const lines = el => wholeCard(el)
 const cards = {};
 
 for (const [label, sc] of Object.entries(scenarios)) {
-  let el;
-  globalThis.window = globalThis; delete globalThis.__coachHud; delete globalThis.__queued;
+  delete globalThis.__queued;
   class PM { queueMessage() { globalThis.__queued = (globalThis.__queued ?? 0) + 1; } getCurrentPhase() { return { phaseName: "CommandPhase" }; } }
   const pm = new PM();
   const onField = () => sc.party.filter(p => p.isOnField());
@@ -248,12 +247,7 @@ for (const [label, sc] of Object.entries(scenarios)) {
       : !!sc.teras?.includes(e.name)) } : null;
   const game = sc.game ? { arena: sc.game.arena, modifiers: sc.game.modifiers, gameMode: sc.game.gameMode } : {};
   const scene = { ...game, phaseManager: pm, getField: () => [...onField(), ...sc.foes.filter(f => f.isOnField())], currentBattle: { waveIndex: sc.game?.wave ?? 89, turn: 1, double: sc.double, enemySwitchCounter: 0, getBattlerCount: () => (sc.double ? 2 : 1), trainer }, ui: { mode: 0, getHandler: () => ({}) }, getPlayerParty: () => sc.party, getEnemyParty: () => sc.foes };
-  globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
-  const node = () => { const n = { style: {}, children: [], addEventListener(ev, fn) { if (ev === "click") n.onclick = fn; }, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
-  globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
-  globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
-  globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  eval(bundle("hud", { expose: true }));
+  const { el } = mountHud({ scene });
   if (sc.trainer) console.log(`queued during prediction: ${globalThis.__queued ?? 0}; queueMessage restored: ${!Object.prototype.hasOwnProperty.call(pm, "queueMessage") && typeof pm.queueMessage === "function"}`);
   console.log(`== ${label}\n${lines(el)}`);
   const x = globalThis.__coachHud.summary();
