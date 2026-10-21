@@ -580,6 +580,17 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(endOfTurnHp(sleeper, { s: at(0, 0, { getField: () => [sleeper, dreamer] }) }), -20, "Bad Dreams");
   const guarded = mon("guarded dreamer", { player: false, abilities: ["PostTurnHurtIfSleepingAbAttr", "BlockNonDirectDamageAbAttr"] });
   assert.equal(endOfTurnHp(sleeper, { s: at(0, 0, { getField: () => [sleeper, guarded] }) }), 0, "a Magic Guard holder deals none");
+  // A held Lum cures the status in `BerryPhase`, ahead of its chip (game-code.md §3).
+  const lum = [new BerryModifier(1)];
+  const lumToxic = m({ status: { effect: 2, toxicTurnCount: 2 }, items: lum });
+  const lumSleeper = m({ status: { effect: 4 }, items: lum });
+  const lumOrb = m({ items: [...lum, held("TurnStatusEffectModifier", { effect: 2 })] });
+  console.log(`lum: toxic ${endOfTurnHp(lumToxic, { s: at() })} · Bad Dreams ${endOfTurnHp(lumSleeper, { s: at(0, 0, { getField: () => [lumSleeper, dreamer] }) })}`
+    + ` · Toxic Orb ${endOfTurnHp(lumOrb, { s: at() })} · Unnerved toxic ${endOfTurnHp(lumToxic, { s: at(0, 0, { getField: () => [lumToxic, unnerve] }) })}`);
+  assert.equal(endOfTurnHp(lumToxic, { s: at() }), 0, "a Lum cures the toxic before it chips");
+  assert.equal(endOfTurnHp(lumSleeper, { s: at(0, 0, { getField: () => [lumSleeper, dreamer] }) }), 0, "…and the sleep before Bad Dreams reads it");
+  assert.equal(endOfTurnHp(lumOrb, { s: at() }), 0, "a Toxic Orb's status, counted a turn early, is cured the turn it would chip");
+  assert.equal(endOfTurnHp(lumToxic, { s: at(0, 0, { getField: () => [lumToxic, unnerve] }) }), -30, "an opposing Unnerve keeps the Lum uneaten");
 }
 
 // ---- A Reviver Seed turns a lethal hit into half HP

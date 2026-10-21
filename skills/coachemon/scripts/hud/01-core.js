@@ -198,6 +198,18 @@ export const awaitingDecision = s => {
   return null;
 };
 
+// `items` with one berry of type `b` off its stack, as `loseHeldItem` leaves them: the last one goes, a stack of two
+// keeps one. Null when it holds no such berry.
+export const lessOneBerry = (items, b) => {
+  let took = false;
+  const left = items.flatMap(m => {
+    if (took || m?.constructor?.name !== "BerryModifier" || m.berryType !== b) return [m];
+    took = true;
+    const n = (m.getStackCount?.() ?? m.stackCount ?? 1) - 1;
+    return n > 0 ? [Object.create(m, { getStackCount: { value: () => n }, stackCount: { value: n } })] : [];
+  });
+  return took ? left : null;
+};
 // The caller picks the moveset: `getMoveset()` or `moveset` (game-code.md §17).
 export const hasMove = (moveset, id) => {
   if (moveset) for (let i = 0; i < moveset.length; i++) if (moveset[i]?.moveId === id) return true;

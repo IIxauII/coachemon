@@ -507,7 +507,9 @@ const endOfTurnSteps = (env, p, { hp = p.hp, dealt = 0 } = {}) => {
 
   // A status orb is counted a turn early: in game its status lands after this chip (game-code.md §21).
   const orb = p.status?.effect ? null : items(p).find(m => m.constructor.name === "TurnStatusEffectModifier" && !types.some(t => ORB_SPARED[m.effect]?.includes(t)));
-  const effect = p.status?.effect || orb?.effect || 0;
+  // A held Lum cures it in the same phase, ahead of the chip (game-code.md §3).
+  const lum = !unnerved(env, p) && items(p).some(m => m.constructor.name === "BerryModifier" && m.berryType === BerryType.LUM);
+  const effect = lum ? 0 : p.status?.effect || orb?.effect || 0;
   if ([StatusEffect.POISON, StatusEffect.TOXIC, StatusEffect.BURN].includes(effect) && !guard && !abAttrs(p, "BlockStatusDamageAbAttr").some(a => (a.effects ?? []).includes(effect))) {
     let d = effect === StatusEffect.POISON ? frac(max, 8) : effect === StatusEffect.TOXIC ? Math.max(1, Math.floor(max * ((p.status?.toxicTurnCount ?? 0) + 1) / 16)) : frac(max, 16);
     if (effect === StatusEffect.BURN) for (const a of abAttrs(p, "ReduceBurnDamageAbAttr")) d = Math.max(1, Math.floor(d * (a.multiplier ?? 0.5)));
@@ -539,7 +541,7 @@ const endOfTurnSteps = (env, p, { hp = p.hp, dealt = 0 } = {}) => {
     }
   }
   if (abAttrs(p, "PostTurnStatusHealAbAttr").some(a => (a.effects ?? []).includes(effect))) queued(frac(max, 8));
-  const asleep = p.status?.effect === StatusEffect.SLEEP || (() => { try { return !!p.hasAbility?.(AbilityId.COMATOSE); } catch { return false; } })();
+  const asleep = effect === StatusEffect.SLEEP || (() => { try { return !!p.hasAbility?.(AbilityId.COMATOSE); } catch { return false; } })();
   // Asks the sleeper's Magic Guard as well as the holder's, where the game's `apply` asks only the holder's
   // (game-code.md §21): in a double, a Magic Guard sleeper beside one without it takes the chip in game and is
   // spared here.
