@@ -30,8 +30,8 @@ export const fakeTurn = (opts = {}) => {
     party = [], foes = [], field = null, command = null,
     trickRoom = false, weather = 0, modifiers = [], enemyModifiers = [], hazards = () => 0, balls = () => 0,
     mode = {}, battleType = 0, mysteryEncounter = null, biomeId = null,
-    // The scene's arena, for its delayed attacks: `positionalTagManager.tags` as the game's. A hypothesis adds or
-    // clears one there for the calls it wraps, so an answer that reads it sees what the planner assumed.
+    // The scene's arena, for its delayed attacks: `positionalTagManager.tags` as the game's. `withPatches` writes onto
+    // it, so an answer that reads it sees what the planner assumed.
     arena = null,
     // The answers. Each takes the same arguments as the op it stands behind.
     outcome = () => null,
@@ -138,10 +138,13 @@ export const fakeTurn = (opts = {}) => {
     sendInScore: (f, me) => sendIn(f, me),
     benefit: (atk, def, mv) => benefit(atk, def, mv) ?? 0,
     speedTie: (a, b) => speedTie(a, b),
-    // The turns left on a delayed attack queued on `p`'s slot, 0 where none. Read off the arena as it stands, never
-    // under this turn's hypothesis, as the real one reads it.
-    delayedOn: p => Math.max(0, ...(arena?.positionalTagManager?.tags ?? [])
-      .filter(x => x.tagType === DELAYED_ATTACK && x.targetIndex === p.getBattlerIndex?.()).map(x => x.turnCount ?? 0)),
+    // The turns left on a delayed attack queued on `p`'s slot, 0 where none (game-code.md §5). Read off the arena as it
+    // stands, never under this turn's hypothesis, as the real one reads it.
+    delayedOn: p => {
+      const at = p.getBattlerIndex?.();
+      return at == null ? 0 : Math.max(0, ...(arena?.positionalTagManager?.tags ?? [])
+        .filter(x => x.tagType === DELAYED_ATTACK && x.targetIndex === at).map(x => x.turnCount ?? 0));
+    },
     ourTera: p => ourTera(p),
     ourTeraOn: p => patches.some(x => x.mon === p && x.tera === true),
     held: p => hud()["25-turn"]?.heldView(patches, heldViews, p) ?? p,
