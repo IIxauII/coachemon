@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { mountHud } from "./fake-page.mjs";
-import { MoveFlags, SpeciesId } from "../../../../src/enums/generated.ts";
+import { Command, MoveFlags, SpeciesId } from "../../../../src/enums/generated.ts";
 import { onGame } from "./game-proto.mjs";
 import { cat, TY } from "./fake-mon.mjs";
 // `moves`: `[name, type, power, category, target = 3, flags = 0, attrs = []]`; an attr is a class name.
@@ -47,6 +47,22 @@ const ourTera = ({ wave = 180, used = 0, modifiers = [ORB], mode = CLASSIC, mega
   bench.hasSpecies = id => terapagos && id === SpeciesId.TERAPAGOS;
   return { double: false, game: { wave, arena: { playerTerasUsed: used }, modifiers, gameMode: mode }, party: [gyarados, bench],
     foes: [mon("Lycanroc", 80, ["Rock"], "Keen Eye", [240,200,120,80,100,120], [["Stone Edge","Rock",100,"P"]], true)] };
+};
+// The same in a double, Gyarados in slot 0 and Tera-Steel Lucario in slot 1, both on one charge. `locked`: slot 1's
+// prompt, slot 0 having pressed the Tera for Waterfall into Lycanroc.
+const ourTeraDouble = ({ locked = false, used = 0 } = {}) => {
+  const at = (p, bi) => Object.assign(p, { getBattlerIndex: () => bi });
+  const party = [
+    at(teraMon("Gyarados", 80, ["Water","Flying"], "Intimidate", [260,170,130,120,150,140], [["Waterfall","Water",80,"P"]], true, "Water"), 0),
+    at(teraMon("Lucario", 80, ["Fighting","Steel"], "Inner Focus", [240,150,110,180,110,100], [["Vacuum Wave","Fighting",20,"S"]], true, "Steel"), 1),
+  ];
+  const foes = [
+    at(mon("Lycanroc", 80, ["Rock"], "Keen Eye", [240,200,120,80,100,120], [["Stone Edge","Rock",100,"P"]], true), 2),
+    at(mon("Golem", 80, ["Rock","Ground"], "Sturdy", [250,180,200,60,80,60], [["Rock Slide","Rock",75,"P",11]], true), 3),
+  ];
+  return { double: true, game: { wave: 180, arena: { playerTerasUsed: used }, modifiers: [ORB], gameMode: CLASSIC }, party, foes,
+    ...(locked ? { fieldIndex: 1, turnCommands: [{ command: Command.FIGHT, cursor: 0, move: { move: 1, targets: [2], useMode: 0 }, targets: [2] }],
+      preTurnCommands: [{ command: Command.TERA, targets: [0] }] } : {}) };
 };
 // Stat i lives at `statStages[i - 1]`.
 const withStages = (p, statStages) => { p.summonData.statStages = statStages; return p; };
@@ -145,6 +161,10 @@ const scenarios = {
   // Offered again: past the biome's last big fight, and before a gym leader whose cleanup refills it for a Terapagos.
   teraLastBigBehind: ourTera({ wave: 175, mode: { ...CLASSIC, isBoss: w => w === 172 } }),
   teraTerapagos: ourTera({ wave: 45, terapagos: true }),
+  // A double: each slot may take the Tera, and slot 1 none once slot 0 pressed it.
+  teraDouble: ourTeraDouble(),
+  teraDoubleLocked: ourTeraDouble({ locked: true }),
+  teraDoubleSpent: ourTeraDouble({ used: 1 }),
   // A trap the planned move runs into goes on the foe row's ✦: Fire into Thick Fat.
   trap: { double: false, party: [
     mon("Charizard", 66, ["Fire","Flying"], "Blaze", [190,125,118,160,128,148], [["Flamethrower","Fire",90,"S"]], true)],
@@ -227,7 +247,7 @@ const cards = {};
 
 for (const [label, sc] of Object.entries(scenarios)) {
   delete globalThis.__queued;
-  class PM { queueMessage() { globalThis.__queued = (globalThis.__queued ?? 0) + 1; } getCurrentPhase() { return { phaseName: "CommandPhase" }; } }
+  class PM { queueMessage() { globalThis.__queued = (globalThis.__queued ?? 0) + 1; } getCurrentPhase() { return { phaseName: "CommandPhase", fieldIndex: sc.fieldIndex ?? 0 }; } }
   const pm = new PM();
   const onField = () => sc.party.filter(p => p.isOnField());
   for (const f of sc.foes) { f.getOpponents = () => onField(); f.getMatchupScore = () => { pm.queueMessage("side effect"); return 1; }; f.id = f.name; }
@@ -242,7 +262,7 @@ for (const [label, sc] of Object.entries(scenarios)) {
       ? !e.isTerastallized && sc.trainer.trainerAI.instantTeras.includes(e.initialTeamIndex)
       : !!sc.teras?.includes(e.name)) } : null;
   const game = sc.game ? { arena: sc.game.arena, modifiers: sc.game.modifiers, gameMode: sc.game.gameMode } : {};
-  const scene = { ...game, phaseManager: pm, getField: () => [...onField(), ...sc.foes.filter(f => f.isOnField())], currentBattle: { waveIndex: sc.game?.wave ?? 89, turn: 1, double: sc.double, enemySwitchCounter: 0, getBattlerCount: () => (sc.double ? 2 : 1), trainer }, ui: { mode: 0, getHandler: () => ({}) }, getPlayerParty: () => sc.party, getEnemyParty: () => sc.foes };
+  const scene = { ...game, phaseManager: pm, getField: () => [...onField(), ...sc.foes.filter(f => f.isOnField())], currentBattle: { waveIndex: sc.game?.wave ?? 89, turn: 1, double: sc.double, ...(sc.turnCommands ? { turnCommands: sc.turnCommands, preTurnCommands: sc.preTurnCommands ?? [] } : {}), enemySwitchCounter: 0, getBattlerCount: () => (sc.double ? 2 : 1), trainer }, ui: { mode: 0, getHandler: () => ({}) }, getPlayerParty: () => sc.party, getEnemyParty: () => sc.foes };
   const { card } = mountHud({ scene });
   if (sc.trainer) console.log(`queued during prediction: ${globalThis.__queued ?? 0}; queueMessage restored: ${!Object.prototype.hasOwnProperty.call(pm, "queueMessage") && typeof pm.queueMessage === "function"}`);
   console.log(`== ${label}\n${card()}`);
@@ -326,4 +346,14 @@ assert.deepEqual(trapsOf("eelevateArrows", "Garchomp", "Eelektross"), { slot: []
   assert.equal(cards.teraBossAhead.field.slots[0].threat?.e, 2, "a Tera it would win the turn with is still kept for the boss");
   assert.equal(teraOf("teraLastBigBehind"), "Water", "a wild wave after the biome's last big fight");
   assert.equal(teraOf("teraTerapagos"), "Water", "with a Terapagos, the gym leader's cleanup refills it first");
+}
+
+// In a double the two slots share the one charge (game-code.md §17): at slot 0's prompt one of them takes it, and at slot 1's,
+// after slot 0 pressed the Tera button, slot 0's move lands at its Tera and slot 1 has none to take.
+{
+  const slots = label => cards[label].field.slots.map(sl => [sl.name, sl.tera]);
+  assert.deepEqual(slots("teraDouble"), [["Gyarados", "Water"], ["Lucario", null]], "one slot Teras, though both could");
+  assert.deepEqual(slots("teraDoubleLocked"), [["Gyarados", "Water"], ["Lucario", null]], "slot 0's pressed Tera, and none for slot 1");
+  assert.ok(cards.teraDoubleLocked.field.slots[0].locked, "slot 0's command is the locked one");
+  assert.deepEqual(slots("teraDoubleSpent"), [["Gyarados", null], ["Lucario", null]], "with the charge spent, neither slot has one");
 }

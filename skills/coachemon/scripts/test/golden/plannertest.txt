@@ -622,6 +622,46 @@ Fight plan likely lost
 ➜ 2. Gyarados Water Hydro Pump → Carracosta falls · foe at 61%
 ⚠ likely lost: nothing we have hurts Carracosta — maximise damage before it comes in
 == our Tera Flying: this turn Earthquake for 0, then 139 a turn
+== doubles, Gyarados may Tera Water
+⚔ Gyarados Tera Water + Water Hydro Pump → Tyranitar 2 hits
+⚔ Lucario Fighting Aura Sphere → Tyranitar 2 hits
+· focus Tyranitar : KO before it moves
+foes weak to: Fighting ×2
+Tyranitar Tyranitar L100 Rock Dark 100% ▲ Fighting ×4 Water ↯ Rock Stone Edge → Gyarados 50% likely · moves after
+Snorlax Snorlax L100 Normal 100% ▲ Fighting ↯ Normal Body Slam → Lucario 50% likely · moves after
+Fight plan steps approximate winnable
+➜ 1.~ Gyarados Tera Water + Water Hydro Pump → Tyranitar KO · 84% left
+· input: ← from Fight to the Tera button
+➜ 2.~ Lucario Fighting Aura Sphere → Snorlax KO · 86% left
+== doubles, slot 0 locked into Tera Water + Hydro Pump
+⚔ Gyarados Tera Water + Water Hydro Pump → Tyranitar 2 hits locked in
+⚔ Lucario Fighting Aura Sphere → Tyranitar 2 hits
+· focus Tyranitar : KO before it moves
+foes weak to: Fighting ×2
+Tyranitar Tyranitar L100 Rock Dark 100% ▲ Fighting ×4 Water ↯ Rock Stone Edge → Gyarados 50% likely · moves after
+Snorlax Snorlax L100 Normal 100% ▲ Fighting ↯ Normal Body Slam → Lucario 50% likely · moves after
+Fight plan steps approximate winnable
+➜ 1.~ Gyarados Tera Water + Water Hydro Pump → Tyranitar KO · 84% left
+· input: ← from Fight to the Tera button
+➜ 2.~ Lucario Fighting Aura Sphere → Snorlax KO · 86% left
+== doubles, the Tera on the pinned slot's partner
+⚔ Gyarados ⚠ Electric ×2 53% {Snorlax's Thunderbolt: ~53% of current HP} Tera Water + Water Waterfall → Snorlax 2 hits
+⚔ Lucario Fighting Close Combat → Tyranitar 1 hit
+foes weak to: Fighting ×2
+Tyranitar Tyranitar L100 Rock Dark 100% ▲ Fighting ×4 Water ↯ Dark Crunch → Lucario 50% likely · moves after
+Snorlax Snorlax L100 Normal 100% ▲ Fighting ↯ Electric Thunderbolt → Gyarados 50% likely · moves after
+Fight plan steps approximate winnable
+➜ 1.~ Lucario Fighting Close Combat → Tyranitar KO · 100% left
+➜ 2.~ Gyarados Water Waterfall → Snorlax KO · 76% left
+== and with none to take
+⚔ Gyarados ⚠ Electric ×4 100% {Snorlax's Thunderbolt: ~100% of current HP, 19% KO} Water Waterfall → Snorlax 3 hits
+⚔ Lucario Fighting Close Combat → Tyranitar 1 hit
+foes weak to: Fighting ×2
+Tyranitar Tyranitar L100 Rock Dark 100% ▲ Fighting ×4 Water ↯ Dark Crunch → Lucario 50% likely · moves after
+Snorlax Snorlax L100 Normal 100% ▲ Fighting ↯ Electric Thunderbolt → Gyarados 50% likely · moves after
+Fight plan steps approximate winnable
+➜ 1.~ Lucario Fighting Close Combat → Tyranitar KO · 100% left
+➜ 2.~ Lucario Fighting Close Combat → Snorlax KO · 62% left
 == protect: case 1, foe faster, Outrage 150, we 3HKO (live)
 ⚔ Vaporeon Normal Protect blocks Outrage's last use · then Ice Beam
 == protect: case 3 · Outrage KOs (300) (live)

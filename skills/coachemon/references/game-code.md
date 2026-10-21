@@ -2199,7 +2199,8 @@ Our Tera, audited at 1.12.1.3. A Tera command needs `canSpeciesTera` — the Ter
 held and a form that is not Mega, Max or Ultra Necrozma (`src/utils/pokemon-utils.ts:165-169`) — and the charge,
 `MAX_TERAS_PER_ARENA = 1` (`src/constants.ts:120`) against `arena.playerTerasUsed` (`src/utils/pokemon-utils.ts:179-182`);
 at slot 1 of a double the command menu also counts slot 0's pending Tera (`src/ui/handlers/command-ui-handler.ts:193-201`).
-It rides on a FIGHT command, never a switch (`src/phases/command-phase.ts:271-275`, `:316`). `TeraPhase.end` raises
+It rides on a FIGHT command, never a switch: `turnCommands[i]` is a plain FIGHT and `preTurnCommands[i]` is
+`{ command: Command.TERA }` (`src/phases/command-phase.ts:265-275`, `:316-317`). `TeraPhase.end` raises
 the count (`src/phases/tera-phase.ts:46-47`).
 - **Refills.** The count is back to 0 on a new `Arena` (`src/battle-scene.ts:1603-1604`, `src/field/arena.ts:76`),
   built on every biome switch (`src/phases/switch-biome-phase.ts:43`), by Teleporting Hijinks
