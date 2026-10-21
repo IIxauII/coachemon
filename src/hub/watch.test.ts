@@ -3,6 +3,7 @@ import { after, test } from "node:test";
 import { cardLine, feedLine, offLine, runWatch } from "./watch.ts";
 import { deadPort, deadSpawn, fakeClient, readyTab, type Peer } from "./fake-ext.ts";
 import { startHub, type Hub } from "./hub.ts";
+import { EVENT_KINDS } from "../../extension/src/relay/channel.ts";
 import type { ExtensionCmd, FromExtension, HubState, ToExtension } from "../protocol/wire.ts";
 
 const shut: (() => void)[] = [];
@@ -73,6 +74,10 @@ test("the panel's own `rewards` kind reads as REWARDS, and a kind that never str
   assert.equal(cardLine({ kind: "starters", wave: 1, verdict: "pick Bulbasaur", text: "…" }), null);
   assert.equal(cardLine({ kind: null, wave: null, verdict: null, text: null }), null);
   assert.equal(cardLine({}), null);
+});
+
+test("every kind the relay streams prints a card line (extension-distribution.md §11.2, #889)", () => {
+  assert.deepEqual(EVENT_KINDS.filter(kind => cardLine({ kind }) === null), [], "streamed kinds the feed drops");
 });
 
 test("a randomized run's card line says so after the verdict (extension-distribution.md §11.2, #723)", () => {
