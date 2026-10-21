@@ -2,7 +2,7 @@
 // and the roster is `previewFor`'s replay.
 import { TIER_NAMES, abilitiesOf, weakestConfidence } from "./01-core.js";
 import { stage } from "./01-meter.js";
-import { bigFightsAhead, isBossWave, isGruntWave, nextHeal } from "./03-calendar.js";
+import { fightsAhead, isBossWave, isGruntWave, nextHeal } from "./03-calendar.js";
 import { gameEvents } from "./04-game-tables.js";
 import { partyAtFight, partyLuck, partyProfile } from "./08-party.js";
 import { setRosterRead } from "./11-threats.js";
@@ -132,7 +132,9 @@ export const aheadModel = run => {
 
 const build = (run, wave) => {
   const s = run.scene;
-  const schedule = bigFightsAhead(s, wave + 1).map(f => ({ ...f, label: KIND_LABEL[f.kind] }));
+  // The road starts past the wave on screen on every card, a battle's included: the fight on screen is the fight
+  // plan's, not the road's.
+  const schedule = fightsAhead(s, wave, { cleared: true }).map(f => ({ ...f, label: KIND_LABEL[f.kind] }));
   const next = schedule[0] ?? null;
   const heal = nextHeal(s, wave + 1);
   const party = run.facts.party;

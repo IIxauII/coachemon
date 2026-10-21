@@ -36,6 +36,7 @@ export const waveKind = (s, w) => {
 // Every wave in the span costs an `isFixedBattle` call, which builds a config and runs the challenge hooks
 // (game-code.md §12).
 const SPAN = 30;
+// @only tests: bigFightsAhead
 export const bigFightsAhead = (s, from, n = SPAN) => {
   if (typeof s?.gameMode?.isFixedBattle !== "function") return [];
   const out = [];
@@ -45,6 +46,14 @@ export const bigFightsAhead = (s, from, n = SPAN) => {
     if (runEndsAt(s, w)) break;
   }
   return out;
+};
+
+// The big fights a run standing on `wave` still has to win: the wave is one of them until it is cleared.
+// @only 26-run, 49-ahead, tests: fightsAhead
+export const fightsAhead = (s, wave, { cleared } = {}) => {
+  if (typeof cleared !== "boolean") throw new TypeError(`fightsAhead: say whether wave ${wave} is cleared`);
+  if (!cleared) return bigFightsAhead(s, wave);
+  return runEndsAt(s, wave) ? [] : bigFightsAhead(s, wave + 1);
 };
 
 export const challengeValue = (s, id) => (s?.gameMode?.challenges ?? []).find(c => c?.id === id)?.value ?? 0;

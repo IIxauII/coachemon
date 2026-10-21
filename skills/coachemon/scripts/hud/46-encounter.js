@@ -2,7 +2,7 @@
 // calls `meetsRequirements()`, which writes and can draw, and replays only the draws a closure makes before its first
 // `await`: past that the card gives odds (game-code.md §13).
 import { TYPES, abilityValue, natureOf, stage, typesOf } from "./01-core.js";
-import { bigFightsAhead, challengeValue } from "./03-calendar.js";
+import { challengeValue } from "./03-calendar.js";
 import { gameTables } from "./04-game-tables.js";
 import { formOf, partyAtFight, partyProfile, typesOfSpecies } from "./08-party.js";
 import { weakestMember } from "./12-value.js";
@@ -266,8 +266,7 @@ const context = (run, me, options, account) => {
   // (CONTEXT.md, `Dead weight`). The standing, challenge-allowed members are who can be sent at the foe in front of
   // the party — and the same members the game's own "every allowed mon" rows walk. A reader mirroring a pick the
   // game itself makes filters `party`, the whole party, exactly as the game filters it (game-code.md §13).
-  const nextBig = bigFightsAhead(s, wave + 1)[0]?.wave ?? null;
-  const atFight = partyAtFight(s, party, { from: wave, fight: nextBig });
+  const atFight = partyAtFight(s, party, run.nextFight);
   const standing = party.filter(p => p.hp > 0
     && tryDo(() => p.isAllowedInBattle(), true) && tryDo(() => p.isAllowedInChallenge(), true));
   // The game's `getHighestLevelPlayerPokemon(true, false)` (game-code.md §13): it skips a challenge-barred mon and a
@@ -277,7 +276,7 @@ const context = (run, me, options, account) => {
   // The party profile (CONTEXT.md) is of the team at the next big fight, since its weakest member is a team-value
   // question — and the answer is handed in, because only a run read can ask it (#582). `fighters` is the same tally
   // over the standing members, which is all `fight` asks of the party, and asks nothing of the weakest member.
-  const profile = partyProfile(atFight.members, { weakest: weakestMember(run, { fight: nextBig }) });
+  const profile = partyProfile(atFight.members, { weakest: weakestMember(run) });
   const fighters = partyProfile(standing);
   // Who the party would miss most. Like `profile.weakest` it judges the party rather than mirroring a pick, so it
   // reads the team at the next big fight and not `top`, the game's highest-level standing mon.
@@ -1080,7 +1079,7 @@ export const encounterModel = (run, h, account) => {
   const s = run.scene;
   const me = s.currentBattle.mysteryEncounter;
   const party = run.facts.party;
-  const key = JSON.stringify([me.encounterType, tryDo(() => me.getSeedOffset()), s.money,
+  const key = JSON.stringify([run.nextFight.fight, me.encounterType, tryDo(() => me.getSeedOffset()), s.money,
     [me.misc?.safariPokemonRemaining, me.misc?.catchStage, me.misc?.fleeStage, tryDo(() => me.misc?.pokemon?.id)],
     // The chunk scan lands asynchronously, and nothing else in this key moves when it does.
     tryDo(() => safariReady(s), false),
