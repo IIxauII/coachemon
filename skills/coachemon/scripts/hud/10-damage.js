@@ -105,6 +105,7 @@ export const targetFacts = (env, t, ignoreAbility = false) => {
     // Reviver Seed (game-code.md §8).
     revive: stack(t, "PokemonInstantReviveModifier") ? Math.max(1, Math.floor(maxHp / 2)) : 0,
     enigma: enigmaOf(env, t),
+    sitrus: sitrusOf(env, t),
     unnerve: ability(t, "PreventBerryUseAbAttr"),
   };
 };
@@ -248,8 +249,8 @@ export const hitOn = (state, dmg) => {
   const [d, bar] = state.facts ? barStep(state.facts, state.hp, state.bar, Math.max(0, dmg)) : [Math.max(0, dmg), state.bar];
   return { ...state, hp: Math.max(0, state.hp - d), bar };
 };
-// `stop`: the branch's use has ended (a revive). `left`: the Enigma Berries it still holds.
-const branch = (hp, bar, revived, tok, p, stop = false, left = 0) => ({ hp, bar, revived, tok, p, stop, left });
+// `stop`: the branch's use has ended (a revive). `left` / `sitrus`: the Enigma / Sitrus Berries it still holds.
+const branch = (hp, bar, revived, tok, p, stop = false, left = 0, sitrus = 0) => ({ hp, bar, revived, tok, p, stop, left, sitrus });
 // Pushes what stands onto `out` and returns the probability that goes down. `luck` false: turn-end chip, an indirect
 // KO, so no endure token, Focus Band or Reviver Seed (game-code.md §21).
 const land = (f, b, d, out, luck = true) => {
@@ -257,18 +258,18 @@ const land = (f, b, d, out, luck = true) => {
   const endure = luck && !b.tok && d >= b.hp ? f.pEndure : 0;
   if (b.hp - dealt > 0) {
     // A roll on a hit the bar clamp already stops still spends the token (game-code.md §3).
-    if (endure) out.push(branch(b.hp - dealt, bar, b.revived, true, b.p * endure, false, b.left));
-    if (endure < 1) out.push(branch(b.hp - dealt, bar, b.revived, b.tok, b.p * (1 - endure), false, b.left));
+    if (endure) out.push(branch(b.hp - dealt, bar, b.revived, true, b.p * endure, false, b.left, b.sitrus));
+    if (endure < 1) out.push(branch(b.hp - dealt, bar, b.revived, b.tok, b.p * (1 - endure), false, b.left, b.sitrus));
     return 0;
   }
   let gone = b.p;
   if (luck) {
-    if (endure) out.push(branch(1, bar, b.revived, true, b.p * endure, false, b.left));
-    if (f.pFocus) out.push(branch(1, bar, b.revived, b.tok, b.p * (1 - endure) * f.pFocus, false, b.left));
+    if (endure) out.push(branch(1, bar, b.revived, true, b.p * endure, false, b.left, b.sitrus));
+    if (f.pFocus) out.push(branch(1, bar, b.revived, b.tok, b.p * (1 - endure) * f.pFocus, false, b.left, b.sitrus));
     gone = b.p * (1 - endure) * (1 - f.pFocus);
   }
   if (!(gone > 0)) return 0;
-  if (luck && f.revive && !b.revived) { out.push(branch(f.revive, bar, true, b.tok, gone, true, b.left)); return 0; }
+  if (luck && f.revive && !b.revived) { out.push(branch(f.revive, bar, true, b.tok, gone, true, b.left, b.sitrus)); return 0; }
   return gone;
 };
 const KO_USES = 9;
@@ -301,18 +302,40 @@ export const shares = (list, fallback) => {
 // The berry heals between `beforeBerry`, the part of `turnEnd` the game runs ahead of it, and the rest, and each branch,
 // `after1`'s and `start`'s included, carries the berries it has `left`; a Berry Pouch's `keep` share of a feed heals
 // and leaves `left` as it was. `preHeal(i)`: `{ p, heal }`, a heal the target takes before use i at share `p` of it, and
-// after it, ahead of the turn end, otherwise; null for none.
-export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 1, act = () => 1, turnEnd = 0, beforeBerry = 0, firstKo = null, cat = null, useAt = null, chain = null, se = null, preHeal = null } = {}) => {
+// after it, ahead of the turn end, otherwise; null for none. `sitrus`: the target eats a Sitrus Berry (`facts.sitrus`)
+// at each turn end that finds it below half, where it eats the Enigma, a Pouch keeping it the same way; null eats none,
+// and otherwise it counts the Sitrus Berries steals have taken off the target by use n's turn end, n from 0: a number,
+// or a function of n. A branch's `sitrus` is the Sitrus Berries it still holds.
+export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 1, act = () => 1, turnEnd = 0, beforeBerry = 0, firstKo = null, cat = null, useAt = null, chain = null, se = null, preHeal = null, sitrus = null } = {}) => {
   const f = rec.facts;
   const berry = se != null && f.enigma?.heal > 0 ? f.enigma : null;
   const held = f.enigma?.left ?? 0;
   const seAt = i => (typeof se === "function" ? se(i) : se);
   const keep = berry?.keep ?? 0;
+  const sit = sitrus != null && f.sitrus?.heal > 0 ? f.sitrus : null;
+  const sitHeld = sit?.left ?? 0;
+  const goneBy = n => (typeof sitrus === "function" ? sitrus(n) : sitrus ?? 0);
+  // `b` less the `x` Sitrus Berries a steal takes, a fraction of one taken at that chance; what stands goes onto `out`.
+  const steal = (b, x, out) => {
+    if (!(x > 0) || !(b.sitrus > 0)) { out.push(b); return; }
+    const sure = Math.min(b.sitrus, Math.floor(x)), q = b.sitrus > sure ? x - Math.floor(x) : 0;
+    if (q > 0) out.push({ ...b, p: b.p * q, sitrus: b.sitrus - sure - 1 });
+    b.p *= 1 - q;
+    b.sitrus -= sure;
+    out.push(b);
+  };
+  // What a branch built from nothing holds: a curve without `start` begins with the steals made before it.
+  const gone0 = sit && !start?.length ? goneBy(0) : 0;
+  const robbed = b => {
+    const out = [];
+    steal(b, gone0, out);
+    return out;
+  };
   // The share `fed` of `b` eats a berry at this turn's end, and a Berry Pouch's `keep` of that heals with it still held.
   const pushFed = (out, b, s, fed) => {
     if (fed > 0 && b.left > 0) {
-      if (fed < 1) out.push(inChain(branch(b.hp, b.bar, b.revived, b.tok, b.p * (1 - fed), false, b.left), s));
-      if (keep > 0) out.push(inChain(Object.assign(branch(b.hp, b.bar, b.revived, b.tok, b.p * fed * keep, false, b.left), { fed: true, kept: true }), s));
+      if (fed < 1) out.push(inChain(branch(b.hp, b.bar, b.revived, b.tok, b.p * (1 - fed), false, b.left, b.sitrus), s));
+      if (keep > 0) out.push(inChain(Object.assign(branch(b.hp, b.bar, b.revived, b.tok, b.p * fed * keep, false, b.left, b.sitrus), { fed: true, kept: true }), s));
       b.p *= fed * (1 - keep);
       b.fed = true;
     }
@@ -326,8 +349,8 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
   const from = chain?.from ?? NO_CHAIN;
   const stepOf = chain ? chain.step : () => NO_STEP;
   let states = (start?.length
-    ? start.map(x => branch(x.hp, x.bar ?? init.bar, !!x.revived, !!x.tok, x.p, false, x.left ?? held))
-    : [branch(init.hp, init.bar, false, false, 1, false, held)]).flatMap(b => from.map(c => inChain(branch(b.hp, b.bar, b.revived, b.tok, b.p * c.p, false, b.left), c.s)));
+    ? start.map(x => branch(x.hp, x.bar ?? init.bar, !!x.revived, !!x.tok, x.p, false, x.left ?? held, x.sitrus ?? sitHeld))
+    : robbed(branch(init.hp, init.bar, false, false, 1, false, held, sitHeld))).flatMap(b => from.map(c => inChain(branch(b.hp, b.bar, b.revived, b.tok, b.p * c.p, false, b.left, b.sitrus), c.s)));
   const by = [], downAt = [];
   const brokeAt = Array(bars).fill(KO_USES);
   let down = 0, after1 = [];
@@ -343,19 +366,19 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
     const early = pre?.heal > 0 ? Math.max(0, Math.min(1, pre.p)) : 0;
     // `late`: this branch takes `pre`'s heal at the turn end.
     const split = pre?.heal > 0 ? states.flatMap(st => [
-      ...(early > 0 ? [inChain(branch(Math.min(f.maxHp, st.hp + pre.heal), st.bar, st.revived, st.tok, st.p * early, false, st.left), st.s)] : []),
-      ...(early < 1 ? [Object.assign(inChain(branch(st.hp, st.bar, st.revived, st.tok, st.p * (1 - early), false, st.left), st.s), { late: true })] : []),
+      ...(early > 0 ? [inChain(branch(Math.min(f.maxHp, st.hp + pre.heal), st.bar, st.revived, st.tok, st.p * early, false, st.left, st.sitrus), st.s)] : []),
+      ...(early < 1 ? [Object.assign(inChain(branch(st.hp, st.bar, st.revived, st.tok, st.p * (1 - early), false, st.left, st.sitrus), st.s), { late: true })] : []),
     ]) : states;
     for (const st of split) {
       const mark = hit.length;
       for (const to of stepOf(st.s)) {
         const go = to.act ? a : 0, p = st.p * to.p;
-        if (go < 1) hit.push(inChain(branch(st.hp, st.bar, st.revived, st.tok, p * (1 - go), false, st.left), to.s));
+        if (go < 1) hit.push(inChain(branch(st.hp, st.bar, st.revived, st.tok, p * (1 - go), false, st.left, st.sitrus), to.s));
         if (wentOff && go > 0) addShare(wentOff, to.s, p * go);
         for (const x of points) {
           const q = p * go * x.p;
           if (!(q > 0)) continue;
-          let branches = [branch(st.hp, st.bar, st.revived, st.tok, q, false, st.left)];
+          let branches = [branch(st.hp, st.bar, st.revived, st.tok, q, false, st.left, st.sitrus)];
           for (let k = 0; k < x.n; k++) {
             const next = [];
             for (const b of branches) {
@@ -386,7 +409,7 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
         // They survived a use that landed.
         const landed = points.filter(x => x.d > 0), mass = landed.reduce((t, x) => t + x.p, 0);
         const fed = berry && mass > 0 ? landed.reduce((t, x) => t + x.p * (x.se ?? seAt(0)), 0) / mass : 0;
-        for (const c of offs) pushFed(hit, branch(1, init.bar, false, false, (1 - k) * c.p, false, held), c.s, fed);
+        for (const c of offs) for (const b of robbed(branch(1, init.bar, false, false, (1 - k) * c.p, false, held, sitHeld))) pushFed(hit, b, c.s, fed);
       }
       fell = k;
       if (fellTo) fellTo = new Map(offs.map(c => [c.s?.key, { s: c.s, p: k * c.p }]));
@@ -407,27 +430,47 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
       return b;
     };
     const groups = new Map();
-    for (let b of hit) {
-      if (b.late) b.hp = Math.min(f.maxHp, b.hp + pre.heal);
-      if (b.fed) {
-        // `endStep` may hand back a fresh branch, which carries no `kept`.
-        const kept = b.kept;
-        b = endStep(b, h0);
-        if (!b) continue;
-        b.hp = Math.min(f.maxHp, b.hp + berry.heal);
-        if (!kept) b.left--;
-        b = endStep(b, h - h0);
-      } else b = endStep(b, h);
-      if (!b) continue;
-      const key = `${b.bar}|${b.revived}|${b.tok}|${b.left}${chain ? `|${b.s.key}` : ""}`;
+    const settle = b => {
+      if (!b) return;
+      const key = `${b.bar}|${b.revived}|${b.tok}|${b.left}|${b.sitrus}${chain ? `|${b.s.key}` : ""}`;
       if (!groups.has(key)) groups.set(key, { b, pts: [] });
       groups.get(key).pts.push({ d: b.hp, p: b.p });
+    };
+    const stolen = sit ? goneBy(i + 1) - goneBy(i) : 0;
+    for (let b of hit) {
+      if (b.late) b.hp = Math.min(f.maxHp, b.hp + pre.heal);
+      if (!b.fed && !(sit && b.sitrus > 0)) {
+        settle(endStep(b, h));
+        continue;
+      }
+      // `endStep` may hand back a fresh branch, which carries no `fed` or `kept`.
+      const { fed, kept } = b;
+      b = endStep(b, h0);
+      if (!b) continue;
+      const standing = [];
+      steal(b, stolen, standing);
+      for (const r of standing) {
+        // Both berries read the HP before either heals (game-code.md §3), on the rounded ratio (§21).
+        const eats = sit && r.sitrus > 0 && Math.round((r.hp / f.maxHp) * 100) / 100 < 0.5;
+        const heal = (fed ? berry.heal : 0) + (eats ? sit.heal : 0);
+        if (fed && !kept) r.left--;
+        const out = [r];
+        if (eats) {
+          if (sit.keep > 0) out.push({ ...r, p: r.p * sit.keep });
+          r.p *= 1 - sit.keep;
+          r.sitrus--;
+        }
+        for (const o of out) {
+          o.hp = Math.min(f.maxHp, o.hp + heal);
+          settle(endStep(o, h - h0));
+        }
+      }
     }
-    states = [...groups.values()].flatMap(({ b, pts }) => squeezeDist(pts, KO_LEVELS).filter(x => x.p > 1e-9).map(x => inChain(branch(x.d, b.bar, b.revived, b.tok, x.p, false, b.left), b.s)));
+    states = [...groups.values()].flatMap(({ b, pts }) => squeezeDist(pts, KO_LEVELS).filter(x => x.p > 1e-9).map(x => inChain(branch(x.d, b.bar, b.revived, b.tok, x.p, false, b.left, b.sitrus), b.s)));
     downAt.push(fellTo ? [...fellTo.values()].filter(x => x.p > 0) : []);
     if (i === 0) {
       const p = states.reduce((t, x) => t + x.p, 0);
-      after1 = p > 0 ? states.map(x => ({ hp: x.hp, bar: x.bar, revived: x.revived, tok: x.tok, left: x.left, p: x.p / p })) : [];
+      after1 = p > 0 ? states.map(x => ({ hp: x.hp, bar: x.bar, revived: x.revived, tok: x.tok, left: x.left, sitrus: x.sitrus, p: x.p / p })) : [];
     }
     by.push(Math.min(1, down));
     for (let k = 1; k <= bars; k++) {
@@ -456,17 +499,19 @@ const opponentsOf = (env, p) => {
 const tagsOf = p => { try { return p.summonData?.tags ?? []; } catch { return []; } };
 const berryQuarter = p => Math.max(1, Math.floor(p.getMaxHp() / 4)) * (ability(p, "DoubleBerryEffectAbAttr") ? 2 : 1);
 const unnerved = (env, p) => opponentsOf(env, p).some(q => ability(q, "PreventBerryUseAbAttr"));
-// One Enigma Berry's heal before the max-HP cap, how many `p` holds, and the chance `keep` that a Berry Pouch leaves one
-// it eats held; null under Heal Block. An opposing Unnerve is the reader's to ask, since it turns on who faces `p`
-// (game-code.md §3).
-const enigmaOf = (env, p) => {
-  const left = items(p).filter(m => m.constructor.name === "BerryModifier" && m.berryType === BerryType.ENIGMA)
+// One Sitrus or Enigma Berry's heal before the max-HP cap, how many `p` holds, and the chance `keep` that a Berry Pouch
+// leaves one it eats held; null under Heal Block. An opposing Unnerve is the reader's to ask, since it turns on who
+// faces `p` (game-code.md §3).
+const quarterBerryOf = (env, p, type) => {
+  const left = items(p).filter(m => m.constructor.name === "BerryModifier" && m.berryType === type)
     .reduce((t, m) => t + (m.getStackCount?.() ?? m.stackCount ?? 1), 0);
   if (!left || p.getTag?.("HEAL_BLOCK")) return null;
   return { heal: Math.floor(berryQuarter(p) * healingCharm(env, p)), left, keep: berryPouch(env, p) };
 };
+const enigmaOf = (env, p) => quarterBerryOf(env, p, BerryType.ENIGMA);
+const sitrusOf = (env, p) => quarterBerryOf(env, p, BerryType.SITRUS);
 // In the game's own phase order (game-code.md §21).
-const endOfTurnSteps = (env, p, { hp = p.hp, dealt = 0 } = {}) => {
+const endOfTurnSteps = (env, p, { hp = p.hp, dealt = 0, sitrus = true } = {}) => {
   const steps = [];
   if (hp <= 0) return steps;
   const max = p.getMaxHp();
@@ -503,7 +548,7 @@ const endOfTurnSteps = (env, p, { hp = p.hp, dealt = 0 } = {}) => {
 
   steps.berries = steps.length;
   // `getHpRatio` rounds to a whole percent, so Sitrus wants hp/max < 0.495 (game-code.md §21).
-  if (cur > 0 && !unnerved(env, p) && Math.round((cur / max) * 100) / 100 < 0.5
+  if (sitrus && cur > 0 && !unnerved(env, p) && Math.round((cur / max) * 100) / 100 < 0.5
     && items(p).some(m => m.constructor.name === "BerryModifier" && m.berryType === BerryType.SITRUS)) queued(berryQuarter(p));
 
   // A held Lum cures the status first (game-code.md §3). Gotcha: nothing here spends it, so a Lum + Toxic Orb holder
@@ -560,9 +605,9 @@ const applyTurnEnd = (steps, hp, max) => {
   }
   return cur;
 };
-// Signed, with no boss bars in the way, and no Enigma Berry: that is `koCurve`'s. `hp`: the HP it will have by then;
-// `dealt`: this turn's damage dealt, for Shell Bell; `beforeBerries`: only the part ahead of the BerryPhase. Reads fields
-// and item and ability attributes only.
+// Signed, with no boss bars in the way, and no Enigma Berry: that is `koCurve`'s, as is the Sitrus under `sitrus`
+// false. `hp`: the HP it will have by then; `dealt`: this turn's damage dealt, for Shell Bell; `beforeBerries`: only the
+// part ahead of the BerryPhase. Reads fields and item and ability attributes only.
 // @only 25-turn, tests: sceneTurnEndHp
 export const sceneTurnEndHp = (env, p, opts = {}) => {
   const hp = opts.hp ?? p.hp;

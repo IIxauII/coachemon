@@ -370,27 +370,31 @@ Fight plan likely lost
 == switched into a foe's lock: Skarmory 3.6975 · Clefable 3.0000 · its last use 3.8086
 == a foe's own pick once its lock runs down: Bronzong 3.4383 · Steelix 1.4383
 == bug bite eats a berry
-Sitrus x1, Pound instead   turnsWe 4 · our HP 146 · P(steal) 0
+Sitrus x1, Pound instead   turnsWe 3 · our HP 164 · P(steal) 0
 Sitrus x1                  turnsWe 3 · our HP 264 · P(steal) 1
+Sitrus x1, 360 HP, Pound   turnsWe 4 · our HP 146 · P(steal) 0
+Sitrus x1, 360 HP          turnsWe 3 · our HP 264 · P(steal) 1
 we eat: Sitrus 100 · at 350/400 50 · beside a Lum 50 · a Sitrus x2 beside a Lum 50 · beside a Liechi 50
 we eat beside a Lum: 50 · with that Lum burnt 100
 Sitrus x1 + Lum x1         turnsWe 3 · our HP 264 · P(steal) 1
 Sitrus x2 + Lum x1         turnsWe 3 · our HP 289 · P(steal) 1
 Sitrus x1 + Liechi x1      turnsWe 3 · our HP 264 · P(steal) 1
 nothing held               turnsWe 3 · our HP 164 · P(steal) 0
-Sitrus x1, Sticky Hold     turnsWe 4 · our HP 146 · P(steal) 0
-Sitrus x1, behind a sub    turnsWe 4 · our HP 146 · P(steal) 0
+Sitrus x1, Sticky Hold     turnsWe 3 · our HP 164 · P(steal) 0
+Sitrus x1, behind a sub    turnsWe 3 · our HP 164 · P(steal) 0
 Sitrus x1, one already ate turnsWe 3 · our HP 164 · P(steal) 1
 …and Pound follows it      turnsWe 3 · our HP 164 · P(steal) 0
 Sitrus x2                  turnsWe 3 · our HP 364 · P(steal) 1
 Sitrus x2, one already ate turnsWe 3 · our HP 264 · P(steal) 1
 depth 2: the follow-up leaves us 264 HP (364 if turn 1's steal were forgotten)
 our Enigma fed beside the steal: they need 4 into Bug Bite, 3 into Pound
-Sitrus x1                  turn end: none gone 70 · one gone 0 · two gone 0
-Sitrus x2                  turn end: none gone 70 · one gone 70 · two gone 0
-Sitrus x1 + Lum x1         turn end: none gone 70 · one gone 35 · two gone 0
-Sitrus x2 + Lum x1         turn end: none gone 70 · one gone 70 · two gone 52.5
-Sitrus x1 + Liechi x1      turn end: none gone 70 · one gone 35 · two gone 0
+our Sitrus from full HP: they need 5 (4 with no berry, 4 into an Unnerve)
+Sitrus x1                  Sitrus stolen: none gone 0 · one gone 1 · two gone 1
+Sitrus x2                  Sitrus stolen: none gone 0 · one gone 1 · two gone 2
+Sitrus x1 + Lum x1         Sitrus stolen: none gone 0 · one gone 0.5 · two gone 1
+Sitrus x2 + Lum x1         Sitrus stolen: none gone 0 · one gone 0.5 · two gone 1.25
+Sitrus x1 + Liechi x1      Sitrus stolen: none gone 0 · one gone 0.5 · two gone 1
+a thief's Sitrus by turns 1, 2: Mini Black Hole 0, 1 · Grip Claw 0.0952, 0.1813
 draw: Sitrus x1            types 0 · supply 1 · lost -70 · eaten 70
 draw: Sitrus x2            types 0 · supply 2 · lost 0 · eaten 70
 draw: Sitrus + Liechi      types 0,3 · supply 2 · lost -35 · eaten 35
@@ -400,7 +404,7 @@ named: a Lum it lacks      nothing to lose
 draws: Sitrus x1 + Lum x2     35 · 17.5 · 17.5 · 0
 we eat from full HP, Sitrus x2: 18 over a Heal Blocked thief
 we eat from full HP, Sitrus x1: moving first 0 · moving second 18
-two Sitrus from full HP over a long fight: 328/400 after 6 turns
+two Sitrus from full HP over a long fight: 346/400 after 5 turns
 eaten: plain 70 · Ripen 140 · Heal Block 0 · Cheek Pouch 163, off a Lum 93
 reach: sticky false,true,false · sub false,true,false
 the 10th draw off Sitrus x1 + Lum x11: 0.068359375
@@ -428,7 +432,7 @@ pick: Toxic, Lum x1                   Giga Drain · effect "" · score 0.1714
 pick: Spore, bare foe, slower than it Spore · effect "sleep" · score -2.8163
 pick: Spore, Lum x1, slower than it   Spore · effect "" · score -4.2681
 pick: Spore, Lum x2, slower than it   Giga Drain · effect "" · score -4.6978
-pick: Spore, Sitrus only, slower      Spore · effect "sleep" · score -2.8163
+pick: Spore, Liechi only, slower      Spore · effect "sleep" · score -2.8163
 burnt: Lum x1 Toxic · score 2.1957 · Lum x2 Giga Drain · score -6.874
 follow: Lum x1 Toxic then Sludge Bomb · Sitrus + Lum Toxic then Knock Off
 == lum: the ⚔ line for a sleep it cures (live)

@@ -8,8 +8,8 @@ import { addShare, healingCharm, koChanceAt, koCurve, koTurn, koTurns, rawMax, s
 const pmName = pm => pm?.getName?.() ?? pm?.name ?? "";
 const bossBarsLeft = p => (p.isBoss?.() && p.bossSegments > 1 ? Math.max(1, (p.bossSegmentIndex ?? p.bossSegments - 1) + 1) : 1);
 // Turn-end HP change, signed: heals +, chip −. `dealt`: damage `p` deals a turn (Shell Bell). Never with
-// `tookSuperEffective`: `koCurve` eats the Enigma Berry, branch by branch.
-const healAtEnd = (turn, p, dealt = 0) => (turn.live ? turn.turnEndHp(p, { dealt }) : 0) || 0;
+// `tookSuperEffective`: `koCurve` eats the Enigma Berry, branch by branch, and under `sitrus` false the Sitrus too.
+const healAtEnd = (turn, p, dealt = 0, sitrus = true) => (turn.live ? turn.turnEndHp(p, { dealt, sitrus }) : 0) || 0;
 const heldStack = (p, name) => (p.getHeldItems?.() ?? []).filter(m => m.constructor?.name === name).reduce((t, m) => t + (m.getStackCount?.() ?? 1), 0);
 const hitCounts = o => {
   const ns = (o?.dist ?? []).filter(d => d.p > 0).map(d => d.n);
@@ -752,32 +752,55 @@ export const berryGone = (holder, heal, { berry = null, eater = null, hp = 0, tu
   };
 };
 
+const sitrusCount = p => heldBerries(p).filter(m => m.berryType === BerryType.SITRUS).reduce((t, m) => t + stackOf(m), 0);
+// The Sitrus Berries `me` has lost by turn j's berries, j from 0, as `koCurve`'s `sitrus` takes it: `steals` are
+// `[{ walk, counts }]`, a `stealWalk` of `me` and `counts(j)`, P(k drawn off it by then). Each is counted on its own.
+const sitrusStolen = (me, steals) => {
+  const full = sitrusCount(me);
+  if (!full || !steals.length) return null;
+  const lost = steals.map(({ walk, counts }) => {
+    const left = overWalk(walk, sitrusCount);
+    return j => full - counts(j).reduce((t, p, k) => t + p * left[Math.min(9, k)], 0);
+  });
+  return j => Math.min(full, lost.reduce((t, f) => t + f(j), 0));
+};
+
 // `at(j)`: `me`'s turn-end HP change at the end of turn j (1 = this turn) of a fight with `foe`, `flat` when that never
 // moves. It moves with Toxic, a status the foe's hits may hand it, and items the foe may steal. `pre`: the part of `base`
-// ahead of the berries. `eaten`, from a berry `foe` eats off it a turn (#646): `byCount` as `berryGone` gives it, and
-// `counts(j)`, P(k berries gone by turn j's end).
+// ahead of the berries. `eaten`, from a berry `foe` eats off it a turn (#646): `byCount` as `berryGone` gives it,
+// `counts(j)`, P(k berries gone by turn j's end), and `walk`, `me`'s `berryWalk`. The Sitrus is never in the course:
+// `koCurve` eats it, and `gone` is its `sitrus`, null when nothing can steal one.
 export const turnEndCourse = (turn, me, foe, hitsPerTurn, dealt = 0, eaten = null) => {
-  const base = healAtEnd(turn, me, dealt);
+  const heal = p => healAtEnd(turn, p, dealt, false);
+  const base = heal(me);
   const pre = (turn.live ? turn.turnEndHp(me, { dealt, beforeBerries: true }) : 0) || 0;
   const toxic = me.status?.effect === StatusEffect.TOXIC
-    ? j => healAtEnd(turn, Object.create(me, { status: { value: { ...me.status, effect: StatusEffect.TOXIC, toxicTurnCount: (me.status.toxicTurnCount ?? 0) + j - 1 } } }), dealt)
+    ? j => heal(Object.create(me, { status: { value: { ...me.status, effect: StatusEffect.TOXIC, toxicTurnCount: (me.status.toxicTurnCount ?? 0) + j - 1 } } }))
     : null;
   const berries = eaten?.byCount?.some(v => v !== base)
     ? j => eaten.counts(j).reduce((sum, p, k) => sum + p * (eaten.byCount[k] - base), 0)
     : null;
+  const rates = foe && hitsPerTurn >= 0 ? stealRates(foe, me) : null;
+  const walk = rates ? stealWalk(me) : null;
+  // Mini Black Hole draws in `TurnEndPhase`, after the berries, so only j − 1 of its draws are in by turn j's
+  // (game-code.md §21).
+  const thiefCounts = j => (j > 0 ? stealCounts(rates.perTurn * (j - 1), rates.perHit * hitsPerTurn * j) : [1]);
+  const gone = sitrusStolen(me, [
+    ...(eaten?.counts ? [{ walk: eaten.walk ?? berryWalk(me), counts: eaten.counts }] : []),
+    ...(walk ? [{ walk, counts: thiefCounts }] : []),
+  ]);
   const plain = toxic ?? (() => base);
-  const flat = berries ? { base, pre, flat: false, at: j => plain(j) + berries(j) }
-    : toxic ? { base, pre, flat: false, at: toxic } : { base, pre, flat: true, at: () => base };
+  const flat = berries ? { base, pre, gone, flat: false, at: j => plain(j) + berries(j) }
+    : toxic ? { base, pre, gone, flat: false, at: toxic } : { base, pre, gone, flat: true, at: () => base };
   if (!foe || !(hitsPerTurn >= 0)) return flat;
   const odds = hitsPerTurn > 0 ? tokenOdds(turn, foe, me) : null;
-  const statusChange = odds ? tokenShift(odds, me, p => healAtEnd(turn, p, dealt)) : 0;
-  const rates = stealRates(foe, me);
-  const byCount = rates ? afterSteals(me, p => healAtEnd(turn, p, dealt)) : null;
+  const statusChange = odds ? tokenShift(odds, me, heal) : 0;
+  const byCount = walk ? overWalk(walk, heal) : null;
   const items = byCount && byCount.some(v => v !== base)
-    ? j => stealCounts(rates.perTurn * (j - 1), rates.perHit * hitsPerTurn * j).reduce((sum, p, k) => sum + p * (byCount[k] - base), 0)
+    ? j => thiefCounts(j).reduce((sum, p, k) => sum + p * (byCount[k] - base), 0)
     : null;
   if (!statusChange && !items) return flat;
-  return { base, pre, flat: false, at: j => flat.at(j) + (statusChange ? statusChange * odds.by(hitsPerTurn * j) : 0) + (items ? items(j) : 0) };
+  return { base, pre, gone, flat: false, at: j => flat.at(j) + (statusChange ? statusChange * odds.by(hitsPerTurn * j) : 0) + (items ? items(j) : 0) };
 };
 // An opposing Unnerve keeps `holder`'s berries uneaten: `opp`'s, or in a double any on the field (game-code.md §21).
 export const unnervedBy = (turn, holder, opp) => {
@@ -838,7 +861,7 @@ const berryCounts = (land, supply, before = 0) => {
 // `drain`: what our drain moves win back a turn, negative into Liquid Ooze; `preHeal`: as `koCurve` takes it.
 export const foeCurve = (turn, t, me, hp, { dealt = 0, foe = null, mult = null, act = () => 1, start = null, drain = 0, preHeal = null } = {}) => {
   const courseOf = d => turnEndCourse(turn, me, foe, t ? hitsOn(t) : -1, d);
-  let heal, pre;
+  let heal, pre, gone;
   if (typeof dealt === "function") {
     const courses = new Map();
     const at = j => {
@@ -848,10 +871,13 @@ export const foeCurve = (turn, t, me, hp, { dealt = 0, foe = null, mult = null, 
     };
     heal = j => at(j).at(j);
     pre = j => at(j).pre;
+    // Steals never turn on what we deal.
+    gone = at(1).gone;
   } else {
     const course = courseOf(dealt);
     heal = course.flat ? course.base : course.at;
     pre = course.pre;
+    gone = course.gone;
   }
   const ramp = setupRamp(foe, t);
   const useOn = x => (x?.expected > 0 ? x.use ?? [{ d: x.expected, p: 1 }] : [{ d: 0, p: 1 }]);
@@ -860,6 +886,7 @@ export const foeCurve = (turn, t, me, hp, { dealt = 0, foe = null, mult = null, 
   return koCurve(turn.mon(me), useOn(threatUse(t, usesBefore)), {
     hp, start, act, turnEnd: withDrain(heal, drain), chain: t?.lockChain?.(usesBefore),
     beforeBerry: withDrain(pre, drain), se: foe && unnervedBy(turn, me, foe) ? null : 0,
+    sitrus: foe && unnervedBy(turn, me, foe) ? null : gone ?? 0,
     scale: mult || ramp ? i => (mult ? mult(i + 1) : 1) * (ramp ? ramp(i + 1) : 1) : undefined,
     firstKo: t?.expected > 0 && !start ? threatKoAt(t, hp) * act(0) * (t.lockAct ? t.lockAct(0) : 1) : null,
     useAt: t?.later || t?.own ? i => useOn(threatUse(t, i + usesBefore)) : null, preHeal,
@@ -1042,7 +1069,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   const holder = turn.held(foe);
   const eats = mine?.expected > 0 && stealsBerry(mine, holder, me);
   const theft = (eats || stole > 0) && berryTypesOf(holder).length ? (() => {
-    const dealt = t?.expected ?? 0, heal = p => healAtEnd(turn, p, dealt);
+    const dealt = t?.expected ?? 0, heal = p => healAtEnd(turn, p, dealt, false);
     // Keyed on the foe object, not its id: a made-up foe that keeps the real one's id reads its own.
     const byFoe = turn.memo("berries", () => new WeakMap());
     if (!byFoe.has(holder)) byFoe.set(holder, { walk: berryWalk(holder), steals: new Map(), eaten: new WeakMap() });
@@ -1051,7 +1078,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     // Turn 1's room, moving first, is after what this use costs us (game-code.md §3).
     const out = berryGone(holder, heal, { eater: me, hp: hp - (mine?.self ?? 0), turn, walk: memo.walk, steals: memo.steals.get(dealt), eatenAt: memo.eaten.get(me) });
     if (out && !memo.eaten.has(me)) memo.eaten.set(me, out.eatenAt);
-    return out;
+    return out && { ...out, walk: memo.walk };
   })() : null;
   const lands = eats ? j => (j === 1 ? now : steady) * (mine.acc ?? 1) : () => 0;
   const counts = theft ? berryCounts(lands, theft.supply, stole) : null;
@@ -1061,7 +1088,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     const drop = mt.drops?.[atkStat] ?? 0;
     const s0 = me.summonData?.statStages?.[atkStat - 1] ?? 0;
     const course = turnEndCourse(turn, foe, me, steady * (mine.acc ?? 1) * ((mine.dist ?? []).reduce((sum, d) => sum + d.n * d.p, 0) || 1), t?.expected ?? 0,
-      theft && { byCount: theft.byCount, counts });
+      theft && { byCount: theft.byCount, counts, walk: theft.walk });
     const heal = withDrain(course.flat ? course.base : course.at, t?.drain ?? 0);
     const defStat = mine.cat === "special" ? Stat.SPDEF : Stat.DEF;
     const defUpBy = t?.boost?.[defStat] ?? 0;
@@ -1077,6 +1104,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     const curve = koCurve(turn.mon(foe), useOf(first), {
       scale, turnEnd: heal, beforeBerry: withDrain(course.pre, t?.drain ?? 0), cat: mine.cat,
       se: unnervedBy(turn, foe, me) ? null : i => (((i ? mine : first).e ?? 1) >= 2 ? 1 : 0),
+      sitrus: unnervedBy(turn, foe, me) ? null : course.gone ?? 0,
       act: i => (i === 0 && nowUse ? now : steady * (acts ? acts.act(i + 1) : 1)),
       firstKo: exact && nowUse ? qWe : null, start: after?.foe, chain: ourLock ? OUR_CHAIN : null,
       useAt: rest && (() => rest),
