@@ -15,6 +15,8 @@ Fight plan likely lost
 winnable · Charizard
 == a bug bite pairing's foe heal profile
 it keeps {"base":0,"pre":0,"sitrus":100,"enigma":0,"enigmas":0} · after the steal {"base":0,"pre":0,"sitrus":0,"enigma":0,"enigmas":0} · we eat 65
+== bug bite after the foe ate its own Sitrus
+we end on 90 (140 when it still held it)
 == a bug bite switch-in's entry turn
 switch: won in 2 · free: won in 1
 == bug bite that never went off

@@ -3,7 +3,7 @@
 // one foe at a time.
 import { iconOf, squeezeDist } from "./01-core.js";
 import { hitOn, koCurve, koTurns, useOf } from "./10-damage.js";
-import { actionOrder, afterSteals, attemptsLost, berryGone, berryStealable, berryWalk, hitsOn, koBoost, koBoostText, koStageFactor, paralysed, sendInAt, sendInBase, stealCounts, stealRates, threatFrom, tokenOdds, tokenShift, unnervedBy } from "./30-planner.js";
+import { actionOrder, afterSteals, attemptsLost, berryTypesOf, berryWalk, hitsOn, koBoost, koBoostText, koStageFactor, lessBerry, overWalk, paralysed, sendInAt, sendInBase, stealCounts, stealRates, stealsBerry, stolenDraws, threatFrom, tokenOdds, tokenShift, unnervedBy } from "./30-planner.js";
 
 // @only tests: tpHealProfile, tpSendScore, tpFight, tpTables, tpActs
 const TP_BEAM = 24;
@@ -141,19 +141,38 @@ export const tpHealProfile = (turn, p) => {
   return { base, pre: tpHealAt(turn, p, Math.ceil(max * 0.75), true), sitrus: Math.max(0, at(Math.floor(max * 0.4)) - base),
     enigma: enigma?.heal ?? 0, enigmas: enigma?.left ?? 0 };
 };
-// Whether `me` knows a move that eats a berry off `f`, and can reach it.
-const tpCanSteal = (turn, me, f) => berryStealable(f, me) && turn.outcomes(me, f).some(o => o?.traits?.attrNames?.has("StealEatBerryAttr"));
+const tpCanSteal = (turn, me, f) => turn.outcomes(me, f).some(o => stealsBerry(o, f, me));
 // `by[k]`: `f`'s profile after k berries stolen, k from 0 (`kept`) up to all it holds or 9 (#646, #833); `walk`: its
 // `berryWalk`.
 const tpHealBy = (turn, f, kept, walk) => {
-  const supply = Math.min(9, berryGone(f, () => 0, { walk })?.supply ?? 0);
-  const seen = new Map();
+  const supply = Math.min(9, stolenDraws(f, { walk })?.supply ?? 0);
+  const profiles = new Map();
   const prof = p => {
-    if (!seen.has(p)) seen.set(p, tpHealProfile(turn, p));
-    return seen.get(p);
+    if (!profiles.has(p)) profiles.set(p, tpHealProfile(turn, p));
+    return profiles.get(p);
   };
-  return walk.slice(0, supply + 1).map((states, k) => (k === 0 ? kept
-    : Object.fromEntries(Object.keys(kept).map(key => [key, states.reduce((t, { held, p }) => t + p * prof(held)[key], 0)]))));
+  const by = Object.fromEntries(Object.keys(kept).map(key => [key, overWalk(walk, p => prof(p)[key])]));
+  return Array.from({ length: supply + 1 }, (_, k) => (k === 0 ? kept : Object.fromEntries(Object.keys(kept).map(key => [key, by[key][k]]))));
+};
+// What each steal of `me`'s off `f` heals it, as `stealHeal` holds it, from what `f` holds. `stealHealAfter`'s `Map`
+// gives the same once `f` has eaten berries of its own, by `tpHeal`'s `used` bits: its Sitrus, and each Enigma (#833).
+const tpStealHeal = (turn, me, f, walk) => {
+  const draws = (holder, w) => {
+    const d = stolenDraws(holder, { eater: me, turn, walk: w });
+    return d ? d.eatenAt.slice(0, Math.min(9, d.supply)) : [];
+  };
+  const types = berryTypesOf(f);
+  const enigmas = turn.mon(f).facts.enigma?.left ?? 0;
+  const after = new Map();
+  for (const sitrus of types.includes(BerryType.SITRUS) ? [0, 1] : [0]) {
+    for (let n = 0; n <= enigmas; n++) {
+      if (!sitrus && !n) continue;
+      let left = sitrus ? lessBerry(f, BerryType.SITRUS) : f;
+      for (let k = 0; k < n; k++) left = lessBerry(left, BerryType.ENIGMA);
+      after.set(sitrus | (n << 1), draws(left, null));
+    }
+  }
+  return { now: draws(f, walk), after };
 };
 
 // `facing`: the foe the first exchange is against, the only one a pinned move's own order is read for.
@@ -167,6 +186,7 @@ export const tpTables = (turn, party, foes, double = false, facing = null) => {
   const foeHeal = foes.map(p => tpHealProfile(turn, p));
   const thieves = party.map(me => foes.map(f => tpCanSteal(turn, me, f)));
   const walks = foes.map((f, fi) => (party.some((_, mi) => thieves[mi][fi]) ? berryWalk(f) : null));
+  const steals = party.map((me, mi) => foes.map((f, fi) => (thieves[mi][fi] ? tpStealHeal(turn, me, f, walks[fi]) : null)));
   return {
     ours, theirs, first,
     // In a double both field mons are out, so neither pays an entry hit to act (#113).
@@ -178,13 +198,11 @@ export const tpTables = (turn, party, foes, double = false, facing = null) => {
     foeState: foes.map(f => turn.mon(f).state),
     ourMax: party.map(p => p.getMaxHp()), foeMax: foes.map(f => f.getMaxHp()),
     ourHeal: party.map(p => tpHealProfile(turn, p)), foeHeal,
-    // `foeHealBy[fi][k]`: the foe's profile after k berries stolen, where one of ours can steal one; `eats[mi][fi][k]`:
-    // what our (k+1)-th steal off it heals us, uncapped, where we can.
+    // `foeHealBy[fi][k]`: the foe's profile after k berries stolen, where one of ours can steal one;
+    // `stealHeal[mi][fi][k]`: what our (k+1)-th steal off it heals us, uncapped, where we can.
     foeHealBy: foes.map((f, fi) => walks[fi] && tpHealBy(turn, f, foeHeal[fi], walks[fi])),
-    eats: party.map((me, mi) => foes.map((f, fi) => {
-      const g = thieves[mi][fi] ? berryGone(f, () => 0, { eater: me, turn, walk: walks[fi] }) : null;
-      return g ? g.eatenAt.slice(0, Math.min(9, g.supply)) : null;
-    })),
+    stealHeal: steals.map(row => row.map(s => s?.now ?? null)),
+    stealHealAfter: steals.map(row => row.map(s => s?.after ?? null)),
     ourUnnerve: party.map(p => !!turn.mon(p).facts.unnerve), foeUnnerve: foes.map(f => !!turn.mon(f).facts.unnerve),
     foeStart: foes.map(f => f.hp),
     // `koMult`: the factor both sides' on-KO boosts put on a hit, after `atkN` and `defN` KOs, at physical share `phys`.
@@ -240,8 +258,9 @@ const tpHeal = (hp, max, prof, used, se, extra = 0) => {
 
 // Carried in `st` besides HP: `ox` the landed enemy hits each of ours has taken (wave status tokens), `od` / `og` the
 // Mini Black Hole and Grip Claw steals from it, `fd` / `fg` the same from each foe, `fl` the berries our Bug Bites have
-// taken off each foe, and `ok` / `fk` the KOs each side has scored for its on-KO boosts. Returns the likelier ending's state with `pWin`, `pLoss`, `pStall` and all three
-// `ends`. `over` pins our move for this exchange only (#113), and is never memoised: the key names the pair, not the move.
+// taken off each foe, and `ok` / `fk` the KOs each side has scored for its on-KO boosts. Returns the likelier ending's
+// state with `pWin`, `pLoss`, `pStall` and all three `ends`. `over` pins our move for this exchange only (#113), and is
+// never memoised: the key names the pair, not the move.
 // `entering`: the foe spends this exchange's first turn switching in and does not attack, so a switch of ours made that
 // turn costs no entry hit (#846).
 export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => {
@@ -256,7 +275,7 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
   const usMul = us && (nUs || nFoe) && T.koMult ? T.koMult(T.party[mi], T.ourKo[mi], nUs, T.foes[fi], T.foeKo[fi], nFoe, us.cat === "special" ? 0 : 1) : 1;
   const themMul = (nUs || nFoe) && T.koMult ? T.koMult(T.foes[fi], T.foeKo[fi], nFoe, T.party[mi], T.ourKo[mi], nUs, them.phys ?? 1) : 1;
   const tok = T.tok?.[mi], robUs = T.fromUs?.[fi]?.[mi], robFoe = T.fromFoe?.[mi]?.[fi];
-  const eats = T.eats?.[mi]?.[fi], healBy = T.foeHealBy?.[fi];
+  const stealHeal = T.stealHeal?.[mi]?.[fi], healBy = T.foeHealBy?.[fi];
   const ourUse = us?.use ?? [{ r: 1, p: 1 }];
   // An Unnerve across the pairing keeps both berries uneaten (game-code.md §21).
   const ourBerry = !!T.ourHeal?.[mi]?.enigma && !T.foeUnnerve?.[fi], foeBerry = !!T.foeHeal?.[fi]?.enigma && !T.ourUnnerve?.[mi];
@@ -287,8 +306,9 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
     // Recoil is paid whether or not the hit finished the foe.
     if (us.self) b.mh -= us.self;
     // A landed steal takes the next berry even on a knockout, and its heal comes after our own chip (game-code.md §3).
-    if (us.steals && eats && b.fl < eats.length) {
-      if (b.mh >= 1) b.mh = Math.min(T.ourMax[mi], b.mh + eats[b.fl]);
+    const draws = (b.fb && T.stealHealAfter?.[mi]?.[fi]?.get(b.fb)) || stealHeal;
+    if (us.steals && draws && b.fl < draws.length) {
+      if (b.mh >= 1) b.mh = Math.min(T.ourMax[mi], b.mh + draws[b.fl]);
       b.fl++;
     }
     b.fh = st.hp;

@@ -1696,6 +1696,10 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
     // Brine's rolls average 82, so five fell a 400 HP thief. The second Sitrus, eaten before turn 2's hit, refills only
     // the 82 turn 1 took: one hit more. At the turn's end it would have refilled 100, and the curve read turn 7.
     assert.deepEqual([twice, none], [6, 5], "the second Sitrus heals the room the first hit opened, not its quarter");
+    // A slower thief that Brine's every roll fells before it moves steals nothing (#833).
+    TABLE["Shuckle>Brine>Beedrill"] = [[140], 1, 1];
+    const felled = bite([berryItem(BERRY.SITRUS)], { hp: 100, foeHp: 120, foeSpe: 500 });
+    console.log(`a slower thief one-shot before it moves: ${felled.hp} HP left`);    assert.equal(felled.hp, 0, "no stolen heal lifts a thief that never moved");
   } finally { TABLE["Shuckle>Brine>Beedrill"] = se; }
 }
 

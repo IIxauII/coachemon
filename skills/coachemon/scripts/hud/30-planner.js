@@ -511,7 +511,8 @@ const stealWalk = (me, takes = m => m.isTransferable !== false) => {
   return out;
 };
 // The expectation of `value(held)` at each count of a `stealWalk`, each state's value worked out once.
-const overWalk = (walk, value) => {
+// @only 35-team-plan: overWalk
+export const overWalk = (walk, value) => {
   const seen = new Map();
   const at = held => {
     if (!seen.has(held)) seen.set(held, value(held));
@@ -566,6 +567,15 @@ const drawValues = (walk, value) => overWalk(walk, p => {
   const types = berryTypesOf(p);
   return types.length ? types.reduce((t, b) => t + (value.get(b) ?? 0), 0) / types.length : 0;
 });
+// `eatenAt[k]`: what the (k+1)-th draw off `holder` heals `eater`, uncapped; `supply`: the berries it can lose in all.
+// Null when it holds none. `walk`: its `berryWalk`, where already worked out.
+// @only 35-team-plan: stolenDraws
+export const stolenDraws = (holder, { eater = null, turn = null, walk = null } = {}) => {
+  const held = heldBerries(holder);
+  if (!held.length) return null;
+  const value = new Map(held.map(m => [m.berryType, eatenNow(eater, m.berryType, turn)]));
+  return { supply: held.reduce((t, m) => t + stackOf(m), 0), eatenAt: drawValues(walk ?? berryWalk(holder), value) };
+};
 // What one berry leaving `holder` is worth, as the HUD prices a held berry. `berry`: a `BerryType` to name the one
 // that goes, else a uniform draw over the berry types held. `heal(p)`: a holder's turn-end HP change, as
 // `turnEndCourse` reads it. `eater` / `hp`: who eats the berry and the HP it stands on. Null when nothing can go.
@@ -574,7 +584,7 @@ const drawValues = (walk, value) => overWalk(walk, p => {
 // `eatenAt[k]` / `eatenFirst[k]`: the eater's gain from the (k+1)-th draw, uncapped / capped at the room `hp` leaves;
 // `supply`: the berries it can lose in all. Worked out already for this holder, and passed back in: `walk` (its
 // `stealWalk` over berries), `steals` (its `byCount` for `heal`) and `eatenAt` (for `eater`).
-// @only 35-team-plan, tests: berryGone
+// @only tests: berryGone
 export const berryGone = (holder, heal, { berry = null, eater = null, hp = 0, turn = null, walk = null, steals = null, eatenAt = null } = {}) => {
   const held = heldBerries(holder);
   const types = berry == null ? held.map(m => m.berryType) : held.some(m => m.berryType === berry) ? [berry] : [];
@@ -654,7 +664,8 @@ export const berryStealable = (foe, thief = null) => {
   return !!berryTypesOf(foe).length;
 };
 // `mine` is our move's record.
-const stealsBerry = (mine, foe, me) => !!mine?.traits?.attrNames?.has("StealEatBerryAttr") && berryStealable(foe, me);
+// @only 35-team-plan: stealsBerry
+export const stealsBerry = (mine, foe, me) => !!mine?.traits?.attrNames?.has("StealEatBerryAttr") && berryStealable(foe, me);
 // P(k berries gone by the end of turn j), k = 0..9: one draw a landed use, at `land(j)`, until the `supply` runs out.
 // `before`: P(a steal landed before this exchange, from the turn a depth-2 line already paid for). Bug Bite and Pluck
 // are plain single-hit attacks with no delay, so use j is turn j.
@@ -961,7 +972,6 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   }
   // The stolen berry is eaten at once: once a landed use, worth what the next draw from the berries still held gives
   // (#646). A thief that moves first eats it before the turn's hit, so it fills only the room already there (#833).
-  // Turn 1 rides `ourDrain` at the room `eatenFirst` read; later turns go to the curve per branch.
   const eatenBy = (j, at) => lands(j) * counts(j - 1).reduce((sum, p, k) => sum + p * at[Math.min(9, k)], 0);
   const stealing = eats && theft?.eatenAt?.some(v => v > 0);
   const ourDrain = !stealing ? drained
@@ -1014,7 +1024,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   const hitOn = i => (tThey ? landed(i) * Math.min(1, taken - i) * defUp * boosted : 0);
   const hitsTaken = () => Array.from({ length: Math.ceil(taken) }, (_, i) => hitOn(i)).reduce((sum, x) => sum + x, 0);
   // A stolen berry's heal is capped at max HP turn by turn, eaten before the turn's hit when we move first (#646), each
-  // order on its own branch (#833).
+  // order on its own branch, and never on a thief that is down by then (#833, game-code.md §3).
   const stepped = () => {
     const drainTurns = Math.min(taken, turnsWe), cost = selfSpent / taken;
     let hs = new Map([[hp, 1]]);
@@ -1026,8 +1036,9 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
       for (const [h0, p] of hs) {
         if (h0 <= 0) { add(0, p); continue; }
         const h = h0 - cost * share;
-        add(Math.max(0, Math.min(maxHp, h + back) - hitOn(i)), p * first);
-        add(Math.max(0, Math.min(maxHp, h - hitOn(i) + back)), p * (1 - first));
+        add(h > 0 ? Math.max(0, Math.min(maxHp, h + back) - hitOn(i)) : 0, p * first);
+        const left = h - hitOn(i);
+        add(left > 0 ? Math.min(maxHp, left + back) : 0, p * (1 - first));
       }
       hs = next;
     }

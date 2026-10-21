@@ -295,7 +295,7 @@ export const shares = (list, fallback) => {
 // (`facts.enigma`) after a landed use, at this share of it — a point's own `se` where it carries one; null eats none.
 // The berry heals between `beforeBerry`, the part of `turnEnd` the game runs ahead of it, and the rest, and each branch,
 // `after1`'s and `start`'s included, carries the berries it has `left`. `preHeal(i)`: `{ p, heal }`, a heal the target
-// takes before use i at share `p` of it, capped at max HP from there, and at the turn end otherwise; null for none.
+// takes before use i at share `p` of it, and after it, ahead of the turn end, otherwise; null for none.
 export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 1, act = () => 1, turnEnd = 0, beforeBerry = 0, firstKo = null, cat = null, useAt = null, chain = null, se = null, preHeal = null } = {}) => {
   const f = rec.facts;
   const berry = se != null && f.enigma?.heal > 0 ? f.enigma : null;
@@ -400,14 +400,14 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
     };
     const groups = new Map();
     for (let b of hit) {
-      const late = b.late ? pre.heal : 0;
+      if (b.late) b.hp = Math.min(f.maxHp, b.hp + pre.heal);
       if (b.fed) {
-        b = endStep(b, h0 + late);
+        b = endStep(b, h0);
         if (!b) continue;
         b.hp = Math.min(f.maxHp, b.hp + berry.heal);
         b.left--;
         b = endStep(b, h - h0);
-      } else b = endStep(b, h + late);
+      } else b = endStep(b, h);
       if (!b) continue;
       const key = `${b.bar}|${b.revived}|${b.tok}|${b.left}${chain ? `|${b.s.key}` : ""}`;
       if (!groups.has(key)) groups.set(key, { b, pts: [] });
