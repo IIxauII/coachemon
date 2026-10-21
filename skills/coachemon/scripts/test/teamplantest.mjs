@@ -604,6 +604,24 @@ assert.equal(plan.approxDoubles, false);
   const held = [item("BerryModifier", { berryType: 2 }), item("TurnHealModifier")];
   const prof = globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpHealProfile(turn, Object.assign(zard, { getHeldItems: () => held })));
   assert.equal(prof.enigma, 24, `a quarter of 96, though Leftovers would top 72 + 24 past max: ${JSON.stringify(prof)}`);
+  assert.equal(prof.keep, undefined, "no Berry Pouch, no keep");
+  s.modifiers = [item("PreserveBerryModifier")];
+  assert.equal(globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpHealProfile(turn, zard)).keep, 0.3, "our Berry Pouch, one stack (#822)");
+  delete s.modifiers;
+}
+// A Berry Pouch keeps our Enigma Berry on part of each feed, so the plan prices more of it (#822). We take 120 a turn
+// super-effective into 400 and fell the foe on turn 3, before its third hit. No Pouch: 280 + 100 → 380 → 260.
+{
+  const { tpFight } = globalThis.__tp;
+  const T = keep => ({ ours: [[{ dmg: 100, e: 1 }]], theirs: [[{ dmg: 120, e: 2 }]], first: [[0]], ourMax: [400], foeMax: [300],
+    ourHeal: [{ base: 0, sitrus: 0, enigma: 100, enigmas: 1, ...(keep == null ? {} : { keep }) }], foeHeal: [null] });
+  const fight = keep => tpFight(T(keep), { oh: [400], ob: [0], fh: [300], fs: [0], fb: [0] }, 0, 0, "free");
+  const [old, none, one, three] = [null, 0, 0.3, 0.9].map(fight);
+  console.log(`== a Berry Pouch keeps our Enigma Berry (#822)\nwe win on ${none.ends.win.mh} HP with no Pouch, ` +
+    `${one.ends.win.mh.toFixed(1)} with one stack, ${three.ends.win.mh.toFixed(1)} with three`);
+  assert.equal(none.ends.win.mh, 260, "no Pouch: one berry on turn 1");
+  assert.deepEqual(none, old, "a profile that carries no keep reads as no Pouch");
+  assert.ok(one.ends.win.mh > none.ends.win.mh && three.ends.win.mh > one.ends.win.mh, "each stack keeps more of the berry for turn 2");
 }
 // A bench mon the trainer Teras (#648, Gordie W180): Coalossal's team index is in `instantTeras`, so the plan prices our
 // hits at Tera Rock, Water ×2 — it Teras at its first FIGHT command, before anything hits it once sent in after a KO —

@@ -196,11 +196,15 @@ const useDist = (perHit, dist, acc, checkAll) => {
   for (const x of live) add(done, x.d, x.p, x.n);
   return squeezeDist([...done.values()], USE_POINTS);
 };
+const sideModifiers = (env, p, name) => ((p?.isPlayer?.() === false ? env?.enemyModifiers : env?.modifiers) ?? [])
+  .filter(m => m.constructor?.name === name);
 // Drain and Healing Charm (game-code.md §18): the charm scales a negative heal too, deepening what Liquid Ooze takes.
 // @only 30-planner: healingCharm
-export const healingCharm = (env, p) => ((p?.isPlayer?.() === false ? env?.enemyModifiers : env?.modifiers) ?? [])
-  .filter(m => m.constructor?.name === "HealingBoosterModifier")
+export const healingCharm = (env, p) => sideModifiers(env, p, "HealingBoosterModifier")
   .reduce((t, m) => t * (1 + ((m.multiplier ?? 1.1) - 1) * (m.getStackCount?.() ?? 1)), 1);
+// Berry Pouch (game-code.md §3).
+const berryPouch = (env, p) => Math.min(10, 3 * sideModifiers(env, p, "PreserveBerryModifier")
+  .reduce((t, m) => t + (m.getStackCount?.() ?? 1), 0)) / 10;
 const drainRatio = (env, atk, def, t) => {
   if (!t.drain) return 0;
   const ratio = t.drain.ratio;
@@ -294,18 +298,21 @@ export const shares = (list, fallback) => {
 // `[{ s, p }]` of what went down on use n, empty without a `chain`. `se`: the target eats an Enigma Berry
 // (`facts.enigma`) after a landed use, at this share of it — a point's own `se` where it carries one; null eats none.
 // The berry heals between `beforeBerry`, the part of `turnEnd` the game runs ahead of it, and the rest, and each branch,
-// `after1`'s and `start`'s included, carries the berries it has `left`. `preHeal(i)`: `{ p, heal }`, a heal the target
-// takes before use i at share `p` of it, and after it, ahead of the turn end, otherwise; null for none.
+// `after1`'s and `start`'s included, carries the berries it has `left`; a Berry Pouch's `keep` share of a feed heals
+// and leaves `left` as it was. `preHeal(i)`: `{ p, heal }`, a heal the target takes before use i at share `p` of it, and
+// after it, ahead of the turn end, otherwise; null for none.
 export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 1, act = () => 1, turnEnd = 0, beforeBerry = 0, firstKo = null, cat = null, useAt = null, chain = null, se = null, preHeal = null } = {}) => {
   const f = rec.facts;
   const berry = se != null && f.enigma?.heal > 0 ? f.enigma : null;
   const held = f.enigma?.left ?? 0;
   const seAt = i => (typeof se === "function" ? se(i) : se);
-  // The share `fed` of `b` eats a berry at this turn's end.
+  const keep = berry?.keep ?? 0;
+  // The share `fed` of `b` eats a berry at this turn's end, and a Berry Pouch's `keep` of that heals with it still held.
   const pushFed = (out, b, s, fed) => {
     if (fed > 0 && b.left > 0) {
       if (fed < 1) out.push(inChain(branch(b.hp, b.bar, b.revived, b.tok, b.p * (1 - fed), false, b.left), s));
-      b.p *= fed;
+      if (keep > 0) out.push(inChain(Object.assign(branch(b.hp, b.bar, b.revived, b.tok, b.p * fed * keep, false, b.left), { fed: true, kept: true }), s));
+      b.p *= fed * (1 - keep);
       b.fed = true;
     }
     out.push(inChain(b, s));
@@ -402,10 +409,12 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
     for (let b of hit) {
       if (b.late) b.hp = Math.min(f.maxHp, b.hp + pre.heal);
       if (b.fed) {
+        // `endStep` may hand back a fresh branch, which carries no `kept`.
+        const kept = b.kept;
         b = endStep(b, h0);
         if (!b) continue;
         b.hp = Math.min(f.maxHp, b.hp + berry.heal);
-        b.left--;
+        if (!kept) b.left--;
         b = endStep(b, h - h0);
       } else b = endStep(b, h);
       if (!b) continue;
@@ -446,13 +455,14 @@ const opponentsOf = (env, p) => {
 const tagsOf = p => { try { return p.summonData?.tags ?? []; } catch { return []; } };
 const berryQuarter = p => Math.max(1, Math.floor(p.getMaxHp() / 4)) * (ability(p, "DoubleBerryEffectAbAttr") ? 2 : 1);
 const unnerved = (env, p) => opponentsOf(env, p).some(q => ability(q, "PreventBerryUseAbAttr"));
-// One Enigma Berry's heal before the max-HP cap, and how many `p` holds; null under Heal Block. An opposing Unnerve is
-// the reader's to ask, since it turns on who faces `p` (game-code.md §3).
+// One Enigma Berry's heal before the max-HP cap, how many `p` holds, and the chance `keep` that a Berry Pouch leaves one
+// it eats held; null under Heal Block. An opposing Unnerve is the reader's to ask, since it turns on who faces `p`
+// (game-code.md §3).
 const enigmaOf = (env, p) => {
   const left = items(p).filter(m => m.constructor.name === "BerryModifier" && m.berryType === BerryType.ENIGMA)
     .reduce((t, m) => t + (m.getStackCount?.() ?? m.stackCount ?? 1), 0);
   if (!left || p.getTag?.("HEAL_BLOCK")) return null;
-  return { heal: Math.floor(berryQuarter(p) * healingCharm(env, p)), left };
+  return { heal: Math.floor(berryQuarter(p) * healingCharm(env, p)), left, keep: berryPouch(env, p) };
 };
 // In the game's own phase order (game-code.md §21).
 const endOfTurnSteps = (env, p, { hp = p.hp, dealt = 0 } = {}) => {

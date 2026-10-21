@@ -168,6 +168,8 @@ export const HUD_DEPS = {
     `src/data/weather.ts#Weather.isTypeDamageImmune`,
     `src/data/abilities/ab-attrs.ts#BlockWeatherDamageAttr.canApply`,
     `src/phases/berry-phase.ts#BerryPhase.eatBerries`,
+    `src/modifier/modifier.ts#BerryModifier.apply`,
+    `src/modifier/modifier.ts#PreserveBerryModifier.apply`,
     `src/data/berry.ts#getBerryPredicate`,
     `src/data/berry.ts#getBerryEffectFunc`,
     `src/phases/post-turn-status-effect-phase.ts#PostTurnStatusEffectPhase.start`,

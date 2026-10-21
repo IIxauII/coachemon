@@ -1,3 +1,7 @@
+== a Berry Pouch keeps the Enigma (#822)
+after hit 1: 180 HP, 1 left, 0.30 · 180 HP, 0 left, 0.70
+down by hit n, no Pouch: 0.00 0.00 0.00 1.00 1.00 1.00 1.00 1.00 1.00
+down by hit n, one stack: 0.00 0.00 0.00 0.70 0.97 0.99 1.00 1.00 1.00
 traits: recoil ≈−9% | recharge turn
 false swipe: 93–99 of 100 HP, pKo 0
 damage: ok

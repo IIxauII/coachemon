@@ -436,13 +436,45 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   const enigma = (n = 1) => held("BerryModifier", { berryType: 2 }, n);
   const factsOf = (o, s = scene) => recOf(mon("enigma", { hp: 100, maxHp: 200, ...o }), s).facts;
   const enigmaOf = (o, s) => factsOf(o, s).enigma;
-  assert.deepEqual(enigmaOf({ items: [enigma(2)] }), { heal: 50, left: 2 });
-  assert.deepEqual(enigmaOf({ items: [enigma()], abilities: ["DoubleBerryEffectAbAttr"] }), { heal: 100, left: 1 }, "Ripen");
+  assert.deepEqual(enigmaOf({ items: [enigma(2)] }), { heal: 50, left: 2, keep: 0 });
+  assert.deepEqual(enigmaOf({ items: [enigma()], abilities: ["DoubleBerryEffectAbAttr"] }), { heal: 100, left: 1, keep: 0 }, "Ripen");
   assert.equal(enigmaOf({ items: [enigma()], tags: ["HEAL_BLOCK"] }), null, "Heal Block");
   const unnerve = mon("unnerve", { player: false, abilities: ["PreventBerryUseAbAttr"] });
-  assert.deepEqual(enigmaOf({ items: [enigma()] }, { ...scene, getField: () => [unnerve] }), { heal: 50, left: 1 }, "an Unnerve on the field now");
+  assert.deepEqual(enigmaOf({ items: [enigma()] }, { ...scene, getField: () => [unnerve] }), { heal: 50, left: 1, keep: 0 }, "an Unnerve on the field now");
   assert.equal(enigmaOf({ items: [new BerryModifier(0)] }), null, "a Sitrus is no Enigma");
   assert.deepEqual([factsOf({ abilities: ["PreventBerryUseAbAttr"] }).unnerve, factsOf({}).unnerve], [true, false]);
+}
+
+// ---- A Berry Pouch on the holder's own side keeps its Enigma Berry 30 % a stack (#822, game-code.md §3)
+{
+  const enigma = held("BerryModifier", { berryType: 2 });
+  const pouch = n => [held("PreserveBerryModifier", {}, n)];
+  const keepOf = (player, side) => recOf(mon("enigma", { hp: 100, maxHp: 200, items: [enigma], player }), { ...scene, ...side }).facts.enigma.keep;
+  assert.equal(keepOf(true, { modifiers: pouch(1) }), 0.3, "one stack");
+  assert.equal(keepOf(true, { modifiers: pouch(3) }), 0.9, "the max stack");
+  assert.equal(keepOf(true, {}), 0, "no Pouch");
+  assert.equal(keepOf(true, { enemyModifiers: pouch(3) }), 0, "the other side's Pouch keeps nothing of ours");
+  assert.equal(keepOf(false, { modifiers: pouch(3) }), 0, "nor ours a foe's");
+  assert.equal(keepOf(false, { enemyModifiers: pouch(1) }), 0.3, "a foe's own side");
+}
+
+// ---- The KO curve heals a kept Enigma Berry's share without spending it (#822)
+{
+  const enigma = held("BerryModifier", { berryType: 2 });
+  const pouch = n => [held("PreserveBerryModifier", {}, n)];
+  // 200 HP taking 70 a super-effective hit, the berry 50. Without the Pouch 200 → 180 → 110 → 40 → down on hit 4.
+  const curve = side => D.koCurve(recOf(mon("enigma", { hp: 200, items: [enigma] }), { ...scene, ...side }), [{ d: 70, p: 1 }], { se: 1 });
+  const kept = curve({ modifiers: pouch(1) });
+  console.log(`== a Berry Pouch keeps the Enigma (#822)\nafter hit 1: ${kept.after1.map(x => `${x.hp} HP, ${x.left} left, ${x.p.toFixed(2)}`).join(" · ")}`);
+  assert.deepEqual(kept.after1.map(x => [x.hp, x.left]).sort((a, b) => a[1] - b[1]), [[180, 0], [180, 1]], "both shares healed");
+  near(kept.after1.find(x => x.left === 1).p, 0.3, "the kept share");
+  near(kept.after1.find(x => x.left === 0).p, 0.7, "the eaten share");
+  const bare = curve({}).by, pouched = kept.by;
+  console.log(`down by hit n, no Pouch: ${bare.map(x => x.toFixed(2)).join(" ")}\n` +
+    `down by hit n, one stack: ${pouched.map(x => x.toFixed(2)).join(" ")}`);
+  assert.deepEqual(bare.slice(0, 4), [0, 0, 0, 1], "no Pouch: down on hit 4");
+  assert.ok(pouched.every((x, i) => x <= bare[i] + 1e-12), "the Pouch never brings the KO forward");
+  assert.ok(pouched.some((x, i) => x < bare[i] - 1e-9), "and pushes it back somewhere");
 }
 
 // ---- The turn end's part ahead of the berries: Shell Bell and the weather (game-code.md §21)
