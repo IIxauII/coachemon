@@ -171,7 +171,6 @@ const counts = t => t.hits.dist.map(x => `${x.n}@${x.p}`).join(" ");
   const spikes = move({ name: "Spikes", target: MoveTarget.ENEMY_SIDE, attrs: [["AddArenaTrapTagAttr", { tagType: "SPIKES" }]] });
   assert.deepEqual(moveTraits(spikes).hazard, { tag: "SPIKES" });
   assert.equal(moveTraits(move({ name: "Protect", target: MoveTarget.USER, attrs: ["ProtectAttr"] })).protect, true);
-  // Endure counts toward the streak, but only survives the hit it meets.
   const endure = moveTraits(move({ name: "Endure", target: MoveTarget.USER, attrs: [["ProtectAttr", { tagType: "ENDURING" }]] }));
   assert.deepEqual([endure.protect, endure.blocks], [true, false], "Endure is in Protect's streak and blocks nothing");
   assert.equal(moveTraits(move({ name: "Spiky Shield", target: MoveTarget.USER, attrs: [["ProtectAttr", { tagType: "SPIKY_SHIELD" }]] })).blocks, true);

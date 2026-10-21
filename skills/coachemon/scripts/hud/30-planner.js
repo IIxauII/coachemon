@@ -1967,14 +1967,14 @@ export const statusPlay = (turn, me, f, info) => {
   if (!mv || info.blocked) return null;
   const t = moveTraits(mv, me, { target: f });
   if (t.protect) {
-    // A double prices Protect through `supportFor` only, until its own status-play pricing lands (#850 §6).
+    // A double would hand it to #262's field hypothesis, which credits the blocked hit to the slot's own attack (#850).
     if (!t.blocks || turn.facts.double || protectedLast(me)) return null;
     const th = threatFrom(turn, f, me, info.pm);
-    const hit = th?.move?.name, skip0 = 1 - (th?.unblocked ?? 0);
-    if (!hit || skip0 < 0.05) return null;
+    const hit = th?.move?.name;
+    if (!hit || th.unblocked > 0) return null;
     const lock = lockOf(f);
-    const last = lock?.name === hit && lock.left === 1;
-    return { kind: "protect", self: true, patches: null, skip0, foeAct: null, note: `blocks ${hit}${last ? "'s last use" : ""}` };
+    const lastUse = lock?.name === hit && lock.left === 1;
+    return { kind: "protect", self: true, patches: null, skip0: 1, foeAct: null, note: `blocks ${hit}${lastUse ? "'s last use" : ""}` };
   }
   if (t.inflicts.some(x => x.self)) return null;
   const up = turn.mon(me).setup(mv);
