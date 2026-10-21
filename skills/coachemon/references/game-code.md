@@ -2098,7 +2098,9 @@ the prompt's closures until `forgetMoveProcess` opens the summary screen in `LEA
 (`src/field/pokemon.ts:1882`); `setMove` writes the new move into both (`:2016-2018`). The copy outlives the wave on
 our side, since `EncounterPhase` resets only the enemy's summon data (`src/phases/encounter-phase.ts:142-146`); a
 switch, a faint or a `ReturnPhase` clears it (`src/phases/switch-summon-phase.ts:134`, `src/phases/faint-phase.ts:60`,
-`src/phases/return-phase.ts:23`). The phase stays current after
+`src/phases/return-phase.ts:23`). The summary screen lists the mon's own `moveset`, not `getMoveset()`
+(`src/ui/handlers/summary-ui-handler.ts:1319-1321`), so a transformed mon is asked on the copied moveset and picks the
+move to forget from its own. The phase stays current after
 the move is taken: `learnMove` calls `setMove` before its "learned" message and ends only once that message is
 dismissed (`src/phases/learn-move-phase.ts:211-229`). A decline likewise ends only after its "did not learn" message
 (`:156-157`, `:166-167`), and nothing the overlay can read marks that message as a decline (#808). The phase writes
@@ -2860,7 +2862,10 @@ Read from the pinned source.
 **The command menu.** `Command` is FIGHT 0, BALL 1, POKEMON 2, RUN 3, TERA 4 (`src/enums/command.ts:1`), laid out 2×2
 (`src/ui/handlers/command-ui-handler.ts:52-61`). UP/DOWN move ±2 and LEFT/RIGHT ±1, never wrapping (`:157-182`). TERA
 sits off the grid: LEFT from FIGHT or POKEMON reaches it when `canTera()` (`:170-172`), RIGHT returns to FIGHT
-(`:178-180`), and `show` moves a cursor left on POKEMON back to FIGHT (`:98-99`).
+(`:178-180`), and `show` moves a cursor left on POKEMON back to FIGHT (`:98-99`). The button is a sprite with no text
+(`:40-50`) and `canTera()` (`:193`) decides whether it shows. ACTION on it opens FIGHT with `Command.TERA` as the
+handler's `fromCommand` (`:143-149`, `fight-ui-handler.ts:125`), which draws the `cursor_tera` cursor (`:309-310`) and
+is the command a move commits (`:155-159`), so a FIGHT opened that way Terastallizes with its move.
 
 **The target cursor.** `TargetSelectUiHandler.processInput` (`src/ui/handlers/target-select-ui-handler.ts:89`) moves a
 `BattlerIndex` — PLAYER 0, PLAYER_2 1, ENEMY 2, ENEMY_2 3 (`src/enums/battler-index.ts:5`) — and only ever lands on a

@@ -1,9 +1,8 @@
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { onGame } from "./game-proto.mjs";
+import { cat, TY } from "./fake-mon.mjs";
 
-const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
-const cat = { P: 0, S: 1, X: 2 };
 const mon = (name, lv, types, ability, [hp, atk, def, spa, spd, spe], moves, field, curHp, sp = {}, extra = {}) => onGame({
   id: name, getMoveQueue: () => [], isTrapped: () => false, trainerSlot: 0,
   species: { speciesId: sp.id ?? 0, catchRate: sp.catchRate ?? 45, baseTotal: sp.bst ?? 400, ability2: 1, abilityHidden: 2, legendary: false, getEvolutionLevels: () => sp.evos ?? [],

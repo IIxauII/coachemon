@@ -148,7 +148,7 @@ const startedOn = async (clone: Clone): Promise<WorkerPool> => {
   await clone({ name: "worker", source: "", input: "" });
   return {
     size: 1,
-    root: { sig: "root", hp: { ours: [1], foes: [1] }, legal: [], forkPoint: "root" },
+    root: { sig: "root", hp: { ours: [1], foes: [1] }, stages: { ours: [[]], foes: [[]] }, legal: [], forkPoint: "root" },
     expand: async () => [],
     rootAt: async () => assert.fail("not rooted here"),
     stats: () => POOL,

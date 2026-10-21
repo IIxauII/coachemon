@@ -44,13 +44,23 @@ Moves
 · Bug Pin Missile 3.1 hits · SE on Psychic/Dark power 93
 Team
 team: +SE Normal/Ice
+== Mew (transformed) ← Aura Sphere
+🎓 Mew learns Mew Atk 100 / SpA 100 Learn → forget Pound
+✓ Fighting Aura Sphere SE on Normal/Rock/Steel… · set move (Fast Bulky Setup) power 125 +83 power
+Moves
+✗ Normal Pound neutral on Psychic/Dark power 42
+· Psychic Psychic SE on Fighting/Poison · set move (Fast Bulky Setup) power 211
+· Normal Transform status
+Team
+team: +SE Normal/Rock/Steel…
 == Cloyster (Skill Link) ← Triple Axel
-🎓 Cloyster learns Cloyster Atk 140 / SpA 90 Learns it — free slot
-✓ Ice Triple Axel 2.7 hits · 2nd Ice move power 122
+🎓 Cloyster learns Cloyster Atk 140 / SpA 90 Learn → forget Constrict
+✓ Ice Triple Axel 2.7 hits · 2nd Ice move power 122 +114 power
 Moves
 · Ice Icicle Spear 5 hits · SE on Ground/Grass/Dragon · set move (Fast Attacker) power 293
 · Rock Rock Blast 5 hits · SE on Bug/Fire/Ice · set move (Fast Attacker) power 176
-· Normal Tackle power 40
+· Normal Tackle 2nd Normal move power 30
+✗ Normal Constrict 2nd Normal move power 8
 == Gengar ← Shadow Ball
 🎓 Gengar learns Gengar Atk 70 / SpA 140 Learn → forget Super Fang
 ✓ Ghost Shadow Ball SE on Ghost/Psychic · 2nd Ghost move · set move (Wallbreaker) power 140 +81 power
@@ -148,21 +158,23 @@ Moves
 · Ice Ice Beam SE on Flying/Grass · weak SpA power 69
 ✗ Water Surf 2nd Water move · weak SpA power 62
 == Sylveon (Pixilate) ← Hyper Voice
-🎓 Sylveon learns Sylveon Atk 65 / SpA 130 Learns it — free slot
-✓ Fairy Hyper Voice Pixilate · SE on Dragon/Dark · set move (Bulky Setup) power 245
+🎓 Sylveon learns Sylveon Atk 65 / SpA 130 Learn → forget Astonish
+✓ Fairy Hyper Voice Pixilate · SE on Dragon/Dark · set move (Bulky Setup) power 245 +234 power
 Moves
-· Ghost Shadow Ball SE on Ghost/Psychic power 101
+· Ghost Shadow Ball 2nd Ghost move power 60
 · Psychic Psyshock SE on Fighting/Poison power 101
 · Fire Mystical Fire SE on Bug/Steel/Grass… power 98
+✗ Ghost Astonish 2nd Ghost move · weak Atk power 11
 Team
 team: +SE Dragon/Dark
 == Venusaur ← Solar Beam (no sun)
-🎓 Venusaur learns Venusaur Atk 100 / SpA 142 Learns it — free slot
-✓ Grass Solar Beam 2nd Grass move · charge turn (not in sun) power 68
+🎓 Venusaur learns Venusaur Atk 100 / SpA 142 Learn → forget Constrict
+✓ Grass Solar Beam 2nd Grass move · charge turn (not in sun) power 68 +61 power
 Moves
-· Poison Sludge Bomb SE on Grass/Fairy · set move (Bulky Support) power 211
+· Poison Sludge Bomb SE on Grass/Fairy · set move (Bulky Support) power 204
 · Grass Giga Drain SE on Ground/Rock/Water · set move (Bulky Support) power 176
 · Grass Sleep Powder sleep · 75% acc · set move (Bulky Support) power 63
+✗ Normal Constrict neutral on Poison · weak Atk power 7
 == STAB by share [12,19,27,34,41]
 == Ludicolo ← Soak (Skarmory ahead)
 🎓 Ludicolo learns Ludicolo Atk 70 / SpA 90 Skip — not an upgrade over Zen Headbutt
@@ -175,12 +187,13 @@ Moves
 Team
 team: −SE Fighting/Poison
 == Garganacl ← Salt Cure
-🎓 Garganacl learns Garganacl Atk 100 / SpA 45 Learns it — free slot
-✓ Rock Salt Cure SE on Flying/Bug · curse 1/16 a turn · set move (Bulky Support) power 109
+🎓 Garganacl learns Garganacl Atk 100 / SpA 45 Learn → forget Constrict
+✓ Rock Salt Cure SE on Flying/Bug · curse 1/16 a turn · set move (Bulky Support) power 109 +99 power
 Moves
 · Fighting Body Press SE on Normal/Dark · set move (Bulky Support) power 121
 · Ground Earthquake SE on Poison/Fire/Electric · set move (Bulky Attacker) power 146
-· Steel Iron Head SE on Fairy power 98
+· Steel Iron Head SE on Fairy power 94
+✗ Normal Constrict power 10
 Team
 team: +SE Flying/Bug
 ok

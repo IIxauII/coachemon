@@ -3,6 +3,7 @@ import { bundle } from "../hud-bundle.mjs";
 import { hudScript, stamp } from "../../../../extension/src/build/artifact.ts";
 import { EVENT, GROUP_IDS, cardBody, coachErrorBody } from "../../../../extension/src/relay/channel.ts";
 import { UiMode } from "../../../../src/enums/generated.ts";
+import { cat, TY } from "./fake-mon.mjs";
 
 // The strip's two lines at reference width: only the act summary's leading clause must fit (#349).
 const CLAUSE_BUDGET = 115;
@@ -26,8 +27,6 @@ const wireOk = card => {
 };
 
 const BUILD = "0.0.0+cafef00dbeef";
-const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
-const cat = { P: 0, S: 1, X: 2 };
 const mv = ([n, t, p, c, a = 100]) => ({ name: n, type: TY.indexOf(t), power: p, category: cat[c], accuracy: a, moveTarget: 3, isChargingMove: () => false, attrs: [] });
 const pk = (name, types, atk, spa, moves) => ({ name, level: 30, hp: 100, getMaxHp: () => 100, getTypes: () => types.map(t => TY.indexOf(t)), getAbility: () => ({ name: "x" }), getStat: i => ({ 1: atk, 3: spa }[i] ?? 100), getIconAtlasKey: () => "k", getIconId: () => 1, moveset: moves.map(m => ({ getMove: () => mv(m), getName: () => m[0], getMovePp: () => 10, ppUsed: 0 })) });
 

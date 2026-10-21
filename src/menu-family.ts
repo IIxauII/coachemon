@@ -2,13 +2,13 @@
  * One plan per menu family (v1-tool-surface.md §7). Pure: no port, no clock, no settle. Matching a label to an Option
  * and the menu-level refusals stay in `selectOption`.
  */
-import { Button } from "./enums/generated.ts";
+import { Button, Command } from "./enums/generated.ts";
 import { Refusal } from "./envelope.ts";
 import type { CursorTarget, MenuOption, MenuRead } from "./game/port.ts";
 import { normalizeLabel } from "./labels.ts";
 import type { Choice } from "./stuck/detector.ts";
 
-export type StepRule = "list" | "grid2x2" | "down_cycle" | "battler_grid";
+export type StepRule = "list" | "grid2x2" | "command_grid" | "down_cycle" | "battler_grid";
 
 export type Walk = { to: number; rule: StepRule };
 
@@ -34,6 +34,11 @@ export function step(rule: StepRule, cursor: number, to: number): Button {
     case "grid2x2":
       if (Math.floor(cursor / 2) !== Math.floor(to / 2)) return cursor < to ? Button.DOWN : Button.UP;
       return cursor < to ? Button.RIGHT : Button.LEFT;
+    // (#642, game-code.md §25)
+    case "command_grid":
+      if (to === Command.TERA) return Button.LEFT;
+      if (cursor === Command.TERA) return Button.RIGHT;
+      return step("grid2x2", cursor, to);
     case "down_cycle":
       return Button.DOWN;
     case "battler_grid": {
@@ -68,7 +73,7 @@ export function planSelect(menu: MenuRead, target: MenuOption): Plan {
     // label (#56).
     case "command":
       if (i === 1 && menu.extra.catchable === false) throw cannotCatch(menu, target);
-      return plan(walk("grid2x2"));
+      return plan(walk("command_grid"));
     // v1-tool-surface.md §7 FIGHT. MYSTERY_ENCOUNTER has no row, and only its four-option layout is FIGHT's grid
     // (game-code.md §13).
     case "fight":

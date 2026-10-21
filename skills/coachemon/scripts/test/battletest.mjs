@@ -4,8 +4,7 @@ import { bundle } from "../hud-bundle.mjs";
 import { wholeCard } from "./panel.mjs";
 import { MoveFlags, SpeciesId } from "../../../../src/enums/generated.ts";
 import { onGame } from "./game-proto.mjs";
-const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
-const cat = { P: 0, S: 1, X: 2 };
+import { cat, TY } from "./fake-mon.mjs";
 // `moves`: `[name, type, power, category, target = 3, flags = 0, attrs = []]`; an attr is a class name.
 const mon = (name, lv, types, ability, [hp, atk, def, spa, spd, spe], moves, field, curHp, next) => onGame({
   // `id` is what the turn keys its memos on, so every mon needs one that tells it from the others.
@@ -266,6 +265,13 @@ assert.deepEqual(trapsOf("eelevateArrows", "Garchomp", "Eelektross"), { slot: []
   assert.equal(tera.pick.pct, plain.pick.pct, "this turn's Hydro Pump lands at Fire/Rock's ×4");
   assert.ok(tera.pick.ko === 0 || tera.pick.ko > plain.pick.ko, "and the hits after it at Tera Rock's ×2");
   assert.deepEqual([tera.types, tera.tera], [["Rock"], "Rock"], "its row: the Tera every later hit meets");
+}
+
+// The fight plan's first exchange against a switch-in gives us the turn it spends coming in (#846): Gyarados outspeeds
+// Coalossal and KOs it in two Hydro Pumps, the first of them free, so no Rock Slide ever lands.
+{
+  const [first] = cards.plainSwitchIn.teamPlan.steps;
+  assert.deepEqual([first.vs.name, first.foeHp, first.hp], ["Coalossal", 0, 100], `step 1 KOs it untouched: ${first.why}`);
 }
 
 // The same against the real party (#648): Gordie W180 at T5, rebuilt from the solver fixture. `instantTeras` is `[5]`,

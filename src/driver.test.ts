@@ -5,7 +5,7 @@ import path from "node:path";
 import { test, type TestContext } from "node:test";
 import { Driver } from "./driver.ts";
 import { KEPT_ENDED, type JobKinds, type JobWork } from "./jobs.ts";
-import { ArenaTagSide, Button, GameModes, MoveCategory, PokemonType, StatusEffect, UiMode } from "./enums/generated.ts";
+import { ArenaTagSide, Button, Command, GameModes, MoveCategory, PokemonType, StatusEffect, UiMode } from "./enums/generated.ts";
 import { Refusal } from "./envelope.ts";
 import { readAtPin } from "./escape-ladder/at-pin.ts";
 import { PINNED_GAME_VERSION } from "./escape-ladder/lookup.ts";
@@ -713,6 +713,68 @@ test("a cursor walk whose Screen changes under it stops as screen_changed, count
   assert.equal(r.screen, "PARTY/SWITCH");
   assert.equal(r.presses, 1);
   assert.deepEqual(presses, [Button.DOWN], "nothing committed on the new screen");
+});
+
+/** COMMAND moving its cursor as `CommandUiHandler.processInput` does (#642, game-code.md §25). */
+function teraCommandTab(start: number, canTera = true) {
+  let cursor = start;
+  let fromCommand: number | null = null;
+  const presses: number[] = [];
+  const onFight = () => fromCommand !== null;
+  const read = (): ScreenRead => ({
+    ready: true, settled: true, reason: "menu-open", mode: onFight() ? UiMode.FIGHT : UiMode.COMMAND, screen: onFight() ? "FIGHT" : "COMMAND",
+    phaseName: "CommandPhase", wave: 180, turn: 16, runLive: true, tutorialActive: false, handler: null, cursor, modeChain: [], messageText: null,
+    onActionInput: false, awaitingActionInput: false, fine: `tera|${fromCommand}|${cursor}`, domMode: null, gameVersion: PINNED_GAME_VERSION, ...money,
+  });
+  const menu = (): MenuRead => {
+    if (onFight()) {
+      const options = ["Hydro Pump", "Waterfall", "Dragon Dance", "Bounce"].map((label, i) => ({ i, label }));
+      return { readable: true, mode: UiMode.FIGHT, screen: "FIGHT", family: "fight", cursor: 0, text: null, messagePending: false, extra: { fieldIndex: 0, tera: fromCommand === Command.TERA }, options };
+    }
+    const options: MenuRead["options"] = ["Fight", "Ball", "Pokémon", "Run"].map((label, i) => ({ i, label }));
+    if (canTera) options.push({ i: Command.TERA, label: "Tera", synthetic: true });
+    return { readable: true, mode: UiMode.COMMAND, screen: "COMMAND", family: "command", cursor, text: null, messagePending: false, extra: { fieldIndex: 0, catchable: false }, options };
+  };
+  const onPress = (b: Button) => {
+    presses.push(b);
+    if (b === Button.UP && (cursor === 2 || cursor === 3)) cursor -= 2;
+    else if (b === Button.DOWN && (cursor === 0 || cursor === 1)) cursor += 2;
+    else if (b === Button.LEFT && (cursor === 1 || cursor === 3)) cursor -= 1;
+    else if (b === Button.LEFT && (cursor === 0 || cursor === 2) && canTera) cursor = Command.TERA;
+    else if (b === Button.RIGHT && (cursor === 0 || cursor === 2)) cursor += 1;
+    else if (b === Button.RIGHT && cursor === Command.TERA) cursor = 0;
+    else if (b === Button.ACTION && (cursor === 0 || cursor === Command.TERA)) fromCommand = cursor;
+  };
+  return { ...drive({ read, menu, onPress }), presses };
+}
+
+for (const start of [0, 1, 2, 3]) {
+  test(`select_option Tera from COMMAND cursor ${start} walks to the Tera button and opens FIGHT in Tera mode (#642)`, async () => {
+    const tab = teraCommandTab(start);
+    const r = await outcome(tab.driver.selectOption("Tera", undefined, undefined, {}));
+    assert.equal(r.error, undefined, JSON.stringify(r));
+    assert.equal(tab.presses.at(-1), Button.ACTION, "committed once, on the Tera button");
+    const fight = await outcome(tab.driver.readMenu({}));
+    assert.equal(fight.screen, "FIGHT");
+    assert.equal((fight.extra as { tera: boolean }).tera, true);
+  });
+}
+
+test("select_option Fight from the Tera button walks back RIGHT and opens FIGHT out of Tera mode (#642)", async () => {
+  const tab = teraCommandTab(Command.TERA);
+  const r = await outcome(tab.driver.selectOption("Fight", undefined, undefined, {}));
+  assert.equal(r.error, undefined, JSON.stringify(r));
+  assert.deepEqual(tab.presses, [Button.RIGHT, Button.ACTION]);
+  const fight = await outcome(tab.driver.readMenu({}));
+  assert.equal((fight.extra as { tera: boolean }).tera, false);
+});
+
+test("select_option Tera while the handler can't Terastallize refuses no_match, pressing nothing (#642)", async () => {
+  const tab = teraCommandTab(0, false);
+  const r = await outcome(tab.driver.selectOption("Tera", undefined, undefined, {}));
+  assert.equal(r.error, "no_match", JSON.stringify(r));
+  assert.deepEqual(r.options, ["fight", "ball", "pokémon", "run"]);
+  assert.deepEqual(tab.presses, []);
 });
 
 test("a menu read that failed is no Screen change: acting calls refuse as before, read-only calls keep the settled Screen (#133)", async () => {

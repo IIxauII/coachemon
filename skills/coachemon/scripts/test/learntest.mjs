@@ -1,8 +1,7 @@
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { wholeCard } from "./panel.mjs";
-const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
-const cat = { P: 0, S: 1, X: 2 };
+import { cat, TY } from "./fake-mon.mjs";
 // An attr: "Name" or ["Name", { fields }]. The HUD matches through the prototype chain, so a class the game
 // subclasses carries its parent here, or a WeatherInstantChargeAttr wouldn't read as an instant charge.
 const PARENTS = {
@@ -25,14 +24,20 @@ const mv = ([n, t, p, c, a = 100, attrs = [], charge = false, target = 3, extra 
 });
 // 07-move-traits reads these abilities by attribute, not by name.
 const AB_ATTRS = { "Skill Link": ["MaxMultiHitAbAttr"], "Magic Guard": ["BlockNonDirectDamageAbAttr"], "Rock Head": ["BlockRecoilDamageAttr"], "Parental Bond": ["AddSecondStrikeAbAttr"] };
+const pokemonMove = m => ({ getMove: () => mv(m), getName: () => m[0], getMovePp: () => 10, ppUsed: 0 });
+// `transformed`: the moveset Transform copied, which `getMoveset` answers with (game-code.md §17).
 const mon = (name, types, atk, spa, moves, extra = {}) => ({
   name, level: 64, hp: 100, getMaxHp: () => 100, getTypes: () => types.map(t => TY.indexOf(t)), getAbility: () => ({ name: extra.ability ?? "x" }),
   hasAbilityWithAttr: a => (AB_ATTRS[extra.ability] ?? []).includes(a), getAbilityAttrs: a => extra.abAttrs?.[a] ?? [], getHeldItems: () => [],
   getStat: i => ({ 1: atk, 3: spa }[i] ?? 100), getIconAtlasKey: () => "k", getIconId: () => 1, friendship: 70,
-  moveset: moves.map(m => ({ getMove: () => mv(m), getName: () => m[0], getMovePp: () => 10, ppUsed: 0 })),
+  moveset: moves.map(pokemonMove),
+  ...(extra.transformed && { getMoveset: () => extra.transformed.map(pokemonMove) }),
 });
 
+const FILLER = ["Constrict","Normal",10,"P"];
+
 const run = (pk, newMove, { double = false, party = [pk], roster = null } = {}) => {
+  assert.equal((pk.getMoveset?.() ?? pk.moveset).length, 4, `${pk.name}: the learn screen opens only on a full moveset (game-code.md §17)`);
   let el; const ds = {};
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const scene = { currentBattle: { double }, ui: { mode: 9, getHandler: () => ({ summaryUiMode: 1, pokemon: pk, newMove: mv(newMove) }) }, getEnemyParty: () => [], getPlayerParty: () => party };
@@ -85,19 +90,30 @@ for (const [label, pk, newMove, double] of cases) {
   assert.ok(byName(r.model, "Pin Missile").value > byName(r.model, "Tackle").value, "Pin Missile outscores Tackle");
 }
 
+// ---- Transformed into a foe with four moves, a mon that knows three is asked which to forget, from its own three.
+{
+  const foe = [["Body Slam","Normal",85,"P"],["Earthquake","Ground",100,"P",100,[],false,4],["Crunch","Dark",80,"P"],["Ice Punch","Ice",75,"P"]];
+  const mew = mon("Mew", ["Psychic"], 100, 100, [["Pound","Normal",40,"P"],["Psychic","Psychic",90,"S"],["Transform","Normal",-1,"X",-1]], { transformed: foe });
+  const r = run(mew, ["Aura Sphere","Fighting",80,"S"]);
+  show("Mew (transformed) ← Aura Sphere", r);
+  assert.notEqual(r.model.decision, "free", "the game asks which move to forget");
+  assert.deepEqual(r.model.moves.map(m => m.name), ["Pound", "Psychic", "Transform"], "the card judges the moves the summary screen lists");
+  assert.equal(r.model.verdict, "Learn → forget Pound");
+}
+
 // ---- Technician + Skill Link, and Triple Axel's growing hits with per-hit accuracy.
 {
-  const pk = mon("Cloyster", ["Water","Ice"], 140, 90, [["Icicle Spear","Ice",25,"P",100,[["MultiHitAttr",{ intrinsicMultiHitType: 1 }]]],["Rock Blast","Rock",25,"P",90,[["MultiHitAttr",{ intrinsicMultiHitType: 1 }]]],["Tackle","Normal",40,"P"]], { ability: "Skill Link" });
+  const pk = mon("Cloyster", ["Water","Ice"], 140, 90, [["Icicle Spear","Ice",25,"P",100,[["MultiHitAttr",{ intrinsicMultiHitType: 1 }]]],["Rock Blast","Rock",25,"P",90,[["MultiHitAttr",{ intrinsicMultiHitType: 1 }]]],["Tackle","Normal",40,"P"],FILLER], { ability: "Skill Link" });
   const r = run(pk, ["Triple Axel","Ice",20,"P",90,[["MultiHitAttr",{ intrinsicMultiHitType: 2 }],"MultiHitPowerIncrementAttr"],false,3,{ flags: 65536 }]);
   show("Cloyster (Skill Link) ← Triple Axel", r);
   assert.equal(byName(r.model, "Icicle Spear").hits, 5, "Skill Link: 5 hits");
   // Skill Link skips the per-hit checks: all three land once the first does (20+40+60 at 90%).
   assert.equal(r.model.move.power, 20);
   assert.equal(r.model.move.hits, 2.7);
-  const tech = mon("Scizor", ["Bug","Steel"], 130, 55, [["Bullet Punch","Steel",40,"P"]], { ability: "Technician" });
+  const tech = mon("Scizor", ["Bug","Steel"], 130, 55, [["Bullet Punch","Steel",40,"P"],["X-Scissor","Bug",80,"P"],["Iron Head","Steel",80,"P"],FILLER], { ability: "Technician" });
   const t = run(tech, ["Double Hit","Normal",35,"P",90,[["MultiHitAttr",{ intrinsicMultiHitType: 0 }]]]);
   assert.ok(t.model.move.notes.includes("Technician"), "Technician boosts 35-power hits");
-  const axel = run(mon("Weavile", ["Dark","Ice"], 120, 45, [["Tackle","Normal",40,"P"]]), ["Triple Axel","Ice",20,"P",90,[["MultiHitAttr",{ intrinsicMultiHitType: 2 }],"MultiHitPowerIncrementAttr"],false,3,{ flags: 65536 }]);
+  const axel = run(mon("Weavile", ["Dark","Ice"], 120, 45, [["Tackle","Normal",40,"P"],["Night Slash","Dark",70,"P"],["Poison Jab","Poison",80,"P"],FILLER]), ["Triple Axel","Ice",20,"P",90,[["MultiHitAttr",{ intrinsicMultiHitType: 2 }],"MultiHitPowerIncrementAttr"],false,3,{ flags: 65536 }]);
   // .9 + .81 + .729: each hit lands only if every one before it did.
   assert.equal(axel.model.move.hits, 2.4, "hits stop at the first miss");
 }
@@ -231,17 +247,17 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.ok(Math.abs(hhQuarter.value - byName(dbl.model, "Helping Hand").value / 4) <= 1, `a quarter of its doubles worth (${hhQuarter.value})`);
   assert.ok(hhQuarter.notes.includes("25% doubles ahead"));
 
-  const clean = run(mon("Jigglypuff", ["Normal","Fairy"], 70, 65, [["Body Slam","Normal",85,"P"],["Dazzling Gleam","Fairy",80,"S"],["Play Rough","Fairy",90,"P",90]]), SING);
+  const clean = run(mon("Jigglypuff", ["Normal","Fairy"], 70, 65, [["Body Slam","Normal",85,"P"],["Dazzling Gleam","Fairy",80,"S"],["Play Rough","Fairy",90,"P",90],FILLER]), SING);
   const sing = clean.model.move;
   assert.ok(sing.value >= 30 && sing.value <= 45, `Sing ≈ sleep × 55% accuracy (${sing.value})`);
   assert.ok(sing.notes.includes("55% acc") && sing.notes.includes("sleep"));
   const crowded = byName(hh.model, "Sing");
   assert.ok(crowded.notes.includes("3 status moves") && crowded.value < sing.value, "a moveset that is mostly status has no room for another");
-  const taunted = run(mon("Sableye", ["Dark","Ghost"], 75, 65, [["Knock Off","Dark",65,"P"],["Shadow Sneak","Ghost",40,"P"],["Fake Out","Normal",40,"P"]]), TAUNT);
+  const taunted = run(mon("Sableye", ["Dark","Ghost"], 75, 65, [["Knock Off","Dark",65,"P"],["Shadow Sneak","Ghost",40,"P"],["Fake Out","Normal",40,"P"],FILLER]), TAUNT);
   assert.ok(taunted.model.move.value > 0 && taunted.model.move.notes.includes("taunt"), `Taunt is scored: ${taunted.model.move.notes}`);
   // A MAGNET_RISEN key matched no tag the game adds, so Magnet Rise went unscored (#730).
   const MAGNET_RISE = ["Magnet Rise","Electric",-1,"X",-1,[["AddBattlerTagAttr",{ tagType: "FLOATING", selfTarget: true }]],false,0];
-  const risen = run(mon("Magnezone", ["Electric","Steel"], 70, 130, [["Thunderbolt","Electric",90,"S"],["Flash Cannon","Steel",80,"S"],["Tri Attack","Normal",80,"S"]]), MAGNET_RISE);
+  const risen = run(mon("Magnezone", ["Electric","Steel"], 70, 130, [["Thunderbolt","Electric",90,"S"],["Flash Cannon","Steel",80,"S"],["Tri Attack","Normal",80,"S"],FILLER]), MAGNET_RISE);
   assert.ok(risen.model.move.value > 0 && risen.model.move.notes.includes("floating"), `Magnet Rise is scored: ${risen.model.move.notes}`);
 
   const unknown = run(mon("Smeargle", ["Normal"], 60, 60, [["Tackle","Normal",40,"P"],["Swift","Normal",60,"S"],["Quick Attack","Normal",40,"P"],["Sketch","Normal",-1,"X",-1]]), ["Pound","Normal",40,"P"]);
@@ -281,7 +297,8 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   const plain = run(mon("Marillish", ["Water","Fairy"], 90, 110, [["Aqua Jet","Water",40,"P",100,[],false,3,{ fields: { priority: 1 } }],["Play Rough","Fairy",90,"P",90],["Ice Beam","Ice",90,"S"],["Surf","Water",90,"S",100,[],false,4]]), ["Liquidation","Water",85,"P",100]);
   assert.ok(plain.model.move.notes.includes("weak Atk"), "without the ability the same stats are a weak fit");
 
-  const sylveon = mon("Sylveon", ["Fairy"], 65, 130, [["Shadow Ball","Ghost",80,"S"],["Psyshock","Psychic",80,"S"],["Mystical Fire","Fire",75,"S"]], { ability: "Pixilate" });
+  // Not FILLER: Pixilate would make it a Fairy move, taking Hyper Voice's coverage.
+  const sylveon = mon("Sylveon", ["Fairy"], 65, 130, [["Shadow Ball","Ghost",80,"S"],["Psyshock","Psychic",80,"S"],["Mystical Fire","Fire",75,"S"],["Astonish","Ghost",30,"P"]], { ability: "Pixilate" });
   const p = run(sylveon, ["Hyper Voice","Normal",90,"S",100,[],false,2]);
   show("Sylveon (Pixilate) ← Hyper Voice", p);
   assert.equal(p.model.move.type, "Fairy");
@@ -289,16 +306,16 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.equal(p.model.move.power, Math.round(90 * 1.2));
 
   // Adaptability's 2× STAB over the plain 1.5×: 1.33.
-  const scoreOf = ability => run(mon("Porygon-Z", ["Normal"], 80, 135, [["Thunderbolt","Electric",90,"S"],["Ice Beam","Ice",90,"S"],["Shadow Ball","Ghost",80,"S"]], { ability }), ["Tri Attack","Normal",80,"S"]).model.move.value;
+  const scoreOf = ability => run(mon("Porygon-Z", ["Normal"], 80, 135, [["Thunderbolt","Electric",90,"S"],["Ice Beam","Ice",90,"S"],["Shadow Ball","Ghost",80,"S"],FILLER], { ability }), ["Tri Attack","Normal",80,"S"]).model.move.value;
   assert.ok(scoreOf("Adaptability") / scoreOf("Download") > 1.3, "Adaptability is worth a third more than plain STAB");
 
   // Weather Ball's type follows the weather, which the card can't see.
-  const w = run(mon("Castform", ["Normal"], 70, 70, [["Thunder","Electric",110,"S",70],["Ice Beam","Ice",90,"S"],["Sunny Day","Fire",-1,"X",-1,[["WeatherChangeAttr",{}]]]]), ["Weather Ball","Normal",50,"S",100,["WeatherBallTypeAttr"]]);
+  const w = run(mon("Castform", ["Normal"], 70, 70, [["Thunder","Electric",110,"S",70],["Ice Beam","Ice",90,"S"],["Sunny Day","Fire",-1,"X",-1,[["WeatherChangeAttr",{}]]],FILLER]), ["Weather Ball","Normal",50,"S",100,["WeatherBallTypeAttr"]]);
   assert.ok(w.model.move.notes.includes("type varies"));
   assert.deepEqual(w.model.move.se, [], "no super-effective claim for a type it can't pin down");
   assert.ok(!w.model.move.stab);
 
-  const venu = types => mon("Venusaur", ["Grass","Poison"], 100, 142, [["Sludge Bomb","Poison",90,"S"],["Giga Drain","Grass",75,"S"],["Sleep Powder","Grass",-1,"X",75,[["StatusEffectAttr",{ effect: 4 }]]]], types);
+  const venu = types => mon("Venusaur", ["Grass","Poison"], 100, 142, [["Sludge Bomb","Poison",90,"S"],["Giga Drain","Grass",75,"S"],["Sleep Powder","Grass",-1,"X",75,[["StatusEffectAttr",{ effect: 4 }]]],FILLER], types);
   const solar = ["Solar Beam","Grass",120,"S",100,[],true,3,{ chargeAttrs: ["WeatherInstantChargeAttr"] }];
   const dry = run(venu({}), solar);
   const sunny = run(venu({}), solar, { party: [venu({}), mon("Torkoal", ["Fire"], 85, 85, [["Lava Plume","Fire",80,"S"]], { ability: "Drought" })] });
@@ -310,7 +327,7 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
 
 // ---- Priority is worth what it can finish
 {
-  const moves = [["Earthquake","Ground",100,"P",100,[],false,4],["Stone Edge","Rock",100,"P",80],["Crunch","Dark",80,"P"]];
+  const moves = [["Earthquake","Ground",100,"P",100,[],false,4],["Stone Edge","Rock",100,"P",80],["Crunch","Dark",80,"P"],FILLER];
   const boost = move => {
     const pk = mon("Ursaluna", ["Ground","Normal"], 140, 60, moves);
     const withPriority = run(pk, move).model.move.value;
@@ -329,7 +346,7 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   const at30 = (...foes) => ({ wave: 30, exact: true, foes });
   const whitney = at30(foe("Clefairy", ["Fairy"]), foe("Miltank", ["Normal"], { segments: 2, statusMoves: ["Milk Drink"], healMoves: ["Milk Drink"] }));
   const brutes = at30(foe("Machoke", ["Fighting"]), foe("Graveler", ["Rock","Ground"]));
-  const sableye = ability => mon("Sableye", ["Dark","Ghost"], 75, 65, [["Knock Off","Dark",65,"P"],["Shadow Sneak","Ghost",40,"P"],["Fake Out","Normal",40,"P"]], { ability });
+  const sableye = ability => mon("Sableye", ["Dark","Ghost"], 75, 65, [["Knock Off","Dark",65,"P"],["Shadow Sneak","Ghost",40,"P"],["Fake Out","Normal",40,"P"],FILLER], { ability });
   const judge = (move, roster, ability) => globalThis.__lm.learnAdvice(sableye(ability), mv(move), { roster }).plan.incoming;
 
   const blind = judge(TAUNT, null);
@@ -485,7 +502,7 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   const SALT_CURE = ["Salt Cure","Rock",40,"P",100,[["AddBattlerTagAttr",{ tagType: "SALT_CURED" }]]];
   const BARE = ["Salt Cure","Rock",40,"P",100];
   const garganacl = ability => mon("Garganacl", ["Rock"], 100, 45,
-    [["Body Press","Fighting",80,"P"],["Earthquake","Ground",100,"P",100,[],false,4],["Iron Head","Steel",80,"P"]], { ability });
+    [["Body Press","Fighting",80,"P"],["Earthquake","Ground",100,"P",100,[],false,4],["Iron Head","Steel",80,"P"],FILLER], { ability });
   const judge = (move, roster = null, ability) => globalThis.__lm.learnAdvice(garganacl(ability), mv(move), { roster }).plan.incoming;
 
   const bare = judge(BARE), blind = judge(SALT_CURE);

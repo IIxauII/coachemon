@@ -93,6 +93,7 @@ export const PAGE: Area = {
     { name: "buttonActions", kind: "field", at: ["src/@types/ui-types.ts#ModalConfig.buttonActions"] },
     { name: "buttonLabels", kind: "field", at: ["src/ui/handlers/modal-ui-handler.ts#ModalUiHandler.buttonLabels"] },
     { name: "candyCount", kind: "field", at: ["src/@types/save-data.ts#StarterDataEntry.candyCount"] },
+    { name: "canTera", kind: "method", at: ["src/ui/handlers/command-ui-handler.ts#CommandUiHandler.canTera"] },
     { name: "Canvas", kind: "locator", at: [], from: "phaser", note: "Phaser.Display.Canvas" },
     { name: "CanvasPool", kind: "locator", at: [], from: "phaser", note: "Phaser.Display.Canvas.CanvasPool" },
     { name: "category", kind: "field", at: ["src/data/moves/move.ts#Move.category"], note: "a getter" },
@@ -221,6 +222,7 @@ export const PAGE: Area = {
         "test/mocks/mocks-container/mock-sprite.ts#MockSprite.frame",
       ],
     },
+    { name: "fromCommand", kind: "field", at: ["src/ui/handlers/fight-ui-handler.ts#FightUiHandler.fromCommand"] },
     {
       name: "game",
       kind: "field",
@@ -885,6 +887,13 @@ export const PAGE: Area = {
       ],
     },
     { ours: "src/page/menu.ts#ball-lines", of: ["src/ui/handlers/ball-ui-handler.ts#BallUiHandler.setup"] },
+    {
+      ours: "src/page/menu.ts#command-tera",
+      of: [
+        "src/ui/handlers/command-ui-handler.ts#CommandUiHandler.processInput",
+        "src/ui/handlers/fight-ui-handler.ts#FightUiHandler.show",
+      ],
+    },
     {
       ours: "src/page/menu.ts#learn-new-move-row",
       of: [

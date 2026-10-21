@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
+import { TY } from "./fake-mon.mjs";
 
 const hash = str => { let h = 2166136261; for (const c of str) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0; return h >>> 0; };
 const RND = {
@@ -12,7 +13,6 @@ const RND = {
 const randSeedInt = (range, min = 0) => (range <= 1 ? min : RND.integerInRange(min, range - 1 + min));
 const shiftCharCodes = (str, n) => [...String(str)].map(c => String.fromCharCode(c.charCodeAt(0) + (n || 0))).join("");
 
-const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const SPECIES = {
   1: ["Garchomp", ["Dragon", "Ground"], 600], 2: ["Lucario", ["Fighting", "Steel"], 525],
   3: ["Milotic", ["Water"], 540], 4: ["Eternatus", ["Poison", "Dragon"], 690], 5: ["Pidgey", ["Normal", "Flying"], 251],

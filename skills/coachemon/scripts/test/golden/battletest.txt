@@ -62,7 +62,7 @@ Arcanine Arcanine L80 Fire 100% ▲ Water
 Ludicolo Ludicolo L80 Water Grass 100% ▲ — ▼ Water ×¼ ↯ Water Surf → Venusaur moves after
 winnable · Venusaur › Blastoise
 Fight plan winnable
-➜ 1. Venusaur ⇄ Grass Power Whip → Ludicolo switch in, takes a hit · KO · 61% left
+➜ 1. Venusaur ⇄ Grass Power Whip → Ludicolo switch in · KO · 80% left
 ➜ 2. Blastoise ⇄ Water Wave Crash → Arcanine switch in, takes a hit · KO · 13% left
 summary trainer | Venusaur Power Whip → Ludicolo · 2 hits | plan: winnable · Venusaur › Blastoise
 == risk
@@ -122,7 +122,7 @@ likely lost · 💀 Coalossal KOs 1/1 · nobody KOs Coalossal 1-on-1 — maximis
 Fight plan likely lost
 💀 Coalossal Coalossal KOs 1/1 · win condition
 ⤵ Gyarados save for Coalossal ~26%/turn
-➜ 1. Gyarados Water Hydro Pump → Coalossal falls · foe at 43%
+➜ 1. Gyarados Water Hydro Pump → Coalossal falls · foe at 15%
 ⚠ likely lost: nobody KOs Coalossal 1-on-1 — maximise damage before it comes in, chip it with Gyarados
 summary trainer | Gyarados Hydro Pump → Coalossal · 3 hits | plan: likely lost · 💀 Coalossal KOs 1/1 · nobody KOs Coalossal 1-on-1 — maximise damage before it comes in, chip it with Gyarados
 queued during prediction: 0; queueMessage restored: true
@@ -135,12 +135,11 @@ trainer 🎯 W89 · Tester Gyarados Gyarados Hydro Pump → Coalossal · 2 hits
 Foes
 Barbaracle Barbaracle L80 Rock Water 100% ▲ —
 Coalossal Coalossal L80 Fire Rock 100% ▲ Water ×4 ↯ Rock Rock Slide → Gyarados moves after
-likely lost · the plan runs out with 1 foe standing — maximise damage
-Fight plan likely lost
-➜ 1. Gyarados Water Hydro Pump → Coalossal KO · 14% left
-➜ 2. Gyarados Water Hydro Pump → Barbaracle falls · foe at 59%
-⚠ likely lost: the plan runs out with 1 foe standing — maximise damage
-summary trainer | Gyarados Hydro Pump → Coalossal · 2 hits | plan: likely lost · the plan runs out with 1 foe standing — maximise damage
+winnable · Gyarados
+Fight plan winnable
+➜ 1. Gyarados Water Hydro Pump → Coalossal KO · 100% left
+➜ 2. Gyarados Water Hydro Pump → Barbaracle KO · 34% left
+summary trainer | Gyarados Hydro Pump → Coalossal · 2 hits | plan: winnable · Gyarados
 queued during prediction: 0; queueMessage restored: true
 == w180
 ⌃ {Hide the drawer} × {Close}
@@ -221,8 +220,8 @@ Arcanine Arcanine L80 Fire 100% ✦ Intimidate ▲ Water ↯ Fire Flare Blitz �
 likely lost · 💀 Ludicolo KOs 1/1 · nothing we have hurts Ludicolo — maximise damage before it comes in
 Fight plan likely lost
 💀 Ludicolo Ludicolo KOs 1/1 · win condition
-➜ 1. Blastoise Water Wave Crash → Arcanine KO · 50% left
-➜ 2. Blastoise Water Wave Crash → Ludicolo falls · foe at 88%
+➜ 1. Blastoise Water Wave Crash → Arcanine KO · 78% left
+➜ 2. Blastoise Water Wave Crash → Ludicolo falls · foe at 76%
 ⚠ likely lost: nothing we have hurts Ludicolo — maximise damage before it comes in
 summary trainer | Blastoise Wave Crash → Arcanine · 2 hits | plan: likely lost · 💀 Ludicolo KOs 1/1 · nothing we have hurts Ludicolo — maximise damage before it comes in
 == soundproof
@@ -282,7 +281,7 @@ Ludicolo Ludicolo L80 Water Grass 100% ▲ Poison ▼ Water ×¼
 Gyarados Gyarados L80 Water Flying 100% ✦ Intimidate ▲ — ↯ Water Waterfall → Venusaur moves first
 winnable · Venusaur › Blastoise
 Fight plan steps approximate winnable
-➜ 1.~ Venusaur Grass Power Whip → Gyarados KO · 47% left
+➜ 1.~ Venusaur Grass Power Whip → Gyarados KO · 69% left
 ➜ 2.~ Blastoise Water Wave Crash → Arcanine KO · 42% left
-➜ 3.~ Venusaur Poison Sludge Bomb → Ludicolo KO · 27% left
+➜ 3.~ Venusaur Poison Sludge Bomb → Ludicolo KO · 49% left
 summary trainer | Blastoise Flash Cannon → Arcanine, then Wave Crash · 2 hits ; Venusaur Power Whip → Gyarados · 3 hits | plan: winnable · Venusaur › Blastoise
