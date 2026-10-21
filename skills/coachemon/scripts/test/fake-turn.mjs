@@ -55,6 +55,7 @@ export const fakeTurn = ({
     return m.get(k);
   };
   const as = fn => (patches.length ? writePatches(patches, fn) : fn());
+  const heldViews = new WeakMap();
   const mark = o => o && { live, ...o };
   const facts = {
     wave, turn: turnNo, enemySwitchCounter, double, trainer, decision, battleType, mysteryEncounter, biomeId,
@@ -134,6 +135,7 @@ export const fakeTurn = ({
     speedTie: (a, b) => speedTie(a, b),
     ourTera: p => ourTera(p),
     ourTeraOn: p => patches.some(x => x.mon === p && x.tera === true),
+    held: p => hud()["25-turn"]?.heldView(patches, heldViews, p) ?? p,
     memo: (k, fn) => memo("caller", k, fn),
     assuming: more => fakeTurn({
       live, exact, wave, turn: turnNo, enemySwitchCounter, double, trainer, decision, party, foes, field, command,

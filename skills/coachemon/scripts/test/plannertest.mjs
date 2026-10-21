@@ -1555,8 +1555,9 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
   const shuckle = (items, extra, maxHp, spe = 5) => mon("Shuckle", 80, ["Bug", "Rock"], [maxHp, 10, 230, 10, 230, spe], [["Brine", "Water", 65, "S"]], true, undefined,
     { getHeldItems: () => items, ...extra });
   // `move`: 0 Bug Bite, 1 Pound. `stole`: a berry an earlier turn of a depth-2 line already ate.
-  // `self`: what each use of ours costs us; `full`: the whole exchange back.
-  const bite = (items, { hp = 200, move = 0, stole = 0, foeHp = 280, foeSpe = 5, thiefAttr = null, thiefTag = null, self = 0, full = false, ...extra } = {}) => {
+  // `self`: what each use of ours costs us; `full`: the whole exchange back; `burnt`: a berry type a `lessBerry` patch
+  // has already taken off the foe.
+  const bite = (items, { hp = 200, move = 0, stole = 0, foeHp = 280, foeSpe = 5, thiefAttr = null, thiefTag = null, self = 0, full = false, burnt = null, ...extra } = {}) => {
     const me = beedrill(hp), foe = shuckle(items, extra, foeHp, foeSpe);
     if (thiefAttr) {
       const own = me.hasAbilityWithAttr?.bind(me);
@@ -1572,7 +1573,8 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
     };
     const { scene } = render({ party: [me], foes: [foe], live: true, switches: () => new Map(), stubOutcome: stub,
       heal: sitrusHeal, dist: () => [{ name: "Brine", type: "Water", p: 1, score: 10, targets: [0] }] });
-    const x = globalThis.__planner.exchange(scene, me, me.moveset[move], foe, { stole });
+    const at = burnt == null ? scene : scene.assuming([{ mon: foe, lessBerry: burnt }]);
+    const x = globalThis.__planner.exchange(at, me, me.moveset[move], foe, { stole });
     return full ? x : { turnsWe: x.turnsWe, hp: x.expectedHpLeft, stole: Math.round(x.stole * 1e4) / 1e4 };
   };
   // The heal we eat, on its own. A 160 HP Shuckle falls to the second use whether its Sitrus heals or not, so the whole
@@ -1596,6 +1598,9 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
   console.log(`we eat: Sitrus ${gain([berryItem(BERRY.SITRUS)])} · at 350/400 ${gain([berryItem(BERRY.SITRUS)], { hp: 350 })}`
     + ` · beside a Lum ${gain([berryItem(BERRY.SITRUS), berryItem(BERRY.LUM)])} · a Sitrus x2 beside a Lum ${gain([berryItem(BERRY.SITRUS, 2), berryItem(BERRY.LUM)])}`
     + ` · beside a Liechi ${gain([berryItem(BERRY.SITRUS), berryItem(BERRY.LIECHI)])}`);
+  const [besideLum, lumBurnt] = [{}, { burnt: BERRY.LUM }].map(o => gain([berryItem(BERRY.SITRUS), berryItem(BERRY.LUM)], o));
+  console.log(`we eat beside a Lum: ${besideLum} · with that Lum burnt ${lumBurnt}`);
+  assert.equal(lumBurnt, gain([berryItem(BERRY.SITRUS)]), "a Lum a cured status burnt is not there to draw (#834)");
   assert.equal(gain([berryItem(BERRY.SITRUS)]), 100, "we eat the quarter we had room for");
   // …capped by the room we have: 50 missing, not the quarter.
   assert.equal(gain([berryItem(BERRY.SITRUS)], { hp: 350 }), 50, "no heal above max HP");
@@ -1941,9 +1946,7 @@ Object.assign(TABLE, { "Machamp>Close Combat>Vileplume": [[40], 1, 1], "Vileplum
   // A lasting Toxic's chip wins a fight Giga Drain loses; a cured one deals nothing, so attacking is the call again.
   assert.equal(by("Toxic, bare foe").name, "Toxic", "a lasting Toxic is worth the turn it spends");
   assert.equal(by("Toxic, Lum x1").name, "Giga Drain", "a Toxic a Lum cures buys no chip and no later turn, so it loses to attacking");
-  // A sleep from a slower user skips nothing this turn, so a cured one is worth only its burnt Lum: here a lasting
-  // sleep beats attacking by enough to pay for that turn, so a Lum x1 holder is Spored twice, and a Lum x2 holder,
-  // whose second Lum cures that one too, is not.
+  // A sleep from a slower user skips nothing this turn, so a cured one is worth only its burnt Lum.
   assert.equal(by("Spore, bare foe, slower than it").name, "Spore", "a lasting sleep keeps costing the foe attempts");
   assert.equal(by("Spore, Lum x1, slower than it").name, "Spore", "burning the last Lum opens a lasting sleep a turn on");
   assert.equal(by("Spore, Lum x2, slower than it").name, "Giga Drain", "a burnt Lum with a second behind it opens nothing");

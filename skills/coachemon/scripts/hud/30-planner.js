@@ -547,7 +547,7 @@ export const overWalk = (walk, value) => {
 // `me`'s turn-end HP change after k steals, k = 0..9, by `heal(p)`.
 export const afterSteals = (me, heal, takes) => overWalk(stealWalk(me, takes), heal);
 
-// A berry eaten off its holder (`StealEatBerryAttr`, game-code.md §3).
+// Bug Bite and Pluck's steals (`StealEatBerryAttr`, game-code.md §3).
 // @only 35-team-plan: berryWalk
 export const berryWalk = holder => stealWalk(holder, isBerry);
 const heldBerries = p => (p.getHeldItems?.() ?? []).filter(isBerry);
@@ -904,16 +904,18 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   // `stole` is a berry an earlier turn of a depth-2 line already ate, which the target stays short of whatever we
   // follow up with — so the course still reads the theft when this move steals none.
   const stole = Math.min(1, opts.stole ?? 0);
-  const eats = mine?.expected > 0 && stealsBerry(mine, foe, me);
-  const theft = (eats || stole > 0) && berryTypesOf(foe).length ? (() => {
+  // A Lum a cured status burnt (#834) is gone from what it can draw.
+  const holder = turn.held?.(foe) ?? foe;
+  const eats = mine?.expected > 0 && stealsBerry(mine, holder, me);
+  const theft = (eats || stole > 0) && berryTypesOf(holder).length ? (() => {
     const dealt = t?.expected ?? 0, heal = p => healAtEnd(turn, p, dealt);
     // Keyed on the foe object, not its id: a made-up foe that keeps the real one's id reads its own.
     const byFoe = turn.memo("berries", () => new WeakMap());
-    if (!byFoe.has(foe)) byFoe.set(foe, { walk: berryWalk(foe), steals: new Map(), eaten: new WeakMap() });
-    const memo = byFoe.get(foe);
+    if (!byFoe.has(holder)) byFoe.set(holder, { walk: berryWalk(holder), steals: new Map(), eaten: new WeakMap() });
+    const memo = byFoe.get(holder);
     if (!memo.steals.has(dealt)) memo.steals.set(dealt, overWalk(memo.walk, heal));
     // Turn 1's room, moving first, is after what this use costs us (game-code.md §3).
-    const out = berryGone(foe, heal, { eater: me, hp: hp - (mine?.self ?? 0), turn, walk: memo.walk, steals: memo.steals.get(dealt), eatenAt: memo.eaten.get(me) });
+    const out = berryGone(holder, heal, { eater: me, hp: hp - (mine?.self ?? 0), turn, walk: memo.walk, steals: memo.steals.get(dealt), eatenAt: memo.eaten.get(me) });
     if (out && !memo.eaten.has(me)) memo.eaten.set(me, out.eatenAt);
     return out;
   })() : null;

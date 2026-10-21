@@ -49,6 +49,18 @@ const patchKey = patches => patches.map(({ mon, stages, status, types, addedType
   waveTurnCount != null ? `${mon.id}w${waveTurnCount}` : null,
   lessBerry != null ? `${mon.id}-b${lessBerry}` : null,
 ].filter(Boolean).join(";")).filter(Boolean).join("|");
+// `p` as `patches`' `lessBerry` entries leave its held items, for a read outside the game calls; `p` itself when none
+// names it. `views` keeps one per mon, so a caller may key on it.
+// @only tests: heldView
+export const heldView = (patches, views, p) => {
+  const gone = patches.filter(x => x.mon === p && x.lessBerry != null);
+  if (!gone.length) return p;
+  if (!views.has(p)) {
+    const items = gone.reduce((left, x) => lessOneBerry(left, x.lessBerry) ?? left, tryDo(() => p.getHeldItems(), []) ?? []);
+    views.set(p, Object.create(p, { getHeldItems: { value: () => items } }));
+  }
+  return views.get(p);
+};
 // @only tests: withPatches
 export const withPatches = (patches, fn) => {
   const undo = [];
@@ -285,7 +297,7 @@ const monRecord = (env, live, p) => {
 let open = false;
 const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
   const key = patches.length ? `${baseKey}#${patchKey(patches)}` : baseKey;
-  const caches = new Map();
+  const caches = new Map(), heldViews = new WeakMap();
   let closed = false;
   const guard = () => {
     if (closed) throw new Error("turn read after its callback returned");
@@ -399,6 +411,7 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
     // A caller's own memo, with this turn's lifetime; a derived turn keeps its own.
     memo: (k, fn) => memo("caller", k, fn),
     assuming: more => makeTurn(env, { live, facts, baseKey, patches: [...patches, ...more], shared }),
+    held: p => heldView(patches, heldViews, p),
     __close: () => { closed = true; },
   };
   // Only at a command prompt: at the free switch prompt or a faint's replacement the enemy decides later, against a

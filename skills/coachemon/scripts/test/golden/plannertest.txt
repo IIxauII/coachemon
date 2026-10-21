@@ -363,6 +363,7 @@ Fight plan likely lost
 Sitrus x1, Pound instead   turnsWe 4 · our HP 146 · P(steal) 0
 Sitrus x1                  turnsWe 3 · our HP 264 · P(steal) 1
 we eat: Sitrus 100 · at 350/400 50 · beside a Lum 50 · a Sitrus x2 beside a Lum 50 · beside a Liechi 50
+we eat beside a Lum: 50 · with that Lum burnt 100
 Sitrus x1 + Lum x1         turnsWe 3 · our HP 264 · P(steal) 1
 Sitrus x2 + Lum x1         turnsWe 3 · our HP 289 · P(steal) 1
 Sitrus x1 + Liechi x1      turnsWe 3 · our HP 264 · P(steal) 1
