@@ -76,8 +76,8 @@ test("the panel's own `rewards` kind reads as REWARDS, and a kind that never str
   assert.equal(cardLine({}), null);
 });
 
-test("every kind the relay streams has a watch label, so a new one cannot drop silently (#889)", () => {
-  assert.deepEqual(EVENT_KINDS.filter(kind => cardLine({ kind }) === null), [], "streamed kinds with no watch label");
+test("every kind the relay streams prints a card line (extension-distribution.md §11.2, #889)", () => {
+  assert.deepEqual(EVENT_KINDS.filter(kind => cardLine({ kind }) === null), [], "streamed kinds the feed drops");
 });
 
 test("a randomized run's card line says so after the verdict (extension-distribution.md §11.2, #723)", () => {
