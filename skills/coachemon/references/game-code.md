@@ -2177,11 +2177,36 @@ Trick Room (`:79`) — then sorts by timing modifier, `getPriority` and the in-b
 (`src/queues/move-phase-priority-queue.ts:23`, `:73`). The audit compares raw `getStat(SPD)` on both sides — stages,
 items and abilities move during a fight.
 
-**Mega and Tera** (not audited). A Mega Bracelet only lets MEGA / PRIMAL form-change items into the reward pool
-(`src/modifier/modifier-type.ts:1598`); attaching the stone applies the modifier at once (`src/battle-scene.ts:2402`),
-which queues the form-change phase (`:2988`). A Tera is limited by `MAX_TERAS_PER_ARENA = 1` (`src/constants.ts:120`)
-on `arena.playerTerasUsed` (`src/phases/tera-phase.ts:47`), reset by a new `Arena` (`src/battle-scene.ts:1603`), a
-party heal (`src/phases/party-heal-phase.ts:48`) or post-battle cleanup with a Terapagos (`src/battle-scene.ts:1578`).
+**Mega and Tera.** Only a Mega Bracelet (`MegaEvolutionAccessModifier`) lets MEGA / PRIMAL form-change items into the
+reward pool (`src/modifier/modifier-type.ts:1598-1600`). Attaching the stone applies the modifier at once
+(`src/battle-scene.ts:2403-2406`, through `src/modifier/modifier.ts:2835`), which queues the form-change phase
+(`src/battle-scene.ts:2988-2992`) — not audited.
+
+Our Tera, audited at 1.12.1.3. A Tera command needs `canSpeciesTera` — the Tera Orb (`TerastallizeAccessModifier`)
+held and a form that is not Mega, Max or Ultra Necrozma (`src/utils/pokemon-utils.ts:165-169`) — and the charge,
+`MAX_TERAS_PER_ARENA = 1` (`src/constants.ts:120`) against `arena.playerTerasUsed` (`src/utils/pokemon-utils.ts:179-182`);
+at slot 1 of a double the command menu also counts slot 0's pending Tera (`src/ui/handlers/command-ui-handler.ts:193-201`).
+It rides on a FIGHT command, never a switch (`src/phases/command-phase.ts:271-275`, `:316`). `TeraPhase.end` raises
+the count (`src/phases/tera-phase.ts:46-47`).
+- **Refills.** The count is back to 0 on a new `Arena` (`src/battle-scene.ts:1603-1604`, `src/field/arena.ts:76`),
+  built on every biome switch (`src/phases/switch-biome-phase.ts:43`), by Teleporting Hijinks
+  (`src/data/mystery-encounters/encounters/teleporting-hijinks-encounter.ts:256`) and at a new run; a session load
+  builds one too but restores the saved count (`src/system/game-data.ts:931`, `:970`). It is reset by any party heal
+  (`src/phases/party-heal-phase.ts:48`): the one into a wave of 10n + 1 unless Limited Support withholds it
+  (`src/phases/select-biome-phase.ts:110-115`), and the heals four mystery encounters queue. And it is reset in the
+  post-battle cleanup with a Terapagos anywhere in the party (`src/battle-scene.ts:1578`), which runs only under
+  `resetArenaState`: the battle just begun is a trainer battle, a mystery encounter or the classic final boss, or the
+  first of a new biome (`:1541-1546`; `currentBattle` is already that battle there, `:1305`, `:1312-1313`, and a session
+  load skips it).
+- **How long it lasts.** Until that cleanup's `resetTera` (`:1574`), a faint (`src/phases/faint-phase.ts:123`) or a
+  Mega/Max form change (`src/field/pokemon.ts:5416-5419`). It survives a switch-out, a wild wave without
+  `resetArenaState`, and a save.
+- **Timing.** Like the foe's, it lands after every `EnemyCommandPhase` has picked (§7;
+  `src/phases/turn-init-phase.ts:59-75`, `src/phases/turn-start-phase.ts:57-68`), so the foe picks against the typing
+  before it.
+- **Stellar.** A plain `getTypes()` reports `[STELLAR]`, but its matchups when hit still use its base types
+  (`src/field/pokemon.ts:2093-2097`, `:2817`).
+
 Neither leaves an "owned but unused" state the audit could read before a fight.
 
 **Unmeasured.** Every threshold is a first cut: a shared weakness at two members and a third of the party with no

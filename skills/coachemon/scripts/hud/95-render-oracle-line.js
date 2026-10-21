@@ -1,5 +1,5 @@
 import { oracleLineNow, oracleLineUnasked, pickWords, sendsToCome } from "./57-oracle-line.js";
-import { badge, dim, h, ICON, ink, line, mon } from "./90-render.js";
+import { badge, dim, h, ICON, ink, line, mon, TERA_INPUT, teraPress } from "./90-render.js";
 
 const MARK = { done: "✓", now: "▸", later: "·" };
 
@@ -12,7 +12,7 @@ const act = a => {
   }
   return [
     a.by ? mon(a.by.icon, a.by.name, ICON.mon) : null,
-    ...(a.tera ? [h("span", { ...ink.ours, marginLeft: "3px" }, "Tera"), a.tera.type ? badge(a.tera.type) : null, h("span", { ...dim, marginRight: "3px" }, "+")] : []),
+    ...(a.tera ? teraPress(a.tera.type) : []),
     a.type ? badge(a.type) : null,
     h("span", { fontWeight: "bold" }, a.move),
     ...(a.target ? [h("span", { ...dim, margin: "0 3px" }, "→"), a.target.ourSide ? h("span", { ...ink.ours, marginRight: "3px" }, "our") : null,
@@ -51,7 +51,7 @@ export const drawOracleStep = m => {
     ...(learning || picking ? [] : st.pivots).map(x => line("⤵", ...sendTo("then send", x), h("span", { ...dim, marginLeft: "3px" }, "at the switch-out prompt"))),
     ...toCome.map(p => line("⤵", ...thenPicked(p), h("span", { ...dim, marginLeft: "3px" }, "at the move prompt"))),
     ...sendsToCome(m, st).map(x => line("⤵", ...sendTo("then send", x), h("span", { ...dim, marginLeft: "3px" }, "at the faint prompt"))),
-    !picking && !learning && teras(st.act) ? line("·", h("span", dim, "Tera: ← from Fight to the Tera button")) : null,
+    !picking && !learning && teras(st.act) ? line("·", h("span", dim, `Tera: ${TERA_INPUT}`)) : null,
     ...oracleLineUnasked(m).map(x => line("·", turnOf(x), ...act(null), ...x.pivots.flatMap(y => sendTo("then send", y)),
       ...x.learns.flatMap(thenPicked), ...x.sends.flatMap(y => sendTo("then send", y)),
       ...after(x, m.mark))),

@@ -42,6 +42,8 @@ export const fakeTurn = ({
   sendIn = () => null,
   benefit = () => 0,
   speedTie = () => null,
+  // `{ type }` of the Tera a mon of ours may take with this command.
+  ourTera = () => null,
   mon = () => ({}),
   patches = [],
 } = {}) => {
@@ -68,7 +70,7 @@ export const fakeTurn = ({
     field: facts.field, party: p => (foes.includes(p) ? foes : party),
   };
   const t = {
-    live, key: `fake:${wave}|${turnNo}|${enemySwitchCounter}`, facts,
+    live, key: `fake:${wave}|${turnNo}|${enemySwitchCounter}${patches.length ? `#${patches.map(x => `${x.mon?.id}:${JSON.stringify({ ...x, mon: undefined })}`).join("|")}` : ""}`, facts,
     mon: p => memo("mon", p, () => {
       const over = mon(p) ?? {};
       const f = plainFacts(p, over.facts ?? {}, facts.enemyModifiers);
@@ -130,11 +132,13 @@ export const fakeTurn = ({
     sendInScore: (f, me) => sendIn(f, me),
     benefit: (atk, def, mv) => benefit(atk, def, mv) ?? 0,
     speedTie: (a, b) => speedTie(a, b),
+    ourTera: p => ourTera(p),
+    ourTeraOn: p => patches.some(x => x.mon === p && x.tera === true),
     memo: (k, fn) => memo("caller", k, fn),
     assuming: more => fakeTurn({
       live, exact, wave, turn: turnNo, enemySwitchCounter, double, trainer, decision, party, foes, field, command,
       trickRoom, weather, modifiers, enemyModifiers, hazards, balls, mode, battleType, mysteryEncounter, biomeId,
-      outcome, outcomes, statusMoves, stopped, failing, heal, moves, switchTo, replay, sendIn, benefit, speedTie, mon,
+      outcome, outcomes, statusMoves, stopped, failing, heal, moves, switchTo, replay, sendIn, benefit, speedTie, ourTera, mon,
       patches: [...patches, ...more],
     }),
   };

@@ -134,6 +134,9 @@ export const ROW = { display: "flex", alignItems: "center", flexWrap: "wrap", ga
 export const gutterMark = mark => h("span",
   { color: gutterInk(mark) ?? "", width: GUTTER, flex: "none" }, mark === IMMUNE ? "▼" : mark);
 export const line = (mark, ...kids) => h("div", ROW, gutterMark(mark), ...kids);
+// Our Tera ahead of the move it goes with, `Tera [Water] +`, and the press that takes it (#639).
+export const teraPress = type => [h("span", { ...ink.ours, marginLeft: "3px" }, "Tera"), type ? badge(type) : null, h("span", { ...dim, marginRight: "3px" }, "+")];
+export const TERA_INPUT = "← from Fight to the Tera button";
 const HP_INK = hp => (hp > 50 ? "#39ff7b" : hp > 20 ? "#f3b200" : "#fb3041");
 export const hpBar = hp => h("span", { display: "inline-flex", alignItems: "center", gap: "3px" },
   h("span", { width: rung(2.5), height: rung(0.5), flex: "none", background: "rgba(255,255,255,.18)" },

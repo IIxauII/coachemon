@@ -161,6 +161,99 @@ Fight plan winnable
 ➜ 4. Leavanny Grass Leaf Storm → Barbaracle KO · 7% left
 ➜ 5. Leavanny Grass Leaf Storm → Carracosta KO · 7% left
 summary trainer | Leavanny Leaf Storm → Coalossal · 2 hits | plan: winnable · Leavanny
+== ourTera
+⌃ {Hide the drawer} × {Close}
+easy 🎯 W180 Gyarados Tera Water + Waterfall → Lycanroc · 2 hits
+⚔ Gyarados Tera Water + Water Waterfall → Lycanroc 2 hits
+Foes
+Lycanroc Lycanroc L80 Rock 100% ▲ Water ↯ Rock Stone Edge → Gyarados moves after
+boss in 10 (W190)
+Next big fight boss in 10 W190
+✓ full heal entering W181 — HP, status, PP, revives, Tera
+· luck 0 (D) — 3.1% tier upgrade per reward
+summary easy | Gyarados Tera Water + Waterfall → Lycanroc · 2 hits
+== teraSpent
+⌃ {Hide the drawer} × {Close}
+danger 🎯 W180 Gyarados Waterfall → Lycanroc · 2 hits
+⚔ Gyarados ⚠ Rock ×2 141% {Lycanroc's Stone Edge: ~141% of current HP} Water Waterfall → Lycanroc 2 hits
+⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
+⚠ Gyarados ← Lycanroc Stone Edge
+Lycanroc Lycanroc L80 Rock 100% ▲ Water ↯ Rock Stone Edge → Gyarados moves after
+boss in 10 (W190)
+Next big fight boss in 10 W190
+✓ full heal entering W181 — HP, status, PP, revives, Tera
+· luck 0 (D) — 3.1% tier upgrade per reward
+summary danger | Gyarados Waterfall → Lycanroc · 2 hits | ⚠ Gyarados
+== noTeraOrb
+⌃ {Hide the drawer} × {Close}
+danger 🎯 W180 Gyarados Waterfall → Lycanroc · 2 hits
+⚔ Gyarados ⚠ Rock ×2 141% {Lycanroc's Stone Edge: ~141% of current HP} Water Waterfall → Lycanroc 2 hits
+⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
+⚠ Gyarados ← Lycanroc Stone Edge
+Lycanroc Lycanroc L80 Rock 100% ▲ Water ↯ Rock Stone Edge → Gyarados moves after
+boss in 10 (W190)
+Next big fight boss in 10 W190
+✓ full heal entering W181 — HP, status, PP, revives, Tera
+· luck 0 (D) — 3.1% tier upgrade per reward
+summary danger | Gyarados Waterfall → Lycanroc · 2 hits | ⚠ Gyarados
+== teraMega
+⌃ {Hide the drawer} × {Close}
+danger 🎯 W180 Gyarados Waterfall → Lycanroc · 2 hits
+⚔ Gyarados ⚠ Rock ×2 141% {Lycanroc's Stone Edge: ~141% of current HP} Water Waterfall → Lycanroc 2 hits
+⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
+⚠ Gyarados ← Lycanroc Stone Edge
+Lycanroc Lycanroc L80 Rock 100% ▲ Water ↯ Rock Stone Edge → Gyarados moves after
+boss in 10 (W190)
+Next big fight boss in 10 W190
+✓ full heal entering W181 — HP, status, PP, revives, Tera
+· luck 0 (D) — 3.1% tier upgrade per reward
+summary danger | Gyarados Waterfall → Lycanroc · 2 hits | ⚠ Gyarados
+== teraOgerpon
+⌃ {Hide the drawer} × {Close}
+danger 🎯 W180 Gyarados Waterfall → Lycanroc · 2 hits
+⚔ Gyarados ⚠ Rock ×2 141% {Lycanroc's Stone Edge: ~141% of current HP} Water Waterfall → Lycanroc 2 hits
+⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
+⚠ Gyarados ← Lycanroc Stone Edge
+Lycanroc Lycanroc L80 Rock 100% ▲ Water ↯ Rock Stone Edge → Gyarados moves after
+boss in 10 (W190)
+Next big fight boss in 10 W190
+✓ full heal entering W181 — HP, status, PP, revives, Tera
+· luck 0 (D) — 3.1% tier upgrade per reward
+summary danger | Gyarados Waterfall → Lycanroc · 2 hits | ⚠ Gyarados
+== teraBossAhead
+⌃ {Hide the drawer} × {Close}
+danger 🎯 W175 Gyarados Waterfall → Lycanroc · 2 hits
+⚔ Gyarados ⚠ Rock ×2 141% {Lycanroc's Stone Edge: ~141% of current HP} Water Waterfall → Lycanroc 2 hits
+⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
+⚠ Gyarados ← Lycanroc Stone Edge
+Lycanroc Lycanroc L80 Rock 100% ▲ Water ↯ Rock Stone Edge → Gyarados moves after
+boss in 5 (W180)
+Next big fight boss in 5 W180
+✓ full heal entering W181 — HP, status, PP, revives, Tera
+· luck 0 (D) — 3.1% tier upgrade per reward
+summary danger | Gyarados Waterfall → Lycanroc · 2 hits | ⚠ Gyarados
+== teraLastBigBehind
+⌃ {Hide the drawer} × {Close}
+easy 🎯 W175 Gyarados Tera Water + Waterfall → Lycanroc · 2 hits
+⚔ Gyarados Tera Water + Water Waterfall → Lycanroc 2 hits
+Foes
+Lycanroc Lycanroc L80 Rock 100% ▲ Water ↯ Rock Stone Edge → Gyarados moves after
+final boss in 25 (W200)
+Next big fight final boss in 25 W200
+✓ full heal entering W181 — HP, status, PP, revives, Tera
+· luck 0 (D) — 3.1% tier upgrade per reward
+summary easy | Gyarados Tera Water + Waterfall → Lycanroc · 2 hits
+== teraTerapagos
+⌃ {Hide the drawer} × {Close}
+easy 🎯 W45 Gyarados Tera Water + Waterfall → Lycanroc · 2 hits
+⚔ Gyarados Tera Water + Water Waterfall → Lycanroc 2 hits
+Foes
+Lycanroc Lycanroc L80 Rock 100% ▲ Water ↯ Rock Stone Edge → Gyarados moves after
+gym leader in 5 (W50)
+Next big fight gym leader in 5 W50
+✓ full heal entering W51 — HP, status, PP, revives, Tera
+· luck 0 (D) — 3.1% tier upgrade per reward
+summary easy | Gyarados Tera Water + Waterfall → Lycanroc · 2 hits
 == trap
 ⌃ {Hide the drawer} × {Close}
 easy 🎯 W89 Charizard Flamethrower → Swinub · 1 hit
