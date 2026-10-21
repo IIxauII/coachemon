@@ -202,7 +202,9 @@ const sceneFacts = (s, env, live) => {
     // missing here keys the held card as slot 0's, and slot 1 is handed slot 0's card (#544).
     command: b.double && (ph?.phaseName === "CommandPhase" || ph?.phaseName === "SelectTargetPhase") && ph.fieldIndex === 1
       && cmd && !cmd.skip
-      ? { kind: cmd.command, cursor: cmd.cursor, move: cmd.move, targets: cmd.targets?.length ? cmd.targets : cmd.move?.targets ?? [] }
+      ? { kind: cmd.command, cursor: cmd.cursor, move: cmd.move, targets: cmd.targets?.length ? cmd.targets : cmd.move?.targets ?? [],
+        // A Tera press's command is a plain FIGHT (game-code.md §17).
+        tera: b.preTurnCommands?.[0]?.command === Command.TERA }
       : null,
   };
 };
@@ -406,11 +408,15 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
       .filter(t => t.tagType === DELAYED_ATTACK && t.targetIndex === p.getBattlerIndex()).map(t => t.turnCount ?? 0)), 0)),
     // This turn is a hypothesis with our `p`'s Tera on (#649).
     ourTeraOn: p => patches.some(x => x.mon === p && x.tera === true),
-    // `{ type }` of the Tera `p` may take with this command, null where there is none to take (#649).
+    // `{ type }` of the Tera `p` may take with this command, null where there is none to take (#649). In a double the
+    // two slots share the charge, which the planner settles (`fieldPlan`).
     ourTera: p => memo("ourTera", p, () => {
+      if (!memo("teraOpen", "", () => live && facts.decision === "command" && ourTeraLeft(env.s, env, facts.wave ?? 0))) return null;
+      return turn.ourTeraType(p);
+    }),
+    // `ourTera` without the charge: the Tera slot 0 already pressed is priced whatever the charge reads now.
+    ourTeraType: p => memo("ourTeraType", p, () => {
       if (!env.playerParty.includes(p) || p.isTerastallized || !p.isOnField?.()) return null;
-      // A single battle's command only.
-      if (!memo("teraOpen", "", () => live && facts.decision === "command" && !env.double && ourTeraLeft(env.s, env, facts.wave ?? 0))) return null;
       // `canSpeciesTera`'s forms (game-code.md §17). A Tera that changes the form (`SpeciesFormChangeTeraTrigger`) is
       // one the patch can't price, so it is not offered.
       if (tryDo(() => !!(p.isMega?.() || p.isMax?.() || p.hasSpecies?.(SpeciesId.NECROZMA, "ultra")
