@@ -55,8 +55,6 @@ export const tmAdvice = (mv, users, ctx) => {
     ...(x.a.setup ? { setup: x.a.setup.text } : {}), ...(x.p.hp <= 0 ? { fainted: true } : {}) });
   const best = all.filter(x => x.a.learn).sort((a, b) => b.a.gain - a.a.gain)[0];
   if (best) return { take: true, best: recipient(best) };
-  const setup = all.filter(x => x.a.setup).sort((a, b) => b.a.setup.value - a.a.setup.value)[0];
-  if (setup?.a.setup.fits) return { take: true, best: { ...recipient(setup), gain: setup.a.setup.value } };
   if (mv.category === MoveCategory.STATUS && all.every(x => x.a.learn === null)) return { take: null, best: null };
   const open = all.find(x => x.a.learn === null);
   if (open) return { take: null, best: recipient(open) };

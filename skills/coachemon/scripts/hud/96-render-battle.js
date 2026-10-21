@@ -46,7 +46,7 @@ export const drawBattle = m => {
     ...(sl.target === "both" ? [h("span", { ...ink.ours, marginLeft: "4px" }, "→ both")]
       : sl.target ? [h("span", { ...ink.ours, margin: "0 2px 0 4px" }, "→"), mon(sl.target.icon, sl.target.name, ICON.mon)] : []),
     h("span", { flex: "1" }),
-    sl.ko ? h("span", dim, hitsText(sl.ko)) : null,
+    sl.ko || sl.accPct != null ? h("span", dim, [sl.ko ? hitsText(sl.ko) : null, sl.accPct != null ? `${sl.accPct}%` : null].filter(Boolean).join(" · ")) : null,
     sl.notes?.length ? h("span", { ...dim, marginLeft: "4px" }, sl.notes.join(" · ")) : null);
   const firstText = p => (p >= 100 ? "moves first" : p <= 0 ? "moves after" : `${p}% first`);
   const slotMove = sl => [

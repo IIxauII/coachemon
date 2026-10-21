@@ -197,7 +197,8 @@ const useDist = (perHit, dist, acc, checkAll) => {
   return squeezeDist([...done.values()], USE_POINTS);
 };
 // Drain and Healing Charm (game-code.md §18): the charm scales a negative heal too, deepening what Liquid Ooze takes.
-const healingCharm = (env, p) => ((p?.isPlayer?.() === false ? env?.enemyModifiers : env?.modifiers) ?? [])
+// @only 30-planner: healingCharm
+export const healingCharm = (env, p) => ((p?.isPlayer?.() === false ? env?.enemyModifiers : env?.modifiers) ?? [])
   .filter(m => m.constructor?.name === "HealingBoosterModifier")
   .reduce((t, m) => t * (1 + ((m.multiplier ?? 1.1) - 1) * (m.getStackCount?.() ?? 1)), 1);
 const drainRatio = (env, atk, def, t) => {
@@ -293,8 +294,9 @@ export const shares = (list, fallback) => {
 // `[{ s, p }]` of what went down on use n, empty without a `chain`. `se`: the target eats an Enigma Berry
 // (`facts.enigma`) after a landed use, at this share of it — a point's own `se` where it carries one; null eats none.
 // The berry heals between `beforeBerry`, the part of `turnEnd` the game runs ahead of it, and the rest, and each branch,
-// `after1`'s and `start`'s included, carries the berries it has `left`.
-export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 1, act = () => 1, turnEnd = 0, beforeBerry = 0, firstKo = null, cat = null, useAt = null, chain = null, se = null } = {}) => {
+// `after1`'s and `start`'s included, carries the berries it has `left`. `preHeal(i)`: `{ p, heal }`, a heal the target
+// takes before use i at share `p` of it, and after it, ahead of the turn end, otherwise; null for none.
+export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 1, act = () => 1, turnEnd = 0, beforeBerry = 0, firstKo = null, cat = null, useAt = null, chain = null, se = null, preHeal = null } = {}) => {
   const f = rec.facts;
   const berry = se != null && f.enigma?.heal > 0 ? f.enigma : null;
   const held = f.enigma?.left ?? 0;
@@ -329,7 +331,15 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
     const hit = [];
     let fell = 0, fellTo = chain ? new Map() : null;
     const wentOff = i === 0 ? new Map() : null;
-    for (const st of states) {
+    const pre = preHeal?.(i);
+    const early = pre?.heal > 0 ? Math.max(0, Math.min(1, pre.p)) : 0;
+    // `late`: this branch takes `pre`'s heal at the turn end.
+    const split = pre?.heal > 0 ? states.flatMap(st => [
+      ...(early > 0 ? [inChain(branch(Math.min(f.maxHp, st.hp + pre.heal), st.bar, st.revived, st.tok, st.p * early, false, st.left), st.s)] : []),
+      ...(early < 1 ? [Object.assign(inChain(branch(st.hp, st.bar, st.revived, st.tok, st.p * (1 - early), false, st.left), st.s), { late: true })] : []),
+    ]) : states;
+    for (const st of split) {
+      const mark = hit.length;
       for (const to of stepOf(st.s)) {
         const go = to.act ? a : 0, p = st.p * to.p;
         if (go < 1) hit.push(inChain(branch(st.hp, st.bar, st.revived, st.tok, p * (1 - go), false, st.left), to.s));
@@ -357,6 +367,7 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
           }
         }
       }
+      if (st.late) for (let k = mark; k < hit.length; k++) hit[k].late = true;
     }
     if (i === 0 && firstKo != null && !start) {
       const standing = hit.reduce((t, x) => t + x.p, 0);
@@ -389,6 +400,7 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
     };
     const groups = new Map();
     for (let b of hit) {
+      if (b.late) b.hp = Math.min(f.maxHp, b.hp + pre.heal);
       if (b.fed) {
         b = endStep(b, h0);
         if (!b) continue;
