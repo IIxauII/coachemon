@@ -1058,7 +1058,7 @@ const hydreigonSnorlax = () => [
   const { lines, field, scene } = render({ party, foes, live: true, double: true, dist, switches: () => new Map() });
   console.log(`== doubles protect (live)\n${lines.join("\n")}`);
   const info = scene.statusMoves(party[1], foes[0]).find(x => x.name === "Protect");
-  assert.equal(globalThis.__planner.statusPlay(scene, party[1], foes[0], info), null, "a double offers no Protect status play (#861)");
+  assert.equal(globalThis.__planner.statusPlay(scene, party[1], foes[0], info), null, "a double offers no Protect status play with no lock running (#876)");
   const slots = slotLines(field);
   assert.match(slots.find(l => /^⚔ Lucario/.test(l)) ?? "", /Protect .*Garchomp KOs Hydreigon first/, `Lucario protects:\n${field.join("\n")}`);
   assert.ok(!/before it can act|💀/.test(slots.find(l => /^⚔ Lucario/.test(l)) ?? ""), `Protect blocks the hit it would be tagged for (#650):\n${field.join("\n")}`);
@@ -2055,52 +2055,107 @@ Object.assign(TABLE, { "Machamp>Close Combat>Vileplume": [[40], 1, 1], "Vileplum
 }
 
 
-// ---- A double sleeps or paralyses no foe its lead fells this turn, and never paralyses in #850's double (#862).
-// Ally's Thunderbolt is too little to fell either foe first.
-{
-  const STATUS = {
-    Spore: SPORE,
-    "Thunder Wave": ["Thunder Wave", "Electric", 0, "X", 0, { id: 86, attrs: [["StatusEffectAttr", { effect: 3 }]] }],
-  };
-  const scene = (move, { myHp = 250, mySpe = 80, foeHp = 300, foeSpe = 120, outrage, own, ours, lock = true }) => {
-    Object.assign(TABLE, {
-      "Lead>Ice Beam>Salamence": [[ours], 1, 4], "Lead>Ice Beam>Snorlax": [[50], 1, 1],
-      "Ally>Thunderbolt>Salamence": [[60], 1, 1], "Ally>Thunderbolt>Snorlax": [[70], 1, 1],
-      "Salamence>Outrage>Lead": [[outrage], 1, 1], "Salamence>Fire Blast>Lead": [[own], 1, 1],
-      "Salamence>Outrage>Ally": [[outrage], 1, 1], "Salamence>Fire Blast>Ally": [[own], 1, 1],
-      "Snorlax>Body Slam>Lead": [[40], 1, 1], "Snorlax>Body Slam>Ally": [[40], 1, 1],
-    });
-    const party = [
-      mon("Lead", 80, ["Water"], [myHp, 100, 100, 100, 100, mySpe], [["Ice Beam", "Ice", 90, "S"], STATUS[move]], true, undefined, { getBattlerIndex: () => 0 }),
-      mon("Ally", 80, ["Electric"], [300, 100, 100, 100, 100, 70], [["Thunderbolt", "Electric", 90, "S"]], true, undefined, { getBattlerIndex: () => 1 }),
-    ];
-    const salamence = mon("Salamence", 80, ["Dragon", "Flying"], [foeHp, 200, 100, 100, 100, foeSpe],
-      [["Outrage", "Dragon", 120, "P", 0, { target: 7, id: 200 }], ["Fire Blast", "Fire", 110, "S", 0, { id: 126 }]], true, undefined,
-      lock ? { getTag: t => (t === "FRENZY" ? { turnCount: 1 } : null), getMoveQueue: () => [{ move: 200, targets: [0], useMode: 2 }], getBattlerIndex: () => 2 }
-        : { getBattlerIndex: () => 2 });
-    const foes = [salamence, foeAt(3, "Snorlax", 80, ["Normal"], [460, 150, 110, 80, 150, 40], [["Body Slam", "Normal", 85, "P"]])];
-    const dist = e => (e === salamence ? [{ name: lock ? "Outrage" : "Fire Blast", type: lock ? "Dragon" : "Fire", p: 1, score: 10, targets: [0], exact: lock }]
-      : [{ name: "Body Slam", type: "Normal", p: 1, score: 10, targets: [1] }]);
-    const replay = (e, _t, opts) => (e === salamence ? [{ name: !lock || opts?.afterLock ? "Fire Blast" : "Outrage", type: "Dragon", p: 1 }] : [{ name: "Body Slam", type: "Normal", p: 1 }]);
-    return lineOf(render({ party, foes, live: true, double: true, dist, replay, switches: () => new Map() }).field, "Lead");
-  };
-  const CASES = [
-    ["1", "foe faster, Outrage 150 / own 60, we 3HKO", { outrage: 150, own: 60, ours: 110 }],
-    ["2", "as 1, foe slower", { foeSpe: 60, outrage: 150, own: 60, ours: 110 }],
-    ["3", "foe faster, Outrage KOs (300), own 60, we 3HKO", { outrage: 300, own: 60, ours: 110 }],
-    ["4", "we faster and 1HKO", { mySpe: 140, foeHp: 100, outrage: 150, own: 60, ours: 110 }, true],
-    ["5", "we slower, 1HKO, Outrage 150", { foeHp: 100, outrage: 150, own: 60, ours: 110 }, true],
-    ["6", "Outrage resisted (40), own 60", { outrage: 40, own: 60, ours: 110 }],
-    ["7", "own pick as strong (150)", { outrage: 150, own: 150, ours: 110 }],
-    ["8", "foe faster, Outrage 130 / own 60, we 4HKO", { outrage: 130, own: 60, ours: 80 }],
-    ["9", "we slower and 1HKO, both its hits KO", { foeHp: 100, outrage: 300, own: 300, ours: 110 }, true],
-    ["10", "no lock, Fire Blast 150 a turn, we 3HKO", { outrage: 0, own: 150, ours: 110, lock: false }],
-    ["11", "no lock, Fire Blast KOs (300), we 3HKO", { outrage: 0, own: 300, ours: 110, lock: false }],
-    ["12", "no lock, Fire Blast 60, we 3HKO", { outrage: 0, own: 60, ours: 110, lock: false }],
+const LEAD_STATUS = {
+  Spore: SPORE,
+  "Thunder Wave": ["Thunder Wave", "Electric", 0, "X", 0, { id: 86, attrs: [["StatusEffectAttr", { effect: 3 }]] }],
+  Protect: ["Protect", "Normal", 0, "X", 4, { target: 0, attrs: ["ProtectAttr"], id: 182 }],
+};
+// #850's double. With `lock`, Outrage (`left` uses, this turn's included) is queued at battler `at`; without, Salamence
+// picks Fire Blast at the lead. Ally's Thunderbolt is too little to fell either foe first unless `allyTb` (its max hit on
+// Salamence) and `allySpe` say otherwise. `lastMove`: the lead's last move's record; `bypass`: Salamence's moves that
+// ignore Protect; `more`: the lead's moves besides Ice Beam and `move`.
+const lockDouble = (move, { myHp = 250, mySpe = 80, foeHp = 300, foeSpe = 120, outrage, own, ours, lock = true, left = 1, at = 0, lastMove = null, bypass = [], allyTb = 60, allySpe = 70, more = [] }) => {
+  Object.assign(TABLE, {
+    "Lead>Ice Beam>Salamence": [[ours], 1, 4], "Lead>Ice Beam>Snorlax": [[50], 1, 1],
+    "Ally>Thunderbolt>Salamence": [[allyTb], 1, 1], "Ally>Thunderbolt>Snorlax": [[70], 1, 1],
+    "Salamence>Outrage>Lead": [[outrage], 1, 1], "Salamence>Fire Blast>Lead": [[own], 1, 1],
+    "Salamence>Outrage>Ally": [[outrage], 1, 1], "Salamence>Fire Blast>Ally": [[own], 1, 1],
+    "Snorlax>Body Slam>Lead": [[40], 1, 1], "Snorlax>Body Slam>Ally": [[40], 1, 1],
+  });
+  const party = [
+    mon("Lead", 80, ["Water"], [myHp, 100, 100, 100, 100, mySpe], [["Ice Beam", "Ice", 90, "S"], LEAD_STATUS[move], ...more], true, undefined,
+      { getBattlerIndex: () => 0, ...(lastMove ? { getLastXMoves: () => [lastMove] } : {}) }),
+    mon("Ally", 80, ["Electric"], [300, 100, 100, 100, 100, allySpe], [["Thunderbolt", "Electric", 90, "S"]], true, undefined, { getBattlerIndex: () => 1 }),
   ];
-  for (const move of Object.keys(STATUS)) {
-    for (const [id, label, sc, oneHit] of CASES) {
-      const line = scene(move, sc);
+  const salamence = mon("Salamence", 80, ["Dragon", "Flying"], [foeHp, 200, 100, 100, 100, foeSpe],
+    [["Outrage", "Dragon", 120, "P", 0, { target: 7, id: 200 }], ["Fire Blast", "Fire", 110, "S", 0, { id: 126 }]], true, undefined,
+    lock ? { getTag: t => (t === "FRENZY" ? { turnCount: left } : null), getMoveQueue: () => [{ move: 200, targets: [at], useMode: 2 }], getBattlerIndex: () => 2 }
+      : { getBattlerIndex: () => 2 });
+  const foes = [salamence, foeAt(3, "Snorlax", 80, ["Normal"], [460, 150, 110, 80, 150, 40], [["Body Slam", "Normal", 85, "P"]])];
+  const dist = e => (e === salamence ? [{ name: lock ? "Outrage" : "Fire Blast", type: lock ? "Dragon" : "Fire", p: 1, score: 10, targets: [lock ? at : 0], exact: lock }]
+    : [{ name: "Body Slam", type: "Normal", p: 1, score: 10, targets: [1] }]);
+  const replay = (e, _t, opts) => (e === salamence ? [{ name: !lock || opts?.afterLock ? "Fire Blast" : "Outrage", type: "Dragon", p: 1 }] : [{ name: "Body Slam", type: "Normal", p: 1 }]);
+  const stubOutcome = (a, d, pm, o) => {
+    const x = outcome(a, d, pm, o);
+    return x && a === salamence && bypass.includes(pm.getName()) ? { ...x, bypassProtect: true } : x;
+  };
+  return render({ party, foes, live: true, double: true, dist, replay, stubOutcome, switches: () => new Map() });
+};
+const LOCK_DOUBLE_CASES = [
+  ["1", "foe faster, Outrage 150 / own 60, we 3HKO", { outrage: 150, own: 60, ours: 110 }],
+  ["2", "as 1, foe slower", { foeSpe: 60, outrage: 150, own: 60, ours: 110 }],
+  ["3", "foe faster, Outrage KOs (300), own 60, we 3HKO", { outrage: 300, own: 60, ours: 110 }],
+  ["4", "we faster and 1HKO", { mySpe: 140, foeHp: 100, outrage: 150, own: 60, ours: 110 }, true],
+  ["5", "we slower, 1HKO, Outrage 150", { foeHp: 100, outrage: 150, own: 60, ours: 110 }, true],
+  ["6", "Outrage resisted (40), own 60", { outrage: 40, own: 60, ours: 110 }],
+  ["7", "own pick as strong (150)", { outrage: 150, own: 150, ours: 110 }],
+  ["8", "foe faster, Outrage 130 / own 60, we 4HKO", { outrage: 130, own: 60, ours: 80 }],
+  ["9", "we slower and 1HKO, both its hits KO", { foeHp: 100, outrage: 300, own: 300, ours: 110 }, true],
+  ["10", "no lock, Fire Blast 150 a turn, we 3HKO", { outrage: 0, own: 150, ours: 110, lock: false }],
+  ["11", "no lock, Fire Blast KOs (300), we 3HKO", { outrage: 0, own: 300, ours: 110, lock: false }],
+  ["12", "no lock, Fire Blast 60, we 3HKO", { outrage: 0, own: 60, ours: 110, lock: false }],
+];
+
+// ---- A double offers Protect only on a foe's locked last use queued at this slot (#876).
+{
+  const playOf = sc => {
+    const { scene: s } = lockDouble("Protect", { outrage: 300, own: 60, ours: 110, ...sc });
+    const [lead] = s.facts.party, [salamence] = s.facts.foes;
+    const info = s.statusMoves(lead, salamence).find(x => x.name === "Protect");
+    return globalThis.__planner.statusPlay(s, lead, salamence, info);
+  };
+  const play = playOf({});
+  assert.deepEqual([play?.kind, play?.skip0, play?.note], ["protect", 1, "blocks Outrage's last use"], `the last use, queued at the lead: ${JSON.stringify(play)}`);
+  assert.equal(playOf({ left: 2 }), null, "not with a use of the lock still to come");
+  assert.equal(playOf({ at: 1 }), null, "not where the lock is queued at the partner");
+  assert.equal(playOf({ lock: false }), null, "not with no lock running");
+  for (const [id, name] of [[182, "Protect"], [501, "Quick Guard"], [469, "Wide Guard"]]) {
+    assert.equal(playOf({ lastMove: { move: id, targets: [0], result: 1 } }), null, `not straight after a ${name} that held`);
+  }
+  assert.equal(playOf({ bypass: ["Outrage"] }), null, "not into a move that ignores Protect");
+}
+
+// ---- A double's Protect is a priced play, picked where blocking the lock's last use wins the lead's race (#876).
+{
+  const HELD = { move: 182, targets: [0], result: 1 };
+  const protects = new Set(["1", "3", "8", "9"]);
+  const cases = [
+    ...LOCK_DOUBLE_CASES.map(([id, label, sc]) => [`${id} · ${label}`, sc, protects.has(id)]),
+    ["3 after a Protect that held", { outrage: 300, own: 60, ours: 110, lastMove: HELD }, false],
+    ...LOCK_DOUBLE_CASES.filter(([, , sc]) => sc.lock !== false).map(([id, label, sc]) => [`${id} with a use to come · ${label}`, { ...sc, left: 2 }, false]),
+  ];
+  for (const [label, sc, protect] of cases) {
+    const { field } = lockDouble("Protect", sc);
+    const l = lineOf(field, "Lead");
+    console.log(`== #850's double, Protect, case ${label}\n${slotLines(field).join("\n")}`);
+    assert.match(l, protect ? /Protect (\d hits )?blocks Outrage's last use .*then Ice Beam/ : /Ice Beam → /, `case ${label}:\n${field.join("\n")}`);
+    if (protect) assert.ok(!/⚠|💀/.test(l), `no threat tag for the hit Protect blocks, case ${label}:\n${l}`);
+  }
+  const { field } = lockDouble("Protect", { outrage: 300, own: 60, ours: 110, allyTb: 400, allySpe: 130 });
+  console.log(`== #850's double, Protect, case 3 with Ally felling Salamence first\n${slotLines(field).join("\n")}`);
+  assert.match(lineOf(field, "Lead"), /Protect (\d hits )?blocks Outrage's last use .*then Ice Beam/, `the priced Protect keeps its note:\n${field.join("\n")}`);
+  assert.ok(!/spare hit/.test(lineOf(field, "Lead")), `a Protect lands no hit to spare:\n${field.join("\n")}`);
+  assert.ok(!field.some(l => /focus/.test(l)), `a Protect is no second hit on the foe:\n${field.join("\n")}`);
+  const hh = lockDouble("Protect", { outrage: 300, own: 60, ours: 110, allyTb: 240, more: [["Helping Hand", "Normal", 0, "X", 5, { target: 10, id: 270 }]] });
+  console.log(`== #850's double, Protect, case 3 with Helping Hand too\n${slotLines(hh.field).join("\n")}`);
+  assert.match(lineOf(hh.field, "Lead"), /Protect (\d hits )?blocks Outrage's last use/, `the priced Protect stays a Protect:\n${hh.field.join("\n")}`);
+}
+
+// ---- A double sleeps or paralyses no foe its lead fells this turn, and never paralyses in #850's double (#862).
+{
+  for (const move of ["Spore", "Thunder Wave"]) {
+    for (const [id, label, sc, oneHit] of LOCK_DOUBLE_CASES) {
+      const line = lineOf(lockDouble(move, sc).field, "Lead");
       console.log(`== #850's double, ${move}, case ${id} · ${label}\n${line}`);
       if (move === "Thunder Wave") assert.ok(!/Thunder Wave/.test(line), `no paralysis in #850's double, case ${id}:\n${line}`);
       if (oneHit) assert.ok(!line.includes(move), `no ${move} into a foe the lead 1HKOs, case ${id}:\n${line}`);

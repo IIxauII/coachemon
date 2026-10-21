@@ -448,6 +448,78 @@ spikes: Toxic Spikes into a bare bench 0.5 · a Lum holder 0
 ⚔ Breloom Grass Seed Bomb → Machamp
 == lum: …and a Lum-holding one (live)
 ⚔ Breloom Grass Spore → Munchlax sleep
+== #850's double, Protect, case 1 · foe faster, Outrage 150 / own 60, we 3HKO
+⚔ Lead Normal Protect blocks Outrage's last use · then Ice Beam
+⚔ Ally Electric Thunderbolt → Salamence
+== #850's double, Protect, case 2 · as 1, foe slower
+⚔ Lead Ice Ice Beam → Salamence 3 hits
+⚔ Ally Electric Thunderbolt → Salamence
+== #850's double, Protect, case 3 · foe faster, Outrage KOs (300), own 60, we 3HKO
+⚔ Lead Normal Protect blocks Outrage's last use · then Ice Beam
+⚔ Ally Electric Thunderbolt → Salamence
+== #850's double, Protect, case 4 · we faster and 1HKO
+⚔ Lead Ice Ice Beam → Salamence 1 hit
+⚔ Ally Electric Thunderbolt → Salamence 2 hits
+== #850's double, Protect, case 5 · we slower, 1HKO, Outrage 150
+⚔ Lead Ice Ice Beam → Salamence 1 hit
+⚔ Ally Electric Thunderbolt → Salamence 2 hits
+== #850's double, Protect, case 6 · Outrage resisted (40), own 60
+⚔ Lead Ice Ice Beam → Salamence 3 hits
+⚔ Ally Electric Thunderbolt → Salamence
+== #850's double, Protect, case 7 · own pick as strong (150)
+⚔ Lead Ice Ice Beam → Salamence 3 hits
+⚔ Ally Electric Thunderbolt → Salamence
+== #850's double, Protect, case 8 · foe faster, Outrage 130 / own 60, we 4HKO
+⚔ Lead Normal Protect blocks Outrage's last use · then Ice Beam
+⚔ Ally Electric Thunderbolt → Salamence
+== #850's double, Protect, case 9 · we slower and 1HKO, both its hits KO
+⚔ Lead Normal Protect 2 hits blocks Outrage's last use · then Ice Beam
+⚔ Ally Electric Thunderbolt → Salamence 2 hits
+== #850's double, Protect, case 10 · no lock, Fire Blast 150 a turn, we 3HKO
+⚔ Lead Ice Ice Beam → Salamence 3 hits
+⚔ Ally Electric Thunderbolt → Salamence
+== #850's double, Protect, case 11 · no lock, Fire Blast KOs (300), we 3HKO
+⚔ Lead 💀 Fire 100% {Salamence's Fire Blast: ~100% of current HP, before it can act} Ice Ice Beam → Salamence 3 hits
+⚔ Ally Electric Thunderbolt → Salamence
+== #850's double, Protect, case 12 · no lock, Fire Blast 60, we 3HKO
+⚔ Lead Ice Ice Beam → Salamence 3 hits
+⚔ Ally Electric Thunderbolt → Salamence
+== #850's double, Protect, case 3 after a Protect that held
+⚔ Lead 💀 Dragon 100% {Salamence's Outrage: ~100% of current HP, before it can act} Ice Ice Beam → Salamence 3 hits
+⚔ Ally Electric Thunderbolt → Salamence
+== #850's double, Protect, case 1 with a use to come · foe faster, Outrage 150 / own 60, we 3HKO
+⚔ Lead Ice Ice Beam → Salamence 3 hits
+⚔ Ally Electric Thunderbolt → Salamence
+== #850's double, Protect, case 2 with a use to come · as 1, foe slower
+⚔ Lead Ice Ice Beam → Salamence 3 hits
+⚔ Ally Electric Thunderbolt → Salamence
+== #850's double, Protect, case 3 with a use to come · foe faster, Outrage KOs (300), own 60, we 3HKO
+⚔ Lead 💀 Dragon 100% {Salamence's Outrage: ~100% of current HP, before it can act} Ice Ice Beam → Salamence 3 hits
+⚔ Ally Electric Thunderbolt → Salamence
+== #850's double, Protect, case 4 with a use to come · we faster and 1HKO
+⚔ Lead Ice Ice Beam → Salamence 1 hit
+⚔ Ally Electric Thunderbolt → Salamence 2 hits
+== #850's double, Protect, case 5 with a use to come · we slower, 1HKO, Outrage 150
+⚔ Lead Ice Ice Beam → Salamence 1 hit
+⚔ Ally Electric Thunderbolt → Salamence 2 hits
+== #850's double, Protect, case 6 with a use to come · Outrage resisted (40), own 60
+⚔ Lead Ice Ice Beam → Salamence 3 hits
+⚔ Ally Electric Thunderbolt → Salamence
+== #850's double, Protect, case 7 with a use to come · own pick as strong (150)
+⚔ Lead Ice Ice Beam → Salamence 3 hits
+⚔ Ally Electric Thunderbolt → Salamence
+== #850's double, Protect, case 8 with a use to come · foe faster, Outrage 130 / own 60, we 4HKO
+⚔ Lead Ice Ice Beam → Salamence
+⚔ Ally Electric Thunderbolt → Salamence
+== #850's double, Protect, case 9 with a use to come · we slower and 1HKO, both its hits KO
+⚔ Lead 💀 Dragon 100% {Salamence's Outrage: ~100% of current HP, before it can act} Ice Ice Beam → Salamence 1 hit
+⚔ Ally Electric Thunderbolt → Salamence 2 hits
+== #850's double, Protect, case 3 with Ally felling Salamence first
+⚔ Lead Normal Protect blocks Outrage's last use · then Ice Beam
+⚔ Ally Electric Thunderbolt → Salamence 1 hit
+== #850's double, Protect, case 3 with Helping Hand too
+⚔ Lead Normal Protect blocks Outrage's last use · then Ice Beam
+⚔ Ally Electric Thunderbolt → Salamence 2 hits
 == #850's double, Spore, case 1 · foe faster, Outrage 150 / own 60, we 3HKO
 ⚔ Lead Grass Spore → Salamence sleep
 == #850's double, Spore, case 2 · as 1, foe slower
