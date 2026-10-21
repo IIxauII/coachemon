@@ -10,14 +10,14 @@ import { arrivalTurn, battleModel } from "./30-planner.js";
 import { teamPlanner } from "./35-team-plan.js";
 import { learnModel, learnSummary } from "./40-learn.js";
 import { catchAdvice, catchLand, keepCatchTeam } from "./45-catch.js";
-import { encounterModel, encounterSummary } from "./46-encounter.js";
-import { biomeModel, biomeSummary } from "./47-biome.js";
+import { encounterLeadingCall, encounterModel, encounterSummary } from "./46-encounter.js";
+import { biomeLeadingCall, biomeModel, biomeSummary } from "./47-biome.js";
 import { previewNext, previewSummary } from "./48-preview.js";
 import { aheadModel, learnRoster, aheadSummary } from "./49-ahead.js";
 import { auditSummary } from "./50-audit.js";
-import { spliceScreen, fusionModel, fusionSummary } from "./49-fusion.js";
-import { rewardsModel, rewardsSummary } from "./52-shop.js";
-import { starterScreen, starterModel, startersSummary } from "./51-starters.js";
+import { spliceScreen, fusionLeadingCall, fusionModel, fusionSummary } from "./49-fusion.js";
+import { rewardsLeadingCall, rewardsModel, rewardsSummary } from "./52-shop.js";
+import { starterScreen, starterModel, startersLeadingCall, startersSummary } from "./51-starters.js";
 import { offTheLineModel, offTheLineSummary, oracleLearnCall, oracleLineModel, oracleLineState, oracleLineSummary, oracleStepSummary } from "./57-oracle-line.js";
 
 export const hitsText = n => `${n} hit${n === 1 ? "" : "s"}`;
@@ -196,39 +196,25 @@ const EMPTY = {
 };
 export const summaryKeys = () => Object.keys(EMPTY);
 
-// The card event reads its call back out of `cardSummary` (extension-distribution.md §11.1), so it has to know how
-// each card's summary joins its clauses: `SEP` is that join.
-const SEP = " · ";
-const leading = s => (typeof s === "string" && s ? s.split(SEP)[0] : null);
-// `Swamp 72 pick — …`: the option the card picked, not the first one it listed.
-const biomePick = s => {
-  const picked = (typeof s === "string" ? s : "").split(SEP).find(o => o.includes(" pick — "));
-  return picked ? picked.replace(/ \d+ pick — [\s\S]*$/, "") : null;
-};
-// `Mysterious Chest: take Open it — pick of 3 Ultra items`: the call alone, without what it would get us.
-const encounterCall = s => {
-  const head = leading(typeof s === "string" ? s.slice(s.indexOf(": ") + 2) : null);
-  return head ? head.split(" — ")[0] : null;
-};
-
 // Every kind the panel can show has a row, and one without `event` is never streamed. A battle keys on the wave alone:
 // its foes drop out of the list as they faint. `cleared` is where the run stands on that card (CONTEXT.md, `Next big
 // fight`), and null where the card asks no judgment of `run.nextFight`: the learn card reads its fight off the road
-// (49-ahead.js, `learnRoster`).
+// (49-ahead.js, `learnRoster`). `call` is the card event's verdict (extension-distribution.md §11.1), asked of each
+// kind's own model; `cardtest.mjs` holds it to the summary's leading call.
 const wave = card => `${card.wave ?? null}`;
 const KINDS = {
-  battle: { event: "battle", cleared: false, key: wave, call: s => s.verdict },
+  battle: { event: "battle", cleared: false, key: wave, call: card => cardSummary(card).verdict },
   learn: { event: "learn", cleared: null, key: card => `${wave(card)}|${card.name ?? ""}|${card.move?.name ?? ""}`,
-    call: (s, card) => oracleLearnCall(card.oracleLine) ?? leading(s.learn) },
+    call: card => oracleLearnCall(card.oracleLine) ?? card.verdict ?? null },
   // A reroll changes the offers, so the rewards screen is a new decision under the same wave.
-  rewards: { event: "reward", cleared: true, key: card => `${wave(card)}|${(card.free ?? []).map(f => f.name).join(",")}`, call: s => leading(s.rewards) },
-  biome: { event: "biome", cleared: true, key: wave, call: s => biomePick(s.biome) },
+  rewards: { event: "reward", cleared: true, key: card => `${wave(card)}|${(card.free ?? []).map(f => f.name).join(",")}`, call: rewardsLeadingCall },
+  biome: { event: "biome", cleared: true, key: wave, call: biomeLeadingCall },
   // A continuous encounter asks again on the same wave under the same name: the mon in front of you and the two
   // stages are what make a minigame turn its own decision, so they key it (`46-encounter.js`).
-  encounter: { event: "encounter", cleared: true, call: s => encounterCall(s.encounter),
+  encounter: { event: "encounter", cleared: true, call: encounterLeadingCall,
     key: card => `${wave(card)}|${card.name ?? ""}${card.minigame ? `|${card.minigame.mon}|${card.minigame.left}|${card.minigame.catchStage},${card.minigame.fleeStage}` : ""}` },
-  starters: { event: null, cleared: null, key: wave, call: s => leading(s.starters) },
-  fusion: { event: null, cleared: true, key: wave, call: s => leading(s.fusion) },
+  starters: { event: null, cleared: null, key: wave, call: startersLeadingCall },
+  fusion: { event: null, cleared: true, key: wave, call: fusionLeadingCall },
 };
 // @only tests: clearedOn
 export const clearedOn = kind => KINDS[kind]?.cleared ?? null;
@@ -242,8 +228,7 @@ export const cardEvent = card => {
   if (!card) return null;
   const k = KINDS[card.kind];
   if (!k) return null;
-  const s = cardSummary(card);
-  return { kind: k.event ?? card.kind, key: k.key(card), wave: card.wave ?? null, verdict: s ? k.call(s, card) : null,
+  return { kind: k.event ?? card.kind, key: k.key(card), wave: card.wave ?? null, verdict: k.call(card),
     oracleLine: oracleLineState(card.oracleLine, card.offTheLine), randomized: !!card.randomized };
 };
 // What the stream pushes and the relay's gate admits (extension-distribution.md §11.1).

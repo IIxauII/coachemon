@@ -1103,11 +1103,19 @@ export const encounterModel = (run, h, account) => {
 // 40). An offer the judgment couldn't reach carries no verdict and is left out below rather than said emptily.
 const offerSaid = o => `${o.name ?? "it"}: ${[o.text, ...o.reasons].join(", ")}`;
 
+const pickOf = m => (m.pick >= 0 ? m.options[m.pick] : null);
+// The card event's verdict, and the leading call this module's summary writes (extension-distribution.md §11.1).
+// @only 60-card: encounterLeadingCall
+export const encounterLeadingCall = m => {
+  const pick = pickOf(m);
+  return pick ? `take ${pick.label}` : m.known ? "your call" : "not judged";
+};
+
 // `Mysterious Chest: take Open it — pick of 3 Ultra items · avoid Leave`, for the watcher and the battle read.
 export const encounterSummary = m => {
-  const pick = m.pick >= 0 ? m.options[m.pick] : null;
+  const pick = pickOf(m);
   const avoid = m.options.filter(o => o.verdict === "avoid").map(o => o.label);
-  const head = pick ? `take ${pick.label}${pick.outcome ? ` — ${pick.outcome}` : ""}` : m.known ? "your call" : "not judged";
+  const head = `${encounterLeadingCall(m)}${pick?.outcome ? ` — ${pick.outcome}` : ""}`;
   const who = m.minigame ? ` vs ${m.minigame.mon}${m.minigame.shiny ? " shiny" : ""}` : "";
   const said = (m.offers ?? []).filter(o => o.verdict).map(offerSaid);
   return `${m.name}${who}: ${head}${avoid.length ? ` · avoid ${avoid.join(", ")}` : ""}`

@@ -130,6 +130,60 @@ const verdictOf = m => cardSummary(m).verdict;
   console.log("card events ok");
 }
 
+// ---- Each card but a battle carries the leading call of its own summary field as its event's verdict, read off its model (extension-distribution.md §11.1)
+{
+  const { cardEvent } = globalThis.__hud["60-card"];
+  const slotOf = { learn: "learn", reward: "rewards", biome: "biome", encounter: "encounter", starters: "starters", fusion: "fusion" };
+  const first = s => s.split(" · ")[0];
+  const oracle = {
+    learn: first, reward: first, starters: first, fusion: first,
+    biome: s => s.split(" · ").find(o => o.includes(" pick — "))?.replace(/ -?\d+ pick — [\s\S]*$/, "") ?? null,
+    encounter: s => first(s.slice(s.indexOf(": ") + 2)).split(" — ")[0],
+  };
+  const roll = (lock, name, verdict) => ({ lock, cost: 250, offers: [{ name }], verdict });
+  const rerollAhead = { canLock: true, locked: false, missed: false, rolls: [roll(false, "Leftovers", "reroll"), roll(true, "Choice Band", "keep")] };
+  const lead = { swaps: [{ in: { name: "Swampert" }, out: { name: "Charizard" }, foe: "Golem" }], confidence: "estimate", missed: false };
+  const shop = over => ({ kind: "rewards", wave: 15, pick: -1, free: [], buys: [], rerollAhead: null, lead: null, audit: null, preview: null, ahead: null, ...over });
+  const potion = { name: "Potion", holder: { name: "Swampert" } };
+  const encounter = over => ({ kind: "encounter", wave: 31, name: "Mysterious Chest", known: true, pick: 0, minigame: null, offers: [],
+    options: [{ label: "Open it", verdict: "take", outcome: "pick of 3 Ultra items" }, { label: "Leave", verdict: "avoid" }], ...over });
+  const starters = over => ({ kind: "starters", wave: null, limit: 10, picks: [], full: false, room: 3, ...over });
+  const pair = { base: { name: "Garchomp" }, other: { name: "Dragonite" }, value: 2.1, fuse: true };
+  const fusion = over => ({ kind: "fusion", wave: 40, picked: null, better: null, unread: null, rows: [], ...over });
+  const cases = [
+    [{ kind: "learn", wave: 14, name: "Charmeleon", move: { name: "Flamethrower" }, verdict: "Learn → forget Ember", forget: 1, team: { onlyType: "Dark" } },
+      "Learn → forget Ember"],
+    [shop({ pick: 0, free: [potion], buys: [{ name: "Ether" }], lead }), "lead with Swampert over Charizard (beats Golem) [≈]"],
+    [shop({ rerollAhead }), "reroll $250 → Leftovers (reroll) [~]"],
+    [shop({ pick: 0, free: [potion] }), "take Potion → Swampert"],
+    [shop({}), null],
+    [{ kind: "biome", wave: 30, options: [{ label: "Construction Site", score: 55, verdict: "keep", reasons: [] },
+      { label: "Swamp", score: 85, verdict: "pick", reasons: [{ text: "2 mons hit SE" }] }] }, "Swamp"],
+    [{ kind: "biome", wave: 30, options: [{ label: "Swamp", score: null, verdict: null, reasons: [] }] }, null],
+    [encounter({ name: "Safari Zone", minigame: { mon: "Nidorina", shiny: true, left: 2, catchStage: 0, fleeStage: 0 },
+      options: [{ label: "Throw a ball", verdict: "take", outcome: "37% to catch it now" }, { label: "Flee", verdict: "avoid" }] }), "take Throw a ball"],
+    [encounter({ offers: [{ name: "Nidorina", verdict: "swap", text: "swap for Jolteon", reasons: ["an answer to Electric at last"] }] }), "take Open it"],
+    [encounter({ pick: -1 }), "your call"],
+    [encounter({ pick: -1, known: false }), "not judged"],
+    [starters({ picks: [{ label: "best", cost: 9, weak: ["Ice"], members: [{ name: "Gible", role: "carry" }, { name: "Pichu", role: "fill" }] },
+      { label: "alt", cost: 8, weak: [], members: [{ name: "Riolu", role: "carry" }] }] }), "best: Gible (carry) + Pichu"],
+    [starters({ full: true, room: 0 }), "nothing to add"],
+    [starters({}), "no caught starter fits"],
+    [fusion({ rows: [pair] }), "Garchomp ← Dragonite (+2.1 turns)"],
+    [fusion({ picked: { name: "Gible" } }), "nothing to fuse Gible with"],
+    [fusion({ unread: "no party" }), "no team read here: no party"],
+  ];
+  const seen = new Set();
+  for (const [card, expected] of cases) {
+    const ev = cardEvent(card);
+    seen.add(ev.kind);
+    const s = cardSummary(card)[slotOf[ev.kind]];
+    assert.strictEqual(ev.verdict, s == null ? null : oracle[ev.kind](s), `${card.kind}'s call is the leading call of "${s}"`);
+    assert.strictEqual(ev.verdict, expected, `${card.kind}'s call`);
+  }
+  assert.deepStrictEqual(EVENT_KINDS.filter(k => k !== "battle" && !seen.has(k)), [], "every streamed kind but a battle has a card here");
+}
+
 // ---- A shop with no free rewards is still a rewards screen; a closed one, its rows spliced out, is not
 {
   const { rewardsScreen } = globalThis.__hud["02-screens"];
