@@ -274,6 +274,16 @@ assert.deepEqual(trapsOf("eelevateArrows", "Garchomp", "Eelektross"), { slot: []
   assert.deepEqual([first.vs.name, first.foeHp, first.hp], ["Coalossal", 0, 100], `step 1 KOs it untouched: ${first.why}`);
 }
 
+// The plan's first exchange prices our entry-turn hit on a switch-in that Teras later as the ⚔ line does (#825): the
+// free Hydro Pump at Fire/Rock ×4, the row's share, then two at Tera Rock ×2 with one Rock Slide taken between.
+{
+  const card = cards.teraSwitchIn, [slot] = card.field.slots, [first] = card.teamPlan.steps;
+  const row = label => cards[label].rows.find(r => r.name === "Coalossal").pick;
+  assert.deepEqual([row("teraSwitchIn").pct, slot.ko], [row("plainSwitchIn").pct, 3], "⚔: the first of 3 hits at the entry typing");
+  assert.deepEqual([first.vs.name, first.foeHp, first.hp], ["Coalossal", 0, 100 - slot.threat.pct],
+    `step 1 KOs it in those 3 hits, not falling with it at 15% as at its Tera throughout: ${first.why}`);
+}
+
 // The same against the real party (#648): Gordie W180 at T5, rebuilt from the solver fixture. `instantTeras` is `[5]`,
 // a *team* index — and at T5 team index 5 is Coalossal in party slot 0, while party slot 5 holds Carracosta.
 {

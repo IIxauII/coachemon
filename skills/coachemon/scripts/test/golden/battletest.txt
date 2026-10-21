@@ -122,7 +122,8 @@ likely lost · 💀 Coalossal KOs 1/1 · nobody KOs Coalossal 1-on-1 — maximis
 Fight plan likely lost
 💀 Coalossal Coalossal KOs 1/1 · win condition
 ⤵ Gyarados save for Coalossal ~26%/turn
-➜ 1. Gyarados Water Hydro Pump → Coalossal falls · foe at 15%
+➜ 1. Gyarados Water Hydro Pump → Coalossal KO · 14% left
+➜ 2. Gyarados Water Hydro Pump → Barbaracle falls · foe at 59%
 ⚠ likely lost: nobody KOs Coalossal 1-on-1 — maximise damage before it comes in, chip it with Gyarados
 summary trainer | Gyarados Hydro Pump → Coalossal · 3 hits | plan: likely lost · 💀 Coalossal KOs 1/1 · nobody KOs Coalossal 1-on-1 — maximise damage before it comes in, chip it with Gyarados
 queued during prediction: 0; queueMessage restored: true

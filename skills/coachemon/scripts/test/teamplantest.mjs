@@ -240,6 +240,27 @@ assert.equal(plan.approxDoubles, false);
   assert.deepEqual([both.pWin, both.mh], [free.pWin, free.mh], "switching in as it does costs no entry hit: both sides spend the turn");
   assert.equal(fight("switch", false).mh, 0, "where a foe already out does hit the entry");
 }
+// A switch-in that Teras later takes our hit on its entry turn at the typing it comes in at (#825). We outspeed it, its
+// hits fell our 150 HP in two, and Surf deals 50 a use against its Tera but 100 against its entry typing.
+{
+  const { tpFight } = globalThis.__tp;
+  const T = ourEntry => ({ ours: [[{ name: "Surf", dmg: 50 }]], theirs: [[{ dmg: 100, entry: 100, e: 1 }]], first: [[0]], ourMax: [150], foeMax: [200],
+    ourHeal: [null], foeHeal: [null], ...(ourEntry ? { ourEntry: [[ourEntry]] } : {}) });
+  const st = () => ({ oh: [150], ob: [0], fh: [200], fs: [0], fb: [0] });
+  const entry = { Surf: { name: "Surf", dmg: 100, e: 2 } };
+  const [plain, priced] = [null, entry].map(x => tpFight(T(x), st(), 0, 0, "stay", null, true));
+  console.log(`== a tera switch-in's entry hit\nat its tera: ${plain.pWin} win, foe at ${plain.fh} · at its entry typing: ${priced.pWin} win at ${priced.mh}`);
+  assert.deepEqual([plain.pLoss, plain.fh], [1, 50], "priced at its Tera, four uses are one too many");
+  assert.deepEqual([priced.pWin, priced.mh], [1, 50], "the entry turn's 100 then two uses at 50 win, after one hit taken");
+  for (const [kind, entering, over] of [["stay", false, null], ["switch", true, null], ["stay", true, { name: "Muddy Water", dmg: 50 }]]) {
+    assert.deepEqual(tpFight(T(entry), st(), 0, 0, kind, over, entering), tpFight(T(null), st(), 0, 0, kind, over, entering),
+      `no entry price for ${kind}${entering ? " into a switch-in" : ""}${over ? ` pinned to ${over.name}` : ""}`);
+  }
+  const memo = { ...T(entry), memo: new Map() };
+  tpFight(memo, st(), 0, 0, "stay", null, true);
+  assert.deepEqual(tpFight(memo, st(), 0, 0, "stay", null, false), tpFight(T(entry), st(), 0, 0, "stay", null, false),
+    "a later exchange from the same state is never served the entry-priced one");
+}
 // Item thieves and wave status tokens carry through the exchange: a long Blastoise–Snorlax fight.
 {
   const item = (name, props = {}, n = 1) => Object.assign(new ({ [name]: class { isTransferable = true; getStackCount() { return n; } } })[name](), props);

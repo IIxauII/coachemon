@@ -62,7 +62,8 @@ export const planOutcomes = (turn, atk, def) => turn.memo(`o:${atk.id}>${def.id}
 
 // Our hit on a foe the turn it switches in, where a bench mon the trainer Teras takes it at the typing it comes in at
 // (game-code.md §7); null for any other foe.
-const entryOutcome = (turn, me, foe, name) => {
+// @only 35-team-plan: entryOutcome
+export const entryOutcome = (turn, me, foe, name) => {
   if (!turn.teraLater(foe)) return null;
   const at = turn.memo(`entry:${foe.id}`, () => turn.assuming([{ mon: foe, tera: false }]));
   return planOutcomes(at, me, foe).find(o => o.name === name) ?? null;

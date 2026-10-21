@@ -27,6 +27,8 @@ the pairing's own pick wins in 4 · a pinned Bug Bite in 3
 won in 7 on 90 HP · 2 berries gone
 == a foe's entry turn
 stay: 0 win at 0 · into a switch-in: 1 win at 50
+== a tera switch-in's entry hit
+at its tera: 0 win, foe at 50 · at its entry typing: 1 win at 50
 == thieves and tokens
 KO · 60% left
 == mirror at a speed tie
