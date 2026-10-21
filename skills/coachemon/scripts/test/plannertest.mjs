@@ -1115,6 +1115,22 @@ Object.assign(TABLE, {
   globalThis.__stub.outcome = outcome;
 }
 
+// ---- The HP a duel costs is priced (#850): of two attacks that win the same race, the one that drains keeps more HP.
+// Venusaur (200 of 280 HP) 3HKOs a 250 HP Snorlax with either Giga Drain (94–110) or Sludge Bomb (98–115), and Snorlax's
+// Body Slam (~40) can't KO it before then.
+Object.assign(TABLE, {
+  "Venusaur>Giga Drain>Snorlax": [[110], 1, 1], "Venusaur>Sludge Bomb>Snorlax": [[115], 1, 1], "Snorlax>Body Slam>Venusaur": [[40], 1, 1],
+});
+{
+  const drains = (a, d, pm, o) => { const x = outcome(a, d, pm, o); return x && pm.getName() === "Giga Drain" ? { ...x, drain: 0.5 } : x; };
+  const venusaur = mon("Venusaur", 80, ["Grass", "Poison"], [280, 100, 120, 180, 120, 150], [["Sludge Bomb", "Poison", 90, "S"], ["Giga Drain", "Grass", 75, "S"]], true, 200);
+  const snorlax = mon("Snorlax", 80, ["Normal"], [250, 150, 110, 80, 150, 30], [["Body Slam", "Normal", 85, "P"]], true);
+  const bodySlam = () => [{ name: "Body Slam", type: "Normal", p: 1, score: 10, targets: [0] }];
+  const field = render({ party: [venusaur], foes: [snorlax], live: true, dist: bodySlam, switches: () => new Map(), stubOutcome: drains }).field;
+  console.log(`== hp kept\n${field.join("\n")}`);
+  assert.match(lineOf(field, "Venusaur"), /Giga Drain → Snorlax/, `the drain keeps more HP for the same race:\n${field.join("\n")}`);
+}
+
 // ---- On-KO boosts (#90): a foe with Beast Boost gets stronger for every KO we feed it.
 // Read off the ability (game-code.md §18).
 {
@@ -1142,18 +1158,19 @@ Object.assign(TABLE, {
   assert.match(fed, /KO feeds Buzzwole's Beast Boost \(\+1 Atk\)/, `the slot names the boost it feeds:\n${fed}`);
   assert.doesNotMatch(at({ hasAbilityWithAttr: () => false }), /feeds/, "no boost, no note");
 
-  // A close call it tips: Mamoswine (150 HP, a speed tie) needs three Earthquakes (136–160) to Buzzwole's two Lunges,
-  // while Crobat resists Lunge (~6 % coming in) but chips slowly with Wing Attack. Without the boost staying edges it
-  // and the switch is only optional; the KO staying would feed Buzzwole tips it to Crobat, and the switch line says
-  // why it's cheap.
+  // A close call: Mamoswine (150 HP, a speed tie) needs three Earthquakes (136–160) to Buzzwole's two Lunges, while
+  // Crobat resists Lunge (~6 % coming in) but chips slowly with Wing Attack. Staying is a coin flip that loses Mamoswine
+  // about half the time, priced at a mon lost and the HP the duel costs (#850): it is failing with or without the boost,
+  // so both switch to Crobat, and the switch line says why it's cheap.
   Object.assign(TABLE, { "Buzzwole>Lunge>Crobat": [[20], 1, 0.25], "Crobat>Wing Attack>Buzzwole": [[45], 1, 4], "Mamoswine>Earthquake>Buzzwole": [[160], 1, 1] });
   const tied = mon("Mamoswine", 80, ["Ice", "Ground"], [300, 200, 100, 70, 80, 150], [["Earthquake", "Ground", 100, "P"]], true, 150);
   const crobat = mon("Crobat", 80, ["Poison", "Flying"], [300, 150, 110, 80, 150, 250], [["Wing Attack", "Flying", 60, "P"]], false);
   const pivot = extra => render({ party: [tied, crobat], foes: [buzzwole(extra)], live: true, dist: lunge, switches: () => new Map() }).field;
   const boosted = pivot({}), plain = pivot({ hasAbilityWithAttr: () => false });
   console.log(`${boosted.join("\n")}\n-- without Beast Boost\n${plain.join("\n")}`);
-  assert.match(boosted.find(l => /^now: ⇄/.test(l)) ?? "", /Mamoswine out › Crobat in · takes ~6% · resists Lunge/, `switch to Crobat:\n${boosted.join("\n")}`);
-  assert.ok(plain.some(l => /^⚔ Mamoswine/.test(l)) && plain.some(l => /Crobat in · optional/.test(l)), `stay without the boost:\n${plain.join("\n")}`);
+  for (const [field, why] of [[boosted, "with the boost"], [plain, "without the boost"]]) {
+    assert.match(field.find(l => /^now: ⇄/.test(l)) ?? "", /Mamoswine out › Crobat in · takes ~6% · resists Lunge/, `switch to Crobat ${why}:\n${field.join("\n")}`);
+  }
 }
 
 // ---- The summary's second danger level: a likely KO after our mon acts, naming what it is saved for (#90).
