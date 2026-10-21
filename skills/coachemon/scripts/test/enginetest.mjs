@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { bundle } from "../hud-bundle.mjs";
+import { mountHud } from "./fake-page.mjs";
 import { GAME_PROTO } from "./game-proto.mjs";
 
 // Attr / condition stand-ins: the HUD identifies them by class name.
@@ -71,14 +71,7 @@ const scene = {
   getPlayerParty: () => party, getEnemyParty: () => enemies, enemyModifiers: [],
   arena: { tags: [], getTag: () => null, isMoveWeatherCancelled: () => false, isMoveTerrainCancelled: () => false },
 };
-globalThis.window = globalThis;
-globalThis.Phaser = {
-  Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } },
-  Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene } } } }] } } },
-};
-globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: () => ({ style: {}, addEventListener() {} }) };
-globalThis.setInterval = () => 0;
-eval(bundle("hud", { expose: true }));
+mountHud({ scene });
 const hud = globalThis.__hud;
 const ask = fn => hud["25-turn"].readTurn(scene, fn);
 const P = hud["30-planner"];

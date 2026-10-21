@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { bundle } from "../hud-bundle.mjs";
+import { mountHud } from "./fake-page.mjs";
 
 const CLASSIC_FIXED = new Set([5, 8, 25, 35, 55, 62, 64, 66, 95, 112, 114, 115, 145, 164, 165, 182, 184, 186, 188, 190, 195]);
 const MODES = {
@@ -10,15 +10,7 @@ const trainer = (name, { voucher = false } = {}) => ({ getName: () => name, conf
 const scene = (wave, t, { mode = "classic", seed = "U0QKEz8wXq3LmN7pR2sT9vYb" } = {}) =>
   ({ seed, gameMode: MODES[mode], currentBattle: { waveIndex: wave, trainer: t } });
 
-globalThis.window = globalThis;
-globalThis.Phaser = { Math: { RND: { state: () => "!rnd,0" } },
-  Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => ({ gameMode: {} }) } } } }] } } } };
-const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
-globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: node };
-globalThis.setInterval = () => 0;
-globalThis.clearInterval = () => {};
-globalThis.localStorage = { getItem: () => "full", setItem() {} };
-eval(bundle("hud", { expose: true }));
+mountHud({ scene: { gameMode: {} } });
 const { planFile } = globalThis.__hud["56-boss-plan"];
 
 const row = (label, s) => console.log(`${label.padEnd(30)}${planFile(s) ?? "—"}`);

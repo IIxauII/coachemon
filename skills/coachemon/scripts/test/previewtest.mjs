@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { bundle } from "../hud-bundle.mjs";
+import { mountHud } from "./fake-page.mjs";
 import { ATTRS } from "./fixtures/party.mjs";
 import { cat as CAT, TY } from "./fake-mon.mjs";
 
@@ -214,16 +214,8 @@ const playWave = (scene, w) => {
 
 // No `ui` on the scene, so the HUD's own tick draws nothing and the test drives the module.
 const mount = opts => {
-  globalThis.window = globalThis;
-  delete globalThis.__coachHud;
   const { scene, offsets } = makeScene(opts);
-  globalThis.Phaser = { Math: { RND }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene } } } }] } } } };
-  const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
-  globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: node };
-  globalThis.setInterval = () => 0;
-  globalThis.clearInterval = () => {};
-  globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  eval(bundle("hud", { expose: true }));
+  mountHud({ scene, rnd: RND });
   const { previewFor, previewNext, previewArm, previewCheck, previewStats, previewActual, previewGrade } =
     globalThis.__hud["48-preview"];
   const { drawPreview } = globalThis.__hud["95-render-preview"], { previewSummary } = globalThis.__hud["48-preview"];

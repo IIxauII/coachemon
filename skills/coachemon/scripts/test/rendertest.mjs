@@ -4,6 +4,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { Challenges } from "../../../../src/enums/generated.ts";
 import { bundle } from "../hud-bundle.mjs";
+import { mountHud } from "./fake-page.mjs";
 import { cat, TY } from "./fake-mon.mjs";
 const HUD = fileURLToPath(new URL("../hud", import.meta.url));
 const mv = ([n, t, p, c, a = 100]) => ({ name: n, type: TY.indexOf(t), power: p, category: cat[c], accuracy: a, moveTarget: 3, isChargingMove: () => false, attrs: [] });
@@ -13,21 +14,10 @@ const PANEL_KEY = "coach-hud-panel";
 const SHUT = { [PANEL_KEY]: JSON.stringify({ view: "drawer", closed: true, group: "act" }) };
 const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
 let store = new Map();
-const mount = (scene, { expose = false, stored = null } = {}) => {
-  let el;
-  store = new Map(Object.entries(stored ?? {}));
-  globalThis.window = globalThis; delete globalThis.__coachHud;
-  globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
-  const node = () => { const n = { style: {}, children: [], addEventListener(ev, fn) { if (ev === "click") n.onclick = fn; }, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
-  globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
-  globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
-  globalThis.localStorage = {
-    getItem: k => (store.has(k) ? store.get(k) : null),
-    setItem: (k, v) => store.set(k, String(v)),
-    removeItem: k => store.delete(k),
-  };
-  eval(bundle("hud", { expose }));
-  return el;
+const mount = (scene, { expose = false, stored = {} } = {}) => {
+  const page = mountHud({ scene, expose, stored });
+  store = page.store;
+  return page.el;
 };
 // A drawn panel is `[controls, strip, bar, pane]`; the strip view stops after the strip, and a dismissal is one glyph.
 const lines = el => (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");

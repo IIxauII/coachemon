@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { bundle } from "../hud-bundle.mjs";
+import { mountHud } from "./fake-page.mjs";
 import { TY } from "./fake-mon.mjs";
 
 const hash = str => { let h = 2166136261; for (const c of str) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0; return h >>> 0; };
@@ -126,16 +126,8 @@ const makeScene = ({ wave, party = [], roster = [1, 2], offsetGym = false, wildS
 };
 
 const mount = opts => {
-  globalThis.window = globalThis;
-  delete globalThis.__coachHud;
   const scene = makeScene(opts);
-  globalThis.Phaser = { Math: { RND }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene } } } }] } } } };
-  const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
-  globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: node };
-  globalThis.setInterval = () => 0;
-  globalThis.clearInterval = () => {};
-  globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  eval(bundle("hud", { expose: true }));
+  mountHud({ scene, rnd: RND });
   const { aheadModel, partyLuck, learnRoster, doubleOdds } = globalThis.__hud["49-ahead"];
   const { drawAhead } = globalThis.__hud["95-render-ahead"], { aheadSummary } = globalThis.__hud["49-ahead"];
   const { readRun } = globalThis.__hud["26-run"];

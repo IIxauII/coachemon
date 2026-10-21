@@ -1,15 +1,8 @@
 import assert from "node:assert";
-import { bundle } from "../hud-bundle.mjs";
+import { mountHud } from "./fake-page.mjs";
 
-globalThis.window = globalThis;
 let rnd = "!rnd,0";
-globalThis.Phaser = { Math: { RND: { state: v => { if (v !== undefined) rnd = v; return rnd; } } }, Display: { Canvas: { CanvasPool: { pool: [] } } } };
-const node = () => ({ style: {}, addEventListener() {}, append() {}, replaceChildren() {}, remove() {} });
-globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: node };
-globalThis.setInterval = () => 0;
-globalThis.clearInterval = () => {};
-globalThis.localStorage = { getItem: () => null, setItem() {} };
-eval(bundle("hud", { expose: true }));
+mountHud({ rnd: { state: v => { if (v !== undefined) rnd = v; return rnd; } } });
 const { readRun } = globalThis.__hud["26-run"];
 const { readTurn } = globalThis.__hud["25-turn"];
 

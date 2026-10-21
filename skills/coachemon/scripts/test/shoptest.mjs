@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { bundle } from "../hud-bundle.mjs";
+import { mountHud } from "./fake-page.mjs";
 import { wholeCard } from "./panel.mjs";
 import { TY } from "./fake-mon.mjs";
 class ModifierType {}
@@ -609,8 +609,6 @@ const classicMode = () => ({
   isFixedBattle: w => E4_WAVES.has(w), getFixedBattle: () => ({}),
 });
 for (const [label, sc] of Object.entries(scenarios)) {
-  let el;
-  globalThis.window = globalThis; delete globalThis.__coachHud;
   sc.setup?.(sc);
   const handler = { options: sc.free.map(t => opt(t)), shopOptionsRows: shopRows, rerollCost: sc.reroll ?? 2250 };
   // Most scenarios leave `gameMode` off, so the card falls back to the tenth-wave rule.
@@ -623,12 +621,7 @@ for (const [label, sc] of Object.entries(scenarios)) {
   sc.pool = sc.rewardPool?.();
   sc.rewardLog = [];
   sc.consoleLog = console.log;
-  globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
-  const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
-  globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
-  globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
-  globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  eval(bundle("hud", { expose: true }));
+  const { el } = mountHud({ scene });
   const hud = globalThis.__hud;
   const { rerollArm, rerollCheck, rerollStats } = hud["50-reroll"];
   const { cardSummary } = hud["60-card"], { rebuild } = hud["98-watch"];

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { bundle } from "../hud-bundle.mjs";
+import { mountHud } from "./fake-page.mjs";
 import { wholeCard } from "./panel.mjs";
 import { TY } from "./fake-mon.mjs";
 
@@ -127,8 +127,6 @@ const HARDCORE = 9; // `Challenges`, which only the bundle's prelude holds
 // asks a roster for.
 const mount = ({ screen = "party", spliced = false, members = party(spliced), picked = null, partyUiMode = 9, hardcore = false, free = [],
   wave = 52, asked = null }) => {
-  let el;
-  globalThis.window = globalThis; delete globalThis.__coachHud;
   const filter = p => (p.fusionSpecies || (hardcore && p.hp <= 0) ? "no effect" : null);
   const handler = screen === "party"
     ? { partyUiMode, selectFilter: filter, transferMode: picked != null, transferCursor: picked ?? -1, cursor: 0 }
@@ -147,12 +145,7 @@ const mount = ({ screen = "party", spliced = false, members = party(spliced), pi
     gameMode: { isSplicedOnly: spliced, challenges: hardcore ? [{ id: HARDCORE, value: 1 }] : [],
       isBoss: w => w % 10 === 0, isFixedBattle: w => w === 25 },
   };
-  globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
-  const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
-  globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
-  globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
-  globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  eval(bundle("hud", { expose: true }));
+  const { el } = mountHud({ scene });
   if (asked) globalThis.__hud["11-threats"].setRosterRead((run, w) => { asked.push(w); return null; });
   // The chunk scan finds nothing under node, so hand over the tables it would have found and tick again: without
   // them there is no threat set, and the judgment every pair is ranked by has nothing to judge against (#589).

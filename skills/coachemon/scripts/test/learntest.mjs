@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { bundle } from "../hud-bundle.mjs";
+import { mountHud } from "./fake-page.mjs";
 import { wholeCard } from "./panel.mjs";
 import { cat, TY } from "./fake-mon.mjs";
 // An attr: "Name" or ["Name", { fields }]. The HUD matches through the prototype chain, so a class the game
@@ -38,15 +38,8 @@ const FILLER = ["Constrict","Normal",10,"P"];
 
 const run = (pk, newMove, { double = false, party = [pk], roster = null } = {}) => {
   assert.equal((pk.getMoveset?.() ?? pk.moveset).length, 4, `${pk.name}: the learn screen opens only on a full moveset (game-code.md §17)`);
-  let el; const ds = {};
-  globalThis.window = globalThis; delete globalThis.__coachHud;
   const scene = { currentBattle: { double }, ui: { mode: 9, getHandler: () => ({ summaryUiMode: 1, pokemon: pk, newMove: mv(newMove) }) }, getEnemyParty: () => [], getPlayerParty: () => party };
-  globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
-  const node = () => { const n = { style: {}, children: [], title: "", addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
-  globalThis.document = { documentElement: { dataset: ds }, body: { appendChild: e => (el = e) }, createElement: node };
-  globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
-  globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  eval(bundle("hud", { expose: true }));
+  const { el } = mountHud({ scene });
   const { learnModel, learnAdvice, blockedByHealBlock } = globalThis.__hud["40-learn"];
   const { learnState } = globalThis.__hud["02-screens"];
   globalThis.__lm = { learnModel, learnState, learnAdvice, tmAdvice: globalThis.__hud["52-shop"].tmAdvice, blockedByHealBlock };

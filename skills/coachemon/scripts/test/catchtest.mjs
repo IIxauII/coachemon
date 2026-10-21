@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { bundle } from "../hud-bundle.mjs";
+import { mountHud } from "./fake-page.mjs";
 import { onGame } from "./game-proto.mjs";
 import { cat, TY } from "./fake-mon.mjs";
 
@@ -31,8 +31,6 @@ const dexData = () => {
 // `events`, `registry`: the timed event manager and the species registry, as 04-game-tables' chunk scan hands them over.
 const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0, 2: 0, 3: 0, 4: 0 }, double = false, owned = [], enemyModifiers = [],
   wave = 23, biome = 3, mode = {}, starters = null, events = null, dex = null, registry = null, moves = null }) => {
-  let el;
-  globalThis.window = globalThis; delete globalThis.__coachHud;
   const pm = { getCurrentPhase: () => (phase ? { phaseName: phase } : null) };
   for (const f of foes) f.getOpponents = () => party.filter(p => p.isOnField());
   const scene = {
@@ -49,12 +47,7 @@ const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0,
     scene.gameData.dexData[id] = { caughtAttr: 1n | 4n | 16n | 128n, ivs: [20,20,20,20,20,20] };
     scene.gameData.starterData[id] = { abilityAttr: 1 };
   }
-  globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
-  const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
-  globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
-  globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
-  globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  eval(bundle("hud", { expose: true }));
+  const { el } = mountHud({ scene });
   const { catchAdvice, catchLand, captureChance, keepCatchTeam } = globalThis.__hud["45-catch"];
   const { readTurn } = globalThis.__hud["25-turn"];
   const { readRun } = globalThis.__hud["26-run"];

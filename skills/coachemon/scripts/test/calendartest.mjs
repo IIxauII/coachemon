@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { bundle } from "../hud-bundle.mjs";
+import { mountHud } from "./fake-page.mjs";
 
 // Shaped like `GameMode`'s own methods, the classic fixed-battle table included (game-code.md §12).
 const CLASSIC_FIXED = new Set([5, 8, 25, 35, 55, 62, 64, 66, 95, 112, 114, 115, 145, 164, 165, 182, 184, 186, 188, 190, 195]);
@@ -12,15 +12,7 @@ const LIMITED_SUPPORT = 8, HARDCORE = 9;
 const scene = (mode = "classic", { offsetGym = false, challenges = [], only } = {}) =>
   ({ offsetGym, gameMode: { ...(only ?? MODES[mode]), challenges } });
 
-globalThis.window = globalThis;
-globalThis.Phaser = { Math: { RND: { state: () => "!rnd,0" } },
-  Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => ({ gameMode: {} }) } } } }] } } } };
-const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
-globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: node };
-globalThis.setInterval = () => 0;
-globalThis.clearInterval = () => {};
-globalThis.localStorage = { getItem: () => "full", setItem() {} };
-eval(bundle("hud", { expose: true }));
+mountHud({ scene: { gameMode: {} } });
 const { waveKind, isBossWave, bigFightsAhead, fightsAhead, nextHeal, healRevives, reviveBefore, challengeOn, trainerOdds, hasTrainers,
   kindIsRolled, isGruntWave, poolAnchorWave, arenaRebuiltBetween, teraRefill, teraSpendable } = globalThis.__hud["03-calendar"];
 

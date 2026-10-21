@@ -5,7 +5,7 @@
 // own: real species with their real rows, deliberately outside the registry below, so no member of ours can be
 // drawn as a threat against itself.
 import assert from "node:assert/strict";
-import { bundle } from "../hud-bundle.mjs";
+import { mountHud } from "./fake-page.mjs";
 import { mon, species } from "./fixtures/party.mjs";
 import { cat as CAT, TY } from "./fake-mon.mjs";
 
@@ -195,19 +195,10 @@ const FACTS = {
 };
 
 let draws = 0, sets = 0;
-globalThis.window = globalThis;
-globalThis.Phaser = {
-  Math: { RND: { _s: "!rnd,live",
-    state(v) { if (v !== undefined) { sets++; this._s = v; } return this._s; },
-    integerInRange() { draws++; return 0; }, realInRange() { draws++; return 0; }, frac() { draws++; return 0; },
-    pick(a) { draws++; return a[0]; }, shuffle(a) { draws++; return a; } } },
-  Display: { Canvas: { CanvasPool: { pool: [] } } },
-};
-const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
-globalThis.document = { documentElement: { dataset: {}, appendChild() {} }, body: { appendChild() {} }, createElement: node };
-globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
-globalThis.localStorage = { getItem: () => "full", setItem() {} };
-eval(bundle("hud", { expose: true }));
+mountHud({ rnd: { _s: "!rnd,live",
+  state(v) { if (v !== undefined) { sets++; this._s = v; } return this._s; },
+  integerInRange() { draws++; return 0; }, realInRange() { draws++; return 0; }, frac() { draws++; return 0; },
+  pick(a) { draws++; return a[0]; }, shuffle(a) { draws++; return a; } } });
 const { RANDBATS } = globalThis.__hud["05-randbats"];
 const { setRosterRead, standardThreats } = globalThis.__hud["11-threats"];
 setRosterRead((run, wave) => run.scene?.roster?.(wave) ?? null);

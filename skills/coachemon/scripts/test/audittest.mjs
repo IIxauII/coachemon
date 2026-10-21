@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { bundle } from "../hud-bundle.mjs";
+import { mountHud } from "./fake-page.mjs";
 import { MoveFlags } from "../../../../src/enums/generated.ts";
 import { TY } from "./fake-mon.mjs";
 
@@ -259,8 +259,6 @@ const scenarios = {
 }
 
 for (const [label, sc] of Object.entries(scenarios)) {
-  let el;
-  globalThis.window = globalThis; delete globalThis.__coachHud;
   const party = sc.party();
   const opt = t => ({ modifierTypeOption: { type: t, cost: 0 } });
   const handler = { options: sc.free.map(opt), shopOptionsRows: [], rerollCost: 1000 };
@@ -269,12 +267,7 @@ for (const [label, sc] of Object.entries(scenarios)) {
     ...(sc.cap ? { getMaxExpLevel: () => sc.cap } : {}),
     // Only where a scenario names challenges: a `gameMode` the others never had would move what they read.
     ...(sc.challenges ? { gameMode: { isClassic: true, challenges: sc.challenges } } : {}) };
-  globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
-  const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
-  globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
-  globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
-  globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  eval(bundle("hud", { expose: true }));
+  const { el } = mountHud({ scene });
   // The chunk scan finds nothing under node, so the table stands in for what it would have found in the page. The
   // panel above drew once without it, which is the point: a card judged before the table landed must not be served
   // after (#582), and every model below is read back after this call.

@@ -1,7 +1,7 @@
 // Every stat below is `calculateStats` worked by hand (game-code.md §24), not a reading taken off the adapter: a
 // Garchomp at level 50 with 31 IVs and a neutral nature has 183 HP whoever computes it.
 import assert from "node:assert/strict";
-import { bundle } from "../hud-bundle.mjs";
+import { mountHud } from "./fake-page.mjs";
 import { TY } from "./fake-mon.mjs";
 
 // `abilities` and `moves` are indexed by id, as the game's own tables are.
@@ -83,19 +83,10 @@ const live = (name, sp, level, stats, { ivs, nature = 0, moves = [], ability = "
 
 const scene = { modifiers: [], enemyModifiers: [], game: { config: { gameVersion: "1.12.0.11" } } };
 let draws = 0;
-globalThis.window = globalThis;
-globalThis.Phaser = {
-  Math: { RND: { _s: "!rnd,live",
-    state(v) { if (v !== undefined) { draws++; this._s = v; } return this._s; },
-    integerInRange() { draws++; return 0; }, realInRange() { draws++; return 0; }, frac() { draws++; return 0; },
-    pick(a) { draws++; return a[0]; }, shuffle(a) { draws++; return a; } } },
-  Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } },
-};
-const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
-globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: node };
-globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
-globalThis.localStorage = { getItem: () => "full", setItem() {} };
-eval(bundle("hud", { expose: true }));
+mountHud({ scene, rnd: { _s: "!rnd,live",
+  state(v) { if (v !== undefined) { draws++; this._s = v; } return this._s; },
+  integerInRange() { draws++; return 0; }, realInRange() { draws++; return 0; }, frac() { draws++; return 0; },
+  pick(a) { draws++; return a[0]; }, shuffle(a) { draws++; return a; } } });
 const { combatantOf, duelEnv, pricesItem } = globalThis.__hud["09-combatant"];
 const { approxOutcomes } = globalThis.__hud["10-damage"];
 const { sandboxBreachCount } = globalThis.__hud["01-core"];

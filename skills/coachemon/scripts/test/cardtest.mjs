@@ -1,16 +1,8 @@
 import assert from "node:assert";
-import { bundle } from "../hud-bundle.mjs";
+import { mountHud } from "./fake-page.mjs";
 import { EVENT_KINDS as RELAY_EVENT_KINDS } from "../../../../extension/src/relay/channel.ts";
 
-// Only enough page for the bundle to build its panel and start its timer: nothing here reads a node.
-globalThis.window = globalThis;
-globalThis.Phaser = { Math: { RND: { state: () => "!rnd,0" } }, Display: { Canvas: { CanvasPool: { pool: [] } } } };
-const node = () => ({ style: {}, addEventListener() {}, append() {}, replaceChildren() {}, remove() {} });
-globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: node };
-globalThis.setInterval = () => 0;
-globalThis.clearInterval = () => {};
-globalThis.localStorage = { getItem: () => null, setItem() {} };
-eval(bundle("hud", { expose: true }));
+mountHud();
 const { EVENT_KINDS, cardSummary, summaryKeys } = globalThis.__hud["60-card"];
 
 // The relay keeps its own copy, in the card table's order: a rename the copy misses stops the shop crossing the gate
@@ -204,3 +196,6 @@ const verdictOf = m => cardSummary(m).verdict;
   assert.deepStrictEqual(standing, { battle: false, rewards: true, biome: true, encounter: true, fusion: true,
     learn: null, starters: null });
 }
+
+assert.throws(() => mountHud({ secne: {} }), /^TypeError: mountHud: unknown option secne \(it takes scene, rnd, stored, expose\)$/);
+assert.throws(() => mountHud({ scene: undefined }), /^TypeError: mountHud: scene is undefined; leave the key out for a page with no game$/);

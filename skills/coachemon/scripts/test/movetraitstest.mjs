@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { bundle } from "../hud-bundle.mjs";
+import { mountHud } from "./fake-page.mjs";
 import { MoveTarget, MultiHitType, MoveFlags, StatusEffect, Stat, SpeciesId, MoveId } from "../../../../src/enums/generated.ts";
 
 // The HUD matches an attribute through its prototype chain, so a stand-in carries its parent where the game
@@ -26,14 +26,7 @@ const mon = ({ id = "user", abilities = [], abAttrs = {}, items = [], species = 
 });
 const lens = n => Object.assign(new (classFor("PokemonMultiHitModifier"))(), { getStackCount: () => n });
 
-globalThis.window = globalThis;
-globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [] } } } };
-const node = () => { const n = { style: {}, dataset: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren() {} }; return n; };
-globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: node };
-globalThis.setInterval = () => 0;
-globalThis.clearInterval = () => {};
-globalThis.localStorage = { getItem: () => "off", setItem() {} };
-eval(bundle("hud", { expose: true }));
+mountHud();
 const { moveTraits, costNotes } = globalThis.__hud["07-move-traits"];
 
 const log = (label, x) => console.log(`${label}: ${x}`);

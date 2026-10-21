@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { bundle } from "../hud-bundle.mjs";
+import { mountHud } from "./fake-page.mjs";
 import { wholeCard } from "./panel.mjs";
 import { GAME_PROTO } from "./game-proto.mjs";
 import { Challenges, PartyMemberStrength, PokemonType, SpeciesId } from "../../../../src/enums/generated.ts";
@@ -73,8 +73,6 @@ const lines = el => wholeCard(el)
 const mount = ({ type, labels, options, party = team(), wave = 30, money = 5000, draws = {}, misc = null, configs = [],
   tier = 66, catchAllowed = false, seedOffset = 30512, biome = 3, balls = [10, 10, 10, 0, 0], modifiers = [], dex = {}, menu = options,
   tokens = {}, enemy = [], tables = null, gameMode, field = false } = {}) => {
-  let el;
-  globalThis.window = globalThis; delete globalThis.__coachHud;
   const forks = [];
   const me = { encounterType: type, encounterTier: tier, options, misc, catchAllowed, enemyPartyConfigs: configs, dialogueTokens: tokens,
     ...(seedOffset == null ? {} : { getSeedOffset: () => seedOffset }) };
@@ -133,12 +131,7 @@ const mount = ({ type, labels, options, party = team(), wave = 30, money = 5000,
     Object.assign(scene.currentBattle, { turn: 1, double: false, battleType: 0, enemySwitchCounter: 0,
       getBattlerCount: () => 1, trainer: null });
   }
-  globalThis.Phaser = { Math: { RND: rnd }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
-  const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
-  globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
-  globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
-  globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  eval(bundle("hud", { expose: true }));
+  const { el } = mountHud({ scene, rnd });
   // The chunk scan finds nothing under node: `tables` stands in for what it would have found, and the card is drawn
   // again.
   if (tables) {

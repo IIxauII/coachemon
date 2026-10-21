@@ -1,8 +1,6 @@
 import assert from "node:assert/strict";
-import { bundle } from "../hud-bundle.mjs";
+import { mountHud } from "./fake-page.mjs";
 import { GAME_PROTO } from "./game-proto.mjs";
-
-const src = bundle("hud", { expose: true });
 
 const calls = { game: 0 };
 const spy = (name, fn) => (...a) => { calls.game++; calls[name] = (calls[name] ?? 0) + 1; return fn(...a); };
@@ -68,11 +66,7 @@ const setup = ({ player, enemy, double = false, phase = "CommandPhase", trainer 
       randSeedInt(range, min = 0) { this.battleSeedState += "+"; return min; }, ...battle,
     },
   };
-  globalThis.window = globalThis;
-  globalThis.Phaser = { Math: { RND: rnd } };
-  globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: () => ({ style: {}, addEventListener() {}, remove() {} }) };
-  globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
-  eval(src);
+  mountHud({ rnd });
   const { readTurn } = globalThis.__hud["25-turn"];
   const ask = fn => readTurn(scene, fn);
   return {
