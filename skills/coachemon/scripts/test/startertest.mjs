@@ -208,7 +208,6 @@ const mount = ({ limit = 10, chosen = [], valid = STARTERS, challenges = [], wit
   return { card, handler, model: globalThis.__coachHud.last(), summary: globalThis.__coachHud.summary() };
 };
 
-
 const show = (label, opts) => {
   const last = mount(opts);
   console.log(`== ${label}\n${last.card()}`);

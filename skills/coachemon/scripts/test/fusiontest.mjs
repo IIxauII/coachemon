@@ -155,7 +155,6 @@ const mount = ({ screen = "party", spliced = false, members = party(spliced), pi
   return { card, scene, model: globalThis.__coachHud.last(), summary: globalThis.__coachHud.summary() };
 };
 
-
 // The card is built inside a run read now, so it opens a `sandbox` where it used to open none: every case asserts
 // what the sibling card tests assert of that seam — the sandbox was restored and the run's own RNG stream never
 // advanced, because a run read may never change what the run would have done (#589).

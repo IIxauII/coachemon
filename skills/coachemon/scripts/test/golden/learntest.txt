@@ -1,5 +1,5 @@
 == Charizard ← Flare Blitz
-card learn W? Skip — not an upgrade over Dragon Breath
+card learn W- Skip — not an upgrade over Dragon Breath
 strip 🎓 Charizard learns Charizard Atk 122 / SpA 154
 Skip — not an upgrade over Dragon Breath
 ✓ Fire Flare Blitz 3rd Fire move · recoil 25% of damage · weak Atk power 64 {base 120 · STAB} −8 power
@@ -11,7 +11,7 @@ Moves
 Team
 team: −SE Dragon
 == Venusaur ← Solar Beam
-card learn W? Skip — not an upgrade over Double-Edge
+card learn W- Skip — not an upgrade over Double-Edge
 strip 🎓 Venusaur learns Venusaur Atk 133 / SpA 142
 Skip — not an upgrade over Double-Edge
 ✓ Grass Solar Beam 2nd Grass move · charge turn power 68 {base 120 · STAB} −26 power
@@ -21,7 +21,7 @@ Moves
 · Grass Synthesis status
 · Grass Power Whip SE on Ground/Rock/Water power 186 {base 120 · 85% acc · STAB}
 == Blastoise ← Skull Bash
-card learn W? Skip — not an upgrade over Aqua Tail
+card learn W- Skip — not an upgrade over Aqua Tail
 strip 🎓 Blastoise learns Blastoise Atk 119 / SpA 121
 Skip — not an upgrade over Aqua Tail
 ✓ Normal Skull Bash neutral on Water · charge turn power 65 {base 130} −7 power
@@ -31,7 +31,7 @@ Moves
 · Water Wave Crash 3rd Water move · recoil 25% of damage · set move (Doubles Bulky Attacker) power 96 {base 120 · STAB}
 · Water Hydro Pump 3rd Water move power 79 {base 110 · 80% acc · STAB}
 == Scrafty ← Head Smash
-card learn W? Learn → forget Brick Break
+card learn W- Learn → forget Brick Break
 strip 🎓 Scrafty learns Scrafty Atk 150 / SpA 62
 Learn → forget Brick Break
 ✓ Rock Head Smash SE on Flying/Bug/Fire · recoil 25% of damage power 117 {base 150 · 80% acc} +49 power
@@ -43,7 +43,7 @@ Moves
 Team
 team: +SE Flying/Bug/Fire
 == Nidoking ← Double Kick
-card learn W? Learn → forget Tackle
+card learn W- Learn → forget Tackle
 strip 🎓 Nidoking learns Nidoking Atk 120 / SpA 100
 Learn → forget Tackle
 ✓ Fighting Double Kick 2 hits · SE on Normal/Ice power 76 {base 30 × 2 hits} +36 power
@@ -55,7 +55,7 @@ Moves
 Team
 team: +SE Normal/Ice
 == Mew (transformed) ← Aura Sphere
-card learn W? Learn → forget Pound
+card learn W- Learn → forget Pound
 strip 🎓 Mew learns Mew Atk 100 / SpA 100
 Learn → forget Pound
 ✓ Fighting Aura Sphere SE on Normal/Rock/Steel… · set move (Fast Bulky Setup) power 125 {base 80} +83 power
@@ -66,7 +66,7 @@ Moves
 Team
 team: +SE Normal/Rock/Steel…
 == Cloyster (Skill Link) ← Triple Axel
-card learn W? Learn → forget Constrict
+card learn W- Learn → forget Constrict
 strip 🎓 Cloyster learns Cloyster Atk 140 / SpA 90
 Learn → forget Constrict
 ✓ Ice Triple Axel 2.7 hits · 2nd Ice move power 122 {base 20 × 2.7 hits · 90% acc · STAB} +114 power
@@ -76,7 +76,7 @@ Moves
 · Normal Tackle 2nd Normal move power 30 {base 40}
 ✗ Normal Constrict 2nd Normal move power 8 {base 10}
 == Gengar ← Shadow Ball
-card learn W? Learn → forget Super Fang
+card learn W- Learn → forget Super Fang
 strip 🎓 Gengar learns Gengar Atk 70 / SpA 140
 Learn → forget Super Fang
 ✓ Ghost Shadow Ball SE on Ghost/Psychic · 2nd Ghost move · set move (Wallbreaker) power 140 {base 80 · STAB} +81 power
@@ -88,7 +88,7 @@ Moves
 Team
 team: +SE Ghost/Psychic
 == Metagross ← Steel Beam
-card learn W? Learn → forget Bullet Punch
+card learn W- Learn → forget Bullet Punch
 strip 🎓 Metagross learns Metagross Atk 135 / SpA 125
 Learn → forget Bullet Punch
 ✓ Steel Steel Beam 2nd Steel move · −50% HP each use power 76 {base 140 · 95% acc · STAB} +10 power
@@ -98,7 +98,7 @@ Moves
 · Steel Iron Head 2nd Steel move power 90 {base 80 · STAB}
 ✗ Steel Bullet Punch 2nd Steel move · priority +1 · set move (Bulky Support) power 66 {base 40 · STAB}
 == Dragonite ← Outrage
-card learn W? Learn → forget Dragon Claw
+card learn W- Learn → forget Dragon Claw
 strip 🎓 Dragonite learns Dragonite Atk 134 / SpA 100
 Learn → forget Dragon Claw
 ✓ Dragon Outrage SE on Dragon · locks 2–3 turns, then confused · set move (Bulky Setup) power 178 {base 120 · STAB} +36 power
@@ -108,7 +108,7 @@ Moves
 · Fire Fire Punch SE on Bug/Steel/Grass… power 98 {base 75}
 · Electric Thunder Punch SE on Flying/Water power 95 {base 75}
 == Arcanine ← Overheat
-card learn W? Learn → forget Wild Charge
+card learn W- Learn → forget Wild Charge
 strip 🎓 Arcanine learns Arcanine Atk 110 / SpA 120
 Learn → forget Wild Charge
 ✓ Fire Overheat 2nd Fire move · −2 SpA after use power 105 {base 130 · 90% acc · STAB} +27 power
@@ -120,7 +120,7 @@ Moves
 Team
 team: −SE Flying/Water
 == Emolga ← Spark
-card learn W? Learn → forget Charge
+card learn W- Learn → forget Charge
 strip 🎓 Emolga learns Emolga Atk 26 / SpA 26
 Learn → forget Charge
 ✓ Electric Spark 2nd Electric move power 73 {base 65 · STAB} +68 power
@@ -130,7 +130,7 @@ Moves
 · Ice Icicle Crash SE on Ground/Grass/Dragon power 99 {base 85 · 90% acc}
 ✗ Electric Charge +1 SpD power 5 {+1 SpD}
 == Tyranitar ← Iron Head (team)
-card learn W? Learn → forget Tackle
+card learn W- Learn → forget Tackle
 strip 🎓 Tyranitar learns Tyranitar Atk 134 / SpA 95
 Learn → forget Tackle
 ✓ Steel Iron Head SE on Rock/Fairy power 99 {base 80} +58 power
@@ -142,7 +142,7 @@ Moves
 Team
 team: +SE Fairy
 == Houndoom ← Nasty Plot (TM)
-card learn W? Learn → forget Howl
+card learn W- Learn → forget Howl
 strip 🎓 Houndoom learns Houndoom Atk 120 / SpA 160
 Learn → forget Howl
 ✓ Dark Nasty Plot +2 SpA · set move (Fast Attacker) power 281 {+2 SpA} +281 power
@@ -152,7 +152,7 @@ Moves
 · Dark Snarl 2nd Dark move power 59 {base 55 · 95% acc · STAB}
 · Fire Incinerate SE on Bug/Steel/Grass… power 117 {base 60 · STAB}
 == Fletchinder ← Roost
-card learn W? Learn → forget Growl
+card learn W- Learn → forget Growl
 strip 🎓 Fletchinder learns Fletchinder Atk 130 / SpA 62
 Learn → forget Growl
 ✓ Flying Roost heal 50% · set move (Bulky Attacker, evolved) power 67 {heal 50%} +59 power
@@ -162,7 +162,7 @@ Moves
 · Fire Flame Charge SE on Steel/Ice power 95 {base 50 · STAB}
 · Normal Quick Attack priority +1 power 47 {base 40}
 == Minccino ← Triple Axel
-card learn W? Learn → forget Helping Hand
+card learn W- Learn → forget Helping Hand
 strip 🎓 Minccino learns Minccino Atk 110 / SpA 60
 Learn → forget Helping Hand
 ✓ Ice Triple Axel 2.4 hits · SE on Flying/Ground/Grass… · set move (Fast Attacker, evolved) power 137 {base 20 × 2.4 hits · 90% acc} +137 power
@@ -174,7 +174,7 @@ Moves
 Team
 team: +SE Flying/Ground/Grass…
 == Chompish ← Dragon Dance
-card learn W? Learn → forget Slash
+card learn W- Learn → forget Slash
 strip 🎓 Chompish learns Chompish Atk 142 / SpA 92
 Learn → forget Slash
 ✓ Dragon Dragon Dance +1 Atk/Spe power 91 {+1 Atk/Spe} +21 power
@@ -184,7 +184,7 @@ Moves
 · Dragon Dragon Claw SE on Dragon power 142 {base 80 · STAB}
 · Ground Dig SE on Poison/Rock/Steel… · charge turn power 78 {base 80 · STAB}
 == Galvantish ← Quiver Dance
-card learn W? Learn → forget Leech Life
+card learn W- Learn → forget Leech Life
 strip 🎓 Galvantish learns Galvantish Atk 89 / SpA 109
 Learn → forget Leech Life
 ✓ Bug Quiver Dance +1 SpA/SpD/Spe power 108 {+1 SpA/SpD/Spe} +35 power
@@ -194,7 +194,7 @@ Moves
 · Electric Discharge SE on Flying/Water power 156 {base 80 · STAB}
 · Poison Gastro Acid status
 == Leavannish ← Victory Dance
-card learn W? Skip — not an upgrade over Leaf Storm
+card learn W- Skip — not an upgrade over Leaf Storm
 strip 🎓 Leavannish learns Leavannish Atk 123 / SpA 90
 Skip — not an upgrade over Leaf Storm
 ✓ Fighting Victory Dance +1 Atk/Def/Spe · 3 status moves · weak fit power 19 {+1 Atk/Def/Spe} −148 power
@@ -206,7 +206,7 @@ Moves
 Team
 team: −SE Ground/Rock/Water
 == Cloystish ← Shell Smash
-card learn W? Learn → forget Icicle Crash
+card learn W- Learn → forget Icicle Crash
 strip 🎓 Cloystish learns Cloystish Atk 107 / SpA 97
 Learn → forget Icicle Crash
 ✓ Normal Shell Smash +2 Atk/SpA/Spe power 358 {+2 Atk/SpA/Spe} +272 power
@@ -216,7 +216,7 @@ Moves
 ✗ Ice Icicle Crash 2nd Ice move power 86 {base 85 · 90% acc · STAB}
 · Ice Ice Beam 2nd Ice move power 92 {base 90 · STAB}
 == Houndour ← Nasty Plot
-card learn W? Learn → forget Howl
+card learn W- Learn → forget Howl
 strip 🎓 Houndour learns Houndour Atk 60 / SpA 80
 Learn → forget Howl
 ✓ Dark Nasty Plot +2 SpA · set move (Fast Attacker, evolved) power 262 {+2 SpA} +262 power
@@ -226,7 +226,7 @@ Moves
 · Normal Leer foe Def −1 power 4 {foe Def −1}
 · Fire Incinerate SE on Bug/Steel/Grass… power 117 {base 60 · STAB}
 == Azumarill (Huge Power) ← Liquidation
-card learn W? Learn → forget Surf
+card learn W- Learn → forget Surf
 strip 🎓 Azumarill learns Azumarill Atk 180 / SpA 110
 Learn → forget Surf
 ✓ Water Liquidation 2nd Water move · set move (Bulky Attacker) power 115 {base 85 · STAB} +53 power
@@ -236,7 +236,7 @@ Moves
 · Ice Ice Beam SE on Flying/Grass · weak SpA power 69 {base 90}
 ✗ Water Surf 2nd Water move · weak SpA power 62 {base 90 · STAB}
 == Sylveon (Pixilate) ← Hyper Voice
-card learn W? Learn → forget Astonish
+card learn W- Learn → forget Astonish
 strip 🎓 Sylveon learns Sylveon Atk 65 / SpA 130
 Learn → forget Astonish
 ✓ Fairy Hyper Voice Pixilate · SE on Dragon/Dark · set move (Bulky Setup) power 245 {base 108 · STAB} +234 power
@@ -248,7 +248,7 @@ Moves
 Team
 team: +SE Dragon/Dark
 == Venusaur ← Solar Beam (no sun)
-card learn W? Learn → forget Constrict
+card learn W- Learn → forget Constrict
 strip 🎓 Venusaur learns Venusaur Atk 100 / SpA 142
 Learn → forget Constrict
 ✓ Grass Solar Beam 2nd Grass move · charge turn (not in sun) power 68 {base 120 · STAB} +61 power
@@ -259,7 +259,7 @@ Moves
 ✗ Normal Constrict neutral on Poison · weak Atk power 7 {base 10}
 == STAB by share [12,19,27,34,41]
 == Ludicolo ← Soak (Skarmory ahead)
-card learn W? Skip — not an upgrade over Zen Headbutt
+card learn W- Skip — not an upgrade over Zen Headbutt
 strip 🎓 Ludicolo learns Ludicolo Atk 70 / SpA 90
 Skip — not an upgrade over Zen Headbutt
 ✓ Water Soak pure Water power 35 {pure Water} −36 power
@@ -271,7 +271,7 @@ Moves
 Team
 team: −SE Fighting/Poison
 == Garganacl ← Salt Cure
-card learn W? Learn → forget Constrict
+card learn W- Learn → forget Constrict
 strip 🎓 Garganacl learns Garganacl Atk 100 / SpA 45
 Learn → forget Constrict
 ✓ Rock Salt Cure SE on Flying/Bug · curse 1/16 a turn · set move (Bulky Support) power 109 {base 40 · STAB} +99 power

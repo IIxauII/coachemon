@@ -16,45 +16,46 @@ const node = () => {
 };
 const seeded = () => ({ _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } });
 
-// Gotcha: the plain half copies `90-render.js`'s `rowText`, and `headingOf` its `headingText`. `card()` asserts both
-// against the wire, so a change there fails here instead of drifting.
+// `plain` copies `90-render.js`'s `rowText`, and `clean` and `headingOf` its `clean` and `headingText`. `card()`
+// asserts all three against the wire, so a change there fails here instead of drifting.
 const walk = n => {
-  if (n == null) return ["", ""];
-  if (typeof n !== "object") return [String(n), String(n)];
-  if (String(n.tagName ?? "").toUpperCase() === "IMG") return [String(n.title ?? ""), String(n.title ?? "")];
-  const kids = n.childNodes ? Array.prototype.slice.call(n.childNodes) : n.children ?? [];
-  const [plain, titled] = kids.length
-    ? [0, 1].map(i => kids.map(walk).map(w => w[i]).filter(Boolean).join(" "))
-    : [String(n.textContent ?? ""), String(n.textContent ?? "")];
-  return [plain, n.title ? `${titled} {${n.title}}` : titled];
+  if (n == null) return { plain: "", titled: "" };
+  if (typeof n !== "object") return { plain: String(n), titled: String(n) };
+  if (String(n.tagName ?? "").toUpperCase() === "IMG") return { plain: String(n.title ?? ""), titled: String(n.title ?? "") };
+  const kids = (n.childNodes ? Array.prototype.slice.call(n.childNodes) : n.children ?? []).map(walk);
+  const leaf = String(n.textContent ?? "");
+  const join = half => (kids.length ? kids.map(k => k[half]).filter(Boolean).join(" ") : leaf);
+  const titled = join("titled");
+  return { plain: join("plain"), titled: n.title ? `${titled} {${n.title}}` : titled };
 };
 const clean = l => l.replace(/\s+/g, " ").trim();
 const headingOf = g => (g.id === "act" ? g.summary
   : g.summary && g.label ? `${g.label}: ${g.summary}` : g.label || g.summary) || null;
 
-// Contract: the card as `__coachHud.card()` sends it, each row with its hover titles inline as `{…}`, under one line
-// for the event and one for the strip's head. The head carries facts the wire does not, such as the shop's money and
-// an encounter's rarity (#894).
+// The card as `__coachHud.card()` sends it, each row with its hover titles inline as `{…}`, under one line for the
+// event and one for the strip's head (#894).
 const cardText = el => {
   const ev = globalThis.__coachHud.card();
-  if (!ev) return "card none";
+  const failed = el.textContent ? [`TEXT ${el.textContent}`] : [];
+  if (!ev) return ["card none", ...failed].join("\n");
   const drawn = [...(globalThis.__hud["98-watch"].watchShown()?.groups ?? [])];
   const head = (el.kids?.length ?? 0) >= 2 ? el.kids[1].children?.[0] : null;
-  const out = [`card ${ev.kind} W${ev.wave ?? "?"} ${ev.verdict}${ev.randomized ? " randomized" : ""}${ev.oracleLine
+  const out = [`card ${ev.kind} W${ev.wave ?? "-"} ${ev.verdict ?? "-"}${ev.randomized ? " randomized" : ""}${ev.oracleLine
     ? ` line ${ev.oracleLine.state} ${ev.oracleLine.turn}/${ev.oracleLine.of}` : ""}`];
-  if (head) out.push(`strip ${clean(walk(head)[1])}`);
+  if (head) out.push(`strip ${clean(walk(head).titled)}`);
   const plain = [];
   for (const wire of ev.groups) {
-    const at = drawn.findIndex(d => d.id === wire.id);
-    assert.ok(at >= 0, `card(): the wire has a ${wire.id} group the panel never drew`);
-    const g = drawn.splice(at, 1)[0];
-    const rows = g.rows.map(walk).map(w => w.map(clean)).filter(([p]) => p);
-    assert.deepEqual(rows.map(([p]) => p), wire.rows, `card(): ${wire.id}'s rows walk differently from the wire`);
+    const index = drawn.findIndex(d => d.id === wire.id);
+    assert.ok(index >= 0, `card(): the wire has a ${wire.id} group the panel never drew`);
+    const rows = drawn.splice(index, 1)[0].rows.map(walk)
+      .map(w => ({ plain: clean(w.plain), titled: clean(w.titled) })).filter(r => r.plain);
+    assert.deepEqual(rows.map(r => r.plain), wire.rows, `card(): ${wire.id}'s rows walk differently from the wire`);
     plain.push([headingOf(wire), ...wire.rows].filter(Boolean).join("\n"));
-    out.push(...[headingOf(wire), ...rows.map(([, t]) => t)].filter(Boolean));
+    out.push(...[headingOf(wire), ...rows.map(r => r.titled)].filter(Boolean));
   }
+  assert.deepEqual(drawn.map(g => g.id), [], "card(): the panel drew groups the wire does not carry");
   assert.equal(plain.filter(Boolean).join("\n") || null, ev.text, "card(): the groups rebuild a different text from the wire's");
-  return out.join("\n");
+  return [...out, ...failed].join("\n");
 };
 
 /**
