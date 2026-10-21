@@ -1046,9 +1046,11 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   };
   const hpLeft = Math.max(0, Math.min(maxHp, stealing && taken > 0 ? stepped()
     : hp - hitsTaken() - selfSpent + drainTotal(ourDrain, Math.min(taken, turnsWe)))) * (1 - selfKo);
+  // What our own move spends is `cost`'s, not `hpKept`'s.
+  const hpKept = Math.max(0, Math.min(maxHp, hp - hitsTaken() + drainTotal(ourDrain, Math.min(taken, turnsWe)))) / maxHp;
   return {
     pWeKoFirst: Math.min(1, Math.round(pWe * 1e9) / 1e9), pTheyKoFirst: Math.min(1, Math.round(pThey * 1e9) / 1e9),
-    expectedHpLeft: Math.round(hpLeft),
+    expectedHpLeft: Math.round(hpLeft), hpKept,
     turnsWe, turnsThey, pFirst, hitsWe, stole: eats ? lands(1) : 0,
     pNeverUsed: Math.min(1, Math.round(never * 1e9) / 1e9),
     eTurnsWe: expTurns(weBy), eTurnsThey: expTurns(theyBy),
@@ -1152,10 +1154,17 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     // The foe's whole bar left to the rest of the team, for the share of the time our mon falls before landing a hit:
     // every scorer below pays it, or the one that skips it wins a lost race (#650).
     const unlanded = never => never * FOE_BAR;
+    // The singles prices of a race lost and of the HP a duel costs (CONTEXT.md, `Turn score`; #850). `hpBefore` is the
+    // share of the bar before any entry hit. A double's joint value prices both through `danger`: charging them per
+    // slot as well counts them twice.
+    const edgeOf = (we, they) => we - (double ? 1 : MON_LOST) * they;
+    const hpBefore = Math.min(1, me.hp / (me.getMaxHp?.() || me.hp || 1));
+    const hpSpent = kept => (double ? 0 : hpBefore - kept);
     const one = (o, fi) => {
       const x = trade(o, active[fi]);
       const turns = x.turnsWe + lost;
-      const score = lasts - x.eTurnsWe - unlanded(x.pNeverUsed) - lost + (x.pWeKoFirst - x.pTheyKoFirst) - (x.cost ?? 0) - cost(o) - feed(active[fi]) * x.pTheyKoFirst;
+      const score = lasts - x.eTurnsWe - unlanded(x.pNeverUsed) - lost + edgeOf(x.pWeKoFirst, x.pTheyKoFirst) - (x.cost ?? 0) - cost(o) - feed(active[fi]) * x.pTheyKoFirst
+        - hpSpent(x.hpKept);
       return { me, move: o, target: fi, turns, hits: x.turnsWe, score, hp, trade: x };
     };
     // The redirect (CONTEXT.md, `Spare hit`; game-code.md §18): `redirScore` is what the hit is worth on the survivor,
@@ -1184,16 +1193,18 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       // `stole`: turn 1 already ate a berry off it, so a follow-up that steals again draws from what is left (#646).
       const value = y => {
         const x2 = exchange(turn, me, y.pm, f, { hp: t1.hp, after: t1, outcome: y, next: true, field: worst, stole: x.trade?.stole ?? 0 });
-        return { y, x2, v: x2.eTurnsThey - x2.eTurnsWe + x2.pWeKoFirst - x2.pTheyKoFirst - (x2.cost ?? 0) };
+        return { y, x2, v: x2.eTurnsThey - x2.eTurnsWe + edgeOf(x2.pWeKoFirst, x2.pTheyKoFirst) - (x2.cost ?? 0) - hpSpent(x2.hpKept) };
       };
       const tried = cands.map(value);
       const best = tried.reduce((b, t) => (!b || t.v > b.v ? t : b), null);
       if (!best || best.y === o) return x;
       const scoreOf = ({ x2 }) => {
         const eTurns = 1 + (1 - t1.we) * x2.eTurnsWe;
-        const edge = t1.we + standing * x2.pWeKoFirst - (t1.they + standing * x2.pTheyKoFirst);
+        const pThey = t1.they + standing * x2.pTheyKoFirst;
+        const edge = edgeOf(t1.we + standing * x2.pWeKoFirst, pThey);
         const spent = Math.min(1, (o.self ?? 0) / (me.getMaxHp?.() || hp)) + (x2.cost ?? 0);
-        return lasts - eTurns - unlanded(x.trade.pNeverUsed) - lost + edge - spent - cost(o) - feed(f) * (t1.they + standing * x2.pTheyKoFirst);
+        return lasts - eTurns - unlanded(x.trade.pNeverUsed) - lost + edge - spent - cost(o) - feed(f) * pThey
+          - hpSpent(t1.we * x.trade.hpKept + standing * x2.hpKept);
       };
       const score = scoreOf(best);
       const { y, x2 } = best;
@@ -1274,7 +1285,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
         let best = null;
         for (const y of cands.length ? cands : [null]) {
           const x2 = exchange(t2, me, y?.pm ?? null, f, { hp: t1p.hp, after: t1p, outcome: y, next: true, foeAct: patches && play.foeAct ? play.foeAct(pF) : null });
-          const v = x2.eTurnsThey - x2.eTurnsWe + x2.pWeKoFirst - x2.pTheyKoFirst - (x2.cost ?? 0);
+          const v = x2.eTurnsThey - x2.eTurnsWe + edgeOf(x2.pWeKoFirst, x2.pTheyKoFirst) - (x2.cost ?? 0) - hpSpent(x2.hpKept);
           if (!best || v > best.v) best = { y, x2, v };
         }
         return best;
@@ -1285,14 +1296,18 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       if (!landed || (w < 1 && !missed)) return null;
       const mix = k => w * landed.x2[k] + (missed ? (1 - w) * missed.x2[k] : 0);
       const eTurns = 1 + mix("eTurnsWe") + unlanded(they + standing * mix("pNeverUsed"));
-      const edge = standing * (mix("pWeKoFirst") - mix("pTheyKoFirst")) - they - feed(f) * (they + standing * mix("pTheyKoFirst"));
+      const pThey = they + standing * mix("pTheyKoFirst");
+      const edge = edgeOf(standing * mix("pWeKoFirst"), pThey) - feed(f) * pThey;
       const spent = (play.hpCost ?? 0) / maxHp + mix("cost");
+      // `hpCost` is in `spent`, so the HP kept is counted as if it were not paid.
+      const kept = standing * Math.min(1, mix("hpKept") + (play.hpCost ?? 0) / maxHp);
       const bonus = ((play.kind === "hazard" ? play.value : 0) + (play.gain ?? 0)) * works;
       const nudge = turn.benefit(me, f, mv) * AI_POINT;
       const hits = Math.min(9, 1 + landed.x2.turnsWe);
       return {
         me, move: { name: info.name, type: info.type, cat: "status", pm, expected: 0, notes: [] }, target: fi, self: !!play.self,
-        turns: hits + lost, hits, score: lasts - eTurns - lost + edge - spent + start.keep + bonus + nudge - STATUS_COST, hp, then: landed.y && (planOutcomes(turn, me, f).find(z => z.name === landed.y.name) ?? landed.y),
+        turns: hits + lost, hits, score: lasts - eTurns - lost + edge - spent - hpSpent(kept) + start.keep + bonus + nudge - STATUS_COST, hp,
+        then: landed.y && (planOutcomes(turn, me, f).find(z => z.name === landed.y.name) ?? landed.y),
         effect: start.effect,
       };
     };
@@ -1428,7 +1443,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const redir = redirectOdds(p, partner, payers);
       const mix = x => (redir > 0 && x?.redirScore != null ? redir * x.redirScore + (1 - redir) * x.score : x?.score ?? 0);
       // A KO'd partner is lost along with whatever it was going to do.
-      let score = mix(p) - (ally ? ally.share + ally.pKo * (ALLY_KO_COST + Math.max(0, partner.score)) : 0);
+      let score = mix(p) - (ally ? ally.share + ally.pKo * (MON_LOST + Math.max(0, partner.score)) : 0);
       if (spare && drawback(p.move)) {
         const clean = opt(p.me, payers.includes(p.me)).filter(x => x.move && !x.play && !drawback(x.move)).reduce((b, x) => (!b || x.score > b.score ? x : b), null);
         if (clean) score = Math.min(score, mix(clean)) + (p.move.benefit ?? 0) * AI_POINT;
@@ -1486,7 +1501,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     const info = picks.map((p, i) => {
       const oi = picks.findIndex(q => q !== p);
       const ally = !p.play && oi >= 0 && !payers.includes(p.me) ? allyHit(p, picks[oi].me) : null;
-      return { ally, spare: false, redir: 0, score: raw[i] - (ally ? ally.share + ally.pKo * (ALLY_KO_COST + Math.max(0, raw[oi])) : 0) };
+      return { ally, spare: false, redir: 0, score: raw[i] - (ally ? ally.share + ally.pKo * (MON_LOST + Math.max(0, raw[oi])) : 0) };
     });
     plans.push({
       picks: picks.map((p, i) => ({ ...shown[i], score: info[i].score })), payers, info, extra: payers.length,
@@ -1861,7 +1876,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
 const hitsAlly = o => [MoveTarget.ALL_OTHERS, MoveTarget.ALL_NEAR_OTHERS].includes(o?.pm?.getMove?.()?.moveTarget);
 // A move the game's own scoring marks down. Without game functions nothing is.
 export const drawback = o => (o?.benefit ?? 0) < 0;
-const ALLY_KO_COST = 4;
+const MON_LOST = 4;
 // `danger` runs to 2, so this caps what a removal adds for the foe's danger near one turn of ours (#320).
 const REMOVAL_DANGER = 0.5;
 const REDIR_NOTE = 0.25;

@@ -300,13 +300,15 @@ Fight plan steps approximate winnable
 ➜ 2.~ Garchomp Dragon Dragon Claw → Snorlax KO · 23% left
 == drain
 Meteor Mash into a draining Golisopod: 5 hits
+== hp kept
+⚔ Venusaur Grass Giga Drain → Snorlax 3 hits
 == on-KO boost
 ⚔ Mamoswine Ground Earthquake → Buzzwole 3 hits KO feeds Buzzwole's Beast Boost (+1 Atk)
 now: ⇄ Mamoswine out › Crobat in · takes ~6% · resists Lunge
 next: ⚔ Crobat Flying Wing Attack → Buzzwole
 -- without Beast Boost
-⚔ Mamoswine Ground Earthquake → Buzzwole 3 hits
-⇄ Mamoswine out › Crobat in · optional · takes ~6% · resists Lunge
+now: ⇄ Mamoswine out › Crobat in · takes ~6% · resists Lunge
+next: ⚔ Crobat Flying Wing Attack → Buzzwole
 == summary
 {"danger":[{"mon":"Mamoswine","from":"Mega Golisopod","move":"Iron Head","level":"after","saveFor":"Xurkitree"}],"plan":"likely lost · 💀 Buzzwole KOs 3/6 · nobody KOs Buzzwole 1-on-1 — maximise damage before it comes in, chip it with Crobat · Mamoswine goes down before Buzzwole comes in"}
 == guzma w165 turn 1 (live)
@@ -331,7 +333,7 @@ Fight plan winnable
 == guzma w165 turn 3 (live)
 ⚔ Golduck ⚠ Steel 100% {Mega Golisopod's Iron Head: ~100% of current HP} Water Surf → Mega Golisopod
 ⤵ Golduck falls this turn › Metagross in free
-⇄ Golduck ⚠ Steel 100% {Mega Golisopod's Iron Head: ~100% of current HP} out › Metagross in · optional · takes ~23% · resists Iron Head
+⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
 foes weak to: Ground ×1
 Mega Golisopod Mega Golisopod L153 Bug Steel 👑 100% ▲ — ↯ Steel Iron Head → Golduck 100% likely · moves after
 Xurkitree Xurkitree L153 Electric 100% ▲ Ground ➜ Mamoswine Ground Precipice Blades ~95% · 2 hits later
@@ -404,12 +406,12 @@ play: Spore, Lum x1           note — · patches — · skip0 1 · foeAct — �
 play: Thunder Wave, bare foe  note paralysis · patches Machamp status 3 · skip0 0.125 · foeAct — · gain 0
 play: Thunder Wave, Lum x1    note — · patches — · skip0 0.125 · foeAct — · gain 0
 play: Toxic, Lum x1, Unnerve  note toxic · patches Machamp status 2 · skip0 0 · foeAct — · gain 0
-pick: Toxic, bare foe                 Toxic · effect "toxic" · score 3.8504
-pick: Toxic, Lum x1                   Giga Drain · effect "" · score 1.0504
-pick: Spore, bare foe, slower than it Spore · effect "sleep" · score -0.8163
-pick: Spore, Lum x1, slower than it   Giga Drain · effect "" · score -0.8489
-pick: Spore, Lum x2, slower than it   Giga Drain · effect "" · score -0.8489
-pick: Spore, Sitrus only, slower      Spore · effect "sleep" · score -0.8163
+pick: Toxic, bare foe                 Toxic · effect "toxic" · score 3.4109
+pick: Toxic, Lum x1                   Giga Drain · effect "" · score 0.1714
+pick: Spore, bare foe, slower than it Spore · effect "sleep" · score -2.8163
+pick: Spore, Lum x1, slower than it   Giga Drain · effect "" · score -4.6978
+pick: Spore, Lum x2, slower than it   Giga Drain · effect "" · score -4.6978
+pick: Spore, Sitrus only, slower      Spore · effect "sleep" · score -2.8163
 == lum: the ⚔ line for a sleep it cures (live)
 ⚔ Vileplume Grass Spore → Machamp
 == lum: …and for one that lasts (live)

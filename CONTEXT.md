@@ -417,10 +417,21 @@ cost of losing a mon be added up at all.
 
 What removing a foe is worth has its own entry: the **removal price**.
 
+In a single battle a duel carries two prices of ours. The chance our mon falls first is charged at a **mon lost**, 4
+turns, where a foe of theirs falling first is credited at 1. The HP the duel costs the mon fighting it is charged at 1
+turn a whole bar, measured from its HP before any entry hit. A double charges neither per slot: its joint value already
+prices our HP and our losses through the foes' danger.
+
 A quantity in some other unit — a bare probability, a fraction of a health bar — cannot be compared with one in turns,
 however reasonable each looks alone; summing them silently picks an exchange rate nobody chose. So a weight the coach
 carries is stated in turns before it is given a number, and one whose unit is unclear is a bug waiting rather than a
 value to tune.
+
+## Mon lost
+
+What losing one of our mons costs, in **turn score**: 4 turns of ours. The same price covers a duel our mon loses in a
+single battle and a partner our own spread move knocks out in a double. It pairs with the price of a foe's whole bar
+left to the rest of the team, also 4.
 
 ## Field threat
 
