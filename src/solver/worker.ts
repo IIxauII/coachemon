@@ -10,7 +10,7 @@ import type { SessionSave } from "./input.ts";
 import type { Checkpoint, Input } from "./oracle-line.ts";
 import { type Clone, harnessJob } from "./replay.ts";
 import { checkpoint, input } from "./schema.ts";
-import type { Child, Hp, Pool, Position } from "./search.ts";
+import type { Child, Hp, Pool, Position, StatStages } from "./search.ts";
 
 // (#655)
 const HEAP_MB = 768;
@@ -27,9 +27,11 @@ export type Miss = { from: number; turn: number; want: Played; got: Played };
 export type Checks = { straight: readonly { turn: number; end: TurnEnd }[]; fork: readonly Miss[]; chain: readonly Miss[] };
 
 const hp = z.object({ ours: z.array(z.number()), foes: z.array(z.number()) }) satisfies z.ZodType<Hp>;
+const stages = z.object({ ours: z.array(z.array(z.int())), foes: z.array(z.array(z.int())) }) satisfies z.ZodType<StatStages>;
 const position = z.object({
   sig: z.string(),
   hp,
+  stages,
   legal: z.array(input.nullable()),
   forkPoint: z.string(),
 }) satisfies z.ZodType<Position>;

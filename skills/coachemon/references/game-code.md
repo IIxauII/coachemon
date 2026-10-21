@@ -2083,7 +2083,9 @@ the prompt's closures until `forgetMoveProcess` opens the summary screen in `LEA
 **Answering it.** `start` ends at once on a move the mon already knows, Sketch excepted, or one unimplemented
 (`src/phases/learn-move-phase.ts:48-57`), and learns into the next slot unasked while the mon knows fewer than four
 (`:62-63`). Both checks read `getMoveset()`, which is the Transform or Mimic moveset in `summonData` while one is set
-(`src/field/pokemon.ts:1882`); `setMove` writes the new move into both (`:2016-2018`). The phase stays current after
+(`src/field/pokemon.ts:1882`); `setMove` writes the new move into both (`:2016-2018`). The summary screen lists the
+mon's own `moveset`, not `getMoveset()` (`src/ui/handlers/summary-ui-handler.ts:1319-1321`), so a transformed mon is
+asked on the copied moveset and picks the move to forget from its own. The phase stays current after
 the move is taken: `learnMove` calls `setMove` before its "learned" message and ends only once that message is
 dismissed (`src/phases/learn-move-phase.ts:211-229`). A decline likewise ends only after its "did not learn" message
 (`:156-157`, `:166-167`), and nothing the overlay can read marks that message as a decline (#808). The phase writes
@@ -2756,7 +2758,23 @@ picked by seed (offset `pokemon.id`), freed instead. The hook runs on copies `ge
 switch is the starter's, `this.passive`, copied at run start (`hasPassive`, `:2361`). So an evolution fights with its
 own passive and hidden ability, not the ones the grid shows: at 1.12.1.1, 126 of 394 evolved final forms carry another
 form-0 passive than their starter (Abra Comatose → Alakazam Magician) and 94 another hidden ability (Magikarp Rattled →
-Gyarados Moxie). The registry (`SpeciesDataRegistry`, found by the chunk scan, §10) gives every
+Gyarados Moxie).
+
+**What an unlock is, read off the tables** (#848). An `allAbilities` entry's `attrs` are attribute instances, known by
+class name (§22). Seven passives carry only attributes that act on an ally or outside the fight, so in a single battle
+they do nothing to it: Run Away (`RunSuccessAbAttr`, a sure escape from a wild battle), Pickup
+(`PostBattleLootAbAttr`), Honey Gather (`MoneyAbAttr`), Friend Guard (`AlliedFieldDamageReductionAbAttr`), Power Spot
+(`AllyMoveCategoryPowerBoostAbAttr`), Hospitality (`PostSummonAllyHealAbAttr`) and Costar
+(`PostSummonCopyAllyStatsAbAttr`, a Pikachu form's passive, `src/data/balance/species/generation-01.ts:2604`)
+(`src/data/abilities/init-abilities.ts:451`, `:463`, `:823`, `:918`, `:1744`, `:2115`, `:2078`). A weather setter's `PostSummonWeatherChangeAbAttr.weatherType`
+and a terrain setter's `PostSummonTerrainChangeAbAttr.terrainType` (`src/data/abilities/ab-attrs.ts:2576`, `:2602`)
+name the field: sun and rain ×1.5 to Fire and Water and ×0.5 to the other (`src/data/weather.ts:252`), harsh sun and
+heavy rain stop the other outright (`:77`), sand ×1.5 a Rock type's SpD and snow an Ice type's Def
+(`Pokemon.getEffectiveStat`, `src/field/pokemon.ts:1532-1541`), and Electric, Grassy and Psychic Terrain ×1.3 their
+type (`src/field/arena.ts:503`) for a grounded user only (`src/data/moves/move.ts:1180`). An `allMoves` entry has
+`type`, `category` and `power`, and its self-boosting stages come from `moveTraits` (§14).
+
+The registry (`SpeciesDataRegistry`, found by the chunk scan, §10) gives every
 species: `getSpecies(id)`, `getAllStarters()` (`src/data/species-data-registry.ts:293`) and `getEvolutions(id)`
 (`:331`: `level`, `item`, `condition`); on the handler a species is only on the visible containers. Ability and move
 names need `allAbilities` / `allMoves` (`src/data/data-lists.ts:8-9`) and egg-move ids `speciesEggMoves`
@@ -2845,7 +2863,10 @@ Read from the pinned source.
 **The command menu.** `Command` is FIGHT 0, BALL 1, POKEMON 2, RUN 3, TERA 4 (`src/enums/command.ts:1`), laid out 2×2
 (`src/ui/handlers/command-ui-handler.ts:52-61`). UP/DOWN move ±2 and LEFT/RIGHT ±1, never wrapping (`:157-182`). TERA
 sits off the grid: LEFT from FIGHT or POKEMON reaches it when `canTera()` (`:170-172`), RIGHT returns to FIGHT
-(`:178-180`), and `show` moves a cursor left on POKEMON back to FIGHT (`:98-99`).
+(`:178-180`), and `show` moves a cursor left on POKEMON back to FIGHT (`:98-99`). The button is a sprite with no text
+(`:40-50`) and `canTera()` (`:193`) decides whether it shows. ACTION on it opens FIGHT with `Command.TERA` as the
+handler's `fromCommand` (`:143-149`, `fight-ui-handler.ts:125`), which draws the `cursor_tera` cursor (`:309-310`) and
+is the command a move commits (`:155-159`), so a FIGHT opened that way Terastallizes with its move.
 
 **The target cursor.** `TargetSelectUiHandler.processInput` (`src/ui/handlers/target-select-ui-handler.ts:89`) moves a
 `BattlerIndex` — PLAYER 0, PLAYER_2 1, ENEMY 2, ENEMY_2 3 (`src/enums/battler-index.ts:5`) — and only ever lands on a

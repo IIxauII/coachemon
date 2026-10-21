@@ -51,7 +51,8 @@ export type ShopRow = { row: number; kind: "buttons" | "reward" | "shop"; items:
 export type FamilyExtra = {
   option_select: { unskippedIndices: number[] | null; selectedIndex: number };
   command: { fieldIndex: number; catchable: boolean | null };
-  fight: { fieldIndex: number; moves?: (FightMove | null)[] };
+  /** `tera`: opened by the Tera command, so the move picked Terastallizes first (#642). */
+  fight: { fieldIndex: number; tera: boolean; moves?: (FightMove | null)[] };
   ball: { catchable: boolean | null };
   target_select: { isMultipleTargets: boolean };
   modifier_select: { rows: ShopRow[]; rowCursor: number; colCursor: number; money: number; rerollCost: number | null };
