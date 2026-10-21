@@ -741,6 +741,7 @@ export const HUD: Area = {
     },
     { name: "hasAbility", kind: "method", at: ["src/field/pokemon.ts#Pokemon.hasAbility"] },
     { name: "hasAbilityWithAttr", kind: "method", at: ["src/field/pokemon.ts#Pokemon.hasAbilityWithAttr"] },
+    { name: "hasSpecies", kind: "method", at: ["src/field/pokemon.ts#Pokemon.hasSpecies"] },
     { name: "hasAnyChallenges", kind: "method", at: ["src/game-mode.ts#GameMode.hasAnyChallenges"] },
     {
       name: "hasAttr",
@@ -886,6 +887,8 @@ export const HUD: Area = {
     { name: "isFreshStartChallenge", kind: "method", at: ["src/game-mode.ts#GameMode.isFreshStartChallenge"] },
     { name: "isFullFreshStartChallenge", kind: "method", at: ["src/game-mode.ts#GameMode.isFullFreshStartChallenge"] },
     { name: "isGrounded", kind: "method", at: ["src/field/pokemon.ts#Pokemon.isGrounded"] },
+    { name: "isMax", kind: "method", at: ["src/field/pokemon.ts#Pokemon.isMax"] },
+    { name: "isMega", kind: "method", at: ["src/field/pokemon.ts#Pokemon.isMega"] },
     { name: "isModal", kind: "field", at: ["src/phases/switch-phase.ts#SwitchPhase.isModal"] },
     {
       name: "isMoveRestricted",
@@ -1711,6 +1714,14 @@ export const HUD: Area = {
       ],
     },
     {
+      ours: "skills/coachemon/scripts/hud/03-calendar.js#tera-refill",
+      of: [
+        "src/battle-scene.ts#BattleScene.doPostBattleCleanup",
+        "src/battle-scene.ts#BattleScene.newArena",
+        "src/phases/party-heal-phase.ts#PartyHealPhase.start",
+      ],
+    },
+    {
       ours: "skills/coachemon/scripts/hud/03-calendar.js#shop-after",
       of: [
         "src/phases/victory-phase.ts#VictoryPhase.start",
@@ -1923,6 +1934,7 @@ export const HUD: Area = {
         "src/phases/enemy-command-phase.ts#EnemyCommandPhase.start",
       ],
     },
+    { ours: "skills/coachemon/scripts/hud/25-turn.js#max-teras-per-arena", of: ["src/constants.ts#MAX_TERAS_PER_ARENA"] },
     {
       ours: "skills/coachemon/scripts/hud/25-turn.js#type-status-immune",
       of: [

@@ -454,4 +454,23 @@ Aura Wheel ×4 into a Gyarados that survives at 1, Enigma: 63 HP bar 0 (100%)
 == inaccurate pick
 ⚔ Quaquaval Normal Mega Kick → Rayquaza 2 hits · 75%
 Quaquaval Mega Kick → Rayquaza · 2 hits · 75%
+== gordie w180 t16, Tera left
+⚔ Gyarados Tera Water + Water Hydro Pump → Tyranitar 2 hits
+Tyranitar Tyranitar L179 Rock Dark 60% ▲ Water ↯ Rock Stone Edge → Gyarados 100% likely · moves after
+Carracosta Carracosta L169 Water Rock 100% ▲ — ↯ Rock Rock Slide → Gyarados 100% likely · moves after ➜ Gyarados Water Hydro Pump ~23% later
+Fight plan winnable
+💀 Carracosta Carracosta KOs 1/1 · win condition
+➜ 1. Gyarados Tera Water + Water Hydro Pump → Tyranitar KO · 79% left
+· input: ← from Fight to the Tera button
+➜ 2. Gyarados Water Hydro Pump → Carracosta KO · 18% left
+⚠ nothing we have hurts Carracosta — maximise damage before it comes in
+== gordie w180 t16, no Tera to take
+⚔ Gyarados ⚠ Rock ×2 58% {Tyranitar's Stone Edge: ~58% of current HP} Water Hydro Pump → Tyranitar 2 hits
+Tyranitar Tyranitar L179 Rock Dark 60% ▲ Water ↯ Rock Stone Edge → Gyarados 100% likely · moves after
+Carracosta Carracosta L169 Water Rock 100% ▲ — ↯ Rock Rock Slide → Gyarados 100% likely · moves after ➜ Gyarados Water Hydro Pump ~17% ⚠ loses trade later
+Fight plan likely lost
+💀 Carracosta Carracosta KOs 1/1 · win condition
+➜ 1. Gyarados Water Hydro Pump → Tyranitar KO · 57% left
+➜ 2. Gyarados Water Hydro Pump → Carracosta falls · foe at 61%
+⚠ likely lost: nothing we have hurts Carracosta — maximise damage before it comes in
 ok

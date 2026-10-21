@@ -22,7 +22,7 @@ globalThis.clearInterval = () => {};
 globalThis.localStorage = { getItem: () => "full", setItem() {} };
 eval(bundle("hud", { expose: true }));
 const { waveKind, isBossWave, bigFightsAhead, fightsAhead, nextHeal, healRevives, reviveBefore, challengeOn, trainerOdds, hasTrainers,
-  kindIsRolled, isGruntWave, poolAnchorWave, arenaRebuiltBetween } = globalThis.__hud["03-calendar"];
+  kindIsRolled, isGruntWave, poolAnchorWave, arenaRebuiltBetween, teraRefill, teraSpendable } = globalThis.__hud["03-calendar"];
 
 const row = (label, cells) => console.log(`${label.padEnd(26)}${cells.join("  ")}`);
 const kinds = (s, waves) => waves.map(w => `${w}:${waveKind(s, w) ?? "—"}`);
@@ -237,6 +237,32 @@ const kinds = (s, waves) => waves.map(w => `${w}:${waveKind(s, w) ?? "—"}`);
   row("waves 11–20", [11, 15, 16, 20].map(w => `${w}:${trainerOdds(d, w, biome)}`));
   assert.deepEqual([5, 10, 15, 20, 30].map(w => trainerOdds(d, w, biome)), [1, 0, 1, 1, 1]);
   assert.equal(trainerOdds(d, 16, biome), 0, "no roll in Daily: the calendar names its trainer waves outright");
+}
+
+// ---- Our Tera is spent only where no big fight comes before the charge refills (#649)
+{
+  const s = scene("classic");
+  const spend = (w, terapagos = false, at = s) => teraSpendable(at, w, terapagos);
+  console.log("== Tera spendable, classic");
+  row("waves", [171, 175, 179, 180, 181, 182, 190].map(w => `${w}:${spend(w) ? "yes" : "no"}`));
+  assert.equal(teraRefill(s, 175), 181, "a new biome and the party heal both refill it on the way into 181");
+  assert.equal(spend(180), true, "the big fight itself: the charge is back for 181");
+  assert.equal(spend(175), false, "a wild wave with the boss at 180 still to come");
+  assert.equal(spend(179), false, "the wave before the boss");
+  assert.equal(spend(182), false, "the first Elite Four member, with three more and the champion before 191");
+  assert.equal(spend(190), true, "the champion is the biome's last big fight");
+  // Limited Support 1 takes the heal away; the new biome still refills it.
+  assert.equal(teraRefill(scene("classic", { challenges: [{ id: LIMITED_SUPPORT, value: 1 }] }), 175), 181);
+  // A wave after the biome's last big fight: the boss at 10 is behind wave 10's own fight.
+  const late = { ...s, gameMode: { ...s.gameMode, isBoss: w => w === 60, isFixedBattle: () => false, isWaveFinal: () => false } };
+  assert.equal(spend(65, false, late), true, "a wild wave after the biome's last big fight");
+  // A Terapagos refills it after any trainer battle too (game-code.md §17): the gym leader at 50 is one.
+  assert.equal(teraRefill(s, 45, true), 50, "with a Terapagos, the gym leader's own cleanup refills it");
+  assert.equal(spend(45, true), true, "so a wild wave before that gym leader may spend it");
+  assert.equal(spend(45, false), false, "without one the gym leader finds it gone");
+  assert.equal(teraRefill(s, 182, true), 184, "the next Elite Four member is a trainer battle");
+  assert.equal(spend(182, true), true);
+  assert.equal(teraSpendable({ gameMode: { isClassic: true } }, 180), false, "without the game's calendar nothing is known safe");
 }
 
 // ---- The game-less fallbacks answer for a build that hides `gameMode`'s methods

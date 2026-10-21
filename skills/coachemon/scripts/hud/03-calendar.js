@@ -175,3 +175,30 @@ export const poolAnchorWave = w => {
 // A new biome between the two waves, not a pool rebuild. An arena covers X1…X0, so a preview taken on an X0 reads the
 // biome the run is leaving.
 export const arenaRebuiltBetween = (from, to) => Math.floor((from - 1) / 10) !== Math.floor((to - 1) / 10);
+
+// A trainer battle no roll decides; a mystery encounter is rolled, so never one here. Without `getFixedBattle` a fixed
+// battle counts as a trainer's, as every classic one is.
+// game-less-backed
+const sureTrainer = (s, w) => {
+  const kind = waveKind(s, w);
+  if (kind === "gym" || (kind === "final" && s?.gameMode?.isClassic)) return true;
+  if (kind === "fixed") return tryDo(() => s.gameMode.getFixedBattle(w).battleType === BattleType.TRAINER, true);
+  return trainerOdds(s, w, null) >= 1;
+};
+// The first wave after `from` that our Tera charge is full again on, null within `SPAN`: a new arena, a party heal,
+// or with a Terapagos the cleanup into a trainer battle (game-code.md §17).
+// @mirrors tera-refill
+export const teraRefill = (s, from, terapagos = false) => {
+  const heal = nextHeal(s, from + 1);
+  for (let w = from + 1; w <= from + SPAN; w++) {
+    if (runEndsAt(s, w - 1)) return null;
+    if (arenaRebuiltBetween(from, w) || w === heal || (terapagos && sureTrainer(s, w))) return w;
+  }
+  return null;
+};
+// Spending the charge on `wave` leaves no big fight before it refills (#649). The current fight never blocks it.
+export const teraSpendable = (s, wave, terapagos = false) => {
+  if (typeof s?.gameMode?.isFixedBattle !== "function") return false;
+  const back = teraRefill(s, wave, terapagos);
+  return !bigFightsAhead(s, wave + 1, back == null ? SPAN : back - wave - 1).length;
+};

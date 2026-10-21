@@ -1,7 +1,7 @@
 import { STATUS_FRAMES } from "./01-core.js";
 import { catchSummary } from "./45-catch.js";
 import { actSummary, deadEndText, foesSummary, hitsText, planSummary, roadSummary } from "./60-card.js";
-import { badge, caption, dim, group, gutterMark, h, hpBar, ICON, img, IMMUNE, ink, line, mon, ROW, rung, some } from "./90-render.js";
+import { badge, caption, dim, group, gutterMark, h, hpBar, ICON, img, IMMUNE, ink, line, mon, ROW, rung, some, teraPress } from "./90-render.js";
 import { drawAhead } from "./95-render-ahead.js";
 import { drawCatch } from "./95-render-catch.js";
 import { drawOffTheLine, drawOracleLine, drawOracleStep } from "./95-render-oracle-line.js";
@@ -42,6 +42,7 @@ export const drawBattle = m => {
   const slotLine = (sl, label) => step(label, "⚔",
     mon(sl.icon, sl.name, ICON.mon),
     sl.threat ? threatTag(sl.threat) : null,
+    ...(sl.tera ? teraPress(sl.tera) : []),
     ...(sl.move ? [badge(sl.type), h("span", { fontWeight: "bold" }, sl.move)] : [h("span", dim, deadEndText(sl))]),
     ...(sl.target === "both" ? [h("span", { ...ink.ours, marginLeft: "4px" }, "→ both")]
       : sl.target ? [h("span", { ...ink.ours, margin: "0 2px 0 4px" }, "→"), mon(sl.target.icon, sl.target.name, ICON.mon)] : []),
@@ -51,6 +52,7 @@ export const drawBattle = m => {
   const firstText = p => (p >= 100 ? "moves first" : p <= 0 ? "moves after" : `${p}% first`);
   const slotMove = sl => [
     mon(sl.icon, sl.name, ICON.mon),
+    ...(sl.tera ? teraPress(sl.tera) : []),
     ...(sl.move ? [badge(sl.type), h("span", { marginRight: "2px" }, sl.move)] : [h("span", dim, "—")]),
     ...(sl.target === "both" ? [h("span", dim, "→ both")] : sl.target ? [h("span", dim, "→"), mon(sl.target.icon, sl.target.name, ICON.ref)] : []),
   ];

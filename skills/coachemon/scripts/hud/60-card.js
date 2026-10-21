@@ -154,7 +154,7 @@ export const readCard = (s, account, { road = true, estimate = false } = {}) => 
   return card;
 };
 
-const slotText = sl => `${sl.name} ${sl.move ?? deadEndText(sl)}${sl.target === "both" ? " → both" : sl.target ? ` → ${sl.target.name}` : ""}${sl.then ? `, then ${sl.then}` : ""}${slowestKo(sl) > 0 && slowestKo(sl) <= 3 ? ` · ${hitsText(slowestKo(sl))}` : ""}${sl.accPct != null ? ` · ${sl.accPct}%` : ""}`;
+const slotText = sl => `${sl.name} ${sl.tera ? `Tera ${sl.tera} + ` : ""}${sl.move ?? deadEndText(sl)}${sl.target === "both" ? " → both" : sl.target ? ` → ${sl.target.name}` : ""}${sl.then ? `, then ${sl.then}` : ""}${slowestKo(sl) > 0 && slowestKo(sl) <= 3 ? ` · ${hitsText(slowestKo(sl))}` : ""}${sl.accPct != null ? ` · ${sl.accPct}%` : ""}`;
 
 // The act group's summary is this string verbatim, so the strip, the watch line and the structured read agree (#349).
 const turnLineSummary = card => (card.unavailable ? `no advice — ${card.unavailable}`

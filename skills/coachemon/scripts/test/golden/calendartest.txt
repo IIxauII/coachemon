@@ -39,6 +39,8 @@ limited support 3         40→none
 waves 41–50               41:0.000  42:0.125  43:0.109  44:0.096  47:0.096  48:0.000  49:0.000  50:1.000
 == trainer odds, daily
 waves 11–20               11:0  15:1  16:0  20:1
+== Tera spendable, classic
+waves                     171:no  175:no  179:no  180:yes  181:no  182:no  190:yes
 == game-less fallbacks
 classic                   1:—  10:boss  20:gym  199:—  200:final
 ok

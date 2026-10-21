@@ -42,6 +42,8 @@ export const fakeTurn = ({
   sendIn = () => null,
   benefit = () => 0,
   speedTie = () => null,
+  // `{ type }` of the Tera a mon of ours may take with this command.
+  ourTera = () => null,
   mon = () => ({}),
   patches = [],
 } = {}) => {
@@ -130,11 +132,12 @@ export const fakeTurn = ({
     sendInScore: (f, me) => sendIn(f, me),
     benefit: (atk, def, mv) => benefit(atk, def, mv) ?? 0,
     speedTie: (a, b) => speedTie(a, b),
+    ourTera: p => ourTera(p),
     memo: (k, fn) => memo("caller", k, fn),
     assuming: more => fakeTurn({
       live, exact, wave, turn: turnNo, enemySwitchCounter, double, trainer, decision, party, foes, field, command,
       trickRoom, weather, modifiers, enemyModifiers, hazards, balls, mode, battleType, mysteryEncounter, biomeId,
-      outcome, outcomes, statusMoves, stopped, failing, heal, moves, switchTo, replay, sendIn, benefit, speedTie, mon,
+      outcome, outcomes, statusMoves, stopped, failing, heal, moves, switchTo, replay, sendIn, benefit, speedTie, ourTera, mon,
       patches: [...patches, ...more],
     }),
   };

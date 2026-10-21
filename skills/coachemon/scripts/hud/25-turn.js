@@ -3,7 +3,7 @@
 // memoised under one key. 10-damage and 20-enemy-ai know how to ask the game; this file decides when.
 import { TYPES, awaitingDecision, closeRead, effectiveness, openRead, sandbox, stat, typesOf } from "./01-core.js";
 import { note } from "./01-meter.js";
-import { challengeOn, waveKind } from "./03-calendar.js";
+import { challengeOn, teraSpendable, waveKind } from "./03-calendar.js";
 import { moveTraits } from "./07-move-traits.js";
 import { approxOutcome, approxOutcomes, barBreakFactors, sceneOutcome, sceneOutcomes, sceneRefused, sceneStatusMoves, sceneTurnEndHp, stateOf, targetFacts } from "./10-damage.js";
 import { aiTargetScore, approxDistribution, sceneDistribution, sceneExactMoves, sceneReplayAI, sceneSendInScore, sceneSwitches, skipsTurn } from "./20-enemy-ai.js";
@@ -36,14 +36,14 @@ const beforeTera = fn => preTera([...teraSaved.keys()], fn);
 const teraTypeOf = e => { try { return teraSaved.has(e) ? TYPES[e.getTeraType?.()] ?? null : null; } catch { return null; } };
 
 // Patches: `{ mon, stages: { [stat 1–5]: change } }`, `{ mon, status }`, `{ mon, types }`, `{ mon, addedType }`,
-// `{ mon, tera: false }` (its predicted Tera off) and `{ mon, waveTurnCount }`, written onto the live mons for one
-// synchronous call (game-code.md §5, §14). `patchKey` is part of the derived turn's key, so no hypothetical answer is ever read from a real memo slot.
+// `{ mon, tera: false }` (its predicted Tera off), `{ mon, tera: true }` (our own Tera on, as `TeraPhase.end` writes it)
+// and `{ mon, waveTurnCount }`, written onto the live mons for one synchronous call (game-code.md §5, §14). `patchKey` is part of the derived turn's key, so no hypothetical answer is ever read from a real memo slot.
 const patchKey = patches => patches.map(({ mon, stages, status, types, addedType, tera, waveTurnCount }) => [
   stages ? `${mon.id}s${Object.entries(stages).map(([i, n]) => `${i}:${n}`).join(",")}` : null,
   status ? `${mon.id}x${status.effect}` : null,
   types ? `${mon.id}t${types.join(",")}` : null,
   addedType != null ? `${mon.id}+${addedType}` : null,
-  tera === false ? `${mon.id}-tera` : null,
+  tera === false ? `${mon.id}-tera` : tera === true ? `${mon.id}+tera` : null,
   waveTurnCount != null ? `${mon.id}w${waveTurnCount}` : null,
 ].filter(Boolean).join(";")).filter(Boolean).join("|");
 // @only tests: withPatches
@@ -52,6 +52,12 @@ export const withPatches = (patches, fn) => {
   try {
     for (const { mon, stages, status, types, addedType, tera, waveTurnCount } of patches) {
       if (tera === false && teraSaved.has(mon)) undo.push(teraOff(mon));
+      if (tera === true) {
+        const was = mon.isTerastallized, added = mon.summonData?.addedType;
+        mon.isTerastallized = true;
+        if (mon.summonData) mon.summonData.addedType = null;
+        undo.push(() => { mon.isTerastallized = was; if (mon.summonData) mon.summonData.addedType = added; });
+      }
       if (stages && Array.isArray(mon.summonData?.statStages)) {
         const prev = mon.summonData.statStages;
         const next = [...prev];
@@ -138,13 +144,23 @@ const modeFlags = (s, live, wave) => {
   };
 };
 
+// @mirrors max-teras-per-arena
+const MAX_TERAS_PER_ARENA = 1;
+// The charge left, the Tera Orb held, and no big fight that spending it now would leave without one (game-code.md §17).
+const ourTeraLeft = (s, env, wave) => tryDo(() => (s.arena.playerTerasUsed ?? 0) < MAX_TERAS_PER_ARENA
+  && env.modifiers.some(m => (typeof m?.is === "function" ? m.is("TerastallizeAccessModifier") : m?.constructor?.name === "TerastallizeAccessModifier"))
+  && teraSpendable(s, wave, env.playerParty.some(p => tryDo(() => !!p?.hasSpecies?.(SpeciesId.TERAPAGOS), false))), false);
+
 const sceneFacts = (s, env, live) => {
   const b = s?.currentBattle ?? {};
   const ph = tryDo(() => s.phaseManager?.getCurrentPhase?.(), null);
   const cmd = b.turnCommands?.[0] ?? null;
+  const decision = s ? awaitingDecision(s) : null;
   return {
     wave: b.waveIndex ?? null, turn: b.turn ?? null, enemySwitchCounter: env.enemySwitchCounter,
-    double: env.double, trainer: env.trainer, decision: s ? awaitingDecision(s) : null,
+    double: env.double, trainer: env.trainer, decision,
+    // Offered in a single battle only (#649).
+    teraOpen: live && decision === "command" && !env.double && ourTeraLeft(s, env, b.waveIndex ?? 0),
     battleType: b.battleType, mysteryEncounter: env.mysteryEncounter,
     party: env.playerParty, foes: env.foes, field: env.field,
     trickRoom: !!tryDo(() => s.arena?.getTag?.("TRICK_ROOM"), false),
@@ -277,9 +293,11 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
     return m.get(k);
   };
   // Every game call below goes through `asDamage`, the patches on. This turn's `EnemyCommandPhase` reads, the switch
-  // check and the move pick, come before any Tera (`asCommand`; game-code.md §7).
+  // check and the move pick, come before any Tera, our own included (`asCommand`; game-code.md §7).
   const asDamage = fn => (patches.length ? withPatches(patches, fn) : fn());
-  const asCommand = fn => beforeTera(() => asDamage(fn));
+  const picked = patches.filter(x => x.tera !== true);
+  const asPicked = fn => (picked.length ? withPatches(picked, fn) : fn());
+  const asCommand = fn => beforeTera(() => asPicked(fn));
   const refused = (atk, def) => memo("refused", `${atk.id}|${def.id}`,
     () => (live ? asDamage(() => sceneRefused(env, atk, def)) : { stopped: [], failing: [] }));
 
@@ -339,8 +357,9 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
     // `preTera`: "command", this turn's pick, made before every predicted Tera; "entry", a benched foe's first, before its own.
     replayAI: (foe, target, opts = {}) => {
       const off = opts.preTera === "command" ? [...teraSaved.keys()] : opts.preTera === "entry" ? [foe].filter(e => teraSaved.has(e)) : [];
+      const as = opts.preTera === "command" ? asPicked : asDamage;
       return memo("replay", `${foe.id}|${target.id}|${opts.hp ?? ""}|${opts.bi ?? ""}|${opts.afterLock ? 1 : ""}|${off.map(e => e.id).join(",")}`,
-        () => (live ? tryDo(() => preTera(off, () => asDamage(() => sceneReplayAI(env, foe, target, opts))), null) : null));
+        () => (live ? tryDo(() => preTera(off, () => as(() => sceneReplayAI(env, foe, target, opts))), null) : null));
     },
     sendInScore: (f, me) => memo("sendIn", `${f.id}|${me.id}`, () => (live ? tryDo(() => turn.atEntry([f], () => asDamage(() => sceneSendInScore(env, f, me))), null) : null)),
     // A benched foe the trainer Teras at its first FIGHT command on the field, not on entry (game-code.md §7).
@@ -353,6 +372,15 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
       const n = tryDo(() => asDamage(() => (aiTargetScore(env, atk, mv, def.getBattlerIndex?.() ?? BattlerIndex.ENEMY, def) ?? [])
         .reduce((t, b) => t + b.score * b.p, 0)), 0);
       return Number.isFinite(n) ? n : 0;
+    }),
+    // `{ type }` of the Tera `p` may take with this command, null where there is none to take (#649).
+    ourTera: p => memo("ourTera", p, () => {
+      if (!facts.teraOpen || !env.playerParty.includes(p) || p.isTerastallized || !p.isOnField?.()) return null;
+      // `canSpeciesTera`'s forms (game-code.md §17).
+      if (tryDo(() => !!(p.isMega?.() || p.isMax?.() || p.hasSpecies?.(SpeciesId.NECROZMA, "ultra")), true)) return null;
+      const t = tryDo(() => p.getTeraType(), null);
+      const type = TYPES[t] ?? (t != null && t === PokemonType.STELLAR ? "Stellar" : null);
+      return type ? { type } : null;
     }),
     // 1 when `a` goes first at a speed tie, 0 when `b` does, null when nothing settles it.
     speedTie: (a, b) => memo("speedTie", `${a.id}|${b.id}`, () => (live ? sceneSpeedTie(env, facts, a, b) : null)),

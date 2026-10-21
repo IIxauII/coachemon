@@ -7,14 +7,14 @@ import { benchMatchupScore } from "./game-proto.mjs";
 // The tables a scenario sets: `outcome` what each move does, `dist` the enemy AI's pick, `switches` the trainer's
 // switch-in, `heal` a turn end's cost, `benefit` the game's own score for a move of ours. `__stub` is rebound per
 // scenario, so every op reads it at call time rather than closing over it.
-const stubTurn = ({ party, foes, live, double, trainer, arena, phase, fieldIndex, turnCommands, exact }) => {
+const stubTurn = ({ party, foes, live, double, trainer, arena, phase, fieldIndex, turnCommands, exact, ourTera = () => null }) => {
   const active = () => {
     const out = foes.filter(f => f.isOnField?.());
     return (out.length ? out : foes).slice(0, double ? 2 : 1);
   };
   const cmd = double && fieldIndex === 1 ? turnCommands[0] : null;
   return fakeTurn({
-    live, exact, wave: 200, turn: 3, double, trainer, party, foes,
+    live, exact, wave: 200, turn: 3, double, trainer, party, foes, ourTera,
     decision: phase === "CheckSwitchPhase" ? "check-switch" : "command",
     trickRoom: !!arena?.getTag?.("TRICK_ROOM"),
     command: cmd && !cmd.skip ? { kind: cmd.command, cursor: cmd.cursor, move: cmd.move, targets: cmd.targets?.length ? cmd.targets : cmd.move?.targets ?? [] } : null,
@@ -70,7 +70,7 @@ const cyrus = withMetagross => {
 };
 
 // `fieldIndex`: whose command phase it is; `turnCommands`: the commands already chosen this turn.
-const render = ({ party, foes, live, arena, dist, switches, double = false, phase, fieldIndex = 0, turnCommands = [], stubOutcome = outcome, benefit = null, heal = null, stopped = null, replay = null, exact = { ok: true }, tables = null }) => {
+const render = ({ party, foes, live, arena, dist, switches, double = false, phase, fieldIndex = 0, turnCommands = [], stubOutcome = outcome, benefit = null, heal = null, stopped = null, replay = null, exact = { ok: true }, tables = null, ourTera }) => {
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const onField = () => party.filter(p => p.isOnField());
   for (const f of foes) { f.getOpponents = () => onField(); f.getMatchupScore = () => 1; }
@@ -89,7 +89,7 @@ const render = ({ party, foes, live, arena, dist, switches, double = false, phas
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   eval(bundle("hud", { expose: true }));
   if (tables) globalThis.__hud["04-game-tables"].setGameTables(tables);
-  const turn = stubTurn({ party, foes, live, double, trainer, arena, phase, fieldIndex, turnCommands, exact });
+  const turn = stubTurn({ party, foes, live, double, trainer, arena, phase, fieldIndex, turnCommands, exact, ourTera });
   globalThis.__planner = plannerApi(turn);
   const card = { ...globalThis.__hud["60-card"].composeBattleCard(turn, null), wave: 200 };
   const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
@@ -2151,5 +2151,50 @@ Object.assign(TABLE, {
   assert.match(pick("Mega Kick", 200, 0.996).summary, / · 99%$/, "a pick below 100% never reads 100%");
 }
 
+// ---- Gordie W180 T16: the card calls Tera Water + Hydro Pump, and its fight plan presses the Tera on step 1 (#649)
+// The table keys a Terastallized mon as `name*`: Hydro Pump gains Tera STAB (×1.5 → ×2), and Stone Edge into Water
+// alone is ×1, not Water/Flying's ×2.
+Object.assign(TABLE, {
+  "Gyarados>Hydro Pump>Tyranitar": [[220], 1, 2], "Gyarados*>Hydro Pump>Tyranitar": [[293], 1, 2],
+  "Gyarados>Hydro Pump>Carracosta": [[110], 0.8, 1], "Gyarados*>Hydro Pump>Carracosta": [[147], 0.8, 1],
+  "Tyranitar>Stone Edge>Gyarados": [[330], 0.8, 2], "Tyranitar>Stone Edge>Gyarados*": [[165], 0.8, 1],
+  "Carracosta>Rock Slide>Gyarados": [[240], 0.9, 2], "Carracosta>Rock Slide>Gyarados*": [[120], 0.9, 1],
+});
+{
+  const teraKeyed = (a, d, pm, o) => {
+    const as = p => (p.isTerastallized ? Object.create(p, { name: { value: `${p.name}*` } }) : p);
+    const x = outcome(as(a), as(d), pm, o);
+    return x && { ...x, name: pm.getName() };
+  };
+  const t16 = ourTera => {
+    const gyarados = mon("Gyarados", 175, ["Water", "Flying"], [570, 400, 260, 200, 300, 300], [["Hydro Pump", "Water", 110, "S"]], true);
+    const tyranitar = mon("Tyranitar", 179, ["Rock", "Dark"], [569, 450, 380, 300, 340, 220], [["Stone Edge", "Rock", 100, "P"]], true, 339,
+      { hasTrainer: () => true });
+    const carracosta = mon("Carracosta", 169, ["Water", "Rock"], [467, 412, 533, 302, 314, 180], [["Rock Slide", "Rock", 75, "P"]], false, undefined,
+      { hasTrainer: () => true });
+    const out = render({ party: [gyarados], foes: [tyranitar, carracosta], live: true, switches: () => new Map(), stubOutcome: teraKeyed,
+      dist: e => (e === tyranitar ? [{ name: "Stone Edge", type: "Rock", p: 1, score: 10, targets: [0] }] : []),
+      ourTera: p => (ourTera && p === gyarados ? { type: "Water" } : null) });
+    return { ...out, gyarados };
+  };
+  const tera = t16(true), plain = t16(false);
+  console.log(`== gordie w180 t16, Tera left\n${tera.lines.join("\n")}\n== gordie w180 t16, no Tera to take\n${plain.lines.join("\n")}`);
+  const call = c => globalThis.__hud["60-card"].cardSummary(c.card).field;
+  assert.equal(call(tera), "Gyarados Tera Water + Hydro Pump → Tyranitar · 2 hits", "the ⚔ call carries the Tera");
+  assert.match(lineOf(tera.field, "Gyarados"), /⚔ Gyarados Tera Water \+ Water Hydro Pump → Tyranitar/);
+  assert.equal(call(plain), "Gyarados Hydro Pump → Tyranitar · 2 hits", "with none to take, the call is the plain move");
+  const slot = c => c.card.field.slots[0];
+  assert.deepEqual([slot(plain).threat?.e, slot(plain).threat?.move], [2, "Stone Edge"], "Stone Edge is ×2 into Water/Flying");
+  assert.ok(!slot(tera).threat || slot(tera).threat.e === 1, `and ×1 into Tera Water: ${JSON.stringify(slot(tera).threat)}`);
+  const pick = c => c.card.rows.find(r => r.name === "Tyranitar").pick;
+  assert.deepEqual([pick(plain).pct, pick(tera).pct], [36, 48], "Hydro Pump into Tyranitar: 36% of its HP, 48% with Tera STAB");
+  const [step] = tera.card.teamPlan.steps;
+  assert.deepEqual([step.send.name, step.tera, step.move], ["Gyarados", "Water", "Hydro Pump"], "step 1 presses the Tera");
+  const at = tera.lines.findIndex(l => /^➜ 1\. Gyarados Tera Water \+/.test(l));
+  assert.ok(at >= 0, "the plan step reads Tera Water + Hydro Pump");
+  assert.equal(tera.lines[at + 1], "· input: ← from Fight to the Tera button", "and its input sits at its own step");
+  assert.ok(!plain.lines.some(l => /Tera/.test(l)), "no Tera anywhere on a card with none to take");
+  assert.ok(tera.card.teamPlan.steps.slice(1).every(x => !x.tera), "only the step that presses it carries it");
+}
 
 console.log("ok");

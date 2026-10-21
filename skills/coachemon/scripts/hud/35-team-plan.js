@@ -3,7 +3,7 @@
 // one foe at a time.
 import { iconOf, squeezeDist } from "./01-core.js";
 import { hitOn, koCurve, koTurns, useOf } from "./10-damage.js";
-import { actionOrder, afterSteals, attemptsLost, berryTypesOf, berryWalk, entryOutcomes, hitsOn, koBoost, koBoostText, koStageFactor, lessBerry, overWalk, paralysed, sendInAt, sendInBase, stealCounts, stealRates, stealsBerry, stolenDraws, threatFrom, tokenOdds, tokenShift, unnervedBy } from "./30-planner.js";
+import { actionOrder, afterSteals, attemptsLost, berryTypesOf, berryWalk, entryOutcomes, hitsOn, koBoost, koBoostText, koStageFactor, lessBerry, ourTeraTurn, overWalk, paralysed, sendInAt, sendInBase, stealCounts, stealRates, stealsBerry, stolenDraws, threatFrom, tokenOdds, tokenShift, unnervedBy } from "./30-planner.js";
 
 // @only tests: tpHealProfile, tpSendScore, tpFight, tpTables, tpActs
 const TP_BEAM = 24;
@@ -225,6 +225,20 @@ export const tpTables = (turn, party, foes, double = false, facing = null, enter
 const tpAtEntry = (turn, me, f) => {
   const outs = entryOutcomes(turn, me, f);
   return outs?.length ? Object.fromEntries(outs.map(o => [o.name, tpMoveOf(o)])) : null;
+};
+
+// `T` with our `mi` at the Tera it takes on step 1, read off `U`, the tables of that mon alone on the Tera's turn (#649).
+const tpWithTera = (T, U, mi) => {
+  const row = (rows, mine) => rows.map((r, i) => (i === mi ? mine[0] : r));
+  const col = (rows, mine) => rows.map((r, fi) => r.map((x, i) => (i === mi ? mine[fi][0] : x)));
+  return {
+    ...T, memo: new Map(),
+    ours: row(T.ours, U.ours), first: row(T.first, U.first), firstBy: row(T.firstBy, U.firstBy),
+    theirs: col(T.theirs, U.theirs), send: col(T.send, U.send), fromUs: col(T.fromUs, U.fromUs),
+    ourHeal: row(T.ourHeal, U.ourHeal), foeHealAt: row(T.foeHealAt, U.foeHealAt), tok: row(T.tok, U.tok),
+    firstPara: row(T.firstPara, U.firstPara), firstParaBy: row(T.firstParaBy, U.firstParaBy),
+    fromFoe: row(T.fromFoe, U.fromFoe), ourItems: row(T.ourItems, U.ourItems),
+  };
 };
 
 // Wave status tokens and item thieves (30-planner.js). `fromUs[fi][mi]` is what foe `fi` steals from our `mi`, and
@@ -550,10 +564,11 @@ const tpFacing = (turn, foes) => {
 const TP_PREFER = 20;
 const TP_HOLD = 10;
 
-// ⚔ owns the turn and this model the rest of the fight (#113). `pin` is `{ mi, outcome?, then?, free? }`: `at(pin)`
-// re-searches with it as step 1, `after(pin)` reads what that plan says comes next, and `view(pin)` renders it.
-// `entering`: `facing` is the foe switching in this turn.
-const tpModel = (T, double, party, foes, facing, entering) => {
+// ⚔ owns the turn and this model the rest of the fight (#113). `pin` is `{ mi, outcome?, then?, free?, tera? }`:
+// `at(pin)` re-searches with it as step 1, `after(pin)` reads what that plan says comes next, and `view(pin)` renders
+// it. `entering`: `facing` is the foe switching in this turn. `teraOf(mi)`: the tables with our `mi` Tera'd from step 1
+// on, for a pin whose `tera` names the type (#649).
+const tpModel = (T, double, party, foes, facing, entering, teraOf = () => T) => {
   const ref = p => ({ icon: iconOf(p), name: p.name });
   const pctOf = (hp, max) => Math.round(hp / max * 100);
   const fcur = foes.indexOf(facing);
@@ -624,14 +639,20 @@ const tpModel = (T, double, party, foes, facing, entering) => {
   // A pin runs the ⚔ move, else its follow-up: a first-turn-only or foe-dependent move would repeat in a table
   // exchange as though it always worked (#650).
   const pinned = pin => [pin.outcome, pin.then].find(o => o?.expected > 0 && !o.traits?.once && !o.traits?.needsAttack) ?? null;
-  const keyOf = pin => (pin && pin.mi != null && pin.mi >= 0 ? `${pin.mi}|${pinned(pin)?.name ?? ""}|${pin.free ? "f" : ""}` : "");
+  const keyOf = pin => (pin && pin.mi != null && pin.mi >= 0 ? `${pin.mi}|${pinned(pin)?.name ?? ""}|${pin.free ? "f" : ""}|${pin.tera ?? ""}` : "");
+  const teraMemo = new Map();
+  const tablesOf = pin => {
+    if (!pin?.tera) return T;
+    if (!teraMemo.has(pin.mi)) teraMemo.set(pin.mi, teraOf(pin.mi));
+    return teraMemo.get(pin.mi);
+  };
   const atMemo = new Map();
   const at = pin => {
     const k = keyOf(pin);
     if (!k) return base;
     if (!atMemo.has(k)) {
       const o = pinned(pin);
-      atMemo.set(k, tpSearch(T, start, hold, { mi: pin.mi, move: o ? tpMoveOf(o) : null, free: !!pin.free }) ?? base);
+      atMemo.set(k, tpSearch(tablesOf(pin), start, hold, { mi: pin.mi, move: o ? tpMoveOf(o) : null, free: !!pin.free }) ?? base);
     }
     return atMemo.get(k);
   };
@@ -651,7 +672,8 @@ const tpModel = (T, double, party, foes, facing, entering) => {
   const viewMemo = new Map();
   const view = pin => {
     const k = keyOf(pin);
-    if (!viewMemo.has(k)) viewMemo.set(k, tpView({ T, party, foes, double, start, win, kills, alive, answers, only, onlyBy, reserve, base, ref, pctOf }, at(pin), !!k));
+    const tera = k && pin.tera ? { mi: pin.mi, type: pin.tera, T: tablesOf(pin) } : null;
+    if (!viewMemo.has(k)) viewMemo.set(k, tpView({ T, party, foes, double, start, win, kills, alive, answers, only, onlyBy, reserve, base, ref, pctOf }, at(pin), !!k, tera));
     return viewMemo.get(k);
   };
   const holdFor = mi => {
@@ -668,14 +690,18 @@ export const teamPlanner = turn => {
   if (!trainer || !party.length || !foes.length) return null;
   // The searches read only the tables `tpTables` builds, never the live game.
   const { foe: facing, entering } = tpFacing(turn, foes);
-  return tpModel(tpTables(turn, party, foes, double, facing, entering), double, party, foes, facing, entering);
+  const T = tpTables(turn, party, foes, double, facing, entering);
+  const teraOf = mi => tpWithTera(T, tpTables(ourTeraTurn(turn, party[mi]), [party[mi]], foes, double, facing, entering), mi);
+  return tpModel(T, double, party, foes, facing, entering, teraOf);
 };
 
 export const teamPlan = turn => teamPlanner(turn)?.view(null) ?? null;
 
-const tpView = (M, plan, pinned) => {
-  const { T, party, foes, double, start, win, kills, alive, answers, only, onlyBy, reserve, base, ref, pctOf } = M;
+// `tera`: `{ mi, type, T }`, the pin's Tera, its step 1 pressing it, and the tables the plan was searched on.
+const tpView = (M, plan, pinned, tera = null) => {
+  const { party, foes, double, start, win, kills, alive, answers, only, onlyBy, reserve, base, ref, pctOf } = M;
   if (!plan) return null;
+  const T = tera?.T ?? M.T;
   const beats = party.map((_, mi) => foes.filter((_, fi) => tpFight(T, start, mi, fi, "free").fh < 1).length);
   const lowValue = mi => !reserve.includes(mi) && (start.oh[mi] / T.ourMax[mi] < 0.35 || beats[mi] === 0);
 
@@ -693,6 +719,7 @@ const tpView = (M, plan, pinned) => {
     if (fed) why.push(`feeds ${fed.ability} ${koBoostText(fed)}`);
     return {
       vs: ref(foes[x.fi]), send: ref(party[x.mi]), entry: x.entry,
+      tera: i === 0 && tera && x.mi === tera.mi ? tera.type : null,
       move: us?.name ?? null, type: us?.type ?? null,
       hp: pctOf(x.hp, T.ourMax[x.mi]), foeHp: pctOf(x.foeHp, T.foeMax[x.fi]),
       sacrifice, why: why.join(" · "),
@@ -729,7 +756,7 @@ const tpView = (M, plan, pinned) => {
     if (!a) return null;
     const what = a.hp < 1 && nxt?.entry === "free" ? `let ${party[a.mi].name} fall → ${party[nxt.mi].name} in free`
       : a.entry === "switch" ? `${party[a.mi].name} in`
-      : `${party[a.mi].name} ${T.ours[a.mi][a.fi]?.name ?? "—"} → ${foes[a.fi].name}`;
+      : `${party[a.mi].name} ${M.T.ours[a.mi][a.fi]?.name ?? "—"} → ${foes[a.fi].name}`;
     return { text: what, gain: Math.round(gain), flips: plan.result !== "win" && base.result === "win" };
   })();
 

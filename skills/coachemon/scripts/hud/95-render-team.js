@@ -1,4 +1,4 @@
-import { badge, dim, h, ICON, ink, line, mon } from "./90-render.js";
+import { badge, dim, h, ICON, ink, line, mon, TERA_INPUT, teraPress } from "./90-render.js";
 
 export const drawTeamPlan = m => {
   const tp = m?.steps ? m : m?.teamPlan;
@@ -30,11 +30,13 @@ export const drawTeamPlan = m => {
       h("span", { ...dim, marginRight: "3px" }, `${i + 1}.${approx ? "~" : ""}`),
       mon(st.send.icon, st.send.name, ICON.mon),
       tag ? h("span", { ...ink.later, marginRight: "2px" }, tag) : null,
+      ...(st.tera ? teraPress(st.tera) : []),
       ...(st.move ? [st.type ? badge(st.type) : null, h("span", { marginRight: "2px" }, st.move)] : [h("span", dim, "—")]),
       h("span", dim, "→"), mon(st.vs.icon, st.vs.name, ICON.ref),
       h("span", { flex: "1" }),
       h("span", st.sacrifice ? ink.later : dim, st.why),
       st.notes?.length ? h("span", { ...dim, marginLeft: "4px" }, st.notes.join(" · ")) : null));
+    if (st.tera) out.push(line("·", h("span", dim, `input: ${TERA_INPUT}`)));
   });
   for (const x of tp.sacrifice) {
     out.push(line("✗", mon(x.icon, x.name, ICON.mon), h("span", { ...ink.later, margin: "0 3px" }, `${x.hp}% · sacrifice to`),
