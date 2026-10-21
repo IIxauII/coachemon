@@ -1,6 +1,7 @@
 == full party
-⌃ ×
-🧬 Splice Azumarill ← Salamence (+0.9 turns) · pick Azumarill first, then Salamence
+card fusion W52 Azumarill ← Salamence (+0.9 turns)
+strip 🧬 Splice
+Azumarill ← Salamence (+0.9 turns) · pick Azumarill first, then Salamence
 Fusions
 ★ Azumarill Azumarill ← Salamence Salamence +0.9 turns
 Water Flying Bug now beats 3 of 5, down from 5 of 6 · the physical wall now beats 3 of 5, down from 5 of 6 · ΔV +0.9 turns · spends Salamence L22 · Azumarill BST 420 → 511 · offers Dragon Rush/Bounce
@@ -10,8 +11,9 @@ Water Fairy the physical wall now beats 3 of 5, down from 5 of 6 · the bulky at
 Ghost Flying Psychic now beats 2 of 5, down from 4 of 6 · Fighting now beats 2 of 5, down from 3 of 6 · ΔV +0.6 turns · spends Salamence L22 · Mimikyu BST 476 → 539 · offers Dragon Rush/Bounce
 summary Azumarill ← Salamence (+0.9 turns) · pick Azumarill first, then Salamence
 == Snorlax picked first
-⌃ ×
-🧬 Splice Snorlax with Snorlax ← Mimikyu (+0.2 turns) · back out: Azumarill ← Salamence is better (+0.9 turns)
+card fusion W52 Snorlax ← Mimikyu (+0.2 turns)
+strip 🧬 Splice Snorlax with
+Snorlax ← Mimikyu (+0.2 turns) · back out: Azumarill ← Salamence is better (+0.9 turns)
 Fusions
 ★ Snorlax Snorlax ← Mimikyu Mimikyu +0.2 turns
 Normal Fairy a better answer to Fairy · a better backup to Poison · ΔV +0.2 turns · spends Mimikyu L30 · Disguise doesn't work fused · Snorlax BST 540 → 510 · offers Shadow Claw
@@ -21,8 +23,9 @@ Normal Flying Fighting now beats 2 of 5, down from 3 of 6 · Poison now beats 2 
 Normal Fairy no backup left to Ground · Grass now beats 4 of 5, up from 4 of 6 · ΔV +0.0 turns · spends Azumarill L42 · Snorlax BST 540 → 481 · offers Aqua Tail/Play Rough
 summary Snorlax ← Mimikyu (+0.2 turns) · back out: Azumarill ← Salamence is better (+0.9 turns)
 == Hardcore, Salamence fainted
-⌃ ×
-🧬 Splice Azumarill ← Mimikyu (+0.8 turns) · pick Azumarill first, then Mimikyu
+card fusion W52 Azumarill ← Mimikyu (+0.8 turns)
+strip 🧬 Splice
+Azumarill ← Mimikyu (+0.8 turns) · pick Azumarill first, then Mimikyu
 Fusions
 ★ Azumarill Azumarill ← Mimikyu Mimikyu +0.8 turns
 Water Fairy the physical wall now beats 2 of 4, down from 4 of 5 · the bulky attacker now beats 1 of 4, down from 3 of 5 · ΔV +0.8 turns · spends Mimikyu L30 · Disguise doesn't work fused · Azumarill BST 420 → 449 · offers Shadow Claw
@@ -32,8 +35,9 @@ Water Fairy Normal now beats 2 of 4, down from 3 of 5 · Ground now beats 2 of 4
 Ghost Water Normal now beats 2 of 4, down from 3 of 5 · Ground now beats 2 of 4, down from 3 of 5 · ΔV +0.7 turns · spends Magikarp L20 · Mimikyu BST 476 → 340 · offers Tackle · Magikarp still evolves
 summary Azumarill ← Mimikyu (+0.8 turns) · pick Azumarill first, then Mimikyu
 == two members
-⌃ ×
-🧬 Splice Garchomp ← Magikarp (−1.6 turns) · no fusion worth a member — back out, the Splicer stays unspent
+card fusion W52 Garchomp ← Magikarp (−1.6 turns)
+strip 🧬 Splice
+Garchomp ← Magikarp (−1.6 turns) · no fusion worth a member — back out, the Splicer stays unspent
 Fusions
 · Garchomp Garchomp ← Magikarp Magikarp −1.6 turns
 Dragon Water Normal now beats 1 of 1, up from 1 of 2 · Flying now beats 1 of 1, up from 1 of 2 · ΔV −1.6 turns · spends Magikarp L20 · Garchomp BST 600 → 401 · offers Tackle · Magikarp still evolves · keeps passive Sand Force
@@ -41,8 +45,9 @@ Dragon Water Normal now beats 1 of 1, up from 1 of 2 · Flying now beats 1 of 1,
 Water Ground no answer left to Normal · no answer left to Fighting · ΔV −9.6 turns · spends Garchomp L50 · Magikarp BST 200 → 401 · offers Dragon Claw/Earthquake · Magikarp still evolves
 summary Garchomp ← Magikarp (−1.6 turns) · no fusion worth a member — back out, the Splicer stays unspent
 == Spliced Endless
-⌃ ×
-🧬 Splice Garchomp ← Azumarill (+5.2 turns) · pick Garchomp first, then Azumarill
+card fusion W52 Garchomp ← Azumarill (+5.2 turns)
+strip 🧬 Splice
+Garchomp ← Azumarill (+5.2 turns) · pick Garchomp first, then Azumarill
 Fusions
 ★ Garchomp Garchomp ← Azumarill Azumarill +5.2 turns
 Dragon Fairy an answer to Fairy at last · an answer to Flying at last · ΔV +5.2 turns · spends Azumarill L42 · Garchomp BST 301 → 511 · offers Aqua Tail/Play Rough · keeps passive Sand Force
@@ -61,35 +66,37 @@ Bug now beats 2 of 3, down from 4 of 4 · a better answer to Fairy
 == party screen, not splicing
 kind null
 == rewards, full party
-⌃ ×
-🛒 $500 nothing affordable take DNA Splicers → Azumarill
+card reward W52 take DNA Splicers → Azumarill
+strip 🛒 $500 nothing affordable
+take DNA Splicers → Azumarill
 ★ DNA Splicers Azumarill fuse Azumarill ← Salamence · +0.9 turns · Bug now beats 3 of 5, down from 5 of 6
 Others
 · Potion party healthy
-5 issues: 2 of 6 weak to Fairy, nobody resists; Magikarp: no Water attack (no STAB); the party is no worse off without Salamence at W60 — first to replace
+Team: 5 issues: 2 of 6 weak to Fairy, nobody resists; Magikarp: no Water attack (no STAB); the party is no worse off without Salamence at W60 — first to replace
 Team audit
 ✗ 2 of 6 weak to Fairy, nobody resists
 ✗ Magikarp: no Water attack (no STAB)
 ✗ the party is no worse off without Salamence at W60 — first to replace
 ✗ Magikarp L20/Salamence L22/Mimikyu L30 trail Garchomp L50 — lead them on easy waves
 · nothing hits Flying/Water/Ice/Fairy super-effectively
-boss in 8 (W60)
+Road: boss in 8 (W60)
 Next big fight boss in 8 W60
 ✓ full heal entering W61 — HP, status, PP, revives, Tera
 · luck 0 (D) — 3.1% tier upgrade per reward
 summary take DNA Splicers → Azumarill
 == rewards, two members
-⌃ ×
-🛒 $500 nothing affordable take DNA Splicers
+card reward W52 take DNA Splicers
+strip 🛒 $500 nothing affordable
+take DNA Splicers
 ★ DNA Splicers least bad · no fusion worth a member · best Garchomp ← Magikarp −1.6 turns
 Others
 · Potion party healthy
-3 issues: Magikarp: no Water attack (no STAB); Magikarp L20 trail Garchomp L50 — lead it on easy waves; nothing hits Fighting/Flying/Ground/Bug +7 super-effectively
+Team: 3 issues: Magikarp: no Water attack (no STAB); Magikarp L20 trail Garchomp L50 — lead it on easy waves; nothing hits Fighting/Flying/Ground/Bug +7 super-effectively
 Team audit
 ✗ Magikarp: no Water attack (no STAB)
 ✗ Magikarp L20 trail Garchomp L50 — lead it on easy waves
 · nothing hits Fighting/Flying/Ground/Bug +7 super-effectively
-boss in 8 (W60)
+Road: boss in 8 (W60)
 Next big fight boss in 8 W60
 ✓ full heal entering W61 — HP, status, PP, revives, Tera
 · luck 0 (D) — 3.1% tier upgrade per reward

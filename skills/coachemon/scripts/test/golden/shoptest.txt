@@ -1,6 +1,7 @@
 == hurt
-⌃ ×
-🛒 $15256 → $9670 take 1× Egg Voucher · buy Revive, Full Heal, Hyper Potion, Ether
+card reward W0 take 1× Egg Voucher
+strip 🛒 $15256 → $9670
+take 1× Egg Voucher · buy Revive, Full Heal, Hyper Potion, Ether
 buy first — taking the free reward closes the shop
 ✓ Revive $2660 Morpeko fainted
 ✓ Full Heal $1330 Scrafty status
@@ -11,7 +12,7 @@ Others
 · 5× Poké Ball you have 34
 · Leppa Berry Charizard Leppa refills a move at 0 PP
 · X Accuracy only lasts a few battles
-6 issues: 4 of 4 weak to Fighting, nobody resists; Blastoise: no Normal attack (no STAB); Morpeko: no Normal attack (no STAB)
+Team: 6 issues: 4 of 4 weak to Fighting, nobody resists; Blastoise: no Normal attack (no STAB); Morpeko: no Normal attack (no STAB)
 Team audit
 ✗ 4 of 4 weak to Fighting, nobody resists
 ✗ Blastoise: no Normal attack (no STAB)
@@ -20,163 +21,179 @@ Team audit
 · Charizard: no Normal attack (no STAB)
 · nothing hits Poison/Ghost/Electric/Psychic +2 super-effectively
 == healthy
-⌃ ×
-🛒 $15256 take X Defense
+card reward W0 take X Defense
+strip 🛒 $15256
+take X Defense
 ★ X Defense least bad · only lasts a few battles
 🎲 nothing good — reroll for $2250?
 Others
 · 5× Poké Ball you have 34
 · Potion party healthy
-2 issues: Charizard: no Normal attack (no STAB); nothing hits Fighting/Flying/Poison/Ground +9 super-effectively
+Team: 2 issues: Charizard: no Normal attack (no STAB); nothing hits Fighting/Flying/Poison/Ground +9 super-effectively
 Team audit
 ✗ Charizard: no Normal attack (no STAB)
 · nothing hits Fighting/Flying/Poison/Ground +9 super-effectively
 == wave 13 rare candy
-⌃ ×
-🛒 $1824 take Rare Candy → Charizard
+card reward W13 take Rare Candy → Charizard
+strip 🛒 $1824
+take Rare Candy → Charizard
 ★ Rare Candy Charizard Lv 16, at the Lv 16 cap where EXP can't level it
 Others
 · 5× Poké Ball you have 12
 · Max Ether PP fine
-1 issue: nothing hits Poison/Ground/Rock/Fire +4 super-effectively
+Team: 1 issue: nothing hits Poison/Ground/Rock/Fire +4 super-effectively
 Team audit
 · nothing hits Poison/Ground/Rock/Fire +4 super-effectively
 == rare candy catch-up
-⌃ ×
-🛒 $100 nothing affordable take Rare Candy → Morpeko
+card reward W13 take Rare Candy → Morpeko
+strip 🛒 $100 nothing affordable
+take Rare Candy → Morpeko
 ★ Rare Candy Morpeko Lv 11, furthest behind
-4 issues: 2 of 2 weak to Fighting, nobody resists; Charizard: no Normal attack (no STAB); Morpeko: no Normal attack (no STAB)
+Team: 4 issues: 2 of 2 weak to Fighting, nobody resists; Charizard: no Normal attack (no STAB); Morpeko: no Normal attack (no STAB)
 Team audit
 ✗ 2 of 2 weak to Fighting, nobody resists
 ✗ Charizard: no Normal attack (no STAB)
 ✗ Morpeko: no Normal attack (no STAB)
 · nothing hits Fighting/Poison/Ground/Rock +7 super-effectively
 == rare candy evolves
-⌃ ×
-🛒 $100 nothing affordable take Rarer Candy
+card reward W13 take Rarer Candy
+strip 🛒 $100 nothing affordable
+take Rarer Candy
 ★ Rarer Candy +1 level for the whole party · 1 at the Lv 16 cap
 Others
 · Rare Candy Charmander evolves at Lv 16
-4 issues: 2 of 2 weak to Fighting, nobody resists; Charizard: no Normal attack (no STAB); Charmander: no Normal attack (no STAB)
+Team: 4 issues: 2 of 2 weak to Fighting, nobody resists; Charizard: no Normal attack (no STAB); Charmander: no Normal attack (no STAB)
 Team audit
 ✗ 2 of 2 weak to Fighting, nobody resists
 ✗ Charizard: no Normal attack (no STAB)
 ✗ Charmander: no Normal attack (no STAB)
 · nothing hits Fighting/Flying/Poison/Ground +9 super-effectively
 == held items by holder
-⌃ ×
-🛒 $100 nothing affordable take Leftovers → Snorlax
+card reward W42 take Leftovers → Snorlax
+strip 🛒 $100 nothing affordable
+take Leftovers → Snorlax
 ★ Leftovers Snorlax 1/16 HP a turn (2/4)
 Others
 · Quick Claw Snorlax 10% to move first
 · King's Rock Jolteon 10% flinch a hit
-1 issue: nothing hits Ground/Rock/Bug/Steel +7 super-effectively
+Team: 1 issue: nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 Team audit
 · nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 == status orb
-⌃ ×
-🛒 $100 nothing affordable take Flame Orb → Machamp
+card reward W42 take Flame Orb → Machamp
+strip 🛒 $100 nothing affordable
+take Flame Orb → Machamp
 ★ Flame Orb Machamp Guts wants the status
 Others
 · Toxic Orb Machamp Guts wants the status
-1 issue: nothing hits Fighting/Flying/Poison/Ground +7 super-effectively
+Team: 1 issue: nothing hits Fighting/Flying/Poison/Ground +7 super-effectively
 Team audit
 · nothing hits Fighting/Flying/Poison/Ground +7 super-effectively
 == status orb nobody
-⌃ ×
-🛒 $100 nothing affordable take 5× Poké Ball
+card reward W42 take 5× Poké Ball
+strip 🛒 $100 nothing affordable
+take 5× Poké Ball
 ★ 5× Poké Ball you have 3
 Others
 · Flame Orb does nothing for this team · for Charizard
-1 issue: nothing hits Fighting/Flying/Poison/Ground +9 super-effectively
+Team: 1 issue: nothing hits Fighting/Flying/Poison/Ground +9 super-effectively
 Team audit
 · nothing hits Fighting/Flying/Poison/Ground +9 super-effectively
 == mints
-⌃ ×
-🛒 $100 nothing affordable take Mint → Snorlax
+card reward W42 take Mint → Snorlax
+strip 🛒 $100 nothing affordable
+take Mint → Snorlax
 ★ Mint Snorlax Adamant +Atk −SpA, was Modest
 Others
 · Mint Modest +SpA −Atk · no better for anyone · for Machamp
-1 issue: nothing hits Fighting/Flying/Poison/Ground +7 super-effectively
+Team: 1 issue: nothing hits Fighting/Flying/Poison/Ground +7 super-effectively
 Team audit
 · nothing hits Fighting/Flying/Poison/Ground +7 super-effectively
 == exp at the cap
-⌃ ×
-🛒 $100 nothing affordable take EXP. All
+card reward W42 take EXP. All
+strip 🛒 $100 nothing affordable
+take EXP. All
 ★ EXP. All nobody on the bench under the Lv 38 cap
 Others
 · EXP. Charm whole party at the Lv 38 cap
-1 issue: nothing hits Ground/Rock/Bug/Steel +7 super-effectively
+Team: 1 issue: nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 Team audit
 · nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 == exp for the bench
-⌃ ×
-🛒 $100 nothing affordable take EXP. All
+card reward W42 take EXP. All
+strip 🛒 $100 nothing affordable
+take EXP. All
 ★ EXP. All EXP for the bench · 1 under the Lv 38 cap
-3 issues: 2 of 3 weak to Ground, nobody resists; Pichu L20 trail Snorlax L45 — lead it on easy waves; nothing hits Ground/Rock/Bug/Steel +7 super-effectively
+Team: 3 issues: 2 of 3 weak to Ground, nobody resists; Pichu L20 trail Snorlax L45 — lead it on easy waves; nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 Team audit
 ✗ 2 of 3 weak to Ground, nobody resists
 ✗ Pichu L20 trail Snorlax L45 — lead it on easy waves
 · nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 == evolution item and eviolite
-⌃ ×
-🛒 $100 nothing affordable take Leaf Stone → Pikachu
+card reward W42 take Leaf Stone → Pikachu
+strip 🛒 $100 nothing affordable
+take Leaf Stone → Pikachu
 ★ Leaf Stone Pikachu evolves now
-4 issues: 2 of 2 weak to Fighting, nobody resists; Gloom: no Normal attack (no STAB); Pikachu: no Normal attack (no STAB)
+Team: 4 issues: 2 of 2 weak to Fighting, nobody resists; Gloom: no Normal attack (no STAB); Pikachu: no Normal attack (no STAB)
 Team audit
 ✗ 2 of 2 weak to Fighting, nobody resists
 ✗ Gloom: no Normal attack (no STAB)
 ✗ Pikachu: no Normal attack (no STAB)
 · nothing hits Fighting/Poison/Bug/Ghost +9 super-effectively
 == vitamins and species boosters
-⌃ ×
-🛒 $100 nothing affordable take Protein → Snorlax
+card reward W42 take Protein → Snorlax
+strip 🛒 $100 nothing affordable
+take Protein → Snorlax
 ★ Protein Snorlax +10% base Atk (carry)
 Others
 · Light Ball Pikachu ×2 Atk/SpA
 · Thick Club nobody it works for · for Snorlax/Jolteon +1
-3 issues: 2 of 3 weak to Ground, nobody resists; Pikachu L30 trail Snorlax L45 — lead it on easy waves; nothing hits Ground/Rock/Bug/Steel +7 super-effectively
+Team: 3 issues: 2 of 3 weak to Ground, nobody resists; Pikachu L30 trail Snorlax L45 — lead it on easy waves; nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 Team audit
 ✗ 2 of 3 weak to Ground, nobody resists
 ✗ Pikachu L30 trail Snorlax L45 — lead it on easy waves
 · nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 == wave 14 pp up
-⌃ ×
-🛒 $1824 take PP Up
+card reward W14 take PP Up
+strip 🛒 $1824
+take PP Up
 ★ PP Up more PP on a move (permanent)
 🎲 nothing good — reroll for $500?
 Others
 · TM Round Comfey → forget Body Slam · +13 power
 · Potion party healthy
-2 issues: Comfey: Body Slam is physical on Atk 50 (SpA 90); nothing hits Flying/Poison/Bug/Grass +2 super-effectively
+Team: 2 issues: Comfey: Body Slam is physical on Atk 50 (SpA 90); nothing hits Flying/Poison/Bug/Grass +2 super-effectively
 Team audit
 · Comfey: Body Slam is physical on Atk 50 (SpA 90)
 · nothing hits Flying/Poison/Bug/Grass +2 super-effectively
 == wave 15 calm mind
-⌃ ×
-🛒 $900 take TM Calm Mind → Comfey
+card reward W15 take TM Calm Mind → Comfey
+strip 🛒 $900
+take TM Calm Mind → Comfey
 ★ TM Calm Mind Comfey setup +1 SpA/SpD
 Others
 · 5× Poké Ball you have 34
 · Full Heal no status
-2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90); nothing hits Poison/Bug/Steel/Fire +4 super-effectively
+Team: 2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90); nothing hits Poison/Bug/Steel/Fire +4 super-effectively
 Team audit
 · Comfey: Tackle is physical on Atk 50 (SpA 90)
 · nothing hits Poison/Bug/Steel/Fire +4 super-effectively
 == tm recipient
-⌃ ×
-🛒 $400 take TM Fire Fang → Morpeko (forget Tackle)
+card reward W22 take TM Fire Fang → Morpeko (forget Tackle)
+strip 🛒 $400
+take TM Fire Fang → Morpeko (forget Tackle)
 ★ TM Fire Fang Morpeko → forget Tackle · +48 power
 Others
 · TM Thunder Fang TM — can't check who learns it
 · 5× Great Ball you have 34
-2 issues: Morpeko: Quick Attack is a second Normal attack (Tackle); nothing hits Poison/Ground/Rock/Fire +4 super-effectively
+Team: 2 issues: Morpeko: Quick Attack is a second Normal attack (Tackle); nothing hits Poison/Ground/Rock/Fire +4 super-effectively
 Team audit
 · Morpeko: Quick Attack is a second Normal attack (Tackle)
 · nothing hits Poison/Ground/Rock/Fire +4 super-effectively
 == wave 18 free ether
-⌃ ×
-🛒 $1622 → $491 take Ether · buy Super Potion, Ether
+card reward W18 take Ether
+strip 🛒 $1622 → $491
+take Ether · buy Super Potion, Ether
 buy first — taking the free reward closes the shop
 ✓ Super Potion $599 Comfey 50% HP
 ✓ Ether $532 Snorlax Body Slam 1/15
@@ -184,189 +201,206 @@ buy first — taking the free reward closes the shop
 Others
 · X Sp. Atk only lasts a few battles
 · Potion heals Comfey a little
-1 issue: nothing hits Poison/Ground/Rock/Bug +6 super-effectively
+Team: 1 issue: nothing hits Poison/Ground/Rock/Bug +6 super-effectively
 Team audit
 · nothing hits Poison/Ground/Rock/Bug +6 super-effectively
 == wave 23 lure vs ether
-⌃ ×
-🛒 $1474 → $144 take Ether · buy Max Ether
+card reward W23 take Ether
+strip 🛒 $1474 → $144
+take Ether · buy Max Ether
 buy first — taking the free reward closes the shop
 ✓ Max Ether $1330 Snorlax Body Slam 1/15
 ★ Ether PP for Morpeko · saves $1330
 Others
 · Super Lure more double battles for a while
 · 5× Poké Ball you have 34
-2 issues: 2 of 2 weak to Fighting, nobody resists; nothing hits Fighting/Poison/Ground/Rock +9 super-effectively
+Team: 2 issues: 2 of 2 weak to Fighting, nobody resists; nothing hits Fighting/Poison/Ground/Rock +9 super-effectively
 Team audit
 ✗ 2 of 2 weak to Fighting, nobody resists
 · nothing hits Fighting/Poison/Ground/Rock +9 super-effectively
 == tm best of two
-⌃ ×
-🛒 $200 nothing affordable take TM Crunch → Snorlax (forget Tackle)
+card reward W24 take TM Crunch → Snorlax (forget Tackle)
+strip 🛒 $200 nothing affordable
+take TM Crunch → Snorlax (forget Tackle)
 ★ TM Crunch Snorlax → forget Tackle · +68 power
 Others
 · 5× Poké Ball you have 34
-3 issues: Comfey: Tackle is physical on Atk 50 (SpA 90); Snorlax: Tackle is a second Normal attack (Body Slam); nothing hits Flying/Poison/Bug/Ghost +4 super-effectively
+Team: 3 issues: Comfey: Tackle is physical on Atk 50 (SpA 90); Snorlax: Tackle is a second Normal attack (Body Slam); nothing hits Flying/Poison/Bug/Ghost +4 super-effectively
 Team audit
 · Comfey: Tackle is physical on Atk 50 (SpA 90)
 · Snorlax: Tackle is a second Normal attack (Body Slam)
 · nothing hits Flying/Poison/Bug/Ghost +4 super-effectively
 == tm skip
-⌃ ×
-🛒 $200 nothing affordable take 5× Poké Ball
+card reward W25 take 5× Poké Ball
+strip 🛒 $200 nothing affordable
+take 5× Poké Ball
 ★ 5× Poké Ball you have 3
 Others
 · TM Tackle skip · no upgrade for Snorlax · Snorlax keeps Brick Break
-3 issues: Comfey: no Fairy attack (no STAB); Comfey: Tackle is physical on Atk 50 (SpA 90); nothing hits Fighting/Flying/Poison/Bug +5 super-effectively
+Team: 3 issues: Comfey: no Fairy attack (no STAB); Comfey: Tackle is physical on Atk 50 (SpA 90); nothing hits Fighting/Flying/Poison/Bug +5 super-effectively
 Team audit
 ✗ Comfey: no Fairy attack (no STAB)
 · Comfey: Tackle is physical on Atk 50 (SpA 90)
 · nothing hits Fighting/Flying/Poison/Bug +5 super-effectively
 == tm compatibility fallback
-⌃ ×
-🛒 $200 nothing affordable take TM Fire Fang → Morpeko
+card reward W26 take TM Fire Fang → Morpeko
+strip 🛒 $200 nothing affordable
+take TM Fire Fang → Morpeko
 ★ TM Fire Fang Morpeko free slot · +78 power
 Others
 · TM Psybeam Arcanine free slot · +77 power
-2 issues: 2 of 2 weak to Ground, nobody resists; nothing hits Fighting/Poison/Ground/Rock +5 super-effectively
+Team: 2 issues: 2 of 2 weak to Ground, nobody resists; nothing hits Fighting/Poison/Ground/Rock +5 super-effectively
 Team audit
 ✗ 2 of 2 weak to Ground, nobody resists
 · nothing hits Fighting/Poison/Ground/Rock +5 super-effectively
 == tm known through Mimic
-⌃ ×
-🛒 $200 nothing affordable take TM Fire Fang → Snorlax
+card reward W26 take TM Fire Fang → Snorlax
+strip 🛒 $200 nothing affordable
+take TM Fire Fang → Snorlax
 ★ TM Fire Fang Snorlax free slot · +80 power
-2 issues: 2 of 2 weak to Fighting, nobody resists; nothing hits Fighting/Poison/Ground/Rock +9 super-effectively
+Team: 2 issues: 2 of 2 weak to Fighting, nobody resists; nothing hits Fighting/Poison/Ground/Rock +9 super-effectively
 Team audit
 ✗ 2 of 2 weak to Fighting, nobody resists
 · nothing hits Fighting/Poison/Ground/Rock +9 super-effectively
 == tm nobody
-⌃ ×
-🛒 $200 nothing affordable take 5× Poké Ball
+card reward W27 take 5× Poké Ball
+strip 🛒 $200 nothing affordable
+take 5× Poké Ball
 ★ 5× Poké Ball least bad · you have 34
 Others
 · TM Nuzzle skip · nobody can learn it
-1 issue: nothing hits Flying/Poison/Ground/Rock +8 super-effectively
+Team: 1 issue: nothing hits Flying/Poison/Ground/Rock +8 super-effectively
 Team audit
 · nothing hits Flying/Poison/Ground/Rock +8 super-effectively
 == tm fainted recipient
-⌃ ×
-🛒 $400 take TM Fire Fang → Morpeko (forget Tackle)
+card reward W22 take TM Fire Fang → Morpeko (forget Tackle)
+strip 🛒 $400
+take TM Fire Fang → Morpeko (forget Tackle)
 ★ TM Fire Fang Morpeko (fainted) → forget Tackle · +48 power
 Others
 · 5× Great Ball you have 34
-2 issues: Morpeko: Quick Attack is a second Normal attack (Tackle); nothing hits Poison/Ground/Rock/Fire +4 super-effectively
+Team: 2 issues: Morpeko: Quick Attack is a second Normal attack (Tackle); nothing hits Poison/Ground/Rock/Fire +4 super-effectively
 Team audit
 · Morpeko: Quick Attack is a second Normal attack (Tackle)
 · nothing hits Poison/Ground/Rock/Fire +4 super-effectively
 == tm fainted hardcore
-⌃ ×
-🛒 $400 take TM Fire Fang
+card reward W22 take TM Fire Fang
+strip 🛒 $400
+take TM Fire Fang
 ★ TM Fire Fang least bad · skip · nobody can learn it
-1 issue: nothing hits Flying/Poison/Ground/Rock +8 super-effectively
+Team: 1 issue: nothing hits Flying/Poison/Ground/Rock +8 super-effectively
 Team audit
 · nothing hits Flying/Poison/Ground/Rock +8 super-effectively
 == tm fainted hardcore negative value
-⌃ ×
-🛒 $400 take TM Fire Fang
+card reward W22 take TM Fire Fang
+strip 🛒 $400
+take TM Fire Fang
 ★ TM Fire Fang least bad · skip · nobody can learn it
-1 issue: nothing hits Flying/Poison/Ground/Rock +8 super-effectively
+Team: 1 issue: nothing hits Flying/Poison/Ground/Rock +8 super-effectively
 Team audit
 · nothing hits Flying/Poison/Ground/Rock +8 super-effectively
 == tm spread by doubles ahead
-⌃ ×
-🛒 $400 take TM Hyper Voice → Charizard
+card reward W22 take TM Hyper Voice → Charizard
+strip 🛒 $400
+take TM Hyper Voice → Charizard
 ★ TM Hyper Voice Charizard free slot · +69 power
-2 issues: Charizard: Tackle is physical on Atk 110 (SpA 150); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
+Team: 2 issues: Charizard: Tackle is physical on Atk 110 (SpA 150); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 Team audit
 · Charizard: Tackle is physical on Atk 110 (SpA 150)
 · nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 == tm setup full moveset
-⌃ ×
-🛒 $200 nothing affordable take TM Calm Mind → Comfey (forget Tackle)
+card reward W28 take TM Calm Mind → Comfey (forget Tackle)
+strip 🛒 $200 nothing affordable
+take TM Calm Mind → Comfey (forget Tackle)
 ★ TM Calm Mind Comfey setup +1 SpA/SpD → forget Tackle
 Others
 · 5× Poké Ball you have 34
-2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90); nothing hits Flying/Bug/Ghost/Steel +6 super-effectively
+Team: 2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90); nothing hits Flying/Bug/Ghost/Steel +6 super-effectively
 Team audit
 · Comfey: Tackle is physical on Atk 50 (SpA 90)
 · nothing hits Flying/Bug/Ghost/Steel +6 super-effectively
 == key items
-⌃ ×
-🛒 $72 nothing affordable take Master Ball
+card reward W31 take Master Ball
+strip 🛒 $72 nothing affordable
+take Master Ball
 ★ Master Ball Master Ball — catches anything · you have 0
 Others
 · Mega Bracelet nobody on the team can Mega Evolve
 · Egg Voucher egg voucher — outlasts the run
-1 issue: nothing hits Flying/Poison/Ground/Rock +8 super-effectively
+Team: 1 issue: nothing hits Flying/Poison/Ground/Rock +8 super-effectively
 Team audit
 · nothing hits Flying/Poison/Ground/Rock +8 super-effectively
 == mega capable
-⌃ ×
-🛒 $72 nothing affordable take Mega Bracelet
+card reward W31 take Mega Bracelet
+strip 🛒 $72 nothing affordable
+take Mega Bracelet
 ★ Mega Bracelet Charizard can Mega Evolve (needs its stone)
 Others
 · Fire Stone nobody can use it
 · Leftovers everyone's at max stack
-2 issues: Charizard: no Normal attack (no STAB); nothing hits Fighting/Flying/Poison/Ground +9 super-effectively
+Team: 2 issues: Charizard: no Normal attack (no STAB); nothing hits Fighting/Flying/Poison/Ground +9 super-effectively
 Team audit
 ✗ Charizard: no Normal attack (no STAB)
 · nothing hits Fighting/Flying/Poison/Ground +9 super-effectively
 == boss next
-⌃ ×
-🛒 $300 👑 boss next take Super Potion
+card reward W19 take Super Potion
+strip 🛒 $300 👑 boss next
+take Super Potion
 ★ Super Potion heals Blastoise
 Others
 · Revive nobody fainted · spare for the boss
 · X Attack only lasts a few battles
-2 issues: Blastoise: no Normal attack (no STAB); nothing hits Flying/Poison/Ghost/Water +5 super-effectively
+Team: 2 issues: Blastoise: no Normal attack (no STAB); nothing hits Flying/Poison/Ghost/Water +5 super-effectively
 Team audit
 ✗ Blastoise: no Normal attack (no STAB)
 · nothing hits Flying/Poison/Ghost/Water +5 super-effectively
 == elite four gauntlet
-⌃ ×
-🛒 $3000 → $2401 👑 boss next take Max Revive · buy Super Potion
+card reward W181 take Max Revive
+strip 🛒 $3000 → $2401 👑 boss next
+take Max Revive · buy Super Potion
 buy first — taking the free reward closes the shop
 ✓ Super Potion $599 Blastoise 86% HP
 ★ Max Revive nobody fainted · spare for the gauntlet
 Others
 · X Attack only lasts a few battles
 · 5× Great Ball you have 34
-2 issues: Blastoise: no Normal attack (no STAB); nothing hits Flying/Poison/Ghost/Water +5 super-effectively
+Team: 2 issues: Blastoise: no Normal attack (no STAB); nothing hits Flying/Poison/Ghost/Water +5 super-effectively
 Team audit
 ✗ Blastoise: no Normal attack (no STAB)
 · nothing hits Flying/Poison/Ghost/Water +5 super-effectively
-fixed battle next wave (W182) — 5 big fights before the next full heal
+Road: fixed battle next wave (W182) — 5 big fights before the next full heal
 Next big fight fixed battle next wave W182
 ✗ 5 big fights before the next full heal (W191)
 · luck 0 (D) — 3.1% tier upgrade per reward
 == ordinary boss run-up
-⌃ ×
-🛒 $3000 take 5× Great Ball
+card reward W176 take 5× Great Ball
+strip 🛒 $3000
+take 5× Great Ball
 ★ 5× Great Ball you have 34
 Others
 · Max Revive nobody fainted
-2 issues: Blastoise: no Normal attack (no STAB); nothing hits Flying/Poison/Ghost/Water +5 super-effectively
+Team: 2 issues: Blastoise: no Normal attack (no STAB); nothing hits Flying/Poison/Ghost/Water +5 super-effectively
 Team audit
 ✗ Blastoise: no Normal attack (no STAB)
 · nothing hits Flying/Poison/Ghost/Water +5 super-effectively
-boss in 4 (W180)
+Road: boss in 4 (W180)
 Next big fight boss in 4 W180
 ✓ full heal entering W181 — HP, status, PP, revives, Tera
 · luck 0 (D) — 3.1% tier upgrade per reward
 == no heal left
-⌃ ×
-🛒 $3000 → $2401 take Max Revive · buy Super Potion
+card reward W192 take Max Revive
+strip 🛒 $3000 → $2401
+take Max Revive · buy Super Potion
 buy first — taking the free reward closes the shop
 ✓ Super Potion $599 Blastoise 86% HP
 ★ Max Revive nobody fainted · spare for the gauntlet
 Others
 · 5× Great Ball you have 34
-2 issues: Blastoise: no Normal attack (no STAB); nothing hits Flying/Poison/Ghost/Water +5 super-effectively
+Team: 2 issues: Blastoise: no Normal attack (no STAB); nothing hits Flying/Poison/Ghost/Water +5 super-effectively
 Team audit
 ✗ Blastoise: no Normal attack (no STAB)
 · nothing hits Flying/Poison/Ghost/Water +5 super-effectively
-fixed battle in 3 (W195) — no full heal left before the final wave
+Road: fixed battle in 3 (W195) — no full heal left before the final wave
 Next big fight fixed battle in 3 W195
 ✗ no full heal left — 2 big fights on what you have
 · luck 0 (D) — 3.1% tier upgrade per reward
@@ -376,8 +410,9 @@ Next big fight fixed battle in 3 W195
 ✗ phase 1's Cosmic Power raises its defences every use — stalling makes it worse
 ✓ it carries no held items in phase 1 and has no passive ability
 == reroll preview
-⌃ ×
-🛒 $3000 take X Defense · reroll $250 → X Attack, Rare Candy, 1× Egg Voucher (reroll) [~] · lock, reroll $700 → 1× Egg Voucher, Leftovers, 5× Great Ball (reroll) [~]
+card reward W14 take X Defense
+strip 🛒 $3000
+take X Defense · reroll $250 → X Attack, Rare Candy, 1× Egg Voucher (reroll) [~] · lock, reroll $700 → 1× Egg Voucher, Leftovers, 5× Great Ball (reroll) [~]
 ★ X Defense least bad · only lasts a few battles
 🎲 reroll $250~ ✓ worth it best 1× Egg Voucher (+21)
 · X Attack only lasts a few battles
@@ -387,12 +422,13 @@ Next big fight fixed battle in 3 W195
 Others
 · 5× Poké Ball you have 34
 · Potion party healthy
-1 issue: nothing hits Ground/Rock/Bug/Steel +7 super-effectively
+Team: 1 issue: nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 Team audit
 · nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 == reroll keep
-⌃ ×
-🛒 $400 take Leftovers → Snorlax · reroll $250 → X Attack, 5× Great Ball, X Attack (keep) [~] · lock, reroll $700 → X Attack, 5× Great Ball, X Attack (short) [~]
+card reward W14 take Leftovers → Snorlax
+strip 🛒 $400
+take Leftovers → Snorlax · reroll $250 → X Attack, 5× Great Ball, X Attack (keep) [~] · lock, reroll $700 → X Attack, 5× Great Ball, X Attack (short) [~]
 ★ Leftovers Snorlax 1/16 HP a turn
 🎲 reroll $250~ keep best 5× Great Ball (-12)
 · X Attack only lasts a few battles
@@ -401,12 +437,13 @@ Team audit
 🔒 lock, reroll $700~ can't pay X Attack · 5× Great Ball · X Attack
 Others
 · 5× Poké Ball you have 34
-1 issue: nothing hits Ground/Rock/Bug/Steel +7 super-effectively
+Team: 1 issue: nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 Team audit
 · nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 == reroll over the buys
-⌃ ×
-🛒 $1300 → $236 take X Defense · buy Hyper Potion · reroll $250 → Master Ball, Master Ball, Master Ball (instead of buys) [~]
+card reward W14 take X Defense
+strip 🛒 $1300 → $236
+take X Defense · buy Hyper Potion · reroll $250 → Master Ball, Master Ball, Master Ball (instead of buys) [~]
 buy first — taking the free reward closes the shop
 ✓ Hyper Potion $1064 Blastoise 32% HP
 ★ X Defense least bad · only lasts a few battles
@@ -414,114 +451,127 @@ buy first — taking the free reward closes the shop
 ★ Master Ball Master Ball — catches anything · you have 0
 · Master Ball Master Ball — catches anything · you have 0
 · Master Ball Master Ball — catches anything · you have 0
-2 issues: Blastoise: no Normal attack (no STAB); nothing hits Flying/Poison/Ghost/Water +5 super-effectively
+Team: 2 issues: Blastoise: no Normal attack (no STAB); nothing hits Flying/Poison/Ghost/Water +5 super-effectively
 Team audit
 ✗ Blastoise: no Normal attack (no STAB)
 · nothing hits Flying/Poison/Ghost/Water +5 super-effectively
 == grip claw off contact
-⌃ ×
-🛒 $100 nothing affordable take Grip Claw → Jolteon
+card reward W42 take Grip Claw → Jolteon
+strip 🛒 $100 nothing affordable
+take Grip Claw → Jolteon
 ★ Grip Claw Jolteon 10% to steal an item when it attacks
-3 issues: Wobbuffet: no attacking move; Wobbuffet: Calm Mind does little (+1 SpA/SpD); nothing hits Ground/Rock/Bug/Ghost +9 super-effectively
+Team: 3 issues: Wobbuffet: no attacking move; Wobbuffet: Calm Mind does little (+1 SpA/SpD); nothing hits Ground/Rock/Bug/Ghost +9 super-effectively
 Team audit
 ✗ Wobbuffet: no attacking move
 · Wobbuffet: Calm Mind does little (+1 SpA/SpD)
 · nothing hits Ground/Rock/Bug/Ghost +9 super-effectively
 == daily level cap
-⌃ ×
-🛒 $100 nothing affordable take EXP. Charm
+card reward W30 take EXP. Charm
+strip 🛒 $100 nothing affordable
+take EXP. Charm
 ★ EXP. Charm more EXP · 2 under the Lv 52 cap
-1 issue: nothing hits Ground/Rock/Bug/Steel +7 super-effectively
+Team: 1 issue: nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 Team audit
 · nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 == classic level cap
-⌃ ×
-🛒 $100 nothing affordable take EXP. Charm
+card reward W30 take EXP. Charm
+strip 🛒 $100 nothing affordable
+take EXP. Charm
 ★ EXP. Charm whole party at the Lv 24 cap
-1 issue: nothing hits Ground/Rock/Bug/Steel +7 super-effectively
+Team: 1 issue: nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 Team audit
 · nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 == tm the evolution move already passed
-⌃ ×
-🛒 $200 nothing affordable take TM Magical Leaf → Comfey
+card reward W27 take TM Magical Leaf → Comfey
+strip 🛒 $200 nothing affordable
+take TM Magical Leaf → Comfey
 ★ TM Magical Leaf Comfey free slot · +78 power · or a Memory Mushroom
 Others
 · 5× Poké Ball you have 34
-2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90) (relearn Magical Leaf); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
+Team: 2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90) (relearn Magical Leaf); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 Team audit
 · Comfey: Tackle is physical on Atk 50 (SpA 90)
 ↺ Memory Mushroom: relearn Magical Leaf · +78 power
 · nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 == tm the relearner move
-⌃ ×
-🛒 $200 nothing affordable take TM Magical Leaf → Comfey
+card reward W27 take TM Magical Leaf → Comfey
+strip 🛒 $200 nothing affordable
+take TM Magical Leaf → Comfey
 ★ TM Magical Leaf Comfey free slot · +78 power · or a Memory Mushroom
-2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90) (relearn Magical Leaf); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
+Team: 2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90) (relearn Magical Leaf); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 Team audit
 · Comfey: Tackle is physical on Atk 50 (SpA 90)
 ↺ Memory Mushroom: relearn Magical Leaf · +78 power
 · nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 == tm already used once
-⌃ ×
-🛒 $200 nothing affordable take TM Crunch → Snorlax
+card reward W27 take TM Crunch → Snorlax
+strip 🛒 $200 nothing affordable
+take TM Crunch → Snorlax
 ★ TM Crunch Snorlax free slot · +116 power · or a Memory Mushroom
-1 issue: nothing hits Fighting/Flying/Poison/Ground +13 super-effectively
+Team: 1 issue: nothing hits Fighting/Flying/Poison/Ground +13 super-effectively
 Team audit
 · nothing hits Fighting/Flying/Poison/Ground +13 super-effectively
 == tm status your call, one relearner
-⌃ ×
-🛒 $200 nothing affordable take TM Screech
+card reward W27 take TM Screech
+strip 🛒 $200 nothing affordable
+take TM Screech
 ★ TM Screech status TM — Comfey can learn it · Comfey can relearn it (Memory Mushroom)
-2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
+Team: 2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 Team audit
 · Comfey: Tackle is physical on Atk 50 (SpA 90)
 · nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 == tm status your call, all relearners
-⌃ ×
-🛒 $200 nothing affordable take TM Screech
+card reward W27 take TM Screech
+strip 🛒 $200 nothing affordable
+take TM Screech
 ★ TM Screech status TM — Comfey +1 can learn it · all can relearn it (Memory Mushroom)
-2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
+Team: 2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 Team audit
 · Comfey: Tackle is physical on Atk 50 (SpA 90)
 · nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 == tm status your call, one still paying
-⌃ ×
-🛒 $200 nothing affordable take TM Screech
+card reward W27 take TM Screech
+strip 🛒 $200 nothing affordable
+take TM Screech
 ★ TM Screech status TM — Comfey +1 can learn it
-2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
+Team: 2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 Team audit
 · Comfey: Tackle is physical on Atk 50 (SpA 90)
 · nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 == tm weighs the relearner with the payer
-⌃ ×
-🛒 $200 nothing affordable take TM Crunch → Snorlax
+card reward W27 take TM Crunch → Snorlax
+strip 🛒 $200 nothing affordable
+take TM Crunch → Snorlax
 ★ TM Crunch Snorlax free slot · +116 power
-2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90) (relearn Crunch); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
+Team: 2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90) (relearn Crunch); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 Team audit
 · Comfey: Tackle is physical on Atk 50 (SpA 90)
 ↺ Memory Mushroom: relearn Crunch · +57 power
 · nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 == reroll disabled
-⌃ ×
-🛒 $3000 take X Defense
+card reward W14 take X Defense
+strip 🛒 $3000
+take X Defense
 ★ X Defense least bad · only lasts a few battles
-1 issue: nothing hits Fighting/Flying/Poison/Ground +11 super-effectively
+Team: 1 issue: nothing hits Fighting/Flying/Poison/Ground +11 super-effectively
 Team audit
 · nothing hits Fighting/Flying/Poison/Ground +11 super-effectively
 == no-reward shop after a flee
-⌃ ×
-🛒 $3000 → $1936 no free reward buy Hyper Potion
+card reward W14 buy Hyper Potion
+strip 🛒 $3000 → $1936 no free reward
+buy Hyper Potion
 ✓ Hyper Potion $1064 Blastoise 32% HP
-2 issues: Blastoise: no Normal attack (no STAB); nothing hits Flying/Poison/Ghost/Water +5 super-effectively
+Team: 2 issues: Blastoise: no Normal attack (no STAB); nothing hits Flying/Poison/Ghost/Water +5 super-effectively
 Team audit
 ✗ Blastoise: no Normal attack (no STAB)
 · nothing hits Flying/Poison/Ghost/Water +5 super-effectively
 == reroll preview unavailable
-⌃ ×
-🛒 $3000 take X Defense
+card reward W14 take X Defense
+strip 🛒 $3000
+take X Defense
 ★ X Defense least bad · only lasts a few battles
 🎲 nothing good — reroll for $250?
-1 issue: nothing hits Fighting/Flying/Poison/Ground +11 super-effectively
+Team: 1 issue: nothing hits Fighting/Flying/Poison/Ground +11 super-effectively
 Team audit
 · nothing hits Fighting/Flying/Poison/Ground +11 super-effectively
 ok

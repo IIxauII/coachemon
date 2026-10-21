@@ -1,7 +1,9 @@
+import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 
 const OPTIONS = ["scene", "rnd", "stored", "expose"];
 const compiled = new Map();
+let mounts = 0;
 const hud = expose => {
   if (!compiled.has(expose)) compiled.set(expose, new Function(`"use strict";${bundle("hud", { expose })}`));
   return compiled.get(expose);
@@ -13,6 +15,47 @@ const node = () => {
   return n;
 };
 const seeded = () => ({ _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } });
+
+// Gotcha: the plain half copies `90-render.js`'s `rowText`, and `headingOf` its `headingText`. `card()` asserts both
+// against the wire, so a change there fails here instead of drifting.
+const walk = n => {
+  if (n == null) return ["", ""];
+  if (typeof n !== "object") return [String(n), String(n)];
+  if (String(n.tagName ?? "").toUpperCase() === "IMG") return [String(n.title ?? ""), String(n.title ?? "")];
+  const kids = n.childNodes ? Array.prototype.slice.call(n.childNodes) : n.children ?? [];
+  const [plain, titled] = kids.length
+    ? [0, 1].map(i => kids.map(walk).map(w => w[i]).filter(Boolean).join(" "))
+    : [String(n.textContent ?? ""), String(n.textContent ?? "")];
+  return [plain, n.title ? `${titled} {${n.title}}` : titled];
+};
+const clean = l => l.replace(/\s+/g, " ").trim();
+const headingOf = g => (g.id === "act" ? g.summary
+  : g.summary && g.label ? `${g.label}: ${g.summary}` : g.label || g.summary) || null;
+
+// Contract: the card as `__coachHud.card()` sends it, each row with its hover titles inline as `{…}`, under one line
+// for the event and one for the strip's head. The head carries facts the wire does not, such as the shop's money and
+// an encounter's rarity (#894).
+const cardText = el => {
+  const ev = globalThis.__coachHud.card();
+  if (!ev) return "card none";
+  const drawn = [...(globalThis.__hud["98-watch"].watchShown()?.groups ?? [])];
+  const head = (el.kids?.length ?? 0) >= 2 ? el.kids[1].children?.[0] : null;
+  const out = [`card ${ev.kind} W${ev.wave ?? "?"} ${ev.verdict}${ev.randomized ? " randomized" : ""}${ev.oracleLine
+    ? ` line ${ev.oracleLine.state} ${ev.oracleLine.turn}/${ev.oracleLine.of}` : ""}`];
+  if (head) out.push(`strip ${clean(walk(head)[1])}`);
+  const plain = [];
+  for (const wire of ev.groups) {
+    const at = drawn.findIndex(d => d.id === wire.id);
+    assert.ok(at >= 0, `card(): the wire has a ${wire.id} group the panel never drew`);
+    const g = drawn.splice(at, 1)[0];
+    const rows = g.rows.map(walk).map(w => w.map(clean)).filter(([p]) => p);
+    assert.deepEqual(rows.map(([p]) => p), wire.rows, `card(): ${wire.id}'s rows walk differently from the wire`);
+    plain.push([headingOf(wire), ...wire.rows].filter(Boolean).join("\n"));
+    out.push(...[headingOf(wire), ...rows.map(([, t]) => t)].filter(Boolean));
+  }
+  assert.equal(plain.filter(Boolean).join("\n") || null, ev.text, "card(): the groups rebuild a different text from the wire's");
+  return out.join("\n");
+};
 
 /**
  * Each call is a fresh page load: `__coachHud` is deleted, not stopped, and the bundle's module state starts over. The
@@ -37,6 +80,12 @@ export const mountHud = (opts = {}) => {
   globalThis.setInterval = () => 0;
   globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: k => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)), removeItem: k => store.delete(k) };
+  const at = ++mounts;
   hud(expose)();
-  return { el, store };
+  const card = () => {
+    if (at !== mounts) throw new Error("mountHud: card() read after a later mount replaced this page");
+    if (!expose) throw new TypeError("mountHud: card() reads the drawn groups, so it needs the default expose");
+    return cardText(el);
+  };
+  return { el, store, card };
 };

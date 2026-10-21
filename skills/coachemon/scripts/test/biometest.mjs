@@ -1,7 +1,6 @@
 // The pools and trainers are invented, not the game's: shaped like its tables, small enough to count by hand.
 import assert from "node:assert/strict";
 import { mountHud } from "./fake-page.mjs";
-import { wholeCard } from "./panel.mjs";
 import { cat, TY } from "./fake-mon.mjs";
 
 // id → [name, types, bst, direct evolutions [[id, level, evoLevelThreshold?]], legendary]
@@ -152,9 +151,6 @@ const lowTeam = () => [
   pk(30, 37, [["Shadow Claw","Ghost",70,"P"]]), pk(31, 37, [["Ember","Fire",40,"S"]]),
 ];
 
-const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
-const lines = el => wholeCard(el)
-  .map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
 
 
 // `t`: what loadGameTables would have found; null is not loaded yet.
@@ -166,7 +162,7 @@ const mount = ({ labels = ["Swamp", "Construction Site"], party = team(), wave =
     ui: { mode: 15, getHandler: () => handler }, getPlayerParty: () => party, getEnemyParty: () => [],
     gameData: { dexData: dex },
   };
-  const { el } = mountHud({ scene });
+  const { card } = mountHud({ scene });
   // The chunk scan finds nothing under node, so hand over what it would have found and tick again.
   const { setGameTables } = globalThis.__hud["04-game-tables"];
   const { spawnsFor, formsFor, spawnTimeOfDay } = globalThis.__hud["47-biome"];
@@ -175,7 +171,7 @@ const mount = ({ labels = ["Swamp", "Construction Site"], party = team(), wave =
   if (roster) globalThis.__hud["11-threats"].setRosterRead(roster);
   globalThis.__hud["98-watch"].rebuild();
   globalThis.__bm = { spawnsFor, formsFor, spawnTimeOfDay };
-  return { el, scene, handler, model: () => globalThis.__coachHud.last() };
+  return { card, scene, handler, model: () => globalThis.__coachHud.last() };
 };
 
 const jsonSafe = (x, label) => assert.equal(JSON.stringify(JSON.parse(JSON.stringify(x))), JSON.stringify(x), `${label}: JSON-safe`);
@@ -183,8 +179,8 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
 
 // ---- Swamp is the pick over Construction Site, whose Fighting types Snorlax is weak to
 {
-  const { el } = mount();
-  console.log(`== swamp vs construction site\n${lines(el)}`);
+  const { card } = mount();
+  console.log(`== swamp vs construction site\n${card()}`);
   console.log(`summary ${globalThis.__coachHud.summary().biome}`);
   const m = mount().model();
   jsonSafe(m, "model");
@@ -218,8 +214,8 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
 // way the game builds a wild mon — the expected catch level for the wave, the last four level-up moves it knows
 // there — and the answer is an estimate, which the card marks (#580, #587, story 21)
 {
-  const { el } = mount({ wave: 60, party: lowTeam() });
-  console.log(`== a stand-in judged for a party under the wave's cap\n${lines(el)}`);
+  const { card } = mount({ wave: 60, party: lowTeam() });
+  console.log(`== a stand-in judged for a party under the wave's cap\n${card()}`);
   const m = globalThis.__coachHud.last();
   jsonSafe(m, "model");
   const [swamp, site] = m.options;
@@ -263,8 +259,8 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
 
 // ---- Before the tables load, the card lists the options and judges none
 {
-  const { el } = mount({ t: null });
-  console.log(`== no tables\n${lines(el)}`);
+  const { card } = mount({ t: null });
+  console.log(`== no tables\n${card()}`);
   const m = globalThis.__coachHud.last();
   assert.equal(m.pick, -1);
   assert.ok(m.options.every(o => o.score == null));
@@ -306,8 +302,8 @@ const daily = forcedBiomes => ({ isDaily: true, dailyConfig: { forcedBiomes }, g
 // ---- Onward is the Daily seed's choice at the next switch: one forced biome is no choice, several come whole
 {
   const onward = (gameMode, t = tables()) => {
-    const { el } = mount({ gameMode, t });
-    return { m: globalThis.__coachHud.last(), text: lines(el).split("\n").filter(l => l.includes("onward")) };
+    const { card } = mount({ gameMode, t });
+    return { m: globalThis.__coachHud.last(), text: card().split("\n").filter(l => l.includes("onward")) };
   };
   const one = onward(daily([{ waveIndex: 40, biomeId: [34] }]));
   console.log(`== a Daily seed forcing Fairy Glade at wave 40\n${one.text.join("\n")}`);
@@ -384,8 +380,8 @@ const daily = forcedBiomes => ({ isDaily: true, dailyConfig: { forcedBiomes }, g
 
 // ---- The gym leader ahead is a reason and part of the score
 {
-  const { el } = mount({ wave: 40 });
-  console.log(`== gym at wave 50\n${lines(el)}`);
+  const { card } = mount({ wave: 40 });
+  console.log(`== gym at wave 50\n${card()}`);
   const [swamp, site] = globalThis.__coachHud.last().options;
   assert.ok(swamp.reasons.some(r => r.gym && r.good && r.text === "W50 gym Poison (Janine): 2 hit SE"), JSON.stringify(swamp.reasons));
   assert.ok(site.reasons.some(r => r.gym && r.good && r.text === "W50 gym Rock (Brock): 2 hit SE, Lapras weak"), JSON.stringify(site.reasons));
@@ -445,9 +441,9 @@ const daily = forcedBiomes => ({ isDaily: true, dailyConfig: { forcedBiomes }, g
   const normal = mount({ party }).model();
   assert.equal(normal.fainted, 0);
   assert.ok(normal.options[1].reasons.some(r => /Snorlax/.test(r.text)), "a fainted Snorlax still fights in the next biome");
-  const { el } = mount({ party, gameMode: { challenges: [{ id: 9, value: 1 }] } });
+  const { card } = mount({ party, gameMode: { challenges: [{ id: 9, value: 1 }] } });
   const hard = globalThis.__coachHud.last();
-  console.log(`== hardcore, Snorlax fainted\n${lines(el)}`);
+  console.log(`== hardcore, Snorlax fainted\n${card()}`);
   assert.equal(hard.fainted, 1);
   assert.ok(!hard.options[1].reasons.some(r => /Snorlax/.test(r.text)), JSON.stringify(hard.options[1].reasons));
 }
@@ -456,8 +452,8 @@ const daily = forcedBiomes => ({ isDaily: true, dailyConfig: { forcedBiomes }, g
 // wave, so Snorlax counts at full health where the old special case (heals only) would have called it fainted (#570)
 {
   const party = team({ lax: { hp: 0 } });
-  const { el } = mount({ party, gameMode: { isFixedBattle: () => false, challenges: [{ id: 8, value: 1 }] } });
-  console.log(`== Limited Support 1, no heal but a shop on the way revives Snorlax\n${lines(el)}`);
+  const { card } = mount({ party, gameMode: { isFixedBattle: () => false, challenges: [{ id: 8, value: 1 }] } });
+  console.log(`== Limited Support 1, no heal but a shop on the way revives Snorlax\n${card()}`);
   const m = globalThis.__coachHud.last();
   assert.equal(m.fainted, 0, "the shop ahead of W40 is a way back");
   assert.ok(m.options[1].reasons.some(r => /Snorlax/.test(r.text)), JSON.stringify(m.options[1].reasons));
@@ -465,8 +461,8 @@ const daily = forcedBiomes => ({ isDaily: true, dailyConfig: { forcedBiomes }, g
 
 // ---- A near tie gets a pick anyway, by the unrounded score, and says what decided it
 {
-  const { el } = mount({ labels: ["Swamp", "Marsh"] });
-  console.log(`== swamp vs marsh\n${lines(el)}`);
+  const { card } = mount({ labels: ["Swamp", "Marsh"] });
+  console.log(`== swamp vs marsh\n${card()}`);
   const m = globalThis.__coachHud.last();
   const [a, b] = m.options;
   assert.ok(Math.abs(a.score - b.score) <= 2, `a near tie: ${a.score} vs ${b.score}`);
@@ -514,8 +510,8 @@ const daily = forcedBiomes => ({ isDaily: true, dailyConfig: { forcedBiomes }, g
 {
   const broken = team();
   broken[0].getTypes = () => { throw new Error("no types"); };
-  const { el, model } = mount({ party: broken });
-  console.log(`== build throws\n${lines(el)}`);
+  const { card, model } = mount({ party: broken });
+  console.log(`== build throws\n${card()}`);
   const m = model();
   jsonSafe(m, "model");
   assert.equal(m.kind, "biome");

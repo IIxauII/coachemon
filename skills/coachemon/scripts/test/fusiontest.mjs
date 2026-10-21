@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { mountHud } from "./fake-page.mjs";
-import { wholeCard } from "./panel.mjs";
 import { TY } from "./fake-mon.mjs";
 
 class ModifierType {}
@@ -145,7 +144,7 @@ const mount = ({ screen = "party", spliced = false, members = party(spliced), pi
     gameMode: { isSplicedOnly: spliced, challenges: hardcore ? [{ id: HARDCORE, value: 1 }] : [],
       isBoss: w => w % 10 === 0, isFixedBattle: w => w === 25 },
   };
-  const { el } = mountHud({ scene });
+  const { card } = mountHud({ scene });
   if (asked) globalThis.__hud["11-threats"].setRosterRead((run, w) => { asked.push(w); return null; });
   // The chunk scan finds nothing under node, so hand over the tables it would have found and tick again: without
   // them there is no threat set, and the judgment every pair is ranked by has nothing to judge against (#589).
@@ -153,12 +152,9 @@ const mount = ({ screen = "party", spliced = false, members = party(spliced), pi
   globalThis.__hud["98-watch"].rebuild();
   globalThis.__ft = { readRun: (s, fn) => globalThis.__hud["26-run"].readRun(s, fn, { cleared: true }),
     fusionOptions: globalThis.__hud["49-fusion"].fusionOptions };
-  return { el, scene, model: globalThis.__coachHud.last(), summary: globalThis.__coachHud.summary() };
+  return { card, scene, model: globalThis.__coachHud.last(), summary: globalThis.__coachHud.summary() };
 };
 
-const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
-const lines = el => wholeCard(el)
-  .map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
 
 // The card is built inside a run read now, so it opens a `sandbox` where it used to open none: every case asserts
 // what the sibling card tests assert of that seam — the sandbox was restored and the run's own RNG stream never
@@ -170,7 +166,7 @@ const untouched = label => {
 
 const show = (label, opts) => {
   const last = mount(opts);
-  console.log(`== ${label}\n${lines(last.el)}`);
+  console.log(`== ${label}\n${last.card()}`);
   const m = last.model;
   assert.equal(JSON.stringify(JSON.parse(JSON.stringify(m))), JSON.stringify(m), `${label}: JSON-safe`);
   console.log(`summary ${opts.screen === "rewards" ? last.summary?.rewards : last.summary?.fusion}`);

@@ -199,3 +199,8 @@ const verdictOf = m => cardSummary(m).verdict;
 
 assert.throws(() => mountHud({ secne: {} }), /^TypeError: mountHud: unknown option secne \(it takes scene, rnd, stored, expose\)$/);
 assert.throws(() => mountHud({ scene: undefined }), /^TypeError: mountHud: scene is undefined; leave the key out for a page with no game$/);
+const stale = mountHud().card;
+assert.equal(stale(), "card none");
+mountHud();
+assert.throws(stale, /^Error: mountHud: card\(\) read after a later mount replaced this page$/);
+assert.throws(mountHud({ expose: false }).card, /^TypeError: mountHud: card\(\) reads the drawn groups, so it needs the default expose$/);

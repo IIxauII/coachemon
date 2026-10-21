@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { mountHud } from "./fake-page.mjs";
-import { wholeCard } from "./panel.mjs";
 import { MoveFlags, SpeciesId } from "../../../../src/enums/generated.ts";
 import { onGame } from "./game-proto.mjs";
 import { cat, TY } from "./fake-mon.mjs";
@@ -223,9 +222,6 @@ const scenarios = {
       mon("Ludicolo", 80, ["Water","Grass"], "Swift Swim", [250,110,120,150,170,110], [["Surf","Water",90,"S"]], true),
       mon("Gyarados", 80, ["Water","Flying"], "Intimidate", [270,155,130,110,160,135], [["Waterfall","Water",80,"P"]], false)] },
 };
-const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
-const lines = el => wholeCard(el)
-  .map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
 
 const cards = {};
 
@@ -247,9 +243,9 @@ for (const [label, sc] of Object.entries(scenarios)) {
       : !!sc.teras?.includes(e.name)) } : null;
   const game = sc.game ? { arena: sc.game.arena, modifiers: sc.game.modifiers, gameMode: sc.game.gameMode } : {};
   const scene = { ...game, phaseManager: pm, getField: () => [...onField(), ...sc.foes.filter(f => f.isOnField())], currentBattle: { waveIndex: sc.game?.wave ?? 89, turn: 1, double: sc.double, enemySwitchCounter: 0, getBattlerCount: () => (sc.double ? 2 : 1), trainer }, ui: { mode: 0, getHandler: () => ({}) }, getPlayerParty: () => sc.party, getEnemyParty: () => sc.foes };
-  const { el } = mountHud({ scene });
+  const { card } = mountHud({ scene });
   if (sc.trainer) console.log(`queued during prediction: ${globalThis.__queued ?? 0}; queueMessage restored: ${!Object.prototype.hasOwnProperty.call(pm, "queueMessage") && typeof pm.queueMessage === "function"}`);
-  console.log(`== ${label}\n${lines(el)}`);
+  console.log(`== ${label}\n${card()}`);
   const x = globalThis.__coachHud.summary();
   console.log(`summary ${x.verdict} | ${x.field}${x.danger.length ? ` | ${x.danger.map(d => `${d.level === "ko" ? "\u{1F480}" : "\u26a0"} ${d.mon}`).join(" ")}` : ""}${x.plan ? ` | plan: ${x.plan}` : ""}`);
   cards[label] = globalThis.__coachHud.last();

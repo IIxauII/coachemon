@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { mountHud } from "./fake-page.mjs";
-import { wholeCard } from "./panel.mjs";
 import { TY } from "./fake-mon.mjs";
 class ModifierType {}
 class PokemonModifierType extends ModifierType {}
@@ -621,7 +620,7 @@ for (const [label, sc] of Object.entries(scenarios)) {
   sc.pool = sc.rewardPool?.();
   sc.rewardLog = [];
   sc.consoleLog = console.log;
-  const { el } = mountHud({ scene });
+  const { card } = mountHud({ scene });
   const hud = globalThis.__hud;
   const { rerollArm, rerollCheck, rerollStats } = hud["50-reroll"];
   const { cardSummary } = hud["60-card"], { rebuild } = hud["98-watch"];
@@ -631,8 +630,7 @@ for (const [label, sc] of Object.entries(scenarios)) {
     setRewardFns: hud["04-game-tables"].setRewardFns, rebuild, HELD: hud["51-items"].HELD, rewardContext: hud["51-items"].rewardContext };
   // Under node the chunk scan finds no reward functions: hand them over and draw again.
   if (sc.pool) { globalThis.__api.setRewardFns(mockRewardFns(sc.pool, sc.rewardLog)); globalThis.__api.rebuild(); }
-  const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
-  console.log(`== ${label}\n` + wholeCard(el).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : ""));
+  console.log(`== ${label}\n${card()}`);
   const m = globalThis.__sm(scene, handler);
   assert.equal(JSON.stringify(JSON.parse(JSON.stringify(m))), JSON.stringify(m), `${label}: JSON-safe`);
   sc.expect?.(m, globalThis.__api, sc, scene);

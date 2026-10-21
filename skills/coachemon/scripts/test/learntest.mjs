@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { mountHud } from "./fake-page.mjs";
-import { wholeCard } from "./panel.mjs";
 import { cat, TY } from "./fake-mon.mjs";
 // An attr: "Name" or ["Name", { fields }]. The HUD matches through the prototype chain, so a class the game
 // subclasses carries its parent here, or a WeatherInstantChargeAttr wouldn't read as an instant charge.
@@ -39,17 +38,13 @@ const FILLER = ["Constrict","Normal",10,"P"];
 const run = (pk, newMove, { double = false, party = [pk], roster = null } = {}) => {
   assert.equal((pk.getMoveset?.() ?? pk.moveset).length, 4, `${pk.name}: the learn screen opens only on a full moveset (game-code.md §17)`);
   const scene = { currentBattle: { double }, ui: { mode: 9, getHandler: () => ({ summaryUiMode: 1, pokemon: pk, newMove: mv(newMove) }) }, getEnemyParty: () => [], getPlayerParty: () => party };
-  const { el } = mountHud({ scene });
+  const { card } = mountHud({ scene });
   const { learnModel, learnAdvice, blockedByHealBlock } = globalThis.__hud["40-learn"];
   const { learnState } = globalThis.__hud["02-screens"];
   globalThis.__lm = { learnModel, learnState, learnAdvice, tmAdvice: globalThis.__hud["52-shop"].tmAdvice, blockedByHealBlock };
   const model = learnModel({ ...learnState(scene), roster });
   assert.equal(JSON.stringify(JSON.parse(JSON.stringify(model))), JSON.stringify(model), "learn model is JSON-safe");
-  const txt = n => typeof n === "string" ? n : n.children.map(txt).join(" ");
-  // Less the panel's corner controls: the caret and the × are one child (#358), dropped by the × it holds rather than
-  // by position, so a shell that reorders its chrome can't silently eat a row.
-  const rest = wholeCard(el).filter(k => ![...(k.children ?? [])].some(c => c.title === "Close"));
-  return { model, text: rest.map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") };
+  return { model, text: card() };
 };
 const show = (label, r) => console.log(`== ${label}\n${r.text}`);
 const byName = (m, n) => m.moves.find(x => x.name === n);

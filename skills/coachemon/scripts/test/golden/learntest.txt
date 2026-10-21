@@ -1,233 +1,285 @@
 == Charizard ← Flare Blitz
-🎓 Charizard learns Charizard Atk 122 / SpA 154 Skip — not an upgrade over Dragon Breath
-✓ Fire Flare Blitz 3rd Fire move · recoil 25% of damage · weak Atk power 64 −8 power
+card learn W? Skip — not an upgrade over Dragon Breath
+strip 🎓 Charizard learns Charizard Atk 122 / SpA 154
+Skip — not an upgrade over Dragon Breath
+✓ Fire Flare Blitz 3rd Fire move · recoil 25% of damage · weak Atk power 64 {base 120 · STAB} −8 power
 Moves
-· Fire Heat Wave 2nd Fire move · spread · set move (Offensive Protect) power 133
-★ Dragon Dragon Breath SE on Dragon power 72
-· Flying Air Slash SE on Fighting power 126
-· Fire Flamethrower 2nd Fire move power 101
+· Fire Heat Wave 2nd Fire move · spread · set move (Offensive Protect) power 133 {base 95 · 90% acc · STAB}
+★ Dragon Dragon Breath SE on Dragon power 72 {base 60}
+· Flying Air Slash SE on Fighting power 126 {base 75 · 95% acc · STAB}
+· Fire Flamethrower 2nd Fire move power 101 {base 90 · STAB}
 Team
 team: −SE Dragon
 == Venusaur ← Solar Beam
-🎓 Venusaur learns Venusaur Atk 133 / SpA 142 Skip — not an upgrade over Double-Edge
-✓ Grass Solar Beam 2nd Grass move · charge turn power 68 −26 power
+card learn W? Skip — not an upgrade over Double-Edge
+strip 🎓 Venusaur learns Venusaur Atk 133 / SpA 142
+Skip — not an upgrade over Double-Edge
+✓ Grass Solar Beam 2nd Grass move · charge turn power 68 {base 120 · STAB} −26 power
 Moves
-★ Normal Double-Edge neutral on Flying/Poison/Bug… · recoil 25% of damage power 94
+★ Normal Double-Edge neutral on Flying/Poison/Bug… · recoil 25% of damage power 94 {base 120}
 · Grass Sleep Powder status
 · Grass Synthesis status
-· Grass Power Whip SE on Ground/Rock/Water power 186
+· Grass Power Whip SE on Ground/Rock/Water power 186 {base 120 · 85% acc · STAB}
 == Blastoise ← Skull Bash
-🎓 Blastoise learns Blastoise Atk 119 / SpA 121 Skip — not an upgrade over Aqua Tail
-✓ Normal Skull Bash neutral on Water · charge turn power 65 −7 power
+card learn W? Skip — not an upgrade over Aqua Tail
+strip 🎓 Blastoise learns Blastoise Atk 119 / SpA 121
+Skip — not an upgrade over Aqua Tail
+✓ Normal Skull Bash neutral on Water · charge turn power 65 {base 130} −7 power
 Moves
-★ Water Aqua Tail 3rd Water move power 72
-· Steel Flash Cannon SE on Ice/Fairy power 104
-· Water Wave Crash 3rd Water move · recoil 25% of damage · set move (Doubles Bulky Attacker) power 96
-· Water Hydro Pump 3rd Water move power 79
+★ Water Aqua Tail 3rd Water move power 72 {base 90 · 90% acc · STAB}
+· Steel Flash Cannon SE on Ice/Fairy power 104 {base 80}
+· Water Wave Crash 3rd Water move · recoil 25% of damage · set move (Doubles Bulky Attacker) power 96 {base 120 · STAB}
+· Water Hydro Pump 3rd Water move power 79 {base 110 · 80% acc · STAB}
 == Scrafty ← Head Smash
-🎓 Scrafty learns Scrafty Atk 150 / SpA 62 Learn → forget Brick Break
-✓ Rock Head Smash SE on Flying/Bug/Fire · recoil 25% of damage power 117 +49 power
+card learn W? Learn → forget Brick Break
+strip 🎓 Scrafty learns Scrafty Atk 150 / SpA 62
+Learn → forget Brick Break
+✓ Rock Head Smash SE on Flying/Bug/Fire · recoil 25% of damage power 117 {base 150 · 80% acc} +49 power
 Moves
-· Fighting Focus Punch 3rd Fighting move power 135
-· Normal Rock Climb neutral on Flying/Poison/Bug… power 84
-✗ Fighting Brick Break 3rd Fighting move power 68
-· Fighting High Jump Kick 3rd Fighting move power 105
+· Fighting Focus Punch 3rd Fighting move power 135 {base 150 · STAB}
+· Normal Rock Climb neutral on Flying/Poison/Bug… power 84 {base 90 · 85% acc}
+✗ Fighting Brick Break 3rd Fighting move power 68 {base 75 · STAB}
+· Fighting High Jump Kick 3rd Fighting move power 105 {base 130 · 90% acc · STAB}
 Team
 team: +SE Flying/Bug/Fire
 == Nidoking ← Double Kick
-🎓 Nidoking learns Nidoking Atk 120 / SpA 100 Learn → forget Tackle
-✓ Fighting Double Kick 2 hits · SE on Normal/Ice power 76 +36 power
+card learn W? Learn → forget Tackle
+strip 🎓 Nidoking learns Nidoking Atk 120 / SpA 100
+Learn → forget Tackle
+✓ Fighting Double Kick 2 hits · SE on Normal/Ice power 76 {base 30 × 2 hits} +36 power
 Moves
-✗ Normal Tackle power 40
-· Poison Poison Jab SE on Fairy power 142
-· Ground Earthquake SE on Poison/Rock/Steel… power 195
-· Bug Pin Missile 3.1 hits · SE on Psychic/Dark power 93
+✗ Normal Tackle power 40 {base 40}
+· Poison Poison Jab SE on Fairy power 142 {base 80 · STAB}
+· Ground Earthquake SE on Poison/Rock/Steel… power 195 {base 100 · STAB}
+· Bug Pin Missile 3.1 hits · SE on Psychic/Dark power 93 {base 25 × 3.1 hits · 95% acc}
 Team
 team: +SE Normal/Ice
 == Mew (transformed) ← Aura Sphere
-🎓 Mew learns Mew Atk 100 / SpA 100 Learn → forget Pound
-✓ Fighting Aura Sphere SE on Normal/Rock/Steel… · set move (Fast Bulky Setup) power 125 +83 power
+card learn W? Learn → forget Pound
+strip 🎓 Mew learns Mew Atk 100 / SpA 100
+Learn → forget Pound
+✓ Fighting Aura Sphere SE on Normal/Rock/Steel… · set move (Fast Bulky Setup) power 125 {base 80} +83 power
 Moves
-✗ Normal Pound neutral on Psychic/Dark power 42
-· Psychic Psychic SE on Fighting/Poison · set move (Fast Bulky Setup) power 211
+✗ Normal Pound neutral on Psychic/Dark power 42 {base 40}
+· Psychic Psychic SE on Fighting/Poison · set move (Fast Bulky Setup) power 211 {base 90 · STAB}
 · Normal Transform status
 Team
 team: +SE Normal/Rock/Steel…
 == Cloyster (Skill Link) ← Triple Axel
-🎓 Cloyster learns Cloyster Atk 140 / SpA 90 Learn → forget Constrict
-✓ Ice Triple Axel 2.7 hits · 2nd Ice move power 122 +114 power
+card learn W? Learn → forget Constrict
+strip 🎓 Cloyster learns Cloyster Atk 140 / SpA 90
+Learn → forget Constrict
+✓ Ice Triple Axel 2.7 hits · 2nd Ice move power 122 {base 20 × 2.7 hits · 90% acc · STAB} +114 power
 Moves
-· Ice Icicle Spear 5 hits · SE on Ground/Grass/Dragon · set move (Fast Attacker) power 293
-· Rock Rock Blast 5 hits · SE on Bug/Fire/Ice · set move (Fast Attacker) power 176
-· Normal Tackle 2nd Normal move power 30
-✗ Normal Constrict 2nd Normal move power 8
+· Ice Icicle Spear 5 hits · SE on Ground/Grass/Dragon · set move (Fast Attacker) power 293 {base 25 × 5 hits · STAB}
+· Rock Rock Blast 5 hits · SE on Bug/Fire/Ice · set move (Fast Attacker) power 176 {base 25 × 5 hits · 90% acc}
+· Normal Tackle 2nd Normal move power 30 {base 40}
+✗ Normal Constrict 2nd Normal move power 8 {base 10}
 == Gengar ← Shadow Ball
-🎓 Gengar learns Gengar Atk 70 / SpA 140 Learn → forget Super Fang
-✓ Ghost Shadow Ball SE on Ghost/Psychic · 2nd Ghost move · set move (Wallbreaker) power 140 +81 power
+card learn W? Learn → forget Super Fang
+strip 🎓 Gengar learns Gengar Atk 70 / SpA 140
+Learn → forget Super Fang
+✓ Ghost Shadow Ball SE on Ghost/Psychic · 2nd Ghost move · set move (Wallbreaker) power 140 {base 80 · STAB} +81 power
 Moves
-· Ghost Night Shade damage = level power 116
-✗ Normal Super Fang halves HP · can't KO power 59
-· Grass Grass Knot weight-based · SE on Ground/Rock/Water power 78
-· Poison Sludge Bomb SE on Grass/Fairy power 176
+· Ghost Night Shade damage = level power 116 {base 116 · fixed damage}
+✗ Normal Super Fang halves HP · can't KO power 59 {base 65 · 90% acc · fixed damage}
+· Grass Grass Knot weight-based · SE on Ground/Rock/Water power 78 {base 60}
+· Poison Sludge Bomb SE on Grass/Fairy power 176 {base 90 · STAB}
 Team
 team: +SE Ghost/Psychic
 == Metagross ← Steel Beam
-🎓 Metagross learns Metagross Atk 135 / SpA 125 Learn → forget Bullet Punch
-✓ Steel Steel Beam 2nd Steel move · −50% HP each use power 76 +10 power
+card learn W? Learn → forget Bullet Punch
+strip 🎓 Metagross learns Metagross Atk 135 / SpA 125
+Learn → forget Bullet Punch
+✓ Steel Steel Beam 2nd Steel move · −50% HP each use power 76 {base 140 · 95% acc · STAB} +10 power
 Moves
-· Psychic Zen Headbutt SE on Fighting power 127
-· Ground Earthquake SE on Steel/Fire/Electric · set move (Bulky Support) power 156
-· Steel Iron Head 2nd Steel move power 90
-✗ Steel Bullet Punch 2nd Steel move · priority +1 · set move (Bulky Support) power 66
+· Psychic Zen Headbutt SE on Fighting power 127 {base 80 · 90% acc · STAB}
+· Ground Earthquake SE on Steel/Fire/Electric · set move (Bulky Support) power 156 {base 100}
+· Steel Iron Head 2nd Steel move power 90 {base 80 · STAB}
+✗ Steel Bullet Punch 2nd Steel move · priority +1 · set move (Bulky Support) power 66 {base 40 · STAB}
 == Dragonite ← Outrage
-🎓 Dragonite learns Dragonite Atk 134 / SpA 100 Learn → forget Dragon Claw
-✓ Dragon Outrage SE on Dragon · locks 2–3 turns, then confused · set move (Bulky Setup) power 178 +36 power
+card learn W? Learn → forget Dragon Claw
+strip 🎓 Dragonite learns Dragonite Atk 134 / SpA 100
+Learn → forget Dragon Claw
+✓ Dragon Outrage SE on Dragon · locks 2–3 turns, then confused · set move (Bulky Setup) power 178 {base 120 · STAB} +36 power
 Moves
-✗ Dragon Dragon Claw SE on Dragon power 142
-· Normal Extreme Speed priority +2 power 105
-· Fire Fire Punch SE on Bug/Steel/Grass… power 98
-· Electric Thunder Punch SE on Flying/Water power 95
+✗ Dragon Dragon Claw SE on Dragon power 142 {base 80 · STAB}
+· Normal Extreme Speed priority +2 power 105 {base 80}
+· Fire Fire Punch SE on Bug/Steel/Grass… power 98 {base 75}
+· Electric Thunder Punch SE on Flying/Water power 95 {base 75}
 == Arcanine ← Overheat
-🎓 Arcanine learns Arcanine Atk 110 / SpA 120 Learn → forget Wild Charge
-✓ Fire Overheat 2nd Fire move · −2 SpA after use power 105 +27 power
+card learn W? Learn → forget Wild Charge
+strip 🎓 Arcanine learns Arcanine Atk 110 / SpA 120
+Learn → forget Wild Charge
+✓ Fire Overheat 2nd Fire move · −2 SpA after use power 105 {base 130 · 90% acc · STAB} +27 power
 Moves
-· Fire Flamethrower SE on Bug/Steel/Grass… power 176
-· Normal Extreme Speed set move (Bulky Attacker) power 88
-✗ Electric Wild Charge SE on Flying/Water · recoil 25% of damage power 78
-· Dark Crunch SE on Ghost/Psychic power 92
+· Fire Flamethrower SE on Bug/Steel/Grass… power 176 {base 90 · STAB}
+· Normal Extreme Speed set move (Bulky Attacker) power 88 {base 80}
+✗ Electric Wild Charge SE on Flying/Water · recoil 25% of damage power 78 {base 90}
+· Dark Crunch SE on Ghost/Psychic power 92 {base 80}
 Team
 team: −SE Flying/Water
 == Emolga ← Spark
-🎓 Emolga learns Emolga Atk 26 / SpA 26 Learn → forget Charge
-✓ Electric Spark 2nd Electric move power 73 +68 power
+card learn W? Learn → forget Charge
+strip 🎓 Emolga learns Emolga Atk 26 / SpA 26
+Learn → forget Charge
+✓ Electric Spark 2nd Electric move power 73 {base 65 · STAB} +68 power
 Moves
-· Electric Thunder Shock SE on Water power 72
-· Normal Quick Attack priority +1 power 47
-· Ice Icicle Crash SE on Ground/Grass/Dragon power 99
-✗ Electric Charge +1 SpD power 5
+· Electric Thunder Shock SE on Water power 72 {base 40 · STAB}
+· Normal Quick Attack priority +1 power 47 {base 40}
+· Ice Icicle Crash SE on Ground/Grass/Dragon power 99 {base 85 · 90% acc}
+✗ Electric Charge +1 SpD power 5 {+1 SpD}
 == Tyranitar ← Iron Head (team)
-🎓 Tyranitar learns Tyranitar Atk 134 / SpA 95 Learn → forget Tackle
-✓ Steel Iron Head SE on Rock/Fairy power 99 +58 power
+card learn W? Learn → forget Tackle
+strip 🎓 Tyranitar learns Tyranitar Atk 134 / SpA 95
+Learn → forget Tackle
+✓ Steel Iron Head SE on Rock/Fairy power 99 {base 80} +58 power
 Moves
-· Dark Crunch 2nd Dark move power 90
-· Rock Stone Edge SE on Flying/Bug/Fire… · set move (Bulky Setup) · only Rock move on team power 187
-✗ Normal Tackle neutral on Fighting · only Normal move on team power 41
-· Dark Bite 2nd Dark move power 68
+· Dark Crunch 2nd Dark move power 90 {base 80 · STAB}
+· Rock Stone Edge SE on Flying/Bug/Fire… · set move (Bulky Setup) · only Rock move on team power 187 {base 100 · 80% acc · STAB}
+✗ Normal Tackle neutral on Fighting · only Normal move on team power 41 {base 40}
+· Dark Bite 2nd Dark move power 68 {base 60 · STAB}
 Team
 team: +SE Fairy
 == Houndoom ← Nasty Plot (TM)
-🎓 Houndoom learns Houndoom Atk 120 / SpA 160 Learn → forget Howl
-✓ Dark Nasty Plot +2 SpA · set move (Fast Attacker) power 281 +281 power
+card learn W? Learn → forget Howl
+strip 🎓 Houndoom learns Houndoom Atk 120 / SpA 160
+Learn → forget Howl
+✓ Dark Nasty Plot +2 SpA · set move (Fast Attacker) power 281 {+2 SpA} +281 power
 Moves
-· Dark Crunch 2nd Dark move · weak Atk power 68
-✗ Normal Howl +1 Atk power 0
-· Dark Snarl 2nd Dark move power 59
-· Fire Incinerate SE on Bug/Steel/Grass… power 117
+· Dark Crunch 2nd Dark move · weak Atk power 68 {base 80 · STAB}
+✗ Normal Howl +1 Atk power 0 {+1 Atk}
+· Dark Snarl 2nd Dark move power 59 {base 55 · 95% acc · STAB}
+· Fire Incinerate SE on Bug/Steel/Grass… power 117 {base 60 · STAB}
 == Fletchinder ← Roost
-🎓 Fletchinder learns Fletchinder Atk 130 / SpA 62 Learn → forget Growl
-✓ Flying Roost heal 50% · set move (Bulky Attacker, evolved) power 67 +59 power
+card learn W? Learn → forget Growl
+strip 🎓 Fletchinder learns Fletchinder Atk 130 / SpA 62
+Learn → forget Growl
+✓ Flying Roost heal 50% · set move (Bulky Attacker, evolved) power 67 {heal 50%} +59 power
 Moves
-· Flying Acrobatics SE on Fighting power 97
-✗ Normal Growl foe Atk −1 power 8
-· Fire Flame Charge SE on Steel/Ice power 95
-· Normal Quick Attack priority +1 power 47
+· Flying Acrobatics SE on Fighting power 97 {base 55 · STAB}
+✗ Normal Growl foe Atk −1 power 8 {foe Atk −1}
+· Fire Flame Charge SE on Steel/Ice power 95 {base 50 · STAB}
+· Normal Quick Attack priority +1 power 47 {base 40}
 == Minccino ← Triple Axel
-🎓 Minccino learns Minccino Atk 110 / SpA 60 Learn → forget Helping Hand
-✓ Ice Triple Axel 2.4 hits · SE on Flying/Ground/Grass… · set move (Fast Attacker, evolved) power 137 +137 power
+card learn W? Learn → forget Helping Hand
+strip 🎓 Minccino learns Minccino Atk 110 / SpA 60
+Learn → forget Helping Hand
+✓ Ice Triple Axel 2.4 hits · SE on Flying/Ground/Grass… · set move (Fast Attacker, evolved) power 137 {base 20 × 2.4 hits · 90% acc} +137 power
 Moves
-· Normal Pound power 78
-· Fairy Baby-Doll Eyes foe Atk −1 · 3 status moves power 5
-✗ Normal Helping Hand ally only power 0
-· Normal Sing sleep · 3 status moves · 55% acc power 23
+· Normal Pound power 78 {base 40 · STAB}
+· Fairy Baby-Doll Eyes foe Atk −1 · 3 status moves power 5 {foe Atk −1}
+✗ Normal Helping Hand ally only power 0 {nothing to target in a single battle}
+· Normal Sing sleep · 3 status moves · 55% acc power 23 {sleep}
 Team
 team: +SE Flying/Ground/Grass…
 == Chompish ← Dragon Dance
-🎓 Chompish learns Chompish Atk 142 / SpA 92 Learn → forget Slash
-✓ Dragon Dragon Dance +1 Atk/Spe power 91 +21 power
+card learn W? Learn → forget Slash
+strip 🎓 Chompish learns Chompish Atk 142 / SpA 92
+Learn → forget Slash
+✓ Dragon Dragon Dance +1 Atk/Spe power 91 {+1 Atk/Spe} +21 power
 Moves
-· Dark Bite SE on Ghost/Psychic power 76
-✗ Normal Slash power 70
-· Dragon Dragon Claw SE on Dragon power 142
-· Ground Dig SE on Poison/Rock/Steel… · charge turn power 78
+· Dark Bite SE on Ghost/Psychic power 76 {base 60}
+✗ Normal Slash power 70 {base 70}
+· Dragon Dragon Claw SE on Dragon power 142 {base 80 · STAB}
+· Ground Dig SE on Poison/Rock/Steel… · charge turn power 78 {base 80 · STAB}
 == Galvantish ← Quiver Dance
-🎓 Galvantish learns Galvantish Atk 89 / SpA 109 Learn → forget Leech Life
-✓ Bug Quiver Dance +1 SpA/SpD/Spe power 108 +35 power
+card learn W? Learn → forget Leech Life
+strip 🎓 Galvantish learns Galvantish Atk 89 / SpA 109
+Learn → forget Leech Life
+✓ Bug Quiver Dance +1 SpA/SpD/Spe power 108 {+1 SpA/SpD/Spe} +35 power
 Moves
-· Bug Signal Beam 2nd Bug move power 84
-✗ Bug Leech Life 2nd Bug move · weak Atk power 73
-· Electric Discharge SE on Flying/Water power 156
+· Bug Signal Beam 2nd Bug move power 84 {base 75 · STAB}
+✗ Bug Leech Life 2nd Bug move · weak Atk power 73 {base 80 · STAB}
+· Electric Discharge SE on Flying/Water power 156 {base 80 · STAB}
 · Poison Gastro Acid status
 == Leavannish ← Victory Dance
-🎓 Leavannish learns Leavannish Atk 123 / SpA 90 Skip — not an upgrade over Leaf Storm
-✓ Fighting Victory Dance +1 Atk/Def/Spe · 3 status moves · weak fit power 19 −148 power
+card learn W? Skip — not an upgrade over Leaf Storm
+strip 🎓 Leavannish learns Leavannish Atk 123 / SpA 90
+Skip — not an upgrade over Leaf Storm
+✓ Fighting Victory Dance +1 Atk/Def/Spe · 3 status moves · weak fit power 19 {+1 Atk/Def/Spe} −148 power
 Moves
-· Bug X-Scissor SE on Grass/Psychic/Dark power 156
+· Bug X-Scissor SE on Grass/Psychic/Dark power 156 {base 80 · STAB}
 · Normal Entrainment status
-· Normal Swords Dance +2 Atk power 268
-★ Grass Leaf Storm SE on Ground/Rock/Water · weak SpA power 167
+· Normal Swords Dance +2 Atk power 268 {+2 Atk}
+★ Grass Leaf Storm SE on Ground/Rock/Water · weak SpA power 167 {base 130 · 90% acc · STAB}
 Team
 team: −SE Ground/Rock/Water
 == Cloystish ← Shell Smash
-🎓 Cloystish learns Cloystish Atk 107 / SpA 97 Learn → forget Icicle Crash
-✓ Normal Shell Smash +2 Atk/SpA/Spe power 358 +272 power
+card learn W? Learn → forget Icicle Crash
+strip 🎓 Cloystish learns Cloystish Atk 107 / SpA 97
+Learn → forget Icicle Crash
+✓ Normal Shell Smash +2 Atk/SpA/Spe power 358 {+2 Atk/SpA/Spe} +272 power
 Moves
-· Water Whirlpool 2nd Water move power 30
-· Water Brine 2nd Water move power 66
-✗ Ice Icicle Crash 2nd Ice move power 86
-· Ice Ice Beam 2nd Ice move power 92
+· Water Whirlpool 2nd Water move power 30 {base 35 · 85% acc · STAB}
+· Water Brine 2nd Water move power 66 {base 65 · STAB}
+✗ Ice Icicle Crash 2nd Ice move power 86 {base 85 · 90% acc · STAB}
+· Ice Ice Beam 2nd Ice move power 92 {base 90 · STAB}
 == Houndour ← Nasty Plot
-🎓 Houndour learns Houndour Atk 60 / SpA 80 Learn → forget Howl
-✓ Dark Nasty Plot +2 SpA · set move (Fast Attacker, evolved) power 262 +262 power
+card learn W? Learn → forget Howl
+strip 🎓 Houndour learns Houndour Atk 60 / SpA 80
+Learn → forget Howl
+✓ Dark Nasty Plot +2 SpA · set move (Fast Attacker, evolved) power 262 {+2 SpA} +262 power
 Moves
-· Dark Bite SE on Ghost/Psychic · weak Atk power 88
-✗ Normal Howl +1 Atk power 0
-· Normal Leer foe Def −1 power 4
-· Fire Incinerate SE on Bug/Steel/Grass… power 117
+· Dark Bite SE on Ghost/Psychic · weak Atk power 88 {base 60 · STAB}
+✗ Normal Howl +1 Atk power 0 {+1 Atk}
+· Normal Leer foe Def −1 power 4 {foe Def −1}
+· Fire Incinerate SE on Bug/Steel/Grass… power 117 {base 60 · STAB}
 == Azumarill (Huge Power) ← Liquidation
-🎓 Azumarill learns Azumarill Atk 180 / SpA 110 Learn → forget Surf
-✓ Water Liquidation 2nd Water move · set move (Bulky Attacker) power 115 +53 power
+card learn W? Learn → forget Surf
+strip 🎓 Azumarill learns Azumarill Atk 180 / SpA 110
+Learn → forget Surf
+✓ Water Liquidation 2nd Water move · set move (Bulky Attacker) power 115 {base 85 · STAB} +53 power
 Moves
-· Water Aqua Jet 2nd Water move · priority +1 · set move (Bulky Attacker) power 66
-· Fairy Play Rough SE on Fighting/Dark · set move (Bulky Attacker) power 187
-· Ice Ice Beam SE on Flying/Grass · weak SpA power 69
-✗ Water Surf 2nd Water move · weak SpA power 62
+· Water Aqua Jet 2nd Water move · priority +1 · set move (Bulky Attacker) power 66 {base 40 · STAB}
+· Fairy Play Rough SE on Fighting/Dark · set move (Bulky Attacker) power 187 {base 90 · 90% acc · STAB}
+· Ice Ice Beam SE on Flying/Grass · weak SpA power 69 {base 90}
+✗ Water Surf 2nd Water move · weak SpA power 62 {base 90 · STAB}
 == Sylveon (Pixilate) ← Hyper Voice
-🎓 Sylveon learns Sylveon Atk 65 / SpA 130 Learn → forget Astonish
-✓ Fairy Hyper Voice Pixilate · SE on Dragon/Dark · set move (Bulky Setup) power 245 +234 power
+card learn W? Learn → forget Astonish
+strip 🎓 Sylveon learns Sylveon Atk 65 / SpA 130
+Learn → forget Astonish
+✓ Fairy Hyper Voice Pixilate · SE on Dragon/Dark · set move (Bulky Setup) power 245 {base 108 · STAB} +234 power
 Moves
-· Ghost Shadow Ball 2nd Ghost move power 60
-· Psychic Psyshock SE on Fighting/Poison power 101
-· Fire Mystical Fire SE on Bug/Steel/Grass… power 98
-✗ Ghost Astonish 2nd Ghost move · weak Atk power 11
+· Ghost Shadow Ball 2nd Ghost move power 60 {base 80}
+· Psychic Psyshock SE on Fighting/Poison power 101 {base 80}
+· Fire Mystical Fire SE on Bug/Steel/Grass… power 98 {base 75}
+✗ Ghost Astonish 2nd Ghost move · weak Atk power 11 {base 30}
 Team
 team: +SE Dragon/Dark
 == Venusaur ← Solar Beam (no sun)
-🎓 Venusaur learns Venusaur Atk 100 / SpA 142 Learn → forget Constrict
-✓ Grass Solar Beam 2nd Grass move · charge turn (not in sun) power 68 +61 power
+card learn W? Learn → forget Constrict
+strip 🎓 Venusaur learns Venusaur Atk 100 / SpA 142
+Learn → forget Constrict
+✓ Grass Solar Beam 2nd Grass move · charge turn (not in sun) power 68 {base 120 · STAB} +61 power
 Moves
-· Poison Sludge Bomb SE on Grass/Fairy · set move (Bulky Support) power 204
-· Grass Giga Drain SE on Ground/Rock/Water · set move (Bulky Support) power 176
-· Grass Sleep Powder sleep · 75% acc · set move (Bulky Support) power 63
-✗ Normal Constrict neutral on Poison · weak Atk power 7
+· Poison Sludge Bomb SE on Grass/Fairy · set move (Bulky Support) power 204 {base 90 · STAB}
+· Grass Giga Drain SE on Ground/Rock/Water · set move (Bulky Support) power 176 {base 75 · STAB}
+· Grass Sleep Powder sleep · 75% acc · set move (Bulky Support) power 63 {sleep}
+✗ Normal Constrict neutral on Poison · weak Atk power 7 {base 10}
 == STAB by share [12,19,27,34,41]
 == Ludicolo ← Soak (Skarmory ahead)
-🎓 Ludicolo learns Ludicolo Atk 70 / SpA 90 Skip — not an upgrade over Zen Headbutt
-✓ Water Soak pure Water power 35 −36 power
+card learn W? Skip — not an upgrade over Zen Headbutt
+strip 🎓 Ludicolo learns Ludicolo Atk 70 / SpA 90
+Skip — not an upgrade over Zen Headbutt
+✓ Water Soak pure Water power 35 {pure Water} −36 power
 Moves
-· Water Scald SE on Fire power 144
-· Grass Energy Ball SE on Water power 159
-★ Psychic Zen Headbutt SE on Fighting/Poison · weak Atk power 71
-· Ice Ice Beam SE on Flying/Grass/Dragon · set move (Setup Sweeper) power 140
+· Water Scald SE on Fire power 144 {base 80 · STAB}
+· Grass Energy Ball SE on Water power 159 {base 90 · STAB}
+★ Psychic Zen Headbutt SE on Fighting/Poison · weak Atk power 71 {base 80 · 90% acc}
+· Ice Ice Beam SE on Flying/Grass/Dragon · set move (Setup Sweeper) power 140 {base 90}
 Team
 team: −SE Fighting/Poison
 == Garganacl ← Salt Cure
-🎓 Garganacl learns Garganacl Atk 100 / SpA 45 Learn → forget Constrict
-✓ Rock Salt Cure SE on Flying/Bug · curse 1/16 a turn · set move (Bulky Support) power 109 +99 power
+card learn W? Learn → forget Constrict
+strip 🎓 Garganacl learns Garganacl Atk 100 / SpA 45
+Learn → forget Constrict
+✓ Rock Salt Cure SE on Flying/Bug · curse 1/16 a turn · set move (Bulky Support) power 109 {base 40 · STAB} +99 power
 Moves
-· Fighting Body Press SE on Normal/Dark · set move (Bulky Support) power 121
-· Ground Earthquake SE on Poison/Fire/Electric · set move (Bulky Attacker) power 146
-· Steel Iron Head SE on Fairy power 94
-✗ Normal Constrict power 10
+· Fighting Body Press SE on Normal/Dark · set move (Bulky Support) power 121 {base 80}
+· Ground Earthquake SE on Poison/Fire/Electric · set move (Bulky Attacker) power 146 {base 100}
+· Steel Iron Head SE on Fairy power 94 {base 80}
+✗ Normal Constrict power 10 {base 10}
 Team
 team: +SE Flying/Bug
 ok
