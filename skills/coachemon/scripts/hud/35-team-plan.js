@@ -595,10 +595,10 @@ const tpFacing = (turn, foes) => {
 const TP_PREFER = 20;
 const TP_HOLD = 10;
 
-// ⚔ owns the turn and this model the rest of the fight (#113). `pin` is `{ mi, outcome?, then?, free?, tera? }`:
+// ⚔ owns the turn and this model the rest of the fight (#113). `pin` is `{ mi, outcome?, then?, free?, tera?, teraMi? }`:
 // `at(pin)` re-searches with it as step 1, `after(pin)` reads what that plan says comes next, and `view(pin)` renders
 // it. `entering`: `facing` is the foe switching in this turn. `teraOf(mi)`: the tables with our `mi` Tera'd from step 1
-// on, for a pin whose `tera` names the type (#649).
+// on, for a pin whose `tera` names the type; `teraMi` is that mon where it is not `mi`, a double's partner (#649).
 const tpModel = (T, double, party, foes, facing, entering, teraOf = () => T) => {
   const ref = p => ({ icon: iconOf(p), name: p.name });
   const pctOf = (hp, max) => Math.round(hp / max * 100);
@@ -670,12 +670,15 @@ const tpModel = (T, double, party, foes, facing, entering, teraOf = () => T) => 
   // A pin runs the ⚔ move, else its follow-up: a first-turn-only or foe-dependent move would repeat in a table
   // exchange as though it always worked (#650).
   const pinned = pin => [pin.outcome, pin.then].find(o => o?.expected > 0 && !o.traits?.once && !o.traits?.needsAttack) ?? null;
-  const keyOf = pin => (pin && pin.mi != null && pin.mi >= 0 ? `${pin.mi}|${pinned(pin)?.name ?? ""}|${pin.free ? "f" : ""}|${pin.tera ?? ""}` : "");
+  // `teraMi`: the mon taking the Tera, `mi` itself unless a double's partner takes it.
+  const teraMiOf = pin => (pin?.tera ? pin.teraMi ?? pin.mi : null);
+  const keyOf = pin => (pin && pin.mi != null && pin.mi >= 0 ? `${pin.mi}|${pinned(pin)?.name ?? ""}|${pin.free ? "f" : ""}|${pin.tera ?? ""}@${teraMiOf(pin) ?? ""}` : "");
   const teraMemo = new Map();
   const tablesOf = pin => {
-    if (!pin?.tera) return T;
-    if (!teraMemo.has(pin.mi)) teraMemo.set(pin.mi, teraOf(pin.mi));
-    return teraMemo.get(pin.mi);
+    const mi = teraMiOf(pin);
+    if (mi == null || mi < 0) return T;
+    if (!teraMemo.has(mi)) teraMemo.set(mi, teraOf(mi));
+    return teraMemo.get(mi);
   };
   const atMemo = new Map();
   const at = pin => {
@@ -703,7 +706,7 @@ const tpModel = (T, double, party, foes, facing, entering, teraOf = () => T) => 
   const viewMemo = new Map();
   const view = pin => {
     const k = keyOf(pin);
-    const tera = k && pin.tera ? { mi: pin.mi, type: pin.tera, T: tablesOf(pin) } : null;
+    const tera = k && teraMiOf(pin) >= 0 ? { mi: teraMiOf(pin), type: pin.tera, T: tablesOf(pin) } : null;
     if (!viewMemo.has(k)) viewMemo.set(k, tpView({ T, party, foes, double, start, win, kills, alive, answers, only, onlyBy, reserve, base, ref, pctOf }, at(pin), !!k, tera));
     return viewMemo.get(k);
   };

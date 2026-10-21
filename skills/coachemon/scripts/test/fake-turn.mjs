@@ -134,6 +134,8 @@ export const fakeTurn = ({
     benefit: (atk, def, mv) => benefit(atk, def, mv) ?? 0,
     speedTie: (a, b) => speedTie(a, b),
     ourTera: p => ourTera(p),
+    // The fake has no charge to gate on: the Tera a mon may take is the one it would.
+    ourTeraType: p => ourTera(p),
     ourTeraOn: p => patches.some(x => x.mon === p && x.tera === true),
     held: p => hud()["25-turn"]?.heldView(patches, heldViews, p) ?? p,
     memo: (k, fn) => memo("caller", k, fn),

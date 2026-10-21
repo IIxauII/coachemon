@@ -276,6 +276,35 @@ Next big fight gym leader in 5 W50
 ✓ full heal entering W51 — HP, status, PP, revives, Tera
 · luck 0 (D) — 3.1% tier upgrade per reward
 summary easy | Gyarados Tera Water + Waterfall → Lycanroc · 2 hits
+== teraDouble
+card battle W180 fight
+strip fight 🎯 W180
+Gyarados Tera Water + Waterfall → Golem · 1 hit ; Lucario Vacuum Wave → Lycanroc
+⚔ Gyarados Tera Water + Water Waterfall → Golem 1 hit
+⚔ Lucario Fighting Vacuum Wave → Lycanroc
+Foes
+Lycanroc Lycanroc L80 Rock 100% ▲ Fighting Water ↯ Rock Stone Edge → Gyarados moves after
+Golem Golem L80 Rock Ground 100% ▲ Fighting Water ×4 ↯ Rock Rock Slide → Gyarados moves after
+Road: boss in 10 (W190)
+Next big fight boss in 10 W190
+✓ full heal entering W181 — HP, status, PP, revives, Tera
+· luck 0 (D) — 3.1% tier upgrade per reward
+summary fight | Gyarados Tera Water + Waterfall → Golem · 1 hit ; Lucario Vacuum Wave → Lycanroc
+== teraDoubleLocked
+card battle W180 fight
+strip fight 🎯 W180
+Gyarados Tera Water + Waterfall → Lycanroc · 2 hits ; Lucario Vacuum Wave → Lycanroc
+⚔ Gyarados Tera Water + Water Waterfall → Lycanroc 2 hits locked in
+⚔ Lucario Fighting Vacuum Wave → Lycanroc
+· focus Lycanroc : KO before it moves
+Foes
+Lycanroc Lycanroc L80 Rock 100% ▲ Fighting Water ↯ Rock Stone Edge → Gyarados moves after
+Golem Golem L80 Rock Ground 100% ▲ Fighting Water ×4 ↯ Rock Rock Slide → Gyarados moves after
+Road: boss in 10 (W190)
+Next big fight boss in 10 W190
+✓ full heal entering W181 — HP, status, PP, revives, Tera
+· luck 0 (D) — 3.1% tier upgrade per reward
+summary fight | Gyarados Tera Water + Waterfall → Lycanroc · 2 hits ; Lucario Vacuum Wave → Lycanroc
 == trap
 card battle W89 easy
 strip easy 🎯 W89

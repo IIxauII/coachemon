@@ -1586,19 +1586,34 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     if (!out.length) out.push({ me, move: null, target: null, turns: 9, hits: 9, score: lasts - 9, hp });
     return out;
   };
-  // Our Tera (#649): every attack again on the turn it lands on, each carrying it. Single battles only.
+  // Our Tera (#649): every attack again on the turn it lands on, each carrying it. `at`: that turn, on top of a status
+  // play's hypothesis where the slot is scored under one.
+  const teraAtOf = (me, hyp) => (hyp?.at ? hyp.at.memo(`ourTera:${me.id}`, () => hyp.at.assuming([{ mon: me, tera: true }])) : ourTeraTurn(turn, me));
   const teraOptions = (me, entering, mine, hyp) => {
-    const tera = slots === 1 && !entering && !mine && !hyp && me.isOnField?.() ? turn.ourTera?.(me) ?? null : null;
+    // Slot 0's Tera takes the charge from slot 1.
+    // @mirrors planned-tera
+    const tera =!entering && !mine && !lock?.tera && me.isOnField?.() ? turn.ourTera?.(me) ?? null : null;
     if (!tera) return [];
-    const at = ourTeraTurn(turn, me);
-    return options(me, false, null, null, at).filter(x => x.move?.expected > 0).map(x => ({ ...x, tera: tera.type, at }));
+    const at = teraAtOf(me, hyp);
+    return options(me, false, null, hyp, at).filter(x => x.move?.expected > 0).map(x => ({ ...x, tera: tera.type, at }));
   };
   const cache = new Map();
   const opt = (me, entering, hyp = null) => {
     const mine = lock && !lock.switchIn && me === lock.me ? lock : null;
     const k = `${party.indexOf(me)}|${entering}|${!!mine}|${hyp?.key ?? ""}`;
-    if (!cache.has(k)) cache.set(k, [...options(me, entering, mine, hyp), ...teraOptions(me, entering, mine, hyp)]);
+    if (!cache.has(k)) {
+      // Slot 0 pressed the Tera: its locked move lands at it.
+      const at = mine?.tera ? teraAtOf(me, hyp) : null;
+      const own = options(me, entering, mine, hyp, at);
+      cache.set(k, at ? own.map(x => ({ ...x, tera: mine.tera, at })) : [...own, ...teraOptions(me, entering, mine, hyp)]);
+    }
     return cache.get(k);
+  };
+  // A field with one of ours Tera'd is a hypothesis of its own: the joint hits, the danger and the order all read the
+  // turn with it on (#649). `hyp` is the status plays' hypothesis it sits on, if any.
+  const fieldHyp = (picks, hyp = null) => {
+    const at = picks.find(p => p.at)?.at;
+    return at ? { at, lost: hyp?.lost ?? [], key: `${hyp?.key ?? ""}|${at.key}` } : hyp;
   };
 
   // Newcomers fill empty slots for free; any beyond are voluntary switches (`payers`), which take the incoming hit
@@ -1620,22 +1635,23 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   const add = (picks, payers) => {
     const sps = slots === 2 ? picks.filter(p => p.play && !protecting(p)) : [];
     if (sps.length) return addStatus(picks, payers, sps);
-    const j = slots === 2 || pair ? joint(picks, payers) : null;
+    const th = fieldHyp(picks);
+    const j = slots === 2 || pair ? joint(picks, payers, undefined, th) : null;
     const swaps = swapsIn(picks);
     const acting = picks.filter(p => p.move?.pm && !p.play && !payers.includes(p.me));
     const info = picks.map(p => {
       const partner = picks.find(q => q !== p);
-      const ally = acting.includes(p) && partner ? allyHit(p, partner.me) : null;
-      const spare = !!j && acting.length === 2 && !p.locked && p.target != null && spareHit(picks, payers, p, j);
+      const ally = acting.includes(p) && partner ? allyHit(p, partner.me, th) : null;
+      const spare = !!j && acting.length === 2 && !p.locked && p.target != null && spareHit(picks, payers, p, j, th);
       // Both slots on one foe: `redir` of the time this hit finds it gone and is worth its `redirScore` (#236); beside a
       // Protect, of the time its follow-up fells it first (#876).
-      const redir = redirectOdds(p, partner, payers);
-      const gone = redir || followUpOdds(p, partner, payers);
+      const redir = redirectOdds(p, partner, payers, th);
+      const gone = redir || followUpOdds(p, partner, payers, th);
       const mix = x => (gone > 0 && x?.redirScore != null ? gone * x.redirScore + (1 - gone) * x.score : x?.score ?? 0);
       // A KO'd partner is lost along with whatever it was going to do.
       let score = mix(p) + blockCredit(p) - (ally ? ally.share + ally.pKo * (MON_LOST + Math.max(0, partner.score)) : 0);
       if (spare && drawback(p.move)) {
-        const clean = opt(p.me, payers.includes(p.me)).filter(x => x.move && !x.play && !drawback(x.move)).reduce((b, x) => (!b || x.score > b.score ? x : b), null);
+        const clean = opt(p.me, payers.includes(p.me)).filter(x => x.move && !x.play && !drawback(x.move) && x.tera === p.tera).reduce((b, x) => (!b || x.score > b.score ? x : b), null);
         if (clean) score = Math.min(score, mix(clean)) + (p.move.benefit ?? 0) * AI_POINT;
       }
       return { ally, spare, redir, score };
@@ -1652,7 +1668,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     // Each slot is shown taking the option the likeliest branch scored.
     const shown = picks.slice();
     // A play's own-duel follow-up felling the partner's target sends the partner's later hit to the survivor (#236).
-    const later = picks.map(p => (p.play ? 0 : Math.max(0, ...picks.map(q => followUpOdds(p, q, payers)))));
+    const later = picks.map(p => (p.play ? 0 : Math.max(0, ...picks.map(q => followUpOdds(p, q, payers, fieldHyp(picks))))));
     let best = -1;
     let jv = 0;
     for (let m = 0; m < 1 << sps.length; m++) {
@@ -1668,13 +1684,13 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
         if (p.play) return;
         const entering = payers.includes(p.me);
         // Where the hypothesis has taken the pick away, the score it had on the real turn.
-        const y = opt(p.me, entering, hyp).find(x => !x.play && x.move?.name === p.move?.name && x.target === p.target) || p;
+        const y = opt(p.me, entering, hyp).find(x => !x.play && x.move?.name === p.move?.name && x.target === p.target && x.tera === p.tera) || p;
         const r = later[i];
         parts[i] += w * (r > 0 && y.redirScore != null ? r * y.redirScore + (1 - r) * y.score : y.score);
         if (w > best) shown[i] = y;
         if (y.move?.pm && !entering) hits.push(y);
       });
-      if (hits.length) jv += w * joint(hits, payers, mons, hyp).value;
+      if (hits.length) jv += w * joint(hits, payers, mons, fieldHyp(hits, hyp)).value;
       best = Math.max(best, w);
     }
     return { parts, jv, shown };
@@ -1687,7 +1703,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     const raw = picks.map((p, i) => (p.play ? p.score + blockCredit(p) + (p.act ? p.works * (1 - p.act(0)) * danger(p.foe, mons) : 0) : parts[i]));
     const info = picks.map((p, i) => {
       const oi = picks.findIndex(q => q !== p);
-      const ally = !p.play && oi >= 0 && !payers.includes(p.me) ? allyHit(p, picks[oi].me) : null;
+      const ally = !p.play && oi >= 0 && !payers.includes(p.me) ? allyHit(p, picks[oi].me, fieldHyp(picks)) : null;
       return { ally, spare: false, redir: 0, score: raw[i] - (ally ? ally.share + ally.pKo * (MON_LOST + Math.max(0, raw[oi])) : 0) };
     });
     plans.push({
@@ -1697,32 +1713,33 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     });
   };
   const blockCredit = p => (protecting(p) ? p.blocks * danger(p.foe, [p.me]) : 0);
-  const allyHit = (p, partner) => {
+  const allyHit = (p, partner, hyp = null) => {
     if (!hitsAlly(p.move)) return null;
-    const o = planOutcomes(turn, p.me, partner).find(x => x.name === p.move.name);
+    const o = planOutcomes(turnOf(hyp), p.me, partner).find(x => x.name === p.move.name);
     return o?.expected > 0 ? { mon: partner, share: Math.min(1, o.expected / partner.getMaxHp()), pKo: o.pKo ?? 0 } : null;
   };
   // The chance `p`'s hit finds its target felled by the partner and lands on the other foe (#236).
-  const redirectOdds = (p, q, payers) => {
+  const redirectOdds = (p, q, payers, hyp = null) => {
     if (!pair || !q || p.redirScore == null || p.play || q.play) return 0;
     if (typeof p.target !== "number" || q.target !== p.target) return 0;
     if (!q.move?.pm || !p.move?.pm || payers.includes(p.me) || payers.includes(q.me)) return 0;
-    return fellsFirst(p, q);
+    return fellsFirst(p, q, hyp);
   };
-  const fellsFirst = (p, q) => (1 - actionOrder(now, p.me, p.move.pm, q.me, q.move.pm)) * landOf(q, active[p.target]) * (q.move.pKo ?? 0);
+  const fellsFirst = (p, q, hyp = null) => (1 - actionOrder(now, p.me, p.move.pm, q.me, q.move.pm)) * landOf(q, active[p.target], hyp) * (q.move.pKo ?? 0);
   // The chance a status play `q`'s own-duel follow-up fells `p`'s target before `p`'s next hit, read off this turn's
   // odds. It never reaches `info.redir`: the card's spare-hit note reads that, and shows only a redirect this turn can
   // make (#862).
-  const followUpOdds = (p, q, payers) => {
+  const followUpOdds = (p, q, payers, hyp = null) => {
     if (!pair || q === p || !q.play || !q.followUp?.pm || p.play || typeof p.target !== "number" || q.target !== p.target) return 0;
     if (!p.move?.pm || payers.includes(p.me) || payers.includes(q.me)) return 0;
-    return fellsFirst(p, { me: q.me, move: q.followUp });
+    return fellsFirst(p, { me: q.me, move: q.followUp }, hyp);
   };
-  // Nothing lost without `p`'s hit: its foes still go down, and the pair's value doesn't drop.
-  const spareHit = (picks, payers, p, j) => {
+  // Nothing lost without `p`'s hit: its foes still go down, and the pair's value doesn't drop. A Tera'd `p` stays
+  // Tera'd without its hit (`hyp`).
+  const spareHit = (picks, payers, p, j, hyp = null) => {
     const targets = p.target === "both" ? active.map((_, i) => i) : [p.target];
     if (!targets.every(t => j.foes[t].pKo >= 0.9)) return false;
-    return j.value - joint(picks.filter(q => q !== p), payers, picks.map(q => q.me)).value < 0.1;
+    return j.value - joint(picks.filter(q => q !== p), payers, picks.map(q => q.me), hyp).value < 0.1;
   };
 
   const dangerMemo = new Map();
@@ -1823,7 +1840,8 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     for (const payers of assignments) {
       const [a, b] = members.map(p => opt(p, payers.includes(p)));
       if (!b) a.forEach(x => add([x], payers));
-      else for (const x of a) for (const y of b) add([x, y], payers);
+      // One Tera a field: the two slots share the charge (#649).
+      else for (const x of a) for (const y of b) if (!(x.tera && y.tera)) add([x, y], payers);
     }
   }
   if (!plans.length) return null;
@@ -1957,24 +1975,25 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   // Support moves, conservative because the planner only scores damage: Protect for a slot likely KO'd before it moves
   // whose partner likely KOs that foe first anyway; Helping Hand when it turns a likely survivor into a likely KO.
   const usablePm = pm => pm && (pm.getMovePp?.() ?? 1) - (pm.ppUsed ?? 0) > 0;
-  const boostedKo = (b, X) => {
+  const boostedKo = (b, X, hyp = null) => {
     if (bossBarsLeft(X) > 1) return 0;
-    const o = b.target === "both" ? planOutcomes(turn, b.me, X).find(x => x.name === b.move.name) : b.move;
+    const o = b.target === "both" ? planOutcomes(turnOf(hyp), b.me, X).find(x => x.name === b.move.name) : b.move;
     if (!o) return 0;
     // @mirrors helping-hand-roll
     const M = rawMax(o) * 1.5;
     const roll = M < X.hp ? 0 : !o.live ? 1 : Math.min(1, (M - X.hp) / (0.15 * M) + 1 / 16);
-    return landOf(b, X) * Math.max(o.pKo ?? 0, (o.acc ?? 1) * roll);
+    return landOf(b, X, hyp) * Math.max(o.pKo ?? 0, (o.acc ?? 1) * roll);
   };
   const supportFor = plan => {
     const out = new Map();
     if (plan.picks.length !== 2 || !plan.joint) return out;
     const mons = plan.picks.map(p => p.me);
+    const th = fieldHyp(plan.picks);
     plan.picks.forEach((a, i) => {
       const b = plan.picks[1 - i];
-      // A slot already Protecting keeps its priced play and its note (#876).
-      if (a.locked || !a.move || protecting(a) || !b.move?.pm || b.target == null || plan.payers.includes(a.me) || plan.payers.includes(b.me)) return;
-      const alone = joint([b], plan.payers, mons);
+      // A slot already Protecting keeps its priced play and its note (#876), and a Tera'd one the attack it was priced on.
+      if (a.locked || a.tera || !a.move || protecting(a) || !b.move?.pm || b.target == null || plan.payers.includes(a.me) || plan.payers.includes(b.me)) return;
+      const alone = joint([b], plan.payers, mons, th);
       const protect = a.me.moveset.find(pm => usablePm(pm) && moveTraits(pm.getMove()).protect);
       if (protect && !protectedLast(a.me) && plan.joint.value - alone.value < 0.5) {
         const X = attackers.find(f => {
@@ -1989,7 +2008,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const ts = b.target === "both" ? active.map((_, t) => t) : [b.target];
       let gain = 0, turned = null;
       active.forEach((X, t) => {
-        const ko = ts.includes(t) ? Math.max(alone.foes[t].pKo, boostedKo(b, X)) : alone.foes[t].pKo;
+        const ko = ts.includes(t) ? Math.max(alone.foes[t].pKo, boostedKo(b, X, th)) : alone.foes[t].pKo;
         gain += ko - plan.joint.foes[t].pKo;
         if (ko >= 0.5 && plan.joint.foes[t].pKo < 0.5) turned = X;
       });
@@ -2005,7 +2024,10 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   // in slot 0, so the pin is the slot aimed there: its step 1 is then an action the player is actually told to take.
   const chosen = slots === 1 ? best.picks[0]
     : best.picks.find(p => !p.play && (p.target === 0 || p.target === "both")) ?? best.picks.find(p => !p.play) ?? best.picks[0];
-  const pin = team && chosen ? { mi: party.indexOf(chosen.me), outcome: chosen.move, then: chosen.then, free: freeSwitch, tera: chosen.tera ?? null } : null;
+  // `teraMi`: the mon the field Teras, which in a double can be the partner of the pinned slot (#649).
+  const teraPick = best.picks.find(p => p.tera);
+  const pin = team && chosen ? { mi: party.indexOf(chosen.me), outcome: chosen.move, then: chosen.then, free: freeSwitch,
+    tera: teraPick?.tera ?? null, teraMi: teraPick ? party.indexOf(teraPick.me) : null } : null;
   const ahead = pin && pin.mi >= 0 ? team.after(pin) : null;
   // A plan step is a whole exchange, so its free entry is this turn's news only when the mon goes down on this one —
   // counting the pick's own trade, since a foe switching in is not an `attackers` threat yet.
@@ -2213,7 +2235,8 @@ const lockedCommand = (turn, party, active, pair) => {
     const i = active.findIndex(f => f.getBattlerIndex?.() === bi);
     target = i >= 0 ? i : active.length === 1 ? 0 : null;
   }
-  return { me, pm, target };
+  // `tera`: the type slot 0 pressed the Tera button for, which lands before its move (#649).
+  return { me, pm, target, tera: cmd.tera ? turn.ourTeraType?.(me)?.type ?? null : null };
 };
 
 // For foes no field slot is planned against. `partnered`: moves that also hit `me`'s partner are out.
@@ -2278,7 +2301,7 @@ export const battleModel = (baseTurn, { team = null } = {}) => {
   const locked = lockedCommand(turn, party, active, active.length === 2);
   // A `fieldPlan` input the turn's own key doesn't cover belongs in this key, or the memo serves a stale plan.
   const ids = mons => mons.map(p => p.id).join();
-  const lockKey = locked ? `${locked.me.id}:${locked.switchIn?.id ?? ""}:${pmName(locked.pm)}:${locked.target}` : "";
+  const lockKey = locked ? `${locked.me.id}:${locked.switchIn?.id ?? ""}:${pmName(locked.pm)}:${locked.target}:${locked.tera ?? ""}` : "";
   const attackers = active.filter(f => !switching(f));
   const plan = turn.memo(`field:${ids(party)}|${ids(facing)}|${ids(attackers)}|${double}|${freeSwitch}|${lockKey}`,
     () => fieldPlan(turn, party, facing, double, attackers, { freeSwitch, locked, team }));
@@ -2302,7 +2325,7 @@ export const battleModel = (baseTurn, { team = null } = {}) => {
       const then = slot.move.cat === "status" ? slot.then ?? null : null;
       // A switch-in takes this turn's hit (`entryOutcome`).
       const entry = !then && !active.includes(target) ? entryOutcome(slot.at ?? turn, slot.me, target, slot.move.name) : null;
-      const dmg = entry?.expected ?? (both ? planOutcomes(turn, slot.me, target).find(x => x.name === slot.move.name)?.expected ?? 0 : (then ?? slot.move).expected);
+      const dmg = entry?.expected ?? (both ? planOutcomes(slot.at ?? turn, slot.me, target).find(x => x.name === slot.move.name)?.expected ?? 0 : (then ?? slot.move).expected);
       // The slot's own KO turns, so the row and the ⚔ line agree.
       return { me: slot.me, mine: { ...slot.move, dmg, then }, myTurns: both ? slot.each?.[ai] ?? koTurn(koCurve(turn.mon(target), [{ d: dmg, p: 1 }]).by) : slot.hits, score: slot.score, later: false, vs: target, at: slot.at };
     }

@@ -1938,6 +1938,7 @@ export const HUD: Area = {
       ],
     },
     { ours: "skills/coachemon/scripts/hud/25-turn.js#max-teras-per-arena", of: ["src/constants.ts#MAX_TERAS_PER_ARENA"] },
+    { ours: "skills/coachemon/scripts/hud/30-planner.js#planned-tera", of: ["src/ui/handlers/command-ui-handler.ts#CommandUiHandler.canTera"] },
     {
       ours: "skills/coachemon/scripts/hud/25-turn.js#type-status-immune",
       of: [

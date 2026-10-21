@@ -3,11 +3,12 @@ import { mountHud } from "./fake-page.mjs";
 import { mon, outcomeFrom, TY } from "./fake-mon.mjs";
 import { fakeTurn } from "./fake-turn.mjs";
 import { benchMatchupScore } from "./game-proto.mjs";
+import { Command } from "../../../../src/enums/generated.ts";
 
 // The tables a scenario sets: `outcome` what each move does, `dist` the enemy AI's pick, `switches` the trainer's
 // switch-in, `heal` a turn end's cost, `benefit` the game's own score for a move of ours. `__stub` is rebound per
 // scenario, so every op reads it at call time rather than closing over it.
-const stubTurn = ({ party, foes, live, double, trainer, arena, phase, fieldIndex, turnCommands, exact, ourTera = () => null }) => {
+const stubTurn = ({ party, foes, live, double, trainer, arena, phase, fieldIndex, turnCommands, preTurnCommands = [], exact, ourTera = () => null }) => {
   const active = () => {
     const out = foes.filter(f => f.isOnField?.());
     return (out.length ? out : foes).slice(0, double ? 2 : 1);
@@ -17,7 +18,7 @@ const stubTurn = ({ party, foes, live, double, trainer, arena, phase, fieldIndex
     live, exact, wave: 200, turn: 3, double, trainer, party, foes, ourTera,
     decision: phase === "CheckSwitchPhase" ? "check-switch" : "command",
     trickRoom: !!arena?.getTag?.("TRICK_ROOM"),
-    command: cmd && !cmd.skip ? { kind: cmd.command, cursor: cmd.cursor, move: cmd.move, targets: cmd.targets?.length ? cmd.targets : cmd.move?.targets ?? [] } : null,
+    command: cmd && !cmd.skip ? { kind: cmd.command, cursor: cmd.cursor, move: cmd.move, targets: cmd.targets?.length ? cmd.targets : cmd.move?.targets ?? [], tera: preTurnCommands[0]?.command === Command.TERA } : null,
     outcome: (atk, def, pm, opts) => globalThis.__stub.outcome(atk, def, pm, opts),
     statusMoves: (atk, def) => atk.moveset.filter(pm => pm.getMove().category === 2).map(pm => ({
       pm, name: pm.getName(), type: TY[pm.getMove().type], cat: "status", acc: pm.getMove().accuracy > 0 ? pm.getMove().accuracy / 100 : 1,
@@ -70,7 +71,7 @@ const cyrus = withMetagross => {
 };
 
 // `fieldIndex`: whose command phase it is; `turnCommands`: the commands already chosen this turn.
-const render = ({ party, foes, live, arena, dist, switches, double = false, phase, fieldIndex = 0, turnCommands = [], stubOutcome = outcome, benefit = null, heal = null, stopped = null, replay = null, exact = { ok: true }, tables = null, ourTera }) => {
+const render = ({ party, foes, live, arena, dist, switches, double = false, phase, fieldIndex = 0, turnCommands = [], stubOutcome = outcome, benefit = null, heal = null, stopped = null, replay = null, exact = { ok: true }, tables = null, ourTera, preTurnCommands = [] }) => {
   const onField = () => party.filter(p => p.isOnField());
   for (const f of foes) { f.getOpponents = () => onField(); f.getMatchupScore = () => 1; }
   const [gyarados, weavile] = foes;
@@ -83,7 +84,7 @@ const render = ({ party, foes, live, arena, dist, switches, double = false, phas
     getPartyMemberMatchupScores: () => [[1, 5]], getSortedPartyMemberMatchupScores: x => x, getNextSummonIndex: () => 1 };
   mountHud();
   if (tables) globalThis.__hud["04-game-tables"].setGameTables(tables);
-  const turn = stubTurn({ party, foes, live, double, trainer, arena, phase, fieldIndex, turnCommands, exact, ourTera });
+  const turn = stubTurn({ party, foes, live, double, trainer, arena, phase, fieldIndex, turnCommands, preTurnCommands, exact, ourTera });
   globalThis.__planner = plannerApi(turn);
   const card = { ...globalThis.__hud["60-card"].composeBattleCard(turn, null), wave: 200 };
   const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
@@ -2477,6 +2478,100 @@ Object.assign(TABLE, {
   assert.equal(t.move.name, "Earthquake", "this turn's pick was made before the Tera");
   assert.equal(t.expected, 0, "and lands on Tera Flying for nothing");
   assert.ok(t.later?.expected > 0, "the uses after it are Dragon Claw, picked against the Tera");
+}
+
+// ---- Our Tera in a double: each slot is priced on its own Tera turn, and the two share one charge (#649).
+// Gyarados (slot 0) and Lucario (slot 1) against Tyranitar and Snorlax, both aiming at both of ours. Tera Water halves
+// Stone Edge into Gyarados and gives Hydro Pump Tera STAB; Tera Steel takes Lucario's Fighting STAB away for nothing.
+Object.assign(TABLE, {
+  "Gyarados>Hydro Pump>Tyranitar": [[220], 1, 2], "Gyarados*>Hydro Pump>Tyranitar": [[293], 1, 2],
+  "Gyarados>Hydro Pump>Snorlax": [[120], 1, 1], "Gyarados*>Hydro Pump>Snorlax": [[160], 1, 1],
+  "Lucario>Aura Sphere>Tyranitar": [[300], 1, 4], "Lucario*>Aura Sphere>Tyranitar": [[200], 1, 4],
+  "Lucario>Aura Sphere>Snorlax": [[200], 1, 2], "Lucario*>Aura Sphere>Snorlax": [[134], 1, 2],
+  "Tyranitar>Stone Edge>Gyarados": [[330], 0.8, 2], "Tyranitar>Stone Edge>Gyarados*": [[165], 0.8, 1],
+  "Tyranitar>Stone Edge>Lucario": [[60], 0.8, 0.5], "Tyranitar>Stone Edge>Lucario*": [[60], 0.8, 0.5],
+  "Snorlax>Body Slam>Gyarados": [[90], 1, 1], "Snorlax>Body Slam>Gyarados*": [[90], 1, 1],
+  "Snorlax>Body Slam>Lucario": [[45], 1, 0.5], "Snorlax>Body Slam>Lucario*": [[45], 1, 0.5],
+});
+{
+  const teraKeyed = (a, d, pm, o) => {
+    const as = p => (p.isTerastallized ? Object.create(p, { name: { value: `${p.name}*` } }) : p);
+    const x = outcome(as(a), as(d), pm, o);
+    return x && { ...x, name: pm.getName() };
+  };
+  // `teras`: the Tera each of ours may take, by name; `fieldIndex`, `turnCommands`, `preTurnCommands`: whose prompt it
+  // is and what slot 0 already chose.
+  const teraDouble = ({ teras = {}, fieldIndex = 0, turnCommands = [], preTurnCommands = [] } = {}) => {
+    const party = [
+      mon("Gyarados", 100, ["Water", "Flying"], [380, 250, 160, 200, 200, 160], [["Hydro Pump", "Water", 110, "S"]], true, undefined, { getBattlerIndex: () => 0 }),
+      mon("Lucario", 100, ["Fighting", "Steel"], [300, 200, 140, 230, 140, 180], [["Aura Sphere", "Fighting", 80, "S"]], true, undefined, { getBattlerIndex: () => 1 }),
+    ];
+    const foes = [
+      foeAt(2, "Tyranitar", 100, ["Rock", "Dark"], [400, 300, 230, 190, 200, 120], [["Stone Edge", "Rock", 100, "P"]]),
+      foeAt(3, "Snorlax", 100, ["Normal"], [500, 220, 140, 130, 220, 60], [["Body Slam", "Normal", 85, "P"]]),
+    ];
+    const out = render({ party, foes, live: true, double: true, dist: aimAtBoth, switches: () => new Map(), stubOutcome: teraKeyed,
+      fieldIndex, turnCommands, preTurnCommands, ourTera: p => (teras[p.name] ? { type: teras[p.name] } : null) });
+    return { ...out, party, foes };
+  };
+  const slotOf = (c, name) => c.card.field.slots.find(sl => sl.name === name);
+
+  const gya = teraDouble({ teras: { Gyarados: "Water" } });
+  console.log(`== doubles, Gyarados may Tera Water\n${gya.lines.join("\n")}`);
+  assert.equal(slotOf(gya, "Gyarados").tera, "Water", `a double's slot takes the Tera it wins with:\n${gya.field.join("\n")}`);
+  assert.match(lineOf(gya.field, "Gyarados"), /⚔ Gyarados Tera Water \+ Water Hydro Pump/);
+  assert.ok(!slotOf(gya, "Gyarados").threat || slotOf(gya, "Gyarados").threat.e === 1, "Stone Edge is ×1 into Tera Water");
+  assert.equal(slotOf(gya, "Lucario").tera, null, "and its partner has none to take");
+
+  const plain = teraDouble();
+  assert.ok(!plain.lines.some(l => /Tera/.test(l)), "no Tera anywhere on a double with none to take");
+  assert.equal(slotOf(plain, "Gyarados").threat?.e, 2, "Stone Edge is ×2 into Water/Flying");
+
+  // Both may Tera, but the field has one charge: the joint search never spends it twice.
+  const both = teraDouble({ teras: { Gyarados: "Water", Lucario: "Water" } });
+  assert.deepEqual(both.card.field.slots.map(sl => sl.tera), ["Water", null], `one Tera between the two slots:\n${both.field.join("\n")}`);
+
+  // Slot 1's prompt after slot 0 pressed the Tera: the charge is spoken for (the game greys the button), and slot 0's
+  // locked move is priced at its Tera.
+  const locked = teraDouble({ teras: { Gyarados: "Water", Lucario: "Water" }, fieldIndex: 1,
+    turnCommands: [{ command: Command.FIGHT, cursor: 0, move: { move: 56, targets: [2], useMode: 0 }, targets: [2] }],
+    preTurnCommands: [{ command: Command.TERA, targets: [0] }] });
+  console.log(`== doubles, slot 0 locked into Tera Water + Hydro Pump\n${locked.lines.join("\n")}`);
+  assert.match(lineOf(locked.field, "Gyarados"), /Tera Water \+ Water Hydro Pump → Tyranitar .*locked in/, `slot 0 keeps its Tera:\n${locked.field.join("\n")}`);
+  assert.equal(slotOf(locked, "Lucario").tera, null, "slot 1 has no charge left to take");
+
+  // The fight plan is pinned to the slot aimed at the first foe. Where that is the partner of the mon taking the Tera,
+  // the plan still carries the Tera'd mon's tables: Snorlax's Thunderbolt, ×4 into Water/Flying, is ×2 into Tera Water.
+  Object.assign(TABLE, {
+    "Snorlax>Thunderbolt>Gyarados": [[400], 1, 4], "Snorlax>Thunderbolt>Gyarados*": [[200], 1, 2],
+    "Snorlax>Thunderbolt>Lucario": [[50], 1, 1], "Snorlax>Thunderbolt>Lucario*": [[50], 1, 1],
+    "Lucario>Close Combat>Tyranitar": [[600], 1, 4], "Lucario*>Close Combat>Tyranitar": [[600], 1, 4],
+    "Gyarados>Waterfall>Tyranitar": [[60], 1, 2], "Gyarados*>Waterfall>Tyranitar": [[80], 1, 2],
+    "Gyarados>Waterfall>Snorlax": [[260], 1, 1], "Gyarados*>Waterfall>Snorlax": [[346], 1, 1],
+    "Lucario>Close Combat>Snorlax": [[100], 1, 2], "Lucario*>Close Combat>Snorlax": [[100], 1, 2],
+    "Tyranitar>Crunch>Gyarados": [[40], 1, 1], "Tyranitar>Crunch>Gyarados*": [[40], 1, 1],
+    "Tyranitar>Crunch>Lucario": [[20], 1, 0.5], "Tyranitar>Crunch>Lucario*": [[20], 1, 0.5],
+  });
+  const partnerTera = tera => {
+    const party = [
+      mon("Gyarados", 100, ["Water", "Flying"], [380, 250, 160, 200, 200, 220], [["Waterfall", "Water", 80, "P"]], true, undefined, { getBattlerIndex: () => 0 }),
+      mon("Lucario", 100, ["Fighting", "Steel"], [300, 200, 140, 230, 140, 180], [["Close Combat", "Fighting", 120, "P"]], true, undefined, { getBattlerIndex: () => 1 }),
+    ];
+    const foes = [
+      foeAt(2, "Tyranitar", 100, ["Rock", "Dark"], [400, 300, 230, 190, 200, 120], [["Crunch", "Dark", 80, "P"]]),
+      foeAt(3, "Snorlax", 100, ["Normal"], [500, 220, 140, 230, 220, 60], [["Thunderbolt", "Electric", 90, "S"]]),
+    ];
+    return render({ party, foes, live: true, double: true, dist: aimAtBoth, switches: () => new Map(), stubOutcome: teraKeyed,
+      ourTera: p => (tera && p.name === "Gyarados" ? { type: "Water" } : null) });
+  };
+  const pt = partnerTera(true), pp = partnerTera(false);
+  console.log(`== doubles, the Tera on the pinned slot's partner\n${pt.lines.join("\n")}\n== and with none to take\n${pp.lines.join("\n")}`);
+  assert.equal(slotOf(pt, "Gyarados").tera, "Water", `Gyarados takes the Tera:\n${pt.field.join("\n")}`);
+  assert.match(lineOf(pt.field, "Gyarados"), /→ Snorlax/, "aimed at the second foe");
+  assert.match(lineOf(pt.field, "Lucario"), /→ Tyranitar/, "its partner takes the first, so the plan is pinned to it");
+  const [first] = pt.card.teamPlan.steps;
+  assert.deepEqual([first.send.name, first.tera], ["Lucario", null], "the pinned partner's step 1 presses no Tera of its own");
+  assert.ok(!pt.lines.some(l => /^· input:/.test(l)), "and no step carries the Tera's input: the ⚔ line does");
 }
 
 // ---- A single battle's Protect is a priced status play, picked where blocking the hit wins the race (#861).
