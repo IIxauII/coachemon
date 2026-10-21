@@ -15,7 +15,7 @@ const stubTurn = ({ party, foes, live, double, trainer, arena, phase, fieldIndex
   };
   const cmd = double && fieldIndex === 1 ? turnCommands[0] : null;
   return fakeTurn({
-    live, exact, wave: 200, turn: 3, double, trainer, party, foes, ourTera,
+    live, exact, wave: 200, turn: 3, double, trainer, party, foes, ourTera, arena,
     decision: phase === "CheckSwitchPhase" ? "check-switch" : "command",
     trickRoom: !!arena?.getTag?.("TRICK_ROOM"),
     command: cmd && !cmd.skip ? { kind: cmd.command, cursor: cmd.cursor, move: cmd.move, targets: cmd.targets?.length ? cmd.targets : cmd.move?.targets ?? [], tera: preTurnCommands[0]?.command === Command.TERA } : null,
@@ -2651,6 +2651,50 @@ const lockTurn = ({ myHp = 250, mySpe = 80, foeHp = 300, foeSpe = 120, outrage, 
   assert.equal(playOf({ lock: false, picks: [["Fire Blast", 0.6], ["Outrage", 0.4]], bypass: ["Outrage"] }), null,
     "not where part of this turn's pick ignores Protect");
   assert.equal(playOf({ endure: true }, "Endure"), null, "Endure is no Protect play");
+}
+
+// ---- A Future Sight already queued on our slot holds the foe's off until it lands, on the fake turn too (#897).
+const FUTURE_SIGHT = ["Future Sight", "Psychic", 120, "S", 0, { target: 0, id: 248, attrs: ["DelayedAttackAttr"] }];
+// `pending`: the turns left on one queued on Snorlax's slot.
+const futureSightTurn = ({ pending = 0 } = {}) => {
+  Object.assign(TABLE, {
+    "Snorlax>Body Slam>Slowking": [[70], 1, 1],
+    "Slowking>Future Sight>Snorlax": [[120], 1, 1], "Slowking>Scald>Snorlax": [[60], 1, 1],
+  });
+  const snorlax = mon("Snorlax", 80, ["Normal"], [400, 150, 100, 80, 130, 50], [["Body Slam", "Normal", 85, "P"]], true);
+  // `mon` puts a fielded foe at battler index 0 too, where the queue on Snorlax's slot would match it.
+  const slowking = mon("Slowking", 80, ["Water", "Psychic"], [350, 80, 110, 130, 130, 60], [FUTURE_SIGHT, ["Scald", "Water", 80, "S"]], true,
+    undefined, { getBattlerIndex: () => 2 });
+  const arena = { positionalTagManager: { tags: pending ? [{ tagType: "DELAYED_ATTACK", targetIndex: 0, turnCount: pending }] : [] } };
+  // Future Sight's condition reads the arena (game-code.md §5): with one queued on the slot it fails, so Slowking Scalds.
+  const queued = me => arena.positionalTagManager.tags.some(x => x.tagType === "DELAYED_ATTACK" && x.targetIndex === me.getBattlerIndex());
+  const rows = me => (queued(me) ? [{ name: "Scald", type: "Water", p: 1 }]
+    : [{ name: "Future Sight", type: "Psychic", p: 0.83 }, { name: "Scald", type: "Water", p: 0.17 }]);
+  return render({
+    party: [snorlax], foes: [slowking], live: true, switches: () => new Map(), arena,
+    dist: () => rows(snorlax).map(r => ({ ...r, score: 10, targets: [0] })),
+    replay: (_e, me) => rows(me),
+  });
+};
+{
+  const open = futureSightTurn();
+  const held = futureSightTurn({ pending: 2 });
+  console.log(`== future sight, none pending (live)\n${open.lines.join("\n")}`);
+  console.log(`== future sight, one landing in 2 turns (live)\n${held.lines.join("\n")}`);
+  const [me] = held.scene.facts.party, [slowking] = held.scene.facts.foes;
+  assert.deepEqual([open.scene.delayedOn(me), held.scene.delayedOn(me)], [0, 2], "the fake reads the queue on Snorlax's slot");
+  assert.equal(held.scene.assuming([]).delayedOn(me), 2, "a turn `assuming` derives keeps the arena it was built with");
+  const row = r => r.lines.find(l => /^Slowking /.test(l)) ?? "";
+  assert.match(row(open), /↯ Psychic Future Sight → Snorlax/, `nothing queued: Future Sight:\n${row(open)}`);
+  assert.match(row(held), /↯ Water Scald → Snorlax/, `one queued: Scald:\n${row(held)}`);
+  const t = globalThis.__planner.threatFrom(held.scene, slowking, me);
+  const [sc, fs] = [55.125, 110.625];
+  assert.ok(Math.abs(t.laterAt(1).expected - sc) < 1e-9, `use 1 still blocked: ${t.laterAt(1).expected}`);
+  assert.ok(Math.abs(t.laterAt(2).expected - (0.83 * fs + 0.17 * sc)) < 1e-9, `use 2 has it back: ${t.laterAt(2).expected}`);
+  // Read as Scald for good, as it would be with `delayedOn` at 0, Snorlax outlasts Slowking (`KO`); only Future Sight
+  // back on its third use fells it.
+  const step = held.lines.find(l => /^➜ 1\. Snorlax/.test(l)) ?? "";
+  assert.match(step, /Body Slam → Slowking falls/, `Future Sight's return is priced into the plan:\n${step}`);
 }
 
 console.log("ok");
