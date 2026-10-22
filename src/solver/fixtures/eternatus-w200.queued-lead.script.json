@@ -1,0 +1,11 @@
+{
+  "inputs": [
+    { "kind": "move", "move": "FICKLE_BEAM", "tera": false },
+    { "kind": "switch", "to": { "slot": 4, "species": "PROBOPASS" } },
+    { "kind": "move", "move": "EARTH_POWER", "tera": false },
+    { "kind": "double", "commands": [{ "kind": "switch", "to": { "slot": 5, "species": "GYARADOS" } }, { "kind": "switch", "to": { "slot": 4, "species": "RESHIRAM" } }] },
+    { "kind": "double", "commands": [{ "kind": "move", "move": "BOUNCE", "tera": false }, { "kind": "move", "move": "DRAGON_PULSE", "tera": false }], "replacements": [{ "slot": 2, "species": "GOLBAT", "field": 1 }] },
+    { "kind": "double", "commands": [null, { "kind": "move", "move": "BRAVE_BIRD", "tera": false }], "replacements": [{ "slot": 3, "species": "SNORLAX", "field": 1 }] },
+    { "kind": "double", "commands": [{ "kind": "move", "move": "HYDRO_PUMP", "tera": false }, { "kind": "move", "move": "BODY_SLAM", "tera": false }] }
+  ]
+}

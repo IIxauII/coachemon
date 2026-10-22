@@ -891,10 +891,18 @@ function toDouble() {
   partner.setFieldPosition(FieldPosition.RIGHT, 0);
   // Where the turn's start queues it, ahead of the foe's command: unshifted, it would run ahead of the target screen our
   // lead's command unshifts, and that screen's prompt would expire unanswered (#788).
-  const levels: any[][] = s.phaseManager.phaseQueue.levels;
+  const manager = s.phaseManager;
+  const levels: any[][] = manager.phaseQueue.levels;
+  const second = manager.create("CommandPhase", 1);
   const level = levels.find(l => l.some(p => p.is("EnemyCommandPhase")));
-  if (level === undefined) throw new Error("the reload queued no foe's command to put our second one ahead of");
-  level.splice(level.findIndex(p => p.is("EnemyCommandPhase")), 0, s.phaseManager.create("CommandPhase", 1));
+  if (level !== undefined) return void level.splice(level.findIndex(p => p.is("EnemyCommandPhase")), 0, second);
+  // A lead playing a queued move ends the reload's command at once, and the foe's command, shifted off the level it
+  // stood at the head of but not yet started, is the current phase: every double fork point with one failed the solve
+  // (#918). It goes back to that head, with our second's command current ahead of it.
+  const current = manager.getCurrentPhase();
+  if (!current?.is("EnemyCommandPhase")) throw new Error("the reload queued no foe's command to put our second one ahead of");
+  levels.at(-1)?.unshift(current);
+  manager.currentPhase = second;
 }
 
 const hp = () => {
