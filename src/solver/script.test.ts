@@ -174,10 +174,11 @@ test("a turn the replay never reached, a mon its checkpoint lacks and another ou
   ]);
 });
 
-test("every fight script in the fixtures reads, and one played live records the outcome and its turns in order (#660, #702)", () => {
+test("every fight script in the fixtures reads, and one played live records the outcome and its turns in order (#660, #702, #918)", () => {
   const dir = new URL("./fixtures/", import.meta.url);
   const scripts = readdirSync(dir).filter(name => name.endsWith(".script.json"));
-  const live = scripts.filter(name => name !== "gordie-w180.queued-faint.script.json");
+  const neverLive = ["gordie-w180.queued-faint.script.json", "eternatus-w200.queued-lead.script.json"];
+  const live = scripts.filter(name => !neverLive.includes(name));
 
   assert.ok(live.length >= 4, `only ${live.join(", ")}`);
   for (const name of scripts) {
