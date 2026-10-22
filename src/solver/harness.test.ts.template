@@ -896,12 +896,12 @@ function toDouble() {
   const second = manager.create("CommandPhase", 1);
   const level = levels.find(l => l.some(p => p.is("EnemyCommandPhase")));
   if (level !== undefined) return void level.splice(level.findIndex(p => p.is("EnemyCommandPhase")), 0, second);
-  // A lead playing a queued move ends the reload's command at once, and the foe's command, shifted off the level it
-  // stood at the head of but not yet started, is the current phase: every double fork point with one failed the solve
-  // (#918). It goes back to that head, with our second's command current ahead of it.
+  // A lead playing a queued move ends the reload's command at once, leaving the foe's command shifted off the head of
+  // the top level but not yet started as the current phase (game-code.md §35): every double fork point with one failed
+  // the solve (#918).
   const current = manager.getCurrentPhase();
   if (!current?.is("EnemyCommandPhase")) throw new Error("the reload queued no foe's command to put our second one ahead of");
-  levels.at(-1)?.unshift(current);
+  levels.at(-1)!.unshift(current);
   manager.currentPhase = second;
 }
 

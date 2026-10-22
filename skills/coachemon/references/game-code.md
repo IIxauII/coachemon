@@ -50,7 +50,7 @@ what was only observed on a tab) is in §22, not in the sections.
 | The session save, and what a reload resets mid-fight | §30 |
 | The randomizer challenges: what they rewrite, and which calls see it | §33 |
 | The classic final boss's second stage and the double it turns into | §34 |
-| A double's skipped commands, and what a reload sends out after a faint | §35 |
+| A double's skipped and queued commands, and what a reload sends out after a faint | §35 |
 | HUD API built on the above | Recommended API for the HUD |
 
 ---
@@ -3380,7 +3380,7 @@ encounter's bar count, `getEncounterBossSegments` (`src/battle-scene.ts:1944-198
 the bar index back at the top of them (`src/field/pokemon.ts:6697-6708`). Its saved `hp` is kept. A second-stage save also loads single
 (§28).
 
-## 35. A double's turn beyond the final boss: skipped commands, and what a reload sends out after a faint
+## 35. A double's turn beyond the final boss: skipped and queued commands, and what a reload sends out after a faint
 
 Read at the pinned tag (`v1.12.1.3`), for the solver's harness (`src/solver/harness.test.ts.template`, #792).
 
@@ -3390,6 +3390,13 @@ Read at the pinned tag (`v1.12.1.3`), for the solver's harness (`src/solver/harn
 `MoveId.NONE` with `skip`. `handleFieldIndexLogic` (`:75-92`, run for any nonzero field index, so slot 1 in a double,
 `:176-178`): an ally that chose `BALL` or `RUN` gives slot 1 the same command with `skip`; with only one of ours active
 it instead moves the phase to that mon's field index and marks nothing (`:79-83`).
+
+**A queued move.** `CommandPhase.start` asks for no command while the slot's move queue holds a usable move
+(`src/phases/command-phase.ts:146-168`, `:187-189`). Three things queue one: a charge move's second turn
+(`src/phases/move-charge-phase.ts:76-90`), a recharge (`MoveId.NONE`, `src/data/battler-tags.ts:556-561`) and a
+rampage's next turn (`:1626-1650`). The phase then ends (`command-phase.ts:647-668`, `:689-691`), and the next phase is
+shifted off the top non-empty level of the phase tree (`src/phase-tree.ts:106-116`). A turn pushes our commands before
+the foes' (`src/phases/turn-init-phase.ts:59-75`).
 
 **Commander's animations.** Commander's apply queues `PokemonAnimType.COMMANDER_APPLY` through
 `BattleScene.triggerPokemonBattleAnim` (`src/data/abilities/ab-attrs.ts:2943`, `src/battle-scene.ts:3008-3022`). The
