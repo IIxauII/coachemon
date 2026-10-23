@@ -8,8 +8,9 @@ routing of module tests through `__coachHud.card()`.
 
 **It is the decided design.** #185 made each `hud/NN-*.js` file a module and settled that "tests reach modules through
 an expose mode" keyed by file name, with `@only` enforcing who may import what (`hud-bundle.mjs`). A named test
-interface would add a second list of names to keep in step with the files, to solve a problem that hasn't come up: in
-the bundle's history one HUD file has been renamed (`50-shop` → `52-shop`).
+interface would add a second list of names to keep in step with the files, to solve a problem that has come up once:
+in the bundle's history HUD files were renumbered in one commit, three of them (`49-audit`, `50-items`, `50-shop`), each
+to fix its layer.
 
 **Module tests are unit tests.** calendar, combatant, damage, enemyai, engine, judgment, journal, meter, movetraits,
 party, projection, run, threats, bossplan, card and gametables check pure functions: calendar arithmetic, damage rolls,

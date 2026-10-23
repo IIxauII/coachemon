@@ -114,12 +114,11 @@ export const keepRoad = (from, to) => {
 
 // `account`: the run's own data, read once a refresh by 98-watch.js, which only the catch and Mystery Encounter cards
 // weigh a mon by. `road: false` leaves the road group to `readRoad`; `estimate` reads a battle card's turn without the
-// game.
+// game. Answers on any screen, not only at a decision: the send-in redraw calls it between decisions and the first build
+// on whatever screen is up, so it reads the screen itself, where `detect(s)` would answer nothing (#888).
 export const readCard = (s, account, { road = true, estimate = false } = {}) => {
   if (!s?.ui) return null;
   const handler = s.ui.getHandler();
-  // These screen checks are not the decision detector's, and swapping in `detect(s).card` breaks things: the send-in
-  // redraw and the first build call this between decisions, where the detector answers nothing (#888).
   const starters = starterScreen(s);
   const learn = learnState(s);
   const rewards = rewardsScreen(s);
