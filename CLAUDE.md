@@ -75,7 +75,7 @@ per checkout and never committed, so fresh clones and agent worktrees have none;
 source-file read for a codebase question, and put this rule in every subagent prompt that explores code. Read raw
 files only for lines the graph or an earlier read already located. `graphify path "<A>" "<B>"` answers how two things
 connect, `graphify explain "<concept>"` one concept; both return a scoped subgraph, far smaller than raw grep output.
-`CONTEXT.md` and `docs/adr/` are read directly, as before.
+`CONTEXT.md` and `docs/adr/` are read directly, as before, even when the hook's read nudge fires on them.
 
 **Broad navigation** goes through `graphify-out/wiki/index.md` when it exists, and `graphify-out/GRAPH_REPORT.md` only
 for an architecture review or when query, path and explain fall short.
