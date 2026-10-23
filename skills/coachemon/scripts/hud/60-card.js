@@ -118,6 +118,8 @@ export const keepRoad = (from, to) => {
 export const readCard = (s, account, { road = true, estimate = false } = {}) => {
   if (!s?.ui) return null;
   const handler = s.ui.getHandler();
+  // These screen checks are not the decision detector's, and swapping in `detect(s).card` breaks things: the send-in
+  // redraw and the first build call this between decisions, where the detector answers nothing (#888).
   const starters = starterScreen(s);
   const learn = learnState(s);
   const rewards = rewardsScreen(s);
