@@ -9,3 +9,4 @@ extension/.wxt/
 .rig/runs/
 docs/research/.next-fight/
 __pycache__/
+graphify-out/

@@ -66,3 +66,18 @@ runs `! kill <server-pid>`.
 `extension/.output/`. Swap a rebuild into the folder already loaded. Orion keys an unpacked extension by its path
 (#418), so a new folder loads as a second Coachemon without the site grant.
 
+## graphify
+
+**Only where `graphify-out/graph.json` exists.** The graph of files, symbols and the links between them is built
+per checkout and never committed, so fresh clones and agent worktrees have none; there this whole section is skipped.
+
+**Query the graph before reading source.** Run `graphify query "<question>"` before your first grep, search or
+source-file read for a codebase question, and put this rule in every subagent prompt that explores code. Read raw
+files only for lines the graph or an earlier read already located. `graphify path "<A>" "<B>"` answers how two things
+connect, `graphify explain "<concept>"` one concept; both return a scoped subgraph, far smaller than raw grep output.
+`CONTEXT.md` and `docs/adr/` are read directly, as before, even when the hook's read nudge fires on them.
+
+**Broad navigation** goes through `graphify-out/wiki/index.md` when it exists, and `graphify-out/GRAPH_REPORT.md` only
+for an architecture review or when query, path and explain fall short.
+
+**After modifying code**, run `graphify update .` to keep the graph current (AST-only, no API cost).
