@@ -33,6 +33,7 @@ export const SERVER: Area = {
       known: [
         "SWITCH", "FAINT_SWITCH", "POST_BATTLE_SWITCH", "REVIVAL_BLESSING", "MODIFIER", "MOVE_MODIFIER", "TM_MODIFIER",
         "REMEMBER_MOVE_MODIFIER", "MODIFIER_TRANSFER", "SPLICE", "RELEASE", "CHECK", "SELECT", "DISCARD",
+        "EVOLUTION_ITEM_MODIFIER", "FORM_CHANGE_ITEM_MODIFIER",
       ],
       handledIn: ["src/screen.ts", "src/escape-ladder/lookup.ts"],
     },

@@ -18,8 +18,24 @@ test("STARTER_SELECT lists the whole filtered grid by name and puts the cursor o
   assert.equal(sprites.added, 0);
 });
 
-/** BALL as the game builds it (game-code.md §20). */
+/** BALL as the game builds it (game-code.md §20): from 1.12.2.0 a ball icon each, `optionsText`, `cancelText`. */
 function ballScene(counts: number[], cursor: number) {
+  const text = (t: string) => ({ text: t });
+  const countsText = text(counts.map(c => `×${c}`).join("\n"));
+  const optionsText = text("Poké Ball\nGreat Ball\nUltra Ball\nRogue Ball\nMaster Ball");
+  const cancelText = text("Cancel");
+  const h = {
+    cursor,
+    countsText,
+    optionsText,
+    cancelText,
+    pokeballSelectContainer: { list: [{}, {}, {}, {}, {}, {}, optionsText, cancelText, countsText, {}] },
+  };
+  return { ui: { mode: 4, handlers: { 4: h } }, pokeballCounts: Object.fromEntries(counts.map((c, i) => [i, c])) };
+}
+
+/** BALL before 1.12.2.0: one unnamed text of names then Cancel, which a live game still on the old build shows. */
+function oldBallScene(counts: number[], cursor: number) {
   const text = (t: string) => ({ text: t });
   const countsText = text(counts.map(c => `×${c}`).join("\n"));
   const h = {
@@ -30,8 +46,8 @@ function ballScene(counts: number[], cursor: number) {
   return { ui: { mode: 4, handlers: { 4: h } }, pokeballCounts: Object.fromEntries(counts.map((c, i) => [i, c])) };
 }
 
-test("BALL options carry the ball name and count, plus the Cancel row (#46)", t => {
-  onPage(t, ballScene([13, 9, 0, 0, 0], 1));
+for (const [build, scene] of [["1.12.2.0", ballScene], ["an older build", oldBallScene]] as const) test(`BALL options carry the ball name and count, plus the Cancel row, on ${build} (#46)`, t => {
+  onPage(t, scene([13, 9, 0, 0, 0], 1));
   const menu = send("menu", {});
   assert.equal(menu.family, "ball");
   assert.equal(menu.readable, true);

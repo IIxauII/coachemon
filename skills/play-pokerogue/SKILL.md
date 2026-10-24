@@ -31,7 +31,7 @@ The `coachemon` MCP server drives a live PokéRogue tab in Chrome over CDP. Stat
 | `TARGET_SELECT` | In doubles, the enemy you can KO or the bigger threat. |
 | `PARTY/FAINT_SWITCH` | Must answer: pick a non-fainted, non-active mon, then `Send Out`. Never `Cancel`. |
 | `PARTY/POST_BATTLE_SWITCH`, `PARTY/SWITCH` | `Cancel` unless a switch is wanted. |
-| `MODIFIER_SELECT` (shop) | Buy first, reorder second, reward last: taking the free reward (row 1, cost 0) ends the screen and starts the next wave, so buy any wanted shop-row item (cost > 0, only if money ≥ cost) **before** it. When `read_card` says "lead with X", reorder next (see [Reordering in the shop](#reordering-in-the-shop)). Then take one reward. Item that targets a mon opens `PARTY/MODIFIER` → pick mon → `Apply`/`Use`/`Teach`. |
+| `MODIFIER_SELECT` (shop) | Buy first, reorder second, reward last: taking the free reward (row 1, cost 0) ends the screen and starts the next wave, so buy any wanted shop-row item (cost > 0, only if money ≥ cost) **before** it. When `read_card` says "lead with X", reorder next (see [Reordering in the shop](#reordering-in-the-shop)). Then take one reward. Item that targets a mon opens `PARTY/MODIFIER` (an evolution or form-change item: `PARTY/EVOLUTION_ITEM_MODIFIER` / `PARTY/FORM_CHANGE_ITEM_MODIFIER`) → pick mon → `Apply`/`Use`/`Teach`. |
 | `SUMMARY/LEARN_MOVE`, move-replace confirm | `select_option` the move to forget by name, or the new move (last option) to decline. On the confirm, `No` declines. |
 | `OPTION_SELECT` (biome etc.) | Choose; first option if indifferent. |
 | Party full, release a mon | Ask the user which mon to release. Never pick one yourself. |

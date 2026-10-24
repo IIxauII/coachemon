@@ -673,6 +673,7 @@ export const HUD_DEPS = {
     `src/modifier/modifier-type.ts#PokemonHeldItemModifierType.constructor`,
     `src/modifier/modifier-type.ts#PokemonNatureChangeModifierType.constructor`,
     `src/modifier/modifier-type.ts#EvolutionItemModifierType.constructor`,
+    `${P}#PlayerPokemon.isEvolutionItemCompatible`,
     `src/modifier/modifier-type.ts#SpeciesStatBoosterModifierTypeGenerator.constructor`,
     `src/modifier/init-modifier-pools.ts#initUltraModifierPool`,
     `src/modifier/modifier.ts#TurnHealModifier.apply`,
