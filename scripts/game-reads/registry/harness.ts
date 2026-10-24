@@ -419,6 +419,7 @@ export const HARNESS: Area = {
     { name: "#phases/command-phase", kind: "import", at: ["src/phases/command-phase.ts#CommandPhase"] },
     { name: "#phases/move-effect-phase", kind: "import", at: ["src/phases/move-effect-phase.ts#MoveEffectPhase"] },
     { name: "#phases/move-phase", kind: "import", at: ["src/phases/move-phase.ts#MovePhase"] },
+    { name: "#phases/scan-ivs-phase", kind: "import", at: ["src/phases/scan-ivs-phase.ts#ScanIvsPhase"] },
     {
       name: "#system/version-converter",
       kind: "import",

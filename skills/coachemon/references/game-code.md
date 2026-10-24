@@ -51,6 +51,7 @@ what was only observed on a tab) is in §22, not in the sections.
 | The randomizer challenges: what they rewrite, and which calls see it | §33 |
 | The classic final boss's second stage and the double it turns into | §34 |
 | A double's skipped and queued commands, and what a reload sends out after a faint | §35 |
+| The IV Scanner's phase, and the headless test framework's sprites | §36 |
 | HUD API built on the above | Recommended API for the HUD |
 
 ---
@@ -3432,3 +3433,25 @@ terrain ability calls `trySetWeather` or `trySetTerrain` with its user (`src/dat
 which refuse only the type already up (`canSetWeather`, `canSetTerrain`, `src/field/arena.ts:245-247`, `:406-408`)
 and give it five turns from a user (`:296-300`, `:426-430`). So a Drizzle whose rain had ended by the save brings it
 back for five turns, where the saved fight had none.
+
+## 36. The IV Scanner's phase, and the headless test framework's sprites
+
+Read at the pinned tag (`v1.12.2.0`), for the solver's harness (`src/solver/harness.test.ts.template`).
+
+**When it runs.** `EncounterPhase.end` pushes a `ScanIvsPhase` for each foe on the field when the battle is neither a
+trainer's nor a Mystery Encounter's and the player holds an `IvScannerModifier` (`src/phases/encounter-phase.ts:571-576`).
+The block sits ahead of the `if (!this.loaded)` one (`:578`), so a session load queues it too. The classic final boss is
+a wild battle (`isWaveTrainer` leaves out the final wave, `src/game-mode.ts:215-216`), so it gets one.
+
+**What it does.** `ScanIvsPhase.start` (`src/phases/scan-ivs-phase.ts:20-74`) takes every foe's battle-info stat labels,
+picked out of `getStatsValueContainer().list` by `m.name.includes("icon_stat_label")` (`:31-32`), tints those whose IVs
+beat the dex's and shows them (`:33-45`). It then ends under `hideIvScanner` (`:48-51`), or asks whether to show the
+IVs (`:53-73`); a yes runs `promptIvs` (`src/ui/handlers/battle-message-ui-handler.ts:195-211`), whose
+`executeWithSeedOffset` (`:197`) saves and restores the RNG state around a callback that draws nothing
+(`src/battle-scene.ts:2025-2039`). Pure UI: no draw, no battle state written.
+
+**In upstream's tests.** The labels are sprites named `icon_stat_label_<i>` (`src/ui/battle-info/battle-info.ts:177-182`).
+`globalScene.add.sprite` builds a `MockSprite` there (`test/mocks/mock-texture-manager.ts:52-56`), whose `setName` hands
+the name to its wrapped Phaser sprite and leaves its own `name` unset (`test/mocks/mocks-container/mock-sprite.ts:204-207`).
+The container holds only such sprites, the HP label first, so the filter throws `Cannot read properties of undefined
+(reading 'includes')` on its first element. No upstream test drives `ScanIvsPhase`.
