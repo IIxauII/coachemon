@@ -41,10 +41,9 @@ export const HARNESS: Area = {
     { name: "due", kind: "field", at: [], from: "ours", note: "the fake clock's timer records" },
     {
       name: "end",
-      kind: "field",
-      at: [],
-      from: "ours",
-      note: "our Played/report objects; HUD decision.end is ours too",
+      kind: "method",
+      at: ["src/phase.ts#Phase.end"],
+      note: "the IV Scanner override ends its phase; our Played/report objects and HUD decision.end are ours",
     },
     { name: "enemyFaintsHistory", kind: "field", at: ["src/battle.ts#Battle.enemyFaintsHistory"] },
     { name: "existing", kind: "method", at: [], from: "phaser", note: "Phaser GameObjectFactory (scene.add)" },
@@ -275,6 +274,12 @@ export const HARNESS: Area = {
       note: "HUD 01-meter reads are ours",
     },
     {
+      name: "start",
+      kind: "method",
+      at: ["src/phase.ts#Phase.start", "src/phases/scan-ivs-phase.ts#ScanIvsPhase.start"],
+      note: "the IV Scanner override replaces it",
+    },
+    {
       name: "startBattle",
       kind: "method",
       at: [
@@ -419,6 +424,7 @@ export const HARNESS: Area = {
     { name: "#phases/command-phase", kind: "import", at: ["src/phases/command-phase.ts#CommandPhase"] },
     { name: "#phases/move-effect-phase", kind: "import", at: ["src/phases/move-effect-phase.ts#MoveEffectPhase"] },
     { name: "#phases/move-phase", kind: "import", at: ["src/phases/move-phase.ts#MovePhase"] },
+    { name: "#phases/scan-ivs-phase", kind: "import", at: ["src/phases/scan-ivs-phase.ts#ScanIvsPhase"] },
     {
       name: "#system/version-converter",
       kind: "import",
