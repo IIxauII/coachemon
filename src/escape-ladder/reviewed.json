@@ -1080,6 +1080,7 @@
     "src/field/pokemon.ts#PlayerPokemon.getCompatibleTms": "4d7ff8100741f0b1",
     "src/field/pokemon.ts#PlayerPokemon.hasTrainer": "c0fade735b59d268",
     "src/field/pokemon.ts#PlayerPokemon.isEnemy": "be429b8281d849a5",
+    "src/field/pokemon.ts#PlayerPokemon.isEvolutionItemCompatible": "2ac87d93b4b1a59d",
     "src/field/pokemon.ts#PlayerPokemon.isTmCompatible": "f56b52661f964791",
     "src/field/pokemon.ts#PlayerPokemon.pauseEvolutions": "cffa728400f99f0b",
     "src/field/pokemon.ts#Pokemon": "00a532327350ef24",
