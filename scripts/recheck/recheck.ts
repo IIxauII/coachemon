@@ -16,7 +16,10 @@ export type RecheckDeps = {
 
 export type KnownFight = { stem: string; name: string };
 
-/** The real lines that matched live at every checkpoint (#660), each a pair of files in `FIXTURES`. */
+/**
+ * The real lines that matched live at every checkpoint (#660), each a pair of files in `FIXTURES`; one, the IV Scanner
+ * copy of Eternatus W200, replays its line on a hand-built save (docs/runbooks/pin-bump.md).
+ */
 export const KNOWN_FIGHTS: readonly KnownFight[] = knownFights;
 
 export const KNOWN_FIGHTS_FILE = new URL("./known-fights.json", import.meta.url);

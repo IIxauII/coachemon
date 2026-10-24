@@ -112,8 +112,8 @@ it runs the **harness re-check** in that clone:
    Kieran W190, Eternatus W200, the one that turns double (#788), Swimmers W173, a trainer double loaded from a
    `Continue` (#835), and Eternatus W200 with an IV Scanner, the one fight not recorded live: Eternatus W200 with an
    `IvScannerModifier` added to its save and live export, which queues the scanner's phase on the load (`game-code.md`
-   §36). It replays Eternatus W200's line, since the phase changes nothing in the fight. Each replay passes the replay protocol and must reproduce every fact live recorded on its line,
-   down to the win.
+   §36). It replays Eternatus W200's line, since the phase changes nothing in the fight. Each replay passes the replay
+   protocol and must reproduce every fact live recorded on its line, down to the win.
 2. Then it runs the fork check and the chained-restore check on each line (#662).
 
 A known fight recorded on an older version than `<new>` is **carried** to it (#703). The clone loads the old save
@@ -175,9 +175,10 @@ no longer carries is replaced by a new one, played live on pokerogue.net.
 Whichever path records it, the fight is like the one it replaces: a single trainer fight, a trainer double, or the
 classic final boss for Eternatus W200. For Swimmers W173, a trainer double reached by a `Continue`, with no input since:
 its save's `enemyModifiers` is `null`, and the load re-rolls its partner's name (#821, #829). Not a Daily or a Mystery
-Encounter, which the solver refuses. A new Eternatus W200 brings its IV Scanner twin with it: copy its `<stem>.json`
+Encounter, which the solver refuses. A new Eternatus W200 brings its IV Scanner copy with it: copy its `<stem>.json`
 with an `IvScannerModifier` added to the save's `modifiers` and to `liveExport`'s, and its `<stem>.win.script.json` as
-it is, both under `<stem>.iv-scanner`.
+it is, both under `<stem>.iv-scanner`. Name the copy in `known-fights.json` in place of the old one, and remove the old
+copy's two files with the fight it replaces.
 
 ### Capture it, then promote it
 
