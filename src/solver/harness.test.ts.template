@@ -54,8 +54,7 @@ BattleScene.prototype.triggerPokemonBattleAnim = function (this: BattleScene, po
   return realAnim.call(this, pokemon, type, ...rest);
 };
 
-// The IV Scanner's phase picks its stat labels by a sprite name the headless game never keeps, and threw at the load
-// of every wild wave with the scanner held, the classic final boss's included; it does nothing but draw (game-code.md
+// The IV Scanner's phase picks its stat labels by a sprite name the headless game never keeps, and throws (game-code.md
 // §36).
 ScanIvsPhase.prototype.start = function (this: ScanIvsPhase) {
   this.end();

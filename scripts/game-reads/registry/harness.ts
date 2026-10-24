@@ -41,10 +41,9 @@ export const HARNESS: Area = {
     { name: "due", kind: "field", at: [], from: "ours", note: "the fake clock's timer records" },
     {
       name: "end",
-      kind: "field",
-      at: [],
-      from: "ours",
-      note: "our Played/report objects; HUD decision.end is ours too",
+      kind: "method",
+      at: ["src/phase.ts#Phase.end"],
+      note: "the IV Scanner override ends its phase; our Played/report objects and HUD decision.end are ours",
     },
     { name: "enemyFaintsHistory", kind: "field", at: ["src/battle.ts#Battle.enemyFaintsHistory"] },
     { name: "existing", kind: "method", at: [], from: "phaser", note: "Phaser GameObjectFactory (scene.add)" },
@@ -273,6 +272,12 @@ export const HARNESS: Area = {
       kind: "field",
       at: ["src/data/moves/move.ts#StatStageChangeAttr.stages"],
       note: "HUD 01-meter reads are ours",
+    },
+    {
+      name: "start",
+      kind: "method",
+      at: ["src/phase.ts#Phase.start", "src/phases/scan-ivs-phase.ts#ScanIvsPhase.start"],
+      note: "the IV Scanner override replaces it",
     },
     {
       name: "startBattle",

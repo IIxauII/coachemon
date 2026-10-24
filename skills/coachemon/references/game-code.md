@@ -3441,11 +3441,11 @@ Read at the pinned tag (`v1.12.2.0`), for the solver's harness (`src/solver/harn
 **When it runs.** `EncounterPhase.end` pushes a `ScanIvsPhase` for each foe on the field when the battle is neither a
 trainer's nor a Mystery Encounter's and the player holds an `IvScannerModifier` (`src/phases/encounter-phase.ts:571-576`).
 The block sits ahead of the `if (!this.loaded)` one (`:578`), so a session load queues it too. The classic final boss is
-a wild battle (`isWaveTrainer` leaves out the final wave, `src/game-mode.ts:215-216`), so it gets one.
+a wild battle (`isWaveTrainer` leaves out the final wave, `src/game-mode.ts:217-218`), so it gets one.
 
 **What it does.** `ScanIvsPhase.start` (`src/phases/scan-ivs-phase.ts:20-74`) takes every foe's battle-info stat labels,
 picked out of `getStatsValueContainer().list` by `m.name.includes("icon_stat_label")` (`:31-32`), tints those whose IVs
-beat the dex's and shows them (`:33-45`). It then ends under `hideIvScanner` (`:48-51`), or asks whether to show the
+beat the dex's and shows every label (`:33-45`). It then ends under `hideIvScanner` (`:48-51`), or asks whether to show the
 IVs (`:53-73`); a yes runs `promptIvs` (`src/ui/handlers/battle-message-ui-handler.ts:195-211`), whose
 `executeWithSeedOffset` (`:197`) saves and restores the RNG state around a callback that draws nothing
 (`src/battle-scene.ts:2025-2039`). Pure UI: no draw, no battle state written.
