@@ -85,16 +85,19 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       out.readable = out.options.length > 0;
     } else if (mode === m.BALL) {
       out.family = "ball";
-      // One text of names, a line per `pokeballCounts` key then Cancel, beside `countsText` (#46, game-code.md §20).
+      // `optionsText` holds the names, a line per `pokeballCounts` key, and `cancelText` the Cancel row, beside
+      // `countsText` (#46, game-code.md §20). Builds before 1.12.2.0 had one unnamed text of names then Cancel.
       // @mirrors ball-lines
-      const names = __kids(h.pokeballSelectContainer).find((k: any) => k !== h.countsText && typeof k.text === "string" && k.text.indexOf("\n") > -1);
+      const names = typeof h.optionsText?.text === "string" ? h.optionsText
+        : __kids(h.pokeballSelectContainer).find((k: any) => k !== h.countsText && typeof k.text === "string" && k.text.indexOf("\n") > -1);
       const lines: string[] = names ? names.text.split("\n").map(__strip) : [];
       const counts = Object.entries(scene.pokeballCounts || {});
       out.options = counts.map(([type, c], i) => {
         const name = lines[i] || null;
         return opt(i, (name ? name + " " : "") + "×" + c, { name, ballType: Number(type), count: c });
       });
-      if (lines.length > counts.length) out.options.push(opt(counts.length, lines[counts.length]));
+      const cancel = typeof h.cancelText?.text === "string" ? __strip(h.cancelText.text) : lines[counts.length];
+      if (cancel) out.options.push(opt(counts.length, cancel));
       out.cursor = h.cursor;
       out.extra.catchable = catchable();
       out.readable = out.options.length > 0;

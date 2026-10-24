@@ -363,6 +363,8 @@ export const LADDER = {
   "PARTY/MOVE_MODIFIER": partyFromShop(8, "source"),
   "PARTY/TM_MODIFIER": partyFromShop(8, "source"),
   "PARTY/REMEMBER_MOVE_MODIFIER": partyFromShop(8, "source"),
+  "PARTY/EVOLUTION_ITEM_MODIFIER": partyFromShop(8, "source"),
+  "PARTY/FORM_CHANGE_ITEM_MODIFIER": partyFromShop(8, "source"),
 
   "PARTY/MODIFIER_TRANSFER": {
     ...partyFromShop(8, "source"),

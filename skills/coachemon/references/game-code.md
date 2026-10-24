@@ -1177,7 +1177,8 @@ biome's `biomeLinks` plus any the active timed event adds: a plain id stays, `[i
 (1/n, line 56). With ≥ 2 left and a `MapModifier` it opens UiMode 15 OPTION_SELECT with one
 `{label: getBiomeName(id), handler}` per link and `blockCancelButton` (lines 58–75), else `randSeedItem` picks. The
 forced list is `getDailyForcedBiomes` (`src/data/daily-seed/daily-run.ts:374`), the event's links
-`getEventBiomeLinks` (`src/timed-event-manager.ts:376`; no event at this tag sets any). The handler closes over the id: a reader sees only the labels. No biome links to END; it is
+`getEventBiomeLinks` (`src/timed-event-manager.ts:376`; at 1.12.2.0 the Halloween 26 event, 23 Oct to 9 Nov 2026,
+links Metropolis and Tall Grass to Graveyard). The handler closes over the id: a reader sees only the labels. No biome links to END; it is
 reached only by the forced rule. Laboratory links to Construction Site and Island, both plain
 (`src/data/balance/biomes/laboratory.ts:103`): a Map offers both, and without one it is a coin
 flip. Island's only other way in is Beach's `[ISLAND, 2]` (`beach.ts:114`), and it leads on only to Sea (`island.ts:113`).
@@ -1219,10 +1220,12 @@ global RND: `speciesPools` by the same 512 cut (a nested entry is rerolled until
 `BattleScene.randomSpecies(w, level, false, speciesFilter)` (`src/battle-scene.ts:2301`, pure but for one
 `randSeedItem`): every catchable species passing the filter, taken back to its root. Every config has a filter (no
 legendary, sub-legendary, mythical or trainer-forbidden species, `src/data/trainers/trainer-config.ts:201`).
-`genNewPartyMemberSpecies` retries up to 25 times (line 512) when the pick came out as a prevolution of the species
-rolled (line 494), a balanced template repeats a type (line 496), or the pick is already in the party (line 507). That
-last check compares the pick's own id with the party's root species (`checkDuplicateSpecies`, line 525), so an evolved
-pick is not caught. Every slot without a `partyMemberFuncs` entry rolls it, even one a named double's pool or a
+`genNewPartyMemberSpecies` retries up to 25 times (line 537) when the pick came out as a prevolution of the species
+rolled (line 501), a balanced template repeats a type (line 504), or the pick shares an evolution line with a member
+already generated (lines 514–534). Since 1.12.2.0 that last check reads the trainer's own `representedSpecies` (line 32):
+each member's species with its prevolution chain, written by `genPartyMember` for every slot, `partyMemberFuncs` ones
+included (lines 329, 340, 446). The pick is rerolled when it or any of its prevolutions is represented, or when it is a
+prevolution of a represented member, so an evolved duplicate is caught too. Every slot without a `partyMemberFuncs` entry rolls it, even one a named double's pool or a
 same-species template then replaces (lines 414–426). The specialty type steers the evolution instead (below).
 
 **A wild spawn.** `Arena.randomSpecies` (`src/field/arena.ts:573`) — draws global RND. A Daily override species wins
@@ -1341,7 +1344,8 @@ different draw (retry counter 1, no luck).
 Members are generated in slot order, each stored in `enemyParty[e]` before the next (`src/phases/encounter-phase.ts:104`–
 `196`), and a later member reads the earlier ones off `currentBattle`. `genPartyMember` reads `enemyLevels[index]`
 (`src/field/trainer.ts:318`), `waveIndex` (`:442`, `:483`) and `enemyParty` (the named-double pool `:362`, a
-same-species slot `:419`, balanced types `:496`, the duplicate-species reroll through `getEnemyParty()` `:534`). The
+same-species slot `:426`, balanced types `:504`). Since 1.12.2.0 the duplicate-species reroll reads the trainer's own
+`representedSpecies` instead of the party, so a replay needs a fresh `Trainer`. The
 `EnemyPokemon` constructor reads `enemyParty.length` (`src/field/pokemon.ts:6611`) and `waveIndex` (`:428`, and for a
 trainer member's IV floor `:6661`), never `enemyLevels`.
 
@@ -2273,8 +2277,8 @@ Golisopod out-healed the damage the HUD promised, and a Buzzwole with Beast Boos
      - Chilling Neigh +1 Atk (`:1819-1820`);
      - Grim Neigh +1 SpA (`:1822-1823`);
      - As One (Glastrier) +1 Atk and As One (Spectrier) +1 SpA (`:1826-1844`);
-     - Battle Bond +1 Atk/SpA/Spe on a holder that isn't the Battle Bond Greninja form, once
-       (`abilitiesApplied`, `:1457-1460`);
+     - Battle Bond +1 Atk/SpA/Spe on a holder that isn't the Battle Bond Greninja form, or on any fusion (from
+       1.12.2.0, a fusion with Battle Bond Greninja too), once (`abilitiesApplied`, `:1457-1460`);
    - or a function of the holder: Beast Boost and Eelevate use `beastBoostHighestStatCalc`, +1 on the highest of Atk,
      Def, SpA, SpD, Spe by `getStat(s, false)`, the first on a tie (`:1565-1566,2182-2184,2398-2408`).
 
@@ -2487,12 +2491,14 @@ its three `applyModifiers` calls (`:1622`, `:1624`, `:1638`) reaches `applyModif
 `src/data/balance/rates.ts:10`), raised for wild spawns by the event's `shinyEncounterMultiplier` and by the Shiny Charm
 (`ShinyRateBoosterModifier`, ×2^(1 + stacks)), and for a trainer's mon to the event's trainer shiny chance.
 
-**The ball menu.** `BallUiHandler.setup` (`src/ui/handlers/ball-ui-handler.ts:29-33`) builds one text object in
-`pokeballSelectContainer` (`:45`): `getPokeballName(pb)` for each `pb` from 0 below the key count of
-`globalScene.pokeballCounts`, then the Cancel line. `countsText` (`:50-55`) is `Object.values(pokeballCounts)`, one per line (`:113-116`), refilled on
-`show` (`:63`); the names are built once, in `setup`. The keys are the `PokeballType` values but the Luxury Ball, in enum
-order (`src/battle-scene.ts:1122-1127`), so line *i* of both is key *i*, and Cancel is the cursor after the last ball
-(`ball-ui-handler.ts:75,80`).
+**The ball menu.** `BallUiHandler.setup` (`src/ui/handlers/ball-ui-handler.ts:32-78`) builds `optionsText` (`:38`):
+`getPokeballName(pb)` for each `pb` from 0 below the key count of `globalScene.pokeballCounts`, one per line, no Cancel.
+Cancel is its own `cancelText` (`:39`), placed under the names. `countsText` (`:40-43`) is `Object.values(pokeballCounts)`,
+one per line, refilled on `show` (`updateCounts`, `:133-139`); the names are built once, in `setup`. All three sit in
+`pokeballSelectContainer` after a ball icon per type (`:69-75`); `updateLayout` (`:142`) sizes the window around them.
+The keys are the `PokeballType` values but the Luxury Ball, in enum order (`src/battle-scene.ts:1122-1127`), so line *i*
+of both texts is key *i*, and Cancel is the cursor after the last ball (`ball-ui-handler.ts:95-121`). Before 1.12.2.0
+the names and Cancel were one unnamed text, which the page reader still falls back to.
 
 `45-catch.js` restates the formula in closed form and the ball rules above.
 
@@ -3319,14 +3325,14 @@ value 2 also lifts the move requirement off move evolutions.
   a wild spawn's evolution (`determineEnemySpecies`, `src/ai/ai-species-gen.ts:122`) never see it.
 
 **Ability Randomizer** (`Challenges.ABILITY_RANDOMIZER`, `src/data/challenge.ts:1594`): value 1 randomizes abilities,
-2 passives too, 3 both but keeps nine abilities as they are.
+2 passives too, 3 both but keeps ten abilities as they are.
 - `SPECIES_ABILITY_MODIFY` (`:1645-1681`): `PokemonSpeciesForm.getAbility(i)` (`src/data/pokemon-species.ts:196-210`)
   returns a pick off every implemented ability bar None, Commander, fourteen form-change abilities
   (`src/data/challenge.ts:1613-1628`) and seven harmful ones (Defeatist, Klutz, Normalize, Slow Start, Stall, Truant,
-  Wimp Out), on the fork `500 × speciesId + abilityId`. At value 3 a different list stays as it is (`:1659-1669`):
-  Schooling, Power Construct, Battle Bond, Disguise, Ice Face, Zero to Hero, Tera Shift, Tera Shell and Teraform Zero.
-  So Battle Bond, Tera Shell and Teraform Zero can be rolled, and Forecast, Stance Change, Zen Mode and the other
-  excluded form-change abilities are rolled away even at value 3. A member's `getAbility` goes through it, a fusion's
+  Wimp Out), on the fork `500 × speciesId + abilityId`. At value 3 a different list stays as it is (`:1657-1673`):
+  Battle Bond, Disguise, Ice Face, Power Construct, Schooling, Shields Down, Teraform Zero, Tera Shell, Tera Shift and
+  Zero to Hero (Shields Down from 1.12.2.0). So Battle Bond, Tera Shell and Teraform Zero can be rolled, and Forecast,
+  Stance Change, Zen Mode and the other excluded form-change abilities are rolled away even at value 3. A member's `getAbility` goes through it, a fusion's
   through the other half's form (`src/field/pokemon.ts:2215`, `:2226`).
 - `PASSIVE_ABILITY_MODIFY` (`src/data/challenge.ts:1683-1705`), value 2 and up: the same pool and fork, with no
   value-3 keep list, for `getPassiveAbility` (`src/data/pokemon-species.ts:217-221`), which a member's own

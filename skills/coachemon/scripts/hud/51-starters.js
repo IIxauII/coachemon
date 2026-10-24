@@ -117,8 +117,8 @@ const passiveFacts = (ab, types, inverse) => {
 
 // (game-code.md §23)
 // @mirrors ability-randomizer
-const FORM_CHANGE_ABILITIES = new Set([AbilityId.SCHOOLING, AbilityId.POWER_CONSTRUCT, AbilityId.BATTLE_BOND, AbilityId.DISGUISE,
-  AbilityId.ICE_FACE, AbilityId.ZERO_TO_HERO, AbilityId.TERA_SHIFT, AbilityId.TERA_SHELL, AbilityId.TERAFORM_ZERO]);
+const FORM_CHANGE_ABILITIES = new Set([AbilityId.SCHOOLING, AbilityId.SHIELDS_DOWN, AbilityId.POWER_CONSTRUCT, AbilityId.BATTLE_BOND,
+  AbilityId.DISGUISE, AbilityId.ICE_FACE, AbilityId.ZERO_TO_HERO, AbilityId.TERA_SHIFT, AbilityId.TERA_SHELL, AbilityId.TERAFORM_ZERO]);
 const rerolledBy = s => {
   const value = challengeValue(s, Challenges.ABILITY_RANDOMIZER);
   return { ability: aid => value >= 1 && !(value >= 3 && FORM_CHANGE_ABILITIES.has(aid)), passive: value >= 2 };
