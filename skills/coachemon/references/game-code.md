@@ -1334,7 +1334,7 @@ fork at `w` (`:82`).
 getPartyLuckValue(party))` (`src/field/arena.ts:573`: a luck-shifted tier roll, `randSeedItem` of the pool, up to ten
 retries on a legendary BST mismatch); a Golden Bug Net holder's `randSeedInt(10)` (`src/phases/encounter-phase.ts:116`);
 then `addEnemyPokemon` (`src/battle-scene.ts:888`). That constructor draws ability, id (the IVs), gender, nature
-(`src/field/pokemon.ts:348`–`419`), the moveset (`:6682`), a trainer member's IVs (`:6710`), and a boss's second IV set
+(`src/field/pokemon.ts:348`–`426`), the moveset (`:6682`), a trainer member's IVs (`:6710`), and a boss's second IV set
 unless a Daily config sets the boss's IVs (`src/battle-scene.ts:912-913`). The shiny check draws nothing — `trySetShiny` (`src/field/pokemon.ts:3063`) compares the
 id already drawn — and a shiny's variant is rolled in a fork at the mon's id on the wave seed (`:3156`). So
 `isEncounterShinyLocked()` (`src/phases/encounter-phase.ts:318`: the END biome, and either Endless — Spliced Endless
@@ -1626,7 +1626,7 @@ and a slot below STRONG has `m` raised by `0.025 × floor(d/25)`, capped at 1.22
 levelled as two of its strength (§11). The battle fields one member per level (`battle.enemyLevels.forEach`, `:205`),
 however many `pokemonConfigs` there are. The template is whatever `Trainer.getPartyTemplate` answers: the config's
 `partyTemplateFunc` when it has one, else `partyTemplates` at `partyTemplateIndex`, which is `randSeedItem` over the
-indices (`field/trainer.ts:61`, `:255`) — so only a config with no func and a single template settles the party's size
+indices (`field/trainer.ts:62`, `:256`) — so only a config with no func and a single template settles the party's size
 and levels before the fight. Mysterious Challengers' first option keeps the biome trainer's own config, so it is settled
 only when that config is. Its second option looks settled but isn't: `clone()` keeps a `partyTemplateFunc`
 (`src/data/trainers/trainer-config.ts:921`) and `setPartyTemplates` doesn't clear it (`:472`–`475`), so an Ace Trainer,
@@ -1680,7 +1680,7 @@ on three of them, so at most one a run). Same file convention as the table above
 | Training Session | party ≥ 2 (`:51`), no flee | pick a member; it leaves the party and fights you as a boss **of itself** — same level, form, IVs, moveset and held items (`getEnemyConfig`, `:384`), the items untransferable — then comes back with the prize. Light: `min(2 + floor(wave / 50), 5)` bars, **2 random non-maxed IVs** up by +10 under 11, +5 under 21, else +3, capped at 31 (`:107`, `:131`–`150`) · medium: `min(2 + floor(wave / 40), 6)` bars, **any nature** (`:225`, `:233`) · heavy: `min(2 + floor(wave / 30), 6)` bars and a `MYSTERY_ENCOUNTER_POST_SUMMON` tag — **+1 to every stat on entry** — for **any ability the species has**, hidden included (`:317`–`320`, `:326`) · leave. All three set `fillRemaining: true`: an ordinary reward screen on top | no draws before the party picker; the IV shuffle is in `onBeforeRewardsPhase`, after the battle |
 | The Pokémon Salesman | money ≥ ×4 (`:54`) | `onInit` builds the mon and the price outright and leaves both on `misc` (`:192`): a starter-cost ≤ 5 species with a hidden ability (rerolled up to 5×), or — on `randSeedInt(100) === 0`, or when a timed event is running — a **shiny Magikarp** or an event mon with 3 extra shiny rolls (`:90`–`163`). Price is `getWaveMoneyAmount(4 × max(starterTier, 2.5) / 5)`, always the full ×4 for a shiny (`:179`–`189`). Buying `catchPokemon`s it **at level 5** with `abilityIndex` 2 (`:229`) · leave | `onInit` fork at `w`: the whole offer, readable on `misc` |
 | Trash to Treasure | waves 100–180 (`:51`), party ≥ 3, once a run, no flee | investigate: a Gmax Garbodor boss, `bossSegmentModifier: 1`, level additive 0.5, `disableSwitch` — **no switching all fight** — opening with **Toxic on your lead and Stockpile on itself** (`:81`–`180`) → guaranteed Leftovers plus Rogue / Ultra / Great and `fillRemaining` · dig: **one Leftovers and one Shell Bell**, each to the first party member not already holding a full stack (`tryApplyDigRewardItems`, `:230`), and a **Black Sludge**: every shop item costs **2.5× for the rest of the run** (`:205`) | `onInit` fork at `w`: the boss's held items; the dig itself draws nothing |
-| Clowning Around | waves 80–180 (`:84`) | `onInit` draws Blacephalon's ability from a 15-strong pool and its **two random types** (`:144`–`153`), leaving the ability's localized name in the `ability` dialogue token and the types on `pokemonConfigs[1].customPokemonData`. Battle: a **double** vs boss Mr. Mime and boss Blacephalon, Mr. Mime **Role Plays** that ability off it and both **Taunt** your slots (`:209`–`229`) → ordinary rewards, then the post-option phase offers that **ability onto one of your mons for good** (`handleSwapAbility`, `:437`) · item shuffle: the member with the most transferable non-berry items has its berries redrawn and its Ultra / Rogue items rerolled **inside their own tiers**, count kept (`:284`–`336`) · type shuffle: **every member's second type is redrawn**, preferring a type it already has a non-status move for — `[...new Set(offTypes)].sort()` (the default, string, sort), `randSeedShuffle`, then `pop` — else `getRandomRegularPokemonType()`, one `randSeedInt(18)` (`src/utils/pokemon-utils.ts:195`), redrawn while it hits one of the mon's own types (`:375`–`413`) | `onInit` fork at `w`: the ability and the types · pre ×1: the whole type shuffle, the loop being synchronous |
+| Clowning Around | waves 80–180 (`:84`) | `onInit` draws Blacephalon's ability from a 15-strong pool and its **two random types** (`:146`–`155`), leaving the ability's localized name in the `ability` dialogue token and the types on `pokemonConfigs[1].customPokemonData`. Battle: a **double** vs boss Mr. Mime and boss Blacephalon, Mr. Mime **Role Plays** that ability off it and both **Taunt** your slots (`:213`–`233`) → ordinary rewards, then the post-option phase offers that **ability onto one of your mons for good** (`handleSwapAbility`, `:441`) · item shuffle: the member with the most transferable non-berry items has its berries redrawn and its Ultra / Rogue items rerolled **inside their own tiers**, count kept (`:288`–`340`) · type shuffle: **every member's second type is redrawn**, preferring a type it already has a non-status move for — `[...new Set(offTypes)].sort()` (the default, string, sort), `randSeedShuffle`, then `pop` — else `getRandomRegularPokemonType()`, one `randSeedInt(18)` (`src/utils/pokemon-utils.ts:195`), redrawn while it hits one of the mon's own types (`:379`–`417`) | `onInit` fork at `w`: the ability and the types · pre ×1: the whole type shuffle, the loop being synchronous |
 | The Expert Pokémon Breeder | waves 25–180 (`:137`), party ≥ 4 | the three options are **your own three lowest-friendship members**, sorted in `onInit` (`:186`); each one's egg count is worked out there too and left on `misc` — `min(max(floor((680 − BST) / 20), 1), 18)` points plus `min(max((7 − starterCost) × 2, 0), 12)`, capped at 30, first 5 points Common, then one Great per 4 and one Common per point left (`calculateEggRewardsForPokemon`, `:600`). Picking one **removes every other member from the party** and fights the breeder's three alone → those eggs, a Soothe Bell and `fillRemaining` rewards. **Losing is not the run**: `onGameOver` (`:681`) puts the party back, leaves the chosen mon fainted at 0 friendship and drops the rewards | `onInit` fork at `w`: the breeder's party and all three egg counts |
 | Dark Deal | waves 30–180, party ≥ 2 (`:129`), catchable | deal: `getRandomPlayerPokemon(true, false, true)` — a random legal member **still standing**, or a random fainted legal one when only one standing member is left (that one itself if no legal member has fainted; any legal member when none stands) (`encounter-pokemon-utils.ts:92`–`121`) — is **removed from the party for good** along with its held items, its name left in the `pokeName` token (`:154`–`167`). Then 5 Rogue Balls and a boss drawn from `getRandomSpeciesByStarterCost` at a tier from `randSeedInt(100)`: ≥ 65 → 6, ≥ 15 → 7, ≥ 5 → 8, else 9–10 (`:186`–`190`) — a band with no species of those types, excluded ones dropped first, widens `min` down to 0 and then `max` up to 10 (`encounter-pokemon-utils.ts:257`–`285`) — sharing the taken mon's types, or a mono-type challenge's own type in their place (`:176`–`182`), and **carrying its held items** (`:194`). Every species left at cost 6 and up is legendary or sub-legendary, the non-legendary paradox mons all being excluded, so the boss is a legendary except where the types have none left in or near the band: Bug drops to Scyther or Heracross (cost 5) at every tier, Ghost to an ordinary cost-4 starter at tiers 6–7 (85% of draws). A dual type stops widening at its first hit, so Bug/Ghost lands on Scyther or Heracross at tiers 6–7 and Normal/Bug is legendary 77% of the time. `withCatchAllowed(true)`, so the boss can be caught · leave | pre ×1: which member it takes · option ×500: the tier roll, then the species |
 | A Trainer's Test | rogue, no wave gate of its own | `onInit` draws one of five stat trainers with `randSeedInt(5)` — Cheryl, Marley, Mira, Riley, else Buck — and leaves it on `misc` and in the `statTrainerName` token (`:53`–`107`); the config is `levelAdditiveModifier: 1` over an **`ELITE_FOUR` party template, 6 mons** (`initForStatTrainer`, `trainer-config.ts:605`). Accept: fight it → an **Epic egg** plus a Relic Gold, 2 Rogue tiers and `fillRemaining` (`:158`–`172`) · decline: a **full party heal** (`PartyHealPhase`) plus a **Rare egg**, and the shop with no free reward (`:184`–`193`) | `onInit` fork at `w`: which trainer |
@@ -2040,24 +2040,24 @@ below applies. Only an inflicted status, a disrupting tag and a trapping tag are
 each decided from what the preview hands over per foe (types, ability, passive, moveset). Paths relative to `src/`:
 
 - **Can a status move reach the foe at all.** Status moves ignore the type chart unless they carry
-  `RespectAttackTypeImmunityAttr` (`field/pokemon.ts:2736-2738`), which only Thunder Wave has (`data/moves/move.ts:9655`):
-  it misses Ground types. Powder moves fail on Grass types (`Move.isTypeImmune`, `data/moves/move.ts:470-472`;
-  `field/pokemon.ts:2744-2746`) and on Overcoat (`data/abilities/init-abilities.ts:979-984`). A Prankster user's status
-  moves fail on Dark types (`data/moves/move.ts:473-476`). `TypeImmunityAbAttr.canApply` checks no move category
+  `RespectAttackTypeImmunityAttr` (`field/pokemon.ts:2746-2748`), which only Thunder Wave has (`data/moves/move.ts:9661`):
+  it misses Ground types. Powder moves fail on Grass types (`Move.isTypeImmune`, `data/moves/move.ts:471-473`;
+  `field/pokemon.ts:2754-2756`) and on Overcoat (`data/abilities/init-abilities.ts:979-984`). A Prankster user's status
+  moves fail on Dark types (`data/moves/move.ts:474-477`). `TypeImmunityAbAttr.canApply` checks no move category
   (`data/abilities/ab-attrs.ts:418-424`), so Volt Absorb / Lightning Rod / Motor Drive take Thunder Wave, Flash Fire /
   Well-Baked Body Will-O-Wisp, Sap Sipper the Grass powders. Levitate and Eelevate are `UngroundedAbAttr`s (`init-abilities.ts:343-346`,
   `:2184-2188`), and an ungrounded target's Ground immunity sits in `getAttackTypeEffectiveness`
-  (`field/pokemon.ts:2823-2829`), which a status move reaches only through `RespectAttackTypeImmunityAttr`: both stop
+  (`field/pokemon.ts:2833-2839`), which a status move reaches only through `RespectAttackTypeImmunityAttr`: both stop
   attacks only. Magic
   Bounce reflects every `REFLECTABLE` move (`init-abilities.ts:1072-1075`, `phases/move-effect-phase.ts:1031-1037`), and
   Good as Gold blocks every status move not aimed at a side (`init-abilities.ts:1975-1985`). Mold Breaker ignores all
   of these but the unsuppressable Comatose and Shields Down (`init-abilities.ts:1510,1372`).
-- **Inflicted status** (`Pokemon.canSetStatus`, `field/pokemon.ts:4967`): Poison and Toxic miss Poison and Steel types
-  unless the user has Corrosion (`:4995-5018`, `init-abilities.ts:1498-1504`), paralysis Electric, freeze Ice, burn
+- **Inflicted status** (`Pokemon.canSetStatus`, `field/pokemon.ts:4977`): Poison and Toxic miss Poison and Steel types
+  unless the user has Corrosion (`:5005-5028`, `init-abilities.ts:1498-1504`), paralysis Electric, freeze Ice, burn
   Fire; sleep has no type immunity. Then `StatusEffectImmunityAbAttr` (`immuneEffects`, empty = every status,
   `ab-attrs.ts:3239-3255`): Limber paralysis, Insomnia and Vital Spirit sleep, Immunity poison, Magma Armor freeze, Water
   Veil / Water Bubble / Thermal Exchange burn, Purifying Salt and Comatose all; Leaf Guard (sun) and Shields Down (form)
-  are left out. The side-wide veils cover the foe itself (`field/pokemon.ts:5051-5063`): Pastel Veil poison, Sweet Veil
+  are left out. The side-wide veils cover the foe itself (`field/pokemon.ts:5061-5073`): Pastel Veil poison, Sweet Veil
   sleep, Flower Veil everything on a Grass type. Scaled by the share of the roster it lands on (a boss weighs one per
   health bar), keeping 0.3 of its value into a roster that takes none of it.
 - **Disruption** (`data/battler-tags.ts`): Taunt stops every status move (`TauntTag.isMoveRestricted`, `:3539`); Heal
@@ -2069,7 +2069,7 @@ each decided from what the preview hands over per foe (types, ability, passive, 
   bites on, ×0.3 with nothing; Disable and Torment only by the share they land on. The preview lists a foe's
   `statusMoves` and `healMoves` (recovery attrs and `HitHealAttr`) for this.
 - **Trapping** (`TRAPPED`: Mean Look, Block, Spider Web): each fails on a Ghost type (`failIfGhostTypeCondition`,
-  `data/moves/move.ts:8993`), and `isTrapped` never holds a Ghost type or a Run Away holder (§7). Run Away is asked at
+  `data/moves/move.ts:8999`), and `isTrapped` never holds a Ghost type or a Run Away holder (§7). Run Away is asked at
   the switch, outside the `MovePhase`–`MoveEndPhase` window where a Mold Breaker user's `ignoreAbilities` is set
   (`phases/move-phase.ts:188`, `phases/move-end-phase.ts:42`), so Mold Breaker never gets past it.
 - **A typing written onto the foe** (Soak, Magic Powder, Forest's Curse, Trick-or-Treat): worth what it opens for the
@@ -2151,7 +2151,7 @@ Delete while the current phase is `SelectModifierPhase` (`:566`, checked again o
 reaches that summary through its party check and through the target picker of a TM or another party item
 (`src/ui/handlers/party-ui-handler.ts:1419`, `:1523-1532`), not through the Memory Mushroom's; the phase stays
 `SelectModifierPhase` throughout. A mon with one move gets the error sound and no list (`:554-556`). Delete, once
-confirmed, is `moveset.splice(moveCursor, 1)` on the live array (`:614`): no phase, no cost, no draw, no undo. A TM or
+confirmed, is `moveset.splice(moveCursor, 1)` on the live array (`:611`): no phase, no cost, no draw, no undo. A TM or
 a Memory Mushroom on a full moveset asks the same question itself: `TmModifier.apply` and `RememberMoveModifier.apply`
 (`src/modifier/modifier.ts:2297`, `:2323`) unshift a `LearnMovePhase`, whose `start` learns into a free slot and
 otherwise asks which move to forget (`src/phases/learn-move-phase.ts:62-66`). There the new move takes the forgotten
@@ -2190,7 +2190,7 @@ Safeguard (`:5076`). The audit uses the type checks only.
 simulated: `move.priority`, then `IncrementMovePriorityAttr`, then `ChangeMovePriorityAbAttr` — Prankster +1 on status
 moves, Gale Wings +1 on Flying moves at full HP, Triage +3 on moves flagged `healingMove()`
 (`src/data/abilities/init-abilities.ts:1081`, `:1202`, `:1410`). That flag is on draining attacks as well as heals —
-Absorb and Mega Drain carry it (`src/data/moves/move.ts:9609`–`9608`), and so does Pollen Puff (`:11668`) — so Gale Wings and Triage both make an attack
+Absorb and Mega Drain carry it (`src/data/moves/move.ts:9609`–`9614`), and so does Pollen Puff (`:11668`) — so Gale Wings and Triage both make an attack
 faster. On every pop the move queue runs `sortInSpeedOrder` (`src/utils/speed-order.ts:21`) — groups shuffled in a fork at
 `turn * 1000 + groups` on the wave seed (`:35`), stable-sorted by `getEffectiveStat(SPD)` descending, reversed under
 Trick Room (`:79`) — then sorts by timing modifier, `getPriority` and the in-bracket modifier (Quick Claw)
@@ -2324,7 +2324,7 @@ lockModifierTiers ? modifierTiers : undefined, customModifierSettings)`.
 - `regenerateModifierPoolThresholds` (`src/modifier/modifier-type.ts:2322`) — **draws, and writes module state.** It
   calls `generateType(party)` on every generator entry of every tier whatever its weight (`:2350`): attack-type,
   base-stat and temp-stat boosters, species items, TMs, evolution and form-change items, mints, Tera Shards, berries
-  (their draws: `:1289`–`1985`). A generator with no candidates returns before drawing and a one-item pick draws
+  (their draws: `:1289`–`1946`). A generator with no candidates returns before drawing and a one-item pick draws
   nothing, so the draw count depends on the party. The weight functions (`src/modifier/init-modifier-pools.ts`) don't
   draw or write; they read party HP, PP, status, held items, abilities, relearn lists (`getLearnableLevelMoves`,
   `:297`), mode, wave and ball counts, and the vouchers' read `rerollCount` (`:333`, `:604`, `:624`). It writes the module-private `modifierPoolThresholds` /
@@ -2541,7 +2541,7 @@ PositionalTagPhase), and sets `TurnEndPhase.upcomingInterlude`. Side effect: pha
   - it is UNDERGROUND or UNDERWATER.
 
   Because segments are ignored, the chip can break several boss bars at once (`pokemon.ts:7227-7233`, §3).
-- After the weather message, `PostWeatherLapseAbAttr` runs per mon (`:75-81`). Its condition `getWeatherCondition` is false while `isWeatherSuppressed()` holds, i.e. while a mon on the field has Cloud Nine or Air Lock (`src/data/weather.ts:208`, `ab-attrs.ts:6127`).
+- After the weather message, `PostWeatherLapseAbAttr` runs per mon (`:69-75`). Its condition `getWeatherCondition` is false while `isWeatherSuppressed()` holds, i.e. while a mon on the field has Cloud Nine or Air Lock (`src/data/weather.ts:208`, `ab-attrs.ts:6127`).
   - `PostWeatherLapseHealAbAttr` (`:3979`), below full HP only, queues a heal of `toDmgValue(maxHp·factor/16)`: Rain Dish and Ice Body 1/16, Dry Skin in rain 1/8.
   - `PostWeatherLapseDamageAbAttr` (`:4010`) deals 1/8 at once to Dry Skin or Solar Power in sun, unless the mon has Magic Guard.
 
@@ -2735,7 +2735,7 @@ the pure reads marked below; nothing here draws from an RNG stream or queues a p
 first option is Add to Party while the starter can join, `:1613-1618`; `CONFIRM` for start and exit, `:3186,3283`), so
 `ui.getHandler()` stops returning it; `ui.handlers[STARTER_SELECT]` is the same instance throughout
 (`src/ui/ui.ts:146`). `SelectStarterPhase.start` (`src/phases/select-starter-phase.ts:17`) is the only outside caller;
-`starterSelectCallback` is set by `show` (`:587`) and cleared when the run starts (`:3170`), so a set callback during
+`starterSelectCallback` is set by `show` (`:587`) and cleared when the run starts (`:3174`), so a set callback during
 `SelectStarterPhase` means a team is being chosen. The Pokédex is a different handler
 (`src/ui/handlers/pokedex-ui-handler.ts:197`). Daily runs never show the grid (`getDailyRunStarters`,
 `src/phases/title-phase.ts:241`). `gameMode` and its challenges are final before the grid opens
@@ -2746,15 +2746,15 @@ that `updateScroll` (`:2546-2643`) fills from `filteredStarterIds[scrollCursor �
 index (0–80) and the grid index is `scrollCursor × 9 + cursor`. `setCursor` (`:2645-2671`) writes `filterBarCursor`
 instead in filter mode; on the grid it clamps to 80, places the cursor by the on-screen index and calls
 `setStarter(container.species.speciesId)`, which sets `lastStarterId` (`:2735`). It never scrolls. The party icons, the start
-button and the random button each take their own inputs first (`:2147-2153`), so ACTION opens the grid starter's
+button and the random button each take their own inputs first (`:2151-2157`), so ACTION opens the grid starter's
 menu only while the grid cursor (`cursorObj`) shows. On a party icon ACTION opens that member's menu, whose first
-option is then Remove from Party (`processPartyIconInput`, `:1379-1381`).
+option is then Remove from Party (`processPartyIconInput`, `:1387-1389`).
 
 **What is offered.** `filterStarters` (`:2357-2544`) builds `filteredStarterIds` from
 `speciesDataRegistry.getAllStarters()`: in challenge mode only those the challenges allow by the **soft** check, where
 the species or any evolution or item form change passes (`isStarterValidForChallenge`,
 `src/ui/utils/starter-select-ui-utils.ts:86-117`, over `checkStarterValidForChallenge(id, props, true)`,
-`src/utils/challenge-utils.ts:600-626`), then the filter bar, whose Caught column defaults to caught only (`:748-760`).
+`src/utils/challenge-utils.ts:600-626`), then the filter bar, whose Caught column defaults to caught only (`:756-768`).
 No list of every allowed starter is kept. A container has `species`, `cost` and an `icon` sprite
 (`src/ui/containers/starter-container.ts:9-20`); `setSpecies(id, props)` (`:88-120`) looks the species up first, then
 replaces the sprite. The grid greys an icon (`icon.alpha` 0.375) in `tryUpdateValue` (`:3067-3149`), which is a state
@@ -2763,7 +2763,7 @@ write — never call it.
 **The team being built.** `partyStarterIds` (`:170`) with a parallel `partyStarters` (`:168`), each built in
 `addToParty` (`:2209-2256`): `{ speciesId, shiny, variant, formIndex, female, abilityIndex, passive, nature, moveset,
 pokerus, nickname, teraType, ivs }`, `passive` true only when `passiveAttr` is `UNLOCKED | ENABLED`. At most
-`PLAYER_PARTY_MAX_SIZE` 6, no duplicates (`:1605-1610`). **A team may start** once `isPartyValid()` (`:3203-3221`,
+`PLAYER_PARTY_MAX_SIZE` 6, no duplicates (`:1613-1618`). **A team may start** once `isPartyValid()` (`:3203-3221`,
 pure): at least one member passes the **strict** check (`soft` false: each active challenge's
 `applyStarterChoice(species, holder, props)` on the species itself); the others need only the soft one. The props a
 challenge check takes come from `getStarterDexAttrPropsFromPreferences(id)` (`:3245-3247`, pure, over the module
@@ -2850,8 +2850,8 @@ species: `getSpecies(id)`, `getAllStarters()` (`src/data/species-data-registry.t
 (`:331`: `level`, `item`, `condition`); on the handler a species is only on the visible containers. Ability and move
 names need `allAbilities` / `allMoves` (`src/data/data-lists.ts:8-9`) and egg-move ids `speciesEggMoves`
 (`src/data/balance/moves/egg-moves.ts:17`), all module exports (§22). `h.lastStarterId` is the id in the info panel
-(`:162`) and is not cleared when the cursor leaves the grid (`setNoStarter`, `:2702-2708`), and the party-icon
-cursor sets it to the member under it (`setPartyStarter`, `:2757`); `h.pokerusSpeciesIds` the
+(`:162`) and is not cleared when the cursor leaves the grid (`setNoStarter`, `:2706-2712`), and the party-icon
+cursor sets it to the member under it (`setPartyStarter`, `:2761`); `h.pokerusSpeciesIds` the
 day's Pokérus starters (`:197`, set in `show`, `:581`), which earn 1.5× EXP (`src/battle-scene.ts:3365-3367`).
 
 **What a run starts with.** `getStartingLevel()` (`src/game-mode.ts:137-147`): 5, or 20 in Daily. `SelectStarterPhase`
@@ -2905,8 +2905,8 @@ unlock, Pokérus, used TMs and moveset. From the second it copies `fusionSpecies
 `fusionAbilityIndex`, shiny, variant, gender, luck and custom data (`:6508-6518`). HP becomes the halves' mean HP share
 of the base's pre-fusion max, then `updateModifiers` recalculates (`:6524-6539`, `:6557`). Every held item of the second
 moves over, `isTransferable` unchecked, up to the base's stack limits; the rest is lost (`:6550-6559`,
-`src/battle-scene.ts:2512-2585`). The second leaves the party (`:6513`), and a `LearnMovePhase` is queued for each of its
-moves the base doesn't know (`:6515-6519`). No evolution check.
+`src/battle-scene.ts:2512-2585`). The second leaves the party (`:6559`), and a `LearnMovePhase` is queued for each of its
+moves the base doesn't know (`:6561-6565`). No evolution check.
 
 **What a fusion is.** Base stats (`calculateBaseStats`, `:1625-1647`): each stat `Math.ceil((base + other) / 2)`, after
 the base half's Shuckle Juice / Old Gateau and before vitamins; Spliced Endless halves an **unfused** mon's instead.
@@ -3241,11 +3241,11 @@ string that is not `N.N.N` or `N.N.N.N` (`src/utils/migrator-utils.ts:60-65`).
 
 **What it does.** It floors `money` (`version-converter.ts:161`), throws `SessionMigrationError` unless `party` is an
 array of non-null objects (`:163-165`, `migrator-utils.ts:6-8`), turns a null `enemyParty` into `[]` and throws on any
-other non-array (`:166-171`). It then runs, oldest first (`:114`, `:209-211`), each session migrator whose version is
-strictly above the save's (`:219-224`): `migrateModifiers` and `migrateCustomPokemonData` (1.0.4), `migrateTera`
+other non-array (`:168-173`). It then runs, oldest first (`:116`, `:211-213`), each session migrator whose version is
+strictly above the save's (`:221-226`): `migrateModifiers` and `migrateCustomPokemonData` (1.0.4), `migrateTera`
 (1.7.0), `migratePartyData` (1.9.0), `fixMoveHistory` (1.10.0), and `migrateRageFistHitCount`,
 `convertCustomPokemonDataTypes`, `shiftFormChangeItems` and `migrateSpeciesSplitSession` (1.12.0.0) (`:97-103`,
-`versions/v1_12_0_0.ts:322-327`). 1.12.1.0 adds only a settings and a system migrator (`versions/v1_12_1_0.ts:441`,
+`versions/v1_12_0_0.ts:324-329`). 1.12.1.0 adds only a settings and a system migrator (`versions/v1_12_1_0.ts:441`,
 `:461`), so a session saved on 1.12.0.0 or later runs no session migrator, only the checks above. Nothing on that path writes `gameVersion`: a migrated save keeps its old one until
 `getSessionSaveData()` writes `globalScene.game.config.gameVersion` (`game-data.ts:779`).
 
