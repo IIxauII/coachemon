@@ -34,6 +34,7 @@ import { getMoveTargets } from "#moves/move-utils";
 import type { CommandPhase } from "#phases/command-phase";
 import { MoveEffectPhase } from "#phases/move-effect-phase";
 import { MovePhase } from "#phases/move-phase";
+import { ScanIvsPhase } from "#phases/scan-ivs-phase";
 import { GameManager } from "#test/framework/game-manager";
 import { PromptHandler } from "#test/helpers/prompt-handler";
 import type { PartyUiHandler } from "#ui/party-ui-handler";
@@ -51,6 +52,12 @@ const realAnim = BattleScene.prototype.triggerPokemonBattleAnim;
 BattleScene.prototype.triggerPokemonBattleAnim = function (this: BattleScene, pokemon, type, ...rest) {
   if (type === PokemonAnimType.COMMANDER_APPLY || type === PokemonAnimType.COMMANDER_REMOVE) return true;
   return realAnim.call(this, pokemon, type, ...rest);
+};
+
+// The IV Scanner's phase picks its stat labels by a sprite name the headless game never keeps, and throws (game-code.md
+// §36).
+ScanIvsPhase.prototype.start = function (this: ScanIvsPhase) {
+  this.end();
 };
 const OVERRIDES = [
   "IVS_OVERRIDE",

@@ -78,10 +78,12 @@ test("the re-check replays the known fights at the stamped version, then checks 
       "replay 188",
       "replay 190",
       "replay 200",
+      "replay 200",
       "replay 173",
       "check 180",
       "check 188",
       "check 190",
+      "check 200",
       "check 200",
       "check 173",
     ],
@@ -162,11 +164,11 @@ test("at a newer game version the re-check carries each known fight's save to it
   const run = await recheck(NEWER, deps);
 
   assert.deepEqual(run.failed, []);
-  assert.equal(calls.length, 10);
+  assert.equal(calls.length, 12);
   for (const call of calls) assert.deepEqual(call.carry, { carried: true });
   for (const call of calls) assert.equal(call.given.cloneVersion, NEWER);
   assert.match(run.text, /carrying the 1\.12\.0\.11 saves of Gordie W180, Drayton W188 and Kieran W190 to 1\.12\.2\.0/);
-  assert.match(run.text, /carrying the 1\.12\.1\.3 saves of Eternatus W200 and Swimmers W173 to 1\.12\.2\.0/);
+  assert.match(run.text, /carrying the 1\.12\.1\.3 saves of Eternatus W200, Eternatus W200 with an IV Scanner and Swimmers W173 to 1\.12\.2\.0/);
 });
 
 test("a carried fight that doesn't replay ends the re-check naming it to record again on the new version, and where how is (#703)", async () => {
