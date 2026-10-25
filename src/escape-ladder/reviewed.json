@@ -1540,6 +1540,8 @@
     "src/phases/post-turn-status-effect-phase.ts#PostTurnStatusEffectPhase.start": "45bc2ab8d2d4d80e",
     "src/phases/return-phase.ts#ReturnPhase.summon": "ca1e7db2c6444401",
     "src/phases/revival-blessing-phase.ts#RevivalBlessingPhase.start": "6c9b61652ff97703",
+    "src/phases/scan-ivs-phase.ts#ScanIvsPhase": "01c1a14922bc2ea2",
+    "src/phases/scan-ivs-phase.ts#ScanIvsPhase.start": "bf4ef430f39eeb56",
     "src/phases/select-biome-phase.ts#SelectBiomePhase": "383d5e5da6d361ac",
     "src/phases/select-biome-phase.ts#SelectBiomePhase.generateNextBiome": "359715422433b167",
     "src/phases/select-biome-phase.ts#SelectBiomePhase.setNextBiomeAndEnd": "0d1efa8acd7b2ae4",
