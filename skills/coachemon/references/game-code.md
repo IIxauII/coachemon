@@ -3390,6 +3390,22 @@ encounter's bar count, `getEncounterBossSegments` (`src/battle-scene.ts:1944-198
 the bar index back at the top of them (`src/field/pokemon.ts:6743-6754`). Its saved `hp` is kept. A second-stage save also loads single
 (§28).
 
+**Which runs meet it.** `isClassicFinalBoss` is an `isClassic` mode on its final wave (`src/battle.ts:129-131`). A
+Challenge run is `isClassic` as well (`src/game-mode.ts:495-504`), and both modes' final wave is 200 (`:296-300`).
+
+**The first form's stats.** Until the wave is reloaded, the first form fights on stats from the boss's id's IVs. The
+constructor calculates them from those IVs (`src/field/pokemon.ts:465`), and only then does `EncounterPhase` fill its
+`ivs` with 31 (`src/phases/encounter-phase.ts:131`). Nothing recalculates them: W199 to W200 goes through
+`NextEncounterPhase.doEncounter`, which skips the base class's `updateModifiers(false)` (`src/phases/next-encounter-phase.ts:12`,
+`encounter-phase.ts:339`), and `generateEnemyModifiers` returns early (`src/battle-scene.ts:2656`). The one exception is
+a Synchronize lead: its nature sync after the fill (`encounter-phase.ts:138`) calls `setNature`, which recalculates
+(`pokemon.ts:1656-1658`). The wave-start save (`encounter-phase.ts:301`) holds the stats as they stand beside `ivs` all
+31. A load runs `updateModifiers(false)` (`src/system/game-data.ts:1005`), which recalculates them from IV 31 and adds
+what the max HP gained to `hp` (`pokemon.ts:1600-1604`), so a reloaded tab fights a tougher first form. The load writes
+no save (`encounter-phase.ts:292`), so the save still holds the old stats. The second stage recalculates either way: adding the Mini
+Black Hole runs `updateModifiers(false)` (`battle-scene.ts:3281`), and the form change recalculates again
+(`pokemon.ts:4676`).
+
 ## 35. A double's turn beyond the final boss: skipped and queued commands, and what a reload sends out after a faint
 
 Read at the pinned tag (`v1.12.2.0`), for the solver's harness (`src/solver/harness.test.ts.template`, #792).
