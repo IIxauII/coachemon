@@ -119,3 +119,19 @@ test("oracle:battle --replay answers no answer naming the script it couldn't rea
   assert.match(run.stdout, /^no answer: could not read .*typo\.script\.json: .*inputs\[0\]\.move/s);
   assert.equal(run.status, 2);
 });
+
+test("oracle:battle refuses a bad search setting with the usage line, which lists every search flag, before it reads the export (#935)", () => {
+  const run = oracle("{ not json", ["--beams", "8"]);
+
+  assert.equal(run.stdout, "");
+  assert.match(run.stderr, /^oracle: --beams 8 is not a list of width:weight\nusage: npm run oracle:battle -- .*\n$/);
+  for (const flag of ["--budget <turns>", "--turns <n>", "--lds <turns|none>", "--beams <width:weight,...>"]) assert.ok(run.stderr.includes(flag), flag);
+  assert.equal(run.status, 2);
+});
+
+test("oracle:battle takes good search settings on to the solve, which still needs the clone (#935)", () => {
+  const run = oracle(exported, ["--budget", "500", "--turns", "20", "--lds", "none", "--beams", "8:1,16:0.5"]);
+
+  assert.match(run.stdout, new RegExp(`^no answer: the oracle's clone of game version ${PIN} isn't set up`));
+  assert.equal(run.status, 2);
+});

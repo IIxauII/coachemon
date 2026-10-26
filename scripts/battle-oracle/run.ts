@@ -4,7 +4,6 @@ import { parseArgs } from "node:util";
 import { PINNED_GAME_VERSION } from "../../src/escape-ladder/lookup.ts";
 import {
   checkForks,
-  DEFAULT_BUDGET,
   type PoolStats,
   type ReplayResult,
   readScript,
@@ -17,6 +16,7 @@ import {
 } from "../../src/solver/solver.ts";
 import { findPinnedClone, harnessIn } from "../clone-test/clone-test.ts";
 import { printChecks, printOracleLine, printReplay } from "./print.ts";
+import { searchSettings } from "./settings.ts";
 
 const ORACLE_LINE = 0;
 const REPLAYED = 0;
@@ -38,12 +38,24 @@ const { values, positionals } = parseArgs({
     check: { type: "string" },
     unchecked: { type: "boolean", default: false },
     workers: { type: "string" },
+    budget: { type: "string" },
+    turns: { type: "string" },
+    lds: { type: "string" },
+    beams: { type: "string" },
   },
   allowPositionals: true,
 });
+const USAGE =
+  "usage: npm run oracle:battle -- [--replay <script.json> | --check <script.json> | --unchecked] [--workers <n>] " +
+  "[--budget <turns>] [--turns <n>] [--lds <turns|none>] [--beams <width:weight,...>] <export.json>";
 const [file] = positionals;
 if (file === undefined) {
-  console.error("usage: npm run oracle:battle -- [--replay <script.json> | --check <script.json> | --unchecked] [--workers <n>] <export.json>");
+  console.error(USAGE);
+  process.exit(NO_ANSWER);
+}
+const settings = searchSettings(values);
+if (!settings.ok) {
+  console.error(`oracle: ${settings.why}\n${USAGE}`);
   process.exit(NO_ANSWER);
 }
 
@@ -104,7 +116,7 @@ const poolLine = (stats: PoolStats) => {
 let result: SolveResult;
 try {
   result = await solve(
-    { ...exported, cloneVersion: PINNED_GAME_VERSION, budget: DEFAULT_BUDGET },
+    { ...exported, cloneVersion: PINNED_GAME_VERSION, ...settings.settings },
     {
       clone: inClone,
       unchecked: values.unchecked,
