@@ -119,6 +119,7 @@ const name = r => (r.evolved.length ? `${r.evolved.map(sp => sp.name).join("→"
   row("fighting them alone", team.map(m => `${m.name} ${at(won, m, { participant: true })}`));
   assert.equal(won.waves, 7, "63–69: the seven waves still to fight");
   assert.equal(won.from, 62, "and the projection still stands on the wave the run stands on");
+  assert.deepEqual([won.cleared, next.cleared], [true, false], "and says which standing it walked from");
   for (const opts of [{}, { participant: true }, { participant: true, participants: 2 }]) {
     assert.deepEqual(team.map(m => won.of(m, opts).level), team.map(m => next.of(m, opts).level),
       `cleared on 62 projects what standing on 63 does (${JSON.stringify(opts)})`);

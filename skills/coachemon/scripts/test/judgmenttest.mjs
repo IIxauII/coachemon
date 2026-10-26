@@ -1387,8 +1387,7 @@ const rowOf = (id, level, moves, ability) => {
       assert.equal(x.roster?.wave ?? null, fight === 30 ? 30 : null, `W${wave}: ${k} reads the roster of W${fight} alone`);
     }
   }
-  // The waves of EXP each judgment projects the party and the newcomer over: a cleared wave's EXP is in their levels
-  // already, so W25 cleared walks 26–29 to W30, four waves, and never counts 25 again (#878).
+  // A cleared wave's EXP is in the levels already (#878).
   console.log("== a fixed battle on 25: the waves of EXP to the fight, by where the run stands");
   for (const [wave, cleared, waves] of [[24, false, 1], [25, false, 0], [25, true, 4], [26, false, 4], [26, true, 3]]) {
     const j = read(wave, cleared, all);

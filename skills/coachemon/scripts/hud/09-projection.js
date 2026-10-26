@@ -111,8 +111,7 @@ const inputsOf = (s, x) => [x?.id ?? null, heldStacks(s, x, "LUCKY_EGG"), heldSt
  * `from` the run stands on. With no `fight` to reach, or none ahead, every level stands where it is.
  *
  * `cleared` says the run has already won `from`, whose EXP is then in the party's levels and not counted again: the
- * walk starts on the wave after, the rule `fightsAhead` holds for the fights themselves (03-calendar.js). Unstated, the
- * wave is still to fight (#878).
+ * walk starts on the wave after, as `fightsAhead` does (03-calendar.js). Unstated, the wave is still to fight (#878).
  *
  * `of(x, { participant, participants })` projects one of them: a live member, or a stand-in carrying a `level`.
  * `participant` says it fights the waves in between, `participants` how many fight each of them alongside it. A mon
@@ -151,6 +150,6 @@ export const levelProjection = (s, { from = 0, fight = null, cleared = false } =
     return { level, was, gained: level - was, cap, capped: level >= cap, waves, share, ...evolveTo(s, x, level),
       confidence: "estimate" };
   };
-  return { from: start, fight: fight == null ? null : Math.floor(fight), waves, cap, expAll, of,
+  return { from: start, cleared: first > start, fight: fight == null ? null : Math.floor(fight), waves, cap, expAll, of,
     inputs: x => inputsOf(s, x), confidence: "estimate" };
 };

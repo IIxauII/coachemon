@@ -134,9 +134,8 @@ export const teamValue = (run, set, members) => {
 };
 
 const waveOf = run => Math.max(1, Math.floor(run?.facts?.wave ?? 0) || 1);
-// Whether the wave the run stands on is won, which keeps its EXP out of every projection (#878). The wave itself still
-// goes to `partyAtFight` as it is: a revive on the way is counted from where the run stands.
-const clearedOf = run => run?.nextFight?.cleared === true;
+const projectionOf = (run, fight) => levelProjection(run?.scene ?? null,
+  { from: waveOf(run), fight, cleared: run?.nextFight?.cleared === true });
 // `{ from, fight, unavailable }`: the wave the judgment stands on and the one it judges at.
 const spanOf = (run, fight) => (fight != null ? { from: waveOf(run), fight, unavailable: null }
   : run?.nextFight ?? { from: waveOf(run), fight: null, unavailable: null });
@@ -158,9 +157,8 @@ const slotsAt = (run, fight) => {
   const s = run?.scene ?? null;
   const here = waveOf(run);
   const party = (run?.facts?.party ?? []).filter(Boolean);
-  const cleared = clearedOf(run);
-  const proj = levelProjection(s, { from: here, fight, cleared });
-  const key = JSON.stringify([fight, here, cleared, proj.expAll,
+  const proj = projectionOf(run, fight);
+  const key = JSON.stringify([fight, here, proj.cleared, proj.expAll,
     party.map(mon => [...proj.inputs(mon), (mon.moveset ?? []).map(m => m?.moveId ?? null),
       heldOf(mon).map(itemKeyOf)])]);
   return run.memo("value-party", key, () => build(s, party, proj, { here, fight }));
@@ -188,6 +186,8 @@ const releasedBy = mon => {
 const stacksOf = m => Math.max(1, Math.floor(tryDo(() => m.getStackCount(), m?.stackCount ?? 1) ?? 1));
 
 const build = (s, party, proj, { here, fight }) => {
+  // The standing wave, cleared or not: a revive on the way is counted from where the run stands, while the projection
+  // skips a cleared wave's EXP (#878).
   const at = partyAtFight(s, party, { from: here, fight });
   const slots = party.map(mon => {
     const dead = at.dead.find(d => d.mon === mon);
@@ -258,8 +258,7 @@ const newcomerOf = (run, fight, spec) => {
   const level = Math.max(1, Math.floor(spec.level ?? mon?.level ?? (standIn ? catchLevelAt(s, waveOf(run)) : 1)));
   // An explicit `moves` wins, for an offer that names the set the mon comes with.
   const moves = spec.moves ?? (standIn ? learnsetMoves(species, form, level) : undefined);
-  const p = levelProjection(s, { from: waveOf(run), fight, cleared: clearedOf(run) })
-    .of(mon ?? { species, formIndex: form, level });
+  const p = projectionOf(run, fight).of(mon ?? { species, formIndex: form, level });
   const built = items => combatantOf({ ...spec, mon, moves, level: p.level, species: p.species ?? species,
     form: p.form ?? form, ...(items ? { items } : {}) });
   const combatant = built(null);
