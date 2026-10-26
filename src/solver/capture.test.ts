@@ -4,11 +4,11 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import type { JobControl, JobWork } from "../jobs.ts";
-import { type Recorder, STATISTICS, withCapture } from "./capture.ts";
+import { type Recorder, type SolveEnd, STATISTICS, withCapture } from "./capture.ts";
 import type { Input, MonState, OracleLine, SessionSave, SolveInput, SolveResult } from "./solver.ts";
-import { readScript } from "./solver.ts";
+import { readScript, solve } from "./solver.ts";
 import type { SearchStatistics } from "./search.ts";
-import type { SolveWork } from "./solve-job.ts";
+import { type SolveWork, solveJob } from "./solve-job.ts";
 
 const ON = { COACHEMON_CAPTURE: "1" };
 
@@ -446,7 +446,7 @@ test("a solve's entry carries how its search went, as the solve handed it on, an
   };
   const answer: SolveResult = { kind: "oracle_line", oracleLine: LINE };
   const work: SolveWork = async (_args, { statistics }) => {
-    statistics?.(search);
+    statistics?.({ startup: { gateMs: 0, loadMs: 0, pool: { warm: true, ms: 0 } }, pool: null, cores: 1, search });
     return answer;
   };
 
@@ -462,4 +462,55 @@ test("a solve that never searched gets an entry with no search in it (#940)", as
   await withCapture(solved(NONE), dir, ON, recorder())({ input: t1() }, ctl());
 
   assert.equal("search" in (entries(dir)[0] as object), false);
+});
+
+test("a solve the gate refuses still appends its entry, with the gate's time and no load check or pool (#942)", async () => {
+  const dir = home();
+  const work = solveJob(dir, {
+    setUp: async () => ({ kind: "clone", gameVersion: "1.12.1.3", dir: path.join(dir, "clone") }),
+    runIn: () => async () => assert.fail("the gate let it through"),
+    solve: (input, deps) => solve(input, { ...deps, clock: { now: () => 0 }, cores: 8 }),
+  });
+
+  const result = await withCapture(work, dir, ON, recorder())({ input: t1() }, ctl());
+
+  assert.equal((result as SolveResult).kind === "no_answer" && (result as { reason: { code: string } }).reason.code, "not_rechecked");
+  const [entry] = entries(dir) as Record<string, unknown>[];
+  assert.deepEqual([entry.ended, entry.startup, entry.pool, entry.cores], [{ kind: "no_answer", code: "not_rechecked" }, { gateMs: 0, loadMs: null, pool: null }, null, 8]);
+});
+
+test("a solve's startup, its pool's final stats and the machine's cores go into its entry as the solve reported them (#942)", async () => {
+  const dir = home();
+  const report = {
+    startup: { gateMs: 1, loadMs: 1_840, pool: { warm: false, ms: 6_210 } },
+    pool: { size: 4, died: 1, lastDeath: "the worker ran out of heap", peakHeapMb: 812, heapLimitMb: 4096, slowPoll: null, realClock: "the page's timers were not found" },
+    cores: 8,
+  };
+  const work: SolveWork = async (_args, { statistics }) => {
+    statistics?.(report);
+    return { kind: "oracle_line", oracleLine: LINE };
+  };
+
+  await withCapture(work, dir, ON, recorder())({ input: t1() }, ctl());
+
+  const [entry] = entries(dir) as Record<string, unknown>[];
+  assert.deepEqual([entry.ended, entry.startup, entry.pool, entry.cores], [{ kind: "oracle_line" }, report.startup, report.pool, 8]);
+});
+
+test("a solve cancelled while it loads still writes the stages it had reached into its entry (#942)", async () => {
+  const dir = home();
+  const cancel = new AbortController();
+  const work = solveJob(dir, {
+    setUp: async () => ({ kind: "clone", gameVersion: "1.12.1.3", dir: path.join(dir, "clone") }),
+    runIn: () => async () => {
+      cancel.abort();
+      return { out: undefined };
+    },
+    solve: (input, deps) => solve(input, { ...deps, unchecked: true, clock: { now: () => 0 }, cores: 8 }),
+  });
+
+  await withCapture(work, dir, ON, recorder())({ input: t1() }, { signal: cancel.signal, progress: () => {} });
+
+  const [entry] = entries(dir) as Record<string, unknown>[];
+  assert.deepEqual([(entry.ended as SolveEnd).kind, entry.startup, entry.pool, entry.cores], ["cancelled", { gateMs: 0, loadMs: null, pool: null }, null, 8]);
 });

@@ -3,9 +3,8 @@ import { type CloneSetup, setUpClone } from "./clone.ts";
 import type { FightPool } from "./fight-pool.ts";
 import type { Clone } from "./replay.ts";
 import { harnessIn } from "./run-in-clone.ts";
-import type { SearchStatistics } from "./search.ts";
 import { shortOracleLine } from "./short-oracle-line.ts";
-import { slowWorkersNote, solve, type SolveDeps, type SolveInput, type SolveResult } from "./solver.ts";
+import { slowWorkersNote, solve, type SolveDeps, type SolveInput, type SolveResult, type SolveReport } from "./solver.ts";
 
 export const SOLVE_JOB = "solve";
 
@@ -20,7 +19,8 @@ export type SolveJobDeps = {
   solve: (input: SolveInput, deps: SolveDeps) => Promise<SolveResult>;
 };
 
-export type SolveControl = JobControl & { statistics?: (statistics: SearchStatistics) => void };
+/** Carries the recorder's `statistics` through to `solve` (#940, #942). */
+export type SolveControl = JobControl & { statistics?: (report: SolveReport) => void };
 
 export type SolveWork = (args: Record<string, unknown>, ctl: SolveControl) => Promise<unknown>;
 

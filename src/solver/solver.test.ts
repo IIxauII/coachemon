@@ -9,8 +9,7 @@ import { noAnswer, Unanswered } from "./no-answer.ts";
 import type { Input } from "./oracle-line.ts";
 import type { WorkerPool } from "./pool.ts";
 import type { Clone } from "./replay.ts";
-import type { SearchStatistics } from "./search.ts";
-import { DEFAULT_BUDGET, gate, solve } from "./solver.ts";
+import { DEFAULT_BUDGET, gate, solve, type SolveReport } from "./solver.ts";
 
 const RECHECKED = reviewed.recheck.gameVersion;
 const drayton: { live: Battle; liveExport: SessionSave; save: SessionSave } = JSON.parse(
@@ -182,7 +181,7 @@ test("a solve given neither runs the discrepancy search, then every beam of the 
 });
 
 test("a solve hands on how its search went, and answers as it would without (#940)", async () => {
-  const reported: SearchStatistics[] = [];
+  const reported: SolveReport[] = [];
 
   const result = await solve({ ...RESOLVE, lds: null, portfolio: [{ width: 1, ours: 0.5 }] }, {
     clone: loadsT5,
@@ -192,7 +191,121 @@ test("a solve hands on how its search went, and answers as it would without (#94
 
   assert.equal(result.kind === "no_answer" && result.reason.code, "no_win");
   assert.deepEqual(
-    reported.map(s => [s.found, s.stages.map(({ stage, ended, spent }) => ({ stage, ended, spent }))]),
+    reported.map(({ search }) => [search?.found, search?.stages.map(({ stage, ended, spent }) => ({ stage, ended, spent }))]),
     [[null, [{ stage: "beam", ended: "emptied", spent: 1 }]]],
   );
+});
+
+/** A clock that moves only when a fake says the work took time. */
+function fakeClock() {
+  let t = 1_000;
+  return { now: () => t, advance: (ms: number) => void (t += ms) };
+}
+
+/** The report but how its search went, whose stage times run on the search's own wall clock (#940). */
+const beforeSearch = ({ search: _, ...report }: SolveReport) => report;
+
+const STATS = { size: 3, died: 1, lastDeath: "the worker ran out of heap", peakHeapMb: 812, heapLimitMb: 4096, slowPoll: "the page's poll was not found", realClock: null };
+
+test("a solve on a pool started for it reports the gate, the load check and the pool's start, then the pool's final stats and the machine's cores (#942)", async () => {
+  const clock = fakeClock();
+  const { lease } = warmLease();
+  const own: Lease = { pool: { ...lease.pool, root: await lease.pool.rootAt(t5.save), stats: () => STATS }, warm: false, done: async () => {} };
+  const reported: SolveReport[] = [];
+
+  const result = await solve(RESOLVE, {
+    clone: async run => {
+      clock.advance(40);
+      return loadsT5(run);
+    },
+    pools: async () => {
+      clock.advance(900);
+      return own;
+    },
+    clock,
+    cores: 12,
+    statistics: report => reported.push(report),
+  });
+
+  assert.equal(result.kind === "no_answer" && result.reason.code, "no_win", JSON.stringify(result));
+  assert.deepEqual(reported.map(beforeSearch), [{ startup: { gateMs: 0, loadMs: 40, pool: { warm: false, ms: 900 } }, pool: STATS, cores: 12 }]);
+});
+
+test("a solve on the fight's warm pool reports that it was warm and how long rooting its start on it took (#942)", async () => {
+  const clock = fakeClock();
+  const { lease } = warmLease({
+    rootAt: async () => {
+      clock.advance(30);
+      return { sig: "t5", hp: { ours: [1], foes: [1] }, stages: { ours: [[]], foes: [[]] }, legal: [tackle], forkPoint: "t5" };
+    },
+  });
+  const reported: SolveReport[] = [];
+
+  await solve(RESOLVE, { clone: loadsT5, pools: async () => lease, clock, cores: 4, statistics: report => reported.push(report) });
+
+  assert.deepEqual(reported.map(beforeSearch), [
+    {
+      startup: { gateMs: 0, loadMs: 0, pool: { warm: true, ms: 30 } },
+      pool: { size: 2, died: 0, lastDeath: null, peakHeapMb: null, heapLimitMb: null, slowPoll: null, realClock: null },
+      cores: 4,
+    },
+  ]);
+});
+
+test("a solve the gate refuses still reports its gate time, with no load check and no pool (#942)", async () => {
+  const reported: unknown[] = [];
+
+  const result = await solve(
+    { ...RESOLVE, cloneVersion: "1.12.0.1" },
+    { clone: async () => assert.fail("the gate let it through"), clock: fakeClock(), cores: 8, statistics: report => reported.push(report) },
+  );
+
+  assert.equal(result.kind === "no_answer" && result.reason.code, "version_mismatch");
+  assert.deepEqual(reported, [{ startup: { gateMs: 0, loadMs: null, pool: null }, pool: null, cores: 8 }]);
+});
+
+test("a solve whose pool never started reports how long it tried, and no pool's stats (#942)", async () => {
+  const clock = fakeClock();
+  const reported: unknown[] = [];
+
+  const result = await solve(RESOLVE, {
+    clone: loadsT5,
+    pools: async () => {
+      clock.advance(2_500);
+      return { failed: "the harness wrote nothing" };
+    },
+    clock,
+    cores: 8,
+    statistics: report => reported.push(report),
+  });
+
+  assert.equal(result.kind === "no_answer" && result.reason.code, "harness_failed");
+  assert.deepEqual(reported, [{ startup: { gateMs: 0, loadMs: 0, pool: { warm: false, ms: 2_500 } }, pool: null, cores: 8 }]);
+});
+
+test("a solve hands its report over as it starts and fills in each stage as it ends, so a cancel reads the stages reached (#942)", async () => {
+  const clock = fakeClock();
+  const { lease } = warmLease();
+  let report: unknown;
+  const seen: Record<string, unknown> = {};
+
+  await solve(RESOLVE, {
+    clone: async run => {
+      seen.loading ??= structuredClone(report);
+      clock.advance(40);
+      return loadsT5(run);
+    },
+    pools: async () => {
+      seen.leasing = structuredClone(report);
+      return lease;
+    },
+    clock,
+    cores: 4,
+    statistics: handed => (report = handed),
+  });
+
+  assert.deepEqual(seen, {
+    loading: { startup: { gateMs: 0, loadMs: null, pool: null }, pool: null, cores: 4 },
+    leasing: { startup: { gateMs: 0, loadMs: 40, pool: null }, pool: null, cores: 4 },
+  });
 });

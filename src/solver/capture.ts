@@ -10,9 +10,9 @@ import { NAMES, TrainerVariant } from "../enums/generated.ts";
 import type { JobWork } from "../jobs.ts";
 import { PLUGIN_VERSION } from "../plugin-version.ts";
 import { type Script, WIN_SCRIPT } from "./script.ts";
-import { LDS, type Lds, PORTFOLIO, type SearchStatistics } from "./search.ts";
-import type { SolveWork } from "./solve-job.ts";
-import type { Beam, Budget, MonState, OracleLine, Reason, SessionSave, SolveInput, SolveResult } from "./solver.ts";
+import { LDS, type Lds, PORTFOLIO } from "./search.ts";
+import type { SolveControl, SolveWork } from "./solve-job.ts";
+import type { Beam, Budget, MonState, OracleLine, Reason, SessionSave, SolveInput, SolveResult, SolveReport } from "./solver.ts";
 
 export const FIGHTS = "fights";
 
@@ -31,9 +31,7 @@ export type SolveStatistics = {
   portfolio: readonly Beam[];
   pluginVersion: string;
   gameVersion: string;
-  /** Absent where the solve ended before it searched, or was cancelled first. */
-  search?: SearchStatistics;
-};
+} & Partial<SolveReport>;
 
 /** `progress` is the last line the solve reported before its cancel, `null` before any. */
 export type SolveEnd =
@@ -57,7 +55,7 @@ export const withCapture =
     const { live, save, extras, liveExport, cloneVersion, budget } = input;
     keep(`${stem}.json`, { live, save, extras, liveExport, cloneVersion, budget });
     const ran = ranUnder(input, turn, recorder);
-    let search: SearchStatistics | undefined;
+    let reported: Partial<SolveReport> = {};
     let recorded = false;
     const record = (ended: () => SolveEnd | null) => {
       if (recorded) return;
@@ -66,9 +64,8 @@ export const withCapture =
         const end = ended();
         if (end === null) return;
         mkdirSync(fight, { recursive: true });
-        const entry: SolveStatistics = { ...ran, ended: end, ...(search && { search }) };
         // One write of one line, so two processes appending to one fight interleave whole entries.
-        appendFileSync(path.join(fight, STATISTICS), JSON.stringify(entry) + "\n");
+        appendFileSync(path.join(fight, STATISTICS), JSON.stringify({ ...ran, ...reported, ended: end } satisfies SolveStatistics) + "\n");
       } catch {}
     };
     let progress: string | null = null;
@@ -76,14 +73,12 @@ export const withCapture =
     const cancelled = () => record(() => ({ kind: "cancelled", progress }));
     if (ctl.signal.aborted) cancelled();
     else ctl.signal.addEventListener("abort", cancelled, { once: true });
-    const watched = {
+    const watched: SolveControl = {
       signal: ctl.signal,
+      statistics: report => (reported = report),
       progress: (line: string) => {
         progress = line;
         ctl.progress(line);
-      },
-      statistics: (statistics: SearchStatistics) => {
-        search = statistics;
       },
     };
     let result: SolveResult;

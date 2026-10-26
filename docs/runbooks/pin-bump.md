@@ -193,7 +193,9 @@ middle of a bump is recorded by hand (below).
    at, `turn-<n>.json` (the augmented export and its extras) and `turn-<n>.win.script.json`. A repeat solve from the same
    turn replaces that turn's input, and the oracle line only with one it found. Every solve that keeps its input,
    cancelled and failed ones too, appends one line to the folder's `statistics.jsonl`: the turn it started at, how it
-   ended, and the settings and versions it ran under.
+   ended, and the settings and versions it ran under; a solve that got as far as the solver also says how long its gate,
+   load check and pool start took (or that its pool was warm), its pool's final stats, and the machine's core count. A
+   cancelled one has the stages it had finished by the cancel.
 2. Solve the fight at its first decision, and win it live on that oracle line. Promoting is your word that you did: nothing
    checks it.
 3. Run `npm run recheck:promote -- <home>/fights/<seed>-w<wave>-<fight>`. It copies the first-turn pair into
