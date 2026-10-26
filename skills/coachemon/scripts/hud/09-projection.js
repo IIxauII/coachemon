@@ -110,6 +110,10 @@ const inputsOf = (s, x) => [x?.id ?? null, heldStacks(s, x, "LUCKY_EGG"), heldSt
  * The levels the party and a would-be newcomer reach by the big fight on wave `fight`, projected from the wave
  * `from` the run stands on. With no `fight` to reach, or none ahead, every level stands where it is.
  *
+ * `cleared` says the run has already won `from`, whose EXP is then in the party's levels and not counted again: the
+ * walk starts on the wave after, the rule `fightsAhead` holds for the fights themselves (03-calendar.js). Unstated, the
+ * wave is still to fight (#878).
+ *
  * `of(x, { participant, participants })` projects one of them: a live member, or a stand-in carrying a `level`.
  * `participant` says it fights the waves in between, `participants` how many fight each of them alongside it. A mon
  * whose EXP routing is not stated is projected on the bench share alone — a projection never flatters what it does
@@ -121,9 +125,10 @@ const inputsOf = (s, x) => [x?.id ?? null, heldStacks(s, x, "LUCKY_EGG"), heldSt
  * `inputs(x)` is what a memo key has to name to keep an answer for `x` honest; `expAll` is the one run-wide input of
  * the same kind.
  */
-export const levelProjection = (s, { from = 0, fight = null } = {}) => {
+export const levelProjection = (s, { from = 0, fight = null, cleared = false } = {}) => {
   const start = Math.floor(from) || 0;
-  const waves = fight == null ? 0 : Math.max(0, Math.floor(fight) - start);
+  const first = cleared === true ? start + 1 : start;
+  const waves = fight == null ? 0 : Math.max(0, Math.floor(fight) - first);
   const expAll = classStacks(s, "ExpShareModifier");
   const cap = levelCapAt(s, fight ?? start);
   const of = (x, { participant = false, participants = 1 } = {}) => {
@@ -135,7 +140,7 @@ export const levelProjection = (s, { from = 0, fight = null } = {}) => {
     const rate = share * egg * (x?.pokerus ? 1.5 : 1);
     const was = Math.max(1, Math.floor(x?.level ?? 1));
     let level = was, exp = expAt(was);
-    for (let w = start; w < start + waves; w++) {
+    for (let w = first; w < first + waves; w++) {
       const lid = levelCapAt(s, w);
       // A member at the cap takes no share, and the share it would have taken is lost rather than passed on to the
       // members below it (game-code.md §15).

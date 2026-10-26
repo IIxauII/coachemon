@@ -271,6 +271,12 @@
   W25 cleared  weakest 30/30 Boss W30  newcomer 30/30 Boss W30  fusion 30/30 Boss W30
   W26 ahead    weakest 30/30 Boss W30  newcomer 30/30 Boss W30  fusion 30/30 Boss W30
   W26 cleared  weakest 30/30 Boss W30  newcomer 30/30 Boss W30  fusion 30/30 Boss W30
+== a fixed battle on 25: the waves of EXP to the fight, by where the run stands
+  W24 ahead    newcomer 1  fusion 1
+  W25 ahead    newcomer 0  fusion 0
+  W25 cleared  newcomer 4  fusion 4
+  W26 ahead    newcomer 4  fusion 4
+  W26 cleared  newcomer 3  fusion 3
   unstated: this run read never said whether wave 25 is cleared: open it with readRun(s, fn, { cleared })
 == the full swap search over six members is inside the budget, cold and memoised
 judgment: ok

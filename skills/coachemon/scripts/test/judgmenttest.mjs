@@ -1387,6 +1387,22 @@ const rowOf = (id, level, moves, ability) => {
       assert.equal(x.roster?.wave ?? null, fight === 30 ? 30 : null, `W${wave}: ${k} reads the roster of W${fight} alone`);
     }
   }
+  // The waves of EXP each judgment projects the party and the newcomer over: a cleared wave's EXP is in their levels
+  // already, so W25 cleared walks 26–29 to W30, four waves, and never counts 25 again (#878).
+  console.log("== a fixed battle on 25: the waves of EXP to the fight, by where the run stands");
+  for (const [wave, cleared, waves] of [[24, false, 1], [25, false, 0], [25, true, 4], [26, false, 4], [26, true, 3]]) {
+    const j = read(wave, cleared, all);
+    const got = { newcomer: j.newcomer.newcomer?.projection?.waves, fusion: j.fusion.fused?.projection?.waves };
+    console.log(`  W${wave} ${cleared ? "cleared" : "ahead  "}  newcomer ${got.newcomer}  fusion ${got.fusion}`);
+    for (const [k, n] of Object.entries(got)) {
+      assert.equal(n, waves, `W${wave}, ${cleared ? "cleared" : "still to win"}: ${k} projects ${waves} waves of EXP`);
+    }
+  }
+  for (const [cleared, waves] of [[false, 35], [true, 34]]) {
+    assert.equal(read(25, cleared, run => judgeNewcomer(run, nc(), { fight: 60 })).newcomer.projection.waves, waves,
+      `a fight the caller names still starts the EXP after a cleared wave (${cleared ? "cleared" : "still to win"})`);
+  }
+
   assert.equal(read(25, false, run => teamVerdict(run, nc())).fight, 25,
     "the catch card in the fixed battle itself judges at that battle");
 

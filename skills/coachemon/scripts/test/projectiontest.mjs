@@ -109,6 +109,28 @@ const name = r => (r.evolved.length ? `${r.evolved.map(sp => sp.name).join("→"
   assert.equal(share.of(team[0], { participant: true, participants: 2 }).capped, false);
 }
 
+// ---- A cleared wave is behind the party: its EXP is in the levels already, so the walk starts on the wave after (#878)
+{
+  const team = party();
+  scene.modifiers = [expAll(2)];
+  const won = levelProjection(scene, { from: 62, fight: 70, cleared: true });
+  const next = levelProjection(scene, { from: 63, fight: 70 });
+  console.log("== W62 cleared, to the boss on 70");
+  row("fighting them alone", team.map(m => `${m.name} ${at(won, m, { participant: true })}`));
+  assert.equal(won.waves, 7, "63–69: the seven waves still to fight");
+  assert.equal(won.from, 62, "and the projection still stands on the wave the run stands on");
+  for (const opts of [{}, { participant: true }, { participant: true, participants: 2 }]) {
+    assert.deepEqual(team.map(m => won.of(m, opts).level), team.map(m => next.of(m, opts).level),
+      `cleared on 62 projects what standing on 63 does (${JSON.stringify(opts)})`);
+  }
+  for (const opts of [{ from: 62, fight: 70 }, { from: 62, fight: 70, cleared: false }]) {
+    assert.equal(levelProjection(scene, opts).waves, 8, `${JSON.stringify(opts)}: W62's own EXP is still to come`);
+  }
+  assert.equal(levelProjection(scene, { from: 69, fight: 70, cleared: true }).waves, 0,
+    "cleared on the wave before the boss, nothing is left between");
+  scene.modifiers = [];
+}
+
 // ---- A member at the cap stays there, whatever it holds and however much it fights
 {
   const capped = { name: "Sudowoodo", id: "185:56", level: 56, pokerus: true };
