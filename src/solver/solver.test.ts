@@ -145,3 +145,37 @@ test("a cancelled re-solve hands its warm pool back whole, whatever its jobs end
 
   assert.deepEqual(asked.done, [false]);
 });
+
+test("a solve given no discrepancy search goes straight to the beams (#934)", async () => {
+  const { lease } = warmLease();
+
+  const result = await solve({ ...RESOLVE, lds: null }, { clone: loadsT5, pools: async () => lease });
+
+  const reason = result.kind === "no_answer" ? result.reason : assert.fail(JSON.stringify(result));
+  assert.equal(reason.code === "no_win" && reason.lds, null);
+});
+
+test("a solve given a one-beam list runs only that beam (#934)", async () => {
+  const { lease } = warmLease();
+
+  const result = await solve({ ...RESOLVE, portfolio: [{ width: 1, ours: 0.5 }] }, { clone: loadsT5, pools: async () => lease });
+
+  const reason = result.kind === "no_answer" ? result.reason : assert.fail(JSON.stringify(result));
+  assert.deepEqual(reason.code === "no_win" && reason.beams.map(({ width, ours }) => ({ width, ours })), [{ width: 1, ours: 0.5 }]);
+});
+
+test("a solve given neither runs the discrepancy search, then every beam of the default list (#934)", async () => {
+  const { lease } = warmLease();
+
+  const result = await solve(RESOLVE, { clone: loadsT5, pools: async () => lease });
+
+  const reason = result.kind === "no_answer" ? result.reason : assert.fail(JSON.stringify(result));
+  assert.deepEqual(reason.code === "no_win" && [reason.lds?.ended, reason.beams.map(({ width, ours }) => ({ width, ours }))], [
+    "exhausted",
+    [
+      { width: 8, ours: 1 },
+      { width: 8, ours: 0.5 },
+      { width: 16, ours: 0.5 },
+    ],
+  ]);
+});
