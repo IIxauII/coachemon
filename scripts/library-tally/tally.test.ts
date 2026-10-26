@@ -50,8 +50,10 @@ test("a fight counts as won under a setting set where any of its solves under it
   assert.deepEqual(more.settings.budget, bigger.budget);
 });
 
+const QUIET = { dropped: {}, replays: { ran: 0, failed: {}, ms: 0 }, merged: 0, stalled: 0 };
+
 const byLds = (pass: number, spent: number, ms: number): Pick<SolveStatistics, "search"> => ({
-  search: { found: { stage: "lds", pass, spent }, stages: [{ stage: "lds", ended: "won", spent, ms }] },
+  search: { found: { stage: "lds", pass, spent }, stages: [{ stage: "lds", ended: "won", spent, ms }], ...QUIET },
 });
 
 /** The discrepancy search ran out of budget first; the beams' `ms` counts from when they started. */
@@ -62,6 +64,7 @@ const byBeam = (index: number, turn: number, spent: number, ms: number): Pick<So
       { stage: "lds", ended: "budget", spent: 3000, ms: 20_000 },
       ...[0, 1, 2].map(i => ({ stage: "beam" as const, index: i, ended: i === index ? ("won" as const) : ("stopped" as const), spent: 100, ms })),
     ],
+    ...QUIET,
   },
 });
 
@@ -71,7 +74,7 @@ test("each win counts toward the stage that found it, and an entry written befor
     solve(GORDIE_AGAIN, WON, byBeam(2, 7, 3_900, 10_000)),
     solve(ETERNATUS, WON, byBeam(2, 11, 4_200, 30_000)),
     solve(ETERNATUS, WON, { turn: 3 }),
-    solve(ETERNATUS, NO_WIN, { search: { found: null, stages: [] } }),
+    solve(ETERNATUS, NO_WIN, { search: { found: null, stages: [], ...QUIET } }),
   ]);
   assert.deepEqual(set.solves, { won: 4, of: 5 });
   assert.deepEqual(set.foundBy, [
@@ -87,7 +90,7 @@ test("turns and time to the first win read the win's own stage, after the discre
     solve(GORDIE_AGAIN, WON, byBeam(2, 7, 3_900, 10_000)),
     solve(ETERNATUS, WON, byBeam(0, 11, 4_200, 30_000)),
     solve(ETERNATUS, WON, { turn: 3 }),
-    solve(ETERNATUS, NO_WIN, { search: { found: null, stages: [] } }),
+    solve(ETERNATUS, NO_WIN, { search: { found: null, stages: [], ...QUIET } }),
   ]);
   assert.deepEqual(set.toWin, { wins: 3, turns: { median: 3_900, max: 4_200 }, ms: { median: 30_000, max: 50_000 } });
 });
