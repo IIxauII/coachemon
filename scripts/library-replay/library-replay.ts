@@ -19,32 +19,38 @@ export type Outcome =
   | { kind: "plays_differently"; checkpoint: number | null; missed: string }
   | { kind: "doesnt_load"; why: string };
 
-export type Line = { fight: string; turn: number; outcome: Outcome };
+export type OracleLineReplay = { fight: string; turn: number; outcome: Outcome };
 
 /** `stem` is a fight folder's `turn-<n>`: what that solve started from, and the oracle line it found. */
-export const replayLine = (stem: string, version: string, replay: Replay): Promise<Outcome> =>
-  replayRead(readLine(stem, version), version, replay);
+export const replayOracleLine = (stem: string, version: string, replay: Replay): Promise<Outcome> =>
+  replayRead(readOracleLine(stem, version), version, replay);
 
 async function replayRead(read: Read, version: string, replay: Replay): Promise<Outcome> {
   if ("why" in read) return { kind: "doesnt_load", why: read.why };
   const { given, script } = read;
   const result = await replay(given, script, carryTo(given, version));
   if (result.kind === "replayed") return { kind: "still_wins", turns: result.replay.steps.at(-1)?.turn ?? 0 };
-  if (PLAYED_OTHERWISE.has(result.reason.code)) return differently(result.reason);
-  return { kind: "doesnt_load", why: cause(result.reason).replace(/\.$/, "") };
+  const { reason } = result;
+  const onThePin = given.save.gameVersion === version;
+  if (PLAYED_OTHERWISE.has(reason.code) || (onThePin && !THE_CLONES.has(reason.code))) return differently(reason);
+  return { kind: "doesnt_load", why: causeOf(reason) };
 }
 
-/** As the re-check carries: a save from an older game through the game's own migration, and one from a newer never. */
 const carryTo = (given: Given, version: string): Carry => ({ carried: newerVersion(version, given.save.gameVersion) });
 
 /** The replays that loaded the fight and then played it otherwise than its oracle line. */
 const PLAYED_OTHERWISE: ReadonlySet<Reason["code"]> = new Set(["known_turn_missed", "illegal_step"]);
 
+/** A save already on the pin that fails to replay is a regression, unless the clone at the pin is what failed. */
+const THE_CLONES: ReadonlySet<Reason["code"]> = new Set(["no_clone", "clone_version", "version_mismatch", "not_rechecked"]);
+
+const causeOf = (reason: Reason) => cause(reason).replace(/\.$/, "");
+
 const messageOf = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 type Read = { given: Given; script: Script } | { why: string };
 
-function readLine(stem: string, version: string): Read {
+function readOracleLine(stem: string, version: string): Read {
   const name = path.basename(stem);
   let given: Given;
   try {
@@ -65,7 +71,7 @@ const AT_TURN = /^turn (\d+): /;
 
 function differently(reason: Reason): Outcome {
   if (reason.code !== "known_turn_missed") {
-    return { kind: "plays_differently", checkpoint: null, missed: cause(reason).replace(/\.$/, "") };
+    return { kind: "plays_differently", checkpoint: null, missed: causeOf(reason) };
   }
   const first = reason.misses.map(miss => AT_TURN.exec(miss)?.[1]).find(turn => turn !== undefined);
   if (first === undefined) return { kind: "plays_differently", checkpoint: null, missed: reason.misses.join("; ") };
@@ -74,7 +80,7 @@ function differently(reason: Reason): Outcome {
   return { kind: "plays_differently", checkpoint: Number(first), missed: missed.join("; ") };
 }
 
-const said = (outcome: Outcome, version: string): string => {
+const described = (outcome: Outcome, version: string): string => {
   switch (outcome.kind) {
     case "still_wins":
       return `still wins, won in ${outcome.turns} turns`;
@@ -99,13 +105,13 @@ function wonTurns(fight: string): number[] {
     .sort((a, b) => a - b);
 }
 
-/** A fight is kept when it is any of `fights`, by its folder or its fight's name, and on any of `waves`; unset keeps all. */
+/** A fight is selected when it is any of `fights`, by its folder or its fight's name, and on any of `waves`; unset keeps all. */
 export type Filter = { fights?: readonly string[]; waves?: readonly number[] };
 
 /** The recorder's `<seed>-w<wave>-<fight>`. */
 const FIGHT = /^.+-w(\d+)-([a-z0-9-]+)$/;
 
-function kept(fight: string, { fights, waves }: Filter): boolean {
+function selected(fight: string, { fights, waves }: Filter): boolean {
   const [, wave, name] = FIGHT.exec(fight) ?? [];
   if (fights?.length && !fights.some(f => f === fight || f === name)) return false;
   return !waves?.length || waves.includes(Number(wave));
@@ -118,12 +124,12 @@ export async function replayLibrary(
   replay: Replay,
   print: (line: string) => void = () => {},
   filter: Filter = {},
-): Promise<{ lines: Line[]; text: string }> {
+): Promise<{ oracleLines: OracleLineReplay[]; text: string }> {
   const found = readdirSync(folder)
     .sort()
-    .filter(fight => kept(fight, filter) && statSync(path.join(folder, fight)).isDirectory())
+    .filter(fight => selected(fight, filter) && statSync(path.join(folder, fight)).isDirectory())
     .flatMap(fight =>
-      wonTurns(path.join(folder, fight)).map(turn => ({ fight, turn, read: readLine(path.join(folder, fight, `turn-${turn}`), version) })),
+      wonTurns(path.join(folder, fight)).map(turn => ({ fight, turn, read: readOracleLine(path.join(folder, fight, `turn-${turn}`), version) })),
     );
   const text: string[] = [];
   const say = (line: string) => {
@@ -137,18 +143,18 @@ export async function replayLibrary(
     const from = read.given.save.gameVersion;
     carried.set(from, (carried.get(from) ?? 0) + 1);
   }
-  for (const [from, n] of carried) say(`library replay: carrying the ${from} saves of ${n} line${n === 1 ? "" : "s"} to ${version}`);
+  for (const [from, n] of carried) say(`library replay: carrying the ${from} saves of ${n} oracle line${n === 1 ? "" : "s"} to ${version}`);
 
-  const lines: Line[] = [];
+  const oracleLines: OracleLineReplay[] = [];
   for (const { fight, turn, read } of found) {
     const outcome = await replayRead(read, version, replay);
-    lines.push({ fight, turn, outcome });
-    say(`  ${fight} turn ${turn}: ${said(outcome, version)}`);
+    oracleLines.push({ fight, turn, outcome });
+    say(`  ${fight} turn ${turn}: ${described(outcome, version)}`);
   }
-  const count = (kind: Outcome["kind"]) => lines.filter(l => l.outcome.kind === kind).length;
+  const count = (kind: Outcome["kind"]) => oracleLines.filter(l => l.outcome.kind === kind).length;
   say(
     `library replay: still wins: ${count("still_wins")}, plays differently: ${count("plays_differently")}, ` +
       `doesn't load: ${count("doesnt_load")} (skipped)`,
   );
-  return { lines, text: text.join("\n") };
+  return { oracleLines, text: text.join("\n") };
 }
