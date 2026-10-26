@@ -48,6 +48,8 @@ export type SolveDeps = {
   progress?: (progress: Progress) => void;
   /** The dev's `oracle:battle --unchecked`: solve on a version the re-check hasn't passed. Never a player's (#665). */
   unchecked?: boolean;
+  /** The library benchmark's: carry an older save as the re-check does, whatever the live export's version. Never a player's (#950). */
+  carry?: Carry;
   /** The pool's size, sized for the machine unless given. */
   workers?: number;
   /**
@@ -77,12 +79,11 @@ export async function solve(input: SolveInput, deps: SolveDeps): Promise<SolveRe
 
 async function solving(
   input: SolveInput,
-  { clone, progress, unchecked = false, workers, pools = start => ownPool(start(clone)), signal }: SolveDeps & { workers: number },
+  { clone, progress, unchecked = false, carry = carryOf(input), workers, pools = start => ownPool(start(clone)), signal }: SolveDeps & { workers: number },
   report: SolveReport,
   clock: { now(): number },
 ): Promise<SolveResult> {
   const since = (start: number) => Math.round(clock.now() - start);
-  const carry = carryOf(input);
   let start = clock.now();
   const refused = refuse(input, unchecked ? passed(input.cloneVersion) : RECHECK, carry);
   report.startup.gateMs = since(start);

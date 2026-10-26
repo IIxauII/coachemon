@@ -42,6 +42,20 @@ test("a player's solve of a continued run carries its save, holding the scene to
   assert.deepEqual(JSON.parse(handed[0].input), { save: drayton.save, inputs: [], liveExport: continued.liveExport });
 });
 
+test("a dev's solve given a carry carries an older save whose live export is not on the clone's version, as the re-check does (#950)", async () => {
+  const handed: Parameters<Clone>[0][] = [];
+  const clone: Clone = async job => {
+    handed.push(job);
+    return { out: undefined };
+  };
+  const library = { ...continued, liveExport: drayton.liveExport };
+
+  const result = await solve(library, { clone, workers: 1, carry: { carried: true } });
+
+  assert.equal(result.kind === "no_answer" && result.reason.code, "harness_failed");
+  assert.deepEqual(JSON.parse(handed[0].input), { save: drayton.save, inputs: [], liveExport: drayton.liveExport });
+});
+
 const totals = (items: SessionSave["modifiers"]) => {
   const out: Record<string, number> = {};
   for (const { typeId, stackCount } of items ?? []) out[typeId] = (out[typeId] ?? 0) + stackCount;

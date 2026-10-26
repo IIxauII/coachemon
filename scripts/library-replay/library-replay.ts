@@ -111,7 +111,7 @@ export type Filter = { fights?: readonly string[]; waves?: readonly number[] };
 /** The recorder's `<seed>-w<wave>-<fight>`. */
 const FIGHT = /^.+-w(\d+)-([a-z0-9-]+)$/;
 
-function selected(fight: string, { fights, waves }: Filter): boolean {
+export function selected(fight: string, { fights, waves }: Filter): boolean {
   const [, wave, name] = FIGHT.exec(fight) ?? [];
   if (fights?.length && !fights.some(f => f === fight || f === name)) return false;
   return !waves?.length || waves.includes(Number(wave));

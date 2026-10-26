@@ -31,6 +31,8 @@ export type SolveStatistics = {
   portfolio: readonly Beam[];
   pluginVersion: string;
   gameVersion: string;
+  /** Set on a re-solve by `npm run library:benchmark`, naming the setting set it ran under; absent on a live solve. */
+  benchmark?: { set: string };
 } & Partial<SolveReport>;
 
 /** `progress` is the last line the solve reported before its cancel, `null` before any. */
@@ -95,13 +97,13 @@ export const withCapture =
     return result;
   };
 
-function endOf(result: SolveResult | undefined): SolveEnd | null {
+export function endOf(result: SolveResult | undefined): SolveEnd | null {
   if (result?.kind === "oracle_line") return { kind: "oracle_line" };
   if (result?.kind === "no_answer") return { kind: "no_answer", code: result.reason.code };
   return null;
 }
 
-function ranUnder(input: SolveInput, turn: number, recorder: Recorder): Omit<SolveStatistics, "ended"> {
+export function ranUnder(input: SolveInput, turn: number, recorder: Recorder): Omit<SolveStatistics, "ended"> {
   return {
     schema: 1,
     turn,

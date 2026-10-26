@@ -21,12 +21,15 @@ export type Summary = { fights: Count; solves: Count; foundBy: FoundBy[]; toWin:
 /** `wave` is null for a folder not named as the recorder names a fight, whose `trainer` is then the folder's name. */
 export type ByFight = Summary & { trainer: string; wave: number | null };
 
-export type SettingSet = Summary & { settings: Settings; byFight: ByFight[] };
+/** `benchmark` names the setting set a benchmark run's entries ran under, null for live solves. */
+export type SettingSet = Summary & { benchmark: string | null; settings: Settings; byFight: ByFight[] };
 
 export const NOT_RECORDED = "not recorded";
 
 export function tally(entries: readonly Entry[]): SettingSet[] {
-  return [...groups(entries, e => JSON.stringify(settingsOf(e.statistics)))].map(solves => ({
+  const ordered = [...entries.filter(e => !benchmarkOf(e)), ...entries.filter(benchmarkOf)];
+  return [...groups(ordered, e => JSON.stringify([benchmarkOf(e), settingsOf(e.statistics)]))].map(solves => ({
+    benchmark: benchmarkOf(solves[0]),
     settings: settingsOf(solves[0].statistics),
     ...summary(solves),
     byFight: [...groups(solves, e => JSON.stringify(foughtAt(e.fight)))]
@@ -34,6 +37,8 @@ export function tally(entries: readonly Entry[]): SettingSet[] {
       .sort((a, b) => (a.wave ?? Infinity) - (b.wave ?? Infinity) || a.trainer.localeCompare(b.trainer)),
   }));
 }
+
+const benchmarkOf = (e: Entry): string | null => e.statistics.benchmark?.set ?? null;
 
 const settingsOf = ({ budget, lds, portfolio }: Partial<SolveStatistics>): Settings => ({ budget, lds, portfolio });
 
@@ -116,7 +121,7 @@ function spread(values: readonly number[]): Spread {
 export function report(entries: readonly Entry[]): string {
   const sets = tally(entries);
   if (sets.length === 0) return "no statistics entries";
-  return sets.map(set => [`### ${settingsLine(set.settings)}`, ...summaryLines(set), "", ...fightTable(set.byFight)].join("\n")).join("\n\n");
+  return sets.map(set => [`### ${set.benchmark === null ? "live" : `benchmark "${set.benchmark}"`}: ${settingsLine(set.settings)}`, ...summaryLines(set), "", ...fightTable(set.byFight)].join("\n")).join("\n\n");
 }
 
 function settingsLine({ budget, lds, portfolio }: Settings): string {
