@@ -1,8 +1,8 @@
 /**
  * The developer's `COACHEMON_CAPTURE=1`: a solve keeps what it solved from, the wave-start save or a mid-fight augmented
  * export, and the oracle line it found, as the fight library's two files under the turn it started at, in that fight's
- * folder under the home, and appends a statistics entry there (#787, #936, #937, #938). Never a player's: unset, nothing
- * is written.
+ * folder under the home, and appends a statistics entry there (#787, #936, #937, #938, #940). Never a player's: unset,
+ * nothing is written.
  */
 import { appendFileSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -10,7 +10,8 @@ import { NAMES, TrainerVariant } from "../enums/generated.ts";
 import type { JobWork } from "../jobs.ts";
 import { PLUGIN_VERSION } from "../plugin-version.ts";
 import { type Script, WIN_SCRIPT } from "./script.ts";
-import { LDS, type Lds, PORTFOLIO } from "./search.ts";
+import { LDS, type Lds, PORTFOLIO, type SearchStatistics } from "./search.ts";
+import type { SolveWork } from "./solve-job.ts";
 import type { Beam, Budget, MonState, OracleLine, Reason, SessionSave, SolveInput, SolveResult } from "./solver.ts";
 
 export const FIRST_TURN = "turn-1";
@@ -28,6 +29,8 @@ export type SolveStatistics = {
   portfolio: readonly Beam[];
   pluginVersion: string;
   gameVersion: string;
+  /** Absent where the solve ended before it searched, or was cancelled first. */
+  search?: SearchStatistics;
 };
 
 /** `progress` is the last line the solve reported before its cancel, `null` before any. */
@@ -42,7 +45,7 @@ export type Recorder = { now: () => Date; pluginVersion: string };
 const RECORDER: Recorder = { now: () => new Date(), pluginVersion: PLUGIN_VERSION };
 
 export const withCapture =
-  (work: JobWork, home: string, env: NodeJS.ProcessEnv = process.env, recorder: Recorder = RECORDER): JobWork =>
+  (work: SolveWork, home: string, env: NodeJS.ProcessEnv = process.env, recorder: Recorder = RECORDER): JobWork =>
   async (args, ctl) => {
     const input = args.input as SolveInput;
     const turn = input.extras === undefined ? 1 : Number.isInteger(input.extras.turn) ? input.extras.turn : null;
@@ -52,6 +55,7 @@ export const withCapture =
     const { live, save, extras, liveExport, cloneVersion, budget } = input;
     keep(`${stem}.json`, { live, save, extras, liveExport, cloneVersion, budget });
     const ran = ranUnder(input, turn, recorder);
+    let search: SearchStatistics | undefined;
     let recorded = false;
     const record = (ended: () => SolveEnd | null) => {
       if (recorded) return;
@@ -60,8 +64,9 @@ export const withCapture =
         const end = ended();
         if (end === null) return;
         mkdirSync(fight, { recursive: true });
+        const entry: SolveStatistics = { ...ran, ended: end, ...(search && { search }) };
         // One write of one line, so two processes appending to one fight interleave whole entries.
-        appendFileSync(path.join(fight, STATISTICS), JSON.stringify({ ...ran, ended: end } satisfies SolveStatistics) + "\n");
+        appendFileSync(path.join(fight, STATISTICS), JSON.stringify(entry) + "\n");
       } catch {}
     };
     let progress: string | null = null;
@@ -74,6 +79,9 @@ export const withCapture =
       progress: (line: string) => {
         progress = line;
         ctl.progress(line);
+      },
+      statistics: (statistics: SearchStatistics) => {
+        search = statistics;
       },
     };
     let result: SolveResult;

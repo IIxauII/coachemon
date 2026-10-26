@@ -9,6 +9,7 @@ import { noAnswer, Unanswered } from "./no-answer.ts";
 import type { Input } from "./oracle-line.ts";
 import type { WorkerPool } from "./pool.ts";
 import type { Clone } from "./replay.ts";
+import type { SearchStatistics } from "./search.ts";
 import { DEFAULT_BUDGET, gate, solve } from "./solver.ts";
 
 const RECHECKED = reviewed.recheck.gameVersion;
@@ -178,4 +179,20 @@ test("a solve given neither runs the discrepancy search, then every beam of the 
       { width: 16, ours: 0.5 },
     ],
   ]);
+});
+
+test("a solve hands on how its search went, and answers as it would without (#940)", async () => {
+  const reported: SearchStatistics[] = [];
+
+  const result = await solve({ ...RESOLVE, lds: null, portfolio: [{ width: 1, ours: 0.5 }] }, {
+    clone: loadsT5,
+    pools: async () => warmLease().lease,
+    statistics: s => reported.push(s),
+  });
+
+  assert.equal(result.kind === "no_answer" && result.reason.code, "no_win");
+  assert.deepEqual(
+    reported.map(s => [s.found, s.stages.map(({ stage, ended, spent }) => ({ stage, ended, spent }))]),
+    [[null, [{ stage: "beam", ended: "emptied", spent: 1 }]]],
+  );
 });

@@ -56,6 +56,21 @@ export type Progress = { spent: number; budget: number };
 
 export type Found = { kind: "found"; inputs: readonly Input[]; replay: Replay };
 
+/**
+ * How one search went, its answer aside. `found` is null where no win replayed; its `spent` is every stage's turns
+ * played when the winning turn came back. A stage that never ran has no entry.
+ */
+export type SearchStatistics = { found: FoundBy | null; stages: readonly StageStatistics[] };
+
+/** `pass` is the most discrepancies the discrepancy search allowed; `turn` counts from where the solve started. */
+export type FoundBy = ({ stage: "lds"; pass: number } | { stage: "beam"; index: number; turn: number }) & { spent: number };
+
+/** `stopped`: still searching when the search ended, on another stage's win or a failure. */
+export type StageStatistics = (
+  | { stage: "lds"; ended: LdsEnd["ended"] | "won" | "stopped" }
+  | { stage: "beam"; index: number; ended: BeamEnd["ended"] | "won" | "stopped" }
+) & { spent: number; ms: number };
+
 type Validate = (inputs: readonly Input[]) => Promise<ReplayResult>;
 
 export type SearchInput = {
@@ -71,6 +86,10 @@ export type SearchInput = {
   /** How many of each field slot's own commands a double pairs up with the other's (`expandPruned`). */
   paired?: number;
   progress?: (progress: Progress) => void;
+  /** Called once, as the search ends, whatever it answers. */
+  statistics?: (statistics: SearchStatistics) => void;
+  /** Wall time in milliseconds. */
+  now?: () => number;
 };
 
 type Node = { path: readonly Action[]; at: Position; hist: readonly number[]; score: number };
@@ -87,9 +106,12 @@ type StageInput = {
   trail: Trail;
   paired: number;
   progress: (spent: number) => void;
+  now: () => number;
 };
 
 type Stage<End> = Found | NoAnswer | { kind: "ended"; end: End };
+
+type Staged<End> = { result: Stage<End>; stages: StageStatistics[]; found: FoundBy | null };
 
 type BeamRun = Beam & {
   index: number;
@@ -97,6 +119,7 @@ type BeamRun = Beam & {
   inFlight: number;
   outOfBudget: boolean;
   ended?: BeamEnd;
+  stage?: StageStatistics;
 };
 
 type Job = { beam: BeamRun; forkPoint: string; inputs: readonly Action[]; done: (children: Child[]) => void; fail: (e: Error) => void };
@@ -239,13 +262,21 @@ export async function search({
   portfolio = PORTFOLIO,
   paired = PAIRED,
   progress,
+  statistics,
+  now = () => performance.now(),
 }: SearchInput): Promise<Found | NoAnswer> {
   const trail: Trail = { unreplayed: [], dropped: 0, tried: new Set() };
   const total = (lds?.expansions ?? 0) + budget.expansions * portfolio.length;
+  const stages: StageStatistics[] = [];
+  const answer = <A extends Found | NoAnswer>(result: A, found: FoundBy | null = null): A => {
+    statistics?.({ found, stages });
+    return result;
+  };
   let ldsSpent = 0;
+  let ldsPlayed = 0;
   let ldsEnd: LdsEnd | null = null;
   if (lds) {
-    const ldsResult = await discrepancySearch(
+    const ran = await discrepancySearch(
       {
         root,
         pool,
@@ -253,33 +284,47 @@ export async function search({
         trail,
         paired,
         progress: spent => {
+          ldsPlayed = spent;
           ldsSpent = Math.min(spent, lds.expansions);
           progress?.({ spent: ldsSpent, budget: total });
         },
+        now,
       },
       lds,
       budget.turns,
     );
-    if (ldsResult.kind !== "ended") return ldsResult;
-    ldsEnd = ldsResult.end;
+    stages.push(...ran.stages);
+    if (ran.result.kind !== "ended") return answer(ran.result, ran.found);
+    ldsEnd = ran.result.end;
   }
-  const beamResult = await beams(
-    { root, pool, validate, trail, paired, progress: spent => progress?.({ spent: ldsSpent + spent, budget: total }) },
+  const ran = await beams(
+    { root, pool, validate, trail, paired, progress: spent => progress?.({ spent: ldsSpent + spent, budget: total }), now },
     budget,
     portfolio,
+    ldsPlayed,
   );
-  if (beamResult.kind !== "ended") return beamResult;
-  return noAnswer({ code: "no_win", lds: ldsEnd, beams: beamResult.end, unreplayed: trail.unreplayed, dropped: trail.dropped });
+  stages.push(...ran.stages);
+  if (ran.result.kind !== "ended") return answer(ran.result, ran.found);
+  return answer(noAnswer({ code: "no_win", lds: ldsEnd, beams: ran.result.end, unreplayed: trail.unreplayed, dropped: trail.dropped }));
 }
 
 /** One position expanded at a time, its actions spread over the pool. */
 async function discrepancySearch(
-  { root, pool, validate, trail, paired, progress }: StageInput,
+  { root, pool, validate, trail, paired, progress, now }: StageInput,
   lds: Lds,
   turns: number,
-): Promise<Stage<LdsEnd>> {
+): Promise<Staged<LdsEnd>> {
+  const started = now();
   let spent = 0;
   let k = 0;
+  const staged = (result: Stage<LdsEnd>): Staged<LdsEnd> => {
+    const ended = result.kind === "ended" ? result.end.ended : result.kind === "found" ? "won" : "stopped";
+    return {
+      result,
+      stages: [{ stage: "lds", ended, spent, ms: Math.round(now() - started) }],
+      found: result.kind === "found" ? { stage: "lds", pass: k, spent } : null,
+    };
+  };
 
   const play = async (node: Node, inputs: readonly Action[]): Promise<Expanded[]> => {
     const chunk = Math.max(1, Math.ceil(inputs.length / pool.size));
@@ -311,21 +356,26 @@ async function discrepancySearch(
   try {
     for (; k <= lds.discrepancies; k++) {
       const ended = await dive({ path: [], at: root, hist: [], score: 0 }, k, new Map());
-      if (ended) return ended;
+      if (ended) return staged(ended);
     }
-    return { kind: "ended", end: { ended: "exhausted", discrepancies: lds.discrepancies, expansions: spent } };
+    return staged({ kind: "ended", end: { ended: "exhausted", discrepancies: lds.discrepancies, expansions: spent } });
   } catch (e) {
-    if (e instanceof OutOfBudget) return { kind: "ended", end: { ended: "budget", discrepancies: k, expansions: spent } };
-    return failure(e);
+    if (e instanceof OutOfBudget) return staged({ kind: "ended", end: { ended: "budget", discrepancies: k, expansions: spent } });
+    return staged(failure(e));
   }
 }
 
-/** The pool serves the earliest beam in the portfolio with a job queued. */
+/**
+ * The pool serves the earliest beam in the portfolio with a job queued. `before` is the turns the discrepancy search
+ * played ahead of the beams.
+ */
 function beams(
-  { root, pool, validate, trail, paired, progress }: StageInput,
+  { root, pool, validate, trail, paired, progress, now }: StageInput,
   budget: Budget,
   portfolio: readonly Beam[],
-): Promise<Stage<BeamEnd[]>> {
+  before: number,
+): Promise<Staged<BeamEnd[]>> {
+  const started = now();
   return new Promise(resolve => {
     const runs: BeamRun[] = portfolio.map((beam, index) => ({
       ...beam,
@@ -339,11 +389,26 @@ function beams(
     let over = false;
     let validating: Promise<unknown> = Promise.resolve();
 
-    const finish = (result: Stage<BeamEnd[]>) => {
+    const stage = (beam: BeamRun, ended: Extract<StageStatistics, { stage: "beam" }>["ended"]): StageStatistics => ({
+      stage: "beam",
+      index: beam.index,
+      ended,
+      spent: beam.spent,
+      ms: Math.round(now() - started),
+    });
+
+    /** `by` is the beam whose win ended the search, on its turn, with every stage's turns played by then. */
+    const finish = (result: Stage<BeamEnd[]>, by?: { beam: BeamRun; turn: number; spent: number }) => {
       if (over) return;
       over = true;
       for (const job of queue.splice(0)) job.fail(new SearchOver());
-      resolve(result);
+      const found = by && result.kind === "found" ? by : null;
+      for (const beam of runs) beam.stage ??= stage(beam, beam === found?.beam ? "won" : "stopped");
+      resolve({
+        result,
+        stages: runs.map(b => b.stage as StageStatistics),
+        found: found && { stage: "beam", index: found.beam.index, turn: found.turn, spent: found.spent },
+      });
     };
     const failed = (e: unknown) => finish(failure(e));
 
@@ -403,6 +468,7 @@ function beams(
 
     const end = (beam: BeamRun, ended: BeamEnd["ended"], turn: number) => {
       beam.ended = { width: beam.width, ours: beam.ours, ended, turn, expansions: beam.spent };
+      beam.stage = stage(beam, ended);
       if (runs.every(b => b.ended)) finish({ kind: "ended", end: runs.map(b => b.ended as BeamEnd) });
     };
 
@@ -417,10 +483,11 @@ function beams(
           throw e;
         }
         if (over) return;
+        const spent = before + sum(runs.map(b => b.spent));
         const { wins, next, stalled } = scored(children, beam.ours, trail);
         for (const win of wins) {
           const ended = await replayed(win.path, replays, trail);
-          if (ended) return finish(ended);
+          if (ended) return finish(ended, { beam, turn, spent });
           if (over) return;
         }
         if (beam.outOfBudget) return end(beam, "budget", turn);

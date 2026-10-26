@@ -8,6 +8,7 @@ import { FightPool } from "./fight-pool.ts";
 import { noAnswer } from "./no-answer.ts";
 import type { WorkerPool } from "./pool.ts";
 import type { Clone, CloneRun, Progress, SolveDeps, SolveInput, SolveResult } from "./solver.ts";
+import type { SearchStatistics } from "./search.ts";
 import { solveJob } from "./solve-job.ts";
 
 const drayton = JSON.parse(readFileSync(new URL("./fixtures/drayton-w188.json", import.meta.url), "utf8"));
@@ -211,4 +212,22 @@ test("a solve job for another fight takes a pool of its own (#677)", async () =>
   await work({ input: INPUT }, control().ctl);
   await work({ input: { ...INPUT, live: { ...INPUT.live!, wave: INPUT.live!.wave + 1 } } }, control().ctl);
   assert.deepEqual(warm, [false, false]);
+});
+
+test("a solve job hands the search's statistics to whoever asked for them, and its progress line stays as it was (#940)", async () => {
+  const { ctl, lines } = control();
+  const reported: SearchStatistics[] = [];
+  const statistics: SearchStatistics = { found: null, stages: [{ stage: "beam", index: 0, ended: "emptied", spent: 12, ms: 40 }] };
+  const work = solveJob("/home/.coachemon", {
+    setUp: async () => SET_UP,
+    runIn: recordingClone().runIn,
+    solve: async (_input, deps: SolveDeps) => {
+      deps.statistics?.(statistics);
+      return LINE;
+    },
+  });
+
+  assert.deepEqual(await work({ input: INPUT }, { ...ctl, statistics: s => reported.push(s) }), LINE);
+  assert.deepEqual(reported, [statistics]);
+  assert.deepEqual(lines, ["loading the fight in the clone and starting the search's workers"]);
 });
