@@ -73,6 +73,8 @@ export async function solve(
       pool: { size: pool.size, expand: (forkPoint, inputs) => pool.expand(forkPoint, inputs, signal) },
       validate: inputs => replay(input, { inputs: [...inputs] }, clone, carry),
       budget: input.budget,
+      lds: input.lds,
+      portfolio: input.portfolio,
       progress: spent => progress?.({ ...spent, pool: pool.stats() }),
     });
     if (searched.kind === "no_answer") return unanswered(searched);
