@@ -1,8 +1,9 @@
-import type { JobControl, JobWork, Shorten } from "../jobs.ts";
+import type { JobControl, Shorten } from "../jobs.ts";
 import { type CloneSetup, setUpClone } from "./clone.ts";
 import type { FightPool } from "./fight-pool.ts";
 import type { Clone } from "./replay.ts";
 import { harnessIn } from "./run-in-clone.ts";
+import type { SearchStatistics } from "./search.ts";
 import { shortOracleLine } from "./short-oracle-line.ts";
 import { slowWorkersNote, solve, type SolveDeps, type SolveInput, type SolveResult } from "./solver.ts";
 
@@ -19,6 +20,10 @@ export type SolveJobDeps = {
   solve: (input: SolveInput, deps: SolveDeps) => Promise<SolveResult>;
 };
 
+export type SolveControl = JobControl & { statistics?: (statistics: SearchStatistics) => void };
+
+export type SolveWork = (args: Record<string, unknown>, ctl: SolveControl) => Promise<unknown>;
+
 const PLAYERS: SolveJobDeps = { setUp: setUpClone, runIn: dir => harnessIn(() => ({ clone: dir })), solve };
 
 /**
@@ -26,7 +31,7 @@ const PLAYERS: SolveJobDeps = { setUp: setUpClone, runIn: dir => harnessIn(() =>
  * of one fight plays on the pool it keeps warm, whose workers no one job's cancel stops (#677).
  */
 export const solveJob =
-  (home: string, deps: SolveJobDeps = PLAYERS, fights?: FightPool): JobWork =>
+  (home: string, deps: SolveJobDeps = PLAYERS, fights?: FightPool): SolveWork =>
   async (args, ctl) => {
     const setUp = await deps.setUp(home, ctl);
     if (setUp.kind !== "clone") return setUp;
@@ -37,6 +42,7 @@ export const solveJob =
     return deps.solve(input, {
       clone: stoppedBy(ctl.signal, clone),
       signal: ctl.signal,
+      statistics: ctl.statistics,
       ...(fights && { pools: start => fights.take(fight, () => start(clone)) }),
       progress: ({ spent, budget, pool }) => {
         const searched = `searched ${spent.toLocaleString("en")} of ${budget.toLocaleString("en")} turns`;

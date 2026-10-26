@@ -8,7 +8,7 @@ import { noAnswer, Unanswered } from "./no-answer.ts";
 import type { Input, NoAnswer, Reason, SolveResult } from "./oracle-line.ts";
 import { type Clone, replay } from "./replay.ts";
 import { isPool, type PoolStats, poolSize, startPool, type WorkerPool } from "./pool.ts";
-import { search, type Progress as Spent } from "./search.ts";
+import { search, type SearchStatistics, type Progress as Spent } from "./search.ts";
 import { type Checks, type NotStarted, startWorker, type Worker } from "./worker.ts";
 
 export type * from "./input.ts";
@@ -42,13 +42,23 @@ export type SolveDeps = {
   pools?: (start: (clone: Clone) => Promise<WorkerPool | NotStarted>) => Promise<Lease | NotStarted>;
   /** The solve's own: once it aborts, its jobs still queued on a pool the fight keeps warm end (#677). */
   signal?: AbortSignal;
+  /** How the search went, once it has ended; a solve that ends before it searches reports none. */
+  statistics?: (statistics: SearchStatistics) => void;
 };
 
 const BROKE_THE_POOL: ReadonlySet<Reason["code"]> = new Set(["no_clone", "workers_died", "harness_failed"]);
 
 export async function solve(
   input: SolveInput,
-  { clone, progress, unchecked = false, workers = poolSize(availableParallelism()), pools = start => ownPool(start(clone)), signal }: SolveDeps,
+  {
+    clone,
+    progress,
+    unchecked = false,
+    workers = poolSize(availableParallelism()),
+    pools = start => ownPool(start(clone)),
+    signal,
+    statistics,
+  }: SolveDeps,
 ): Promise<SolveResult> {
   const carry = carryOf(input);
   const refused = refuse(input, unchecked ? passed(input.cloneVersion) : RECHECK, carry);
@@ -76,6 +86,7 @@ export async function solve(
       lds: input.lds,
       portfolio: input.portfolio,
       progress: spent => progress?.({ ...spent, pool: pool.stats() }),
+      statistics,
     });
     if (searched.kind === "no_answer") return unanswered(searched);
     const { steps, receipt, luck } = searched.replay;

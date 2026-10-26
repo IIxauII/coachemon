@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { noAnswer } from "./no-answer.ts";
 import type { Beam, Input, Outcome, ReplayResult } from "./oracle-line.ts";
-import { type Action, type Child, type Lds, type Pool, type Position, type Progress, search } from "./search.ts";
+import { type Action, type Child, type Lds, type Pool, type Position, type Progress, type SearchStatistics, search } from "./search.ts";
 
 /**
  * What a move does from a path: our side's HP fraction and the foe's total HP lost so far, each side's stat stages if
@@ -791,4 +791,154 @@ test("a double pairs up a move that costs our partner HP for stat stages, as Bea
   const fromRoot = played.filter(p => p.startsWith("root: ")).map(p => p.slice(6));
   assert.ok(fromRoot.includes("BEAT_UP+B4"), "Beat Up is the slot's one command paired with the other's best");
   assert.ok(!fromRoot.includes("HYPER_VOICE+B4"), "the best hit on the foe is not");
+});
+
+/** Wall time that moves only when a test moves it. */
+function fakeClock() {
+  let at = 0;
+  return { now: () => at, advance: (ms: number) => void (at += ms) };
+}
+
+function reported() {
+  const got: SearchStatistics[] = [];
+  return { got, statistics: (s: SearchStatistics) => void got.push(s) };
+}
+
+test("a search whose discrepancy search runs out and whose second beam wins on turn 5 reports that, with each stage's turns, end and time (#940)", async () => {
+  // Weighing our HP at 0.5 prefers SLAM, whose every next move loses; at 1 it prefers PECK, which wins on the fifth.
+  const { root, pool } = tree(["SLAM", "PECK"], {
+    "": { SLAM: [0.5, 0.4], PECK: [0.1, 1] },
+    PECK: { PECK: [0.2, 1] },
+    "PECK PECK": { PECK: [0.3, 1] },
+    "PECK PECK PECK": { PECK: [0.4, 1] },
+    "PECK PECK PECK PECK": { PECK: "won" },
+  });
+  const clock = fakeClock();
+  const validate = async () => {
+    clock.advance(250);
+    return replayed("won");
+  };
+  const { got, statistics } = reported();
+
+  const result = await search({
+    root,
+    pool,
+    validate,
+    budget: BUDGET,
+    lds: { ours: 1, alternatives: 1, discrepancies: 0, expansions: 2 },
+    portfolio: NARROW,
+    now: clock.now,
+    statistics,
+  });
+
+  assert.equal(result.kind, "found");
+  assert.deepEqual(got, [
+    {
+      found: { stage: "beam", index: 1, turn: 5, spent: 2 + 4 + 10 },
+      stages: [
+        { stage: "lds", spent: 2, ended: "budget", ms: 0 },
+        { stage: "beam", index: 0, spent: 4, ended: "emptied", ms: 0 },
+        { stage: "beam", index: 1, spent: 10, ended: "won", ms: 250 },
+      ],
+    },
+  ]);
+});
+
+/** Each turn the pool plays takes 1 ms on `clock`. */
+const ticking = (inner: Pool, clock: ReturnType<typeof fakeClock>): Pool => ({
+  size: inner.size,
+  async expand(forkPoint, inputs) {
+    clock.advance(inputs.length);
+    return inner.expand(forkPoint, inputs);
+  },
+});
+
+test("a no answer's statistics carry each stage's turns, end and wall time, and no win (#940)", async () => {
+  const { root, pool } = tree(["SLAM", "PECK"], {
+    "": { SLAM: [0.5, 0.4], PECK: [0.1, 1] },
+    PECK: { PECK: [0.2, 1] },
+  });
+  const clock = fakeClock();
+  const { got, statistics } = reported();
+
+  const result = await search({
+    root,
+    pool: ticking(pool, clock),
+    validate: replaysAll().validate,
+    budget: BUDGET,
+    lds: DISCREPANT,
+    portfolio: [{ width: 1, ours: 1 }],
+    now: clock.now,
+    statistics,
+  });
+
+  assert.equal(result.kind, "no_answer");
+  // The discrepancy search plays 22 turns; the beam plays the root, PECK and PECK PECK, where every move loses.
+  assert.deepEqual(got, [
+    {
+      found: null,
+      stages: [
+        { stage: "lds", spent: 22, ended: "exhausted", ms: 22 },
+        { stage: "beam", index: 0, spent: 6, ended: "emptied", ms: 6 },
+      ],
+    },
+  ]);
+});
+
+test("a win the discrepancy search found names the pass it was found on and the turns played by then (#940)", async () => {
+  // PECK scores best at the root and loses on; SLAM, the second best, wins on the next turn.
+  const { root, pool } = tree(["SLAM", "PECK"], {
+    "": { SLAM: [0.5, 0.4], PECK: [0.1, 1] },
+    SLAM: { SLAM: "won" },
+  });
+  const clock = fakeClock();
+  const { got, statistics } = reported();
+
+  await search({ root, pool: ticking(pool, clock), validate: replaysAll().validate, budget: BUDGET, lds: DISCREPANT, now: clock.now, statistics });
+
+  // Two moves from each of the root and PECK on pass 0, then from the root, PECK and SLAM on pass 1.
+  assert.deepEqual(got, [{ found: { stage: "lds", pass: 1, spent: 10 }, stages: [{ stage: "lds", spent: 10, ended: "won", ms: 10 }] }]);
+});
+
+test("a beam still searching when another beam's win replays is stopped, with the turns it played by then (#940)", async () => {
+  // At our-HP weight 0.5 the first beam follows SLAM, which never ends; at 1 the second follows PECK to a win on turn 3.
+  const { root, pool } = fight(["SLAM", "PECK"], (path, move) => {
+    if (path.every(m => m === "SLAM")) return move === "SLAM" ? { foeLost: 0.5 + 0.01 * path.length, ours: 0.4 } : path.length === 0 ? { foeLost: 0.1, ours: 1 } : "lost";
+    if (move === "SLAM") return "lost";
+    return path.length === 2 ? "won" : { foeLost: 0.1 * (path.length + 1), ours: 1 };
+  });
+  const { got, statistics } = reported();
+
+  await search({ root, pool, validate: replaysAll().validate, budget: BUDGET, lds: null, portfolio: NARROW, now: fakeClock().now, statistics });
+
+  const [stats] = got;
+  assert.deepEqual(stats.found && [stats.found.stage, stats.found.stage === "beam" && [stats.found.index, stats.found.turn]], ["beam", [1, 3]]);
+  assert.deepEqual(stats.stages.map(s => [s.stage === "beam" && s.index, s.ended, s.ms]), [
+    [0, "stopped", 0],
+    [1, "won", 0],
+  ]);
+  assert.ok(stats.stages[0].spent > 0, "the stopped beam counts the turns it played");
+});
+
+test("a search a worker's failure ends still reports, every stage running then stopped (#940)", async () => {
+  const root: Position = { sig: "root", hp: { foes: [1], ours: [1] }, stages: { foes: [[]], ours: [[]] }, legal: [move("TACKLE")], forkPoint: "root" };
+  const pool: Pool = {
+    size: 1,
+    expand: async () => {
+      throw new Error("the worker exited");
+    },
+  };
+  const { got, statistics } = reported();
+
+  await search({ root, pool, validate: replaysAll().validate, budget: BUDGET, lds: null, portfolio: NARROW, now: fakeClock().now, statistics });
+
+  assert.deepEqual(got, [
+    {
+      found: null,
+      stages: [
+        { stage: "beam", index: 0, spent: 0, ended: "stopped", ms: 0 },
+        { stage: "beam", index: 1, spent: 0, ended: "stopped", ms: 0 },
+      ],
+    },
+  ]);
 });

@@ -7,6 +7,8 @@ import type { JobControl, JobWork } from "../jobs.ts";
 import { type Recorder, STATISTICS, withCapture } from "./capture.ts";
 import type { Input, MonState, OracleLine, SessionSave, SolveInput, SolveResult } from "./solver.ts";
 import { readScript } from "./solver.ts";
+import type { SearchStatistics } from "./search.ts";
+import type { SolveWork } from "./solve-job.ts";
 
 const ON = { COACHEMON_CAPTURE: "1" };
 
@@ -430,4 +432,34 @@ test("recording passes each progress line through as reported and hands back the
 
   assert.equal(result, answer);
   assert.deepEqual(lines, ["loading the fight in the clone and starting the search's workers", "searched 3,000 of 12,000 turns, slowly: 1 of 4 workers polls slowly"]);
+});
+
+test("a solve's entry carries how its search went, as the solve handed it on, and its answer is the solve's own (#940)", async () => {
+  const dir = home();
+  const search: SearchStatistics = {
+    found: { stage: "beam", index: 1, turn: 5, spent: 16 },
+    stages: [
+      { stage: "lds", ended: "budget", spent: 2, ms: 30 },
+      { stage: "beam", index: 0, ended: "emptied", spent: 4, ms: 55 },
+      { stage: "beam", index: 1, ended: "won", spent: 10, ms: 310 },
+    ],
+  };
+  const answer: SolveResult = { kind: "oracle_line", oracleLine: LINE };
+  const work: SolveWork = async (_args, { statistics }) => {
+    statistics?.(search);
+    return answer;
+  };
+
+  const result = await withCapture(work, dir, ON, recorder())({ input: t1() }, ctl());
+
+  assert.equal(result, answer);
+  assert.deepEqual((entries(dir) as Record<string, unknown>[]).map(e => [e.ended, e.search]), [[{ kind: "oracle_line" }, search]]);
+});
+
+test("a solve that never searched gets an entry with no search in it (#940)", async () => {
+  const dir = home();
+
+  await withCapture(solved(NONE), dir, ON, recorder())({ input: t1() }, ctl());
+
+  assert.equal("search" in (entries(dir)[0] as object), false);
 });
