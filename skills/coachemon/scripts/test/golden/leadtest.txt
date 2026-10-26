@@ -1,5 +1,7 @@
 == single: Charizard loses to Golem
 {"wave":45,"swaps":[{"out":{"name":"Charizard","slot":0,"icon":null,"s":-2},"in":{"name":"Swampert","slot":2,"icon":null,"s":2.9765625},"foe":"Golem"}],"confidence":"exact","missed":false}
+== single: Charizard with a copied Surf beats Golem
+quiet
 == wild single: Charizard loses to Golem
 {"wave":45,"swaps":[{"out":{"name":"Charizard","slot":0,"icon":null,"s":-2},"in":{"name":"Swampert","slot":2,"icon":null,"s":2.9765625},"foe":"Golem"}],"confidence":"exact","missed":false}
 == fainted slot 0: Typhlosion leads and loses

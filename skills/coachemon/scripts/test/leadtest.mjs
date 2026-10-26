@@ -68,6 +68,16 @@ const TRIO = () => [
   assert.ok(sw.in.s > 0, `the one leading instead wins it: ${sw.in.s}`);
 }
 
+// ---- A lead keeps a Transform or Mimic copy into the next wave, so it is judged with the copied moves (#865)
+{
+  const party = TRIO();
+  const copy = full(SP.swampert, 45, [MV.surf]).moveset;
+  party[0].getMoveset = () => copy;
+  const a = advise(party, preview([GOLEM]));
+  show("single: Charizard with a copied Surf beats Golem", a);
+  assert.equal(a, null, "no swap: the lead wins the opener with its copy");
+}
+
 // ---- A wild opener is judged like a trainer's
 {
   const a = advise(TRIO(), preview([GOLEM], { type: "wild" }));

@@ -120,6 +120,17 @@ const shown = x => x.map(o => `${o.name} ×${o.e} ${o.max}${o.pKo ? ` pKo ${o.pK
   assert.deepEqual(combatantOf({ mon: fed }).stats, [203, 150, 115, 100, 105, 122], "20 base HP of Protein, carried over");
 }
 
+// ---- A member with a copied moveset fights with the copy, and is judged with its own moves unless asked as it fights (#865)
+{
+  const mon = live("Garchomp", GARCHOMP, 50, [183, 150, 115, 100, 105, 122], { moves: [EARTHQUAKE] });
+  const copy = [pmOf(DRAGON_CLAW)];
+  mon.getMoveset = () => copy;
+  const foe = combatantOf({ species: SNORLAX, level: 50, moves: [BODY_SLAM], player: false });
+  assert.deepEqual(duel(mon, foe).map(o => o.name), ["Dragon Claw"], "the live member's moves are the battle moveset");
+  assert.deepEqual(duel(combatantOf({ mon }), foe).map(o => o.name), ["Earthquake"], "the combatant keeps the member's own");
+  assert.deepEqual(duel(combatantOf({ mon, battle: true }), foe).map(o => o.name), ["Dragon Claw"], "and fights with the copy under `battle`");
+}
+
 // ---- The same species at another level gets the game's stats for that level
 {
   const at = level => combatantOf({ species: GARCHOMP, level });

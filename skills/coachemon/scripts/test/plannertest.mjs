@@ -20,7 +20,7 @@ const stubTurn = ({ party, foes, live, double, trainer, arena, phase, fieldIndex
     trickRoom: !!arena?.getTag?.("TRICK_ROOM"),
     command: cmd && !cmd.skip ? { kind: cmd.command, cursor: cmd.cursor, move: cmd.move, targets: cmd.targets?.length ? cmd.targets : cmd.move?.targets ?? [], tera: preTurnCommands[0]?.command === Command.TERA } : null,
     outcome: (atk, def, pm, opts) => globalThis.__stub.outcome(atk, def, pm, opts),
-    statusMoves: (atk, def) => atk.moveset.filter(pm => pm.getMove().category === 2).map(pm => ({
+    statusMoves: (atk, def) => (atk.getMoveset?.() ?? atk.moveset).filter(pm => pm.getMove().category === 2).map(pm => ({
       pm, name: pm.getName(), type: TY[pm.getMove().type], cat: "status", acc: pm.getMove().accuracy > 0 ? pm.getMove().accuracy / 100 : 1,
       e: 1, priority: pm.getMove().priority ?? 0, bypassProtect: false, bounce: false, blocked: null,
     })),
@@ -488,6 +488,34 @@ Object.assign(TABLE, { "Garchomp>Earthquake>Snorlax": [[800], 1, 1] });
   const open = pOf(0), guarded = pOf(0.5);
   console.log(`== foe Protect: KO this turn ${open.toFixed(3)} → ${guarded.toFixed(3)}`);
   assert.ok(open > 0.99 && Math.abs(guarded - open / 2) < 1e-6, `Protect halves this turn's KO: ${open} → ${guarded}`);
+
+  // A foe fighting with a copied moveset (game-code.md §17): the AI's slot indexes `getMoveset()`, where Protect is
+  // slot 0, while its own moveset holds Body Slam there (#865).
+  const copied = protect => {
+    const foes = snorlax();
+    const own = foes[0].moveset;
+    foes[0].getMoveset = () => [own[1], own[0]];
+    const dist = () => [{ name: "Protect", type: "Normal", slot: 0, p: protect, score: 10, targets: [2] }, { name: "Body Slam", type: "Normal", slot: 1, p: 1 - protect, score: 10, targets: [0] }];
+    const { scene: s } = oneOnOne({ party, foes, dist });
+    return globalThis.__planner.exchange(s, party[0], party[0].moveset[0], foes[0]).turn1.we;
+  };
+  const viaCopy = copied(0.25);
+  console.log(`== foe Protect from a copied moveset: KO this turn ${viaCopy.toFixed(3)}`);
+  assert.ok(Math.abs(viaCopy - open * 0.75) < 1e-6, `the slot is read off the battle moveset, where it is Protect: ${viaCopy}`);
+}
+
+// ---- A transformed member is planned with the moves its fight menu offers, not its own (#865).
+Object.assign(TABLE, { "Ditto>Body Slam>Snorlax": [[120], 1, 1] });
+{
+  const copy = mon("Snorlax", 80, ["Normal"], [460, 150, 110, 80, 150, 40], [["Body Slam", "Normal", 85, "P"]], false).moveset;
+  const ditto = mon("Ditto", 80, ["Normal"], [460, 150, 110, 80, 150, 140], [["Transform", "Normal", 0, "X", 0, { id: 144 }]], true);
+  ditto.getMoveset = () => copy;
+  const foes = [mon("Snorlax", 80, ["Normal"], [460, 150, 110, 80, 150, 40], [["Body Slam", "Normal", 85, "P"]], true)];
+  const { field, scene } = oneOnOne({ party: [ditto], foes, dist: () => [{ name: "Body Slam", type: "Normal", slot: 0, p: 1, score: 10, targets: [0] }] });
+  const line = field.find(l => /^⚔ Ditto/.test(l)) ?? "";
+  console.log(`== transformed member (live)\n${line}`);
+  assert.match(line, /Body Slam → .*Snorlax/, `plans the copied Body Slam:\n${field.join("\n")}`);
+  assert.equal(globalThis.__planner.planOutcomes(scene, ditto, foes[0]).find(o => o.name === "Body Slam")?.pm, copy[0], "the row carries the copied moveset entry");
 }
 
 // A foe setting up: Snorlax picks Swords Dance half the time (+1 Atk a turn expected), so its later Body Slams hit
@@ -986,6 +1014,18 @@ const hydreigonSnorlax = () => [
   const slots = slotLines(field);
   assert.match(slots.find(l => /^⚔ Garchomp/.test(l)) ?? "", /Dragon Claw → Snorlax .*locked in/, `slot 0 keeps its command:\n${field.join("\n")}`);
   assert.match(slots.find(l => /^⚔ Lucario/.test(l)) ?? "", /Aura Sphere → Hydreigon/, "slot 1 is planned around it");
+}
+// ---- Slot 0's locked cursor indexes its copied moveset, not its own (#865).
+{
+  const party = doublesParty();
+  const copy = party[0].moveset;
+  party[0].moveset = mon("Garchomp", 80, ["Dragon", "Ground"], [270, 200, 150, 120, 130, 130], [["Earthquake", "Ground", 100, "P", 0, { target: 6 }]], true).moveset;
+  party[0].getMoveset = () => copy;
+  const turnCommands = [{ command: 0, cursor: 0, move: { move: 337, targets: [], useMode: 0 }, targets: [3] }];
+  const { field } = render({ party, foes: hydreigonSnorlax(), live: true, double: true, dist: aimAtBoth, switches: () => new Map(), fieldIndex: 1, turnCommands });
+  const chomp = slotLines(field).find(l => /^⚔ Garchomp/.test(l)) ?? "";
+  console.log(`== doubles slot 0 locked, copied moveset (live)\n${chomp}`);
+  assert.match(chomp, /Dragon Claw → Snorlax .*locked in/, `the cursor reads the battle moveset:\n${field.join("\n")}`);
 }
 
 // Slot 0 is locked into a spread move the foe standing in front of it can't be touched by (no Boomburst row for

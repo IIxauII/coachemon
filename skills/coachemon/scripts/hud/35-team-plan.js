@@ -1,7 +1,7 @@
 // A trainer fight played out exchange by exchange, with HP carried between them: what the one-turn planner can't see.
 // The enemy's choices are not branched, it never switches mid-exchange, and a double is planned one of ours against
 // one foe at a time.
-import { iconOf, squeezeDist } from "./01-core.js";
+import { battleMoveset, iconOf, squeezeDist } from "./01-core.js";
 import { berryPouch, hitOn, koCurve, koTurns, useOf } from "./10-damage.js";
 import { actionOrder, afterSteals, attemptsLost, berryTypesOf, berryWalk, entryOutcomes, hitsOn, koBoost, koBoostText, koStageFactor, laterUse, lessBerry, ourTeraTurn, overWalk, paralysed, sendInAt, sendInBase, stealCounts, stealRates, stealsBerry, stolenDraws, threatFrom, tokenOdds, tokenShift, unnervedBy } from "./30-planner.js";
 
@@ -90,11 +90,11 @@ const tpTheirMove = (turn, f, me) => {
 const tpFoeFirst = (turn, me, f, ours, theirs) => {
   if (turn.live && ours?.name) {
     try {
-      const a = me.moveset.find(pm => pm?.getName?.() === ours.name);
+      const a = battleMoveset(me).find(pm => pm?.getName?.() === ours.name);
       if (a) {
         const t = threatFrom(turn, f, me, a, { next: !me.isOnField?.() || !f.isOnField?.() });
         if (Number.isFinite(t?.first)) return t.first;
-        const b = theirs.name ? f.moveset.find(pm => pm?.getName?.() === theirs.name) : null;
+        const b = theirs.name ? battleMoveset(f).find(pm => pm?.getName?.() === theirs.name) : null;
         const p = b ? actionOrder(turn, me, a, f, b) : null;
         if (Number.isFinite(p)) return 1 - p;
       }

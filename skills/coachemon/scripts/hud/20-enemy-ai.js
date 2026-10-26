@@ -1,7 +1,7 @@
 // The enemy's choice read twice: the game's own `getNextMove` for this turn, and a re-implementation that gives every
 // outcome its chance, for later turns and as the exact call's oracle at a pin bump (game-code.md §6, #183). Calls game
 // code but never decides when that is allowed: 25-turn does, and `env` is its `sceneEnv`.
-import { SPREAD_TARGETS, TYPES, forcedRng, hasAttr, keepTurnData, sandbox, sandboxBreachCount, withPick } from "./01-core.js";
+import { SPREAD_TARGETS, TYPES, forcedRng, hasAttr, keepTurnData, movesetOf, sandbox, sandboxBreachCount, withPick } from "./01-core.js";
 
 // The AI skips their conditions (game-code.md §6).
 // @mirrors no-condition-check
@@ -13,7 +13,6 @@ const usableFor = (pm, e, ignorePp = false) => {
   const r = pm.isUsable(e, ignorePp, true);
   return Array.isArray(r) ? r[0] : !!r;
 };
-const movesetOf = e => (e.getMoveset?.() ?? e.moveset).filter(Boolean);
 
 // `getMoveTargets` as outcomes [{ targets, multiple, p }]: one per opponent for `RANDOM_NEAR_ENEMY`, which draws its
 // target (game-code.md §6).

@@ -28,7 +28,7 @@ export const leadAdvice = (run, preview) => {
   if (openers.some(o => !o.c) || allowed.length <= n) return null;
   const built = new Map();
   const scores = x => {
-    if (!built.has(x)) built.set(x, combatantOf({ mon: x.mon, hp: x.mon.hp }));
+    if (!built.has(x)) built.set(x, combatantOf({ mon: x.mon, hp: x.mon.hp, battle: true }));
     return openers.map(o => duel(run, built.get(x), o.c).s);
   };
   const top = ss => ss.reduce((b, s, i) => (s > ss[b] ? i : b), 0);

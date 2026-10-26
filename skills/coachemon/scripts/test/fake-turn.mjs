@@ -106,7 +106,7 @@ export const fakeTurn = (opts = {}) => {
       const dmg = hud()["10-damage"];
       const approx = () => (dmg ? dmg.approxOutcomes(approxEnv, atk, def) : []);
       if (!live) return approx();
-      const tabled = as(() => (outcomes ? outcomes(atk, def) : atk.moveset.map(pm => outcome(atk, def, pm, {})))).filter(Boolean);
+      const tabled = as(() => (outcomes ? outcomes(atk, def) : (atk.getMoveset?.() ?? atk.moveset).map(pm => outcome(atk, def, pm, {})))).filter(Boolean);
       return tabled.length ? tabled.map(mark) : approx();
     }),
     statusMoves: (atk, def) => as(() => statusMoves(atk, def)),
