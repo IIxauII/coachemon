@@ -1,25 +1,25 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { noAnswer } from "./no-answer.ts";
+import { noAnswer, Unanswered } from "./no-answer.ts";
 import type { Beam, Input, Outcome, ReplayResult } from "./oracle-line.ts";
 import { type Action, type Child, type Lds, type Pool, type Position, type Progress, type SearchStatistics, search } from "./search.ts";
 
 /**
  * What a move does from a path: our side's HP fraction and the foe's total HP lost so far, each side's stat stages if
- * any, or how the fight ends.
+ * any, how the fight ends, or why the harness dropped the turn.
  */
 type Play = (
   path: readonly string[],
   move: string,
-) => { foeLost: number; ours: number; stages?: { ours: number; foes: number } } | "won" | "lost";
+) => { foeLost: number; ours: number; stages?: { ours: number; foes: number } } | "won" | "lost" | { dropped: string };
 
 const move = (name: string): Input => ({ kind: "move", move: name as Input extends { move: infer M } ? M : never, tera: false });
 const named = (action: Action) => (action?.kind === "move" ? action.move : "wait");
 
-/** A one-on-one fight played by a table; every path is its own position, so nothing merges. */
-function fight(moves: readonly string[], play: Play) {
+/** A one-on-one fight played by a table; unless `sig` says otherwise, every path is its own position, so nothing merges. */
+function fight(moves: readonly string[], play: Play, sig = (path: readonly string[]) => path.join(" ")) {
   const position = (path: readonly string[], foeLost: number, ours: number, stages = { ours: 0, foes: 0 }): Position => ({
-    sig: path.join(" "),
+    sig: sig(path),
     hp: { foes: [1 - foeLost], ours: [ours] },
     stages: { foes: [[stages.foes]], ours: [[stages.ours]] },
     legal: moves.map(move),
@@ -34,6 +34,7 @@ function fight(moves: readonly string[], play: Play) {
       return inputs.map((input): Child => {
         const played = play(from, named(input));
         if (played === "won" || played === "lost") return { input, end: played, hp: { foes: [0], ours: [0.5] } };
+        if ("dropped" in played) return { input, end: "dropped", why: played.dropped };
         return { input, end: "on", at: position([...from, named(input)], played.foeLost, played.ours, played.stages) };
       });
     },
@@ -46,10 +47,10 @@ function fight(moves: readonly string[], play: Play) {
  * and the foe's stat stages; a move it doesn't name loses.
  */
 type Result = [number, number] | [number, number, number, number];
-const tree = (moves: readonly string[], table: Record<string, Record<string, Result | "won" | "lost">>) =>
+const tree = (moves: readonly string[], table: Record<string, Record<string, Result | "won" | "lost" | { dropped: string }>>) =>
   fight(moves, (path, name) => {
     const played = table[path.join(" ")]?.[name] ?? "lost";
-    if (typeof played === "string") return played;
+    if (typeof played === "string" || !Array.isArray(played)) return played;
     const [foeLost, ours, oursStages = 0, foesStages = 0] = played;
     return { foeLost, ours, stages: { ours: oursStages, foes: foesStages } };
   });
@@ -799,6 +800,8 @@ function fakeClock() {
   return { now: () => at, advance: (ms: number) => void (at += ms) };
 }
 
+const NOTHING_ELSE = { dropped: {}, replays: { ran: 0, failed: {}, ms: 0 }, merged: 0, stalled: 0 };
+
 function reported() {
   const got: SearchStatistics[] = [];
   return { got, statistics: (s: SearchStatistics) => void got.push(s) };
@@ -840,6 +843,10 @@ test("a search whose discrepancy search runs out and whose second beam wins on t
         { stage: "beam", index: 0, spent: 4, ended: "emptied", ms: 0 },
         { stage: "beam", index: 1, spent: 10, ended: "won", ms: 250 },
       ],
+      dropped: {},
+      replays: { ran: 1, failed: {}, ms: 250 },
+      merged: 0,
+      stalled: 0,
     },
   ]);
 });
@@ -881,6 +888,7 @@ test("a no answer's statistics carry each stage's turns, end and wall time, and 
         { stage: "lds", spent: 22, ended: "exhausted", ms: 22 },
         { stage: "beam", index: 0, spent: 6, ended: "emptied", ms: 6 },
       ],
+      ...NOTHING_ELSE,
     },
   ]);
 });
@@ -897,7 +905,14 @@ test("a win the discrepancy search found names the pass it was found on and the 
   await search({ root, pool: ticking(pool, clock), validate: replaysAll().validate, budget: BUDGET, lds: DISCREPANT, now: clock.now, statistics });
 
   // Two moves from each of the root and PECK on pass 0, then from the root, PECK and SLAM on pass 1.
-  assert.deepEqual(got, [{ found: { stage: "lds", pass: 1, spent: 10 }, stages: [{ stage: "lds", spent: 10, ended: "won", ms: 10 }] }]);
+  assert.deepEqual(got, [
+    {
+      found: { stage: "lds", pass: 1, spent: 10 },
+      stages: [{ stage: "lds", spent: 10, ended: "won", ms: 10 }],
+      ...NOTHING_ELSE,
+      replays: { ran: 1, failed: {}, ms: 0 },
+    },
+  ]);
 });
 
 test("a beam still searching when another beam's win replays is stopped, with the turns it played by then (#940)", async () => {
@@ -939,6 +954,95 @@ test("a search a worker's failure ends still reports, every stage running then s
         { stage: "beam", index: 0, spent: 0, ended: "stopped", ms: 0 },
         { stage: "beam", index: 1, spent: 0, ended: "stopped", ms: 0 },
       ],
+      ...NOTHING_ELSE,
     },
   ]);
+});
+
+test("a search where a win fails its replay once and a turn is dropped for a named reason reports exactly that (#941)", async () => {
+  // GROWL's turn is dropped at the root; TACKLE TACKLE wins but loses on replay, and TACKLE EMBER EMBER replays the win.
+  const { root, pool } = tree(["TACKLE", "EMBER", "GROWL"], {
+    "": { TACKLE: [0.5, 1], EMBER: [0.4, 1], GROWL: { dropped: "the turn timed out" } },
+    TACKLE: { TACKLE: "won", EMBER: [0.6, 1], GROWL: [0.5, 1] },
+    "TACKLE EMBER": { EMBER: "won" },
+  });
+  const clock = fakeClock();
+  const validate = async (inputs: readonly Input[]) => {
+    clock.advance(100);
+    return replayed(inputs.length === 2 ? "lost" : "won");
+  };
+  const { got, statistics } = reported();
+
+  const result = await search({ root, pool, validate, budget: BUDGET, lds: null, portfolio: [NARROW[0]], now: clock.now, statistics });
+
+  assert.deepEqual(result.kind === "found" && result.inputs.map(named), ["TACKLE", "EMBER", "EMBER"]);
+  assert.deepEqual(got, [
+    {
+      found: { stage: "beam", index: 0, turn: 3, spent: 9 },
+      stages: [{ stage: "beam", index: 0, spent: 9, ended: "won", ms: 200 }],
+      dropped: { "the turn timed out": 1 },
+      replays: { ran: 2, failed: { lost: 1 }, ms: 200 },
+      merged: 0,
+      stalled: 0,
+    },
+  ]);
+});
+
+test("a position reached by two paths counts as merged once each time (#941)", async () => {
+  // Both moves reach one position per turn, and both lose from the second.
+  const { root, pool } = fight(
+    ["SLAM", "PECK"],
+    path => (path.length < 2 ? { foeLost: 0.1 * (path.length + 1), ours: 1 } : "lost"),
+    path => String(path.length),
+  );
+  const { got, statistics } = reported();
+
+  await search({ root, pool, validate: replaysAll().validate, budget: BUDGET, lds: null, portfolio: [{ width: 2, ours: 1 }], now: fakeClock().now, statistics });
+
+  assert.deepEqual(got, [
+    { found: null, stages: [{ stage: "beam", index: 0, spent: 6, ended: "emptied", ms: 0 }], ...NOTHING_ELSE, merged: 2 },
+  ]);
+});
+
+test("each path cut for its foes losing no HP for 6 turns counts as stalled (#941)", async () => {
+  const { root, pool } = fight(["SPLASH", "GROWL"], () => ({ foeLost: 0.1, ours: 1 }));
+  const { got, statistics } = reported();
+
+  await search({ root, pool, validate: replaysAll().validate, budget: BUDGET, lds: null, portfolio: [NARROW[0]], now: fakeClock().now, statistics });
+
+  // Turn 7's two children are the first to have lost no more HP than six turns before.
+  assert.deepEqual(got, [
+    { found: null, stages: [{ stage: "beam", index: 0, spent: 14, ended: "stalled", ms: 0 }], ...NOTHING_ELSE, stalled: 2 },
+  ]);
+});
+
+test("failed replays count by reason code or outcome, and the no answer's dropped count still counts every drop (#941)", async () => {
+  const { root, pool } = tree(["TACKLE", "EMBER", "GROWL", "SPLASH", "HOWL"], {
+    "": { TACKLE: "won", EMBER: "won", GROWL: { dropped: "the turn timed out" }, SPLASH: { dropped: "the turn timed out" }, HOWL: { dropped: "the worker lost the fork point" } },
+  });
+  const validate = async (inputs: readonly Input[]) =>
+    named(inputs[0]) === "TACKLE" ? noAnswer({ code: "illegal_step", index: 0, turn: 1, why: "isn't offered", tried: inputs[0], legal: [] }) : replayed("open");
+  const { got, statistics } = reported();
+
+  const result = await search({ root, pool, validate, budget: BUDGET, lds: null, portfolio: [NARROW[0]], now: fakeClock().now, statistics });
+
+  assert.equal(result.kind === "no_answer" && result.reason.code === "no_win" && result.reason.dropped, 3);
+  assert.deepEqual(
+    got.map(s => [s.dropped, s.replays]),
+    [[{ "the turn timed out": 2, "the worker lost the fork point": 1 }, { ran: 2, failed: { illegal_step: 1, open: 1 }, ms: 0 }]],
+  );
+});
+
+test("a replay that throws counts as failed by the reason it carries, and its time still counts (#941)", async () => {
+  const { root, pool } = tree(["TACKLE"], { "": { TACKLE: "won" } });
+  const clock = fakeClock();
+  const validate = async (): Promise<ReplayResult> => {
+    clock.advance(40);
+    throw new Unanswered(noAnswer({ code: "scene_mismatch", differences: ["the foe's HP"] }));
+  };
+  const { got, statistics } = reported();
+
+  await search({ root, pool, validate, budget: BUDGET, lds: null, portfolio: [NARROW[0]], now: clock.now, statistics });
+
+  assert.deepEqual(got.map(s => s.replays), [{ ran: 1, failed: { scene_mismatch: 1 }, ms: 40 }]);
 });

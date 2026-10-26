@@ -58,9 +58,21 @@ export type Found = { kind: "found"; inputs: readonly Input[]; replay: Replay };
 
 /**
  * How one search went, its answer aside. `found` is null where no win replayed; its `spent` is every stage's turns
- * played when the winning turn came back. A stage that never ran has no entry.
+ * played when the winning turn came back. A stage that never ran has no entry. `dropped` counts the turns the harness
+ * couldn't play by its reason text, `merged` the positions kept once for sharing another's sig, and `stalled` the paths
+ * cut for their foes losing no HP.
  */
-export type SearchStatistics = { found: FoundBy | null; stages: readonly StageStatistics[] };
+export type SearchStatistics = {
+  found: FoundBy | null;
+  stages: readonly StageStatistics[];
+  dropped: Readonly<Record<string, number>>;
+  replays: ReplayStatistics;
+  merged: number;
+  stalled: number;
+};
+
+/** The confirming replays: `failed` counts the ones that didn't win by outcome (`lost`, `open`) or reason code. */
+export type ReplayStatistics = { ran: number; failed: Readonly<Record<string, number>>; ms: number };
 
 /** `pass` is the most discrepancies the discrepancy search allowed; `turn` counts from where the solve started. */
 export type FoundBy = ({ stage: "lds"; pass: number } | { stage: "beam"; index: number; turn: number }) & { spent: number };
@@ -96,8 +108,16 @@ type Node = { path: readonly Action[]; at: Position; hist: readonly number[]; sc
 
 type Expanded = { node: Node; child: Child };
 
-/** What every stage of one search adds to its "no answer", and the paths it has already sent to replay. */
-type Trail = { unreplayed: string[]; dropped: number; tried: Set<string> };
+/** What every stage of one search adds to its "no answer" and its statistics, and the paths it has already sent to replay. */
+type Trail = {
+  unreplayed: string[];
+  dropped: number;
+  tried: Set<string>;
+  drops: Map<string, number>;
+  replays: { ran: number; failed: Map<string, number>; ms: number };
+  merged: number;
+  stalled: number;
+};
 
 type StageInput = {
   root: Position;
@@ -131,6 +151,7 @@ class OutOfBudget extends Error {}
 const ENVIRONMENT_GONE = new Set<Reason["code"]>(["no_clone", "clone_version"]);
 
 const sum = (xs: readonly number[]) => xs.reduce((a, b) => a + b, 0);
+const tally = (counts: Map<string, number>, key: string) => counts.set(key, (counts.get(key) ?? 0) + 1);
 const parts = <T>(xs: readonly T[], size: number): T[][] => {
   const out: T[][] = [];
   for (let i = 0; i < xs.length; i += size) out.push(xs.slice(i, i + size));
@@ -208,7 +229,10 @@ function scored(children: readonly Expanded[], ours: number, trail: Trail) {
   let stalled = 0;
   for (const { node, child } of children) {
     const path = [...node.path, child.input];
-    if (child.end === "dropped") trail.dropped++;
+    if (child.end === "dropped") {
+      trail.dropped++;
+      tally(trail.drops, child.why);
+    }
     if (child.end === "won") wins.push({ path, oursLeft: sum(child.hp.ours) });
     if (child.end !== "on") continue;
     const lost = foeLost(child.at.hp);
@@ -219,8 +243,10 @@ function scored(children: readonly Expanded[], ours: number, trail: Trail) {
     }
     const score = worth(child.at, ours);
     const same = kept.get(child.at.sig);
+    if (same !== undefined) trail.merged++;
     if (same === undefined || score > same.score) kept.set(child.at.sig, { path, at: child.at, hist, score });
   }
+  trail.stalled += stalled;
   wins.sort((a, b) => b.oursLeft - a.oursLeft);
   return { wins, next: [...kept.values()].sort((a, b) => b.score - a.score), stalled };
 }
@@ -265,12 +291,43 @@ export async function search({
   statistics,
   now = () => performance.now(),
 }: SearchInput): Promise<Found | NoAnswer> {
-  const trail: Trail = { unreplayed: [], dropped: 0, tried: new Set() };
+  const trail: Trail = {
+    unreplayed: [],
+    dropped: 0,
+    tried: new Set(),
+    drops: new Map(),
+    replays: { ran: 0, failed: new Map(), ms: 0 },
+    merged: 0,
+    stalled: 0,
+  };
   const total = (lds?.expansions ?? 0) + budget.expansions * portfolio.length;
   const stages: StageStatistics[] = [];
   const answer = <A extends Found | NoAnswer>(result: A, found: FoundBy | null = null): A => {
-    statistics?.({ found, stages });
+    const { drops, replays, merged, stalled } = trail;
+    statistics?.({
+      found,
+      stages,
+      dropped: Object.fromEntries(drops),
+      replays: { ran: replays.ran, failed: Object.fromEntries(replays.failed), ms: Math.round(replays.ms) },
+      merged,
+      stalled,
+    });
     return result;
+  };
+  const timed: Validate = async inputs => {
+    const started = now();
+    trail.replays.ran++;
+    try {
+      const verdict = await validate(inputs);
+      const kind = verdict.kind === "replayed" ? verdict.replay.outcome : verdict.reason.code;
+      if (kind !== "won") tally(trail.replays.failed, kind);
+      return verdict;
+    } catch (e) {
+      tally(trail.replays.failed, e instanceof Unanswered ? e.answer.reason.code : "harness_failed");
+      throw e;
+    } finally {
+      trail.replays.ms += now() - started;
+    }
   };
   let ldsSpent = 0;
   let ldsPlayed = 0;
@@ -280,7 +337,7 @@ export async function search({
       {
         root,
         pool,
-        validate,
+        validate: timed,
         trail,
         paired,
         progress: spent => {
@@ -298,7 +355,7 @@ export async function search({
     ldsEnd = ran.result.end;
   }
   const ran = await beams(
-    { root, pool, validate, trail, paired, progress: spent => progress?.({ spent: ldsSpent + spent, budget: total }), now },
+    { root, pool, validate: timed, trail, paired, progress: spent => progress?.({ spent: ldsSpent + spent, budget: total }), now },
     budget,
     portfolio,
     ldsPlayed,

@@ -224,7 +224,14 @@ test("a solve job hands the solve's report, how its search went included, to who
     pool: null,
     turnTimes: null,
     cores: 8,
-    search: { found: null, stages: [{ stage: "beam", index: 0, ended: "emptied", spent: 12, ms: 40 }] },
+    search: {
+      found: null,
+      stages: [{ stage: "beam", index: 0, ended: "emptied", spent: 12, ms: 40 }],
+      dropped: {},
+      replays: { ran: 0, failed: {}, ms: 0 },
+      merged: 0,
+      stalled: 0,
+    },
   };
   const work = solveJob("/home/.coachemon", {
     setUp: async () => SET_UP,
