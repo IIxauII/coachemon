@@ -1,6 +1,6 @@
 // Everything about the live battle is the turn's (`25-turn.js`): this opens no sandbox and keeps no cache but
 // `turn.memo`. Against an approximate turn every answer still comes back, labelled `live: false`.
-import { ABILITY_IMMUNE, ABILITY_IMMUNE_FLAG, CONTACT_PUNISH, FIELD_TRAPS, MOVE_TRAPS, SPREAD_TARGETS, STATUS_FRAMES, TYPES, UNGROUNDED, abilitiesOf, effectiveness, hitsUngrounded, iconOf, isBerry, lessOneBerry, lumsHeld, moveHasFlag, squeezeDist, stackOf, stage, stat, typesOf, vs } from "./01-core.js";
+import { ABILITY_IMMUNE, ABILITY_IMMUNE_FLAG, CONTACT_PUNISH, FIELD_TRAPS, MOVE_TRAPS, SPREAD_TARGETS, STATUS_FRAMES, TYPES, UNGROUNDED, abilitiesOf, effectiveness, hitsUngrounded, iconOf, isBerry, lessOneBerry, battleMoveset, lumsHeld, moveHasFlag, movesetOf, squeezeDist, stackOf, stage, stat, typesOf, vs } from "./01-core.js";
 import { gameTables } from "./04-game-tables.js";
 import { moveTraits } from "./07-move-traits.js";
 import { addShare, healingCharm, koChanceAt, koCurve, koTurn, koTurns, rawMax, shares, useOf } from "./10-damage.js";
@@ -19,8 +19,9 @@ const hitCounts = o => {
 
 const protectChance = (turn, foe) => turn.memo(`protect:${foe.id}`, () => {
   if (!turn.live || !foe.isOnField?.()) return 0;
+  const moves = movesetOf(foe);
   return (turn.enemyAction(foe).moves ?? []).reduce((sum, d) => {
-    const pm = foe.moveset[d.slot] ?? foe.moveset.find(m => m?.getName() === d.name);
+    const pm = moves[d.slot] ?? moves.find(m => m.getName() === d.name);
     const mv = pm?.getMove?.();
     return sum + (mv && moveTraits(mv).protect ? d.p : 0);
   }, 0);
@@ -40,7 +41,7 @@ const AI_POINT = 0.25 / 6;
 // The damage module's records plus `pm` (the moveset entry), `dmg` (expected damage) and `benefit`: the enemy AI's
 // own step-7 score for our move against this target, either sign (game-code.md §6), 0 without game functions.
 export const planOutcomes = (turn, atk, def) => turn.memo(`o:${atk.id}>${def.id}`, () => {
-  const pmOf = name => atk.moveset.find(m => m?.getName() === name) ?? null;
+  const pmOf = name => battleMoveset(atk).find(m => m?.getName() === name) ?? null;
   const outs = turn.outcomes(atk, def);
   // The records, not `turn.live`: a live turn still falls back to the approximation for a move the game refuses to
   // price, and the rows claimed that as a live number (#130).
@@ -76,7 +77,7 @@ export const ourTeraTurn = (turn, me) => turn.memo(`ourTera:${me.id}`, () => tur
 
 const NO_MOVE_INFO = { priority: 0 };
 // The moveset entry behind a likely-move row.
-const rowMove = (foe, m) => m.o?.pm ?? foe.moveset.find(x => x?.getName() === m.name) ?? NO_MOVE_INFO;
+const rowMove = (foe, m) => m.o?.pm ?? battleMoveset(foe).find(x => x?.getName() === m.name) ?? NO_MOVE_INFO;
 // Quick Claw and Quick Draw (game-code.md §5).
 // @mirrors quick-chance
 const quickChance = (p, category) => {
@@ -194,7 +195,7 @@ const withFails = (turn, foe, me, now, rows) => {
   return rows.map(r => (!r.o && fails(r.name) ? { ...r, fails: true } : r));
 };
 
-const onceNames = foe => (foe.moveset ?? []).filter(pm => pm && moveTraits(pm.getMove()).once).map(pm => pm.getName());
+const onceNames = foe => movesetOf(foe).filter(pm => moveTraits(pm.getMove()).once).map(pm => pm.getName());
 // `turn` with `foe` `count` turns into its time on the field, which only a first-turn-only move reads (game-code.md
 // §5): `turn` itself where its own count reads the same, or `foe` has no such move.
 const atWaveTurn = (turn, foe, count) => {
@@ -215,7 +216,7 @@ const outcomesOn = (turn, at, foe, me, outs) => (at === turn ? outs : planOutcom
 
 // The moves a foe's own use fails later (#844, game-code.md §5): `{ name, type }`, the type it strips off the user, or
 // `{ name, delayed: true }`.
-const spendsOf = foe => (foe.moveset ?? []).flatMap(pm => {
+const spendsOf = foe => battleMoveset(foe).flatMap(pm => {
   const t = pm ? moveTraits(pm.getMove()) : null;
   return t?.removedType != null ? [{ name: pm.getName(), type: t.removedType }] : t?.delayed ? [{ name: pm.getName(), delayed: true }] : [];
 });
@@ -318,7 +319,7 @@ const spendChain = (turn, foe, me, { outs, moves, next, turns, onMe }) => {
 // A foe's lock still running: `left` uses, its queued one included (game-code.md §5).
 const lockOf = foe => {
   const tag = foe.getTag?.("FRENZY"), q = foe.getMoveQueue?.()?.[0];
-  const pm = tag && q ? foe.moveset?.find(m => m?.moveId === q.move) : null;
+  const pm = tag && q ? battleMoveset(foe).find(m => m?.moveId === q.move) : null;
   return pm ? { name: pm.getName(), left: Math.max(1, tag.turnCount ?? 1), targets: q.targets ?? [] } : null;
 };
 // A double's pick that Protects: its own duel's, writing no hypothesis (#876).
@@ -328,7 +329,7 @@ const protectedLast = me => {
   const last = me.getLastXMoves?.(1)?.[0];
   if (!last || last.result !== MoveResult.SUCCESS) return false;
   if (last.move === MoveId.QUICK_GUARD || last.move === MoveId.WIDE_GUARD) return true;
-  const mv = gameTables()?.moves?.[last.move] ?? (me.getMoveset?.() ?? me.moveset).find(pm => pm?.moveId === last.move)?.getMove();
+  const mv = gameTables()?.moves?.[last.move] ?? battleMoveset(me).find(pm => pm?.moveId === last.move)?.getMove();
   return !!mv && moveTraits(mv).protect;
 };
 
@@ -912,7 +913,7 @@ export const sendInBase = (turn, f, me) => {
   const v = turn.sendInScore(f, me);
   if (v != null) return { base: v, outspeed };
   // game-less-backed
-  const moves = (f.moveset ?? []).map(pm => pm?.getMove?.()).filter(mv => mv && mv.category !== MoveCategory.STATUS);
+  const moves = battleMoveset(f).map(pm => pm?.getMove?.()).filter(mv => mv && mv.category !== MoveCategory.STATUS);
   return turn.atEntry([f], () => {
     const atk = moves.length ? moves.reduce((t, mv) => t + effectiveness(TYPES[mv.type], me) * (typesOf(f).includes(TYPES[mv.type]) ? 1.5 : 1), 0) / moves.length : 1;
     const def = typesOf(me).reduce((x, t) => x / Math.max(effectiveness(t, f), 0.25), 1);
@@ -2026,7 +2027,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       // A slot already Protecting keeps its priced play and its note (#876), and a Tera'd one the attack it was priced on.
       if (a.locked || a.tera || !a.move || protecting(a) || !b.move?.pm || b.target == null || plan.payers.includes(a.me) || plan.payers.includes(b.me)) return;
       const alone = joint([b], plan.payers, mons, teraHyp);
-      const protect = a.me.moveset.find(pm => usablePm(pm) && moveTraits(pm.getMove()).protect);
+      const protect = battleMoveset(a.me).find(pm => usablePm(pm) && moveTraits(pm.getMove()).protect);
       if (protect && !protectedLast(a.me) && plan.joint.value - alone.value < 0.5) {
         const X = attackers.find(f => {
           const xi = active.indexOf(f);
@@ -2035,7 +2036,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
         });
         if (X) { out.set(a, { kind: "protect", pm: protect, note: `${b.me.name} KOs ${X.name} first` }); return; }
       }
-      const hh = a.me.moveset.find(pm => usablePm(pm) && (pm.getMove().id === MoveId.HELPING_HAND || pmName(pm) === "Helping Hand"));
+      const hh = battleMoveset(a.me).find(pm => usablePm(pm) && (pm.getMove().id === MoveId.HELPING_HAND || pmName(pm) === "Helping Hand"));
       if (!hh) return;
       const ts = b.target === "both" ? active.map((_, t) => t) : [b.target];
       let gain = 0, turned = null;
@@ -2258,7 +2259,8 @@ const lockedCommand = (turn, party, active, pair) => {
     return switchIn && party.includes(switchIn) ? { me, switchIn } : null;
   }
   if (cmd.kind !== Command.FIGHT) return null;
-  const pm = me.moveset[cmd.cursor] ?? me.moveset.find(m => m && m.moveId === cmd.move?.move) ?? null;
+  const moves = battleMoveset(me);
+  const pm = moves[cmd.cursor] ?? moves.find(m => m && m.moveId === cmd.move?.move) ?? null;
   const mv = pm?.getMove?.();
   const bi = cmd.targets[0];
   let target = null;

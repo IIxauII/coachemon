@@ -1,7 +1,7 @@
 // The one door between the coach engine and the live battle: `readTurn` decides once whether answers come from the
 // game's own code, opens the only sandbox, sets a predicted Tera, and hands callers a turn whose every answer is
 // memoised under one key. 10-damage and 20-enemy-ai know how to ask the game; this file decides when.
-import { TYPES, awaitingDecision, closeRead, effectiveness, lessOneBerry, openRead, sandbox, stat, typesOf } from "./01-core.js";
+import { TYPES, awaitingDecision, battleMoveset, closeRead, effectiveness, lessOneBerry, openRead, sandbox, stat, typesOf } from "./01-core.js";
 import { note } from "./01-meter.js";
 import { challengeOn, teraSpendable, waveKind } from "./03-calendar.js";
 import { moveTraits } from "./07-move-traits.js";
@@ -334,7 +334,7 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
   const turn = {
     live, key, facts,
     mon: p => memo("mon", p, () => monRecord(env, live, p)),
-    outcome: (atk, def, pm, opts = {}) => memo("outcome", `${atk.id}|${def.id}|${atk.moveset?.indexOf?.(pm)}|${pm?.getMove?.()?.id}|${!!opts.aiView}|${opts.crit}`,
+    outcome: (atk, def, pm, opts = {}) => memo("outcome", `${atk.id}|${def.id}|${battleMoveset(atk).indexOf(pm)}|${pm?.getMove?.()?.id}|${!!opts.aiView}|${opts.crit}`,
       () => (live ? asDamage(() => sceneOutcome(env, atk, def, pm, opts)) : approxOutcome(env, atk, def, pm))),
     outcomes: (atk, def) => memo("outcomes", `${atk.id}|${def.id}`,
       () => (live ? asDamage(() => sceneOutcomes(env, atk, def)) : approxOutcomes(env, atk, def))),

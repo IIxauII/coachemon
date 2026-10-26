@@ -250,6 +250,7 @@ export const combatantOf = (spec = {}) => {
   const powers = powerBoosts(held);
   const slots = Array.isArray(spec.moves)
     ? spec.moves.map(id => slotOf(id, tryDo(() => gameTables().moves))).filter(Boolean)
+    // The member's own moves, never a Transform or Mimic copy (game-code.md §17): a member is judged off the field.
     : (mon?.moveset ?? []).filter(Boolean);
   const moveset = powers.size ? slots.map(pm => boostSlot(pm, powers)) : slots;
   const bars = Math.max(0, Math.floor(spec.boss ?? mon?.bossSegments ?? 0));

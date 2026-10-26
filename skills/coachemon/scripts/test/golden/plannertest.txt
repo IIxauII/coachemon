@@ -66,6 +66,9 @@ Fight plan winnable
 == hazard: Stealth Rock (live)
 ⚔ Skarmory Rock Stealth Rock 4 to come · then Drill Peck
 == foe Protect: KO this turn 1.000 → 0.500
+== foe Protect from a copied moveset: KO this turn 0.750
+== transformed member (live)
+⚔ Ditto Normal Body Slam → Snorlax
 == foe setup: expected turns to KO Gallade 7.27 → 4.94
 == types: Soak first (live)
 ⚔ Primarina Water Soak → Golisopod pure Water · then Energy Ball
@@ -272,6 +275,8 @@ Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 5
 Fight plan steps approximate winnable
 ➜ 1.~ Lucario Fighting Aura Sphere → Hydreigon KO · 71% left
 ➜ 2.~ Lucario Fighting Aura Sphere → Snorlax KO · 32% left
+== doubles slot 0 locked, copied moveset (live)
+⚔ Garchomp Dragon Dragon Claw → Snorlax locked in
 == doubles slot 0 locked into a spread move one foe answers (live)
 ⚔ Garchomp Normal Boomburst → both locked in · Snorlax 2 hits
 ⚔ Lucario Fighting Aura Sphere → Hydreigon 2 hits
