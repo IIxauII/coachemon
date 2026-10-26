@@ -13,6 +13,8 @@ import { type Script, WIN_SCRIPT } from "./script.ts";
 import { LDS, type Lds, PORTFOLIO } from "./search.ts";
 import type { Beam, Budget, MonState, OracleLine, Reason, SessionSave, SolveInput, SolveResult } from "./solver.ts";
 
+export const FIGHTS = "fights";
+
 export const FIRST_TURN = "turn-1";
 
 export const STATISTICS = "statistics.jsonl";
@@ -47,7 +49,7 @@ export const withCapture =
     const input = args.input as SolveInput;
     const turn = input.extras === undefined ? 1 : Number.isInteger(input.extras.turn) ? input.extras.turn : null;
     if (env.COACHEMON_CAPTURE !== "1" || turn === null) return work(args, ctl);
-    const fight = path.join(home, "fights", fightKey(input.save));
+    const fight = path.join(home, FIGHTS, fightKey(input.save));
     const stem = path.join(fight, turn === 1 ? FIRST_TURN : `turn-${turn}`);
     const { live, save, extras, liveExport, cloneVersion, budget } = input;
     keep(`${stem}.json`, { live, save, extras, liveExport, cloneVersion, budget });
