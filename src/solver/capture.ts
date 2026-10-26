@@ -1,7 +1,7 @@
 /**
  * The developer's `COACHEMON_CAPTURE=1`: a solve keeps what it solved from, the wave-start save or a mid-fight augmented
- * export, and the oracle line it found, as a known fight's two files under the turn it started at, in that fight's folder
- * under the home (#787, #936, #937). Never a player's: unset, nothing is written.
+ * export, and the oracle line it found, as the fight library's two files under the turn it started at, in that fight's
+ * folder under the home (#787, #936, #937). Never a player's: unset, nothing is written.
  */
 import { mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
