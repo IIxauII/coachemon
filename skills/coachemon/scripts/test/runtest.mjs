@@ -62,6 +62,28 @@ const keyOf = s => readRun(s, run => run.key);
   console.log(`builds ${builds}`);
 }
 
+// ---- The exact memo: held by its own key across run keys, the sixteen last asked kept (#922).
+{
+  let builds = 0;
+  const ask = (s, k) => readRun(s, run => run.memoExact("preview", k, () => ({ built: ++builds })));
+  const first = ask(scene(), "a");
+  assert.equal(ask(scene({ getPlayerParty: () => [mon(1, { level: 50 })] }), "a"), first, "a moved run key is still the memo");
+  for (let i = 0; i < 15; i++) ask(scene(), `k${i}`);
+  assert.equal(ask(scene(), "a"), first, "asking again keeps it among the last sixteen");
+  for (let i = 15; i < 31; i++) ask(scene(), `k${i}`);
+  assert.notEqual(ask(scene(), "a"), first, "sixteen others later, it is gone");
+  let tries = 0;
+  const fails = s => readRun(s, run => run.memoExact("x", 1, () => { tries++; throw new Error("no game"); }));
+  assert.deepEqual(fails(scene()), { unavailable: "x: no game" });
+  fails(scene());
+  assert.equal(tries, 1, "an unavailable answer is held for its run key");
+  fails(scene({ getPlayerParty: () => [mon(1, { level: 50 })] }));
+  assert.equal(tries, 2, "and asked again under another");
+  const held = readRun(scene(), run => [run.held("audit", "k"), run.memo("audit", "k", () => "built"), run.held("audit", "k")]);
+  assert.deepEqual(held, [undefined, "built", "built"], "held reads the run key's memo and builds nothing");
+  console.log(`exact builds ${builds}`);
+}
+
 // ---- Unavailable: a build that throws is an answer with a reason, kept like any other.
 {
   let tries = 0;

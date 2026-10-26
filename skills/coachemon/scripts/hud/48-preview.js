@@ -262,23 +262,95 @@ export const previewCheck = s => {
 export const previewStats = () => ({ ...stats, hit: { ...stats.hit }, miss: { ...stats.miss } });
 const everMissed = field => stats.miss[field] > 0;
 
-// Memoised by the wave alone, so every other input the replay reads must be in the run key. A replay that throws
-// comes back as the run read's `{ unavailable }`.
-export const previewFor = (run, w) => {
+// The replay key (#520): what `replay` reads of the live run. The base is read on every wave and decides the wave's
+// kind, so the base's first replay names the part that follows it.
+const classOf = m => m?.constructor?.name ?? null;
+const stacksOf = (mods, cls) => (mods ?? []).filter(m => classOf(m) === cls)
+  .reduce((t, m) => t + (tryDo(() => m.getStackCount(), m.stackCount ?? 1) ?? 1), 0);
+const EGG_PHASES = ["EggLapsePhase", "EggHatchPhase"];
+const baseKey = (s, w) => {
+  const me = s.mysteryEncounterSaveData;
+  return [s.seed, s.currentBattle?.waveIndex ?? null, w, s.arena?.biomeId ?? null, s.arena?.lastTimeOfDay ?? null,
+    (me?.encounteredEvents ?? []).length, me?.encounterSpawnChance ?? null,
+    tryDo(() => gameEvents().activeEvent()?.name),
+    stacksOf(s.modifiers, "HiddenAbilityRateBoosterModifier"),
+    (s.enemyModifiers ?? []).filter(m => classOf(m) === "EnemyFusionChanceModifier").map(m => [m.chance ?? null, stacksOf([m], classOf(m))]),
+    EGG_PHASES.includes(tryDo(() => s.phaseManager.getCurrentPhase().phaseName))];
+};
+
+const DOUBLE_ATTR = "DoubleBattleChanceAbAttr";
+// The double chance's ability gate (game-code.md §0, §16).
+const doubleApplications = p => {
+  const own = tryDo(() => p.getAbility());
+  if (typeof own?.hasAttr !== "function") return tryDo(() => p.hasAbilityWithAttr(DOUBLE_ATTR), false) ? 1 : 0;
+  const passive = tryDo(() => (p.hasPassive() ? p.getPassiveAbility() : null));
+  return (tryDo(() => p.canApplyAbility(false) && own.hasAttr(DOUBLE_ATTR), false) ? 1 : 0)
+    + (passive && passive.id !== own.id && tryDo(() => p.canApplyAbility(true) && passive.hasAttr(DOUBLE_ATTR), false) ? 1 : 0);
+};
+// Past three divisions every double chance draws alike (game-code.md §16, #520).
+const doubleKey = s => {
+  const field = tryDo(() => s.getPlayerField(), null) ?? tryDo(() => s.getPlayerParty().filter(Boolean).slice(0, 1), []);
+  const lures = (s.modifiers ?? []).filter(m => classOf(m) === "DoubleBattleChanceBoosterModifier").length;
+  return Math.min(3, lures + field.reduce((t, p) => t + doubleApplications(p), 0));
+};
+
+// The encounter-level money requirements (#520).
+// @mirrors me-money-multipliers
+const ME_MONEY = [1.5, 1.75, 2, 4];
+// One entry per member, in no order, covering every encounter's primary requirement: the count that qualifies is what
+// draws, and a count per reason misses a member trading one reason to qualify for another.
+const meMember = p => JSON.stringify([
+  (r => r >= 0.51 && r <= 1)(tryDo(() => p.getHpRatio(), (p.hp ?? 0) / (tryDo(() => p.getMaxHp(), 1) || 1))),
+  tryDo(() => p.isOfType(PokemonType.BUG, { includeTeraType: false }), false),
+  (tryDo(() => p.getHeldItems(), []) ?? []).map(it => JSON.stringify([classOf(it), it.type?.moveType ?? null, !!it.isTransferable])).sort(),
+]);
+const battleAt = (s, w) => Object.create(s.currentBattle, { waveIndex: { value: w } });
+const KIND_KEY = {
+  trainer: s => [doubleKey(s), !!s.currentBattle?.double],
+  wild: (s, w, party) => [doubleKey(s), partyLuck(party, s, gameEvents()), stacksOf(s.modifiers, "ShinyRateBoosterModifier"), hasBugNet(s)],
+  me: (s, w, party) => [
+    ME_MONEY.filter(m => tryDo(() => withBattle(s, battleAt(s, w), () => s.getWaveMoneyAmount(m)), Infinity) <= (s.money ?? 0)).length,
+    stacksOf(s.modifiers, "BerryModifier") >= 6,
+    Math.min(4, party.filter(p => tryDo(() => p.isAllowedInBattle(), true)).length),
+    party.map(meMember).sort(),
+  ],
+};
+
+const buildModel = (s, w, party) => {
+  try { return { kind: "preview", ...quiet(() => replay(s, w, party)) }; } catch (e) { return { unavailable: `preview: ${e?.message ?? e}` }; }
+};
+// `missed` is the tally's as it stands: a build the key holds outlives the misses scored after it (#520).
+const marked = new WeakMap();
+const withMissed = value => {
+  const missed = FIELDS.filter(f => everMissed(f) && value.confidence?.[f]);
+  const was = marked.get(value);
+  if (was && was.missed.join() === missed.join()) return was;
+  const model = { ...value, missed };
+  marked.set(value, model);
+  return model;
+};
+
+// `key` is the replay key the model is held under, null where nothing was replayed.
+// @only 49-ahead: previewRead
+export const previewRead = (run, w) => {
   const s = run.scene;
-  if (!s?.currentBattle || w == null || w < 1) return null;
+  if (!s?.currentBattle || w == null || w < 1) return { key: null, model: null };
   const missing = NEEDED.filter(k => typeof s[k] !== "function");
   if (!hasSpeciesRoll(s)) missing.push("randomSpecies");
   if (missing.length || typeof s.gameMode?.isFixedBattle !== "function" || !s.seed) {
-    return { kind: "preview", wave: w, unavailable: missing[0] ? `the live build has no ${missing[0]}` : "no run seed" };
+    return { key: null, model: { kind: "preview", wave: w, unavailable: missing[0] ? `the live build has no ${missing[0]}` : "no run seed" } };
   }
-  const value = run.memo("preview", w, () => {
-    const model = { kind: "preview", ...quiet(() => replay(s, w, run.facts.party)) };
-    model.missed = FIELDS.filter(f => everMissed(f) && model.confidence?.[f]);
-    return model;
-  });
-  return value.kind ? value : { kind: "preview", wave: w, unavailable: value.unavailable };
+  const party = run.facts.party;
+  const base = JSON.stringify(baseKey(s, w));
+  let model = null;
+  const build = () => (model ??= buildModel(s, w, party));
+  const read = run.memoExact("preview-kind", base, () => (m => m.type ?? m)(build()));
+  const kind = typeof read === "string" ? read : null;
+  const key = JSON.stringify([base, kind, KIND_KEY[kind]?.(s, w, party) ?? null]);
+  const value = run.memoExact("preview", key, build);
+  return { key, model: value.kind ? withMissed(value) : { kind: "preview", wave: w, unavailable: value.unavailable } };
 };
+export const previewFor = (run, w) => previewRead(run, w).model;
 export const previewNext = run => previewFor(run, run.facts.wave + 1);
 
 const CONFIDENCE_MARK = { exact: "", replay: "~", estimate: "≈" };

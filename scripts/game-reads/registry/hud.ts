@@ -15,6 +15,7 @@ export const HUD: Area = {
     { name: "abilityHidden", kind: "field", at: ["src/data/pokemon-species.ts#PokemonSpeciesForm.abilityHidden"] },
     { name: "abilityIndex", kind: "field", at: ["src/field/pokemon.ts#Pokemon.abilityIndex"] },
     { name: "acc", kind: "field", at: ["src/ui/containers/move-info-overlay.ts#MoveInfoOverlay.acc"] },
+    { name: "activeEvent", kind: "method", at: ["src/timed-event-manager.ts#TimedEventManager.activeEvent"] },
     { name: "actualFps", kind: "field", at: [], from: "phaser", note: "Phaser.Core.TimeStep (game.loop)" },
     {
       name: "addedType",
@@ -936,6 +937,7 @@ export const HUD: Area = {
       kind: "field",
       at: ["src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.lastStarterId"],
     },
+    { name: "lastTimeOfDay", kind: "field", at: ["src/field/arena.ts#Arena.lastTimeOfDay"] },
     { name: "layers", kind: "field", at: ["src/data/arena-tag.ts#EntryHazardTag.layers"] },
     {
       name: "legendary",
@@ -1554,6 +1556,8 @@ export const HUD: Area = {
     { name: "width", kind: "field", at: [], from: "ours", note: "DOM style.width on our panel" },
     { name: "x", kind: "field", at: [], from: "ours", note: "our scored-hit rows ({ x })" },
     { name: "CheckSwitchPhase", kind: "phase", at: ["src/phases/check-switch-phase.ts#CheckSwitchPhase"] },
+    { name: "EggHatchPhase", kind: "phase", at: ["src/phases/egg-hatch-phase.ts#EggHatchPhase"] },
+    { name: "EggLapsePhase", kind: "phase", at: ["src/phases/egg-lapse-phase.ts#EggLapsePhase"] },
     { name: "LearnMovePhase", kind: "phase", at: ["src/phases/learn-move-phase.ts#LearnMovePhase"] },
     {
       name: "MysteryEncounterPhase",
@@ -2544,6 +2548,22 @@ export const HUD: Area = {
     },
     { ours: "skills/coachemon/scripts/hud/48-preview.js#rand-seed-int", of: ["src/utils/common.ts#randSeedInt"] },
     { ours: "skills/coachemon/scripts/hud/48-preview.js#wave-seed-of", of: ["src/utils/common.ts#shiftCharCodes"] },
+    {
+      ours: "skills/coachemon/scripts/hud/48-preview.js#me-money-multipliers",
+      of: [
+        "src/data/mystery-encounters/encounters/delibirdy-encounter.ts#DelibirdyEncounter",
+        "src/data/mystery-encounters/encounters/delibirdy-encounter.ts#DELIBIRDY_MONEY_PRICE_MULTIPLIER",
+        "src/data/mystery-encounters/encounters/fun-and-games-encounter.ts#FunAndGamesEncounter",
+        "src/data/mystery-encounters/encounters/safari-zone-encounter.ts#SafariZoneEncounter",
+        "src/data/mystery-encounters/encounters/safari-zone-encounter.ts#SAFARI_MONEY_MULTIPLIER",
+        "src/data/mystery-encounters/encounters/shady-vitamin-dealer-encounter.ts#ShadyVitaminDealerEncounter",
+        "src/data/mystery-encounters/encounters/shady-vitamin-dealer-encounter.ts#VITAMIN_DEALER_CHEAP_PRICE_MULTIPLIER",
+        "src/data/mystery-encounters/encounters/teleporting-hijinks-encounter.ts#TeleportingHijinksEncounter",
+        "src/data/mystery-encounters/encounters/teleporting-hijinks-encounter.ts#MONEY_COST_MULTIPLIER",
+        "src/data/mystery-encounters/encounters/the-pokemon-salesman-encounter.ts#ThePokemonSalesmanEncounter",
+        "src/data/mystery-encounters/encounters/the-pokemon-salesman-encounter.ts#MAX_POKEMON_PRICE_MULTIPLIER",
+      ],
+    },
     {
       ours: "skills/coachemon/scripts/hud/49-ahead.js#double-abilities",
       of: [

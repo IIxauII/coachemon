@@ -25,6 +25,22 @@ test("a shop's first draw, the first after a reroll and the first after a buy ar
     "a reroll's state is drawn on its first refresh that drew, not on the first refresh that saw it");
 });
 
+test("each shop visit has one first draw, money changed or not (#922)", () => {
+  const draws = shopDraws([
+    win(3, [tick(1, 3, { kind: "battle", drew: true }), tick(2, 3, { drew: true, shop: shop(0, 900) })]),
+    win(4, [tick(3, 4, { kind: "battle", drew: true }), tick(4, 4, { drew: true, shop: shop(0, 900) })]),
+    win(5, [
+      tick(5, 5, { drew: true, shop: shop(0, 900) }),
+      tick(6, 5, { kind: "learn", drew: true }),
+      tick(7, 5, { drew: true, shop: shop(0, 900) }),
+      tick(8, 5, { kind: "battle", drew: true }),
+      tick(9, 5, { drew: true, shop: shop(0, 900) }),
+    ]),
+  ]);
+  assert.deepEqual(draws.map(d => [d.wave, d.after, d.ms]), [[3, "first", 2], [4, "first", 4], [5, "first", 5], [5, "first", 9]],
+    "a learn card from a TM stays in the visit; a battle between (a retry) starts a new one");
+});
+
 test("a log from before the shop note has no shop draws (#516)", () => {
   assert.deepEqual(shopDraws([win(1, [tick(1, 1, { drew: true })])]), []);
 });

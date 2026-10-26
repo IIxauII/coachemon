@@ -194,4 +194,7 @@ Tackle · Rock Slide
 Tackle · Rock Slide
 this grunt's double is an unseeded roll: it can't be read ahead · if nothing changes: a catch, evolution, shop pick or biome change re-rolls this
 summary "W35 fixed trainer Rocket Grunt0 — Gengar L23, Machop L24, Gengar L25 [≈]"
+== replay key wild W12: kept by a level-up, an evolution, a Dire Hit expiring, a trainer reward, a catch; moved by seed, live wave, biome, time of day, encounters met, encounter chance, event, Ability Charm stack, enemy fusion, egg phase, lure, an Illuminate lead with a No Guard passive, luck, Shiny Charm stack, Bug Net
+== replay key trainer W14: kept by a level-up, an evolution, a Dire Hit expiring, a trainer reward, a catch; moved by seed, live wave, biome, time of day, encounters met, encounter chance, event, Ability Charm stack, enemy fusion, egg phase, lure, an Illuminate lead with a No Guard passive, live double
+== replay key me W12: kept by a level-up, an evolution, a Dire Hit expiring, a trainer reward, money within its tier; moved by seed, live wave, biome, time of day, encounters met, encounter chance, event, Ability Charm stack, enemy fusion, egg phase, money tier, berries to six, a catch, members over half HP, a member turned Bug, a Quick Claw held, a Quick Claw it can't give, a member barred from battle
 ok

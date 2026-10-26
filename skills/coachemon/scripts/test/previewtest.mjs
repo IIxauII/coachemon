@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { mountHud } from "./fake-page.mjs";
+import { PokemonType } from "../../../../src/enums/generated.ts";
 import { ATTRS } from "./fixtures/party.mjs";
 import { cat as CAT, TY } from "./fake-mon.mjs";
 
@@ -168,6 +169,8 @@ const makeScene = ({ wave = 12, seed = "kAbC12", party = [], modifiers = [], meR
     },
     addEnemyPokemon: (sp, level, _slot, boss) => mon(sp, level, { boss: boss ? 2 : 0, moves: foeMoves }),
     getMysteryEncounter: () => ({ localizationKey: "departmentStoreSale", encounterTier: 0 }),
+    money: 0,
+    getWaveMoneyAmount: m => Math.floor(scene.currentBattle.waveIndex * 100 * m / 10) * 10,
     // `BattleScene.randomSpecies`, whose third argument is not the arena method's (game-code.md §11).
     randomSpecies: (w, level, fromArenaPool) => (fromArenaPool
       ? scene.arena.randomSpecies(w, level, 0, partyLuckOf(party))
@@ -592,6 +595,82 @@ const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.doub
     assert.ok(!`${card}${summary}`.includes("?"), `and never ?:\n${card}\n${summary}`);
     console.log(`== card wave ${from + 1}\n${card}`);
     console.log(`summary ${JSON.stringify(summary)}`);
+  }
+}
+
+// ---- The replay is kept under the replay key: party levels, members and the item count leave it alone (#922).
+{
+  const mod = (name, over = {}) => Object.assign(new ({ [name]: class {} })[name](), { stackCount: 1, getStackCount() { return this.stackCount; } }, over);
+  const member = (id, over = {}) => ({ id, species: species(id), name: SPECIES[id][0], level: 20, hp: 60, getMaxHp: () => 60,
+    getHpRatio: () => 1, getLuck: () => 0, isAllowedInBattle: () => true, getHeldItems: () => [], ...over });
+  for (const meRate of [0, 256]) {
+    const party = [member(5), member(6)];
+    const { scene, offsets, pv } = mount({ wave: 11, party, modifiers: [], meRate });
+    const kinds = {};
+    for (let w = 12; w < 20; w++) kinds[pv.previewFor(scene, w).type] ??= w;
+    if (meRate) delete kinds.trainer;
+    assert.deepEqual(Object.keys(kinds).sort(), meRate ? ["me"] : ["trainer", "wild"]);
+    const replays = w => { const n = offsets.length; pv.previewFor(scene, w); return offsets.length - n; };
+    for (const [kind, w] of Object.entries(kinds)) {
+      const kept = {
+        "a level-up": () => { party[0].level++; },
+        "an evolution": () => { party[1].species = species(3); party[1].name = "Onix"; },
+        "a Dire Hit expiring": () => { scene.modifiers = scene.modifiers.filter(m => m.constructor.name !== "TempCritBoosterModifier"); },
+        "a trainer reward": () => { scene.modifiers = [...scene.modifiers, mod("AttackTypeBoosterModifier", { pokemonId: party[0].id })]; },
+        ...(kind === "me" ? { "money within its tier": () => { scene.money += 10; } } : { "a catch": () => { party.push(member(4)); } }),
+      };
+      scene.modifiers = [mod("TempCritBoosterModifier")];
+      replays(w);
+      for (const [what, change] of Object.entries(kept)) {
+        change();
+        assert.equal(replays(w), 0, `${kind} W${w}: ${what} keeps the replay`);
+      }
+      const set = (o, k, v) => () => { const was = o[k]; o[k] = v; return () => { o[k] = was; }; };
+      const tables = globalThis.__hud["04-game-tables"];
+      const moved = {
+        seed: set(scene, "seed", "other"),
+        "live wave": set(scene.currentBattle, "waveIndex", 10),
+        biome: set(scene.arena, "biomeId", 8),
+        "time of day": set(scene.arena, "lastTimeOfDay", 2),
+        "encounters met": set(scene.mysteryEncounterSaveData, "encounteredEvents", [{}]),
+        "encounter chance": set(scene.mysteryEncounterSaveData, "encounterSpawnChance", 9),
+        event: () => { tables.setGameTables({ moves: MOVES, abilities: [], events: { activeEvent: () => ({ name: "Halloween" }) } });
+          return () => tables.setGameTables({ moves: MOVES, abilities: [] }); },
+        "Ability Charm stack": set(scene, "modifiers", [...scene.modifiers, mod("HiddenAbilityRateBoosterModifier")]),
+        "enemy fusion": set(scene, "enemyModifiers", [mod("EnemyFusionChanceModifier", { chance: 0.01 })]),
+        "egg phase": set(scene.phaseManager, "getCurrentPhase", () => ({ phaseName: "EggLapsePhase" })),
+        ...(kind === "me" ? {
+          "money tier": set(scene, "money", 1e6),
+          "berries to six": set(scene, "modifiers", [...scene.modifiers, mod("BerryModifier", { stackCount: 6, pokemonId: party[0].id })]),
+          "a catch": set(scene, "getPlayerParty", () => [...party, member(4)]),
+          "members over half HP": set(party[0], "getHpRatio", () => 0.5),
+          "a member turned Bug": set(party[0], "isOfType", t => t === PokemonType.BUG),
+          "a Quick Claw held": set(party[0], "getHeldItems", () => [mod("BypassSpeedChanceModifier", { isTransferable: true })]),
+          "a Quick Claw it can't give": set(party[0], "getHeldItems", () => [mod("BypassSpeedChanceModifier", { isTransferable: false })]),
+          "a member barred from battle": set(party[1], "isAllowedInBattle", () => false),
+        } : {
+          lure: set(scene, "modifiers", [...scene.modifiers, mod("DoubleBattleChanceBoosterModifier")]),
+          "an Illuminate lead with a No Guard passive": () => {
+            const ability = id => ({ id, hasAttr: a => a === "DoubleBattleChanceAbAttr" });
+            Object.assign(party[0], { getAbility: () => ability(35), hasPassive: () => true, getPassiveAbility: () => ability(99), canApplyAbility: () => true });
+            return () => { for (const k of ["getAbility", "hasPassive", "getPassiveAbility", "canApplyAbility"]) delete party[0][k]; };
+          },
+        }),
+        ...(kind === "wild" ? {
+          luck: set(party[0], "getLuck", () => 2),
+          "Shiny Charm stack": set(scene, "modifiers", [...scene.modifiers, mod("ShinyRateBoosterModifier")]),
+          "Bug Net": set(scene, "modifiers", [...scene.modifiers, mod("BoostBugSpawnModifier")]),
+        } : {}),
+        ...(kind === "trainer" ? { "live double": set(scene.currentBattle, "double", true) } : {}),
+      };
+      for (const [what, change] of Object.entries(moved)) {
+        const undo = change();
+        assert.ok(replays(w) > 0, `${kind} W${w}: ${what} replays`);
+        undo();
+        assert.equal(replays(w), 0, `${kind} W${w}: back from ${what}, the replay held before`);
+      }
+      console.log(`== replay key ${kind} W${w}: kept by ${Object.keys(kept).join(", ")}; moved by ${Object.keys(moved).join(", ")}`);
+    }
   }
 }
 

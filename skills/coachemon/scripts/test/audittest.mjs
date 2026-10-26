@@ -295,5 +295,49 @@ for (const [label, sc] of Object.entries(scenarios)) {
   console.log(`summary ${summary.audit}`);
   assert.equal(JSON.stringify(JSON.parse(JSON.stringify(m))), JSON.stringify(m), `${label}: JSON-safe`);
   sc.expect?.(a, m, summary, party);
+
+  // A fresh mount, so no memo holds the one-shot build: each chunk runs in a run read of its own, as a later task's.
+  mountHud({ scene });
+  globalThis.__hud["04-game-tables"].setGameTables(threatTables());
+  globalThis.__slotScores = globalThis.__hud["40-learn"].slotScores;
+  const { auditJob, auditStep, auditHeld } = globalThis.__hud["50-audit"];
+  const ahead = sc.ahead ?? m.ahead;
+  const chunk = fn => globalThis.__hud["26-run"].readRun(scene, fn, { cleared: true });
+  const job = chunk(run => auditJob(run, ahead));
+  const chunks = [];
+  let done;
+  while ((done = chunk(run => auditStep(run, job))) === undefined) {
+    chunks.push(job.ran.at(-1));
+    assert.equal(chunk(run => auditHeld(run, ahead)), undefined, `${label}: nothing is held until every chunk is in`);
+  }
+  chunks.push(job.ran.at(-1));
+  assert.deepEqual(done, a, `${label}: the chunked audit is the one-shot's, findings, ranking and relearns`);
+  assert.equal(chunk(run => auditHeld(run, ahead)), done, `${label}: and is then the memo's`);
+  console.log(`chunks ${chunks.length}: ${chunks.join(", ")}`);
+}
+
+// ---- A run that moves between chunks starts the audit over, and the audit is the moved run's (#922)
+{
+  const sc = Object.values(scenarios)[0];
+  const party = sc.party();
+  const handler = { options: sc.free.map(t => ({ modifierTypeOption: { type: t, cost: 0 } })), shopOptionsRows: [], rerollCost: 1000 };
+  const scene = { money: 500, pokeballCounts: { 0: 20 }, modifiers: sc.modifiers ?? [], currentBattle: { waveIndex: sc.wave, double: false },
+    ui: { mode: 6, getHandler: () => handler }, getPlayerParty: () => party, getEnemyParty: () => [] };
+  mountHud({ scene });
+  globalThis.__hud["04-game-tables"].setGameTables(threatTables());
+  const { auditJob, auditStep } = globalThis.__hud["50-audit"];
+  const chunk = fn => globalThis.__hud["26-run"].readRun(scene, fn, { cleared: true });
+  const ahead = chunk(run => globalThis.__hud["49-ahead"].aheadModel(run));
+  const job = chunk(run => auditJob(run, ahead));
+  chunk(run => auditStep(run, job));
+  chunk(run => auditStep(run, job));
+  party[0].level += 20;
+  let done;
+  while ((done = chunk(run => auditStep(run, job))) === undefined);
+  mountHud({ scene });
+  globalThis.__hud["04-game-tables"].setGameTables(threatTables());
+  assert.deepEqual(done, chunk(run => globalThis.__hud["50-audit"].teamAudit(run, ahead)), "the audit of the party as it now stands");
+  assert.equal(job.ran.filter(n => n === job.ran[0]).length, 2, "it started over from the first chunk");
+  console.log(`moved between chunks: ${job.ran.join(", ")}`);
 }
 console.log("ok");

@@ -6,7 +6,7 @@ import { challengeOn, waveKind } from "./03-calendar.js";
 import { learnAdvice, learnMoveById } from "./40-learn.js";
 import { previewNext } from "./48-preview.js";
 import { aheadModel, doubleOdds, learnRoster } from "./49-ahead.js";
-import { teamAudit } from "./50-audit.js";
+import { auditHeld, teamAudit } from "./50-audit.js";
 import { rerollPreview, rerollClauses } from "./50-reroll.js";
 import { isA, rewardContext, rewardValue } from "./51-items.js";
 import { leadAdvice, leadSummary } from "./51-lead.js";
@@ -68,7 +68,8 @@ const shopTier = t => {
 };
 const hasFormKey = (p, re) => [p.species, p.fusionSpecies].some(sp => (sp?.forms ?? []).some(f => re.test(f?.formKey ?? "")));
 
-export const rewardsModel = (run, h) => {
+// `audit: "later"` leaves a team audit the memo doesn't hold to the watch's later tasks, as `auditOwed` (#922).
+export const rewardsModel = (run, h, { audit: when = "now" } = {}) => {
   const s = run.scene;
   const party = s.getPlayerParty();
   const alive = party.filter(p => p.hp > 0);
@@ -255,8 +256,9 @@ export const rewardsModel = (run, h) => {
     ? { ...ahead.luck, upgrades: !pinned || pinned.luckUpgrades }
     : null;
   const affordable = shop.filter(i => i.cost <= s.money).length;
+  const audit = when === "later" ? auditHeld(run, ahead) : stage("shop.audit", () => teamAudit(run, ahead));
   return { kind: "rewards", money: s.money, left: money, buys, free, pick, reroll, rerollAhead, bossNext, gauntlet, luck, wave,
-    affordable, ahead, audit: stage("shop.audit", () => teamAudit(run, ahead)),
+    affordable, ahead, audit: audit ?? null, ...(audit === undefined ? { auditOwed: true } : {}),
     lead: stage("shop.lead", () => leadAdvice(run, previewNext(run))) };
 };
 
