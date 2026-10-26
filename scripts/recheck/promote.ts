@@ -1,10 +1,10 @@
 /**
- * Turns a fight `COACHEMON_CAPTURE=1` kept under the home into a known fight (#787). Promoting is the maintainer's word
+ * Turns a fight `COACHEMON_CAPTURE=1` kept under the home into a known fight (#787, #936). Promoting is the maintainer's word
  * that live won the fight on the kept oracle line: nothing here checks that.
  */
-import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { fightName } from "../../src/solver/capture.ts";
+import { FIRST_TURN, fightName } from "../../src/solver/capture.ts";
 import { WIN_SCRIPT } from "../../src/solver/script.ts";
 import { readScript, type SolveInput } from "../../src/solver/solver.ts";
 import type { KnownFight } from "./recheck.ts";
@@ -24,9 +24,13 @@ export type Promoted = { promoted: KnownFight } | { refused: string };
 /** A known fight's `<stem>.json`. */
 type Recorded = Required<Pick<SolveInput, "live" | "save" | "liveExport">>;
 
-/** `kept` is either of the fight's two files. */
+/** `kept` is a fight folder, for its first-turn solve, or either of a solve's two files in one. */
 export async function promote(kept: string, deps: PromoteDeps, stem?: string): Promise<Promoted> {
-  const keptStem = kept.endsWith(WIN_SCRIPT) ? kept.slice(0, -WIN_SCRIPT.length) : kept.replace(/\.json$/, "");
+  const keptStem = isFolder(kept)
+    ? path.join(kept, FIRST_TURN)
+    : kept.endsWith(WIN_SCRIPT)
+      ? kept.slice(0, -WIN_SCRIPT.length)
+      : kept.replace(/\.json$/, "");
   const read = readKept(keptStem, deps.pin);
   if ("refused" in read) return read;
   const { recorded, script } = read;
@@ -56,6 +60,8 @@ export async function promote(kept: string, deps: PromoteDeps, stem?: string): P
   takeBack();
   return { refused: `the re-check of ${fight.name} failed: ${failed.join("; ")}. Nothing was promoted.` };
 }
+
+const isFolder = (file: string) => existsSync(file) && statSync(file).isDirectory();
 
 function readKept(keptStem: string, pin: string): { recorded: Recorded; script: string } | { refused: string } {
   const kept = JSON.parse(readFileSync(`${keptStem}.json`, "utf8")) as Recorded & Partial<Pick<SolveInput, "extras" | "cloneVersion" | "budget">>;

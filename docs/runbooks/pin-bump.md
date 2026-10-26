@@ -186,13 +186,14 @@ The solver solves only on the pin (a newer save gets `version_mismatch`), so thi
 the pin: ahead of a bump, or after the stamp, to replace a fight that only carries. A fight that stops carrying in the
 middle of a bump is recorded by hand (below).
 
-1. Start the plugin's server with `COACHEMON_CAPTURE=1` and solving on. Each solve from a fight's first turn keeps
-   `<home>/fights/<seed>-w<wave>-<fight>.json` (what it solved from) and, once it finds an oracle line,
-   `<seed>-w<wave>-<fight>.win.script.json` beside it, its `known` taken from the oracle line's checkpoints. A solve past the
-   first turn keeps nothing, and only the 12 latest fights stay.
+1. Start the plugin's server with `COACHEMON_CAPTURE=1` and solving on. Each fight gets a folder,
+   `<home>/fights/<seed>-w<wave>-<fight>/`, and every fight is kept. A solve from the fight's first turn keeps `turn-1.json`
+   there (what it solved from) and, once it finds an oracle line, `turn-1.win.script.json` beside it, its `known` taken
+   from the oracle line's checkpoints. A repeat solve replaces `turn-1.json`, and the oracle line only with one it found.
+   A solve past the first turn keeps nothing.
 2. Solve the fight at its first decision, and win it live on that oracle line. Promoting is your word that you did: nothing
    checks it.
-3. Run `npm run recheck:promote -- <home>/fights/<seed>-w<wave>-<fight>.json`. It copies the pair into
+3. Run `npm run recheck:promote -- <home>/fights/<seed>-w<wave>-<fight>`. It copies the first-turn pair into
    `src/solver/fixtures/` as `<fight>-w<wave>` (`--stem <name>` picks another), names it in `known-fights.json`, and
    re-checks that fight at the pin without a carry. It refuses a fight with no oracle line file, a mid-fight file, a save from
    another version than the pin, and a stem already taken. A failed re-check takes the fight back out.

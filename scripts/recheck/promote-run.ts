@@ -9,7 +9,7 @@ import { FIXTURES, KNOWN_FIGHTS_FILE, recheck } from "./recheck.ts";
 const { values, positionals } = parseArgs({ options: { stem: { type: "string" } }, allowPositionals: true });
 const [kept] = positionals;
 if (kept === undefined) {
-  console.error("usage: npm run recheck:promote -- [--stem <name>] <home>/fights/<fight>.json");
+  console.error("usage: npm run recheck:promote -- [--stem <name>] <home>/fights/<seed>-w<wave>-<fight>");
   process.exit(2);
 }
 
