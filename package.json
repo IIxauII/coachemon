@@ -25,6 +25,7 @@
     "oracle:encounter": "node scripts/encounter-oracle/run.ts",
     "oracle:preview": "node scripts/preview-stability/run.ts",
     "recheck:promote": "node scripts/recheck/promote-run.ts",
+    "library:replay": "node scripts/library-replay/run.ts",
     "bump:suite": "node scripts/bump-suite/run.ts",
     "ladder:drift": "node scripts/drift.ts",
     "reads:check": "node scripts/game-reads/main.ts",
