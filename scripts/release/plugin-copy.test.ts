@@ -57,6 +57,13 @@ test("the fight library is in the repo and none of it ships, a recorded fight's 
   assert.deepEqual(written.filter(f => f.startsWith(library)), []);
 });
 
+test("the repo's own skills, /import-fights among them, are in the repo and none of them ships (#711, #946)", () => {
+  const held = [...workingTree(REPO).keys()].filter(f => f.startsWith(".claude/skills/"));
+  for (const skill of ["pin-bump", "import-fights"]) assert.ok(held.includes(`.claude/skills/${skill}/SKILL.md`), skill);
+  assert.deepEqual(held.filter(shipped), []);
+  assert.deepEqual(written.filter(f => f.startsWith(".claude/")), []);
+});
+
 test("the copy's package.json and lockfile list the runtime dependencies alone, at the versions HEAD locks", () => {
   const json = (file: string) => JSON.parse(readFileSync(path.join(OUT, file), "utf8"));
   const atHead = (file: string) => JSON.parse(execFileSync("git", ["show", `HEAD:${file}`], { cwd: REPO, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 }));
