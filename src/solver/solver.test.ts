@@ -342,3 +342,57 @@ test("a solve reports how long the turns it asked its pool for took to restore a
 
   assert.deepEqual(reported.map(({ turnTimes }) => turnTimes), [times]);
 });
+
+/** The classic final boss at W200, on a tab reloaded at the wave's start: its save holds the stats the fresh tab fought. */
+const eternatus: { live: Battle; liveExport: SessionSave; save: SessionSave } = JSON.parse(
+  readFileSync(new URL("./fixtures/eternatus-w200.json", import.meta.url), "utf8"),
+  (k, v) => (k === "gameVersion" ? RECHECKED : v),
+);
+const FINAL_BOSS: SolveInput = { ...eternatus, cloneVersion: RECHECKED, budget: { expansions: 4, turns: 2 } };
+const LIVE_BOSS = { hp: 832, stats: [832, 407, 492, 647, 402, 587] };
+
+/** A clone whose replays load the final boss's scene cleanly, and in which no worker starts; it records each job. */
+function loadsFinalBoss() {
+  const jobs: { name: string; save: { enemyParty: { hp: number; stats: number[] }[] } }[] = [];
+  const clone: Clone = async ({ name, input }) => {
+    jobs.push({ name, ...JSON.parse(input) });
+    if (name === "worker") return { missing: "no worker in this test" };
+    return {
+      out: JSON.stringify({
+        version: RECHECKED,
+        hygiene: {
+          realRng: { constructed: true, reloaded: true },
+          overrides: [],
+          enemyItemsBeforeReload: 0,
+          items: { ours: totals(eternatus.save.modifiers), foes: totals(eternatus.save.enemyModifiers) },
+        },
+        battle: eternatus.live,
+        scene: eternatus.liveExport,
+        steps: [],
+        end: "won",
+      }),
+    };
+  };
+  const boss = (name: string) =>
+    jobs.filter(job => job.name === name).map(({ save }) => ({ hp: save.enemyParty[0].hp, stats: save.enemyParty[0].stats }));
+  return { clone, boss };
+}
+
+test("a solve of the classic final boss's first form starts its search's workers on the boss the live tab fights (#917)", async () => {
+  const { clone, boss } = loadsFinalBoss();
+
+  await solve(FINAL_BOSS, { clone, workers: 1 });
+
+  assert.deepEqual(boss("worker"), [LIVE_BOSS]);
+});
+
+test("a re-solve of the classic final boss's first form roots it on the warm pool as the live tab fights it (#917)", async () => {
+  const { clone } = loadsFinalBoss();
+  const { lease, asked } = warmLease();
+
+  await solve(FINAL_BOSS, { clone, pools: async () => lease });
+
+  const [[save]] = asked.rootAt as [SessionSave][];
+  const [rooted] = save.enemyParty as { hp: number; stats: number[] }[];
+  assert.deepEqual({ hp: rooted.hp, stats: rooted.stats }, LIVE_BOSS);
+});

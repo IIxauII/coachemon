@@ -1,6 +1,6 @@
 import { availableParallelism } from "node:os";
 import reviewed from "../escape-ladder/reviewed.json" with { type: "json" };
-import { augmentedExport } from "./extras.ts";
+import { augmentedExport, withLiveFinalBoss } from "./extras.ts";
 import { type Carry, carryOf, refuse } from "./gate.ts";
 import type { Budget, Recheck, SolveInput } from "./input.ts";
 import type { Lease } from "./fight-pool.ts";
@@ -93,8 +93,9 @@ async function solving(
   if (loaded.kind === "no_answer") return loaded;
 
   const at = augmentedExport(input)?.forkPoint;
+  const save = withLiveFinalBoss(input.save, input.liveExport);
   start = clock.now();
-  const leased = await pools(on => startPool(workers, () => startWorker(on, input.save, at), input.cloneVersion));
+  const leased = await pools(on => startPool(workers, () => startWorker(on, save, at), input.cloneVersion));
   if (!("pool" in leased)) {
     report.startup.pool = { warm: false, ms: since(start) };
     return notStarted(leased, input.cloneVersion);
@@ -109,7 +110,7 @@ async function solving(
   try {
     let root: Position;
     try {
-      root = warm ? await pool.rootAt(input.save, at, signal) : pool.root;
+      root = warm ? await pool.rootAt(save, at, signal) : pool.root;
     } finally {
       report.startup.pool = { warm, ms: since(start) };
     }
@@ -160,7 +161,8 @@ export async function checkForks(
   // The checks are what the harness re-check runs (#665), so they can't wait on one having passed.
   const refused = refuse(given, passed(given.cloneVersion), carry);
   if (refused) return refused;
-  return withStarted(await startWorker(clone, given.save, augmentedExport(given)?.forkPoint), given.cloneVersion, async worker => {
+  const save = withLiveFinalBoss(given.save, given.liveExport);
+  return withStarted(await startWorker(clone, save, augmentedExport(given)?.forkPoint), given.cloneVersion, async worker => {
     try {
       return { kind: "checked", checks: await worker.check(inputs) };
     } catch (e) {
