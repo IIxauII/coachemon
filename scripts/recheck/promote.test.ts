@@ -27,14 +27,14 @@ const KEPT = {
 const LINE = { inputs: [{ kind: "move", move: "SURF", tera: false }], known: { outcome: "won", after: [{ turn: 1 }] } };
 const BEFORE: KnownFight[] = [{ stem: "drayton-w188", name: "Drayton W188" }];
 
-/** A home's kept fight beside an empty fixtures folder and a known-fights list of one. */
+/** A home's fight folder, holding its first-turn solve, beside an empty fixtures folder and a known-fights list of one. */
 function setUp({ kept = KEPT, line = LINE as unknown }: { kept?: unknown; line?: unknown } = {}) {
   const root = mkdtempSync(path.join(tmpdir(), "coachemon-promote-"));
-  const fights = path.join(root, "home", "fights");
+  const fight = path.join(root, "home", "fights", "Zu5cgKRQ0vigLcOhpJxYMUa0-w180-gordie");
   const fixtures = path.join(root, "fixtures");
-  mkdirSync(fights, { recursive: true });
+  mkdirSync(fight, { recursive: true });
   mkdirSync(fixtures);
-  const keptFile = path.join(fights, "Zu5cgKRQ0vigLcOhpJxYMUa0-w180-gordie.json");
+  const keptFile = path.join(fight, "turn-1.json");
   writeFileSync(keptFile, JSON.stringify(kept));
   if (line !== null) writeFileSync(keptFile.replace(/\.json$/, ".win.script.json"), JSON.stringify(line));
   const knownFights = path.join(root, "known-fights.json");
@@ -51,10 +51,10 @@ function setUp({ kept = KEPT, line = LINE as unknown }: { kept?: unknown; line?:
     },
   });
   const known = () => JSON.parse(readFileSync(knownFights, "utf8")) as KnownFight[];
-  return { keptFile, fixtures, deps, known, rechecked };
+  return { fight, keptFile, fixtures, deps, known, rechecked };
 }
 
-test("promoting a kept fight adds its fixtures and its known-fights entry, then re-checks that fight at the pin (#787)", async () => {
+test("promoting a kept fight's first-turn solve adds its fixtures and its known-fights entry, then re-checks that fight at the pin (#787, #936)", async () => {
   const { keptFile, fixtures, deps, known, rechecked } = setUp();
 
   const out = await promote(keptFile, deps());
@@ -66,6 +66,15 @@ test("promoting a kept fight adds its fixtures and its known-fights entry, then 
   assert.deepEqual(JSON.parse(readFileSync(path.join(fixtures, "gordie-w180.win.script.json"), "utf8")), LINE);
   assert.deepEqual(known(), [...BEFORE, fight]);
   assert.deepEqual(rechecked, [fight]);
+});
+
+test("promoting a fight folder promotes its first-turn solve (#936)", async () => {
+  const { fight, fixtures, deps } = setUp();
+
+  const out = await promote(fight, deps());
+
+  assert.deepEqual(out, { promoted: { stem: "gordie-w180", name: "Gordie W180" } });
+  assert.deepEqual(JSON.parse(readFileSync(path.join(fixtures, "gordie-w180.win.script.json"), "utf8")), LINE);
 });
 
 const refusedWith = async (out: Promise<unknown>, why: RegExp) => {

@@ -1,15 +1,16 @@
 /**
  * The developer's `COACHEMON_CAPTURE=1`: a solve from a fight's wave-start save keeps what it solved from, and the oracle
- * line it found, under the home as a known fight's two files (#787). Never a player's: unset, nothing is written.
+ * line it found, as a known fight's two files in that fight's folder under the home (#787, #936). Never a player's:
+ * unset, nothing is written.
  */
-import { mkdirSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { NAMES, TrainerVariant } from "../enums/generated.ts";
 import type { JobWork } from "../jobs.ts";
 import { type Script, WIN_SCRIPT } from "./script.ts";
 import type { MonState, OracleLine, SessionSave, SolveInput, SolveResult } from "./solver.ts";
 
-const KEPT_FIGHTS = 12;
+export const FIRST_TURN = "turn-1";
 
 export const withCapture =
   (work: JobWork, home: string, env: NodeJS.ProcessEnv = process.env): JobWork =>
@@ -17,15 +18,11 @@ export const withCapture =
     const input = args.input as SolveInput;
     if (env.COACHEMON_CAPTURE !== "1" || input.extras !== undefined) return work(args, ctl);
     const dir = path.join(home, "fights");
-    const stem = path.join(dir, fightKey(input.save));
-    const scriptFile = `${stem}${WIN_SCRIPT}`;
-    // An oracle line kept beside an earlier solve's input belongs to that solve, not this one.
-    drop(scriptFile);
+    const stem = path.join(dir, fightKey(input.save), FIRST_TURN);
     const { live, save, liveExport, cloneVersion, budget } = input;
     keep(`${stem}.json`, { live, save, liveExport, cloneVersion, budget });
-    prune(dir);
     const result = (await work(args, ctl)) as SolveResult;
-    if (!ctl.signal.aborted && result?.kind === "oracle_line") keep(scriptFile, scriptOf(result.oracleLine));
+    if (!ctl.signal.aborted && result?.kind === "oracle_line") keep(`${stem}${WIN_SCRIPT}`, scriptOf(result.oracleLine));
     return result;
   };
 
@@ -67,21 +64,7 @@ function side(name: "ours" | "foes", mons: readonly MonState[]) {
   return Object.keys(facts).length === 0 ? {} : { [name]: facts };
 }
 
-/** Never fails the solve, nor do `keep` and `drop`. */
-function prune(dir: string): void {
-  try {
-    const inputs = readdirSync(dir)
-      .filter(name => name.endsWith(".json") && !name.endsWith(WIN_SCRIPT))
-      .map(name => ({ stem: path.join(dir, name.slice(0, -".json".length)), at: statSync(path.join(dir, name)).mtimeMs }))
-      .sort((a, b) => b.at - a.at);
-    for (const { stem } of inputs.slice(KEPT_FIGHTS)) {
-      drop(`${stem}.json`);
-      drop(`${stem}${WIN_SCRIPT}`);
-    }
-  } catch {}
-}
-
-/** Whole or not at all. */
+/** Whole or not at all, and never throws: no write fails the solve. */
 function keep(file: string, value: unknown): void {
   const part = `${file}.part`;
   try {
