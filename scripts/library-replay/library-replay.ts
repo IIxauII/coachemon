@@ -80,7 +80,7 @@ function differently(reason: Reason): Outcome {
   return { kind: "plays_differently", checkpoint: Number(first), missed: missed.join("; ") };
 }
 
-const described = (outcome: Outcome, version: string): string => {
+export const described = (outcome: Outcome, version: string): string => {
   switch (outcome.kind) {
     case "still_wins":
       return `still wins, won in ${outcome.turns} turns`;
