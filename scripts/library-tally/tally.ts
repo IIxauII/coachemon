@@ -4,7 +4,7 @@ import type { SearchStatistics } from "../../src/solver/search.ts";
 
 /**
  * An entry of any schema, read for whatever fields it has, beside the fight folder it sits in. A search written before
- * #941 has its win and stages only.
+ * its drop counts (#941) has its win and stages only.
  */
 export type Entry = {
   fight: string;
@@ -160,7 +160,6 @@ function replays(solves: readonly Entry[]): TimeSplit["replays"] {
   return { solves: recorded.length, ran: sumOf(recorded, r => r.ran), ms: sumOf(recorded, r => r.ms) };
 }
 
-/** Leaves out `null` turn times, which are a solve that played no turn on the pool or one cancelled before they were read. */
 function turns(solves: readonly Entry[]): TurnTime | null {
   const recorded = solves.flatMap(({ statistics }) => (statistics.turnTimes ? [statistics.turnTimes] : []));
   if (recorded.length === 0) return null;
