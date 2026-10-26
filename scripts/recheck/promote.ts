@@ -1,6 +1,6 @@
 /**
- * Turns a fight `COACHEMON_CAPTURE=1` kept under the home into a known fight (#787, #936). Promoting is the maintainer's word
- * that live won the fight on the kept oracle line: nothing here checks that.
+ * Turns a fight `COACHEMON_CAPTURE=1` recorded into a known fight (#787, #936). Promoting is the maintainer's word that
+ * live won the fight on the kept oracle line: nothing here checks that.
  */
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";

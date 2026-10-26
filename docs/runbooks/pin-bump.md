@@ -196,13 +196,19 @@ middle of a bump is recorded by hand (below).
    ended, and the settings and versions it ran under; a solve that got as far as the solver also says how long its gate,
    load check and pool start took (or that its pool was warm), its pool's final stats, how long the turns it played took
    to restore their fork point and to play (count, total, p50, p95 and max of each), and the machine's core count. A
-   cancelled one has the stages it had finished by the cancel.
+   cancelled one has the stages it had finished by the cancel. The fight waits there until `npm run library:import`, which
+   a session started in a checkout offers as `/import-fights`, merges it into the fight library at
+   `src/solver/fixtures/library/<seed>-w<wave>-<fight>/` and moves it to
+   `<home>/fights-imported/<when>/<seed>-w<wave>-<fight>/`.
 2. Solve the fight at its first decision, and win it live on that oracle line. Promoting is your word that you did: nothing
    checks it.
-3. Run `npm run recheck:promote -- <home>/fights/<seed>-w<wave>-<fight>`. It copies the first-turn pair into
+3. Run `npm run recheck:promote -- <fight folder>`: `<home>/fights/<seed>-w<wave>-<fight>` before an import, and the
+   moved-aside `<home>/fights-imported/<when>/<seed>-w<wave>-<fight>` after one, which holds exactly what was recorded.
+   The library copy holds it only once the import's PR has merged, and only if the library had no first-turn pair for
+   that fight before: one it held stays, so the line you won on may be only aside. It copies the first-turn pair into
    `src/solver/fixtures/` as `<fight>-w<wave>` (`--stem <name>` picks another), names it in `known-fights.json`, and
-   re-checks that fight at the pin without a carry. It refuses a fight with no oracle line file, a mid-fight file, a save from
-   another version than the pin, and a stem already taken. A failed re-check takes the fight back out.
+   re-checks that fight at the pin without a carry. It refuses a fight with no oracle line file, a mid-fight file, a save
+   from another version than the pin, and a stem already taken. A failed re-check takes the fight back out.
 4. Remove the fight it replaces from `known-fights.json` and `src/solver/fixtures/`.
 
 ### By hand
