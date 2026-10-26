@@ -291,12 +291,12 @@ function timeLines({ time: { startup, lds, beams, replays, turns }, drops }: Sum
       ? [`turns played: ${turns.turns}, restoring ${time(turns.restoreMs)} and playing ${time(turns.playMs)} of worker time, ${over(turns.solves)}`]
       : []),
     ...(drops
-      ? [`top drop reasons: ${drops.top.length > 0 ? `${dropsText(drops)}; of ${drops.dropped} dropped` : "none"} ${over(drops.solves)}`]
+      ? [`top drop reasons: ${drops.top.length > 0 ? `${dropsText(drops.top)}; of ${drops.dropped} dropped` : "none"} ${over(drops.solves)}`]
       : []),
   ];
 }
 
-const dropsText = ({ top }: Drops) => top.map(d => `${d.reason}: ${d.turns}`).join("; ");
+const dropsText = (top: Drops["top"]) => top.map(d => `${d.reason}: ${d.turns}`).join("; ");
 
 const timed = (ms: number | undefined) => (ms === undefined ? "—" : time(ms));
 
@@ -315,7 +315,7 @@ function timeTable(rows: readonly ByFight[]): string[] {
           timed(t.replays?.ms),
           timed(t.turns?.restoreMs),
           timed(t.turns?.playMs),
-          drops ? dropsText({ ...drops, top: drops.top.slice(0, 1) }) || "none" : "—",
+          drops ? dropsText(drops.top.slice(0, 1)) || "none" : "—",
         ].join(" | "),
       )
       .map(row => `| ${row} |`),
