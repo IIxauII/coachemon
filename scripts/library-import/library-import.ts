@@ -3,6 +3,7 @@ import { appendFileSync, copyFileSync, existsSync, mkdirSync, readdirSync, readF
 import path from "node:path";
 import { FIGHTS, STATISTICS } from "../../src/solver/capture.ts";
 import { WIN_SCRIPT } from "../../src/solver/script.ts";
+import { type Outcome, type Replay, replayOracleLine } from "../library-replay/library-replay.ts";
 
 export type Imported = {
   fight: string;
@@ -13,7 +14,14 @@ export type Imported = {
   statistics: number;
   /** Turns the library holds solved from another position: the library's solve stays, and the new one is only aside. */
   differs: string[];
+  /** Each oracle line this import added that didn't replay to its win, by the turn its solve started from. */
+  failed: { turn: number; outcome: Exclude<Outcome, { kind: "still_wins" }> }[];
+  /** Every Pokémon nickname in the files this import added, the foes' included, as the game shows it. */
+  nicknames: string[];
 };
+
+/** Replays each oracle line an import adds, once, on `version`. */
+export type AtThePin = { version: string; replay: Replay };
 
 export type Import = { imported: Imported[] };
 
@@ -22,16 +30,30 @@ export const LIBRARY = new URL("../../src/solver/fixtures/library/", import.meta
 export const IMPORTED = "fights-imported";
 
 /** Each fight imported moves to `<home>/fights-imported/<at>/`, so a lost import is redone by moving its fights back. */
-export function importFights(home: string, library: string, at: Date): Import {
+export async function importFights(home: string, library: string, at: Date, pin: AtThePin): Promise<Import> {
   const fights = path.join(home, FIGHTS);
   const aside = path.join(home, IMPORTED, at.toISOString().replaceAll(":", "-"));
   const imported: Imported[] = [];
   for (const fight of waitingIn(fights)) {
-    imported.push({ fight, ...merge(path.join(fights, fight), path.join(library, fight)) });
+    const to = path.join(library, fight);
+    const merged = merge(path.join(fights, fight), to);
     mkdirSync(aside, { recursive: true });
     renameSync(path.join(fights, fight), path.join(aside, fight));
+    imported.push({ fight, ...merged, failed: await replayAdded(to, merged.added, pin), nicknames: nicknamesIn(to, merged.added) });
   }
   return { imported };
+}
+
+/** A replay that throws fails its line, never the import. */
+async function replayAdded(fight: string, added: string[], { version, replay }: AtThePin): Promise<Imported["failed"]> {
+  const failed: Imported["failed"] = [];
+  for (const turn of added.flatMap(file => (file.endsWith(WIN_SCRIPT) ? [file.slice(0, -WIN_SCRIPT.length)] : []))) {
+    const outcome = await replayOracleLine(path.join(fight, turn), version, replay).catch(
+      (e: unknown): Outcome => ({ kind: "doesnt_load", why: `the replay threw: ${e instanceof Error ? e.message : String(e)}` }),
+    );
+    if (outcome.kind !== "still_wins") failed.push({ turn: Number(turn.slice("turn-".length)), outcome });
+  }
+  return failed;
 }
 
 export const waiting = (home: string): number => waitingIn(path.join(home, FIGHTS)).length;
@@ -44,7 +66,33 @@ const waitingIn = (fights: string): string[] =>
         .sort()
     : [];
 
-function merge(from: string, to: string): Omit<Imported, "fight"> {
+function nicknamesIn(fight: string, added: string[]): string[] {
+  const found = new Set<string>();
+  const walk = (value: unknown): void => {
+    if (Array.isArray(value)) value.forEach(walk);
+    else if (value !== null && typeof value === "object") {
+      for (const [key, inner] of Object.entries(value)) {
+        if (key === "nickname" && typeof inner === "string" && inner !== "") found.add(decodeNickname(inner));
+        else walk(inner);
+      }
+    }
+  };
+  for (const file of added.filter(f => f.endsWith(".json"))) walk(JSON.parse(readFileSync(path.join(fight, file), "utf8")));
+  return [...found].sort();
+}
+
+/** As the game's own `decodeNickname` reads it, except that one it can't decode is listed as the fight keeps it. */
+function decodeNickname(kept: string): string {
+  const bytes = Buffer.from(kept, "base64");
+  if (bytes.toString("base64") !== kept) return kept;
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return kept;
+  }
+}
+
+function merge(from: string, to: string): Omit<Imported, "fight" | "failed" | "nicknames"> {
   const merged = existsSync(to);
   mkdirSync(to, { recursive: true });
   const files = readdirSync(from)
