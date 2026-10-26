@@ -302,13 +302,36 @@ Distinct from the save the game writes at the start of a wave, which a solve fro
 
 The PokéRogue release the live tab serves, as the game itself reports it. An **oracle** runs exactly one game version,
 and it refuses a save from any other, because the game would load it under the wrong rules without a word. What holds
-an oracle to its version is the test harness having replayed a known fight on it, not the clone. A save from an older
+an oracle to its version is the test harness having replayed a **known fight** on it, not the clone. A save from an older
 game is **carried** to the oracle's version through the game's own migration, as the live game carries it: a known
 fight's in that re-check, and a player's once the live game serves the oracle's version, since the game rewrites a
 continued run's wave-start save only at the next wave. The loaded scene is held to the live export, migrated the same
 way. A save from a newer game is never carried.
 
 Distinct from a **build id**, which is which build of the extension a tab runs.
+
+## Known fight
+
+A trainer fight won live, kept in the repo with the save it started from and, turn by turn, the inputs played and what
+live showed after each. It is re-checked at every pin bump: the new **game version** must replay it to the same win,
+every fact live showed matched, before the **oracle** solves on that version. Known fights are few and strict, and they
+are what hold the oracle to its version. A fight joins them only on the maintainer's word that it was won live, by hand
+or on its **oracle line**. One that stops replaying on a new version is replaced by another played live, never simply
+dropped.
+
+Distinct from the **fight library**, which keeps every solved fight, won or not, and gates nothing.
+
+## Fight library
+
+Every fight the maintainer solved with the dev switch on: what each solve started from, at the first turn or mid-fight,
+the **oracle line** where it found one, and how the search went. It keeps the fights the oracle could not win too, and
+has no limit. It is for offline use alone: replaying its oracle lines on changed code to see what broke, and solving its
+fights again to compare how the oracle searches. It is never a gate: no pin bump replays it, nothing in it holds a solve
+back, and a player never sees it.
+
+Distinct from a **known fight**: a library fight records how a solve went, not that the game was seen to play it that
+way. It becomes a known fight only once the maintainer has won it live on its oracle line and promotes it, and the
+library never adds to the known fights on its own.
 
 ## Game read
 
