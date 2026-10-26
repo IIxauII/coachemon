@@ -3,6 +3,7 @@
 // socket until the socket closes. It judges nothing: `src/solver/replay.ts` and `src/solver/worker.ts` read it.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { connect } from "node:net";
+import { performance as wallClock } from "node:perf_hooks";
 import { createInterface } from "node:readline";
 import { getHeapStatistics } from "node:v8";
 import { BattleScene } from "#app/battle-scene";
@@ -1008,12 +1009,18 @@ function naming(
   return asked.learns || asked.replacement || asked.pivots ? { kind: "queued", ...asked } : null;
 }
 
+const msSince = (start: number) => Math.round((wallClock.now() - start) * 10) / 10;
+
 async function expand(at: string, inputs: (Input | null)[]) {
   const children: unknown[] = [];
+  const turns: { restoreMs: number; playMs: number }[] = [];
   const queue = [...inputs];
   while (queue.length > 0) {
     const input = queue.shift() as Input | null;
+    const restoring = wallClock.now();
     await restore(at);
+    const restoreMs = msSince(restoring);
+    const playing = wallClock.now();
     const wasDouble = double();
     const named = input?.learns ?? [];
     const namedSwaps = replacementsOf(input);
@@ -1076,10 +1083,11 @@ async function expand(at: string, inputs: (Input | null)[]) {
     else if (stray > 0) children.push({ input: played, end: "dropped", why: `left ${stray} prompts queued` });
     else if (ended === "on") children.push({ input: played, end: "on", at: position() });
     else children.push({ input: played, end: ended, hp: hp() });
+    turns.push({ restoreMs, playMs: msSince(playing) });
   }
   const { used_heap_size, heap_size_limit } = getHeapStatistics();
   const mb = (bytes: number) => Math.round(bytes / 2 ** 20);
-  return { children, heap: { usedMb: mb(used_heap_size), limitMb: mb(heap_size_limit) } };
+  return { children, heap: { usedMb: mb(used_heap_size), limitMb: mb(heap_size_limit) }, turns };
 }
 
 type Played = { input: Input | null; turn: number; checkpoint: unknown; end: Turn };

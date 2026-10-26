@@ -7,7 +7,7 @@ import type { Lease } from "./fight-pool.ts";
 import { noAnswer, Unanswered } from "./no-answer.ts";
 import type { Input, NoAnswer, Reason, SolveResult } from "./oracle-line.ts";
 import { type Clone, replay } from "./replay.ts";
-import { isPool, type PoolStats, poolSize, startPool, type WorkerPool } from "./pool.ts";
+import { isPool, type PoolStats, poolSize, startPool, type TurnTimes, type WorkerPool } from "./pool.ts";
 import { type Position, search, type SearchStatistics, type Progress as Spent } from "./search.ts";
 import { type Checks, type NotStarted, startWorker, type Worker } from "./worker.ts";
 
@@ -15,7 +15,7 @@ export type * from "./input.ts";
 export type * from "./oracle-line.ts";
 export { type Clone, type CloneRun, replay } from "./replay.ts";
 export { type Known, readScript, type Script } from "./script.ts";
-export { type PoolStats, slowWorkersNote } from "./pool.ts";
+export { type PoolStats, slowWorkersNote, type Spread, type TurnTimes } from "./pool.ts";
 
 export type Progress = Spent & { pool: PoolStats };
 export type { Checks, Miss } from "./worker.ts";
@@ -24,11 +24,13 @@ export type { Checks, Miss } from "./worker.ts";
  * What a solve spent before its search, and the pool it searched on (#942), each part filled in as its stage ends: `null`
  * is a stage the solve never reached, or one still going when a cancel reads it. `startup.pool` runs from asking for the
  * pool to the search's first position on it, so a warm one's is rooting this solve's start on it; `pool` is the pool's
- * own stats as it was handed back. `search` is how the search went (#940), absent until it has ended.
+ * own stats as it was handed back, and `turnTimes` the turns this solve's jobs played on it (#943). `search` is how the
+ * search went (#940), absent until it has ended.
  */
 export type SolveReport = {
   startup: { gateMs: number; loadMs: number | null; pool: { warm: boolean; ms: number } | null };
   pool: PoolStats | null;
+  turnTimes: TurnTimes | null;
   cores: number;
   search?: SearchStatistics;
 };
@@ -68,7 +70,7 @@ const BROKE_THE_POOL: ReadonlySet<Reason["code"]> = new Set(["no_clone", "worker
 
 export async function solve(input: SolveInput, deps: SolveDeps): Promise<SolveResult> {
   const { clock = CLOCK, cores = availableParallelism() } = deps;
-  const report: SolveReport = { startup: { gateMs: 0, loadMs: null, pool: null }, pool: null, cores };
+  const report: SolveReport = { startup: { gateMs: 0, loadMs: null, pool: null }, pool: null, turnTimes: null, cores };
   deps.statistics?.(report);
   return solving(input, { ...deps, workers: deps.workers ?? poolSize(cores) }, report, clock);
 }
@@ -130,6 +132,7 @@ async function solving(
     return unanswered(e instanceof Unanswered ? e.answer : noAnswer({ code: "harness_failed", why: e instanceof Error ? e.message : String(e) }));
   } finally {
     report.pool = pool.stats();
+    report.turnTimes = pool.turnTimes(signal);
     await leased.done(broken);
   }
 }

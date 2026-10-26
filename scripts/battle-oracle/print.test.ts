@@ -3,7 +3,7 @@ import { test } from "node:test";
 import type { MonState, OracleLine, Replay } from "../../src/solver/oracle-line.ts";
 import type { Played } from "../../src/solver/worker.ts";
 import { describeInput } from "../../src/solver/describe.ts";
-import { printChecks, printOracleLine, printReplay } from "./print.ts";
+import { printChecks, printOracleLine, printReplay, printTurnTimes } from "./print.ts";
 
 const mon = (species: MonState["species"], hp: number, extra: Partial<MonState> = {}): MonState => ({
   slot: 0,
@@ -159,4 +159,22 @@ test("a double input with no turn before it to name its mons names their field s
   const input = { kind: "double", commands: [null, { kind: "move", move: "TWISTER", tera: true }] } as const;
 
   assert.equal(describeInput(input), "field 1: Tera + Twister");
+});
+
+test("a solve's turn times print how many turns its pool played, then each half's total, p50, p95 and max (#943)", () => {
+  const text = printTurnTimes({
+    restore: { count: 1_234, totalMs: 52_310.4, p50Ms: 18.2, p95Ms: 31, maxMs: 140.5 },
+    play: { count: 1_234, totalMs: 412_080, p50Ms: 240, p95Ms: 902.5, maxMs: 4_210 },
+  });
+
+  assert.equal(
+    text,
+    "1,234 turns played: restoring took 52.3 s (p50 18.2 ms, p95 31 ms, max 140.5 ms), playing 412.1 s (p50 240 ms, p95 902.5 ms, max 4,210 ms)",
+  );
+});
+
+test("a solve whose pool played no turn says so (#943)", () => {
+  const none = { count: 0, totalMs: 0, p50Ms: null, p95Ms: null, maxMs: null };
+
+  assert.equal(printTurnTimes({ restore: none, play: none }), "no turn played");
 });

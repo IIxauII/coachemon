@@ -43,6 +43,9 @@ const child = z.discriminatedUnion("end", [
 /** `limitMb` is V8's for the process: the cap, and room for the young generation. */
 export type HeapUse = { usedMb: number; limitMb: number };
 const heapUse = z.object({ usedMb: z.number(), limitMb: z.number() }) satisfies z.ZodType<HeapUse>;
+/** `restoreMs` runs until the turn's fork point is back, `playMs` from there to the turn's end (#943). */
+export type TurnTime = { restoreMs: number; playMs: number };
+const turnTime = z.object({ restoreMs: z.number(), playMs: z.number() }) satisfies z.ZodType<TurnTime>;
 const turnEnd = z.union([z.enum(["won", "lost", "on"]), z.object({ illegal: z.string() })]) satisfies z.ZodType<TurnEnd>;
 const played = z.object({ input: input.nullable(), turn: z.int(), checkpoint, end: turnEnd }) satisfies z.ZodType<Played>;
 const miss = z.object({ from: z.int(), turn: z.int(), want: played, got: played }) satisfies z.ZodType<Miss>;
@@ -62,6 +65,8 @@ export type Worker = Pick<Pool, "expand"> & {
   realClock: string | null;
   /** The last job's report; `null` before one has finished. */
   heap(): HeapUse | null;
+  /** The last job's, one for each turn it played; none before one has finished. */
+  turnTimes(): readonly TurnTime[];
   check(inputs: readonly Input[]): Promise<Checks>;
   close(): Promise<void>;
 };
@@ -83,20 +88,23 @@ export async function startWorker(clone: Clone, save: SessionSave, at?: string):
   const running = await spawn(clone, save, at);
   if (!("root" in running)) return running;
   let heap: HeapUse | null = null;
+  let turnTimes: readonly TurnTime[] = [];
   return {
     root: running.root,
     slowPoll: running.slowPoll,
     realClock: running.realClock,
     async expand(forkPoint, inputs): Promise<Child[]> {
       const answer = await running.ask({ kind: "expand", forkPoint, inputs }, EXPAND_MS);
-      const parsed = z.object({ children: z.array(child), heap: heapUse }).parse(answer);
+      const parsed = z.object({ children: z.array(child), heap: heapUse, turns: z.array(turnTime) }).parse(answer);
       heap = parsed.heap;
+      turnTimes = parsed.turns;
       return parsed.children;
     },
     async rootAt(save, at) {
       return z.object({ root: position }).parse(await running.ask({ kind: "root", save, at }, EXPAND_MS)).root;
     },
     heap: () => heap,
+    turnTimes: () => turnTimes,
     async check(inputs) {
       return checks.parse(await running.ask({ kind: "checks", inputs }, CHECKS_MS));
     },

@@ -20,6 +20,7 @@ function pools() {
       expand: async () => [],
       rootAt: async () => assert.fail("the holder roots nothing"),
       stats: () => ({ size: 2, died: 0, lastDeath: null, peakHeapMb: null, heapLimitMb: null, slowPoll: null, realClock: null }),
+      turnTimes: () => assert.fail("the holder times no turn"),
       async close() {
         fake.closed = true;
       },

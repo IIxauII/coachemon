@@ -446,7 +446,7 @@ test("a solve's entry carries how its search went, as the solve handed it on, an
   };
   const answer: SolveResult = { kind: "oracle_line", oracleLine: LINE };
   const work: SolveWork = async (_args, { statistics }) => {
-    statistics?.({ startup: { gateMs: 0, loadMs: 0, pool: { warm: true, ms: 0 } }, pool: null, cores: 1, search });
+    statistics?.({ startup: { gateMs: 0, loadMs: 0, pool: { warm: true, ms: 0 } }, pool: null, turnTimes: null, cores: 1, search });
     return answer;
   };
 
@@ -479,11 +479,15 @@ test("a solve the gate refuses still appends its entry, with the gate's time and
   assert.deepEqual([entry.ended, entry.startup, entry.pool, entry.cores], [{ kind: "no_answer", code: "not_rechecked" }, { gateMs: 0, loadMs: null, pool: null }, null, 8]);
 });
 
-test("a solve's startup, its pool's final stats and the machine's cores go into its entry as the solve reported them (#942)", async () => {
+test("a solve's startup, its pool's final stats, its turns' restore and play times and the machine's cores go into its entry as the solve reported them (#942, #943)", async () => {
   const dir = home();
   const report = {
     startup: { gateMs: 1, loadMs: 1_840, pool: { warm: false, ms: 6_210 } },
     pool: { size: 4, died: 1, lastDeath: "the worker ran out of heap", peakHeapMb: 812, heapLimitMb: 4096, slowPoll: null, realClock: "the page's timers were not found" },
+    turnTimes: {
+      restore: { count: 3, totalMs: 61.5, p50Ms: 20.1, p95Ms: 22, maxMs: 22 },
+      play: { count: 3, totalMs: 702, p50Ms: 230, p95Ms: 260, maxMs: 260 },
+    },
     cores: 8,
   };
   const work: SolveWork = async (_args, { statistics }) => {
@@ -494,7 +498,10 @@ test("a solve's startup, its pool's final stats and the machine's cores go into 
   await withCapture(work, dir, ON, recorder())({ input: t1() }, ctl());
 
   const [entry] = entries(dir) as Record<string, unknown>[];
-  assert.deepEqual([entry.ended, entry.startup, entry.pool, entry.cores], [{ kind: "oracle_line" }, report.startup, report.pool, 8]);
+  assert.deepEqual(
+    [entry.ended, entry.startup, entry.pool, entry.turnTimes, entry.cores],
+    [{ kind: "oracle_line" }, report.startup, report.pool, report.turnTimes, 8],
+  );
 });
 
 test("a solve cancelled while it loads still writes the stages it had reached into its entry (#942)", async () => {

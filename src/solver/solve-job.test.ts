@@ -13,6 +13,8 @@ import { solveJob } from "./solve-job.ts";
 const drayton = JSON.parse(readFileSync(new URL("./fixtures/drayton-w188.json", import.meta.url), "utf8"));
 const INPUT: SolveInput = { ...drayton, cloneVersion: "1.12.0.11", budget: { expansions: 3000, turns: 40 } };
 const SET_UP: CloneSetup = { kind: "clone", gameVersion: "1.12.0.11", dir: "/home/.coachemon/clone/v1.12.0.11/game" };
+const NONE = { count: 0, totalMs: 0, p50Ms: null, p95Ms: null, maxMs: null };
+const NO_TURNS = { restore: NONE, play: NONE };
 const POOL = { size: 4, died: 0, lastDeath: null, peakHeapMb: null, heapLimitMb: null, slowPoll: null, realClock: null };
 const LINE: SolveResult = { kind: "oracle_line", oracleLine: GORDIE_LINE };
 
@@ -152,6 +154,7 @@ const startedOn = async (clone: Clone): Promise<WorkerPool> => {
     expand: async () => [],
     rootAt: async () => assert.fail("not rooted here"),
     stats: () => POOL,
+    turnTimes: () => NO_TURNS,
     close: async () => {},
   };
 };
@@ -219,6 +222,7 @@ test("a solve job hands the solve's report, how its search went included, to who
   const statistics: SolveReport = {
     startup: { gateMs: 0, loadMs: 40, pool: { warm: false, ms: 900 } },
     pool: null,
+    turnTimes: null,
     cores: 8,
     search: { found: null, stages: [{ stage: "beam", index: 0, ended: "emptied", spent: 12, ms: 40 }] },
   };

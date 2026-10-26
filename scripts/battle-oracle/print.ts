@@ -2,6 +2,7 @@ import { describeInput, STAGES, title } from "../../src/solver/describe.ts";
 import { NO_LUCK } from "../../src/solver/luck.ts";
 import type { Checks, Miss } from "../../src/solver/worker.ts";
 import type { Luck, MonState, OracleLine, Receipt, Replay, Step } from "../../src/solver/oracle-line.ts";
+import type { Spread, TurnTimes } from "../../src/solver/pool.ts";
 
 const mon = (m: MonState) =>
   [
@@ -73,4 +74,13 @@ export function printChecks({ straight, fork, chain }: Checks): { passed: boolea
       ...chain.map(m => `    ${missed(m)}`),
     ].join("\n"),
   };
+}
+
+const ms = (n: number | null) => `${(n ?? 0).toLocaleString("en")} ms`;
+const half = ({ totalMs, p50Ms, p95Ms, maxMs }: Spread) =>
+  `${(totalMs / 1000).toFixed(1)} s (p50 ${ms(p50Ms)}, p95 ${ms(p95Ms)}, max ${ms(maxMs)})`;
+
+export function printTurnTimes({ restore, play }: TurnTimes): string {
+  if (restore.count === 0) return "no turn played";
+  return `${restore.count.toLocaleString("en")} turns played: restoring took ${half(restore)}, playing ${half(play)}`;
 }
