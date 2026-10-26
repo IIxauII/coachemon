@@ -344,7 +344,7 @@ const starters = (over = {}) => ({
   const card = starters();
   const { groups, text } = show("starters · a proposal, a pick made and a cursor", card, drawStarters);
   assert.deepEqual(groups.map(g => g.id), ["act", "options", "notes"]);
-  assert.equal(groups[0].summary, "4/10 pts spent · best: Gible (carry) + Magikarp · 10/10 pts · weak Ice");
+  assert.equal(groups[0].summary, "spent 4/10 pts · best: Gible (carry) + Magikarp · 10/10 pts · weak Ice");
   assert.ok(groups[0].rows.some(r => r.includes("picked: Gible")), groups[0].rows.join("\n"));
   assert.ok(groups[1].rows.some(r => r.includes("Rattata")), groups[1].rows.join("\n"));
   assert.ok(text.includes("\nProposals\n★ best"), text);
@@ -354,7 +354,7 @@ const starters = (over = {}) => ({
 {
   const { groups } = show("starters · nothing to add", starters({ picks: [], full: true, room: 0, viewing: null }), drawStarters);
   assert.deepEqual(groups.map(g => g.id), ["act"]);
-  assert.equal(groups[0].summary, "4/10 pts spent · nothing to add");
+  assert.equal(groups[0].summary, "spent 4/10 pts · nothing to add");
 }
 
 // ---- Fusion: the call line leaves the rows, because `act.summary` carries it.

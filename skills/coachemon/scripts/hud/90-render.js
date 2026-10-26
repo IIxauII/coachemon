@@ -147,15 +147,15 @@ export const sep = { borderTop: "1px solid rgba(255,255,255,.12)", margin: "3px 
 
 export const GROUP_IDS = ["act", "foes", "catch", "plan", "options", "audit", "road", "notes"];
 const inOrder = groups => GROUP_IDS.flatMap(id => (groups ?? []).filter(g => g.id === id));
-// `rows` are nodes, each flattened to one line of text. `lead` reaches the wire alone, ahead of the summary: the facts
-// the strip's head draws (#905).
-export const group = (id, label, summary, rows, lead = null) => {
+// `rows` are nodes, each flattened to one line of text. `caption`, the caption's words, reaches the wire alone, ahead of
+// the summary (extension-distribution.md §11.1).
+export const group = (id, label, summary, rows, caption = null) => {
   if (!GROUP_IDS.includes(id)) throw new Error(`unknown group ${id}`);
   if (!label) throw new Error(`group ${id} has no label`);
-  return { id, label, summary: summary || null, rows: (rows ?? []).filter(Boolean), lead: lead || null };
+  return { id, label, summary: summary || null, rows: (rows ?? []).filter(Boolean), caption: caption || null };
 };
-export const some = (id, label, summary, rows, lead) => {
-  const g = group(id, label, summary, rows, lead);
+export const some = (id, label, summary, rows, caption) => {
+  const g = group(id, label, summary, rows, caption);
   return g.summary || g.rows.length ? g : null;
 };
 
@@ -248,7 +248,7 @@ export const drawer = groups => {
 // one table. A second copy here, for the tests alone, let the panel change under a suite still drawing the old shape
 // (#388).
 export const flatGroups = groups => inOrder(groups).map(g => ({ id: g.id, label: g.label,
-  summary: [g.lead, g.summary].filter(Boolean).join(" · ") || null, rows: g.rows.map(rowText).map(clean).filter(Boolean) }));
+  summary: [g.caption, g.summary].filter(Boolean).join(" · ") || null, rows: g.rows.map(rowText).map(clean).filter(Boolean) }));
 
 // The text, walked off the **flattened** groups and nothing else, so the wire and the text cannot disagree.
 const textOfGroups = wire => wire

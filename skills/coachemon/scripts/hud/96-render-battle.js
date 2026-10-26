@@ -14,7 +14,7 @@ const sendOrder = m => {
 };
 export const captionBattle = m => caption("🎯", m.title,
   ...sendOrder(m).flatMap((o, i) => [i ? h("span", dim, "›") : null, mon(o.icon, o.name, ICON.mon)]));
-const leadBattle = m => {
+const battleCaptionText = m => {
   const order = sendOrder(m);
   return [m.trainer ? m.title : null, order.length ? `we send ${order.map(o => o.name).join(" › ")}` : null].filter(Boolean).join(" · ");
 };
@@ -24,7 +24,7 @@ const planGroup = m => some("plan", "Plan", planSummary(m), m.oracleLine ? drawO
 
 export const drawBattle = m => {
   const oracle = drawOracleStep(m.oracleLine), off = drawOffTheLine(m.offTheLine);
-  if (m.unavailable) return [group("act", "Now", actSummary(m), [...off, ...oracle], leadBattle(m)), planGroup(m)].filter(Boolean);
+  if (m.unavailable) return [group("act", "Now", actSummary(m), [...off, ...oracle], battleCaptionText(m)), planGroup(m)].filter(Boolean);
   const f = m.field;
 
   const threatTag = t => {
@@ -148,7 +148,7 @@ export const drawBattle = m => {
   // The same rows as 96-render-rewards' road, which a file on this layer can't import: change both.
   const road = [...drawPreview(m.preview), ...drawAhead(m.ahead)];
   return [
-    some("act", "Now", actSummary(m), oracle.length ? [...enemySwitches, ...oracle] : [...off, ...field], leadBattle(m)),
+    some("act", "Now", actSummary(m), oracle.length ? [...enemySwitches, ...oracle] : [...off, ...field], battleCaptionText(m)),
     some("foes", "Foes", foesSummary(m), [team, ...rows]),
     some("catch", "Catch", catchSummary(m.catch), drawCatch(m)),
     planGroup(m),
