@@ -1,5 +1,7 @@
 import type { BattleType, GameModes, MysteryEncounterType, TrainerVariant } from "../enums/generated.ts";
 import type { ExtrasResult } from "../page/extras.ts";
+import type { Beam } from "./oracle-line.ts";
+import type { Lds } from "./search.ts";
 
 export type SolveInput = {
   /** The wave-start save, or the session export when `extras` comes with it. */
@@ -11,6 +13,9 @@ export type SolveInput = {
   liveExport?: SessionSave;
   cloneVersion: string;
   budget: Budget;
+  /** The search's own `LDS` and `PORTFOLIO` where unset; a `null` discrepancy search runs the beams alone. */
+  lds?: Lds | null;
+  portfolio?: readonly Beam[];
 };
 
 export type Battle = { wave: number; battleSeed: string };
