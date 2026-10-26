@@ -27,7 +27,8 @@
     "recheck:promote": "node scripts/recheck/promote-run.ts",
     "bump:suite": "node scripts/bump-suite/run.ts",
     "ladder:drift": "node scripts/drift.ts",
-    "reads:check": "node scripts/game-reads/main.ts"
+    "reads:check": "node scripts/game-reads/main.ts",
+    "library:import": "node scripts/library-import/run.ts"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
