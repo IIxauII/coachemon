@@ -191,7 +191,7 @@ middle of a bump is recorded by hand (below).
    there (what it solved from) and, once it finds an oracle line, `turn-1.win.script.json` beside it, its `known` taken
    from the oracle line's checkpoints. A re-solve past the first turn keeps its pair the same way under the turn it started
    at, `turn-<n>.json` (the augmented export and its extras) and `turn-<n>.win.script.json`. A repeat solve from the same
-   turn replaces that turn's input, and the oracle line only with one it found. Every solve that keeps its input,
+   turn replaces that turn's pair: its input, and its oracle line only if this solve found one. Every recorded solve,
    cancelled and failed ones too, appends one line to the folder's `statistics.jsonl`: the turn it started at, how it
    ended, and the settings and versions it ran under; a solve that got as far as the solver also says how long its gate,
    load check and pool start took (or that its pool was warm), its pool's final stats, how long the turns it played took

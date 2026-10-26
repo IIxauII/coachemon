@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test, { after } from "node:test";
 import { fileURLToPath } from "node:url";
-import { LIBRARY } from "../library-import/library-import.ts";
+import { LIBRARY } from "../library-replay/library-replay.ts";
 import { assemble, shipped, strays, workingTree } from "./plugin-copy.ts";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");

@@ -3,11 +3,13 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
+import { recordSolveStart, solveStartsIn } from "../../src/solver/fight-library.ts";
+import type { Script, SessionSave, SolveInput } from "../../src/solver/solver.ts";
 import { type KnownFight, promote, type PromoteDeps } from "./promote.ts";
 
 const PIN = "1.12.1.3";
 
-const save = {
+const save: SessionSave = {
   gameVersion: PIN,
   gameMode: 0,
   seed: "Zu5cgKRQ0vigLcOhpJxYMUa0",
@@ -17,26 +19,34 @@ const save = {
   party: [],
   enemyParty: [],
 };
-const KEPT = {
+const KEPT: SolveInput = {
   live: { wave: 180, battleSeed: "U0QKEz8wJ8ea7832" },
   save,
   liveExport: { ...save, party: [{ id: 1 }] },
   cloneVersion: PIN,
   budget: { expansions: 3000, turns: 40 },
 };
-const LINE = { inputs: [{ kind: "move", move: "SURF", tera: false }], known: { outcome: "won", after: [{ turn: 1 }] } };
+const LINE: Script = { inputs: [{ kind: "move", move: "SURF", tera: false }], known: { outcome: "won", after: [{ turn: 1 }] } };
 const BEFORE: KnownFight[] = [{ stem: "drayton-w188", name: "Drayton W188" }];
 
+const midFight = (turn: number): SolveInput => ({ ...KEPT, extras: { turn } as unknown as NonNullable<SolveInput["extras"]> });
+
+/** Records `input`'s solve into `home`, as `COACHEMON_CAPTURE=1` does, with `line` as the oracle line it found, if any; its input file. */
+function recorded(home: string, input: SolveInput, line: Script | null = LINE): string {
+  recordSolveStart({ home }, input)?.finish({ ended: line ? { kind: "oracle_line" } : { kind: "no_answer", code: "no_win" }, report: null, oracleLine: line ?? undefined });
+  const start = solveStartsIn({ home }).find(s => s.turn === (input.extras?.turn ?? 1));
+  if (start === undefined) throw new Error("not recorded");
+  return start.files.input;
+}
+
 /** A home's fight folder, holding its first-turn solve, beside an empty fixtures folder and a known-fights list of one. */
-function setUp({ kept = KEPT, line = LINE as unknown }: { kept?: unknown; line?: unknown } = {}) {
+function setUp({ kept = KEPT, line = LINE }: { kept?: SolveInput; line?: Script | null } = {}) {
   const root = mkdtempSync(path.join(tmpdir(), "coachemon-promote-"));
-  const fight = path.join(root, "home", "fights", "Zu5cgKRQ0vigLcOhpJxYMUa0-w180-gordie");
+  const home = path.join(root, "home");
   const fixtures = path.join(root, "fixtures");
-  mkdirSync(fight, { recursive: true });
   mkdirSync(fixtures);
-  const keptFile = path.join(fight, "turn-1.json");
-  writeFileSync(keptFile, JSON.stringify(kept));
-  if (line !== null) writeFileSync(keptFile.replace(/\.json$/, ".win.script.json"), JSON.stringify(line));
+  const keptFile = recorded(home, kept, line);
+  const fight = path.dirname(keptFile);
   const knownFights = path.join(root, "known-fights.json");
   writeFileSync(knownFights, JSON.stringify(BEFORE));
   const rechecked: KnownFight[] = [];
@@ -51,7 +61,7 @@ function setUp({ kept = KEPT, line = LINE as unknown }: { kept?: unknown; line?:
     },
   });
   const known = () => JSON.parse(readFileSync(knownFights, "utf8")) as KnownFight[];
-  return { fight, keptFile, fixtures, deps, known, rechecked };
+  return { home, fight, keptFile, fixtures, deps, known, rechecked };
 }
 
 test("promoting a kept fight's first-turn solve adds its fixtures and its known-fights entry, then re-checks that fight at the pin (#787, #936)", async () => {
@@ -93,7 +103,8 @@ test("promotion refuses a kept fight with no oracle line file, naming why, and c
 });
 
 test("promotion refuses a mid-fight file, which the re-check can't replay from the wave start (#787)", async () => {
-  const { keptFile, deps, known } = setUp({ kept: { ...KEPT, extras: {} } });
+  const { keptFile, deps, known } = setUp();
+  writeFileSync(keptFile, JSON.stringify({ ...KEPT, extras: {} }));
 
   await refusedWith(promote(keptFile, deps()), /mid-fight.*wave-start save/);
 
@@ -101,13 +112,12 @@ test("promotion refuses a mid-fight file, which the re-check can't replay from t
 });
 
 test("promotion refuses a fight folder's mid-fight solve, either of its files, as it refuses any mid-fight file, and changes nothing (#937)", async () => {
-  const { fight, fixtures, deps, known, rechecked } = setUp();
-  const midFight = path.join(fight, "turn-5");
-  writeFileSync(`${midFight}.json`, JSON.stringify({ ...KEPT, extras: { turn: 5 } }));
-  writeFileSync(`${midFight}.win.script.json`, JSON.stringify(LINE));
+  const { home, fixtures, deps, known, rechecked } = setUp();
+  recorded(home, midFight(5));
+  const { files } = solveStartsIn({ home })[1];
 
-  await refusedWith(promote(`${midFight}.json`, deps()), /turn-5\.json is a mid-fight solve's.*wave-start save/);
-  await refusedWith(promote(`${midFight}.win.script.json`, deps()), /turn-5\.json is a mid-fight solve's.*wave-start save/);
+  await refusedWith(promote(files.input, deps()), /turn-5\.json is a mid-fight solve's.*wave-start save/);
+  await refusedWith(promote(files.oracleLine, deps()), /turn-5\.json is a mid-fight solve's.*wave-start save/);
 
   assert.equal(existsSync(path.join(fixtures, "gordie-w180.json")), false);
   assert.deepEqual(known(), BEFORE);
@@ -115,9 +125,8 @@ test("promotion refuses a fight folder's mid-fight solve, either of its files, a
 });
 
 test("a fight folder holding mid-fight solves too still promotes its first-turn solve (#937)", async () => {
-  const { fight, fixtures, deps } = setUp();
-  writeFileSync(path.join(fight, "turn-5.json"), JSON.stringify({ ...KEPT, extras: { turn: 5 } }));
-  writeFileSync(path.join(fight, "turn-5.win.script.json"), JSON.stringify({ ...LINE, inputs: [{ kind: "move", move: "THUNDER", tera: true }] }));
+  const { home, fight, fixtures, deps } = setUp();
+  recorded(home, midFight(5), { ...LINE, inputs: [{ kind: "move", move: "THUNDER", tera: true }] });
 
   const out = await promote(fight, deps());
 
@@ -129,6 +138,19 @@ test("promotion refuses a fight saved on another game version than the pin, whic
   const { keptFile, deps } = setUp({ kept: { ...KEPT, save: { ...save, gameVersion: "1.12.0.11" } } });
 
   await refusedWith(promote(keptFile, deps()), /1\.12\.0\.11.*pin is 1\.12\.1\.3/);
+});
+
+test("promotion refuses a path that is no fight folder or solve start file, and an input that doesn't read, naming it, and changes nothing", async () => {
+  const { fight, keptFile, deps, known, rechecked } = setUp();
+  const notes = path.join(fight, "notes.txt");
+  writeFileSync(notes, "won it live");
+
+  await refusedWith(promote(notes, deps()), new RegExp(`^${notes.replaceAll(/[.\\/]/g, "\\$&")} is no fight folder and no solve start's file`));
+  writeFileSync(keptFile, "{ not json");
+  await refusedWith(promote(fight, deps()), /^turn-1\.json doesn't read: /);
+
+  assert.deepEqual(known(), BEFORE);
+  assert.deepEqual(rechecked, []);
 });
 
 test("promotion refuses a stem the fixtures already hold, so no known fight is overwritten (#787)", async () => {

@@ -2,11 +2,11 @@
  * Turns a fight `COACHEMON_CAPTURE=1` kept under the home into a known fight (#787, #936). Promoting is the maintainer's word
  * that live won the fight on the kept oracle line: nothing here checks that.
  */
-import { existsSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { FIRST_TURN, fightName } from "../../src/solver/capture.ts";
-import { WIN_SCRIPT } from "../../src/solver/script.ts";
-import { readScript, type SolveInput } from "../../src/solver/solver.ts";
+import { fightName, solveStartAt } from "../../src/solver/fight-library.ts";
+import { type Script, WIN_SCRIPT } from "../../src/solver/script.ts";
+import type { SolveInput } from "../../src/solver/solver.ts";
 import type { KnownFight } from "./recheck.ts";
 
 export type { KnownFight };
@@ -22,16 +22,11 @@ export type PromoteDeps = {
 export type Promoted = { promoted: KnownFight } | { refused: string };
 
 /** A known fight's `<stem>.json`. */
-type Recorded = Required<Pick<SolveInput, "live" | "save" | "liveExport">>;
+type Recorded = Pick<SolveInput, "live" | "save" | "liveExport">;
 
 /** `kept` is a fight folder, for its first-turn solve, or either of a solve's two files in one. */
 export async function promote(kept: string, deps: PromoteDeps, stem?: string): Promise<Promoted> {
-  const keptStem = isFolder(kept)
-    ? path.join(kept, FIRST_TURN)
-    : kept.endsWith(WIN_SCRIPT)
-      ? kept.slice(0, -WIN_SCRIPT.length)
-      : kept.replace(/\.json$/, "");
-  const read = readKept(keptStem, deps.pin);
+  const read = readKept(kept, deps.pin);
   if ("refused" in read) return read;
   const { recorded, script } = read;
 
@@ -47,7 +42,7 @@ export async function promote(kept: string, deps: PromoteDeps, stem?: string): P
     writeFileSync(deps.knownFights, listed(known));
   };
   writeFileSync(files[0], JSON.stringify(recorded) + "\n");
-  writeFileSync(files[1], script);
+  writeFileSync(files[1], JSON.stringify(script) + "\n");
   writeFileSync(deps.knownFights, listed([...known, fight]));
   let failed: string[];
   try {
@@ -61,29 +56,25 @@ export async function promote(kept: string, deps: PromoteDeps, stem?: string): P
   return { refused: `the re-check of ${fight.name} failed: ${failed.join("; ")}. Nothing was promoted.` };
 }
 
-const isFolder = (file: string) => existsSync(file) && statSync(file).isDirectory();
-
-function readKept(keptStem: string, pin: string): { recorded: Recorded; script: string } | { refused: string } {
-  const kept = JSON.parse(readFileSync(`${keptStem}.json`, "utf8")) as Recorded & Partial<Pick<SolveInput, "extras" | "cloneVersion" | "budget">>;
-  if (kept.extras !== undefined) {
-    return { refused: `${keptStem}.json is a mid-fight solve's: the re-check replays a fight from its wave-start save, with no extras.` };
+function readKept(kept: string, pin: string): { recorded: Recorded; script: Script } | { refused: string } {
+  const start = solveStartAt(kept);
+  if ("why" in start) return { refused: start.why };
+  const { input, oracleLine, files } = start;
+  if ("why" in input) return { refused: input.why };
+  if (input.extras !== undefined) {
+    return { refused: `${files.input} is a mid-fight solve's: the re-check replays a fight from its wave-start save, with no extras.` };
   }
-  if (kept.save?.gameVersion !== pin) {
+  if (input.save.gameVersion !== pin) {
     return {
-      refused: `${keptStem}.json was saved on game version ${kept.save?.gameVersion}, and the pin is ${pin}: the re-check would carry it, where a known fight recorded now replays without one.`,
+      refused: `${files.input} was saved on game version ${input.save.gameVersion}, and the pin is ${pin}: the re-check would carry it, where a known fight recorded now replays without one.`,
     };
   }
-  if (!existsSync(`${keptStem}${WIN_SCRIPT}`)) {
-    return { refused: `${keptStem} has no oracle line file: its solve ended without an oracle line, so there is none it was won on.` };
+  if (oracleLine === null) {
+    return { refused: `${files.input} has no oracle line file: its solve ended without an oracle line, so there is none it was won on.` };
   }
-  const script = readFileSync(`${keptStem}${WIN_SCRIPT}`, "utf8");
-  try {
-    readScript(script);
-  } catch (e) {
-    return { refused: `${keptStem}${WIN_SCRIPT} doesn't read as a script: ${e instanceof Error ? e.message : String(e)}` };
-  }
-  const { live, save, liveExport } = kept;
-  return { recorded: { live, save, liveExport }, script };
+  if ("why" in oracleLine) return { refused: oracleLine.why };
+  const { live, save, liveExport } = input;
+  return { recorded: { live, save, liveExport }, script: oracleLine };
 }
 
 /** `gordie-w180` is `Gordie W180`. */

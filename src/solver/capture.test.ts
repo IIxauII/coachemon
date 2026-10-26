@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import type { JobControl, JobWork } from "../jobs.ts";
-import { type Recorder, type SolveEnd, STATISTICS, withCapture } from "./capture.ts";
-import type { Input, MonState, OracleLine, SessionSave, SolveInput, SolveResult } from "./solver.ts";
-import { readScript, solve } from "./solver.ts";
+import { withCapture } from "./capture.ts";
+import { type Recorder, type SolveEnd, type SolveStart, solveStartsIn, statisticsEntriesIn } from "./fight-library.ts";
+import type { Input, MonState, OracleLine, Script, SessionSave, SolveInput, SolveResult } from "./solver.ts";
+import { solve } from "./solver.ts";
 import type { SearchStatistics } from "./search.ts";
 import { type SolveWork, solveJob } from "./solve-job.ts";
 
@@ -68,25 +69,29 @@ const solved =
   async () =>
     result;
 
-const GORDIE = "Zu5cgKRQ0vigLcOhpJxYMUa0-w180-gordie";
+const starts = (dir: string): SolveStart[] => solveStartsIn({ home: dir });
 
-test("with capture on, a T1 solve that ends in an oracle line keeps its input and an oracle line readScript reads, under the fight's folder (#787, #936)", async () => {
+const oracleLines = (dir: string) => starts(dir).map(s => s.oracleLine);
+
+const scriptOf = (dir: string): Script => starts(dir)[0].oracleLine as Script;
+
+test("with capture on, a T1 solve that ends in an oracle line records its solve start with the oracle line it found, read back through the fight library (#787, #936)", async () => {
   const dir = home();
   const input = t1();
 
   const result = await withCapture(solved(), dir, ON)({ input }, ctl());
 
   assert.equal((result as SolveResult).kind, "oracle_line");
-  const stem = path.join(dir, "fights", GORDIE, "turn-1");
-  assert.deepEqual(JSON.parse(readFileSync(`${stem}.json`, "utf8")), {
+  const [start] = starts(dir);
+  assert.deepEqual([start.fight.name, start.fight.wave, start.turn], ["gordie", 180, 1]);
+  assert.deepEqual(start.input, {
     live: input.live,
     save: input.save,
     liveExport: input.liveExport,
     cloneVersion: "1.12.1.3",
     budget: { expansions: 3000, turns: 40 },
   });
-  const script = readScript(readFileSync(`${stem}.win.script.json`, "utf8"));
-  assert.deepEqual(script, {
+  assert.deepEqual(start.oracleLine, {
     inputs: [{ kind: "move", move: "SURF", tera: false }],
     known: {
       outcome: "won",
@@ -127,39 +132,6 @@ const midFight = (turn: number): SolveInput => {
   return { ...input, save: exported, extras: { turn, rndState: `rng-${turn}` } as unknown as NonNullable<SolveInput["extras"]> };
 };
 
-test("a fight's first-turn solve and a mid-fight re-solve share its folder, the re-solve's augmented export and oracle line kept under the turn it started at (#937)", async () => {
-  const dir = home();
-  const input = midFight(5);
-  await withCapture(solved(), dir, ON)({ input: t1() }, ctl());
-
-  await withCapture(solved(), dir, ON)({ input }, ctl());
-
-  const fight = path.join(dir, "fights", GORDIE);
-  assert.deepEqual(readdirSync(fight).sort(), [STATISTICS, "turn-1.json", "turn-1.win.script.json", "turn-5.json", "turn-5.win.script.json"]);
-  assert.deepEqual(JSON.parse(readFileSync(path.join(fight, "turn-5.json"), "utf8")), {
-    live: input.live,
-    save: input.save,
-    extras: input.extras,
-    liveExport: input.liveExport,
-    cloneVersion: "1.12.1.3",
-    budget: { expansions: 3000, turns: 40 },
-  });
-  assert.deepEqual(readScript(readFileSync(path.join(fight, "turn-5.win.script.json"), "utf8")).inputs, [{ kind: "move", move: "SURF", tera: false }]);
-  assert.equal(JSON.parse(readFileSync(path.join(fight, "turn-1.json"), "utf8")).extras, undefined);
-});
-
-test("two re-solves from different turns are both kept, one that found no oracle line with its input alone (#937)", async () => {
-  const dir = home();
-
-  await withCapture(solved(NONE), dir, ON)({ input: midFight(3) }, ctl());
-  await withCapture(solved(), dir, ON)({ input: midFight(7) }, ctl());
-
-  const fight = path.join(dir, "fights", GORDIE);
-  assert.deepEqual(readdirSync(fight).sort(), [STATISTICS, "turn-3.json", "turn-7.json", "turn-7.win.script.json"]);
-  assert.equal(JSON.parse(readFileSync(path.join(fight, "turn-3.json"), "utf8")).extras.rndState, "rng-3");
-  assert.equal(JSON.parse(readFileSync(path.join(fight, "turn-7.json"), "utf8")).extras.rndState, "rng-7");
-});
-
 test("a re-solve whose augmented export lacks the turn keeps nothing, there being no turn to keep it under, and its answer stands (#937)", async () => {
   const dir = home();
   const input = { ...midFight(4), extras: { turn: null, unread: ["turn"] } as unknown as NonNullable<SolveInput["extras"]> };
@@ -167,7 +139,8 @@ test("a re-solve whose augmented export lacks the turn keeps nothing, there bein
   const result = await withCapture(solved(NONE), dir, ON)({ input }, ctl());
 
   assert.deepEqual(result, NONE);
-  assert.equal(existsSync(path.join(dir, "fights")), false);
+  assert.deepEqual(starts(dir), []);
+  assert.deepEqual(statisticsEntriesIn({ home: dir }).entries, []);
 });
 
 test("a solve that ends with no oracle line keeps its input and no oracle line (#787, #936)", async () => {
@@ -175,30 +148,21 @@ test("a solve that ends with no oracle line keeps its input and no oracle line (
 
   await withCapture(solved(NONE), dir, ON)({ input: t1() }, ctl());
 
-  assert.deepEqual(readdirSync(path.join(dir, "fights", GORDIE)).sort(), [STATISTICS, "turn-1.json"]);
+  assert.deepEqual(
+    starts(dir).map(s => [s.turn, "why" in s.input, s.oracleLine]),
+    [[1, false, null]],
+  );
 });
 
-test("a repeat solve from the same turn replaces the input, and an earlier oracle line stays when the repeat finds none (#936)", async () => {
+test("a repeat solve from the same turn that finds no oracle line replaces the pair, leaving its new solve start with none (#969)", async () => {
   const dir = home();
-  const stem = path.join(dir, "fights", GORDIE, "turn-1");
   await withCapture(solved(), dir, ON)({ input: t1() }, ctl());
 
   const repeat = { ...t1(), budget: { expansions: 40000, turns: 40 } };
   await withCapture(solved(NONE), dir, ON)({ input: repeat }, ctl());
 
-  assert.deepEqual(JSON.parse(readFileSync(`${stem}.json`, "utf8")).budget, { expansions: 40000, turns: 40 });
-  assert.deepEqual(readScript(readFileSync(`${stem}.win.script.json`, "utf8")).inputs, [{ kind: "move", move: "SURF", tera: false }]);
-});
-
-test("a repeat solve that finds an oracle line replaces the earlier one (#936)", async () => {
-  const dir = home();
-  await withCapture(solved(), dir, ON)({ input: t1() }, ctl());
-
-  const other: OracleLine = { ...LINE, steps: [{ turn: 1, input: { kind: "move", move: "THUNDER", tera: true }, checkpoint: { ours: [], foes: [] } }] };
-  await withCapture(solved({ kind: "oracle_line", oracleLine: other }), dir, ON)({ input: t1() }, ctl());
-
-  const script = readScript(readFileSync(path.join(dir, "fights", GORDIE, "turn-1.win.script.json"), "utf8"));
-  assert.deepEqual(script.inputs, [{ kind: "move", move: "THUNDER", tera: true }]);
+  const [start] = starts(dir);
+  assert.deepEqual([(start.input as SolveInput).budget, start.oracleLine], [{ expansions: 40000, turns: 40 }, null]);
 });
 
 test("a solve cancelled before its oracle line came back keeps none (#787, #936)", async () => {
@@ -211,28 +175,7 @@ test("a solve cancelled before its oracle line came back keeps none (#787, #936)
 
   await withCapture(work, dir, ON)({ input: t1() }, { signal: controller.signal, progress: () => {} });
 
-  assert.deepEqual(readdirSync(path.join(dir, "fights", GORDIE)).sort(), [STATISTICS, "turn-1.json"]);
-});
-
-test("more than 12 fights are all kept, each in a folder of its own (#936)", async () => {
-  const dir = home();
-
-  for (let wave = 1; wave <= 13; wave++) await withCapture(solved(), dir, ON)({ input: t1({ waveIndex: wave }) }, ctl());
-
-  const fights = readdirSync(path.join(dir, "fights")).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-  assert.deepEqual(fights, Array.from({ length: 13 }, (_, i) => `Zu5cgKRQ0vigLcOhpJxYMUa0-w${i + 1}-gordie`));
-  for (const fight of fights) assert.deepEqual(readdirSync(path.join(dir, "fights", fight)).sort(), [STATISTICS, "turn-1.json", "turn-1.win.script.json"]);
-});
-
-test("two solves of one fight share its folder, and another fight on the same wave gets its own (#936)", async () => {
-  const dir = home();
-
-  await withCapture(solved(), dir, ON)({ input: t1() }, ctl());
-  await withCapture(solved(), dir, ON)({ input: t1() }, ctl());
-  await withCapture(solved(), dir, ON)({ input: t1({ trainer: { trainerType: 57, variant: 2 } }) }, ctl());
-
-  assert.deepEqual(readdirSync(path.join(dir, "fights")).sort(), [GORDIE, "Zu5cgKRQ0vigLcOhpJxYMUa0-w180-swimmers"]);
-  assert.deepEqual(readdirSync(path.join(dir, "fights", GORDIE)).sort(), [STATISTICS, "turn-1.json", "turn-1.win.script.json"]);
+  assert.deepEqual(oracleLines(dir), [null]);
 });
 
 test("a home where no fight folder can be made still gets the solve's own answer (#787, #936)", async () => {
@@ -244,17 +187,28 @@ test("a home where no fight folder can be made still gets the solve's own answer
   assert.deepEqual(result, { kind: "oracle_line", oracleLine: LINE });
 });
 
-test("an oracle line that can't be written leaves no part of it behind, and the input and the answer stand (#787, #936)", async () => {
+/** A fight solved once without an oracle line, with a directory planted at `file`, its oracle line's or that one's part. */
+async function plantedAt(file: (oracleLine: string) => string): Promise<string> {
   const dir = home();
-  const fight = path.join(dir, "fights", GORDIE);
-  mkdirSync(path.join(fight, "turn-1.win.script.json"), { recursive: true });
+  await withCapture(solved(NONE), dir, ON)({ input: t1() }, ctl());
+  mkdirSync(file(starts(dir)[0].files.oracleLine));
+  return dir;
+}
+
+test("an old oracle line that can't be removed still leaves the solve's own answer (#969)", async () => {
+  const dir = await plantedAt(line => line);
 
   const result = await withCapture(solved(), dir, ON)({ input: t1() }, ctl());
 
   assert.deepEqual(result, { kind: "oracle_line", oracleLine: LINE });
-  assert.deepEqual(readdirSync(fight).sort(), [STATISTICS, "turn-1.json", "turn-1.win.script.json"]);
-  assert.deepEqual(readdirSync(path.join(fight, "turn-1.win.script.json")), []);
-  assert.equal(JSON.parse(readFileSync(path.join(fight, "turn-1.json"), "utf8")).cloneVersion, "1.12.1.3");
+});
+
+test("an oracle line that can't be written still leaves the solve's own answer (#787, #936)", async () => {
+  const dir = await plantedAt(line => `${line}.part`);
+
+  const result = await withCapture(solved(), dir, ON)({ input: t1() }, ctl());
+
+  assert.deepEqual(result, { kind: "oracle_line", oracleLine: LINE });
 });
 
 test("a trainer double's oracle line keeps each field slot's command and replacement as played, under the pair's name (#787, #936)", async () => {
@@ -271,8 +225,8 @@ test("a trainer double's oracle line keeps each field slot's command and replace
     ctl(),
   );
 
-  const script = readScript(readFileSync(path.join(dir, "fights", "Zu5cgKRQ0vigLcOhpJxYMUa0-w173-swimmers", "turn-1.win.script.json"), "utf8"));
-  assert.deepEqual(script.inputs, [double]);
+  assert.deepEqual(starts(dir)[0].fight.name, "swimmers");
+  assert.deepEqual(scriptOf(dir).inputs, [double]);
 });
 
 test("a species twice on one side is left out of what live must show, which keys each mon by species (#787)", async () => {
@@ -284,19 +238,14 @@ test("a species twice on one side is left out of what live must show, which keys
 
   await withCapture(solved({ kind: "oracle_line", oracleLine: line }), dir, ON)({ input: t1() }, ctl());
 
-  const script = readScript(readFileSync(path.join(dir, "fights", GORDIE, "turn-1.win.script.json"), "utf8"));
-  assert.deepEqual(Object.keys(script.known?.after[0].ours ?? {}), ["PALKIA"]);
+  assert.deepEqual(Object.keys(scriptOf(dir).known?.after[0].ours ?? {}), ["PALKIA"]);
 });
 
 const AT = "2026-10-26T09:30:00.000Z";
 
 const recorder = (): Recorder => ({ now: () => new Date(AT), pluginVersion: "1.83.0" });
 
-const entries = (dir: string, fight = GORDIE): unknown[] =>
-  readFileSync(path.join(dir, "fights", fight, "statistics.jsonl"), "utf8")
-    .split("\n")
-    .filter(line => line !== "")
-    .map(line => JSON.parse(line));
+const entries = (dir: string): unknown[] => statisticsEntriesIn({ home: dir }).entries.map(e => e.statistics);
 
 test("a solve that ends in an oracle line appends one statistics entry: the turn it started from, when, how it ended, its settings and the versions (#938)", async () => {
   const dir = home();
@@ -320,36 +269,6 @@ test("a solve that ends in an oracle line appends one statistics entry: the turn
       gameVersion: "1.12.1.3",
     },
   ]);
-});
-
-test("repeat solves of one fight append an entry each, under the settings each ran with, and none is overwritten (#938)", async () => {
-  const dir = home();
-  const lds = { ours: 0.5, alternatives: 3, discrepancies: 1, expansions: 500 };
-
-  await withCapture(solved(), dir, ON, recorder())({ input: t1() }, ctl());
-  await withCapture(solved(NONE), dir, ON, recorder())({ input: { ...t1(), budget: { expansions: 40000, turns: 60 }, lds, portfolio: [{ width: 4, ours: 1 }] } }, ctl());
-  await withCapture(solved(), dir, ON, recorder())({ input: { ...t1(), lds: null } }, ctl());
-
-  const [first, second, third] = entries(dir) as Record<string, unknown>[];
-  assert.equal(entries(dir).length, 3);
-  assert.deepEqual(first.ended, { kind: "oracle_line" });
-  assert.deepEqual([second.ended, second.budget, second.lds, second.portfolio], [{ kind: "no_answer", code: "no_win" }, { expansions: 40000, turns: 60 }, lds, [{ width: 4, ours: 1 }]]);
-  assert.deepEqual([third.ended, third.lds], [{ kind: "oracle_line" }, null]);
-});
-
-test("a mid-fight re-solve appends its entry to the fight's file under the turn it started at, beside the first-turn solve's (#937, #938)", async () => {
-  const dir = home();
-
-  await withCapture(solved(), dir, ON, recorder())({ input: t1() }, ctl());
-  await withCapture(solved(NONE), dir, ON, recorder())({ input: midFight(5) }, ctl());
-
-  assert.deepEqual(
-    (entries(dir) as Record<string, unknown>[]).map(e => [e.turn, e.ended]),
-    [
-      [1, { kind: "oracle_line" }],
-      [5, { kind: "no_answer", code: "no_win" }],
-    ],
-  );
 });
 
 test("a failed solve gets an entry saying it failed and why, and still fails with its own error (#938)", async () => {
@@ -395,18 +314,19 @@ test("a solve cancelled before it reported any progress says so (#938)", async (
 
 test("a statistics file that can't be written leaves the solve's answer and its error as they were (#938)", async () => {
   const dir = home();
-  const fight = path.join(dir, "fights", GORDIE);
-  mkdirSync(path.join(fight, STATISTICS), { recursive: true });
+  mkdirSync(path.join(dir, "fights", "Zu5cgKRQ0vigLcOhpJxYMUa0-w180-gordie", "statistics.jsonl"), { recursive: true });
   const boom = new Error("the clone's worker died");
 
   const result = await withCapture(solved(), dir, ON, recorder())({ input: t1() }, ctl());
+  const won = oracleLines(dir);
   await assert.rejects(
     withCapture(async () => Promise.reject(boom), dir, ON, recorder())({ input: t1() }, ctl()),
     boom,
   );
 
   assert.deepEqual(result, { kind: "oracle_line", oracleLine: LINE });
-  assert.deepEqual(readdirSync(fight).sort(), [STATISTICS, "turn-1.json", "turn-1.win.script.json"]);
+  assert.equal(won.length === 1 && won[0] !== null && "inputs" in won[0], true, "the win's oracle line is kept");
+  assert.deepEqual(oracleLines(dir), [null], "the failed repeat replaced the pair");
 });
 
 test("an answer no entry can be made from is still handed back as it came (#938)", async () => {
@@ -415,7 +335,8 @@ test("an answer no entry can be made from is still handed back as it came (#938)
   const result = await withCapture(async () => undefined, dir, ON, recorder())({ input: t1() }, ctl());
 
   assert.equal(result, undefined);
-  assert.deepEqual(readdirSync(path.join(dir, "fights", GORDIE)), ["turn-1.json"]);
+  assert.deepEqual(oracleLines(dir), [null]);
+  assert.deepEqual(entries(dir), []);
 });
 
 test("recording passes each progress line through as reported and hands back the solve's own answer (#938)", async () => {

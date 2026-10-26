@@ -1,11 +1,13 @@
 /** Replays the fight library's oracle lines on the current code, and only reports: nothing it finds fails a run (#939). */
-import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
+import { type Filter, type SolveStart, solveStartsIn } from "../../src/solver/fight-library.ts";
 import type { Carry } from "../../src/solver/gate.ts";
 import { cause, newerVersion } from "../../src/solver/no-answer.ts";
 import type { Reason, ReplayResult } from "../../src/solver/oracle-line.ts";
-import { readScript, type Script, WIN_SCRIPT } from "../../src/solver/script.ts";
+import type { Script } from "../../src/solver/script.ts";
 import type { SolveInput } from "../../src/solver/solver.ts";
+
+export type { Filter };
 
 export const LIBRARY = new URL("../../src/solver/fixtures/library/", import.meta.url);
 
@@ -21,9 +23,8 @@ export type Outcome =
 
 export type OracleLineReplay = { fight: string; turn: number; outcome: Outcome };
 
-/** `stem` is a fight folder's `turn-<n>`: what that solve started from, and the oracle line it found. */
-export const replayOracleLine = (stem: string, version: string, replay: Replay): Promise<Outcome> =>
-  replayRead(readOracleLine(stem, version), version, replay);
+export const replayOracleLine = (start: SolveStart, version: string, replay: Replay): Promise<Outcome> =>
+  replayRead(readOracleLine(start, version), version, replay);
 
 async function replayRead(read: Read, version: string, replay: Replay): Promise<Outcome> {
   if ("why" in read) return { kind: "doesnt_load", why: read.why };
@@ -50,26 +51,11 @@ export const messageOf = (e: unknown) => (e instanceof Error ? e.message : Strin
 
 type Read = { given: Given; script: Script } | { why: string };
 
-/** `file` is a fight folder's `turn-<n>.json`, what one solve started from. */
-export function readSolveStart(file: string): SolveInput | { why: string } {
-  try {
-    const kept = JSON.parse(readFileSync(file, "utf8")) as SolveInput;
-    return typeof kept?.save?.gameVersion === "string" ? kept : { why: `${path.basename(file)} holds no save` };
-  } catch (e) {
-    return { why: `${path.basename(file)} doesn't read: ${messageOf(e)}` };
-  }
-}
-
-function readOracleLine(stem: string, version: string): Read {
-  const name = path.basename(stem);
-  const kept = readSolveStart(`${stem}.json`);
-  if ("why" in kept) return kept;
-  const given: Given = { ...kept, cloneVersion: version };
-  try {
-    return { given, script: readScript(readFileSync(`${stem}${WIN_SCRIPT}`, "utf8")) };
-  } catch (e) {
-    return { why: `${name}${WIN_SCRIPT} doesn't read as a script: ${messageOf(e)}` };
-  }
+function readOracleLine({ input, oracleLine, files }: SolveStart, version: string): Read {
+  if ("why" in input) return input;
+  if (oracleLine === null) return { why: `${path.basename(files.oracleLine)} is missing` };
+  if ("why" in oracleLine) return oracleLine;
+  return { given: { ...input, cloneVersion: version }, script: oracleLine };
 }
 
 const AT_TURN = /^turn (\d+): /;
@@ -98,36 +84,6 @@ export const described = (outcome: Outcome, version: string): string => {
   }
 };
 
-const WON = /^turn-(\d+)\.win\.script\.json$/;
-
-/** Each solve in a fight folder that found an oracle line, by the turn it started from. */
-function wonTurns(fight: string): number[] {
-  return readdirSync(fight)
-    .flatMap(file => {
-      const turn = WON.exec(file)?.[1];
-      return turn === undefined ? [] : [Number(turn)];
-    })
-    .sort((a, b) => a - b);
-}
-
-/** A fight is selected when it is any of `fights`, by its folder or its fight's name, and on any of `waves`; unset keeps all. */
-export type Filter = { fights?: readonly string[]; waves?: readonly number[] };
-
-/** The recorder's `<seed>-w<wave>-<fight>`. */
-const FIGHT = /^.+-w(\d+)-([a-z0-9-]+)$/;
-
-function selected(fight: string, { fights, waves }: Filter): boolean {
-  const [, wave, name] = FIGHT.exec(fight) ?? [];
-  if (fights?.length && !fights.some(f => f === fight || f === name)) return false;
-  return !waves?.length || waves.includes(Number(wave));
-}
-
-/** The fight folders in `folder` that `filter` selects, in name order. */
-export const fightFolders = (folder: string, filter: Filter): string[] =>
-  readdirSync(folder)
-    .sort()
-    .filter(fight => selected(fight, filter) && statSync(path.join(folder, fight)).isDirectory());
-
 /** Every oracle line in `folder`, a folder of fight folders, replayed on `version`. Each line of `text` goes to `print` as it comes. */
 export async function replayLibrary(
   folder: string,
@@ -136,9 +92,9 @@ export async function replayLibrary(
   print: (line: string) => void = () => {},
   filter: Filter = {},
 ): Promise<{ oracleLines: OracleLineReplay[]; text: string }> {
-  const found = fightFolders(folder, filter).flatMap(fight =>
-    wonTurns(path.join(folder, fight)).map(turn => ({ fight, turn, read: readOracleLine(path.join(folder, fight, `turn-${turn}`), version) })),
-  );
+  const found = solveStartsIn({ library: folder }, filter)
+    .filter(start => start.oracleLine !== null)
+    .map(start => ({ fight: start.fight.folder, turn: start.turn, read: readOracleLine(start, version) }));
   const text: string[] = [];
   const say = (line: string) => {
     text.push(line);

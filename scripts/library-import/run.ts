@@ -4,8 +4,8 @@ import { PINNED_GAME_VERSION } from "../../src/escape-ladder/lookup.ts";
 import { coachemonHome } from "../../src/home.ts";
 import { replay } from "../../src/solver/solver.ts";
 import { findPinnedClone, harnessIn } from "../clone-test/clone-test.ts";
-import { described } from "../library-replay/library-replay.ts";
-import { importFights, LIBRARY, waiting } from "./library-import.ts";
+import { described, LIBRARY } from "../library-replay/library-replay.ts";
+import { importFights, waiting } from "./library-import.ts";
 
 const USAGE = "usage: npm run library:import -- [--count | --remind] [--home <home>] [<library>]";
 
@@ -40,7 +40,7 @@ if (values.remind) {
 }
 
 const inClone = harnessIn(findPinnedClone);
-const { imported } = await importFights(home, library, new Date(), {
+const { imported, asideUnder } = await importFights(home, library, new Date(), {
   version: PINNED_GAME_VERSION,
   replay: (given, script, carry) => replay(given, script, inClone, carry),
 });
@@ -52,10 +52,11 @@ for (const fight of imported) {
     ...(fight.differs.length > 0 ? [`kept the library's ${fight.differs.join(", ")}, solved there from another position`] : []),
   ];
   console.log(`  ${fight.fight}: ${what.join("; ")}`);
+  if (fight.unread.length > 0) console.log(`    left out, doesn't read: ${fight.unread.join("; ")}`);
   for (const { turn, outcome } of fight.failed) console.log(`    turn ${turn}'s oracle line ${described(outcome, PINNED_GAME_VERSION)}`);
   if (fight.nicknames.length > 0) console.log(`    nicknames: ${fight.nicknames.join(", ")}`);
 }
-console.log(`library import: ${imported.length} ${imported.length === 1 ? "fight" : "fights"} into ${library}, moved aside under ${home}/fights-imported/`);
+console.log(`library import: ${imported.length} ${imported.length === 1 ? "fight" : "fights"} into ${library}, moved aside under ${asideUnder}/`);
 const failed = imported.reduce((n, fight) => n + fight.failed.length, 0);
 console.log(`library import: ${failed} new oracle ${failed === 1 ? "line" : "lines"} failed to replay on ${PINNED_GAME_VERSION}`);
 const nicknames = [...new Set(imported.flatMap(fight => fight.nicknames))].sort();

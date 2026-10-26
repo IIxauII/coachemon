@@ -2,7 +2,6 @@ import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { PINNED_GAME_VERSION } from "../../src/escape-ladder/lookup.ts";
-import { PLUGIN_VERSION } from "../../src/plugin-version.ts";
 import { solve } from "../../src/solver/solver.ts";
 import { findPinnedClone, harnessIn } from "../clone-test/clone-test.ts";
 import { LIBRARY, messageOf } from "../library-replay/library-replay.ts";
@@ -81,7 +80,6 @@ await benchmark(
   },
   {
     version: PINNED_GAME_VERSION,
-    recorder: { now: () => new Date(), pluginVersion: PLUGIN_VERSION },
     filter: { fights: values.fight, waves },
     print: console.log,
   },

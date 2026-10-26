@@ -324,8 +324,8 @@ Distinct from the **fight library**, which keeps every solved fight, won or not,
 ## Fight library
 
 Every fight the maintainer solved with the dev switch on: what each solve started from, at the first turn or mid-fight,
-the **oracle line** where it found one, and how the search went. It keeps the fights the oracle could not win too, and
-has no limit. It is for offline use alone: replaying its oracle lines on changed code to see what broke, and solving its
+the **oracle line** where it found one, and how the search went. Each **solve start** keeps only its latest solve's
+pair. It keeps the fights the oracle could not win too, and has no limit. It is for offline use alone: replaying its oracle lines on changed code to see what broke, and solving its
 fights again to compare how the oracle searches. It is never a gate: no pin bump replays it, nothing in it holds a solve
 back, and a player never sees it.
 
@@ -333,12 +333,24 @@ Distinct from a **known fight**: a library fight records how a solve went, not t
 way. It becomes a known fight only once the maintainer has won it live on its oracle line and promotes it, and the
 library never adds to the known fights on its own.
 
+## Solve start
+
+What one solve in the **fight library** started from: a fight's first turn, or a mid-fight re-solve kept under the turn
+it started at, held with the **oracle line** that solve found as one pair. A repeat solve from the same turn replaces
+the pair, so an oracle line never sits beside a start it was not solved from.
+
+## Statistics entry
+
+One line per solve in a fight's statistics file: what the solve ran under, how it ended, and the solver's report of how
+it went where it got that far. Every entry is read against a baseline schema, and a line that doesn't read is named and
+skipped, never counted.
+
 ## Setting set
 
 A named choice of the oracle's search settings: its budget, turn limit, discrepancy search and beams. A benchmark run
-solves the **fight library**'s fights again under one or more setting sets, once for each solve start, which is a
-fight's first turn or a mid-fight re-solve. Each of those solves appends a statistics entry marked with its set's name,
-so the tally counts it apart from live solves and from the other sets. A live solve runs under no setting set.
+solves the **fight library**'s fights again under one or more setting sets, once for each **solve start**. Each of
+those solves appends a **statistics entry** marked with its set's name, so the tally counts it apart from live solves
+and from the other sets. A live solve runs under no setting set.
 
 ## Game read
 
