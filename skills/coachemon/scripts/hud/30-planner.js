@@ -1017,7 +1017,7 @@ export const paralysed = me => {
 // race when that isn't the target, #320); `stole` (P(a berry steal of ours already landed before this exchange), for
 // the second Bug Bite of a depth-2 line). `cost`: our max HP the move spends, plus a little for a lock-in.
 // `turn1`: P(we KO first), P(they do), and the HP branches each side stands on if neither does, each summing to 1;
-// `self`, what turn 1's use costs us, the entry hit's on a Tera switch-in (#879).
+// `self`, the HP turn 1's use costs us, the entry hit's on a Tera switch-in (#879).
 // `stole`: P(this turn's berry steal lands), 0 for a move that steals none.
 // `pNeverUsed`: the chance our mon falls before this move goes off at all (#650).
 export const exchange = (turn, me, pm, foe, opts = {}) => {
@@ -1258,10 +1258,11 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     cost: Math.min(1, (selfSpent + selfKo * Math.max(0, hp - selfSpent)) / maxHp) + (mt.lock ? 0.1 + lockCarry(turn, me, mine, foe, afterKo) : 0),
     turn1: (() => {
       // The curve front-loaded every use's self-cost, and turn 1 has only paid one.
+      const self = opener?.self ?? 0;
       const me1 = freeThey || !theirs ? [{ hp, p: 1 }]
-        : theirs.after1.map(x => ({ ...x, hp: x.revived ? x.hp : Math.min(maxHp, x.hp + selfSpent - (opener?.self ?? 0)) }));
+        : theirs.after1.map(x => ({ ...x, hp: x.revived ? x.hp : Math.min(maxHp, x.hp + selfSpent - self) }));
       return {
-        we: weFirst, they: theyFirst, me: me1, hp: me1.reduce((t, x) => t + x.p * x.hp, 0), self: opener?.self ?? 0,
+        we: weFirst, they: theyFirst, me: me1, hp: me1.reduce((t, x) => t + x.p * x.hp, 0), self,
         foe: foeAfter1 ?? [{ hp: foe.hp, p: 1 }],
       };
     })(),

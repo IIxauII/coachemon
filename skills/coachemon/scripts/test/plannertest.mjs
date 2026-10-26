@@ -1236,9 +1236,36 @@ Object.assign(TABLE, {
   for (const field of [false, true]) {
     const self1 = o => race({ field, ...o }).turn1.self;
     assert.equal(self1({ entry: 50, tera: 0, entrySelf: 12, teraSelf: 5 }), 12, "turn 1 is the entry hit");
-    assert.equal(self1({ entry: 0, tera: 50, entrySelf: 7, teraSelf: 12 }), 7, "turn 1 is the entry hit, reverse");
+    assert.equal(self1({ entry: 0, tera: 50, entrySelf: 7, teraSelf: 12 }), 7, "turn 1 pays the entry hit's cost, whatever it deals");
     assert.equal(self1({ entry: 0, tera: 50, entrySelf: 7, teraSelf: 12, free: false }), 12, "a paid switch-in's turn 1 is the Tera'd move");
   }
+  // The depth-2 line: Snorlax on 75 takes Giga Drain's entry hit (51–60) then Sludge Bomb (25–30), where Sludge Bomb
+  // alone needs three turns and the Tera'd Giga Drain (8–10) many more. Its turn 1 pays the entry hit's recoil.
+  const line = (entrySelf, teraSelf) => {
+    const id = `#879 ${n++}`, foe = snorlax(`Snorlax ${id}`, 75);
+    const me = mon("Venusaur", 80, ["Grass", "Poison"], [280, 100, 120, 180, 120, 100], [["Giga Drain", "Grass", 75, "S"], ["Sludge Bomb", "Poison", 90, "S"]], true, 200, { id: `Venusaur ${id}` });
+    const at = (dmg, self) => {
+      const o = outcomeFrom({ "Venusaur>Giga Drain>Snorlax": [[dmg], 1, 1], "Venusaur>Sludge Bomb>Snorlax": [[30], 1, 1], "Snorlax>Body Slam>Venusaur": [[80], 1, 1] });
+      return (a, d, pm, x) => { const y = o(a, d, pm, x); return y && pm.getName() === "Giga Drain" ? { ...y, self } : y; };
+    };
+    const keep = globalThis.__stub.outcome;
+    globalThis.__stub.outcome = at(10, teraSelf);
+    try {
+      const [p] = globalThis.__planner.fieldPlan(teraTurn(foe, at(60, entrySelf)), [me], [foe], false, []).picks;
+      return { line: `${p.move?.name} then ${p.then?.name ?? "—"}`, score: p.score };
+    } finally {
+      globalThis.__stub.outcome = keep;
+    }
+  };
+  const none = line(0, 0);
+  assert.equal(none.line, "Giga Drain then Sludge Bomb", "the entry hit opens, Sludge Bomb finishes");
+  const charged = (entrySelf, teraSelf) => {
+    const x = line(entrySelf, teraSelf);
+    assert.equal(x.line, none.line, `the same line with recoil ${entrySelf} / ${teraSelf}`);
+    return Math.round((none.score - x.score) * 280 * 1e6) / 1e6;
+  };
+  assert.equal(charged(12, 0), 12, "the depth-2 line's turn 1 pays the entry hit's recoil");
+  assert.equal(charged(0, 12), 0, "and not the Tera'd move's, which turn 1 never used");
 }
 
 // ---- On-KO boosts (#90): a foe with Beast Boost gets stronger for every KO we feed it.
