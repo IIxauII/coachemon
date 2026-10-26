@@ -5,7 +5,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test, { after } from "node:test";
 import { fileURLToPath } from "node:url";
-import { assemble, strays, workingTree } from "./plugin-copy.ts";
+import { LIBRARY } from "../library-import/library-import.ts";
+import { assemble, shipped, strays, workingTree } from "./plugin-copy.ts";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -45,6 +46,15 @@ test("the copy holds nothing that is ours alone: docs, scripts, tests, fixtures,
   }
   const ours = written.filter(f => /\.test\.ts$|\/fixtures\/|^skills\/coachemon\/scripts\/test\/|\/fake-[\w-]+\.ts$/.test(f));
   assert.deepEqual(ours, []);
+});
+
+test("the fight library is in the repo and none of it ships, a recorded fight's files included (#944)", () => {
+  const library = `${path.relative(REPO, fileURLToPath(LIBRARY))}/`;
+  const held = [...workingTree(REPO).keys()].filter(f => f.startsWith(library));
+  assert.notDeepEqual(held, []);
+  const recorded = ["turn-1.json", "turn-5.win.script.json", "statistics.jsonl"].map(f => `${library}Zu5cgKRQ0vigLcOhpJxYMUa0-w180-gordie/${f}`);
+  assert.deepEqual([...held, ...recorded].filter(shipped), []);
+  assert.deepEqual(written.filter(f => f.startsWith(library)), []);
 });
 
 test("the copy's package.json and lockfile list the runtime dependencies alone, at the versions HEAD locks", () => {
