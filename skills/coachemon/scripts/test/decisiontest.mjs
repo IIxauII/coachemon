@@ -105,6 +105,8 @@ const step = (label, change = () => {}, { road = true } = {}) => {
   seen = now;
   return built;
 };
+// A shop's team audit lands in tasks of its own after the road (#922).
+const noAudit = built => built.filter(b => !b.startsWith("audit:"));
 const count = kind => decisions().filter(d => d.kind === kind).length;
 const cards = () => events.filter(e => e.type === "coachemon:card").map(e => JSON.parse(e.detail));
 
@@ -221,11 +223,11 @@ scene = game;
   step("back from the transfer", () => { g.mode = UiMode.MODIFIER_SELECT; g.handler = offers; });
   step("summary screen", () => { g.mode = UiMode.SUMMARY; g.handler = {}; });
   step("Growl forgotten", () => { three.moveset.splice(2, 1); });
-  assert.deepEqual(step("back from the summary", () => { g.mode = UiMode.MODIFIER_SELECT; g.handler = offers; }),
+  assert.deepEqual(noAudit(step("back from the summary", () => { g.mode = UiMode.MODIFIER_SELECT; g.handler = offers; })),
     ["watch:rewards", "road:rewards"], "the card built before the move went is not shown again");
   step("party check", () => { g.mode = UiMode.PARTY; g.handler = { partyUiMode: PartyUiMode.CHECK }; });
   step("Bulbasaur switched to the lead", () => { g.party.reverse(); });
-  assert.deepEqual(step("back from the party check", () => { g.mode = UiMode.MODIFIER_SELECT; g.handler = offers; }),
+  assert.deepEqual(noAudit(step("back from the party check", () => { g.mode = UiMode.MODIFIER_SELECT; g.handler = offers; })),
     ["watch:rewards", "road:rewards"], "the card built for the old lead is not shown again");
   step("reroll", () => { shop = g.phase = { phaseName: "SelectModifierPhase" }; g.money = 450; });
   assert.equal(count("reward"), 7);
@@ -241,11 +243,60 @@ scene = game;
   assert.deepEqual(step("splice screen after the buy", () => { g.mode = UiMode.PARTY; g.handler = { partyUiMode: PartyUiMode.SPLICE }; }), ["watch:fusion"]);
   step("back, and Leftovers handed back", () => { g.modifiers[0].pokemonId = 11; g.mode = UiMode.MODIFIER_SELECT; g.handler = offers; });
   assert.deepEqual(step("splice screen after the transfer", () => { g.mode = UiMode.PARTY; g.handler = { partyUiMode: PartyUiMode.SPLICE }; }), ["watch:fusion"]);
-  assert.deepEqual(step("spliced, and paid for", () => { g.party = [full]; g.money = 200; g.mode = UiMode.MODIFIER_SELECT; g.handler = offers; }),
+  assert.deepEqual(noAudit(step("spliced, and paid for", () => { g.party = [full]; g.money = 200; g.mode = UiMode.MODIFIER_SELECT; g.handler = offers; })),
     ["watch:rewards", "road:rewards"]);
   assert.deepEqual([count("fusion"), count("reward"), watched() - before], [5, 12, 15]);
   g.party = [full, three];
   three.moveset = moves;
+}
+
+// ---- the shop's team audit lands after its road a chunk per task, and is drawn whole or not at all (#922)
+{
+  const shownRec = () => globalThis.__hud["98-watch"].watchShown();
+  const runOne = () => tasks.shift()?.();
+  const auditGroup = rec => (rec.groups ?? []).find(x => x.id === "audit")?.summary ?? null;
+  full.level = 31;
+  g.phase = { phaseName: "SelectModifierPhase" };
+  assert.deepEqual(step("a shop the memo hasn't audited", () => {}, { road: false }), ["watch:rewards"]);
+  const rec = shownRec();
+  assert.deepEqual([rec.audit, rec.card.audit, auditGroup(rec)], ["owed", null, "checking the team"]);
+  runOne();
+  assert.deepEqual(opened(), ["road:rewards"], "the road first, in a task of its own");
+  let chunks = 0;
+  while (rec.audit === "owed") {
+    runOne();
+    chunks++;
+    assert.deepEqual(opened(), ["audit:rewards"], "one chunk per task");
+    if (rec.audit === "owed") assert.deepEqual([rec.card.audit, auditGroup(rec)], [null, "checking the team"], "no partial audit");
+  }
+  assert.equal(tasks.length, 0);
+  assert.ok(rec.card.audit.findings.length && auditGroup(rec) && auditGroup(rec) !== "checking the team");
+  assert.deepEqual(lifecycle(), ["road landed", "audit landed"]);
+  console.log(`audit landed after ${chunks} chunks: ${auditGroup(rec)}`);
+}
+
+// ---- a buy between the audit's chunks drops them, and the shop it leaves open is audited anew (#922)
+{
+  const shownRec = () => globalThis.__hud["98-watch"].watchShown();
+  full.level = 32;
+  g.phase = { phaseName: "SelectModifierPhase" };
+  step("another unaudited shop", () => {}, { road: false });
+  const before = shownRec();
+  tasks.shift()();
+  tasks.shift()();
+  assert.deepEqual(opened(), ["road:rewards", "audit:rewards"]);
+  assert.deepEqual(lifecycle(), ["road landed"]);
+  assert.deepEqual(step("bought between chunks", () => { g.money -= 50; }, { road: false }), ["watch:rewards"]);
+  const after = shownRec();
+  assert.notEqual(after, before);
+  runTasks();
+  assert.deepEqual([before.audit, before.card.audit], ["owed", null], "the dropped chunks drew nothing");
+  assert.equal(after.audit, "landed");
+  assert.deepEqual(lifecycle(), ["road landed", "audit landed"], "and one audit landed, the open shop's");
+  const ran = opened();
+  assert.deepEqual([ran[0], new Set(ran.slice(1))], ["road:rewards", new Set(["audit:rewards"])], "only the open shop's tasks ran");
+  console.log(`after the buy: ${ran.length - 1} chunks, the audit built from its first`);
+  full.level = 30;
 }
 
 // ---- a learn into a full moveset builds, and an automatic or already-known one does not

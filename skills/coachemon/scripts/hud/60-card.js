@@ -14,7 +14,7 @@ import { encounterLeadingCall, encounterModel, encounterSummary } from "./46-enc
 import { biomeLeadingCall, biomeModel, biomeSummary } from "./47-biome.js";
 import { previewNext, previewSummary } from "./48-preview.js";
 import { aheadModel, learnRoster, aheadSummary } from "./49-ahead.js";
-import { auditSummary } from "./50-audit.js";
+import { auditJob, auditStep, auditSummary } from "./50-audit.js";
 import { spliceScreen, fusionLeadingCall, fusionModel, fusionSummary } from "./49-fusion.js";
 import { rewardsLeadingCall, rewardsModel, rewardsSummary } from "./52-shop.js";
 import { starterScreen, starterModel, startersLeadingCall, startersSummary } from "./51-starters.js";
@@ -112,6 +112,19 @@ export const keepRoad = (from, to) => {
   if (to.catch && from.catch) { keepCatchTeam(from.catch, to.catch); to.verdict = verdictOf(to); }
 };
 
+// A shop card built with `road: false` owes its team audit unless the memo held it (#922).
+export const auditOwed = card => card?.kind === "rewards" && card.auditOwed === true;
+// One chunk of that audit, in a run read of its own; `held.job` carries the chunks between calls. True once the audit
+// is on the card.
+export const readAuditChunk = (s, card, held) => readRun(s, run => {
+  held.job ??= auditJob(run, card.ahead);
+  const done = auditStep(run, held.job);
+  if (done === undefined) return false;
+  card.audit = done;
+  delete card.auditOwed;
+  return true;
+}, { cleared: KINDS.rewards.cleared });
+
 // `account`: the run's own data, read once a refresh by 98-watch.js, which only the catch and Mystery Encounter cards
 // weigh a mon by. `road: false` leaves the road group to `readRoad`; `estimate` reads a battle card's turn without the
 // game. Answers on any screen, not only at a decision: the send-in redraw calls it between decisions and the first build
@@ -133,7 +146,7 @@ export const readCard = (s, account, { road = true, estimate = false } = {}) => 
     // Inside a run read, like the learn card above: the fusion judgment runs there and nowhere else (#589).
     card = readRun(s, run => fusionModel(run, handler), { cleared: KINDS.fusion.cleared });
   } else if (rewards) {
-    card = stage("shop.run", () => readRun(s, run => stage("shop.model", () => rewardsModel(run, rewards)),
+    card = stage("shop.run", () => readRun(s, run => stage("shop.model", () => rewardsModel(run, rewards, { audit: road ? "now" : "later" })),
       { cleared: KINDS.rewards.cleared }));
     shopNote(s, card);
   } else if (biomeScreen(s, handler)) {

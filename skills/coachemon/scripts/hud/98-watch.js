@@ -7,7 +7,7 @@ import { previewArm, previewCheck } from "./48-preview.js";
 import { rerollArm, rerollCheck } from "./50-reroll.js";
 import { journalCheck, journalCheckpoint } from "./55-journal.js";
 import { holdOracleLine, oracleLineCheck, oracleLineSeen } from "./57-oracle-line.js";
-import { cardEvent, hasRoad, keepRoad, readCard, readOracleLine, readRoad } from "./60-card.js";
+import { auditOwed, cardEvent, hasRoad, keepRoad, readAuditChunk, readCard, readOracleLine, readRoad } from "./60-card.js";
 import { battleScene, clearMissed, controls, drawer, dropGame, el, glyph, missedSprite, openGroup, PANEL_W, panelState, setRedraw, strip, wireCard } from "./90-render.js";
 import { captionBattle, drawBattle } from "./96-render-battle.js";
 import { captionEncounter, drawEncounter } from "./96-render-encounter.js";
@@ -28,8 +28,8 @@ const KIND = {
   biome: { draw: drawBiome, caption: captionBiome },
 };
 
-// The lifecycle, in order, for the watch's test: `built`, `cached`, `redrawn`, `road landed`, `oracle line landed`,
-// `hidden`, `failed`.
+// The lifecycle, in order, for the watch's test: `built`, `cached`, `redrawn`, `road landed`, `audit landed`,
+// `oracle line landed`, `hidden`, `failed`.
 const LOG = 64;
 const log = [];
 const logged = what => { log.push(what); if (log.length > LOG) log.shift(); };
@@ -60,14 +60,15 @@ const look = s => {
   return true;
 };
 
-// What the panel shows: `{ card, key, road, version, failure, groups }`. `road` is `none`, `owed` or `landed`;
-// `version` is bumped on every change and is unique across records, so the draw keys on it. A failure is a record
-// with no card.
+// What the panel shows: `{ card, key, road, audit, version, failure, groups }`. `road` and `audit` are `none`,
+// `owed` or `landed`; `version` is bumped on every change and is unique across records, so the draw keys on it. A
+// failure is a record with no card.
 let versions = 0;
 let shown = null;
 export const watchShown = () => shown;
 const record = (card, landed) => ({
   card, key: { ...built }, road: !hasRoad(card) ? "none" : landed ? "landed" : "owed",
+  audit: auditOwed(card) ? "owed" : "none", chunks: null,
   version: ++versions, failure: null, groups: undefined,
 });
 const changed = rec => { rec.version = ++versions; rec.groups = undefined; };
@@ -239,7 +240,7 @@ const decide = road => {
   const rec = cached();
   if (!rec) { build(road); return; }
   show(rec);
-  if (road) land();
+  if (road) { land(); while (rec.audit === "owed" && shown === rec) landAudit(rec); }
 };
 
 let after = () => {};
@@ -266,13 +267,35 @@ const land = () => {
     stage("arm", () => armPreview(rec.card));
   });
 };
-// The road group lands in its own task, so a press between the card and the task leaves it to the next decision (#487).
-// A re-inject's `stop()` removes the panel, and a task queued before it then lands nothing.
+// `rec.chunks` holds the chunks run so far, and is drawn from only once the last is in.
+const landAudit = rec => {
+  try {
+    const s = battleScene();
+    if (!s?.ui) return;
+    screenNote(s, rec.card);
+    rec.chunks ??= {};
+    if (!stage("audit", () => readAuditChunk(s, rec.card, rec.chunks))) return;
+    rec.audit = "landed";
+    rec.chunks = null;
+    changed(rec);
+    logged("audit landed");
+    draw(rec);
+  } catch (e) { fail(e); }
+};
+const owed = rec => (rec?.road === "owed" ? "road" : rec?.audit === "owed" ? "audit" : null);
+// The road group lands in its own task, then the team audit a chunk per task, so a press between the card and a task
+// leaves them to the next decision and drops the chunks run (#487, #922). A re-inject's `stop()` removes the panel, and
+// a task queued before it then lands nothing.
 const landLater = () => {
   const rec = shown;
-  setTimeout(() => {
-    if (shown === rec && rec.road === "owed" && isBuilt() && el.isConnected !== false) run("road", land);
+  const next = () => setTimeout(() => {
+    if (shown !== rec || !isBuilt() || el.isConnected === false) { rec.chunks = null; return; }
+    const what = owed(rec);
+    if (what === "road") run("road", land);
+    else if (what === "audit") run("audit", () => landAudit(rec));
+    if (owed(rec)) next();
   }, 0);
+  next();
 };
 
 // A look that throws is no decision, and the fallback's next tick reports it: with frames, nothing else would.
@@ -301,7 +324,7 @@ export const watchFrame = () => {
   trySeen(s);
   if (tryLook(s)) {
     run(cached() ? "cache" : "watch", () => decide(false));
-    if (shown?.road === "owed") landLater();
+    if (owed(shown)) landLater();
   } else if (trySentIn(s)) {
     run("send-in", () => build(false, true));
   }

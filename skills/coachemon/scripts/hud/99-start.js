@@ -48,14 +48,14 @@ const stream = () => {
   const ev = eventNow();
   if (!ev) return;
   // The kind rides in the signature because two kinds share a key on one wave: a biome choice and its battle are both
-  // keyed on the wave alone. The road state rides too, so a card sent before its road group landed goes again once it
-  // has it (#542), and so does a card each oracle line handed lands on (#670), each turn the oracle line leads (#671) and
-  // the card it goes off the line on (#675).
+  // keyed on the wave alone. The road and audit states ride too, so a card sent before its road group or its team audit
+  // landed goes again once it has it (#542, #922), and so does a card each oracle line handed lands on (#670), each
+  // turn the oracle line leads (#671) and the card it goes off the line on (#675).
   // A faint prompt keeps the turn number it picks for, so it rides as well, with the field slot it fills: a double's
   // two prompts share one turn.
   const pick = rec.card.oracleLine?.faintPick ? `|pick${rec.card.oracleLine.sending?.field ?? ""}` : "";
   const line = ev.oracleLine ? `${ev.oracleLine.state}|${ev.oracleLine.turn}${pick}` : "";
-  const sig = `${ev.kind}|${ev.key}|${ev.verdict}|${rec.road}|${rec.card.oracleLine?.id ?? ""}|${line}`;
+  const sig = `${ev.kind}|${ev.key}|${ev.verdict}|${rec.road}|${rec.audit}|${rec.card.oracleLine?.id ?? ""}|${line}`;
   if (sig === sentCard) return;
   const body = bodyOf(ev);
   if (typeof body?.text !== "string") return;

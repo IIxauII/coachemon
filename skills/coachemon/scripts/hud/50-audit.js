@@ -1,6 +1,7 @@
 // A finding (CONTEXT.md, `Team audit`; game-code.md §17) is `{ kind, level, text, mon? }`: `level` "high" for what
 // loses fights, "low" for what only costs tempo.
 import { TYPES, abilitiesOf, effectiveness, moveHasFlag, typesOf, vs } from "./01-core.js";
+import { stage } from "./01-meter.js";
 import { gameTables } from "./04-game-tables.js";
 import { partyAtFight } from "./08-party.js";
 import { weakestMember } from "./12-value.js";
@@ -215,52 +216,109 @@ const firstToReplace = (run, roster, fight) => {
 };
 
 // `ahead` is `aheadModel`'s. The memo key holds what the audit reads beyond the run key: the roster and each moveset.
-export const teamAudit = (run, ahead) => {
+// null for an empty party.
+const auditKey = (run, ahead) => {
   const party = run.facts.party;
   if (!party.length) return null;
   const next = ahead?.next;
   const foes = next?.foes?.length ? next.foes : [];
   // The species table lands partway through a run, and "first to replace" cannot be priced before it does: an audit
   // taken without one must not be served back once it has arrived (#582).
-  const key = JSON.stringify([next?.wave, foes.map(f => [f.name, f.level]), party.map(p => [p.id, (p.moveset ?? []).map(m => m?.moveId)]),
+  return JSON.stringify([next?.wave, foes.map(f => [f.name, f.level]), party.map(p => [p.id, (p.moveset ?? []).map(m => m?.moveId)]),
     tryDo(() => typeof gameTables().species.getAllSpecies === "function", false)]);
-  return run.memo("audit", key, () => build(run, party, next, foes));
 };
-const build = (run, all, next, foes) => {
-  const s = run.scene;
-  const wave = run.facts.wave;
-  // A check added below reads `party`, never `all`: every finding is about the team at `next`. `firstToReplace` is
-  // the one exception, and reads neither — it ranks the slots the judgment ranks, dead weight among them, and is
-  // handed `all` only to count how many slots the roster holds.
-  const party = partyAtFight(s, all, { from: wave, fight: next?.wave ?? null }).members;
-  const double = tryDo(() => doubleOdds(s, wave + 1), 0);
-  const findings = [];
-  if (foes.length) {
-    findings.push(...singleAnswers(party, foes, next.wave), ...speedCheck(party, foes, next.wave));
-  }
-  findings.push(...sharedWeakness(party),
-    ...typeHoles(party, new Set(foes.flatMap(f => f.types ?? []))));
-  const fixes = new Map();
-  for (const p of party) {
-    const slots = slotFindings(p, party, double);
-    if (!slots.length) continue;
-    const fix = tryDo(() => relearnBest(p, party, double));
-    if (fix) fixes.set(p.name, fix);
-    findings.push(...slots);
-  }
-  if (foes.length) findings.push(...deadStatus(party, foes, next.wave));
-  // Outside the `foes` guard: which member the party loses least by is a team-value question, which the standard
-  // threats answer whether or not the next fight's roster can be previewed (#582).
-  findings.push(...firstToReplace(run, all, next?.wave ?? null), ...levelSpread(s, party), ...expAtCap(s, party));
+
+// The finders, one chunk each and in the order their findings rank on a tie; `setup` queues the rest. A check added
+// here reads `c.party`, never `c.all`: every finding is about the team at `next`. `firstToReplace` is the one
+// exception, and reads neither — it ranks the slots the judgment ranks, dead weight among them, and is handed `all`
+// only to count how many slots the roster holds.
+const FINDERS = {
+  setup: (run, c) => {
+    const s = run.scene;
+    c.party = partyAtFight(s, c.all, { from: run.facts.wave, fight: c.next?.wave ?? null }).members;
+    c.double = tryDo(() => doubleOdds(s, run.facts.wave + 1), 0);
+    const roster = c.foes.length ? ["singleAnswers", "speedCheck"] : [];
+    // Outside the roster's guard: which member the party loses least by is a team-value question, which the standard
+    // threats answer whether or not the next fight's roster can be previewed (#582).
+    return [...roster, "sharedWeakness", "typeHoles", ...c.party.map((_, i) => `slots:${i}`),
+      ...(c.foes.length ? ["deadStatus"] : []), "weakestLink", "levelSpread", "expAtCap"];
+  },
+  singleAnswers: (_, c) => singleAnswers(c.party, c.foes, c.next.wave),
+  speedCheck: (_, c) => speedCheck(c.party, c.foes, c.next.wave),
+  sharedWeakness: (_, c) => sharedWeakness(c.party),
+  typeHoles: (_, c) => typeHoles(c.party, new Set(c.foes.flatMap(f => f.types ?? []))),
+  slots: (_, c, i) => {
+    const p = c.party[i];
+    const slots = slotFindings(p, c.party, c.double);
+    if (!slots.length) return [];
+    const fix = tryDo(() => relearnBest(p, c.party, c.double));
+    if (fix) c.fixes.set(p.name, fix);
+    return slots;
+  },
+  deadStatus: (_, c) => deadStatus(c.party, c.foes, c.next.wave),
+  weakestLink: (run, c) => firstToReplace(run, c.all, c.next?.wave ?? null),
+  levelSpread: (run, c) => levelSpread(run.scene, c.party),
+  expAtCap: (run, c) => expAtCap(run.scene, c.party),
+};
+const finish = (run, c) => {
   const rank = f => (f.level === "high" ? 0 : f.kind === "coverage" ? 2 : 1);
-  const sorted = findings.map((f, i) => ({ ...f, i })).sort((a, b) => rank(a) - rank(b) || a.i - b.i).map(({ i, ...f }) => f);
-  for (const [mon, fix] of fixes) {
+  const sorted = c.findings.map((f, i) => ({ ...f, i })).sort((a, b) => rank(a) - rank(b) || a.i - b.i).map(({ i, ...f }) => f);
+  for (const [mon, fix] of c.fixes) {
     const at = sorted.find(f => f.kind === "slot" && f.mon === mon && f.level === "high")
       ?? sorted.find(f => f.kind === "slot" && f.mon === mon && fix.forget && f.slot === fix.forget)
       ?? sorted.find(f => f.kind === "slot" && f.mon === mon);
     if (at) at.relearn = fix;
   }
-  return { wave, vs: foes.length ? { wave: next.wave, who: next.trainer ?? next.label } : null, findings: sorted };
+  return { wave: run.facts.wave, vs: c.foes.length ? { wave: c.next.wave, who: c.next.trainer ?? c.next.label } : null, findings: sorted };
+};
+const fresh = (run, ahead) => {
+  const next = ahead?.next;
+  return { runKey: run.key, key: auditKey(run, ahead), ahead, all: run.facts.party, next,
+    foes: next?.foes?.length ? next.foes : [], todo: ["setup"], findings: [], fixes: new Map() };
+};
+const stepOf = (run, c) => {
+  const [name, i] = c.todo.shift().split(":");
+  c.ran.push(name);
+  const out = stage(`audit.${name}`, () => FINDERS[name](run, c, Number(i)));
+  if (name === "setup") c.todo.push(...out);
+  else c.findings.push(...out);
+};
+
+// The one-shot build: every chunk in this run read.
+export const teamAudit = (run, ahead) => {
+  const key = auditKey(run, ahead);
+  if (key == null) return null;
+  return run.memo("audit", key, () => {
+    const c = { ...fresh(run, ahead), ran: [] };
+    while (c.todo.length) stepOf(run, c);
+    return finish(run, c);
+  });
+};
+
+/**
+ * The same build a chunk at a time, for the watch's later tasks (#922): `auditStep` runs the next chunk in the run
+ * read it is handed, and answers the audit once the last is in, `undefined` until then. Nothing is held before that,
+ * and a run that moves between chunks starts the audit over. `ran` lists the chunks run, restarts included.
+ */
+export const auditJob = (run, ahead) => ({ ...fresh(run, ahead), ran: [] });
+export const auditStep = (run, job) => {
+  if (job.runKey !== run.key) Object.assign(job, fresh(run, job.ahead));
+  if (job.key == null) return null;
+  const held = run.held("audit", job.key);
+  if (held !== undefined) return held;
+  try {
+    stepOf(run, job);
+    if (job.todo.length) return undefined;
+    const done = finish(run, job);
+    return run.memo("audit", job.key, () => done);
+  } catch (e) {
+    return run.memo("audit", job.key, () => ({ unavailable: `audit: ${e?.message ?? e}` }));
+  }
+};
+// What the memo holds for this audit: `undefined` when it is still to build.
+export const auditHeld = (run, ahead) => {
+  const key = auditKey(run, ahead);
+  return key == null ? null : run.held("audit", key);
 };
 
 export const auditSummary = a => {

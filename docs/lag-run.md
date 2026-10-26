@@ -123,14 +123,15 @@ asked the game for and missed, with how often: the evidence for or against the m
 
 ### Shop card by stage
 
-A log whose overlay notes the shop (#516) gets a table of the shop card's draws below the per-wave one: per wave, the
-first draw, the first after each reroll (`reroll`) and the first after each buy (`buy`), with the party's size, the TMs
-on offer and in the previewed rolls, the refresh's ms and its exclusive stages. Inside `read`, the rewards card's run
-read is `shop.run` (the sandbox and the run facts) around `shop.model` (the model's own code), which holds
-`shop.ahead` (`aheadModel`), `shop.needs` (the needs and both `planBuys`), `shop.context` (`rewardContext`),
+A log whose overlay notes the shop (#516) gets a table of the shop card's draws below the per-wave one: per wave, one
+first draw per shop visit (#922), the first after each reroll (`reroll`) and the first after each buy (`buy`), with the
+party's size, the TMs on offer and in the previewed rolls, the refresh's ms and its exclusive stages. Inside `read`, the
+rewards card's run read is `shop.run` (the sandbox and the run facts) around `shop.model` (the model's own code), which
+holds `shop.ahead` (`aheadModel`), `shop.needs` (the needs and both `planBuys`), `shop.context` (`rewardContext`),
 `shop.judge` (the free options) with `shop.tm` (`tmAdvice`), `shop.roll` (`rerollPreview`), `shop.rollJudge`
-(`rerollAdvice`) with `shop.rollTm`, and `shop.audit` (`teamAudit`). `odds` is every `doubleOdds` call, wherever it
-runs. `read` keeps what is left: the screen checks and the account read.
+(`rerollAdvice`) with `shop.rollTm`, and `shop.audit` (`teamAudit`), which the watch's card has only when the memo holds
+the audit: otherwise it lands after the road, one `audit` refresh per chunk, its stage `audit.<finder>` (#922). `odds`
+is every `doubleOdds` call, wherever it runs. `read` keeps what is left: the screen checks and the account read.
 
 ### Per moment
 
