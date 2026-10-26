@@ -116,16 +116,57 @@ test("with capture unset, the same solve writes nothing under the home (#787)", 
   assert.deepEqual(readdirSync(dir), []);
 });
 
-test("a mid-fight solve, from the export and its extras, writes nothing even with capture on (#787)", async () => {
+const NONE = { kind: "no_answer", reason: { code: "no_win", lds: null, beams: [], unreplayed: [], dropped: 0 }, message: "no win" } as const;
+
+/** A re-solve from the augmented export taken at `turn`'s decision. */
+const midFight = (turn: number): SolveInput => {
+  const input = t1();
+  const exported = { ...input.save, party: [{ id: 1, hp: turn }] };
+  return { ...input, save: exported, extras: { turn, rndState: `rng-${turn}` } as unknown as NonNullable<SolveInput["extras"]> };
+};
+
+test("a fight's first-turn solve and a mid-fight re-solve share its folder, the re-solve's augmented export and oracle line kept under the turn it started at (#937)", async () => {
   const dir = home();
-  const input = { ...t1(), extras: {} as NonNullable<SolveInput["extras"]> };
+  const input = midFight(5);
+  await withCapture(solved(), dir, ON)({ input: t1() }, ctl());
 
   await withCapture(solved(), dir, ON)({ input }, ctl());
 
-  assert.equal(existsSync(path.join(dir, "fights")), false);
+  const fight = path.join(dir, "fights", GORDIE);
+  assert.deepEqual(readdirSync(fight).sort(), ["turn-1.json", "turn-1.win.script.json", "turn-5.json", "turn-5.win.script.json"]);
+  assert.deepEqual(JSON.parse(readFileSync(path.join(fight, "turn-5.json"), "utf8")), {
+    live: input.live,
+    save: input.save,
+    extras: input.extras,
+    liveExport: input.liveExport,
+    cloneVersion: "1.12.1.3",
+    budget: { expansions: 3000, turns: 40 },
+  });
+  assert.deepEqual(readScript(readFileSync(path.join(fight, "turn-5.win.script.json"), "utf8")).inputs, [{ kind: "move", move: "SURF", tera: false }]);
+  assert.equal(JSON.parse(readFileSync(path.join(fight, "turn-1.json"), "utf8")).extras, undefined);
 });
 
-const NONE = { kind: "no_answer", reason: { code: "no_win", lds: null, beams: [], unreplayed: [], dropped: 0 }, message: "no win" } as const;
+test("two re-solves from different turns are both kept, one that found no oracle line with its input alone (#937)", async () => {
+  const dir = home();
+
+  await withCapture(solved(NONE), dir, ON)({ input: midFight(3) }, ctl());
+  await withCapture(solved(), dir, ON)({ input: midFight(7) }, ctl());
+
+  const fight = path.join(dir, "fights", GORDIE);
+  assert.deepEqual(readdirSync(fight).sort(), ["turn-3.json", "turn-7.json", "turn-7.win.script.json"]);
+  assert.equal(JSON.parse(readFileSync(path.join(fight, "turn-3.json"), "utf8")).extras.rndState, "rng-3");
+  assert.equal(JSON.parse(readFileSync(path.join(fight, "turn-7.json"), "utf8")).extras.rndState, "rng-7");
+});
+
+test("a re-solve whose augmented export lacks the turn keeps nothing, there being no turn to keep it under, and its answer stands (#937)", async () => {
+  const dir = home();
+  const input = { ...midFight(4), extras: { turn: null, unread: ["turn"] } as unknown as NonNullable<SolveInput["extras"]> };
+
+  const result = await withCapture(solved(NONE), dir, ON)({ input }, ctl());
+
+  assert.deepEqual(result, NONE);
+  assert.equal(existsSync(path.join(dir, "fights")), false);
+});
 
 test("a solve that ends with no oracle line keeps its input alone (#787, #936)", async () => {
   const dir = home();
