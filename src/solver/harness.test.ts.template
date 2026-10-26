@@ -534,16 +534,16 @@ async function reload(session: string, before = () => {}) {
   before();
   await game.reload.reloadSession();
   BattleScene.prototype.randBattleSeedInt = realRand;
-  asSaved(JSON.parse(session).enemyParty);
+  putBackFinalBoss(JSON.parse(session).enemyParty);
   sweep(replaced);
 }
 
 /**
- * A load recalculates the classic final boss's first form (game-code.md §34). Puts back the stats and HP the session
- * holds: a wave-start save's are the live tab's (`withLiveFinalBoss` in `src/solver/extras.ts`), and a fork point's
- * are what this scene fought on (#917).
+ * The classic final boss's first form, on the stats and HP its session holds, which a load recalculated (game-code.md
+ * §34): a wave-start save's are the live tab's (`withLiveFinalBoss` in `src/solver/extras.ts`), and a fork point's are
+ * what this scene fought on (#917).
  */
-function asSaved(saved: { id: number; hp: number; stats: number[] }[]) {
+function putBackFinalBoss(saved: { id: number; hp: number; stats: number[] }[]) {
   const s = scene();
   if (!s.currentBattle.isClassicFinalBoss) return;
   for (const p of s.getEnemyParty()) {

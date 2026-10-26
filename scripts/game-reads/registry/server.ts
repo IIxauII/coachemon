@@ -80,5 +80,9 @@ export const SERVER: Area = {
       ],
     },
     { ours: "src/solver/replay.ts#load-defaults", of: ["src/field/pokemon.ts#Pokemon.constructor"] },
+    {
+      ours: "src/solver/extras.ts#classic-final-boss",
+      of: ["src/battle.ts#Battle.isClassicFinalBoss", "src/game-mode.ts#GameMode.isWaveFinal", "src/game-mode.ts#getGameMode"],
+    },
   ],
 };
