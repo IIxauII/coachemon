@@ -1232,6 +1232,13 @@ Object.assign(TABLE, {
   // A paid switch-in has no entry hit: turn 1 pays the Tera'd move's recoil, as before.
   assert.equal(paid1({ entry: 0, tera: 50, entrySelf: 7, teraSelf: 12, free: false }), 12, "a paid switch-in pays the Tera'd move's recoil");
   assert.equal(spent(race({ entry: 0, tera: 50, entrySelf: 7, teraSelf: 12, free: false })), 9 * 12, "a paid switch-in prices the Tera'd move's recoil on every use");
+  // `turn1.self`, what turn 1's use cost us, is what the depth-2 line charges for it.
+  for (const field of [false, true]) {
+    const self1 = o => race({ field, ...o }).turn1.self;
+    assert.equal(self1({ entry: 50, tera: 0, entrySelf: 12, teraSelf: 5 }), 12, "turn 1 is the entry hit");
+    assert.equal(self1({ entry: 0, tera: 50, entrySelf: 7, teraSelf: 12 }), 7, "turn 1 is the entry hit, reverse");
+    assert.equal(self1({ entry: 0, tera: 50, entrySelf: 7, teraSelf: 12, free: false }), 12, "a paid switch-in's turn 1 is the Tera'd move");
+  }
 }
 
 // ---- On-KO boosts (#90): a foe with Beast Boost gets stronger for every KO we feed it.

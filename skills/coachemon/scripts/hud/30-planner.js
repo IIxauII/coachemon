@@ -1016,7 +1016,8 @@ export const paralysed = me => {
 // attempt a status we gave it leaves standing); `field` and `fieldAct(i)` (in a double, the foe whose hits price the
 // race when that isn't the target, #320); `stole` (P(a berry steal of ours already landed before this exchange), for
 // the second Bug Bite of a depth-2 line). `cost`: our max HP the move spends, plus a little for a lock-in.
-// `turn1`: P(we KO first), P(they do), and the HP branches each side stands on if neither does, each summing to 1.
+// `turn1`: P(we KO first), P(they do), and the HP branches each side stands on if neither does, each summing to 1;
+// `self`, what turn 1's use costs us, the entry hit's on a Tera switch-in (#879).
 // `stole`: P(this turn's berry steal lands), 0 for a move that steals none.
 // `pNeverUsed`: the chance our mon falls before this move goes off at all (#650).
 export const exchange = (turn, me, pm, foe, opts = {}) => {
@@ -1260,7 +1261,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
       const me1 = freeThey || !theirs ? [{ hp, p: 1 }]
         : theirs.after1.map(x => ({ ...x, hp: x.revived ? x.hp : Math.min(maxHp, x.hp + selfSpent - (opener?.self ?? 0)) }));
       return {
-        we: weFirst, they: theyFirst, me: me1, hp: me1.reduce((t, x) => t + x.p * x.hp, 0),
+        we: weFirst, they: theyFirst, me: me1, hp: me1.reduce((t, x) => t + x.p * x.hp, 0), self: opener?.self ?? 0,
         foe: foeAfter1 ?? [{ hp: foe.hp, p: 1 }],
       };
     })(),
@@ -1402,7 +1403,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
         const eTurns = 1 + (1 - t1.we) * x2.eTurnsWe;
         const pThey = t1.they + standing * x2.pTheyKoFirst;
         const edge = edgeOf(t1.we + standing * x2.pWeKoFirst, pThey);
-        const spent = Math.min(1, (o.self ?? 0) / (me.getMaxHp?.() || hp)) + (x2.cost ?? 0);
+        const spent = Math.min(1, t1.self / (me.getMaxHp?.() || hp)) + (x2.cost ?? 0);
         return lasts - eTurns - unlanded(x.trade.pNeverUsed) - lost + edge - spent - cost(o) - feed(f) * pThey
           - hpSpent(t1.we * x.trade.hpKept + standing * x2.hpKept);
       };
