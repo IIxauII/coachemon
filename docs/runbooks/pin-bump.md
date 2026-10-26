@@ -191,7 +191,9 @@ middle of a bump is recorded by hand (below).
    there (what it solved from) and, once it finds an oracle line, `turn-1.win.script.json` beside it, its `known` taken
    from the oracle line's checkpoints. A re-solve past the first turn keeps its pair the same way under the turn it started
    at, `turn-<n>.json` (the augmented export and its extras) and `turn-<n>.win.script.json`. A repeat solve from the same
-   turn replaces that turn's input, and the oracle line only with one it found.
+   turn replaces that turn's input, and the oracle line only with one it found. Every solve that keeps its input,
+   cancelled and failed ones too, appends one line to the folder's `statistics.jsonl`: the turn it started at, how it
+   ended, and the settings and versions it ran under.
 2. Solve the fight at its first decision, and win it live on that oracle line. Promoting is your word that you did: nothing
    checks it.
 3. Run `npm run recheck:promote -- <home>/fights/<seed>-w<wave>-<fight>`. It copies the first-turn pair into
