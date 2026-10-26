@@ -1,6 +1,6 @@
 // Everything about the live battle is the turn's (`25-turn.js`): this opens no sandbox and keeps no cache but
 // `turn.memo`. Against an approximate turn every answer still comes back, labelled `live: false`.
-import { ABILITY_IMMUNE, ABILITY_IMMUNE_FLAG, CONTACT_PUNISH, FIELD_TRAPS, MOVE_TRAPS, SPREAD_TARGETS, STATUS_FRAMES, TYPES, UNGROUNDED, abilitiesOf, effectiveness, hitsUngrounded, iconOf, isBerry, lessOneBerry, battleMoveset, lumsHeld, moveHasFlag, movesetOf, squeezeDist, stackOf, stage, stat, typesOf, vs } from "./01-core.js";
+import { ABILITY_IMMUNE, ABILITY_IMMUNE_FLAG, CONTACT_PUNISH, FIELD_TRAPS, MOVE_TRAPS, SPREAD_TARGETS, STATUS_FRAMES, TYPES, UNGROUNDED, abilitiesOf, battleMoveset, effectiveness, hitsUngrounded, iconOf, isBerry, lessOneBerry, lumsHeld, moveHasFlag, movesetOf, squeezeDist, stackOf, stage, stat, typesOf, vs } from "./01-core.js";
 import { gameTables } from "./04-game-tables.js";
 import { moveTraits } from "./07-move-traits.js";
 import { addShare, healingCharm, koChanceAt, koCurve, koTurn, koTurns, rawMax, shares, useOf } from "./10-damage.js";
@@ -216,9 +216,9 @@ const outcomesOn = (turn, at, foe, me, outs) => (at === turn ? outs : planOutcom
 
 // The moves a foe's own use fails later (#844, game-code.md §5): `{ name, type }`, the type it strips off the user, or
 // `{ name, delayed: true }`.
-const spendsOf = foe => battleMoveset(foe).flatMap(pm => {
-  const t = pm ? moveTraits(pm.getMove()) : null;
-  return t?.removedType != null ? [{ name: pm.getName(), type: t.removedType }] : t?.delayed ? [{ name: pm.getName(), delayed: true }] : [];
+const spendsOf = foe => movesetOf(foe).flatMap(pm => {
+  const t = moveTraits(pm.getMove());
+  return t.removedType != null ? [{ name: pm.getName(), type: t.removedType }] : t.delayed ? [{ name: pm.getName(), delayed: true }] : [];
 });
 // What `foe`'s earlier uses left behind: `gone`, the types they stripped, and `wait`, its uses at `me` still to come
 // that the delayed attack on `me`'s slot blocks.
@@ -913,7 +913,7 @@ export const sendInBase = (turn, f, me) => {
   const v = turn.sendInScore(f, me);
   if (v != null) return { base: v, outspeed };
   // game-less-backed
-  const moves = battleMoveset(f).map(pm => pm?.getMove?.()).filter(mv => mv && mv.category !== MoveCategory.STATUS);
+  const moves = movesetOf(f).map(pm => pm.getMove?.()).filter(mv => mv && mv.category !== MoveCategory.STATUS);
   return turn.atEntry([f], () => {
     const atk = moves.length ? moves.reduce((t, mv) => t + effectiveness(TYPES[mv.type], me) * (typesOf(f).includes(TYPES[mv.type]) ? 1.5 : 1), 0) / moves.length : 1;
     const def = typesOf(me).reduce((x, t) => x / Math.max(effectiveness(t, f), 0.25), 1);

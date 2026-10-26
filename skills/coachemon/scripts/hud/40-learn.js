@@ -1,5 +1,5 @@
 // The learn decision, for the level-up prompt and a TM alike, judged without battle state.
-import { ABILITY_IMMUNE, CHART, SPREAD_TARGETS, STAT_NAMES, STATUS_FRAMES, TYPES, UNGROUNDED, abilitiesOf, effectiveness, iconOf, moveHasFlag, typesOf, vs } from "./01-core.js";
+import { ABILITY_IMMUNE, CHART, SPREAD_TARGETS, STAT_NAMES, STATUS_FRAMES, TYPES, UNGROUNDED, abilitiesOf, battleMoveset, effectiveness, iconOf, moveHasFlag, typesOf, vs } from "./01-core.js";
 import { RANDBATS } from "./05-randbats.js";
 import { costNotes, moveTraits } from "./07-move-traits.js";
 import { partyProfile } from "./08-party.js";
@@ -579,7 +579,7 @@ const learnPlan = (pk, mv, { double: flag = false, party = [pk], roster = null }
   let compare = -1;
   moves.forEach((m, i) => { if (m.value !== null && (compare < 0 || gainOf(m) > gainOf(moves[compare]))) compare = i; });
   // Not `current`: under Transform the game asks on the copied moveset but forgets from the mon's own (game-code.md §17).
-  const free = (pk.getMoveset?.() ?? pk.moveset ?? []).length < 4;
+  const free = battleMoveset(pk).length < 4;
   const against = free || compare < 0 ? current : current.filter((_, j) => j !== compare);
   const incoming = info(pk, mv, moveScore(pk, mv, against, double, ctx));
   // `statusScore` has already noted the boost: this is only for the verdict line.
