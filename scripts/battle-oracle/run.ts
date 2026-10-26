@@ -10,12 +10,13 @@ import {
   replay,
   type Script,
   type SolveInput,
+  type SolveReport,
   type SolveResult,
   slowWorkersNote,
   solve,
 } from "../../src/solver/solver.ts";
 import { findPinnedClone, harnessIn } from "../clone-test/clone-test.ts";
-import { printChecks, printOracleLine, printReplay } from "./print.ts";
+import { printChecks, printOracleLine, printReplay, printTurnTimes } from "./print.ts";
 import { searchSettings } from "./settings.ts";
 
 const ORACLE_LINE = 0;
@@ -104,6 +105,7 @@ const workers = values.workers === undefined ? undefined : Number(values.workers
 if (workers !== undefined && !(Number.isInteger(workers) && workers > 0)) exitNoAnswer(`--workers ${values.workers} is not a count`);
 let shown = -PROGRESS_EVERY;
 let last: PoolStats | undefined;
+let report: SolveReport | undefined;
 const started = Date.now();
 const poolLine = (stats: PoolStats) => {
   const { size, died, lastDeath, peakHeapMb, heapLimitMb } = stats;
@@ -121,6 +123,7 @@ try {
       clone: inClone,
       unchecked: values.unchecked,
       workers,
+      statistics: handed => (report = handed),
       progress: ({ spent, budget, pool }) => {
         last = pool;
         if (spent - shown < PROGRESS_EVERY) return;
@@ -135,6 +138,7 @@ try {
   exitNoAnswer(`the solver failed: ${messageOf(err)}`);
 }
 if (last) console.error(`oracle: done in ${Math.round((Date.now() - started) / 1000)} s; ${poolLine(last)}`);
+if (report?.turnTimes) console.error(`oracle: ${printTurnTimes(report.turnTimes)}`);
 if (result.kind === "oracle_line") {
   console.log(printOracleLine(result.oracleLine));
   process.exit(ORACLE_LINE);

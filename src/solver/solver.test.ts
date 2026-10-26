@@ -7,7 +7,7 @@ import type { Lease } from "./fight-pool.ts";
 import type { Battle, MidFightExtras, SessionSave, SolveInput } from "./input.ts";
 import { noAnswer, Unanswered } from "./no-answer.ts";
 import type { Input } from "./oracle-line.ts";
-import type { WorkerPool } from "./pool.ts";
+import type { TurnTimes, WorkerPool } from "./pool.ts";
 import type { Clone } from "./replay.ts";
 import { DEFAULT_BUDGET, gate, solve, type SolveReport } from "./solver.ts";
 
@@ -74,8 +74,11 @@ const loadsT5: Clone = async () => ({
 
 const tackle: Input = { kind: "move", move: "TACKLE", tera: false };
 
+const NONE = { count: 0, totalMs: 0, p50Ms: null, p95Ms: null, maxMs: null };
+const NO_TURNS: TurnTimes = { restore: NONE, play: NONE };
+
 /** A warm pool whose every turn loses, so the search ends in no win; it records what it was asked. */
-function warmLease(answer: Partial<Pick<WorkerPool, "rootAt">> = {}) {
+function warmLease(answer: Partial<Pick<WorkerPool, "rootAt" | "turnTimes">> = {}) {
   const asked = { rootAt: [] as unknown[][], expand: [] as { forkPoint: string; signal?: AbortSignal }[], done: [] as boolean[] };
   const pool: WorkerPool = {
     size: 2,
@@ -89,6 +92,7 @@ function warmLease(answer: Partial<Pick<WorkerPool, "rootAt">> = {}) {
       return inputs.map(input => ({ input, end: "lost", hp: { ours: [0], foes: [1] } }));
     },
     stats: () => ({ size: 2, died: 0, lastDeath: null, peakHeapMb: null, heapLimitMb: null, slowPoll: null, realClock: null }),
+    turnTimes: answer.turnTimes ?? (() => NO_TURNS),
     close: async () => assert.fail("a warm pool is the fight's to close"),
   };
   const lease: Lease = { pool, warm: true, done: async broken => void asked.done.push(broken) };
@@ -228,7 +232,7 @@ test("a solve on a pool started for it reports the gate, the load check and the 
   });
 
   assert.equal(result.kind === "no_answer" && result.reason.code, "no_win", JSON.stringify(result));
-  assert.deepEqual(reported.map(beforeSearch), [{ startup: { gateMs: 0, loadMs: 40, pool: { warm: false, ms: 900 } }, pool: STATS, cores: 12 }]);
+  assert.deepEqual(reported.map(beforeSearch), [{ startup: { gateMs: 0, loadMs: 40, pool: { warm: false, ms: 900 } }, pool: STATS, turnTimes: NO_TURNS, cores: 12 }]);
 });
 
 test("a solve on the fight's warm pool reports that it was warm and how long rooting its start on it took (#942)", async () => {
@@ -247,6 +251,7 @@ test("a solve on the fight's warm pool reports that it was warm and how long roo
     {
       startup: { gateMs: 0, loadMs: 0, pool: { warm: true, ms: 30 } },
       pool: { size: 2, died: 0, lastDeath: null, peakHeapMb: null, heapLimitMb: null, slowPoll: null, realClock: null },
+      turnTimes: NO_TURNS,
       cores: 4,
     },
   ]);
@@ -261,7 +266,7 @@ test("a solve the gate refuses still reports its gate time, with no load check a
   );
 
   assert.equal(result.kind === "no_answer" && result.reason.code, "version_mismatch");
-  assert.deepEqual(reported, [{ startup: { gateMs: 0, loadMs: null, pool: null }, pool: null, cores: 8 }]);
+  assert.deepEqual(reported, [{ startup: { gateMs: 0, loadMs: null, pool: null }, pool: null, turnTimes: null, cores: 8 }]);
 });
 
 test("a solve whose pool never started reports how long it tried, and no pool's stats (#942)", async () => {
@@ -280,7 +285,7 @@ test("a solve whose pool never started reports how long it tried, and no pool's 
   });
 
   assert.equal(result.kind === "no_answer" && result.reason.code, "harness_failed");
-  assert.deepEqual(reported, [{ startup: { gateMs: 0, loadMs: 0, pool: { warm: false, ms: 2_500 } }, pool: null, cores: 8 }]);
+  assert.deepEqual(reported, [{ startup: { gateMs: 0, loadMs: 0, pool: { warm: false, ms: 2_500 } }, pool: null, turnTimes: null, cores: 8 }]);
 });
 
 test("a solve hands its report over as it starts and fills in each stage as it ends, so a cancel reads the stages reached (#942)", async () => {
@@ -305,7 +310,21 @@ test("a solve hands its report over as it starts and fills in each stage as it e
   });
 
   assert.deepEqual(seen, {
-    loading: { startup: { gateMs: 0, loadMs: null, pool: null }, pool: null, cores: 4 },
-    leasing: { startup: { gateMs: 0, loadMs: 40, pool: null }, pool: null, cores: 4 },
+    loading: { startup: { gateMs: 0, loadMs: null, pool: null }, pool: null, turnTimes: null, cores: 4 },
+    leasing: { startup: { gateMs: 0, loadMs: 40, pool: null }, pool: null, turnTimes: null, cores: 4 },
   });
+});
+
+test("a solve reports how long the turns it asked its pool for took to restore and to play, and no other solve's (#943)", async () => {
+  const signal = new AbortController().signal;
+  const times: TurnTimes = {
+    restore: { count: 6, totalMs: 120.6, p50Ms: 18.2, p95Ms: 31, maxMs: 31 },
+    play: { count: 6, totalMs: 1_480, p50Ms: 240, p95Ms: 402.5, maxMs: 402.5 },
+  };
+  const { lease } = warmLease({ turnTimes: asked => (asked === signal ? times : NO_TURNS) });
+  const reported: SolveReport[] = [];
+
+  await solve(RESOLVE, { clone: loadsT5, pools: async () => lease, signal, clock: fakeClock(), cores: 4, statistics: report => reported.push(report) });
+
+  assert.deepEqual(reported.map(({ turnTimes }) => turnTimes), [times]);
 });

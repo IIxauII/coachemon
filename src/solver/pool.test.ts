@@ -4,7 +4,7 @@ import type { Input, ReplayResult } from "./oracle-line.ts";
 import { poolSize, startPool } from "./pool.ts";
 import { type Action, type Child, type Position, search } from "./search.ts";
 import type { SessionSave } from "./input.ts";
-import { type NotStarted, type Worker, WorkerDied } from "./worker.ts";
+import { type NotStarted, type TurnTime, type Worker, WorkerDied } from "./worker.ts";
 
 const tackle: Input = { kind: "move", move: "TACKLE", tera: false };
 const root: Position = { sig: "root", hp: { ours: [1], foes: [1] }, stages: { ours: [[]], foes: [[]] }, legal: [tackle], forkPoint: "root" };
@@ -16,13 +16,15 @@ type Fake = { n: number; jobs: number; closed: boolean };
 
 /**
  * Workers started by a script: `job` answers a worker's jobs, or "die" for it to die on one; `boot` is the nth start's
- * fate, `null` for a worker that started; `heapMb` is what a worker's jobs leave on its heap; `slowPoll` and
- * `realClock` are the nth start's reasons to keep the slow poll and real time.
+ * fate, `null` for a worker that started; `heapMb` is what a worker's jobs leave on its heap; `turns`, how long each
+ * turn a job played took to restore and to play; `slowPoll` and `realClock` are the nth start's reasons to keep the slow
+ * poll and real time.
  */
 function fakeWorkers({
   job = (_w: Fake, inputs: readonly Action[]): Child[] | "die" => won(inputs),
   boot = (_n: number): NotStarted | null => null,
   heapMb = (_w: Fake): number | null => null,
+  turns = (_w: Fake, _inputs: readonly Action[]): TurnTime[] => [],
   slowPoll = (_n: number): string | null => null,
   realClock = (_n: number): string | null => null,
 } = {}) {
@@ -36,6 +38,7 @@ function fakeWorkers({
     if (fate !== null) return fate;
     const fake = started[n];
     let used: number | null = null;
+    let timed: TurnTime[] = [];
     return {
       root,
       slowPoll: slowPoll(n),
@@ -49,6 +52,7 @@ function fakeWorkers({
         const answer = job(fake, inputs);
         if (answer === "die") throw new WorkerDied("the worker stopped, writing nothing");
         used = heapMb(fake);
+        timed = turns(fake, inputs);
         return answer;
       },
       async rootAt(_save, at) {
@@ -56,6 +60,7 @@ function fakeWorkers({
         return { ...root, sig: at ?? "wave start", forkPoint: at ?? "wave start" };
       },
       heap: () => (used === null ? null : { usedMb: used, limitMb: 864 }),
+      turnTimes: () => timed,
       check: async () => assert.fail("no check in a pool"),
       async close() {
         fake.closed = true;
@@ -239,6 +244,46 @@ test("a pool whose workers kept the slow poll says why in its stats, and one who
   assert.equal(slowPool.stats().slowPoll, "PhaseInterceptor.run is not the one the fast poll copies");
   assert.equal(fastPool.stats().slowPoll, null);
 });
+
+test("a pool sums up how long its workers took to restore each turn's fork point and to play it: count, total, p50, p95 and max of each (#943)", async () => {
+  // Turn n of the 20 restores in n ms and plays in 3n ms, four turns to a job.
+  let n = 0;
+  const fakes = fakeWorkers({
+    turns: () => Array.from({ length: 4 }, () => (++n, { restoreMs: n, playMs: 3 * n })),
+  });
+  const pool = await startPool(2, fakes.start, "1.12.0.11");
+  assert.ok("expand" in pool);
+
+  await Promise.all(Array.from({ length: 5 }, () => pool.expand("root", [tackle])));
+  await pool.close();
+
+  assert.deepEqual(pool.turnTimes(), {
+    restore: { count: 20, totalMs: 210, p50Ms: 10, p95Ms: 19, maxMs: 20 },
+    play: { count: 20, totalMs: 630, p50Ms: 30, p95Ms: 57, maxMs: 60 },
+  });
+});
+
+test("a pool keeps each solve's turn times apart, so a warm pool's next solve counts only its own, and one that played none has none (#943)", async () => {
+  const fakes = fakeWorkers({ turns: (_w, inputs) => inputs.map(() => ({ restoreMs: inputs.length, playMs: 10 * inputs.length })) });
+  const pool = await startPool(1, fakes.start, "1.12.0.11");
+  assert.ok("expand" in pool);
+  const [first, next, idle] = [new AbortController(), new AbortController(), new AbortController()];
+
+  await pool.expand("root", [tackle], first.signal);
+  await pool.expand("root", [tackle, tackle], next.signal);
+  await pool.close();
+
+  assert.deepEqual(
+    [pool.turnTimes(first.signal), pool.turnTimes(next.signal), pool.turnTimes(idle.signal)],
+    [
+      { restore: { count: 1, totalMs: 1, p50Ms: 1, p95Ms: 1, maxMs: 1 }, play: { count: 1, totalMs: 10, p50Ms: 10, p95Ms: 10, maxMs: 10 } },
+      { restore: { count: 2, totalMs: 4, p50Ms: 2, p95Ms: 2, maxMs: 2 }, play: { count: 2, totalMs: 40, p50Ms: 20, p95Ms: 20, maxMs: 20 } },
+      { restore: NONE, play: NONE },
+    ],
+  );
+});
+
+const NONE = { count: 0, totalMs: 0, p50Ms: null, p95Ms: null, maxMs: null };
 
 const SAVE = { seed: "s33d", waveIndex: 180 } as unknown as SessionSave;
 

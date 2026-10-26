@@ -77,6 +77,7 @@ const heap = { usedMb: 412, limitMb: 864 };
 const won = (inputs: unknown[]) => ({
   children: inputs.map(input => ({ input, end: "won", hp: { ours: [1], foes: [0] } })),
   heap,
+  turns: inputs.map((_, i) => ({ restoreMs: 12.5 + i, playMs: 80 + i })),
 });
 
 test("a worker hands the harness the save and its port, and comes back with the harness's root (#662)", async () => {
@@ -246,6 +247,22 @@ test("a worker runs under a 768 MB heap cap, and says what its last job left on 
   assert.deepEqual(worker.heap(), heap);
 });
 
+test("a worker says how long each turn its last job played took to restore and to play, as the harness answered (#943)", async () => {
+  const { clone } = fakeHarness(job => won(job.inputs));
+  const worker = await startWorker(clone, save);
+  assert.ok("root" in worker);
+
+  const before = worker.turnTimes();
+  await worker.expand("root", [tackle, null]);
+  await worker.close();
+
+  assert.deepEqual(before, []);
+  assert.deepEqual(worker.turnTimes(), [
+    { restoreMs: 12.5, playMs: 80 },
+    { restoreMs: 13.5, playMs: 81 },
+  ]);
+});
+
 test("a harness answer that strays from the protocol fails the job rather than reaching the search (#662)", async () => {
   const { clone } = fakeHarness(() => ({ children: [{ input: tackle, end: "drawn" }] }));
   const worker = await startWorker(clone, save);
@@ -261,7 +278,7 @@ test("a child whose turn took learn picks reaches the search with them, on a tur
     { input: { ...tackle, learns }, end: "won", hp: { ours: [1], foes: [0] } },
     { input: { kind: "queued", learns }, end: "won", hp: { ours: [1], foes: [0] } },
   ];
-  const { clone } = fakeHarness(() => ({ children, heap }));
+  const { clone } = fakeHarness(() => ({ children, heap, turns: [] }));
   const worker = await startWorker(clone, save);
   assert.ok("root" in worker);
 
