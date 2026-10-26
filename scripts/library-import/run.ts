@@ -7,11 +7,11 @@ import { findPinnedClone, harnessIn } from "../clone-test/clone-test.ts";
 import { described } from "../library-replay/library-replay.ts";
 import { importFights, LIBRARY, waiting } from "./library-import.ts";
 
-const USAGE = "usage: npm run library:import -- [--count] [--home <home>] [<library>]";
+const USAGE = "usage: npm run library:import -- [--count | --remind] [--home <home>] [<library>]";
 
 let parsed;
 try {
-  parsed = parseArgs({ options: { count: { type: "boolean" }, home: { type: "string" } }, allowPositionals: true });
+  parsed = parseArgs({ options: { count: { type: "boolean" }, remind: { type: "boolean" }, home: { type: "string" } }, allowPositionals: true });
 } catch {
   console.error(USAGE);
   process.exit(2);
@@ -26,6 +26,16 @@ const [library = fileURLToPath(LIBRARY)] = positionals;
 
 if (values.count) {
   console.log(waiting(home));
+  process.exit(0);
+}
+
+if (values.remind) {
+  const count = waiting(home);
+  if (count > 0)
+    console.log(
+      `${count} recorded ${count === 1 ? "fight is" : "fights are"} waiting for import into the fight library. ` +
+        "At a natural pause, offer `/import-fights` once this session; run it only on a yes.",
+    );
   process.exit(0);
 }
 
