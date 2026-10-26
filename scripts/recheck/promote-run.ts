@@ -12,8 +12,7 @@ if (kept === undefined) {
   console.error(
     [
       "usage: npm run recheck:promote -- [--stem <name>] <fight folder>",
-      "  <home>/fights/<seed>-w<wave>-<fight> before library:import, src/solver/fixtures/library/<seed>-w<wave>-<fight> after it,",
-      "  or the moved-aside <home>/fights-imported/<when>/<seed>-w<wave>-<fight> when the library already held that fight's first turn",
+      "  <home>/fights/<seed>-w<wave>-<fight> before library:import, <home>/fights-imported/<when>/<seed>-w<wave>-<fight> after it",
     ].join("\n"),
   );
   process.exit(2);
