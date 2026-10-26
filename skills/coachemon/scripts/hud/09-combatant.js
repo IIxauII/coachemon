@@ -1,7 +1,7 @@
 // Builds the live-shaped object the approx duel matrix scores (`approxOutcomes`) out of plain data — a species at a
 // level, a member at a projected level, a fusion of two halves the player hasn't committed — and refuses the live
 // scene: it constructs no game object and draws no RNG, so a run read that calls it stays a read.
-import { TYPES, natureOf } from "./01-core.js";
+import { TYPES, movesetOf, natureOf } from "./01-core.js";
 import { gameTables } from "./04-game-tables.js";
 import { baseStatsOf, formOf } from "./08-party.js";
 
@@ -188,6 +188,8 @@ const fusedTypes = (a, b) => {
  *   `stats`    a `Stat`-indexed stat row given outright, for a combatant with no species to compute one from — a
  *              **preview**'s foe. It wins over the base stats, the IVs and the nature, which then only name the mon
  *   `moves`    move ids, at full PP; the live moveset where absent
+ *   `battle`   true for a member judged as it fights now: its moves are a Transform or Mimic copy where one is set,
+ *              which outlives the wave on our side (game-code.md §17)
  *   `items`    the held items it carries, the live member's own where absent and none where there is no member. The
  *              ones the adapter can price (`PRICED`) are applied here, as the stat and power multipliers the game
  *              applies them as; the whole list is handed on through `getHeldItems`, which is where the duel reads
@@ -250,7 +252,7 @@ export const combatantOf = (spec = {}) => {
   const powers = powerBoosts(held);
   const slots = Array.isArray(spec.moves)
     ? spec.moves.map(id => slotOf(id, tryDo(() => gameTables().moves))).filter(Boolean)
-    : (mon?.moveset ?? []).filter(Boolean);
+    : spec.battle ? movesetOf(mon) : (mon?.moveset ?? []).filter(Boolean);
   const moveset = powers.size ? slots.map(pm => boostSlot(pm, powers)) : slots;
   const bars = Math.max(0, Math.floor(spec.boss ?? mon?.bossSegments ?? 0));
   const bar = Math.max(0, Math.min(bars ? bars - 1 : 0, spec.bar ?? (bars ? bars - 1 : 0)));

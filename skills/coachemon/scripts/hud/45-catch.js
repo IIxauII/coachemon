@@ -4,7 +4,7 @@
 //
 // The team verdict is the other half, and it is not here: a turn read cannot open a run read, so `catchLand` attaches
 // the judgment when the road lands, through the same owed/landed road the battle card's preview rides (#584).
-import { abilitiesOf, hasAttr, iconOf } from "./01-core.js";
+import { abilitiesOf, hasAttr, iconOf, movesetOf } from "./01-core.js";
 import { koCurve, koTurn, useOf } from "./10-damage.js";
 import { PARTY_SIZE, judgeNewcomer } from "./12-value.js";
 import { exchange, threatFrom } from "./30-planner.js";
@@ -156,7 +156,7 @@ const escapeReason = (turn, foe, party, p) => {
   for (const me of party.filter(x => x.isOnField?.())) {
     let turns = 9, first = turn.mon(me).speed >= turn.mon(foe).speed ? 1 : 0, theyFirst = 0;
     try {
-      for (const pm of (me.moveset ?? []).filter(Boolean)) {
+      for (const pm of movesetOf(me)) {
         const mv = pm.getMove?.();
         if (!mv || mv.category === MoveCategory.STATUS) continue;
         const x = exchange(turn, me, pm, foe);
@@ -188,7 +188,7 @@ const lowerHpTip = (turn, foe, party) => {
   const field = party.filter(x => x.isOnField?.());
   const by = me => (field.length > 1 ? `${me.name}'s ` : "");
   for (const me of field) {
-    for (const pm of (me.moveset ?? []).filter(Boolean)) {
+    for (const pm of movesetOf(me)) {
       let mv = null;
       try { mv = pm.getMove(); } catch {}
       if (mv && hasAttr(mv, "SurviveDamageAttr") && (pm.getMovePp?.() ?? 1) - (pm.ppUsed ?? 0) > 0) return `lower its HP with ${by(me)}${pm.getName()}`;

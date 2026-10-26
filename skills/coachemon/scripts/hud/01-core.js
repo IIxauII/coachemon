@@ -212,6 +212,12 @@ export const lessOneBerry = (items, b) => {
   });
   return took ? left : null;
 };
+const NO_MOVES = Object.freeze([]);
+// The moves `p` fights with, a Transform or Mimic copy while one is set; a FIGHT command's cursor indexes it
+// (game-code.md §17). It is the game's own array, so never mutate it. A built combatant has only `moveset`.
+export const battleMoveset = p => p?.getMoveset?.() ?? p?.moveset ?? NO_MOVES;
+// `battleMoveset` without its empty slots: what the enemy AI's `slot` indexes.
+export const movesetOf = p => battleMoveset(p).filter(Boolean);
 // The caller picks the moveset: `getMoveset()` or `moveset` (game-code.md §17).
 export const hasMove = (moveset, id) => {
   if (moveset) for (let i = 0; i < moveset.length; i++) if (moveset[i]?.moveId === id) return true;
@@ -222,8 +228,8 @@ export const hasMove = (moveset, id) => {
 // stays current over "X learned Y!" once the move is taken (game-code.md §17, #525). Allocates nothing, as the watch's
 // detector reads it each frame.
 export const learnAsked = (party, ph) => {
-  const pk = party?.[ph.partyMemberIndex], ms = pk?.getMoveset?.() ?? pk?.moveset;
-  if (!ms || ms.length < 4) return null;
+  const pk = party?.[ph.partyMemberIndex], ms = battleMoveset(pk);
+  if (ms.length < 4) return null;
   if (ph.moveId !== MoveId.SKETCH && hasMove(ms, ph.moveId)) return null;
   return pk;
 };

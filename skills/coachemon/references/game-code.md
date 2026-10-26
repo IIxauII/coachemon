@@ -2128,7 +2128,10 @@ our side, since `EncounterPhase` resets only the enemy's summon data (`src/phase
 switch, a faint or a `ReturnPhase` clears it (`src/phases/switch-summon-phase.ts:134`, `src/phases/faint-phase.ts:60`,
 `src/phases/return-phase.ts:23`). The summary screen lists the mon's own `moveset`, not `getMoveset()`
 (`src/ui/handlers/summary-ui-handler.ts:1322-1324`), so a transformed mon is asked on the copied moveset and picks the
-move to forget from its own. The phase stays current after
+move to forget from its own. The fight menu and the command phase read `getMoveset()` too, unfiltered: a FIGHT command's
+`cursor` indexes it directly, and a slot past its end shows as "-" and cannot be selected (`computeMoveId`,
+`src/phases/command-phase.ts:228`; `trySelectMove`, `src/field/pokemon.ts:3329`; `displayMoves`,
+`src/ui/handlers/fight-ui-handler.ts:344`). `LearnMovePhase` stays current after
 the move is taken: `learnMove` calls `setMove` before its "learned" message and ends only once that message is
 dismissed (`src/phases/learn-move-phase.ts:211-229`). A decline likewise ends only after its "did not learn" message
 (`:156-157`, `:166-167`), and nothing the overlay can read marks that message as a decline (#808). The phase writes

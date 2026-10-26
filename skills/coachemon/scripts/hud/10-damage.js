@@ -1,6 +1,6 @@
 // Calls game code but never decides when that is allowed: 25-turn opens the one sandbox, predicts Tera and keys every
 // answer before a `scene*` export runs, and `env` is its `sceneEnv`. Every other export is pure.
-import { SPREAD_TARGETS, TYPES, abilitiesOf, effectiveness, forcedRng, gameVersionOf, keepTurnData, lumsHeld, squeezeDist, stage, stat, typesOf, versionAtLeast } from "./01-core.js";
+import { SPREAD_TARGETS, TYPES, abilitiesOf, effectiveness, forcedRng, gameVersionOf, keepTurnData, lumsHeld, movesetOf, squeezeDist, stage, stat, typesOf, versionAtLeast } from "./01-core.js";
 import { costNotes, moveTraits } from "./07-move-traits.js";
 
 const reliability = (mv, t = moveTraits(mv)) => {
@@ -62,7 +62,7 @@ export const sceneRefused = (env, p, def) => {
   }
   return { stopped: [...stopped], failing };
 };
-const plainUsable = (p, status = false) => p.moveset.filter(Boolean)
+const plainUsable = (p, status = false) => movesetOf(p)
   .filter(pm => (pm.getMove().category === MoveCategory.STATUS) === status && pm.getMovePp() - pm.ppUsed > 0);
 const traitsNow = (env, atk, mv, live, def = null) => {
   const t = moveTraits(mv, atk, { party: env?.party?.(atk) ?? null, target: def });
