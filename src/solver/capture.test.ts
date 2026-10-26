@@ -443,6 +443,10 @@ test("a solve's entry carries how its search went, as the solve handed it on, an
       { stage: "beam", index: 0, ended: "emptied", spent: 4, ms: 55 },
       { stage: "beam", index: 1, ended: "won", spent: 10, ms: 310 },
     ],
+    dropped: { "the turn timed out": 3 },
+    replays: { ran: 2, failed: { lost: 1 }, ms: 420 },
+    merged: 5,
+    stalled: 1,
   };
   const answer: SolveResult = { kind: "oracle_line", oracleLine: LINE };
   const work: SolveWork = async (_args, { statistics }) => {
