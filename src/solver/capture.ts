@@ -1,7 +1,7 @@
 /**
- * The developer's `COACHEMON_CAPTURE=1`: a solve from a fight's wave-start save keeps what it solved from, and the oracle
- * line it found, as a known fight's two files in that fight's folder under the home (#787, #936). Never a player's:
- * unset, nothing is written.
+ * The developer's `COACHEMON_CAPTURE=1`: a solve keeps what it solved from, the wave-start save or a mid-fight augmented
+ * export, and the oracle line it found, as the fight library's two files under the turn it started at, in that fight's
+ * folder under the home (#787, #936, #937). Never a player's: unset, nothing is written.
  */
 import { mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -16,11 +16,11 @@ export const withCapture =
   (work: JobWork, home: string, env: NodeJS.ProcessEnv = process.env): JobWork =>
   async (args, ctl) => {
     const input = args.input as SolveInput;
-    if (env.COACHEMON_CAPTURE !== "1" || input.extras !== undefined) return work(args, ctl);
-    const dir = path.join(home, "fights");
-    const stem = path.join(dir, fightKey(input.save), FIRST_TURN);
-    const { live, save, liveExport, cloneVersion, budget } = input;
-    keep(`${stem}.json`, { live, save, liveExport, cloneVersion, budget });
+    const turn = input.extras === undefined ? FIRST_TURN : Number.isInteger(input.extras.turn) ? `turn-${input.extras.turn}` : null;
+    if (env.COACHEMON_CAPTURE !== "1" || turn === null) return work(args, ctl);
+    const stem = path.join(home, "fights", fightKey(input.save), turn);
+    const { live, save, extras, liveExport, cloneVersion, budget } = input;
+    keep(`${stem}.json`, { live, save, extras, liveExport, cloneVersion, budget });
     const result = (await work(args, ctl)) as SolveResult;
     if (!ctl.signal.aborted && result?.kind === "oracle_line") keep(`${stem}${WIN_SCRIPT}`, scriptOf(result.oracleLine));
     return result;
