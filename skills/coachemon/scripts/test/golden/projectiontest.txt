@@ -6,6 +6,8 @@ no EXP. All, benched      Garchomp 50→50  Snorlax 48→48  Lapras 47→47  Mag
 EXP. All ×2, benched      Garchomp 50→53  Snorlax 48→51  Lapras 47→50  Magikarp 35→41
 fighting them alone       Garchomp 50→56=cap  Snorlax 48→56=cap  Lapras 47→55  Magikarp 35→48
 one of two fighting       Garchomp 50→54  Snorlax 48→52  Lapras 47→51  Magikarp 35→42
+== W62 cleared, to the boss on 70
+fighting them alone       Garchomp 50→56=cap  Snorlax 48→55  Lapras 47→54  Magikarp 35→46
 == at the cap
 L56, every multiplier     56→56=cap  gained 0
 == a newcomer 12 levels behind

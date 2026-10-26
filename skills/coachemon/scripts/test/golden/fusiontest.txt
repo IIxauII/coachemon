@@ -60,7 +60,7 @@ Spliced Endless: unfused mons run on half their base stats
 summary Garchomp ← Azumarill (+5.2 turns) · pick Garchomp first, then Azumarill
 == Snorlax ← Mimikyu
 ΔV +0.1 turns · spends Mimikyu L30 · Disguise doesn't work fused · Snorlax BST 540 → 510 · offers Shadow Claw
-Bug now beats 2 of 3, down from 4 of 4 · a better answer to Fairy
+Water now beats 3 of 3, up from 3 of 4 · Grass now beats 3 of 3, up from 3 of 4
 == Azumarill's passive unreadable
 30 pairs → 25 · unread null
 == party screen, not splicing
