@@ -189,8 +189,9 @@ middle of a bump is recorded by hand (below).
 1. Start the plugin's server with `COACHEMON_CAPTURE=1` and solving on. Each fight gets a folder,
    `<home>/fights/<seed>-w<wave>-<fight>/`, and every fight is kept. A solve from the fight's first turn keeps `turn-1.json`
    there (what it solved from) and, once it finds an oracle line, `turn-1.win.script.json` beside it, its `known` taken
-   from the oracle line's checkpoints. A repeat solve replaces `turn-1.json`, and the oracle line only with one it found.
-   A solve past the first turn keeps nothing.
+   from the oracle line's checkpoints. A re-solve past the first turn keeps its pair the same way under the turn it started
+   at, `turn-<n>.json` (the augmented export and its extras) and `turn-<n>.win.script.json`. A repeat solve from the same
+   turn replaces that turn's input, and the oracle line only with one it found.
 2. Solve the fight at its first decision, and win it live on that oracle line. Promoting is your word that you did: nothing
    checks it.
 3. Run `npm run recheck:promote -- <home>/fights/<seed>-w<wave>-<fight>`. It copies the first-turn pair into

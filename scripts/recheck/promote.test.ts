@@ -100,6 +100,31 @@ test("promotion refuses a mid-fight file, which the re-check can't replay from t
   assert.deepEqual(known(), BEFORE);
 });
 
+test("promotion refuses a fight folder's mid-fight solve, either of its files, as it refuses any mid-fight file, and changes nothing (#937)", async () => {
+  const { fight, fixtures, deps, known, rechecked } = setUp();
+  const midFight = path.join(fight, "turn-5");
+  writeFileSync(`${midFight}.json`, JSON.stringify({ ...KEPT, extras: { turn: 5 } }));
+  writeFileSync(`${midFight}.win.script.json`, JSON.stringify(LINE));
+
+  await refusedWith(promote(`${midFight}.json`, deps()), /turn-5\.json is a mid-fight solve's.*wave-start save/);
+  await refusedWith(promote(`${midFight}.win.script.json`, deps()), /turn-5\.json is a mid-fight solve's.*wave-start save/);
+
+  assert.equal(existsSync(path.join(fixtures, "gordie-w180.json")), false);
+  assert.deepEqual(known(), BEFORE);
+  assert.deepEqual(rechecked, []);
+});
+
+test("a fight folder holding mid-fight solves too still promotes its first-turn solve (#937)", async () => {
+  const { fight, fixtures, deps } = setUp();
+  writeFileSync(path.join(fight, "turn-5.json"), JSON.stringify({ ...KEPT, extras: { turn: 5 } }));
+  writeFileSync(path.join(fight, "turn-5.win.script.json"), JSON.stringify({ ...LINE, inputs: [{ kind: "move", move: "THUNDER", tera: true }] }));
+
+  const out = await promote(fight, deps());
+
+  assert.deepEqual(out, { promoted: { stem: "gordie-w180", name: "Gordie W180" } });
+  assert.deepEqual(JSON.parse(readFileSync(path.join(fixtures, "gordie-w180.win.script.json"), "utf8")), LINE);
+});
+
 test("promotion refuses a fight saved on another game version than the pin, which the re-check would carry (#787)", async () => {
   const { keptFile, deps } = setUp({ kept: { ...KEPT, save: { ...save, gameVersion: "1.12.0.11" } } });
 
