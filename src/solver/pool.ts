@@ -1,7 +1,7 @@
 import { noAnswer, Unanswered } from "./no-answer.ts";
 import type { SessionSave } from "./input.ts";
 import type { Action, Child, Pool, Position } from "./search.ts";
-import { type NotStarted, type Worker, WorkerDied } from "./worker.ts";
+import { type NotStarted, type TurnTime, type Worker, WorkerDied } from "./worker.ts";
 
 // (#655)
 export const poolSize = (cores: number) => Math.max(1, Math.min(cores - 2, 6));
@@ -23,6 +23,37 @@ export type PoolStats = {
   realClock: string | null;
 };
 
+/** `p50Ms` and `p95Ms` are nearest-rank; all three are `null` with no turn counted. */
+export type Spread = { count: number; totalMs: number; p50Ms: number | null; p95Ms: number | null; maxMs: number | null };
+
+/** How long the turns a solve's jobs played took, restoring their fork point and playing on from it (#943). */
+export type TurnTimes = { restore: Spread; play: Spread };
+
+/** Kept as how many times each value came, so a long-lived pool holds no sample of its own (#943). */
+function spreadOf() {
+  const seen = new Map<number, number>();
+  let count = 0;
+  let total = 0;
+  return {
+    add(ms: number) {
+      seen.set(ms, (seen.get(ms) ?? 0) + 1);
+      count++;
+      total += ms;
+    },
+    read(): Spread {
+      const sorted = [...seen].sort(([a], [b]) => a - b);
+      const rank = (p: number) => {
+        let below = 0;
+        for (const [ms, n] of sorted) if ((below += n) >= Math.ceil(p * count)) return ms;
+        return null;
+      };
+      return { count, totalMs: Math.round(total * 10) / 10, p50Ms: rank(0.5), p95Ms: rank(0.95), maxMs: sorted.at(-1)?.[0] ?? null };
+    },
+  };
+}
+
+const timesOf = () => ({ restore: spreadOf(), play: spreadOf() });
+
 /** Why the search's workers run slower than they could, for a progress line; `null` when they run as fast as they can. */
 export function slowWorkersNote({ slowPoll, realClock }: Pick<PoolStats, "slowPoll" | "realClock">): string | null {
   const notes = [
@@ -42,6 +73,8 @@ export type WorkerPool = Omit<Pool, "expand"> & {
   /** `Worker.rootAt`, on whichever worker is free. */
   rootAt(save: SessionSave, at?: string, signal?: AbortSignal): Promise<Position>;
   stats(): PoolStats;
+  /** The turns played by the jobs asked under `signal`, or under none. */
+  turnTimes(signal?: AbortSignal): TurnTimes;
   close(): Promise<void>;
 };
 
@@ -80,6 +113,14 @@ export async function startPool(size: number, start: () => Promise<Worker | NotS
   let heapLimitMb: number | null = null;
   let slowPoll = workers.findLast(w => w.slowPoll !== null)?.slowPoll ?? null;
   let realClock = workers.findLast(w => w.realClock !== null)?.realClock ?? null;
+  const timed = new WeakMap<AbortSignal, ReturnType<typeof timesOf>>();
+  const unsignalled = timesOf();
+  const timing = (signal?: AbortSignal) => {
+    if (signal === undefined) return unsignalled;
+    const times = timed.get(signal) ?? timesOf();
+    timed.set(signal, times);
+    return times;
+  };
 
   const restart = (slot: Slot) => {
     const fresh = start().then(w => {
@@ -163,10 +204,19 @@ export async function startPool(size: number, start: () => Promise<Worker | NotS
           peakHeapMb = Math.max(peakHeapMb ?? 0, heap.usedMb);
           heapLimitMb = heap.limitMb;
         }
+        const times = timing(signal);
+        for (const { restoreMs, playMs } of worker.turnTimes()) {
+          times.restore.add(restoreMs);
+          times.play.add(playMs);
+        }
         return children;
       }, signal),
     rootAt: (save, at, signal) => ask(worker => worker.rootAt(save, at), signal),
     stats: () => ({ size, died, lastDeath, peakHeapMb, heapLimitMb, slowPoll, realClock }),
+    turnTimes: signal => {
+      const { restore, play } = timing(signal);
+      return { restore: restore.read(), play: play.read() };
+    },
     async close() {
       closed = true;
       for (const job of queue.splice(0)) job.fail(closedPool());
