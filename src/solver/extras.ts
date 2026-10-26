@@ -100,6 +100,28 @@ const secondStage = (save: SessionSave) =>
   save.gameMode === GameModes.CLASSIC &&
   (save.enemyParty as { species?: number; formIndex?: number }[]).some(m => m.species === SpeciesId.ETERNATUS && (m.formIndex ?? 0) > 0);
 
+/** The game's `isClassicFinalBoss`, which a Challenge run passes too. */
+const classicFinalWave = (save: SessionSave) =>
+  (save.gameMode === GameModes.CLASSIC || save.gameMode === GameModes.CHALLENGE) && save.waveIndex === 200;
+
+type FinalBoss = { id: number; formIndex?: number; hp: number; stats: number[] };
+
+/**
+ * The save with the classic final boss's first form on the live export's stats and HP, which `harness.test.ts.template`
+ * puts back after each load: a load recalculates them, and a reloaded tab's save still holds the old ones (#917,
+ * game-code.md §34).
+ */
+export function withLiveFinalBoss(save: SessionSave, liveExport: SessionSave | undefined): SessionSave {
+  if (liveExport === undefined || !classicFinalWave(save)) return save;
+  const firstForm = (m: FinalBoss) => (m.formIndex ?? 0) === 0;
+  const live = new Map((liveExport.enemyParty as FinalBoss[]).filter(firstForm).map(m => [m.id, m]));
+  const enemyParty = (save.enemyParty as FinalBoss[]).map(m => {
+    const fought = firstForm(m) && live.get(m.id);
+    return fought ? { ...m, hp: fought.hp, stats: [...fought.stats] } : m;
+  });
+  return { ...save, enemyParty };
+}
+
 /** In the shape `forkPoint()` in `harness.test.ts.template` writes. */
 function forkPoint(save: SessionSave, read: CheckedExtras): string {
   const ours = save.party as SavedMon[];

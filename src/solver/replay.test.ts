@@ -556,3 +556,36 @@ test("a carried replay whose harness reports no migration fails, never matching 
   assert.equal(said.code, "harness_failed");
   assert.match(said.code === "harness_failed" ? said.why : "", /didn't say how it migrated/);
 });
+
+/** The classic final boss at W200, on a tab reloaded at the wave's start: its save holds the stats the fresh tab fought. */
+const eternatus: { live: Battle; liveExport: SessionSave; save: SessionSave } = JSON.parse(
+  readFileSync(new URL("./fixtures/eternatus-w200.json", import.meta.url), "utf8"),
+);
+/** The same wave on the tab that generated it: the boss on its id's IVs, as its save holds them (#917). */
+const freshTab = (() => {
+  const liveExport = structuredClone(eternatus.liveExport);
+  Object.assign(liveExport.enemyParty[0] as object, { hp: 772, stats: [772, 353, 475, 589, 378, 559] });
+  return { ...eternatus, liveExport };
+})();
+const handedBoss = async (given: typeof eternatus) => {
+  const { clone, handed } = fakeClone({ out: undefined });
+  await replay({ ...given, cloneVersion: "1.12.1.3" }, { inputs: [] }, clone);
+  const [boss] = JSON.parse(handed[0].input).save.enemyParty;
+  return { hp: boss.hp, stats: boss.stats };
+};
+
+test("a replay of the classic final boss's first form hands the harness the boss the live tab fights, its stats and HP (#917)", async () => {
+  assert.deepEqual(await handedBoss(freshTab), { hp: 772, stats: [772, 353, 475, 589, 378, 559] });
+  assert.deepEqual(await handedBoss(eternatus), { hp: 832, stats: [832, 407, 492, 647, 402, 587] });
+});
+
+test("a replay hands the harness the save's own boss past the final boss's first form, and off the classic final wave (#917)", async () => {
+  const saved = { hp: 772, stats: [772, 353, 475, 589, 378, 559] };
+  const secondForm = structuredClone(eternatus);
+  for (const party of [secondForm.save.enemyParty, secondForm.liveExport.enemyParty]) Object.assign(party[0] as object, { formIndex: 1 });
+  const endless = structuredClone(eternatus);
+  for (const save of [endless.save, endless.liveExport]) save.gameMode = GameModes.ENDLESS;
+
+  assert.deepEqual(await handedBoss(secondForm), saved);
+  assert.deepEqual(await handedBoss(endless), saved);
+});

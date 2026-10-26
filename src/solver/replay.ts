@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { z } from "zod";
 import { NAMES } from "../enums/generated.ts";
 import { title } from "./describe.ts";
-import { augmentedExport } from "./extras.ts";
+import { augmentedExport, withLiveFinalBoss } from "./extras.ts";
 import { type Carry, refuse } from "./gate.ts";
 import type { SavedItem, SessionSave, SolveInput } from "./input.ts";
 import { luckOf } from "./luck.ts";
@@ -81,7 +81,7 @@ export async function replay(
   if (!liveExport) return noAnswer({ code: "no_live_export" });
 
   const source = readFileSync(new URL("./harness.test.ts.template", import.meta.url), "utf8");
-  const job = { ...harnessJob(save, inputs, augmented?.forkPoint), ...(carried && { liveExport }) };
+  const job = { ...harnessJob(withLiveFinalBoss(save, liveExport), inputs, augmented?.forkPoint), ...(carried && { liveExport }) };
   const run = await clone({ name: "replay", source, input: JSON.stringify(job) });
   if ("missing" in run) return noAnswer({ code: "no_clone", version: given.cloneVersion, cause: run.missing });
   if (run.out === undefined) return failed("the harness wrote no report");
