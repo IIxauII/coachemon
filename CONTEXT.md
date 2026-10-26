@@ -333,6 +333,13 @@ Distinct from a **known fight**: a library fight records how a solve went, not t
 way. It becomes a known fight only once the maintainer has won it live on its oracle line and promotes it, and the
 library never adds to the known fights on its own.
 
+## Setting set
+
+A named choice of the oracle's search settings: its budget, turn limit, discrepancy search and beams. A benchmark run
+solves the **fight library**'s fights again under one or more setting sets, once for each solve start, which is a
+fight's first turn or a mid-fight re-solve. Each of those solves appends a statistics entry marked with its set's name,
+so the tally counts it apart from live solves and from the other sets. A live solve runs under no setting set.
+
 ## Game read
 
 A name our code takes from the game: a field or method it reads off a game object, a phase's name, a storage key, a

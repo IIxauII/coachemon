@@ -30,7 +30,8 @@
     "ladder:drift": "node scripts/drift.ts",
     "reads:check": "node scripts/game-reads/main.ts",
     "library:import": "node scripts/library-import/run.ts",
-    "library:tally": "node scripts/library-tally/run.ts"
+    "library:tally": "node scripts/library-tally/run.ts",
+    "library:benchmark": "node scripts/library-benchmark/run.ts"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

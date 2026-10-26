@@ -50,8 +50,10 @@ test("a fight counts as won under a setting set where any of its solves under it
   assert.deepEqual(more.settings.budget, bigger.budget);
 });
 
+const QUIET = { dropped: {}, replays: { ran: 0, failed: {}, ms: 0 }, merged: 0, stalled: 0 };
+
 const byLds = (pass: number, spent: number, ms: number): Pick<SolveStatistics, "search"> => ({
-  search: { found: { stage: "lds", pass, spent }, stages: [{ stage: "lds", ended: "won", spent, ms }] },
+  search: { found: { stage: "lds", pass, spent }, stages: [{ stage: "lds", ended: "won", spent, ms }], ...QUIET },
 });
 
 /** The discrepancy search ran out of budget first; the beams' `ms` counts from when they started. */
@@ -62,6 +64,7 @@ const byBeam = (index: number, turn: number, spent: number, ms: number): Pick<So
       { stage: "lds", ended: "budget", spent: 3000, ms: 20_000 },
       ...[0, 1, 2].map(i => ({ stage: "beam" as const, index: i, ended: i === index ? ("won" as const) : ("stopped" as const), spent: 100, ms })),
     ],
+    ...QUIET,
   },
 });
 
@@ -71,7 +74,7 @@ test("each win counts toward the stage that found it, and an entry written befor
     solve(GORDIE_AGAIN, WON, byBeam(2, 7, 3_900, 10_000)),
     solve(ETERNATUS, WON, byBeam(2, 11, 4_200, 30_000)),
     solve(ETERNATUS, WON, { turn: 3 }),
-    solve(ETERNATUS, NO_WIN, { search: { found: null, stages: [] } }),
+    solve(ETERNATUS, NO_WIN, { search: { found: null, stages: [], ...QUIET } }),
   ]);
   assert.deepEqual(set.solves, { won: 4, of: 5 });
   assert.deepEqual(set.foundBy, [
@@ -87,7 +90,7 @@ test("turns and time to the first win read the win's own stage, after the discre
     solve(GORDIE_AGAIN, WON, byBeam(2, 7, 3_900, 10_000)),
     solve(ETERNATUS, WON, byBeam(0, 11, 4_200, 30_000)),
     solve(ETERNATUS, WON, { turn: 3 }),
-    solve(ETERNATUS, NO_WIN, { search: { found: null, stages: [] } }),
+    solve(ETERNATUS, NO_WIN, { search: { found: null, stages: [], ...QUIET } }),
   ]);
   assert.deepEqual(set.toWin, { wins: 3, turns: { median: 3_900, max: 4_200 }, ms: { median: 30_000, max: 50_000 } });
 });
@@ -125,7 +128,7 @@ test("the report heads each setting set with its settings, then its wins, turns 
   const [usual, beamsAlone] = out.split(/^### /m).slice(1);
   assert.match(
     usual,
-    /^beams 8 wide ours 1, 8 wide ours 0\.5, 16 wide ours 0\.5, 3000 turns each, to turn 40; discrepancy search 3000 turns, 2 alternatives, 2 discrepancies, ours 1\n/,
+    /^live: beams 8 wide ours 1, 8 wide ours 0\.5, 16 wide ours 0\.5, 3000 turns each, to turn 40; discrepancy search 3000 turns, 2 alternatives, 2 discrepancies, ours 1\n/,
   );
   assert.match(usual, /^fights won: 2 of 2; solves won: 2 of 3$/m);
   assert.match(usual, /^turns to the first win: median 2300, max 4200, over 2 wins$/m);
@@ -133,7 +136,7 @@ test("the report heads each setting set with its settings, then its wins, turns 
   assert.match(usual, /^found by: discrepancy search, pass 1: 1; beam 2 \(16 wide, ours 0\.5\): 1$/m);
   assert.match(usual, /^\| gordie \| 180 \| 1 of 1 \| 1 of 1 \| 400 \| 5\.0 s \| discrepancy search, pass 1: 1 \|$/m);
   assert.match(usual, /^\| eternatus \| 200 \| 1 of 1 \| 1 of 2 \| 4200 \| 50\.3 min \| beam 2 \(16 wide, ours 0\.5\): 1 \|$/m);
-  assert.match(beamsAlone, /^beams 16 wide ours 0\.5, 3000 turns each, to turn 40; no discrepancy search\n/);
+  assert.match(beamsAlone, /^live: beams 16 wide ours 0\.5, 3000 turns each, to turn 40; no discrepancy search\n/);
   assert.match(beamsAlone, /^fights won: 0 of 1; solves won: 0 of 1$/m);
   assert.doesNotMatch(beamsAlone, /^(turns to the first win|time to the first win|found by):/m);
   assert.match(beamsAlone, /^\| eternatus \| 200 \| 0 of 1 \| 0 of 1 \| — \| — \| — \|$/m);
@@ -142,6 +145,28 @@ test("the report heads each setting set with its settings, then its wins, turns 
 test("an entry that predates the settings it ran under is tallied apart, under settings not recorded (#948)", () => {
   const { budget: _b, lds: _l, portfolio: _p, ...bare } = solve(GORDIE, WON).statistics;
   const out = report([{ fight: GORDIE, statistics: bare }, solve(GORDIE, WON)]);
-  assert.match(out, /^### settings not recorded\nfights won: 1 of 1; solves won: 1 of 1$/m);
+  assert.match(out, /^### live: settings not recorded\nfights won: 1 of 1; solves won: 1 of 1$/m);
   assert.match(out, /^found by: not recorded: 1$/m);
+});
+
+test("benchmark entries are tallied apart from live ones, a setting set each by its name, after the live sets (#950)", () => {
+  const run = (set: string, over: Partial<SolveStatistics> = {}) => ({ benchmark: { set }, ...over });
+  const sets = tally([
+    solve(ETERNATUS, WON, run("total 40000", { budget: { expansions: 10000, turns: 40 } })),
+    solve(ETERNATUS, NO_WIN),
+    solve(ETERNATUS, NO_WIN, run("default")),
+    solve(GORDIE, WON, run("default")),
+    solve(GORDIE, WON),
+  ]);
+  assert.deepEqual(
+    sets.map(s => ({ benchmark: s.benchmark, solves: s.solves })),
+    [
+      { benchmark: null, solves: { won: 1, of: 2 } },
+      { benchmark: "total 40000", solves: { won: 1, of: 1 } },
+      { benchmark: "default", solves: { won: 1, of: 2 } },
+    ],
+  );
+  const out = report([solve(GORDIE, WON), solve(GORDIE, NO_WIN, run("default"))]);
+  assert.match(out, /^### live: beams 8 wide ours 1, /m);
+  assert.match(out, /^### benchmark "default": beams 8 wide ours 1, /m);
 });

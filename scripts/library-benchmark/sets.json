@@ -1,0 +1,7 @@
+{
+  "default": {},
+  "total 20000": { "budget": "5000", "lds": "5000" },
+  "total 40000": { "budget": "10000", "lds": "10000" },
+  "default without 8 wide ours 0.5": { "beams": "8:1,16:0.5" },
+  "total 40000 without 8 wide ours 0.5": { "budget": "10000", "lds": "10000", "beams": "8:1,16:0.5" }
+}
