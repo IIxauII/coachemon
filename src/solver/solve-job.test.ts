@@ -7,8 +7,7 @@ import type { CloneSetup } from "./clone.ts";
 import { FightPool } from "./fight-pool.ts";
 import { noAnswer } from "./no-answer.ts";
 import type { WorkerPool } from "./pool.ts";
-import type { Clone, CloneRun, Progress, SolveDeps, SolveInput, SolveResult } from "./solver.ts";
-import type { SearchStatistics } from "./search.ts";
+import type { Clone, CloneRun, Progress, SolveDeps, SolveInput, SolveReport, SolveResult } from "./solver.ts";
 import { solveJob } from "./solve-job.ts";
 
 const drayton = JSON.parse(readFileSync(new URL("./fixtures/drayton-w188.json", import.meta.url), "utf8"));
@@ -214,10 +213,15 @@ test("a solve job for another fight takes a pool of its own (#677)", async () =>
   assert.deepEqual(warm, [false, false]);
 });
 
-test("a solve job hands the search's statistics to whoever asked for them, and its progress line stays as it was (#940)", async () => {
+test("a solve job hands the solve's report, how its search went included, to whoever asked for it, and its progress line stays as it was (#940, #942)", async () => {
   const { ctl, lines } = control();
-  const reported: SearchStatistics[] = [];
-  const statistics: SearchStatistics = { found: null, stages: [{ stage: "beam", index: 0, ended: "emptied", spent: 12, ms: 40 }] };
+  const reported: SolveReport[] = [];
+  const statistics: SolveReport = {
+    startup: { gateMs: 0, loadMs: 40, pool: { warm: false, ms: 900 } },
+    pool: null,
+    cores: 8,
+    search: { found: null, stages: [{ stage: "beam", index: 0, ended: "emptied", spent: 12, ms: 40 }] },
+  };
   const work = solveJob("/home/.coachemon", {
     setUp: async () => SET_UP,
     runIn: recordingClone().runIn,
