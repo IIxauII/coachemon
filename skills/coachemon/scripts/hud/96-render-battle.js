@@ -8,11 +8,15 @@ import { drawOffTheLine, drawOracleLine, drawOracleStep } from "./95-render-orac
 import { drawPreview } from "./95-render-preview.js";
 import { drawTeamPlan } from "./95-render-team.js";
 
-export const captionBattle = m => {
+const sendOrder = m => {
   const slotNames = new Set(m.field?.slots.map(sl => sl.name) ?? []);
-  const order = m.trainer || (m.order ?? []).some(o => !slotNames.has(o.name)) ? m.order ?? [] : [];
-  return caption("🎯", m.title,
-    ...order.flatMap((o, i) => [i ? h("span", dim, "›") : null, mon(o.icon, o.name, ICON.mon)]));
+  return m.trainer || (m.order ?? []).some(o => !slotNames.has(o.name)) ? m.order ?? [] : [];
+};
+export const captionBattle = m => caption("🎯", m.title,
+  ...sendOrder(m).flatMap((o, i) => [i ? h("span", dim, "›") : null, mon(o.icon, o.name, ICON.mon)]));
+const leadBattle = m => {
+  const order = sendOrder(m);
+  return [m.trainer ? m.title : null, order.length ? `we send ${order.map(o => o.name).join(" › ")}` : null].filter(Boolean).join(" · ");
 };
 
 // An oracle line rests on no turn read, so a card without one keeps it (#670).
@@ -20,7 +24,7 @@ const planGroup = m => some("plan", "Plan", planSummary(m), m.oracleLine ? drawO
 
 export const drawBattle = m => {
   const oracle = drawOracleStep(m.oracleLine), off = drawOffTheLine(m.offTheLine);
-  if (m.unavailable) return [group("act", "Now", actSummary(m), [...off, ...oracle]), planGroup(m)].filter(Boolean);
+  if (m.unavailable) return [group("act", "Now", actSummary(m), [...off, ...oracle], leadBattle(m)), planGroup(m)].filter(Boolean);
   const f = m.field;
 
   const threatTag = t => {
@@ -144,7 +148,7 @@ export const drawBattle = m => {
   // The same rows as 96-render-rewards' road, which a file on this layer can't import: change both.
   const road = [...drawPreview(m.preview), ...drawAhead(m.ahead)];
   return [
-    some("act", "Now", actSummary(m), oracle.length ? [...enemySwitches, ...oracle] : [...off, ...field]),
+    some("act", "Now", actSummary(m), oracle.length ? [...enemySwitches, ...oracle] : [...off, ...field], leadBattle(m)),
     some("foes", "Foes", foesSummary(m), [team, ...rows]),
     some("catch", "Catch", catchSummary(m.catch), drawCatch(m)),
     planGroup(m),

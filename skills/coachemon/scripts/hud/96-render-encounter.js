@@ -3,6 +3,7 @@ import { caption, dim, h, ink, line, some } from "./90-render.js";
 
 const ENCOUNTER_MARK = { take: "★", ok: "·", avoid: "✗", off: "·" };
 export const captionEncounter = m => caption("🎭", m.name, m.tier ? h("span", { ...dim, fontWeight: "normal" }, m.tier) : null);
+const leadEncounter = m => (m.tier ? `${m.tier} tier` : null);
 
 export const drawEncounter = m => {
   const options = [];
@@ -28,7 +29,7 @@ export const drawEncounter = m => {
     m.known ? null : line("", h("span", dim, "not judged yet: options and requirements only")),
   ];
   return [
-    some("act", "Now", encounterSummary(m), []),
+    some("act", "Now", encounterSummary(m), [], leadEncounter(m)),
     some("options", "Options", null, options),
     some("notes", "Notes", null, notes),
   ].filter(Boolean);

@@ -173,7 +173,8 @@ const now = (label, s, over) => {
   const c = cardAt(s, over);
   const drawn = drawBattle(c);
   const groups = flatGroups(drawn);
-  const act = groups.find(x => x.id === "act");
+  // `summary` is the call as the strip draws it: the wire's leads with the strip head's facts (#905).
+  const act = { ...groups.find(x => x.id === "act"), summary: drawn.find(x => x.id === "act").summary };
   const shown = flat(strip(c, null, drawn));
   console.log(`== ${label}`);
   console.log(`strip | ${shown}`);
@@ -562,7 +563,7 @@ const prompt = (label, s) => {
   console.log(`== ${label}`);
   console.log(`strip | ${shown}`);
   for (const g of groups) for (const x of g.rows) console.log(`  ${g.id.padEnd(8)}${x}`);
-  return { card: c, groups, strip: shown, act: groups.find(g => g.id === "act") };
+  return { card: c, groups, strip: shown, act: { ...groups.find(g => g.id === "act"), summary: drawn.find(g => g.id === "act").summary } };
 };
 
 // ---- At the move prompt itself the oracle line's answer is the learn card's call, though the turn has moved on
