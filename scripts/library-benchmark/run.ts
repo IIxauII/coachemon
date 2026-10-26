@@ -5,7 +5,7 @@ import { PINNED_GAME_VERSION } from "../../src/escape-ladder/lookup.ts";
 import { PLUGIN_VERSION } from "../../src/plugin-version.ts";
 import { solve } from "../../src/solver/solver.ts";
 import { findPinnedClone, harnessIn } from "../clone-test/clone-test.ts";
-import { LIBRARY } from "../library-replay/library-replay.ts";
+import { LIBRARY, messageOf } from "../library-replay/library-replay.ts";
 import { benchmark, settingSets } from "./benchmark.ts";
 
 const SETS = new URL("./sets.json", import.meta.url);
@@ -47,7 +47,7 @@ let text: string;
 try {
   text = readFileSync(setsFile, "utf8");
 } catch (e) {
-  console.error(`library benchmark: could not read ${setsFile}: ${e instanceof Error ? e.message : String(e)}`);
+  console.error(`library benchmark: could not read ${setsFile}: ${messageOf(e)}`);
   process.exit(2);
 }
 const sets = settingSets(text);

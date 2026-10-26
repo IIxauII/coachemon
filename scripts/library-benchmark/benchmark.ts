@@ -1,29 +1,28 @@
-/** Solves the fight library's fights again under named setting sets, each solve appending a statistics entry (#950). */
-import { appendFileSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { appendFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { endOf, ranUnder, type Recorder, type SolveEnd, STATISTICS, type SolveStatistics } from "../../src/solver/capture.ts";
 import type { Carry } from "../../src/solver/gate.ts";
 import { newerVersion } from "../../src/solver/no-answer.ts";
 import type { SolveInput, SolveReport, SolveResult } from "../../src/solver/solver.ts";
 import { type SearchFlags, type SearchSettings, searchSettings } from "../battle-oracle/settings.ts";
-import { type Filter, selected } from "../library-replay/library-replay.ts";
+import { carryTo, type Filter, fightFolders, messageOf, readSolveStart } from "../library-replay/library-replay.ts";
 
-export type SettingSet = { name: string; settings: SearchSettings };
+export type NamedSettings = { name: string; settings: SearchSettings };
 
 const FLAGS: readonly (keyof SearchFlags)[] = ["budget", "turns", "lds", "beams"];
 
 /** `text` is a JSON object of named sets, each a set of `oracle:battle`'s search flags without their dashes. */
-export function settingSets(text: string): { ok: true; sets: SettingSet[] } | { ok: false; why: string } {
+export function settingSets(text: string): { ok: true; sets: NamedSettings[] } | { ok: false; why: string } {
   let named: unknown;
   try {
     named = JSON.parse(text);
   } catch (e) {
-    return { ok: false, why: `not JSON: ${e instanceof Error ? e.message : String(e)}` };
+    return { ok: false, why: `not JSON: ${messageOf(e)}` };
   }
   if (typeof named !== "object" || named === null || Array.isArray(named) || Object.keys(named).length === 0) {
     return { ok: false, why: "not an object of named setting sets" };
   }
-  const sets: SettingSet[] = [];
+  const sets: NamedSettings[] = [];
   for (const [name, flags] of Object.entries(named)) {
     const refused = (why: string) => ({ ok: false as const, why: `setting set "${name}": ${why}` });
     if (typeof flags !== "object" || flags === null || Array.isArray(flags)) return refused("not an object of flags");
@@ -53,21 +52,18 @@ type Start = { fight: string; turn: number; kept: SolveInput | { why: string } }
  */
 export async function benchmark(
   folder: string,
-  sets: readonly SettingSet[],
+  sets: readonly NamedSettings[],
   solve: Solve,
   { version, recorder, filter = {}, print = () => {} }: Options,
 ): Promise<void> {
-  const starts: Start[] = readdirSync(folder)
-    .sort()
-    .filter(fight => selected(fight, filter) && statSync(path.join(folder, fight)).isDirectory())
-    .flatMap(fight =>
-      readdirSync(path.join(folder, fight))
-        .flatMap(file => {
-          const turn = INPUT.exec(file)?.[1];
-          return turn === undefined ? [] : [{ fight, turn: Number(turn), kept: read(path.join(folder, fight, file)) }];
-        })
-        .sort((a, b) => a.turn - b.turn),
-    );
+  const starts: Start[] = fightFolders(folder, filter).flatMap(fight =>
+    readdirSync(path.join(folder, fight))
+      .flatMap(file => {
+        const turn = INPUT.exec(file)?.[1];
+        return turn === undefined ? [] : [{ fight, turn: Number(turn), kept: readSolveStart(path.join(folder, fight, file)) }];
+      })
+      .sort((a, b) => a.turn - b.turn),
+  );
   const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? "" : "s"}`;
   print(`library benchmark: solving ${plural(starts.length, "solve start")} in ${folder} under ${plural(sets.length, "setting set")} on game version ${version}`);
   for (const { fight, turn, kept } of starts) {
@@ -80,7 +76,7 @@ export async function benchmark(
       print(`  ${fight} turn ${turn}: skipped, its save is from ${from}, newer than ${version}`);
       continue;
     }
-    const carry = { carried: newerVersion(version, from) };
+    const carry = carryTo(kept, version);
     for (const { name, settings } of sets) {
       const input: SolveInput = { ...kept, cloneVersion: version, ...settings };
       let reported: Partial<SolveReport> = {};
@@ -88,22 +84,13 @@ export async function benchmark(
       try {
         ended = endOf(await solve(input, report => (reported = report), carry));
       } catch (e) {
-        ended = { kind: "failed", failure: e instanceof Error ? e.message : String(e) };
+        ended = { kind: "failed", failure: messageOf(e) };
       }
       if (ended === null) continue;
       const entry: SolveStatistics = { ...ranUnder(input, turn, recorder), ...reported, ended, benchmark: { set: name } };
       appendFileSync(path.join(folder, fight, STATISTICS), JSON.stringify(entry) + "\n");
       print(`  ${fight} turn ${turn}, "${name}": ${described(ended)}`);
     }
-  }
-}
-
-function read(file: string): SolveInput | { why: string } {
-  try {
-    const kept = JSON.parse(readFileSync(file, "utf8")) as SolveInput;
-    return typeof kept?.save?.gameVersion === "string" ? kept : { why: `${path.basename(file)} holds no save` };
-  } catch (e) {
-    return { why: `${path.basename(file)} doesn't read: ${e instanceof Error ? e.message : String(e)}` };
   }
 }
 

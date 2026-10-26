@@ -5,7 +5,7 @@ import path from "node:path";
 import { test } from "node:test";
 import type { SolveStatistics } from "../../src/solver/capture.ts";
 import type { SolveInput, SolveReport, SolveResult } from "../../src/solver/solver.ts";
-import { benchmark, type SettingSet, settingSets } from "./benchmark.ts";
+import { benchmark, type NamedSettings, settingSets } from "./benchmark.ts";
 
 const PIN = "1.12.2.0";
 
@@ -24,7 +24,6 @@ const save = (waveIndex: number) => ({
 
 const kept = (waveIndex: number) => ({ save: save(waveIndex), cloneVersion: PIN, budget: { expansions: 3000, turns: 40 } });
 
-/** A live entry as the recorder appended it, beside the solve it was for. */
 const LIVE = JSON.stringify({ schema: 1, turn: 1, at: "2026-10-20T10:00:00.000Z", ended: { kind: "no_answer", code: "no_win" } });
 
 /** A library folder whose fights each hold a first-turn solve and one live statistics entry. */
@@ -44,14 +43,13 @@ const entries = (root: string, fight: string): Partial<SolveStatistics>[] =>
     .split("\n")
     .map(line => JSON.parse(line));
 
-const SETS: SettingSet[] = [
+const SETS: NamedSettings[] = [
   { name: "default", settings: { budget: { expansions: 3000, turns: 40 } } },
   { name: "total 40000", settings: { budget: { expansions: 10000, turns: 40 }, lds: { ours: 1, alternatives: 2, discrepancies: 2, expansions: 10000 } } },
 ];
 
 const REPORT: SolveReport = { startup: { gateMs: 1, loadMs: 2, pool: { warm: false, ms: 3 } }, pool: null, turnTimes: null, cores: 8 };
 
-/** Every solve answers "no answer" and reports `REPORT`. */
 const fake = () => {
   const inputs: SolveInput[] = [];
   return {
