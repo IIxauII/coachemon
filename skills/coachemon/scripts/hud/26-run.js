@@ -50,6 +50,13 @@ const bucketsFor = key => {
   return b;
 };
 
+// A replay keyed on what it reads (#520) outlives the run key, so it is held here by its own `k` (#922).
+const EXACT_KEPT = 16;
+const exact = new Map(); // bucket → Map(k → answer), oldest first
+const built = (bucket, build) => {
+  try { return build(); } catch (e) { return { unavailable: `${bucket}: ${e?.message ?? e}` }; }
+};
+
 export const readRun = (s, fn, { cleared = null } = {}) => {
   openRead("run"); // throws inside a turn read or another run read
   try {
@@ -64,15 +71,24 @@ export const readRun = (s, fn, { cleared = null } = {}) => {
       guard();
       let m = buckets.get(bucket);
       if (!m) buckets.set(bucket, (m = new Map()));
-      if (!m.has(k)) {
-        let v;
-        try { v = build(); } catch (e) { v = { unavailable: `${bucket}: ${e?.message ?? e}` }; }
-        m.set(k, v);
-      }
+      if (!m.has(k)) m.set(k, built(bucket, build));
       return m.get(k);
     };
+    // `memo`'s twin held across run keys: `k` must hold every input `build` reads, the run key's included.
+    const memoExact = (bucket, k, build) => {
+      guard();
+      let m = exact.get(bucket);
+      if (!m) exact.set(bucket, (m = new Map()));
+      const v = m.has(k) ? m.get(k) : built(bucket, build);
+      m.delete(k);
+      m.set(k, v);
+      while (m.size > EXACT_KEPT) m.delete(m.keys().next().value);
+      return v;
+    };
+    // What `memo` holds for `k`, or undefined: nothing is built.
+    const held = (bucket, k) => { guard(); return buckets.get(bucket)?.get(k); };
     const run = {
-      key, scene: s, facts, memo,
+      key, scene: s, facts, memo, memoExact, held,
       /**
        * The next big fight (CONTEXT.md, `Next big fight`), frozen, as `{ from, fight, kind, cleared, unavailable }`:
        * `from` is the wave on screen and `fight` the first big fight from it, which counts that wave until `cleared`

@@ -15,18 +15,25 @@ export const SHOP_STAGES = [
   "shop.roll", "shop.rollJudge", "shop.rollTm", "shop.audit", "road", "groups", "dom", "other",
 ];
 
-/** A state is the shop's reroll count and money: a new one is drawn on its first refresh that drew. */
+/**
+ * A state is the shop's reroll count and money: a new one is drawn on its first refresh that drew. A visit starts on a
+ * new wave, or after a battle on the same one (a retry), money unchanged or not (#922).
+ */
 export function shopDraws(windows: WaveWindow[]): ShopDraw[] {
   const out: ShopDraw[] = [];
-  let prev: Shop | null = null, pending: ShopDraw["after"] | null = null;
+  let prev: Shop | null = null, prevWave: number | null = null, fought = false, pending: ShopDraw["after"] | null = null;
   const ticks = windows.flatMap(w => (w.stats.ticks as Tick[]).map(t => ({ t, wave: t.wave ?? w.wave })));
   for (const { t, wave } of ticks) {
+    if (t.kind === "battle") fought = true;
     if (t.kind !== "rewards" || !t.shop || wave == null) continue;
     const s = t.shop;
-    if (!prev || s.rerolls !== prev.rerolls || s.money !== prev.money) {
-      pending = !prev || s.rerolls < prev.rerolls || s.money > prev.money ? "first" : s.rerolls > prev.rerolls ? "reroll" : "buy";
+    const visit = !prev || wave !== prevWave || fought || s.rerolls < prev.rerolls || s.money > prev.money;
+    if (visit || s.rerolls !== prev!.rerolls || s.money !== prev!.money) {
+      pending = visit ? "first" : s.rerolls > prev!.rerolls ? "reroll" : "buy";
       prev = s;
     }
+    prevWave = wave;
+    fought = false;
     if (pending && t.drew) {
       out.push({ wave, after: pending, ms: t.ms, shop: s, stages: t.stages ?? {} });
       pending = null;

@@ -1,12 +1,12 @@
 // The next big fight, and whether the party is ready for it. Nothing here draws: the schedule is the run calendar's,
 // and the roster is `previewFor`'s replay.
-import { TIER_NAMES, abilitiesOf, weakestConfidence } from "./01-core.js";
+import { TIER_NAMES, abilitiesOf, typesOf, weakestConfidence } from "./01-core.js";
 import { stage } from "./01-meter.js";
 import { fightsAhead, isBossWave, isGruntWave, nextHeal } from "./03-calendar.js";
 import { gameEvents } from "./04-game-tables.js";
 import { partyAtFight, partyLuck, partyProfile } from "./08-party.js";
 import { setRosterRead } from "./11-threats.js";
-import { confidenceMark, previewFor } from "./48-preview.js";
+import { confidenceMark, previewRead } from "./48-preview.js";
 
 const ROSTER_HORIZON = 10;
 const FINAL_NOTICE = 10;
@@ -121,26 +121,48 @@ const eternatusCard = (s, model, party) => {
   return { foe: foe && { name: foe.name, level: foe.level, types: foe.types, segments: foe.segments, moves: foe.moves }, facts };
 };
 
-// Memoised: the schedule calls `isFixedBattle` for every wave it walks, and each call builds a config and runs the
-// challenge hooks (game-code.md §12).
+// The road starts past the wave on screen on every card, a battle's included: the fight on screen is the fight plan's,
+// not the road's. Its schedule calls `isFixedBattle` for every wave it walks, and each call builds a config and runs
+// the challenge hooks (game-code.md §12).
+const roadOf = (s, wave) => ({
+  schedule: fightsAhead(s, wave, { cleared: true }).map(f => ({ ...f, label: KIND_LABEL[f.kind] })),
+  heal: nextHeal(s, wave + 1),
+});
+
+// What the readiness reads of each member at the fight, in party order (#520).
+const profileKey = members => members.map(p => [p.id ?? null, p.name ?? null, p.level ?? null, tryDo(() => typesOf(p), []),
+  tryDo(() => abilitiesOf(p), []), (p.moveset ?? []).map(m => m?.moveId ?? null)]);
+
+// Held across run keys on what it reads (#520): the replay behind it is the preview's, so a level-up or a faint
+// rebuilds this and replays nothing.
+const perRead = new WeakMap();
 export const aheadModel = run => {
   const s = run.scene;
   const wave = run.facts.wave;
   if (!wave || typeof s.gameMode?.isFixedBattle !== "function") return null;
-  return run.memo("ahead", "model", () => build(run, wave));
+  if (!perRead.has(run)) perRead.set(run, read(run, wave));
+  return perRead.get(run);
 };
 
-const build = (run, wave) => {
+const read = (run, wave) => {
   const s = run.scene;
-  // The road starts past the wave on screen on every card, a battle's included: the fight on screen is the fight
-  // plan's, not the road's.
-  const schedule = fightsAhead(s, wave, { cleared: true }).map(f => ({ ...f, label: KIND_LABEL[f.kind] }));
-  const next = schedule[0] ?? null;
-  const heal = nextHeal(s, wave + 1);
+  const road = run.memoExact("ahead-road", JSON.stringify([s.seed, wave]), () => roadOf(s, wave));
+  const first = road.schedule?.[0] ?? null;
   const party = run.facts.party;
   const luck = partyLuck(party, s, gameEvents());
+  const preview = first && first.wave - wave <= ROSTER_HORIZON ? previewRead(run, first.wave) : { key: null, model: null };
+  const named = preview.model && !preview.model.unavailable ? preview.model : null;
+  const members = named ? partyAtFight(s, party, { from: wave, fight: first.wave }).members : null;
+  const finalNear = road.schedule?.some(f => f.kind === "final" && f.wave - wave <= FINAL_NOTICE);
+  const eternatus = finalNear ? [party.length, party.filter(p => p.hp > 0).length, heldStacks(s, party)] : null;
+  const key = JSON.stringify([s.seed, wave, luck, preview.key, members && profileKey(members), eternatus]);
+  return run.memoExact("ahead", key, () => build(s, wave, road, party, luck, preview.model, members));
+};
 
-  const model = next && next.wave - wave <= ROSTER_HORIZON ? previewFor(run, next.wave) : null;
+const build = (s, wave, road, party, luck, model, members) => {
+  const schedule = road.schedule;
+  const next = schedule[0] ? { ...schedule[0] } : null;
+  const heal = road.heal;
   const named = model && !model.unavailable ? model : null;
   if (next) {
     next.in = next.wave - wave;
@@ -158,7 +180,7 @@ const build = (run, wave) => {
     wave, next, heal: heal == null ? null : { wave: heal, in: heal - wave },
     fightsBeforeHeal: heal == null ? schedule.length : schedule.filter(f => f.wave < heal).length,
     schedule: schedule.slice(0, 4).map(f => ({ ...f, in: f.wave - wave })),
-    readiness: named ? readiness(named, partyProfile(partyAtFight(s, party, { from: wave, fight: next?.wave ?? null }).members)) : null,
+    readiness: named ? readiness(named, partyProfile(members)) : null,
     luck: { value: luck, grade: LUCK_GRADES[luck] ?? String(luck), upgradePct: Math.round(upgradeChance(luck) * 1000) / 10 },
     // The wave just cleared, not the one ahead: its rewards are the screen on show.
     thisWave: rewardRules(s, wave),

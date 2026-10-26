@@ -396,7 +396,7 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   assert.equal(ah.doubleOdds(scene, 200, 1), 0, "and the final wave is never double");
 }
 
-// ---- A switch reorders the party and nothing else: the road is served from the memo, not replayed (#563).
+// ---- A switch reorders the party and nothing else: the preview is served from the memo, not replayed (#563).
 {
   const party = team();
   const { scene } = mount({ wave: 24, party });
@@ -408,10 +408,35 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   party.reverse();
   destroyed = 0;
   const after = road();
-  assert.equal(after.ahead, before.ahead, "the look-ahead is the memo's");
+  assert.deepEqual(after.ahead.next, before.ahead.next, "the look-ahead's road is the same");
   assert.equal(after.preview, before.preview, "the preview is the memo's");
   assert.equal(destroyed, 0, "nothing was replayed");
   console.log(`== switched in ${party[0].name}: road served from the memo`);
+}
+
+// ---- A level-up, a faint or a move learned rebuilds the readiness, and replays nothing (#922)
+{
+  const party = team();
+  // Hardcore, so a faint keeps the member off the fight (game-code.md §12).
+  const { scene, ah } = mount({ wave: 24, party, challenges: [{ id: 9, value: 1 }] });
+  const before = ah.aheadModel(scene);
+  const steps = {
+    "a level-up": () => { party[0].level = 30; },
+    "a faint": () => { party[1].hp = 0; },
+    "a move learned": () => { party[0].moveset.push({ moveId: "Earthquake", getName: () => "Earthquake", getMove: () => gameMove("Earthquake") }); },
+  };
+  let last = before;
+  for (const [what, change] of Object.entries(steps)) {
+    change();
+    destroyed = 0;
+    const now = ah.aheadModel(scene);
+    assert.equal(destroyed, 0, `${what}: nothing replayed`);
+    assert.notDeepEqual(now.readiness, last.readiness, `${what}: the readiness is rebuilt`);
+    assert.deepEqual(now.next, before.next, `${what}: the road ahead is the same`);
+    console.log(`== ${what}: ${now.readiness.verdict} · ${now.readiness.notes.map(n => n.text).join("; ")}`);
+    last = now;
+  }
+  assert.equal(ah.aheadModel(scene), last, "an unchanged party is the memo's");
 }
 
 // ---- On a cleared wave the road's next fight is the run read's next big fight, around Rival 2 on 25 (#587, #877)
