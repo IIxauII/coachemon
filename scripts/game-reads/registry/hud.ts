@@ -15,6 +15,7 @@ export const HUD: Area = {
     { name: "abilityHidden", kind: "field", at: ["src/data/pokemon-species.ts#PokemonSpeciesForm.abilityHidden"] },
     { name: "abilityIndex", kind: "field", at: ["src/field/pokemon.ts#Pokemon.abilityIndex"] },
     { name: "acc", kind: "field", at: ["src/ui/containers/move-info-overlay.ts#MoveInfoOverlay.acc"] },
+    { name: "activeEvent", kind: "method", at: ["src/timed-event-manager.ts#TimedEventManager.activeEvent"] },
     { name: "actualFps", kind: "field", at: [], from: "phaser", note: "Phaser.Core.TimeStep (game.loop)" },
     {
       name: "addedType",
@@ -936,6 +937,7 @@ export const HUD: Area = {
       kind: "field",
       at: ["src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.lastStarterId"],
     },
+    { name: "lastTimeOfDay", kind: "field", at: ["src/field/arena.ts#Arena.lastTimeOfDay"] },
     { name: "layers", kind: "field", at: ["src/data/arena-tag.ts#EntryHazardTag.layers"] },
     {
       name: "legendary",
@@ -1539,8 +1541,6 @@ export const HUD: Area = {
     },
     { name: "variant", kind: "field", at: ["src/field/pokemon.ts#Pokemon.variant"] },
     { name: "warn", kind: "method", at: ["test/mocks/mock-console/mock-console.ts#MockConsole.warn"] },
-    { name: "activeEvent", kind: "method", at: ["src/timed-event-manager.ts#TimedEventManager.activeEvent"] },
-    { name: "lastTimeOfDay", kind: "field", at: ["src/field/arena.ts#Arena.lastTimeOfDay"] },
     { name: "waveCycleOffset", kind: "field", at: ["src/battle-scene.ts#BattleScene.waveCycleOffset"] },
     { name: "waveSeed", kind: "field", at: ["src/battle-scene.ts#BattleScene.waveSeed"] },
     {

@@ -52,8 +52,8 @@ const bucketsFor = key => {
 
 // A replay keyed on what it reads (#520) outlives the run key, so it is held here by its own `k` (#922).
 const EXACT_KEPT = 16;
-const exact = new Map(); // bucket → Map(k → answer), oldest first
-const built = (bucket, build) => {
+const exact = new Map(); // bucket → Map(k → { v: answer, key: the run key it was built under }), oldest first
+const answer = (bucket, build) => {
   try { return build(); } catch (e) { return { unavailable: `${bucket}: ${e?.message ?? e}` }; }
 };
 
@@ -71,19 +71,21 @@ export const readRun = (s, fn, { cleared = null } = {}) => {
       guard();
       let m = buckets.get(bucket);
       if (!m) buckets.set(bucket, (m = new Map()));
-      if (!m.has(k)) m.set(k, built(bucket, build));
+      if (!m.has(k)) m.set(k, answer(bucket, build));
       return m.get(k);
     };
-    // `memo`'s twin held across run keys: `k` must hold every input `build` reads, the run key's included.
+    // `memo`'s twin held across run keys: `k` must hold every input `build` reads, the run key's included. An
+    // `{ unavailable }` answer is held for the run key it was built under alone, as `memo` holds it.
     const memoExact = (bucket, k, build) => {
       guard();
       let m = exact.get(bucket);
       if (!m) exact.set(bucket, (m = new Map()));
-      const v = m.has(k) ? m.get(k) : built(bucket, build);
+      let e = m.get(k);
+      if (!e || (e.v?.unavailable && e.key !== key)) e = { v: answer(bucket, build), key };
       m.delete(k);
-      m.set(k, v);
+      m.set(k, e);
       while (m.size > EXACT_KEPT) m.delete(m.keys().next().value);
-      return v;
+      return e.v;
     };
     // What `memo` holds for `k`, or undefined: nothing is built.
     const held = (bucket, k) => { guard(); return buckets.get(bucket)?.get(k); };

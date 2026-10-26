@@ -1,5 +1,5 @@
 // The next big fight, and whether the party is ready for it. Nothing here draws: the schedule is the run calendar's,
-// and the roster is `previewFor`'s replay.
+// and the roster is the preview's replay.
 import { TIER_NAMES, abilitiesOf, typesOf, weakestConfidence } from "./01-core.js";
 import { stage } from "./01-meter.js";
 import { fightsAhead, isBossWave, isGruntWave, nextHeal } from "./03-calendar.js";
@@ -133,8 +133,6 @@ const roadOf = (s, wave) => ({
 const profileKey = members => members.map(p => [p.id ?? null, p.name ?? null, p.level ?? null, tryDo(() => typesOf(p), []),
   tryDo(() => abilitiesOf(p), []), (p.moveset ?? []).map(m => m?.moveId ?? null)]);
 
-// Held across run keys on what it reads (#520): the replay behind it is the preview's, so a level-up or a faint
-// rebuilds this and replays nothing.
 const perRead = new WeakMap();
 export const aheadModel = run => {
   const s = run.scene;
@@ -155,15 +153,16 @@ const read = (run, wave) => {
   const members = named ? partyAtFight(s, party, { from: wave, fight: first.wave }).members : null;
   const finalNear = road.schedule?.some(f => f.kind === "final" && f.wave - wave <= FINAL_NOTICE);
   const eternatus = finalNear ? [party.length, party.filter(p => p.hp > 0).length, heldStacks(s, party)] : null;
+  // Held across run keys on what it reads (#520): the replay is the preview's own, so a level-up or a faint rebuilds
+  // this and replays nothing.
   const key = JSON.stringify([s.seed, wave, luck, preview.key, members && profileKey(members), eternatus]);
-  return run.memoExact("ahead", key, () => build(s, wave, road, party, luck, preview.model, members));
+  return run.memoExact("ahead", key, () => build(s, wave, { road, party, luck, named, members }));
 };
 
-const build = (s, wave, road, party, luck, model, members) => {
+const build = (s, wave, { road, party, luck, named, members }) => {
   const schedule = road.schedule;
   const next = schedule[0] ? { ...schedule[0] } : null;
   const heal = road.heal;
-  const named = model && !model.unavailable ? model : null;
   if (next) {
     next.in = next.wave - wave;
     next.trainer = named?.trainer?.name ?? null;

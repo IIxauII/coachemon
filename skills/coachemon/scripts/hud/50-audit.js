@@ -217,11 +217,12 @@ const firstToReplace = (run, roster, fight) => {
 
 // `ahead` is `aheadModel`'s. The memo key holds what the audit reads beyond the run key: the roster and each moveset.
 // null for an empty party.
+const foesOf = next => (next?.foes?.length ? next.foes : []);
 const auditKey = (run, ahead) => {
   const party = run.facts.party;
   if (!party.length) return null;
   const next = ahead?.next;
-  const foes = next?.foes?.length ? next.foes : [];
+  const foes = foesOf(next);
   // The species table lands partway through a run, and "first to replace" cannot be priced before it does: an audit
   // taken without one must not be served back once it has arrived (#582).
   return JSON.stringify([next?.wave, foes.map(f => [f.name, f.level]), party.map(p => [p.id, (p.moveset ?? []).map(m => m?.moveId)]),
@@ -241,7 +242,7 @@ const FINDERS = {
     // Outside the roster's guard: which member the party loses least by is a team-value question, which the standard
     // threats answer whether or not the next fight's roster can be previewed (#582).
     return [...roster, "sharedWeakness", "typeHoles", ...c.party.map((_, i) => `slots:${i}`),
-      ...(c.foes.length ? ["deadStatus"] : []), "weakestLink", "levelSpread", "expAtCap"];
+      ...(c.foes.length ? ["deadStatus"] : []), "firstToReplace", "levelSpread", "expAtCap"];
   },
   singleAnswers: (_, c) => singleAnswers(c.party, c.foes, c.next.wave),
   speedCheck: (_, c) => speedCheck(c.party, c.foes, c.next.wave),
@@ -256,7 +257,7 @@ const FINDERS = {
     return slots;
   },
   deadStatus: (_, c) => deadStatus(c.party, c.foes, c.next.wave),
-  weakestLink: (run, c) => firstToReplace(run, c.all, c.next?.wave ?? null),
+  firstToReplace: (run, c) => firstToReplace(run, c.all, c.next?.wave ?? null),
   levelSpread: (run, c) => levelSpread(run.scene, c.party),
   expAtCap: (run, c) => expAtCap(run.scene, c.party),
 };
@@ -274,9 +275,9 @@ const finish = (run, c) => {
 const fresh = (run, ahead) => {
   const next = ahead?.next;
   return { runKey: run.key, key: auditKey(run, ahead), ahead, all: run.facts.party, next,
-    foes: next?.foes?.length ? next.foes : [], todo: ["setup"], findings: [], fixes: new Map() };
+    foes: foesOf(next), todo: ["setup"], findings: [], fixes: new Map() };
 };
-const stepOf = (run, c) => {
+const runChunk = (run, c) => {
   const [name, i] = c.todo.shift().split(":");
   c.ran.push(name);
   const out = stage(`audit.${name}`, () => FINDERS[name](run, c, Number(i)));
@@ -289,8 +290,8 @@ export const teamAudit = (run, ahead) => {
   const key = auditKey(run, ahead);
   if (key == null) return null;
   return run.memo("audit", key, () => {
-    const c = { ...fresh(run, ahead), ran: [] };
-    while (c.todo.length) stepOf(run, c);
+    const c = auditJob(run, ahead);
+    while (c.todo.length) runChunk(run, c);
     return finish(run, c);
   });
 };
@@ -307,7 +308,7 @@ export const auditStep = (run, job) => {
   const held = run.held("audit", job.key);
   if (held !== undefined) return held;
   try {
-    stepOf(run, job);
+    runChunk(run, job);
     if (job.todo.length) return undefined;
     const done = finish(run, job);
     return run.memo("audit", job.key, () => done);

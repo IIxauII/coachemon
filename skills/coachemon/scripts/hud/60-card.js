@@ -114,15 +114,16 @@ export const keepRoad = (from, to) => {
 
 // A shop card built with `road: false` owes its team audit unless the memo held it (#922).
 export const auditOwed = card => card?.kind === "rewards" && card.auditOwed === true;
-// One chunk of that audit, in a run read of its own; `held.job` carries the chunks between calls. True once the audit
-// is on the card.
-export const readAuditChunk = (s, card, held) => readRun(s, run => {
-  held.job ??= auditJob(run, card.ahead);
-  const done = auditStep(run, held.job);
-  if (done === undefined) return false;
-  card.audit = done;
-  delete card.auditOwed;
-  return true;
+// One chunk of that audit, in a run read of its own: `job` is the last call's answer, null to start. The audit goes
+// on the card once the last chunk is in.
+export const readAuditChunk = (s, card, job) => readRun(s, run => {
+  job ??= auditJob(run, card.ahead);
+  const done = auditStep(run, job);
+  if (done !== undefined) {
+    card.audit = done;
+    delete card.auditOwed;
+  }
+  return job;
 }, { cleared: KINDS.rewards.cleared });
 
 // `account`: the run's own data, read once a refresh by 98-watch.js, which only the catch and Mystery Encounter cards

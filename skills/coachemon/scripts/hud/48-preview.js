@@ -279,7 +279,7 @@ const baseKey = (s, w) => {
 };
 
 const DOUBLE_ATTR = "DoubleBattleChanceAbAttr";
-// `applySingleAbAttrs`' gate, once for the ability and once for a passive that differs from it.
+// The double chance's ability gate (game-code.md §0, §16).
 const doubleApplications = p => {
   const own = tryDo(() => p.getAbility());
   if (typeof own?.hasAttr !== "function") return tryDo(() => p.hasAbilityWithAttr(DOUBLE_ATTR), false) ? 1 : 0;
@@ -287,7 +287,7 @@ const doubleApplications = p => {
   return (tryDo(() => p.canApplyAbility(false) && own.hasAttr(DOUBLE_ATTR), false) ? 1 : 0)
     + (passive && passive.id !== own.id && tryDo(() => p.canApplyAbility(true) && passive.hasAttr(DOUBLE_ATTR), false) ? 1 : 0);
 };
-// `getDoubleBattleChance` divides by 4 per lure and per application, and past three every chance draws alike (#520).
+// Past three divisions every double chance draws alike (game-code.md §16, #520).
 const doubleKey = s => {
   const field = tryDo(() => s.getPlayerField(), null) ?? tryDo(() => s.getPlayerParty().filter(Boolean).slice(0, 1), []);
   const lures = (s.modifiers ?? []).filter(m => classOf(m) === "DoubleBattleChanceBoosterModifier").length;
@@ -344,8 +344,10 @@ export const previewRead = (run, w) => {
   const base = JSON.stringify(baseKey(s, w));
   let model = null;
   const build = () => (model ??= buildModel(s, w, party));
-  const kind = run.memoExact("preview-kind", base, () => build().type ?? null);
-  const key = JSON.stringify([base, kind, KIND_KEY[kind]?.(s, w, party) ?? null]);  const value = run.memoExact("preview", key, build);
+  const read = run.memoExact("preview-kind", base, () => (m => m.type ?? m)(build()));
+  const kind = typeof read === "string" ? read : null;
+  const key = JSON.stringify([base, kind, KIND_KEY[kind]?.(s, w, party) ?? null]);
+  const value = run.memoExact("preview", key, build);
   return { key, model: value.kind ? withMissed(value) : { kind: "preview", wave: w, unavailable: value.unavailable } };
 };
 export const previewFor = (run, w) => previewRead(run, w).model;

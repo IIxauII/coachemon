@@ -60,15 +60,15 @@ const look = s => {
   return true;
 };
 
-// What the panel shows: `{ card, key, road, audit, version, failure, groups }`. `road` and `audit` are `none`,
-// `owed` or `landed`; `version` is bumped on every change and is unique across records, so the draw keys on it. A
-// failure is a record with no card.
+// What the panel shows: `{ card, key, road, audit, auditJob, version, failure, groups }`. `road` and `audit` are
+// `none`, `owed` or `landed`, and `auditJob` holds the audit's chunks run so far; `version` is bumped on every change
+// and is unique across records, so the draw keys on it. A failure is a record with no card.
 let versions = 0;
 let shown = null;
 export const watchShown = () => shown;
 const record = (card, landed) => ({
   card, key: { ...built }, road: !hasRoad(card) ? "none" : landed ? "landed" : "owed",
-  audit: auditOwed(card) ? "owed" : "none", chunks: null,
+  audit: auditOwed(card) ? "owed" : "none", auditJob: null,
   version: ++versions, failure: null, groups: undefined,
 });
 const changed = rec => { rec.version = ++versions; rec.groups = undefined; };
@@ -216,12 +216,17 @@ const build = (road, sendIn = false) => {
     let landed = road && hasRoad(card);
     if (sendIn && field.from?.road === "landed" && hasRoad(card)) { keepRoad(field.from.card, card); landed = true; }
     const rec = record(card, landed);
+    if (rec.audit === "owed") rec.card.auditBefore = auditDrawn(shown, rec);
     takeField(s, rec);
     if (sendIn) logged("redrawn");
     else { remember(rec); keepDecided(rec); logged("built"); if (landed) logged("road landed"); }
     draw(rec);
   } catch (e) { fail(e); }
 };
+
+// A shop card that owes its audit draws the last one drawn in the same shop until its own is in (#922).
+const auditDrawn = (from, to) => (from?.card?.kind === "rewards" && from.key.kind === to.key.kind && from.key.k1 === to.key.k1
+  ? from.card.audit ?? from.card.auditBefore ?? null : null);
 
 // A card built for this decision before, drawn without reading the game.
 const show = rec => {
@@ -240,48 +245,44 @@ const decide = road => {
   const rec = cached();
   if (!rec) { build(road); return; }
   show(rec);
-  if (road) { land(); while (rec.audit === "owed" && shown === rec) landAudit(rec); }
+  if (!road) return;
+  land();
+  while (rec.audit === "owed" && shown === rec && landAudit(rec));
 };
 
 let after = () => {};
 // Every refresh the watch opens ends with `after`: the stream, which 99-start wires in.
 const run = (why, fn) => refresh(why, () => { fn(); after(); });
 
+// True when `read` ran; one that answers false has landed nothing yet.
 const landOn = (rec, name, read) => {
   try {
     const s = battleScene();
-    if (!s?.ui) return;
+    if (!s?.ui) return false;
     screenNote(s, rec.card);
-    read(s);
+    if (read(s) === false) return true;
     changed(rec);
     logged(`${name} landed`);
     draw(rec);
-  } catch (e) { fail(e); }
+    return true;
+  } catch (e) { fail(e); return false; }
 };
 const land = () => {
   const rec = shown;
-  if (rec?.road !== "owed") return;
-  landOn(rec, "road", s => {
+  if (rec?.road !== "owed") return false;
+  return landOn(rec, "road", s => {
     stage("road", () => readRoad(s, rec.card));
     rec.road = "landed";
     stage("arm", () => armPreview(rec.card));
   });
 };
-// `rec.chunks` holds the chunks run so far, and is drawn from only once the last is in.
-const landAudit = rec => {
-  try {
-    const s = battleScene();
-    if (!s?.ui) return;
-    screenNote(s, rec.card);
-    rec.chunks ??= {};
-    if (!stage("audit", () => readAuditChunk(s, rec.card, rec.chunks))) return;
-    rec.audit = "landed";
-    rec.chunks = null;
-    changed(rec);
-    logged("audit landed");
-    draw(rec);
-  } catch (e) { fail(e); }
-};
+const landAudit = rec => landOn(rec, "audit", s => {
+  rec.auditJob = stage("audit", () => readAuditChunk(s, rec.card, rec.auditJob));
+  if (rec.card.auditOwed) return false;
+  rec.audit = "landed";
+  rec.auditJob = null;
+  return true;
+});
 const owed = rec => (rec?.road === "owed" ? "road" : rec?.audit === "owed" ? "audit" : null);
 // The road group lands in its own task, then the team audit a chunk per task, so a press between the card and a task
 // leaves them to the next decision and drops the chunks run (#487, #922). A re-inject's `stop()` removes the panel, and
@@ -289,11 +290,12 @@ const owed = rec => (rec?.road === "owed" ? "road" : rec?.audit === "owed" ? "au
 const landLater = () => {
   const rec = shown;
   const next = () => setTimeout(() => {
-    if (shown !== rec || !isBuilt() || el.isConnected === false) { rec.chunks = null; return; }
+    if (shown !== rec || !isBuilt() || el.isConnected === false) { rec.auditJob = null; return; }
     const what = owed(rec);
-    if (what === "road") run("road", land);
-    else if (what === "audit") run("audit", () => landAudit(rec));
-    if (owed(rec)) next();
+    let moved = false;
+    if (what === "road") run("road", () => { moved = land(); });
+    else if (what === "audit") run("audit", () => { moved = landAudit(rec); });
+    if (moved && owed(rec)) next();
   }, 0);
   next();
 };

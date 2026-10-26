@@ -29,7 +29,7 @@ Team audit
 weakest first Minccino -0.2 · Diglett -0.2 · Wiglett 0.1 · Houndour 0.1 · Oinkologne 0.5 · Fletchinder 2.0
 mushroom Memory Mushroom: 18 Minccino · relearn Take Down over Helping Hand · +84 power | 5× Poké Ball: -4 you have 20
 summary 11 issues: Minccino: 1 attack, 3 status moves (relearn Take Down over Helping Hand); Diglett: no Ground attack (no STAB) (relearn Bulldoze); the party is no worse off without Minccino at W29 — first to replace
-chunks 12: setup, sharedWeakness, typeHoles, slots, slots, slots, slots, slots, slots, weakestLink, levelSpread, expAtCap
+chunks 12: setup, sharedWeakness, typeHoles, slots, slots, slots, slots, slots, slots, firstToReplace, levelSpread, expAtCap
 == wave 29 whitney, diglett fainted under hardcore
 ★ Memory Mushroom Minccino relearn Take Down over Helping Hand · +84 power
 Others
@@ -60,7 +60,7 @@ Team audit
 weakest first Diglett fainted 0.0 · Minccino -0.2 · Wiglett 0.0 · Houndour 0.1 · Oinkologne 0.5 · Fletchinder 2.1
 mushroom Memory Mushroom: 18 Minccino · relearn Take Down over Helping Hand · +84 power | 5× Poké Ball: -4 you have 20
 summary 11 issues: 2 of 5 weak to Rock (Fletchinder ×4), nobody resists; 2 of 5 weak to Electric, nobody resists; Minccino: 1 attack, 3 status moves (relearn Take Down over Helping Hand)
-chunks 11: setup, sharedWeakness, typeHoles, slots, slots, slots, slots, slots, weakestLink, levelSpread, expAtCap
+chunks 11: setup, sharedWeakness, typeHoles, slots, slots, slots, slots, slots, firstToReplace, levelSpread, expAtCap
 == wave 164 guzma
 ★ 5× Poké Ball least bad · you have 20
 12 issues: Araquanid (W165) has one answer: Crobat Wing Attack; Flygon (W165) has one answer: Dudunsparce Blizzard (70%); only Crobat outspeeds Flygon (Spe 404) at W165 · no priority attack
@@ -90,7 +90,7 @@ Team audit vs W165 Guzma
 weakest first Comfey -0.1 · Golduck 0.0 · Crobat 0.1 · Dudunsparce 0.1 · Mamoswine 0.3 · Metagross 0.8
 mushroom 5× Poké Ball: -4 least bad · you have 20
 summary 12 issues: Araquanid (W165) has one answer: Crobat Wing Attack; Flygon (W165) has one answer: Dudunsparce Blizzard (70%); only Crobat outspeeds Flygon (Spe 404) at W165 · no priority attack
-chunks 15: setup, singleAnswers, speedCheck, sharedWeakness, typeHoles, slots, slots, slots, slots, slots, slots, deadStatus, weakestLink, levelSpread, expAtCap
+chunks 15: setup, singleAnswers, speedCheck, sharedWeakness, typeHoles, slots, slots, slots, slots, slots, slots, deadStatus, firstToReplace, levelSpread, expAtCap
 == clean
 ★ 5× Poké Ball least bad · you have 20
 1 issue: nothing hits Dark super-effectively
@@ -99,7 +99,7 @@ Team audit
 · coverage nothing hits Dark super-effectively
 mushroom 5× Poké Ball: -4 least bad · you have 20
 summary 1 issue: nothing hits Dark super-effectively
-chunks 9: setup, sharedWeakness, typeHoles, slots, slots, slots, weakestLink, levelSpread, expAtCap
+chunks 9: setup, sharedWeakness, typeHoles, slots, slots, slots, firstToReplace, levelSpread, expAtCap
 == wave 164 guzma, twin Flygon
 ★ 5× Poké Ball least bad · you have 20
 12 issues: Araquanid (W165) has one answer: Crobat Wing Attack; Flygon (W165) has one answer: Dudunsparce Blizzard (70%); only Crobat outspeeds Flygon (Spe 404) at W165 · no priority attack
@@ -129,7 +129,7 @@ Team audit vs W165 Guzma
 weakest first Comfey -0.1 · Golduck 0.0 · Crobat 0.1 · Dudunsparce 0.1 · Mamoswine 0.3 · Metagross 0.8
 mushroom 5× Poké Ball: -4 least bad · you have 20
 summary 12 issues: Araquanid (W165) has one answer: Crobat Wing Attack; Flygon (W165) has one answer: Dudunsparce Blizzard (70%); only Crobat outspeeds Flygon (Spe 404) at W165 · no priority attack
-chunks 15: setup, singleAnswers, speedCheck, sharedWeakness, typeHoles, slots, slots, slots, slots, slots, slots, deadStatus, weakestLink, levelSpread, expAtCap
+chunks 15: setup, singleAnswers, speedCheck, sharedWeakness, typeHoles, slots, slots, slots, slots, slots, slots, deadStatus, firstToReplace, levelSpread, expAtCap
 == wave 164 guzma, Triage Giga Drain
 ★ 5× Poké Ball least bad · you have 20
 11 issues: Araquanid (W165) has one answer: Crobat Wing Attack; Flygon (W165) has one answer: Dudunsparce Blizzard (70%); the party is no worse off without Comfey at W165 — first to replace
@@ -158,7 +158,7 @@ Team audit vs W165 Guzma
 weakest first Comfey -0.1 · Golduck 0.0 · Crobat 0.1 · Dudunsparce 0.1 · Mamoswine 0.3 · Metagross 0.8
 mushroom 5× Poké Ball: -4 least bad · you have 20
 summary 11 issues: Araquanid (W165) has one answer: Crobat Wing Attack; Flygon (W165) has one answer: Dudunsparce Blizzard (70%); the party is no worse off without Comfey at W165 — first to replace
-chunks 15: setup, singleAnswers, speedCheck, sharedWeakness, typeHoles, slots, slots, slots, slots, slots, slots, deadStatus, weakestLink, levelSpread, expAtCap
+chunks 15: setup, singleAnswers, speedCheck, sharedWeakness, typeHoles, slots, slots, slots, slots, slots, slots, deadStatus, firstToReplace, levelSpread, expAtCap
 == wave 164 guzma, Triage Pollen Puff
 ★ 5× Poké Ball least bad · you have 20
 10 issues: Araquanid (W165) has one answer: Crobat Wing Attack; Flygon (W165) has one answer: Dudunsparce Blizzard (70%); the party is no worse off without Comfey at W165 — first to replace
@@ -186,7 +186,7 @@ Team audit vs W165 Guzma
 weakest first Comfey -0.1 · Golduck 0.0 · Crobat 0.1 · Dudunsparce 0.1 · Mamoswine 0.2 · Metagross 0.7
 mushroom 5× Poké Ball: -4 least bad · you have 20
 summary 10 issues: Araquanid (W165) has one answer: Crobat Wing Attack; Flygon (W165) has one answer: Dudunsparce Blizzard (70%); the party is no worse off without Comfey at W165 — first to replace
-chunks 15: setup, singleAnswers, speedCheck, sharedWeakness, typeHoles, slots, slots, slots, slots, slots, slots, deadStatus, weakestLink, levelSpread, expAtCap
+chunks 15: setup, singleAnswers, speedCheck, sharedWeakness, typeHoles, slots, slots, slots, slots, slots, slots, deadStatus, firstToReplace, levelSpread, expAtCap
 == wave 164 guzma, Triage Recover
 ★ 5× Poké Ball least bad · you have 20
 11 issues: Araquanid (W165) has one answer: Crobat Wing Attack; Flygon (W165) has one answer: Dudunsparce Blizzard (70%); only Crobat outspeeds Flygon (Spe 404) at W165 · no priority attack
@@ -215,6 +215,6 @@ Team audit vs W165 Guzma
 weakest first Comfey -0.1 · Golduck 0.0 · Crobat 0.1 · Dudunsparce 0.1 · Mamoswine 0.3 · Metagross 0.8
 mushroom 5× Poké Ball: -4 least bad · you have 20
 summary 11 issues: Araquanid (W165) has one answer: Crobat Wing Attack; Flygon (W165) has one answer: Dudunsparce Blizzard (70%); only Crobat outspeeds Flygon (Spe 404) at W165 · no priority attack
-chunks 15: setup, singleAnswers, speedCheck, sharedWeakness, typeHoles, slots, slots, slots, slots, slots, slots, deadStatus, weakestLink, levelSpread, expAtCap
-moved between chunks: setup, sharedWeakness, setup, sharedWeakness, typeHoles, slots, slots, slots, slots, slots, slots, weakestLink, levelSpread, expAtCap
+chunks 15: setup, singleAnswers, speedCheck, sharedWeakness, typeHoles, slots, slots, slots, slots, slots, slots, deadStatus, firstToReplace, levelSpread, expAtCap
+moved between chunks: setup, sharedWeakness, setup, sharedWeakness, typeHoles, slots, slots, slots, slots, slots, slots, firstToReplace, levelSpread, expAtCap
 ok

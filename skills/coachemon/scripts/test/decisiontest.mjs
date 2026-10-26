@@ -273,6 +273,18 @@ scene = game;
   assert.ok(rec.card.audit.findings.length && auditGroup(rec) && auditGroup(rec) !== "checking the team");
   assert.deepEqual(lifecycle(), ["road landed", "audit landed"]);
   console.log(`audit landed after ${chunks} chunks: ${auditGroup(rec)}`);
+
+  // An item bought moves the run key, so the memo misses: the shop draws the audit it had until the new one is in.
+  const landed = auditGroup(rec);
+  assert.deepEqual(step("an item bought", () => { g.money -= 100; g.modifiers.push({ stackCount: 1, type: { id: "X_ATTACK" } }); }, { road: false }),
+    ["watch:rewards"]);
+  const bought = shownRec();
+  assert.deepEqual([bought.audit, bought.card.audit, auditGroup(bought)], ["owed", null, landed], "the audit as it was");
+  runTasks();
+  assert.deepEqual(noAudit(opened()), ["road:rewards"]);
+  assert.deepEqual([bought.audit, auditGroup(bought)], ["landed", landed]);
+  assert.deepEqual(lifecycle(), ["road landed", "audit landed"]);
+  g.modifiers.pop();
 }
 
 // ---- a buy between the audit's chunks drops them, and the shop it leaves open is audited anew (#922)

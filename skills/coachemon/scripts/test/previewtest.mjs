@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { mountHud } from "./fake-page.mjs";
+import { PokemonType } from "../../../../src/enums/generated.ts";
 import { ATTRS } from "./fixtures/party.mjs";
 import { cat as CAT, TY } from "./fake-mon.mjs";
 
@@ -643,6 +644,10 @@ const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.doub
           "berries to six": set(scene, "modifiers", [...scene.modifiers, mod("BerryModifier", { stackCount: 6, pokemonId: party[0].id })]),
           "a catch": set(scene, "getPlayerParty", () => [...party, member(4)]),
           "members over half HP": set(party[0], "getHpRatio", () => 0.5),
+          "a member turned Bug": set(party[0], "isOfType", t => t === PokemonType.BUG),
+          "a Quick Claw held": set(party[0], "getHeldItems", () => [mod("BypassSpeedChanceModifier", { isTransferable: true })]),
+          "a Quick Claw it can't give": set(party[0], "getHeldItems", () => [mod("BypassSpeedChanceModifier", { isTransferable: false })]),
+          "a member barred from battle": set(party[1], "isAllowedInBattle", () => false),
         } : {
           lure: set(scene, "modifiers", [...scene.modifiers, mod("DoubleBattleChanceBoosterModifier")]),
           "an Illuminate lead with a No Guard passive": () => {

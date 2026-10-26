@@ -1295,7 +1295,7 @@ const rowOf = (id, level, moves, ability) => {
     (wave === 50 ? { wave, name: `Lt. Surge W50${confidenceMark(confidence)}`, confidence, foes } : null);
   // A Ground the Electric gym cannot touch, into the six it sweeps.
   const nc = () => mon(OURS.swampert, CAP, [M.earthquake, M.surf, M.iceBeam, M.bodySlam], { ability: "Torrent" });
-  // A seed per roster: in the page the preview is a function of the run key (48-preview.js, `previewFor`), so two
+  // A seed per roster: the roster's threats are memoised under the run key (11-threats.js, `rosterThreats`), so two
   // rosters on one run key would be served the first one's threats.
   const alone = judge(WATERS(), nc(), {}, { seed: "judge-roster-none" });
   const both = judge(WATERS(), nc(), {}, { seed: "judge-roster-replay", roster: preview("replay") });
