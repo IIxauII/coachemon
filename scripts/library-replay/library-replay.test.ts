@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
+import { recordSolveStart, solveStartsIn } from "../../src/solver/fight-library.ts";
 import type { Carry } from "../../src/solver/gate.ts";
 import { noAnswer } from "../../src/solver/no-answer.ts";
 import type { ReplayResult } from "../../src/solver/oracle-line.ts";
-import type { Script } from "../../src/solver/solver.ts";
+import type { Script, SessionSave, SolveInput } from "../../src/solver/solver.ts";
 import { type Given, replayLibrary, replayOracleLine } from "./library-replay.ts";
 
 const PIN = "1.12.2.0";
@@ -14,7 +15,11 @@ const OLDER = "1.12.1.3";
 
 const GORDIE = "Zu5cgKRQ0vigLcOhpJxYMUa0-w180-gordie";
 
-const save = (over: object = {}) => ({
+const KIERAN = { waveIndex: 190, trainer: { trainerType: 365, variant: 0 } };
+const ETERNATUS = { waveIndex: 200, trainer: null, enemyParty: [{ species: 890 }] };
+const SWIMMERS = { waveIndex: 173, trainer: { trainerType: 57, variant: 2 } };
+
+const save = (over: object = {}): SessionSave => ({
   gameVersion: PIN,
   gameMode: 0,
   seed: "Zu5cgKRQ0vigLcOhpJxYMUa0",
@@ -26,13 +31,13 @@ const save = (over: object = {}) => ({
   ...over,
 });
 
-/** A solve's input as the recorder keeps it: `turn` past 1 is a mid-fight re-solve's, with its extras. */
-const kept = (turn = 1, over: object = {}) => {
+/** A solve's input: `turn` past 1 is a mid-fight re-solve's, with its extras. */
+const kept = (turn = 1, over: object = {}): SolveInput => {
   const s = save(over);
   return {
     live: { wave: s.waveIndex, battleSeed: "U0QKEz8wJ8ea7832" },
     save: s,
-    ...(turn > 1 && { extras: { turn, rndState: `rng-${turn}` } }),
+    ...(turn > 1 && { extras: { turn, rndState: `rng-${turn}` } as unknown as NonNullable<SolveInput["extras"]> }),
     liveExport: { ...s, party: [{ id: 1 }] },
     cloneVersion: s.gameVersion,
     budget: { expansions: 3000, turns: 40 },
@@ -44,19 +49,21 @@ const oracleLine = (move: "SURF" | "THUNDER" = "SURF"): Script => ({
   known: { outcome: "won", after: [{ turn: 1 }, { turn: 2 }] },
 });
 
-/** A library folder holding each fight folder's solves, by `turn-<n>`; a solve given no oracle line found none. */
-function library(fights: Record<string, Record<number, { input?: unknown; oracleLine?: unknown }>>): string {
+/** A library folder of the solves recorded into it; a solve given no oracle line found none. */
+function library(solves: { input: SolveInput; oracleLine?: Script }[]): string {
   const root = mkdtempSync(path.join(tmpdir(), "coachemon-library-"));
-  for (const [fight, solves] of Object.entries(fights)) {
-    mkdirSync(path.join(root, fight));
-    for (const [turn, { input = kept(Number(turn)), oracleLine: script }] of Object.entries(solves)) {
-      const stem = path.join(root, fight, `turn-${turn}`);
-      writeFileSync(`${stem}.json`, typeof input === "string" ? input : JSON.stringify(input));
-      if (script !== undefined) writeFileSync(`${stem}.win.script.json`, typeof script === "string" ? script : JSON.stringify(script));
-    }
+  for (const { input, oracleLine } of solves) {
+    recordSolveStart({ library: root }, input)?.finish({ ended: oracleLine ? { kind: "oracle_line" } : { kind: "no_answer", code: "no_win" }, report: null, oracleLine });
   }
   return root;
 }
+
+/** Where the solve start recorded from `input` keeps its files, for a fixture no correct recorder writes. */
+const filesOf = (root: string, input: SolveInput) => {
+  const start = solveStartsIn({ library: root }).find(s => s.turn === (input.extras?.turn ?? 1) && s.fight.wave === input.save.waveIndex);
+  if (start === undefined) throw new Error("no such solve start");
+  return start.files;
+};
 
 const won = (turns: number): ReplayResult => ({
   kind: "replayed",
@@ -81,7 +88,10 @@ const fake = (answer: (given: Given, script: Script) => ReplayResult = (_, scrip
 };
 
 test("the replay plays each fight's first-turn and mid-fight oracle lines at the pin, and reports each that still wins (#939)", async () => {
-  const folder = library({ [GORDIE]: { 1: { oracleLine: oracleLine() }, 5: { oracleLine: oracleLine("THUNDER") } } });
+  const folder = library([
+    { input: kept(1), oracleLine: oracleLine() },
+    { input: kept(5), oracleLine: oracleLine("THUNDER") },
+  ]);
   const { calls, replay } = fake();
 
   const run = await replayLibrary(folder, PIN, replay);
@@ -106,10 +116,11 @@ test("the replay plays each fight's first-turn and mid-fight oracle lines at the
 });
 
 test("an oracle line that plays differently is reported with its first missed checkpoint, and one played past its end by what live did (#939)", async () => {
-  const folder = library({
-    [GORDIE]: { 1: { oracleLine: oracleLine() }, 5: { oracleLine: oracleLine() } },
-    "Zu5cgKRQ0vigLcOhpJxYMUa0-w190-kieran": { 1: { input: kept(1, { waveIndex: 190 }), oracleLine: oracleLine() } },
-  });
+  const folder = library([
+    { input: kept(1), oracleLine: oracleLine() },
+    { input: kept(5), oracleLine: oracleLine() },
+    { input: kept(1, KIERAN), oracleLine: oracleLine() },
+  ]);
   const { replay } = fake(given => {
     if (given.save.waveIndex === 190) return noAnswer({ code: "known_turn_missed", misses: ["the replay lost, where live won"] });
     return given.extras === undefined
@@ -140,15 +151,16 @@ test("an oracle line that plays differently is reported with its first missed ch
 });
 
 test("an older save is carried to the pin, and an oracle line whose save doesn't load on it is skipped, not failed, with why (#939)", async () => {
-  const folder = library({
-    [GORDIE]: {
-      1: { input: kept(1, { gameVersion: OLDER }), oracleLine: oracleLine() },
-      5: { input: kept(5, { gameVersion: OLDER }), oracleLine: oracleLine() },
-    },
-    "Zu5cgKRQ0vigLcOhpJxYMUa0-w190-kieran": { 1: { input: kept(1, { waveIndex: 190, gameVersion: "1.13.0.0" }), oracleLine: oracleLine() } },
-    "Zu5cgKRQ0vigLcOhpJxYMUa0-w200-eternatus": { 1: { input: "{ not json", oracleLine: oracleLine() } },
-    "Zu5cgKRQ0vigLcOhpJxYMUa0-w173-swimmers": { 1: { oracleLine: '{ "inputs": "not a list" }' } },
-  });
+  const [eternatus, swimmers] = [kept(1, ETERNATUS), kept(1, SWIMMERS)];
+  const folder = library([
+    { input: kept(1, { gameVersion: OLDER }), oracleLine: oracleLine() },
+    { input: kept(5, { gameVersion: OLDER }), oracleLine: oracleLine() },
+    { input: kept(1, { ...KIERAN, gameVersion: "1.13.0.0" }), oracleLine: oracleLine() },
+    { input: eternatus, oracleLine: oracleLine() },
+    { input: swimmers, oracleLine: oracleLine() },
+  ]);
+  writeFileSync(filesOf(folder, eternatus).input, "{ not json");
+  writeFileSync(filesOf(folder, swimmers).oracleLine, '{ "inputs": "not a list" }');
   const { calls, replay } = fake(given => {
     if (given.save.gameVersion === "1.13.0.0") return noAnswer({ code: "version_mismatch", save: "1.13.0.0", live: null, clone: PIN });
     return given.extras === undefined
@@ -187,11 +199,12 @@ test("an older save is carried to the pin, and an oracle line whose save doesn't
 });
 
 test("a save already on the pin that fails to replay plays differently, as a regression, where a carried one is skipped (#939)", async () => {
-  const folder = library({
-    [GORDIE]: { 1: { oracleLine: oracleLine() }, 5: { oracleLine: oracleLine() } },
-    "Zu5cgKRQ0vigLcOhpJxYMUa0-w190-kieran": { 1: { input: kept(1, { waveIndex: 190, gameVersion: OLDER }), oracleLine: oracleLine() } },
-    "Zu5cgKRQ0vigLcOhpJxYMUa0-w200-eternatus": { 1: { input: kept(1, { waveIndex: 200 }), oracleLine: oracleLine() } },
-  });
+  const folder = library([
+    { input: kept(1), oracleLine: oracleLine() },
+    { input: kept(5), oracleLine: oracleLine() },
+    { input: kept(1, { ...KIERAN, gameVersion: OLDER }), oracleLine: oracleLine() },
+    { input: kept(1, ETERNATUS), oracleLine: oracleLine() },
+  ]);
   const { replay } = fake(given => {
     if (given.save.waveIndex === 200) return noAnswer({ code: "no_clone", version: PIN, cause: "no clone" });
     return given.extras === undefined
@@ -218,11 +231,13 @@ test("a save already on the pin that fails to replay plays differently, as a reg
 test("the fight and wave filters narrow the oracle lines replayed, and a solve that found no oracle line is never replayed (#939)", async () => {
   const kieran = "Zu5cgKRQ0vigLcOhpJxYMUa0-w190-kieran";
   const otherGordie = "AbC-w188-gordie";
-  const folder = library({
-    [GORDIE]: { 1: { oracleLine: oracleLine() }, 3: {}, 5: { oracleLine: oracleLine() } },
-    [otherGordie]: { 1: { input: kept(1, { waveIndex: 188, seed: "AbC" }), oracleLine: oracleLine() } },
-    [kieran]: { 1: { input: kept(1, { waveIndex: 190 }), oracleLine: oracleLine() } },
-  });
+  const folder = library([
+    { input: kept(1), oracleLine: oracleLine() },
+    { input: kept(3) },
+    { input: kept(5), oracleLine: oracleLine() },
+    { input: kept(1, { waveIndex: 188, seed: "AbC" }), oracleLine: oracleLine() },
+    { input: kept(1, KIERAN), oracleLine: oracleLine() },
+  ]);
   const replayed = async (filter: Parameters<typeof replayLibrary>[4]) =>
     (await replayLibrary(folder, PIN, fake().replay, undefined, filter)).oracleLines.map(l => `${l.fight} ${l.turn}`);
 
@@ -234,11 +249,11 @@ test("the fight and wave filters narrow the oracle lines replayed, and a solve t
   assert.deepEqual(await replayed({ fights: ["gord"] }), [], "a fight is named whole, never by part of its name");
 });
 
-test("one oracle line replays on its own, from its fight folder's turn stem, as the import replays a new one (#939)", async () => {
-  const folder = library({ [GORDIE]: { 5: { input: kept(5, { gameVersion: OLDER }), oracleLine: oracleLine() } } });
+test("one oracle line replays on its own, from its solve start, as the import replays a new one (#939)", async () => {
+  const folder = library([{ input: kept(5, { gameVersion: OLDER }), oracleLine: oracleLine() }]);
   const { calls, replay } = fake();
 
-  const outcome = await replayOracleLine(path.join(folder, GORDIE, "turn-5"), PIN, replay);
+  const outcome = await replayOracleLine(solveStartsIn({ library: folder })[0], PIN, replay);
 
   assert.deepEqual(outcome, { kind: "still_wins", turns: 2 });
   assert.deepEqual(

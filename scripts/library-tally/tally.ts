@@ -1,17 +1,14 @@
-/** How solving went across a fight folder tree's statistics entries, per setting set (#948). */
-import type { SolveStatistics } from "../../src/solver/capture.ts";
-import type { SearchStatistics } from "../../src/solver/search.ts";
+/** How solving went across the fight library's statistics entries, per setting set (#948). */
+import type { Fight, StatisticsEntry } from "../../src/solver/fight-library.ts";
 
-/**
- * An entry of any schema, read for whatever fields it has, beside the fight folder it sits in. A search written before
- * its drop counts (#941) has its win and stages only.
- */
-export type Entry = {
-  fight: string;
-  statistics: Partial<Omit<SolveStatistics, "search">> & { search?: Pick<SearchStatistics, "found" | "stages"> & Partial<SearchStatistics> };
-};
+export type Entry = { fight: Fight; statistics: StatisticsEntry };
 
 type Statistics = Entry["statistics"];
+
+/** An entry's solver report, every part absent where the solve never reached the solver. */
+type Reported = Partial<Extract<Statistics, { cores: number }>>;
+
+const reportOf = (statistics: Statistics): Reported => statistics;
 
 export type Settings = Pick<Statistics, "budget" | "lds" | "portfolio">;
 
@@ -55,8 +52,6 @@ export type ByFight = Summary & { trainer: string; wave: number | null };
 /** `benchmark` names the setting set a benchmark run's entries ran under, null for live solves. */
 export type SettingSet = Summary & { benchmark: string | null; settings: Settings; byFight: ByFight[] };
 
-export const NOT_RECORDED = "not recorded";
-
 const TOP_DROPS = 3;
 
 export function tally(entries: readonly Entry[]): SettingSet[] {
@@ -65,8 +60,8 @@ export function tally(entries: readonly Entry[]): SettingSet[] {
     benchmark: benchmarkOf(solves[0]),
     settings: settingsOf(solves[0].statistics),
     ...summary(solves),
-    byFight: [...groups(solves, e => JSON.stringify(foughtAt(e.fight)))]
-      .map(fought => ({ ...foughtAt(fought[0].fight), ...summary(fought) }))
+    byFight: [...groups(solves, e => JSON.stringify([e.fight.name, e.fight.wave]))]
+      .map(fought => ({ trainer: fought[0].fight.name, wave: fought[0].fight.wave, ...summary(fought) }))
       .sort((a, b) => (a.wave ?? Infinity) - (b.wave ?? Infinity) || a.trainer.localeCompare(b.trainer)),
   }));
 }
@@ -81,15 +76,7 @@ function groups(entries: readonly Entry[], key: (e: Entry) => string): Iterable<
   return by.values();
 }
 
-/** The recorder's `<seed>-w<wave>-<fight>`. */
-const FIGHT = /^.+-w(\d+)-([a-z0-9-]+)$/;
-
-function foughtAt(fight: string): { trainer: string; wave: number | null } {
-  const [, wave, trainer] = FIGHT.exec(fight) ?? [];
-  return wave === undefined ? { trainer: fight, wave: null } : { trainer, wave: Number(wave) };
-}
-
-const won = (e: Entry) => e.statistics.ended?.kind === "oracle_line";
+const won = (e: Entry) => e.statistics.ended.kind === "oracle_line";
 
 function summary(solves: readonly Entry[]): Summary {
   const wins = solves.filter(won);
@@ -104,7 +91,10 @@ function summary(solves: readonly Entry[]): Summary {
 }
 
 function drops(solves: readonly Entry[]): Drops | null {
-  const recorded = solves.flatMap(({ statistics }) => (statistics.search?.dropped ? [statistics.search.dropped] : []));
+  const recorded = solves.flatMap(({ statistics }) => {
+    const dropped = reportOf(statistics).search?.dropped;
+    return dropped ? [dropped] : [];
+  });
   if (recorded.length === 0) return null;
   const by = new Map<string, number>();
   for (const dropped of recorded) for (const [reason, turns] of Object.entries(dropped)) by.set(reason, (by.get(reason) ?? 0) + turns);
@@ -117,7 +107,10 @@ function drops(solves: readonly Entry[]): Drops | null {
 
 /** A part still `null` counts as nothing spent on it. */
 function startup(solves: readonly Entry[]): Startup | null {
-  const recorded = solves.flatMap(({ statistics }) => (statistics.startup ? [statistics.startup] : []));
+  const recorded = solves.flatMap(({ statistics }) => {
+    const { startup } = reportOf(statistics);
+    return startup ? [startup] : [];
+  });
   if (recorded.length === 0) return null;
   const gateMs = sumOf(recorded, s => s.gateMs);
   const loadMs = sumOf(recorded, s => s.loadMs ?? 0);
@@ -127,7 +120,7 @@ function startup(solves: readonly Entry[]): Startup | null {
 
 function fightsWon(solves: readonly Entry[]): Count {
   const fights = new Map<string, boolean>();
-  for (const e of solves) fights.set(e.fight, (fights.get(e.fight) ?? false) || won(e));
+  for (const e of solves) fights.set(e.fight.folder, (fights.get(e.fight.folder) ?? false) || won(e));
   return { won: [...fights.values()].filter(Boolean).length, of: fights.size };
 }
 
@@ -135,33 +128,36 @@ function foundBy(wins: readonly Entry[]): FoundBy[] {
   const counts = new Map<string, number>();
   for (const { statistics } of wins) {
     const by = stageOf(statistics);
-    counts.set(by, (counts.get(by) ?? 0) + 1);
+    if (by !== null) counts.set(by, (counts.get(by) ?? 0) + 1);
   }
-  const last = (by: string) => (by === NOT_RECORDED ? 1 : 0);
-  return [...counts]
-    .map(([by, wins]) => ({ by, wins }))
-    .sort((a, b) => last(a.by) - last(b.by) || b.wins - a.wins);
+  return [...counts].map(([by, wins]) => ({ by, wins })).sort((a, b) => b.wins - a.wins);
 }
 
-function stageOf({ search, portfolio }: Statistics): string {
-  const found = search?.found;
-  if (!found) return NOT_RECORDED;
-  return found.stage === "lds" ? `discrepancy search, pass ${found.pass}` : beamName(found.index, portfolio);
+function stageOf(statistics: Statistics): string | null {
+  const found = reportOf(statistics).search?.found;
+  if (!found) return null;
+  return found.stage === "lds" ? `discrepancy search, pass ${found.pass}` : beamName(found.index, statistics.portfolio);
 }
 
 function beamName(index: number, portfolio: Statistics["portfolio"]): string {
-  const beam = portfolio?.[index];
+  const beam = portfolio[index];
   return beam ? `beam ${index} (${beam.width} wide, ours ${beam.ours})` : `beam ${index}`;
 }
 
 function replays(solves: readonly Entry[]): TimeSplit["replays"] {
-  const recorded = solves.flatMap(({ statistics }) => (statistics.search?.replays ? [statistics.search.replays] : []));
+  const recorded = solves.flatMap(({ statistics }) => {
+    const replays = reportOf(statistics).search?.replays;
+    return replays ? [replays] : [];
+  });
   if (recorded.length === 0) return null;
   return { solves: recorded.length, ran: sumOf(recorded, r => r.ran), ms: sumOf(recorded, r => r.ms) };
 }
 
 function turns(solves: readonly Entry[]): TurnTime | null {
-  const recorded = solves.flatMap(({ statistics }) => (statistics.turnTimes ? [statistics.turnTimes] : []));
+  const recorded = solves.flatMap(({ statistics }) => {
+    const { turnTimes } = reportOf(statistics);
+    return turnTimes ? [turnTimes] : [];
+  });
   if (recorded.length === 0) return null;
   return {
     solves: recorded.length,
@@ -174,13 +170,14 @@ function turns(solves: readonly Entry[]): TurnTime | null {
 const sumOf = <T>(items: readonly T[], part: (item: T) => number) => items.reduce((total, item) => total + part(item), 0);
 
 function lds(solves: readonly Entry[]): Time | null {
-  const recorded = solves.flatMap(({ statistics }) => statistics.search?.stages.filter(s => s.stage === "lds") ?? []);
+  const recorded = solves.flatMap(({ statistics }) => reportOf(statistics).search?.stages.filter(s => s.stage === "lds") ?? []);
   return recorded.length === 0 ? null : { solves: recorded.length, ms: sumOf(recorded, s => s.ms) };
 }
 
 function beams(solves: readonly Entry[]): Beams | null {
-  const ran = solves.flatMap(({ statistics: { search, portfolio } }) => {
-    const beams = search?.stages.flatMap(s => (s.stage === "beam" ? [{ beam: beamName(s.index, portfolio), index: s.index, ms: s.ms }] : [])) ?? [];
+  const ran = solves.flatMap(({ statistics }) => {
+    const stages = reportOf(statistics).search?.stages ?? [];
+    const beams = stages.flatMap(s => (s.stage === "beam" ? [{ beam: beamName(s.index, statistics.portfolio), index: s.index, ms: s.ms }] : []));
     return beams.length > 0 ? [beams] : [];
   });
   if (ran.length === 0) return null;
@@ -203,7 +200,8 @@ function toWin(wins: readonly Entry[]): ToWin | null {
 }
 
 /** A beam's `ms` counts from when the beams started, which is after the discrepancy search ended. */
-function winAt({ search }: Statistics): { turns: number; ms: number } | null {
+function winAt(statistics: Statistics): { turns: number; ms: number } | null {
+  const { search } = reportOf(statistics);
   const winner = search?.stages.find(s => s.ended === "won");
   if (!search?.found || !winner) return null;
   const before = winner.stage === "beam" ? (search.stages.find(s => s.stage === "lds")?.ms ?? 0) : 0;
@@ -228,16 +226,12 @@ export function report(entries: readonly Entry[]): string {
 }
 
 function settingsLine({ budget, lds, portfolio }: Settings): string {
-  if (budget === undefined && lds === undefined && portfolio === undefined) return "settings not recorded";
-  const beams = portfolio ? `beams ${portfolio.map(b => `${b.width} wide ours ${b.ours}`).join(", ")}` : "beams not recorded";
-  const each = budget ? `, ${budget.expansions} turns each, to turn ${budget.turns}` : "";
+  const beams = `beams ${portfolio.map(b => `${b.width} wide ours ${b.ours}`).join(", ")}`;
   const discrepancy =
     lds === null
       ? "no discrepancy search"
-      : lds === undefined
-        ? "discrepancy search not recorded"
-        : `discrepancy search ${lds.expansions} turns, ${lds.alternatives} alternatives, ${lds.discrepancies} discrepancies, ours ${lds.ours}`;
-  return `${beams}${each}; ${discrepancy}`;
+      : `discrepancy search ${lds.expansions} turns, ${lds.alternatives} alternatives, ${lds.discrepancies} discrepancies, ours ${lds.ours}`;
+  return `${beams}, ${budget.expansions} turns each, to turn ${budget.turns}; ${discrepancy}`;
 }
 
 const count = ({ won, of }: Count) => `${won} of ${of}`;
