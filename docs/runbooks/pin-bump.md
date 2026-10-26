@@ -196,10 +196,16 @@ middle of a bump is recorded by hand (below).
    ended, and the settings and versions it ran under; a solve that got as far as the solver also says how long its gate,
    load check and pool start took (or that its pool was warm), its pool's final stats, how long the turns it played took
    to restore their fork point and to play (count, total, p50, p95 and max of each), and the machine's core count. A
-   cancelled one has the stages it had finished by the cancel.
+   cancelled one has the stages it had finished by the cancel. The fight waits there until `npm run library:import`, which
+   a session started in a checkout offers as `/import-fights`, copies it into the fight library as
+   `src/solver/fixtures/library/<seed>-w<wave>-<fight>/` and moves it to
+   `<home>/fights-imported/<when>/<seed>-w<wave>-<fight>/`.
 2. Solve the fight at its first decision, and win it live on that oracle line. Promoting is your word that you did: nothing
    checks it.
-3. Run `npm run recheck:promote -- <home>/fights/<seed>-w<wave>-<fight>`. It copies the first-turn pair into
+3. Run `npm run recheck:promote -- <fight folder>`, the folder the fight is in now: `<home>/fights/<seed>-w<wave>-<fight>`
+   before an import, and its library copy `src/solver/fixtures/library/<seed>-w<wave>-<fight>` after one. If the library
+   held that fight's first turn before the import, it kept its own first-turn pair and oracle line, so the line you won on
+   may be only in the moved-aside copy under `<home>/fights-imported/<when>/`: promote from there. It copies the first-turn pair into
    `src/solver/fixtures/` as `<fight>-w<wave>` (`--stem <name>` picks another), names it in `known-fights.json`, and
    re-checks that fight at the pin without a carry. It refuses a fight with no oracle line file, a mid-fight file, a save from
    another version than the pin, and a stem already taken. A failed re-check takes the fight back out.

@@ -9,7 +9,13 @@ import { FIXTURES, KNOWN_FIGHTS_FILE, recheck } from "./recheck.ts";
 const { values, positionals } = parseArgs({ options: { stem: { type: "string" } }, allowPositionals: true });
 const [kept] = positionals;
 if (kept === undefined) {
-  console.error("usage: npm run recheck:promote -- [--stem <name>] <home>/fights/<seed>-w<wave>-<fight>");
+  console.error(
+    [
+      "usage: npm run recheck:promote -- [--stem <name>] <fight folder>",
+      "  <home>/fights/<seed>-w<wave>-<fight> before library:import, src/solver/fixtures/library/<seed>-w<wave>-<fight> after it,",
+      "  or the moved-aside <home>/fights-imported/<when>/<seed>-w<wave>-<fight> when the library already held that fight's first turn",
+    ].join("\n"),
+  );
   process.exit(2);
 }
 
