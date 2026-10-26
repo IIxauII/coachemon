@@ -56,7 +56,9 @@ export const drawRewards = m => {
       ...buyRows, ...leadRows, first ? h("div", sep) : null, take,
       ...drawReroll(m)]),
     some("options", "Others", null, others),
-    some("audit", "Team", auditSummary(m.audit), drawAudit(m.audit)),
+    // Owed, the group keeps what it drew before, or its tab alone, until every chunk is in (#922).
+    m.auditOwed && !m.auditBefore ? some("audit", "Team", "checking the team", [])
+      : some("audit", "Team", auditSummary(m.auditOwed ? m.auditBefore : m.audit), drawAudit(m.auditOwed ? m.auditBefore : m.audit)),
     // The same rows as 96-render-battle's road, which a file on this layer can't import: change both.
     some("road", "Road", roadSummary(m.preview, m.ahead), [...drawPreview(m.preview), ...drawAhead(m.ahead)]),
   ].filter(Boolean);
