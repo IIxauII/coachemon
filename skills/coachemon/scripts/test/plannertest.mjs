@@ -1155,9 +1155,10 @@ Object.assign(TABLE, {
   const bodySlam = () => [{ name: "Body Slam", type: "Normal", p: 1, score: 10, targets: [0] }];
   const { scene: s } = render({ party: [venusaur("V")], foes: [snorlax("S")], live: true, dist: bodySlam, switches: () => new Map() });
   const { exchange } = globalThis.__planner;
-  const gigaDrain = (dmg, drain) => {
+  // `self`: what one use costs us (recoil, contact chip), which follows the typing the hit lands on (#879).
+  const gigaDrain = (dmg, drain, self = 0) => {
     const at = outcomeFrom({ "Venusaur>Giga Drain>Snorlax": [[dmg], 1, dmg ? 1 : 0], "Snorlax>Body Slam>Venusaur": [[80], 1, 1] });
-    return (a, d, pm, o) => { const x = at(a, d, pm, o); return x && pm.getName() === "Giga Drain" ? { ...x, drain } : x; };
+    return (a, d, pm, o) => { const x = at(a, d, pm, o); return x && pm.getName() === "Giga Drain" ? { ...x, drain, self } : x; };
   };
   // `teraLater` true for `foe`, whose base typing takes `entry`; the turn itself prices the Tera'd typing.
   const teraTurn = (foe, entry) => {
@@ -1168,11 +1169,12 @@ Object.assign(TABLE, {
   };
   let n = 0;
   // `entry` / `tera`: Giga Drain's damage at the base typing and at the Tera; `tera` alone is a foe that never Teras.
-  const race = ({ entry = null, tera, drain = 0, field = false, free = true, heal = null, foeHp, fieldSpe }) => {
+  // `entrySelf` / `teraSelf`: what one use costs us at each typing.
+  const race = ({ entry = null, tera, drain = 0, field = false, free = true, heal = null, foeHp, fieldSpe, entrySelf = 0, teraSelf = 0 }) => {
     const id = `#823 ${n++}`, foe = snorlax(`Snorlax ${id}`, foeHp), me = venusaur(`Venusaur ${id}`);
     const keep = { outcome: globalThis.__stub.outcome, heal: globalThis.__stub.heal };
-    Object.assign(globalThis.__stub, { outcome: gigaDrain(tera, drain), heal });
-    const turn = entry == null ? s : teraTurn(foe, gigaDrain(entry, drain));
+    Object.assign(globalThis.__stub, { outcome: gigaDrain(tera, drain, teraSelf), heal });
+    const turn = entry == null ? s : teraTurn(foe, gigaDrain(entry, drain, entrySelf));
     try {
       return exchange(turn, me, me.moveset[0], foe, { free, ...(field ? { field: snorlax(`field Snorlax ${id}`, undefined, fieldSpe) } : {}) });
     } finally {
@@ -1205,6 +1207,31 @@ Object.assign(TABLE, {
   // Not a free switch-in: no entry hit, the Tera'd move all the way.
   const paid = drain => e(race({ entry: 50, tera: 0, drain, free: false }));
   assert.equal(paid(0.5), paid(0), "a paid switch-in prices the Tera'd move on every use");
+
+  // #879: our recoil and contact chip follow the same split. Snorlax on 900 outlasts all nine uses either way, so `cost`
+  // is one use at the entry hit's price plus eight at the Tera'd move's.
+  const spent = x => Math.round(x.cost * 280);
+  for (const field of [false, true]) {
+    const kind = field ? "double" : "single";
+    const hit = race({ entry: 50, tera: 0, entrySelf: 12, field });
+    assert.equal(hit.hitsWe, 9, `${kind}: Giga Drain never knocks Snorlax out`);
+    assert.equal(spent(hit), 12, `${kind}: the entry hit's recoil once, none on the Tera'd move's uses`);
+    assert.equal(spent(race({ entry: 0, tera: 50, teraSelf: 12, field })), 8 * 12, `${kind}: no recoil on turn 1, the Tera'd move's on the eight after`);
+  }
+  // Snorlax on 40 behind a faster field foe: the entry hit knocks it out on turn 1, the Tera'd move on turn 2.
+  const kept = o => race({ field: true, foeHp: 40, fieldSpe: 200, ...o }).expectedHpLeft;
+  assert.equal(kept({ entry: 50, tera: 0 }) - kept({ entry: 50, tera: 0, entrySelf: 12 }), 12, "the entry hit's recoil comes off the HP left");
+  assert.equal(kept({ entry: 0, tera: 50 }) - kept({ entry: 0, tera: 50, teraSelf: 12 }), 12, "one Tera'd use, one recoil: turn 1's entry hit costs nothing");
+  // In a double the field foe still hits us on turn 1, and turn 1 has paid the entry hit's recoil alone.
+  const paid1 = ({ entrySelf = 0, teraSelf = 0, ...o }) => {
+    const hp1 = x => Math.round(race({ field: true, ...o, ...x }).turn1.hp * 1e6) / 1e6;
+    return hp1({}) - hp1({ entrySelf, teraSelf });
+  };
+  assert.equal(paid1({ entry: 50, tera: 0, entrySelf: 12 }), 12, "turn 1 paid the entry hit's recoil");
+  assert.equal(paid1({ entry: 0, tera: 50, teraSelf: 12 }), 0, "turn 1 paid no recoil: the entry hit dealt nothing");
+  // A paid switch-in has no entry hit: turn 1 pays the Tera'd move's recoil, as before.
+  assert.equal(paid1({ entry: 0, tera: 50, entrySelf: 7, teraSelf: 12, free: false }), 12, "a paid switch-in pays the Tera'd move's recoil");
+  assert.equal(spent(race({ entry: 0, tera: 50, entrySelf: 7, teraSelf: 12, free: false })), 9 * 12, "a paid switch-in prices the Tera'd move's recoil on every use");
 }
 
 // ---- On-KO boosts (#90): a foe with Beast Boost gets stronger for every KO we feed it.

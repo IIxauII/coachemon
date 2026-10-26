@@ -1138,7 +1138,8 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
       };
     }
     const selfHits = ourLock ? ourLock.slice(0, hitsWe).reduce((t, s) => t + s.self, 0) : 0;
-    selfSpent = (mine.self ?? 0) * Math.min(hitsWe, turnsWe) + (selfHits && selfHits * confusionHit(me));
+    // The first use's recoil and contact chip are the entry hit's, not the Tera'd move's (#879).
+    selfSpent = (first.self ?? 0) + (mine.self ?? 0) * (Math.min(hitsWe, turnsWe) - 1) + (selfHits && selfHits * confusionHit(me));
     const soften = st => (mt.drops?.[st] ? stage(me.summonData?.statStages?.[st - 1] ?? 0) / stage(Math.max(-6, (me.summonData?.statStages?.[st - 1] ?? 0) + mt.drops[st])) : 1);
     if (hitsWe > 1 && (mt.drops?.[Stat.DEF] || mt.drops?.[Stat.SPDEF])) defUp = 1 + ((soften(Stat.DEF) + soften(Stat.SPDEF)) / 2 - 1) * (hitsWe - 1) / hitsWe;
   }
@@ -1257,7 +1258,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     turn1: (() => {
       // The curve front-loaded every use's self-cost, and turn 1 has only paid one.
       const me1 = freeThey || !theirs ? [{ hp, p: 1 }]
-        : theirs.after1.map(x => ({ ...x, hp: x.revived ? x.hp : Math.min(maxHp, x.hp + selfSpent - (mine?.self ?? 0)) }));
+        : theirs.after1.map(x => ({ ...x, hp: x.revived ? x.hp : Math.min(maxHp, x.hp + selfSpent - (opener?.self ?? 0)) }));
       return {
         we: weFirst, they: theyFirst, me: me1, hp: me1.reduce((t, x) => t + x.p * x.hp, 0),
         foe: foeAfter1 ?? [{ hp: foe.hp, p: 1 }],
