@@ -159,6 +159,7 @@ The call a **card** leads with: one per card, saying in a few words what the car
 - **rewards** — the first clause of the rewards line.
 - **biome** — the biome the coach picks.
 - **encounter** — `take` and the option the coach picks, `your call` on an encounter it judges without picking one, or `not judged` on one it can't judge.
+- **pivot** — `your pick`, always: a **pivot** is picked without a **turn read**, so the card judges none, and a held **oracle line**'s pick is drawn on it but never leads it.
 
 Starters and fusion cards have a leading call too, but the card event never sends those kinds.
 
