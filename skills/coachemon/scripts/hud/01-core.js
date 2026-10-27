@@ -39,7 +39,8 @@ export const moveHasFlag = (mv, f) => (typeof mv?.hasFlag === "function" ? mv.ha
 
 export const typesOf = p => p.getTypes().map(t => TYPES[t]).filter(Boolean);
 export const abilitiesOf = p => [p.getAbility()?.name, p.hasPassive?.() ? p.getPassiveAbility()?.name : null].filter(Boolean);
-// Mycelium Might carries the same bypass, but for status moves alone, so it stays off this list (game-code.md §1).
+// Bypasses that cover every move. Mycelium Might's covers status moves alone, so a caller judging a status move has to
+// ask for it as well (game-code.md §1).
 // @mirrors mold-breakers
 const MOLD_BREAKERS = ["Mold Breaker", "Teravolt", "Turboblaze"];
 export const hasMoldBreaker = p => abilitiesOf(p).some(a => MOLD_BREAKERS.includes(a));

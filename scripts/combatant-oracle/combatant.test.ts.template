@@ -47,11 +47,15 @@ function inRunRead<T>(game: GameManager, fn: (duel: (m: unknown, t: unknown) => 
   );
 }
 
-/** A level-5 member goes down to its Psystrike in one hit. */
+/** By default, a level-5 member goes down to its Psystrike in one hit. */
 const laterFoe = (spec: object = {}) =>
   combatantOf({ species: speciesDataRegistry.getSpecies(SpeciesId.MEWTWO), level: 100, moves: [MoveId.PSYSTRIKE], player: false, ...spec });
 
-/** A level-100 Mewtwo's ability and its one move, each a one-hit KO on a level-5 Magikarp, and the hits a full-health Sturdy one takes to go down. */
+/**
+ * A level-100 Mewtwo's ability and its one move, each a one-hit KO on a level-5 Magikarp, and the hits a full-health
+ * Sturdy one takes to go down. The two names are spelled out because vitest names the cases before the game's tables
+ * load.
+ */
 const STURDY_BYPASS: [string, string, number, AbilityId, MoveId][] = [
   ["Mold Breaker", "Psystrike", 1, AbilityId.MOLD_BREAKER, MoveId.PSYSTRIKE],
   ["Teravolt", "Psystrike", 1, AbilityId.TERAVOLT, MoveId.PSYSTRIKE],

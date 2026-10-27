@@ -20,9 +20,8 @@ const MOVES = [];
 const move = (id, name, type, power, { pp = 10, cat = 0, acc = 100, flags = 0 } = {}) =>
   (MOVES[id] = { id, name, type: TY.indexOf(type), power, accuracy: acc, category: cat, pp, moveTarget: 3, priority: 0, flags, attrs: [] });
 const [EARTHQUAKE, DRAGON_CLAW, BODY_SLAM, GROWL] = [89, 337, 34, 45];
-const SUNSTEEL_STRIKE = MoveId.SUNSTEEL_STRIKE;
 move(EARTHQUAKE, "Earthquake", "Ground", 100);
-move(SUNSTEEL_STRIKE, "Sunsteel Strike", "Steel", 100, { pp: 5, flags: MoveFlags.IGNORE_ABILITIES });
+move(MoveId.SUNSTEEL_STRIKE, "Sunsteel Strike", "Steel", 100, { pp: 5, flags: MoveFlags.IGNORE_ABILITIES });
 move(DRAGON_CLAW, "Dragon Claw", "Dragon", 80, { pp: 15 });
 move(BODY_SLAM, "Body Slam", "Normal", 85, { pp: 15 });
 move(GROWL, "Growl", "Normal", 0, { pp: 40, cat: 2 });
@@ -438,9 +437,9 @@ const shown = x => x.map(o => `${o.name} ×${o.e} ${o.max}${o.pKo ? ` pKo ${o.pK
     ["Mold Breaker", "Mold Breaker", {}, 1],
     ["Teravolt", "Teravolt", {}, 1],
     ["Turboblaze", "Turboblaze", {}, 1],
-    ["Sunsteel Strike", "Sand Veil", { moves: [SUNSTEEL_STRIKE] }, 1],
+    ["Sunsteel Strike", "Sand Veil", { moves: [MoveId.SUNSTEEL_STRIKE] }, 1],
     ["Pressure", "Pressure", {}, 2],
-    // The game's Mycelium Might carries the bypass attr too, for status moves only (game-code.md §1).
+    // Its attr as the game gives it (game-code.md §1).
     ["Mycelium Might", "Mycelium Might", { attrs: ["MoveAbilityBypassAbAttr"] }, 2],
   ];
   const seen = cases.map(([label, ability, extra, n]) => {
