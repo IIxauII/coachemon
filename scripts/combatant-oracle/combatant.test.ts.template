@@ -152,4 +152,30 @@ describe("the combatant adapter against the game (#989)", () => {
 
     expectHeldOn(hitAtLaterFight(game, mon));
   });
+
+  it("a member whose passive Trace copied a foe's Sturdy goes down to a later foe's one-hit KO (#992)", async () => {
+    game.override.ability(AbilityId.BALL_FETCH).passiveAbility(AbilityId.TRACE).enemyAbility(AbilityId.STURDY);
+    await game.classicMode.startBattle(SpeciesId.MAGIKARP);
+    const mon = game.field.getPlayerPokemon();
+    expect(mon.summonData.passiveAbility).toBe(AbilityId.STURDY);
+    expect(mon.hasAbilityWithAttr("PreDefendFullHpEndureAbAttr", false, true)).toBe(true);
+    expect(combatantOf({ mon }).getPassiveAbility().name).toBe(allAbilities[AbilityId.TRACE].name);
+
+    const hit = hitAtLaterFight(game, mon);
+    expect(hit.raw).toBeGreaterThan(hit.targetHp);
+    expect(hit.pKo).toBe(1);
+    expect(inRunRead(game, duel => duel(combatantOf({ mon }), laterFoe())).taken).toBe(1);
+  });
+
+  it("a member holding a passive Trace's copy whose own passive is no longer Trace, as after an evolution, is named by the passive it has (#992)", async () => {
+    game.override.ability(AbilityId.BALL_FETCH).passiveAbility(AbilityId.TRACE).enemyAbility(AbilityId.STURDY);
+    await game.classicMode.startBattle(SpeciesId.MAGIKARP);
+    const mon = game.field.getPlayerPokemon();
+    game.override.passiveAbility(AbilityId.NONE).hasPassiveAbility(true);
+    expect(mon.getPassiveAbility().id).toBe(AbilityId.STURDY);
+
+    const own = allAbilities[mon.species.getPassiveAbility(mon.formIndex)];
+    expect(own.id).not.toBe(AbilityId.TRACE);
+    expect(combatantOf({ mon }).getPassiveAbility().name).toBe(own.name);
+  });
 });
