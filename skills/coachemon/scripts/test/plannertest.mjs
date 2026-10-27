@@ -2591,7 +2591,7 @@ Object.assign(TABLE, {
     const foes = [mon("Arcanine", 80, ["Fire"], [300, 230, 160, 200, 160, 150], [["Flare Blitz", "Fire", 120, "P"]], true),
       mon("Ninetales", 80, ["Fire"], [280, 150, 160, 230, 200, 200], [["Flamethrower", "Fire", 90, "S"]], true)];
     const table = {};
-    for (const us of ["Scizor", "Yanmega"]) for (const f of ["Arcanine", "Ninetales"]) table[`${us}>U-turn>${f}`] = [[110], 1, 1];
+    for (const us of ["Scizor", "Yanmega"]) for (const f of ["Arcanine", "Ninetales"]) table[`${us}>U-turn>${f}`] = [[200], 1, 1];
     for (const [f, mv] of [["Arcanine", "Flare Blitz"], ["Ninetales", "Flamethrower"]]) {
       Object.assign(table, { [`${f}>${mv}>Scizor`]: [[90], 1, 1], [`${f}>${mv}>Yanmega`]: [[90], 1, 1],
         [`${f}>${mv}>Ferrothorn`]: [[600], 1, 4], [`${f}>${mv}>Vaporeon`]: [[70], 1, 0.5] });
@@ -2606,6 +2606,71 @@ Object.assign(TABLE, {
     assert.equal(new Set(sent).size, sent.length, `two slots never send the same mon: ${pivots.join(", ")}`);
   }
   assert.equal(pick("U-turn", false).slot.pivot, null, "nobody on the bench, nobody to name");
+}
+
+// ---- A pivot is priced on the turns it comes in on: after a KO, against the trainer's send-in; never where the foe
+// moved first and KO'd the user, since no pivot comes then (#530).
+{
+  class ForceSwitchOutAttr { constructor() { this.selfSwitch = true; } }
+  const uTurner = (stats, moves = [["U-turn", "Bug", 70, "P"]]) => {
+    const m = mon("Scizor", 80, ["Bug", "Steel"], stats, moves, true);
+    const built = m.moveset[0].getMove;
+    m.moveset[0].getMove = () => ({ ...built(), attrs: [new ForceSwitchOutAttr()] });
+    return m;
+  };
+  const arcanine = () => mon("Arcanine", 80, ["Fire"], [300, 230, 160, 200, 160, 150], [["Flare Blitz", "Fire", 120, "P"]], true);
+  const flareBlitz = () => [{ name: "Flare Blitz", type: "Fire", p: 1, score: 10, targets: [0] }];
+
+  // A speed tie: each side moves first half the time. Flare Blitz KOs Scizor, so half of turn 1 brings no pivot.
+  {
+    const scizor = uTurner([280, 250, 200, 110, 160, 150]), foe = arcanine();
+    const table = { "Scizor>U-turn>Arcanine": [[110], 1, 1], "Arcanine>Flare Blitz>Scizor": [[400], 1, 4] };
+    const { scene } = render({ party: [scizor], foes: [foe], live: true, stubOutcome: outcomeFrom(table), switches: () => new Map(), dist: flareBlitz });
+    const { pivot } = globalThis.__planner.exchange(scene, scizor, scizor.moveset[0], foe).turn1;
+    console.log(`== a switch-out's turn 1 on a speed tie, KO'd moving second\n${JSON.stringify(pivot)}`);
+    assert.deepEqual(pivot, { ko: 0, hit: 0.5, clear: 0, down: 0.5, flinched: 0 }, "moving second, Scizor falls before U-turn goes off");
+  }
+  {
+    const scizor = uTurner([280, 250, 200, 110, 160, 150]), foe = arcanine();
+    const table = { "Scizor>U-turn>Arcanine": [[110], 1, 1], "Arcanine>Flare Blitz>Scizor": [[90], 1, 1] };
+    const { scene } = render({ party: [scizor], foes: [foe], live: true, stubOutcome: outcomeFrom(table), switches: () => new Map(), dist: flareBlitz });
+    const { pivot } = globalThis.__planner.exchange(scene, scizor, scizor.moveset[0], foe).turn1;
+    assert.deepEqual(pivot, { ko: 0, hit: 0.5, clear: 0.5, down: 0, flinched: 0 }, "surviving it, the pivot comes in on a clear field");
+  }
+
+  // U-turn KOs Arcanine before it moves, so the pivot meets the trainer's next mon, Gyarados: Jolteon, not Vaporeon.
+  const koPivot = withReserve => {
+    const party = [
+      uTurner([270, 250, 200, 110, 160, 200]),
+      mon("Vaporeon", 80, ["Water"], [400, 120, 140, 220, 190, 120], [["Surf", "Water", 90, "S"]], false),
+      mon("Jolteon", 80, ["Electric"], [270, 120, 120, 250, 190, 260], [["Thunderbolt", "Electric", 90, "S"]], false),
+    ];
+    const gyarados = mon("Gyarados", 80, ["Water", "Flying"], [380, 250, 160, 120, 200, 160], [["Waterfall", "Water", 80, "P"]], false);
+    const table = {
+      "Scizor>U-turn>Arcanine": [[400], 1, 1], "Arcanine>Flare Blitz>Scizor": [[90], 1, 1],
+      "Arcanine>Flare Blitz>Vaporeon": [[70], 1, 0.5], "Arcanine>Flare Blitz>Jolteon": [[200], 1, 1],
+      "Vaporeon>Surf>Arcanine": [[160], 1, 2], "Jolteon>Thunderbolt>Arcanine": [[120], 1, 1],
+      "Gyarados>Waterfall>Vaporeon": [[50], 1, 0.5], "Gyarados>Waterfall>Jolteon": [[100], 1, 1], "Gyarados>Waterfall>Scizor": [[60], 1, 1],
+      "Vaporeon>Surf>Gyarados": [[60], 1, 0.5], "Jolteon>Thunderbolt>Gyarados": [[400], 1, 4], "Scizor>U-turn>Gyarados": [[100], 1, 1],
+    };
+    const out = render({ party, foes: [arcanine(), ...(withReserve ? [gyarados] : [])], live: true, stubOutcome: outcomeFrom(table), switches: () => new Map(),
+      dist: e => (e.name === "Gyarados" ? [{ name: "Waterfall", type: "Water", p: 1, score: 10, targets: [0] }] : flareBlitz()) });
+    return out.card.field.slots[0];
+  };
+  const ko = koPivot(true);
+  console.log(`== a U-turn that KOs: the pivot meets the send-in\n${ko.name} ${ko.move} → ${ko.pivot?.name ?? "none"} ${JSON.stringify(ko.pivot?.afterKo ?? null)}`);
+  assert.equal(ko.pivot?.name, "Jolteon", "priced against Gyarados, who comes in after the KO, not Arcanine, who falls");
+  assert.deepEqual(ko.pivot?.afterKo, { fell: { id: "Arcanine", name: "Arcanine" }, next: { id: "Gyarados", name: "Gyarados" } },
+    "and the pick says the field it was planned for");
+  assert.equal(koPivot(false).pivot?.afterKo, undefined, "with nobody left to send, the battle ends after the pivot: no field to plan for");
+
+  // With the duel won either way, a move that stays in finishes the foe; U-turn leaves the rest of its bar to the team.
+  {
+    const scizor = uTurner([270, 250, 200, 110, 160, 200], [["U-turn", "Bug", 70, "P"], ["X-Scissor", "Bug", 70, "P"]]);
+    const table = { "Scizor>U-turn>Arcanine": [[110], 1, 1], "Scizor>X-Scissor>Arcanine": [[110], 1, 1], "Arcanine>Flare Blitz>Scizor": [[40], 1, 1] };
+    const out = render({ party: [scizor], foes: [arcanine()], live: true, stubOutcome: outcomeFrom(table), switches: () => new Map(), dist: flareBlitz });
+    assert.equal(out.card.field.slots[0].move, "X-Scissor", "U-turn's one hit is worth less than the KO the same hit leads to");
+  }
 }
 
 // ---- Gordie W180 T16: the card calls Tera Water + Hydro Pump, and its fight plan presses the Tera on step 1 (#649)
