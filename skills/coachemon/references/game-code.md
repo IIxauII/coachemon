@@ -2937,7 +2937,7 @@ stays the base's (`:2251-2272`). `getPassiveAbility` answers `summonData.passive
 passive Trace writes one: the foe's passive, else its ability (`src/data/abilities/ab-attrs.ts:2709`,
 `:2718`). Every other ability swap writes `summonData.ability`, which `getAbility(true)` skips. `hasAbility` and
 `hasAbilityWithAttr` hand `ignoreOverride` to `getAbility` alone and ask the passive through `getPassiveAbility`
-(`:2435-2458`), so they answer the copy whatever `ignoreOverride` says; `evolve` leaves `summonData` alone
+(`pokemon.ts:2435-2458`), so they answer the copy whatever `ignoreOverride` says; `evolve` leaves `summonData` alone
 (`:6313-6392`), so a member that evolves keeps its copy. Learnsets merge both halves (`src/field/learnsets.ts:223-252`), TMs are the union, then
 the Moveset Randomizer's `PLAYER_TM_COMPATIBILITY` (`pokemon.ts:6090-6110`), egg moves the base's only (`:1911-1925`).
 Evolution checks the base's line first, then the other half's, one at a time, each list after the Moveset Randomizer's

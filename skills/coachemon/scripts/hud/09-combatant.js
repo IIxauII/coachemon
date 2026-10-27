@@ -231,9 +231,9 @@ export const combatantOf = (spec = {}) => {
       : evolved ? abilityNameOf(evolvedAbility())
         : mon ? abilityNameOf(tryDo(() => mon.getAbility(true)))
           : abilityNameOf(firstAbility(form));
-  // The passive stays the base half's, fused or not (game-code.md §24), but it is the *species*' own, so an evolved
-  // member brings the evolved species' passive rather than the one it has now (game-code.md §23).
   const ownMon = untraced(mon);
+  // The passive stays the base half's, fused or not (game-code.md §24), but it is the *species*' own, so an evolved
+  // member brings the evolved species' passive rather than the one it has now (§23).
   const passive = spec.passive !== undefined ? abilityNameOf(spec.passive)
     : mon && tryDo(() => mon.hasPassive(), false)
       ? abilityNameOf(evolved ? tryDo(() => species.getPassiveAbility(formIndex)) : tryDo(() => ownMon.getPassiveAbility()))
