@@ -49,6 +49,9 @@ const fusionOf = (a, b, j, spliced) => {
   const fused = j.fused?.combatant ?? null;
   const bst = bstPair(a, b, spliced);
   const ability = nameOf(fused?.getAbility?.()) || null;
+  // Off the fused mon, never the live base, whose `getPassiveAbility` answers a passive Trace's copy first (#996,
+  // game-code.md §24).
+  const passive = nameOf(fused?.getPassiveAbility?.()) || null;
   // The fused mon's ability is the other half's, so an ability `canApplyAbility` refuses on a fusion — Disguise, Zen
   // Mode, Schooling, Stance Change (game-code.md §24) — leaves it with none at all. The adapter already refuses it,
   // and a player picking that half has to be told why the fusion comes out blank.
@@ -67,7 +70,7 @@ const fusionOf = (a, b, j, spliced) => {
     offered.length ? `offers ${offered.slice(0, 2).join("/")}${offered.length > 2 ? ` +${offered.length - 2}` : ""}` : null,
     items ? `${items} held item${items > 1 ? "s" : ""} move over` : null,
     evolves.length ? `${evolves.join(" & ")} still evolve${evolves.length > 1 ? "" : "s"}` : null,
-    a.hasPassive?.() ? `keeps passive ${nameOf(tryDo(() => a.getPassiveAbility()))}` : null,
+    passive ? `keeps passive ${passive}` : null,
   ].filter(Boolean);
   return {
     a, b, value: j.delta, release: j.release, net: j.net, fuse: j.verdict === "fuse",
