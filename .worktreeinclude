@@ -1,0 +1,4 @@
+# Gitignored files Claude Code copies from the main checkout into each worktree it creates.
+# The graphify graph: a snapshot of the main checkout's graph at creation time (see CLAUDE.md, "graphify").
+graphify-out/graph.json
+graphify-out/GRAPH_REPORT.md

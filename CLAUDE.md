@@ -69,7 +69,10 @@ runs `! kill <server-pid>`.
 ## graphify
 
 **Only where `graphify-out/graph.json` exists.** The graph of files, symbols and the links between them is built
-per checkout and never committed, so fresh clones and agent worktrees have none; there this whole section is skipped.
+per checkout and never committed, so a fresh clone has none; there this whole section is skipped. A worktree Claude
+Code creates gets a copy of the main checkout's graph through `.worktreeinclude`, as of the moment it was created, so
+it lacks the branch's own changes until `graphify update .` runs there. A worktree made with `git worktree add` gets
+no copy. graphify's git hooks rebuild only the main checkout's graph, never a worktree's.
 
 **Query the graph before reading source.** Run `graphify query "<question>"` before your first grep, search or
 source-file read for a codebase question, and put this rule in every subagent prompt that explores code. Read raw
