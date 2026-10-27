@@ -38,8 +38,10 @@ Keep the registry of game reads (ADR 0004), `drift:check` and the battle oracle.
 3. **Plain data is not safer by itself.** Three bump fixes came from the HUD reading a *stored* field where the game's
    accessor applies a hook: `ability1` instead of `getAbility`, raw evolution rows, raw starter data. A layer would
    still have to call the game's computed accessors at read time (`getTypes`, `getAbility`, `getHeldItems`, …). Those
-   are the very calls the registry already tracks. The live-shaped stand-in that #572 built shows the opposite risk:
-   game code can call it and find a method missing ([§7](#7-found-along-the-way)). [code]
+   are the very calls the registry already tracks. The live-shaped stand-in that #572 built shows two other risks
+   ([§7](#7-found-along-the-way)) [code]:
+   - game code can call it and find a method missing;
+   - it can pass on a live answer that depends on the moment.
 4. **Nothing in place can hold the line.** The bundler could guard the entry points in about ten lines. But game
    objects cross as *values* (live mons in `turn.facts`, the scene in `run.scene`), and neither the bundler nor the
    name-based read check can see where a value came from. A static guard on values needs a typed pass over about 11k
@@ -326,7 +328,7 @@ summaries (`60-card.js:185–301`), the card event and the 15 renderers. It does
 
 ### What must hold a live object
 
-Four kinds of work can't run on a copy [code]:
+Five kinds of work can't run on a copy [code]:
 
 1. **The per-frame look.** Each frame the watch keys the decision on the *identity* of live objects:
    - the battle and phase in `detect` (`02-decision.js:56–89`);
@@ -342,6 +344,10 @@ Four kinds of work can't run on a copy [code]:
    - The turn read writes hypotheses onto live mons (`25-turn.js:68–124`) and calls `shouldTera`, `getEffectiveStat`
      and `canSetStatus` (`:376, 263, 278`).
    - `09-projection.js:51–55` runs the challenges' `applyModifyEvolutions` on the live member.
+   - `10-damage.js` patches live objects while it runs:
+     - it pins `Phaser.Math.RND.integerInRange` for Present (`:640–644`);
+     - it wraps the defender's `calculateStabMultiplier` to ask for damage at a given roll (`:658–663`);
+     - it sets the arena's `ignoreAbilities` fields around a simulated move (`:703–710`).
 3. **Generation under the run's seed.**
    - `48-preview.js` swaps `s.currentBattle` (`:42–46`) and runs `generateNewBattleTrainer`, `genPartyMember` and
      `addEnemyPokemon` (`:117–150`).
@@ -350,7 +356,15 @@ Four kinds of work can't run on a copy [code]:
    - `46-encounter.js` checks options under `executeWithSeedOffset` (`:289–291`).
 
    Their *outputs* are already plain.
-4. **Entry points.**
+4. **Game checks with no stored answer, run per member.** These are called for each party member and have nothing to
+   copy:
+   - the encounter's `queryParty` and `canSetStatus` (`46-encounter.js:133, 676`);
+   - the Splicer's `selectFilter` (`49-fusion.js:144, 162`);
+   - the shop's `selectFilter` and `isTmCompatible` (`52-shop.js:23–32`).
+
+   A view can carry their answers if the read layer asks once per member at read time: `meetsReqs`, `tm.compatible`
+   and a splice `allowed` list. [inferred]
+5. **Entry points.**
    - `battleScene()` and the sprite atlas (`90-render.js:12–33`);
    - the tables (`04-game-tables.js:57–93`);
    - the frame loop (`99-start.js:70`);
@@ -795,6 +809,20 @@ These are independent of the recommendation. Each could be its own issue.
   `test/damagetest.mjs:157`). Whether an outer catch saves the card was not traced. A clone test with a Parental Bond
   member in a team-value duel would settle it. It is a small instance of the risk any live-shaped stand-in carries:
   game code calls it and finds a method missing.
+- **A combatant may carry today's ability suppression into a later fight.** [code; not run]
+  - When the member's ability is untouched, the stand-in answers `hasAbilityWithAttr` through the live member
+    (`09-combatant.js:266–268`).
+  - The game's `hasAbilityWithAttr` runs `canApplyAbility` (`game/field/pokemon.ts:2386–2425, 2450–2458`). That checks
+    the field *as it stands now*:
+    - the arena's `ignoreAbilities` flag;
+    - the member's own `summonData.abilitySuppressed`, set by Gastro Acid for example;
+    - Neutralizing Gas, while the member is on the field;
+    - `hp > 0`.
+  - So a duel scored for a later fight, such as team value or the road ahead, may treat a suppressed or fainted
+    member's ability as absent.
+
+  This is the opposite risk to the one above: here the stand-in delegates a *computed* game answer that depends on
+  the moment.
 - **One 6v6 doubles trainer card costs over 100 ms of the overlay's own code on fakes.** [measured on fakes]
   - It takes 57 ms with the damage calls failing over to the type chart, and 130 ms with them stubbed.
   - All of it lands in the meter's `read` stage, before any game code runs.
@@ -906,13 +934,13 @@ helpers that wrap them. Counts are occurrences in source. [measured]
 | `47-biome` | `run`, the biome handler, tables | `biomeLinks` 50, `getEventBiomeLinks` 51, `speciesPools` 163, `trainerPool` 200 | 48 | 9 | 24 | 0 | 16 | no, given tables as data |
 | `48-preview` | `run.scene`; the scene from `98-watch` | `executeWithSeedOffset` 32; `withBattle` 42–46; `genPartyMember` 139; `addEnemyPokemon` 150 | 44 | 32 | 9 | 12 | 10 | yes: generation |
 | `49-ahead` | `run` | `isFixedBattle` 25, 52, `getBattleCount` 44 | 15 | 10 | 5 | 0 | 5 | no |
-| `49-fusion` | `run`, the splice handler | `getSpeciesForm` 21, `selectFilter` 144–163 | 11 | 9 | 9 | 0 | 1 | no; its screen read moves down |
+| `49-fusion` | `run`, the splice handler | `getSpeciesForm` 21, `selectFilter` 144, 162 per member | 11 | 9 | 9 | 0 | 1 | as written, yes: `selectFilter` runs on each live member |
 | `50-audit` | `run` | `getLearnableLevelMoves` 94; `getMaxExpLevel` 133 | 8 | 12 | 3 | 0 | 3 | no |
 | `50-reroll` | the scene | `Phaser.Math.RND.state` 22, 36, 44; `gameRewardFns()` 76 | 25 | 6 | 14 | 0 | 6 | yes: reward generation |
 | `51-items` | `run.scene` via `52-shop` | `getMaxExpLevel` 78, `getEvolutionLevels` 125, `getNature` 129 | 13 | 18 | 9 | 0 | 1 | no |
 | `51-lead` | `run` | `isAllowedInBattle` 14 | 1 | 2 | 0 | 0 | 0 | no |
 | `51-starters` | the scene | starter handler internals 316–443; `applyStarterSelectModify` 185 | 61 | 7 | 39 | 4 | 13 | yes for the screen and hooks |
-| `52-shop` | `run`, the shop handler | `shopOptionsRows` 93, `isTmCompatible` 31–32, `getOrInferTier` 67 | 24 | 15 | 13 | 2 | 5 | no; its handler read moves down |
+| `52-shop` | `run`, the shop handler | `shopOptionsRows` 93, `selectFilter` 23–24 and `isTmCompatible` 31–32 per member, `getOrInferTier` 67 | 24 | 15 | 13 | 2 | 5 | as written, yes: the per-member checks |
 | `53-pivot` | the scene, `run` | `getCurrentPhase` 18; both parties 34 | 4 | 7 | 0 | 0 | 4 | no; its screen read moves down |
 | `55-journal` | the scene | both parties 49–50; `mysteryEncounterSaveData` 62 | 10 | 1 | 4 | 0 | 6 | no |
 | `56-boss-plan` | the scene | `hasVoucher` 10 | 1 | 1 | 1 | 0 | 0 | no |
