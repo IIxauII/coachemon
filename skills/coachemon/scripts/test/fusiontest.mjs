@@ -37,7 +37,10 @@ const mon = (name, types, base, ability, moves, f = {}, spliced = false) => {
     ivs: [20, 20, 20, 20, 20, 20], nature: f.nature ?? 0, getNature() { return this.nature; }, customPokemonData: { types: [] },
     getSpeciesForm: () => species, getTypes: () => species.type2 == null ? [species.type1] : [species.type1, species.type2],
     getAbility: () => ({ name: ability, attrs: f.noFusion ? [{ constructor: { name: "NoFusionAbilityAbAttr" } }] : [] }),
-    hasPassive: () => !!f.passive, getPassiveAbility: () => ({ name: f.passive, attrs: [] }),
+    // `copy` is what a passive Trace copied on the field, which `getPassiveAbility` answers first (game-code.md §24).
+    // The game holds it as an ability id, and this as a name: there is no ability table here.
+    hasPassive: () => !!f.passive, getPassiveAbility() { return { name: this.summonData?.passiveAbility || f.passive, attrs: [] }; },
+    ...(f.copy ? { summonData: { passiveAbility: f.copy } } : {}),
     getStat: () => 100, getIconAtlasKey: () => "pokemon_icons_1", getIconId: () => name,
     // What the judgment reads off a live member beyond the above: its own base-stat row, what a release would
     // destroy, and whether a challenge bars it from the fight it is judged at (#589).
@@ -46,7 +49,8 @@ const mon = (name, types, base, ability, moves, f = {}, spliced = false) => {
     moveset: moves.map(id => new PokemonMove(id)),
   };
 };
-const party = (spliced = false) => {
+// `tweak` maps a member's name to options laid over its own.
+const party = (spliced = false, tweak = {}) => {
   monId = 0;
   const mons = [
     ["Garchomp", ["Dragon", "Ground"], [108, 130, 95, 80, 85, 102], "Rough Skin", [MV.dragonClaw, MV.earthquake], { level: 50, nature: 3, passive: "Sand Force" }],
@@ -56,7 +60,7 @@ const party = (spliced = false) => {
     ["Azumarill", ["Water", "Fairy"], [100, 50, 80, 60, 80, 50], "Huge Power", [MV.aquaTail, MV.playRough], { level: 42 }],
     ["Mimikyu", ["Ghost", "Fairy"], [55, 90, 80, 50, 105, 96], "Disguise", [MV.shadowClaw], { level: 30, noFusion: true }],
   ];
-  return mons.map(a => mon(...a, spliced));
+  return mons.map(([name, types, base, ability, moves, f]) => mon(name, types, base, ability, moves, { ...f, ...tweak[name] }, spliced));
 };
 
 // Every name is in the randbats snapshot, which is joined on name alone, and none is a party species above, so
@@ -235,6 +239,25 @@ let best;
   untouched("Snorlax ← Mimikyu");
 }
 
+// ---- A base whose passive Trace holds a foe's Sturdy keeps passive Trace, as the fused mon it is judged as does (#996).
+{
+  const members = party(false, { Garchomp: { passive: "Trace", copy: "Sturdy" } });
+  const { scene } = mount({ members });
+  const { readRun, fusionOptions } = globalThis.__ft;
+  const judge = globalThis.__hud["12-value"].judgeFusionPair;
+  const rows = readRun(scene, run => fusionOptions(run).options.filter(f => f.a.name === "Garchomp").map(f => ({
+    pair: `${f.a.name} ← ${f.b.name}`, note: f.notes.find(n => n.startsWith("keeps passive")) ?? null,
+    fused: judge(run, f.a, f.b).fused?.combatant?.getPassiveAbility()?.name ?? null,
+  })));
+  console.log(`== Garchomp's passive Trace holding Sturdy\n${rows.map(r => `${r.pair}: ${r.note} · fused ${r.fused}`).join("\n")}`);
+  assert.ok(rows.length, "pairs on a Garchomp base");
+  for (const r of rows) {
+    assert.equal(r.note, "keeps passive Trace", `${r.pair}: the base's own passive, not the copy`);
+    assert.equal(r.fused, "Trace", `${r.pair}: the fused combatant names the same passive`);
+  }
+  untouched("Garchomp's passive Trace holding Sturdy");
+}
+
 // ---- A pair the card cannot put in words is dropped, and never takes the card with it (#589).
 {
   const named = o => o.options.map(f => `${f.a.name} ← ${f.b.name}`);
@@ -243,20 +266,19 @@ let best;
   const pairs = sc => globalThis.__ft.readRun(sc, run => globalThis.__ft.fusionOptions(run));
   const all = pairs(mount({}).scene);
   const members = party();
-  // Only the card's own description of a pair reads its base's passive — the combatant adapter takes a throw as no
-  // passive — so this drops every pair on an Azumarill base, and only those.
-  members.find(p => p.name === "Azumarill").hasPassive = () => { throw new Error("no passive to read"); };
+  // Only the card reads a member's form, for the BST it prints, so this drops every pair Azumarill is in, and only
+  // those.
+  members.find(p => p.name === "Azumarill").getSpeciesForm = () => ({ get baseStats() { throw new Error("no form to read"); } });
   const { scene, model: m } = mount({ members });
   const some = pairs(scene);
-  console.log(`== Azumarill's passive unreadable\n${all.options.length} pairs → ${some.options.length} · unread ${some.unread}`);
+  console.log(`== Azumarill's form unreadable\n${all.options.length} pairs → ${some.options.length} · unread ${some.unread}`);
   assert.equal(some.unread, null, "one pair the card cannot describe is no reason to read nothing");
-  assert.ok(some.options.every(f => f.a.name !== "Azumarill"), "every pair on an Azumarill base is dropped");
-  assert.ok(some.options.some(f => f.b.name === "Azumarill"), "and Azumarill is still a half the other bases can spend");
-  assert.deepEqual(named(some), named(all).filter(n => !n.startsWith("Azumarill ")), "the rest rank exactly as before");
+  assert.ok(some.options.every(f => f.a.name !== "Azumarill" && f.b.name !== "Azumarill"), "every pair Azumarill is in is dropped");
+  assert.deepEqual(named(some), named(all).filter(n => !n.includes("Azumarill")), "the rest rank exactly as before");
   assert.equal(m.kind, "fusion");
   assert.equal(`${m.rows[0].base.name} ← ${m.rows[0].other.name}`, named(some)[0],
     "and the card still draws, led by the best pair left — the healthy party's best was an Azumarill base");
-  untouched("Azumarill's passive unreadable");
+  untouched("Azumarill's form unreadable");
 }
 
 // ---- Another party screen (a plain check) draws no fusion card.

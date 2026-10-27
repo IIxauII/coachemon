@@ -56,8 +56,14 @@ summary Garchomp ← Azumarill (+5.2 turns) · pick Garchomp first, then Azumari
 == Snorlax ← Mimikyu
 ΔV +0.1 turns · spends Mimikyu L30 · Disguise doesn't work fused · Snorlax BST 540 → 510 · offers Shadow Claw
 Water now beats 3 of 3, up from 3 of 4 · Grass now beats 3 of 3, up from 3 of 4
-== Azumarill's passive unreadable
-30 pairs → 25 · unread null
+== Garchomp's passive Trace holding Sturdy
+Garchomp ← Salamence: keeps passive Trace · fused Trace
+Garchomp ← Mimikyu: keeps passive Trace · fused Trace
+Garchomp ← Azumarill: keeps passive Trace · fused Trace
+Garchomp ← Snorlax: keeps passive Trace · fused Trace
+Garchomp ← Magikarp: keeps passive Trace · fused Trace
+== Azumarill's form unreadable
+30 pairs → 20 · unread null
 == party screen, not splicing
 kind null
 == rewards, full party
