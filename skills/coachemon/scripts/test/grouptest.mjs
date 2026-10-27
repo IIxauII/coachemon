@@ -11,6 +11,7 @@ const { drawEncounter } = globalThis.__hud["96-render-encounter"];
 const { drawStarters } = globalThis.__hud["96-render-starters"];
 const { drawFusion } = globalThis.__hud["96-render-fusion"];
 const { drawBiome } = globalThis.__hud["97-render-biome"];
+const { drawPivot } = globalThis.__hud["96-render-pivot"];
 const { GROUP_IDS, MARKS, flatGroups, wireCard } = globalThis.__hud["90-render"];
 const { EVENT_KINDS, cardEvent, streamable } = globalThis.__hud["60-card"];
 
@@ -398,6 +399,32 @@ const biomeOption = (over = {}) => ({ label: "Swamp", id: 1, score: 72, offense:
   const { groups } = show("biome · no spawn data yet", card, drawBiome);
   assert.deepEqual(groups.map(g => g.id), ["act"]);
   assert.equal(groups[0].summary, "Swamp · Construction Site");
+}
+
+// ---- Pivot: the bench is `act`, with what needs no turn read, and the foes' attacking types are `foes` (#530). A held
+// oracle line is `plan`, its step naming the pick, and is never the card's call.
+{
+  const pivot = (over = {}) => ({ kind: "pivot", wave: 24, turn: 3, slot: 0, out: { icon: null, name: "Scizor" },
+    withheld: "mid-turn", foes: [{ icon: null, name: "Arcanine", hp: 70, types: ["Fire"], attacks: ["Fire", "Normal"] }],
+    bench: [{ icon: null, name: "Ferrothorn", hp: 60, types: ["Grass", "Steel"], hits: [{ from: "Arcanine", type: "Fire", e: 4 }], resists: false },
+      { icon: null, name: "Vaporeon", hp: 100, types: ["Water"], hits: [], resists: false },
+      { icon: null, name: "Heatran", hp: 35, types: ["Fire", "Steel"], hits: [], resists: true }],
+    heldLine: null, ...over });
+  const { groups, text } = show("pivot · three on the bench, no oracle line", pivot(), drawPivot);
+  assert.deepEqual(groups.map(g => g.id), ["act", "foes"]);
+  assert.equal(groups[0].summary, "Scizor leaves the field · your pick — mid-turn, no turn read: the foe has already chosen its move");
+  assert.ok(text.includes("⚠ Ferrothorn 60% Grass Steel hit by Arcanine's Fire ×4"), text);
+  assert.ok(text.includes("✓ Heatran 35% Fire Steel resists every foe attack type"), text);
+  assert.ok(text.includes("\nFoes\n· Arcanine 70% Fire attacks: Fire Normal"), text);
+  const ref = name => ({ icon: null, name });
+  const heldLine = { id: 1, mark: "~", faintPick: false, sending: null, learning: null, last: 4, turns: 2, left: 2, of: 3, steps: [
+    { turn: 3, at: "now", act: { kind: "move", by: ref("Scizor"), move: "U-turn", type: "Bug", tera: null }, learns: [], sends: [],
+      pivots: [{ ...ref("Vaporeon"), field: 0, for: ref("Scizor") }], after: [{ ...ref("Vaporeon"), hp: 300, maxHp: 300 }] },
+    { turn: 4, at: "later", act: { kind: "move", by: ref("Vaporeon"), move: "Surf", type: "Water", tera: null }, learns: [], pivots: [], sends: [], after: [] }] };
+  const held = show("pivot · a held oracle line names the pick", pivot({ heldLine }), drawPivot);
+  assert.deepEqual(held.groups.map(g => g.id), ["act", "foes", "plan"]);
+  assert.ok(held.text.includes("send Vaporeon for Scizor"), held.text);
+  assert.deepEqual([cardEvent(pivot({ heldLine })).verdict, cardEvent(pivot({ heldLine })).oracleLine], ["your pick", null], "the line is drawn, never the call");
 }
 
 // A kind leaving `EVENT_KINDS` moves both sides of this, so it is caught by the relay pin in `cardtest.mjs` instead.

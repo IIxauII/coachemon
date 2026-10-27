@@ -67,6 +67,7 @@ test("each streamed card kind is one summary line, with the first line of its te
   assert.equal(cardLine({ kind: "reward", wave: 15, verdict: "buy first", text: "free: Ultra Ball" }), "REWARDS w15 · buy first | free: Ultra Ball");
   assert.equal(cardLine({ kind: "biome", wave: 20, verdict: "Swamp", text: "Swamp 72 pick" }), "BIOME w20 · Swamp | Swamp 72 pick");
   assert.equal(cardLine({ kind: "encounter", wave: 23, verdict: "not judged", text: "Mysterious Chest" }), "ENCOUNTER w23 · not judged | Mysterious Chest");
+  assert.equal(cardLine({ kind: "pivot", wave: 24, verdict: "your pick", text: "Scizor leaves the field · your pick" }), "PIVOT w24 · your pick | Scizor leaves the field · your pick");
 });
 
 test("the panel's own `rewards` kind reads as REWARDS, and a kind that never streams says nothing (extension-distribution.md §11.1)", () => {

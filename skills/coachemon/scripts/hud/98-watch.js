@@ -13,6 +13,7 @@ import { captionBattle, drawBattle } from "./96-render-battle.js";
 import { captionEncounter, drawEncounter } from "./96-render-encounter.js";
 import { captionFusion, drawFusion } from "./96-render-fusion.js";
 import { captionLearn, drawLearn } from "./96-render-learn.js";
+import { captionPivot, drawPivot } from "./96-render-pivot.js";
 import { captionRewards, drawRewards } from "./96-render-rewards.js";
 import { captionStarters, drawStarters } from "./96-render-starters.js";
 import { captionBiome, drawBiome } from "./97-render-biome.js";
@@ -26,6 +27,7 @@ const KIND = {
   starters: { draw: drawStarters, caption: captionStarters },
   fusion: { draw: drawFusion, caption: captionFusion },
   biome: { draw: drawBiome, caption: captionBiome },
+  pivot: { draw: drawPivot, caption: captionPivot },
 };
 
 // The lifecycle, in order, for the watch's test: `built`, `cached`, `redrawn`, `road landed`, `audit landed`,
@@ -85,9 +87,10 @@ const remember = rec => {
 };
 const cached = () => cache.find(e => same(e.key, built)) ?? null;
 
-// The front of each party as of the last battle card built, which a learn card held since does not replace: a send-in
-// after the learn still redraws, from that battle card (#537). A send-in swaps party entries, so a faint, which swaps
-// none, is no send-in (game-code.md §7).
+// The front of each party as of the last battle card built, which a mid-turn card held since, a learn's or a pivot's,
+// does not replace: a send-in after it still redraws, from that battle card (#537, #530). A send-in swaps party
+// entries, so a faint, which swaps none, is no send-in (game-code.md §7).
+const MID_TURN = ["learn", "pivot"];
 const field = { from: null, battle: null, p0: null, p1: null, e0: null, e1: null };
 const fronts = s => {
   const b = s.currentBattle, p = s.getPlayerParty(), e = s.getEnemyParty();
@@ -95,7 +98,7 @@ const fronts = s => {
   field.p1 = b.double ? p[1] : null; field.e1 = b.double ? e[1] : null;
 };
 const takeField = (s, rec) => {
-  if (rec?.card?.kind === "learn") return;
+  if (MID_TURN.includes(rec?.card?.kind)) return;
   field.from = rec?.card?.kind === "battle" ? rec : null;
   field.battle = field.from ? s.currentBattle ?? null : null;
   if (field.battle) fronts(s);

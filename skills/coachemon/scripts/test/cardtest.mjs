@@ -73,15 +73,19 @@ const verdictOf = m => cardSummary(m).verdict;
       options: [{ label: "Open it", verdict: "take", outcome: "pick of 3 Ultra items" }, { label: "Leave", verdict: "avoid" }] },
     starters: { kind: "starters", wave: null, limit: 10, picks: [{ label: "best", cost: 10, weak: [], members: [{ name: "Gible", role: "carry" }] }] },
     fusion: { kind: "fusion", wave: 40, picked: null, better: null, rows: [{ base: { name: "Garchomp" }, other: { name: "Dragonite" }, value: 2.1, fuse: true }] },
+    pivot: { kind: "pivot", wave: 24, turn: 3, slot: 0, out: { name: "Scizor" }, foes: [{ name: "Arcanine", attacks: ["Fire"] }],
+      bench: [{ name: "Ferrothorn", hp: 60, types: ["Grass", "Steel"], hits: [{ from: "Arcanine", type: "Fire", e: 4 }], resists: false },
+        { name: "Vaporeon", hp: 100, types: ["Water"], hits: [], resists: true }] },
   };
+  const OWN = { battle: "verdict", learn: "learn", rewards: "rewards", biome: "biome", encounter: "encounter", starters: "starters", fusion: "fusion", pivot: "pivot" };
   const declared = summaryKeys();
   for (const [kind, model] of Object.entries(kinds)) {
     const s = cardSummary(model);
     assert.deepEqual(Object.keys(s), declared, `${kind} summary keys`);
     assert.equal(s.kind, kind);
-    const own = { battle: "verdict", learn: "learn", rewards: "rewards", biome: "biome", encounter: "encounter", starters: "starters", fusion: "fusion" }[kind];
+    const own = OWN[kind];
     assert.notEqual(s[own], null, `${kind} fills ${own}`);
-    for (const k of ["learn", "rewards", "encounter", "biome", "fusion", "starters"]) {
+    for (const k of ["learn", "rewards", "encounter", "biome", "fusion", "starters", "pivot"]) {
       if (k !== own) assert.equal(s[k], null, `${kind} leaves ${k} null`);
     }
   }
@@ -89,7 +93,7 @@ const verdictOf = m => cardSummary(m).verdict;
   console.log(`contract ok: ${declared.join(" ")}`);
   for (const [kind, model] of Object.entries(kinds)) {
     const s = cardSummary(model);
-    const own = { battle: "verdict", learn: "learn", rewards: "rewards", biome: "biome", encounter: "encounter", starters: "starters", fusion: "fusion" }[kind];
+    const own = OWN[kind];
     console.log(`${kind}: ${s[own]}`);
   }
 }
@@ -125,10 +129,11 @@ const verdictOf = m => cardSummary(m).verdict;
 // ---- Each card but a battle carries the leading call of its own summary field as its event's verdict, read off its model (extension-distribution.md §11.1)
 {
   const { cardEvent } = globalThis.__hud["60-card"];
-  const slotOf = { learn: "learn", reward: "rewards", biome: "biome", encounter: "encounter", starters: "starters", fusion: "fusion" };
+  const slotOf = { learn: "learn", reward: "rewards", biome: "biome", encounter: "encounter", starters: "starters", fusion: "fusion", pivot: "pivot" };
   const first = s => s.split(" · ")[0];
   const oracle = {
     learn: first, reward: first, starters: first, fusion: first,
+    pivot: s => first(s).split(" — ")[0],
     biome: s => s.split(" · ").find(o => o.includes(" pick — "))?.replace(/ -?\d+ pick — [\s\S]*$/, "") ?? null,
     encounter: s => first(s.slice(s.indexOf(": ") + 2)).split(" — ")[0],
   };
@@ -166,6 +171,9 @@ const verdictOf = m => cardSummary(m).verdict;
     [fusion({ rows: [pair] }), "Garchomp ← Dragonite (+2.1 turns)"],
     [fusion({ picked: { name: "Gible" } }), "nothing to fuse Gible with"],
     [fusion({ unread: "no party" }), "no team read here: no party"],
+    // No pick is judged mid-turn (#530), so the call names none, whoever the bench holds.
+    [{ kind: "pivot", wave: 24, turn: 3, slot: 0, out: { name: "Scizor" }, foes: [],
+      bench: [{ name: "Vaporeon", hp: 100, types: ["Water"], hits: [], resists: false }] }, "your pick"],
   ];
   const seen = new Set();
   for (const [card, expected] of cases) {
@@ -191,10 +199,10 @@ const verdictOf = m => cardSummary(m).verdict;
 // ---- Each card states where the run stands: a battle's wave is still to win, a card after it stands past it (#587, #877)
 {
   const { clearedOn } = globalThis.__hud["60-card"];
-  const standing = Object.fromEntries(["battle", "rewards", "biome", "encounter", "fusion", "learn", "starters"]
+  const standing = Object.fromEntries(["battle", "rewards", "biome", "encounter", "fusion", "learn", "starters", "pivot"]
     .map(k => [k, clearedOn(k)]));
   assert.deepStrictEqual(standing, { battle: false, rewards: true, biome: true, encounter: true, fusion: true,
-    learn: null, starters: null });
+    learn: null, starters: null, pivot: null });
 }
 
 assert.throws(() => mountHud({ secne: {} }), /^TypeError: mountHud: unknown option secne \(it takes scene, rnd, stored, expose\)$/);

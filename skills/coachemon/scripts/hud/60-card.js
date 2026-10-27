@@ -17,6 +17,7 @@ import { aheadModel, learnRoster, aheadSummary } from "./49-ahead.js";
 import { auditJob, auditStep, auditSummary } from "./50-audit.js";
 import { spliceScreen, fusionLeadingCall, fusionModel, fusionSummary } from "./49-fusion.js";
 import { rewardsLeadingCall, rewardsModel, rewardsSummary } from "./52-shop.js";
+import { pivotLeadingCall, pivotModel, pivotScreen, pivotSummary } from "./53-pivot.js";
 import { starterScreen, starterModel, startersLeadingCall, startersSummary } from "./51-starters.js";
 import { offTheLineModel, offTheLineSummary, oracleLearnCall, oracleLineModel, oracleLineState, oracleLineSummary, oracleStepSummary } from "./57-oracle-line.js";
 
@@ -66,6 +67,11 @@ export const readOracleLine = (s, card) => {
   if (card?.kind === "learn") {
     const m = oracleLineModel(s);
     card.oracleLine = m?.learning ? m : null;
+    return;
+  }
+  // Drawn for its pick, never the card's call, so the card event's `oracleLine` stays null (§11.1).
+  if (card?.kind === "pivot") {
+    card.heldLine = oracleLineModel(s);
     return;
   }
   if (card?.kind !== "battle") return;
@@ -136,6 +142,7 @@ export const readCard = (s, account, { road = true, estimate = false } = {}) => 
   const starters = starterScreen(s);
   const learn = learnState(s);
   const rewards = rewardsScreen(s);
+  const pivot = pivotScreen(s);
   let card = null;
   if (starters) {
     card = starterModel(s, starters);
@@ -154,6 +161,10 @@ export const readCard = (s, account, { road = true, estimate = false } = {}) => 
     card = readRun(s, run => biomeModel(run, handler), { cleared: KINDS.biome.cleared });
   } else if (encounterScreen(s, handler)) {
     card = readRun(s, run => encounterModel(run, handler, account), { cleared: KINDS.encounter.cleared });
+  } else if (pivot) {
+    // Mid-turn, like a learn: a run read alone, never a turn read (CONTEXT.md, `Turn read`).
+    card = readRun(s, run => pivotModel(run, pivot), { cleared: KINDS.pivot.cleared });
+    readOracleLine(s, card);
   } else {
     const b = s.currentBattle;
     const foes = s.getEnemyParty().filter(p => p.hp > 0);
@@ -206,7 +217,7 @@ export const planSummary = card => (card.oracleLine ? oracleLineSummary(card.ora
 // so probe.js can pass the whole thing through.
 const EMPTY = {
   kind: null, wave: null, verdict: null, field: null, danger: [], plan: null,
-  learn: null, rewards: null, encounter: null, biome: null, fusion: null, starters: null,
+  learn: null, rewards: null, encounter: null, biome: null, fusion: null, starters: null, pivot: null,
   next: null, ahead: null, audit: null,
 };
 export const summaryKeys = () => Object.keys(EMPTY);
@@ -231,6 +242,10 @@ const KINDS = {
     key: card => `${wave(card)}|${card.name ?? ""}${card.minigame ? `|${card.minigame.mon}|${card.minigame.left}|${card.minigame.catchStage},${card.minigame.fleeStage}` : ""}` },
   starters: { event: null, cleared: null, key: wave, call: startersLeadingCall },
   fusion: { event: null, cleared: true, key: wave, call: fusionLeadingCall },
+  // One turn can ask twice in a field, after a U-turn and then the Emergency Exit of the mon it sent in: the leaver
+  // tells them apart.
+  pivot: { event: "pivot", cleared: null, call: pivotLeadingCall,
+    key: card => `${wave(card)}|${card.turn ?? ""}|${card.slot}|${card.out?.name ?? ""}` },
 };
 // @only tests: clearedOn
 export const clearedOn = kind => KINDS[kind]?.cleared ?? null;
@@ -264,6 +279,7 @@ export const cardSummary = card => {
   if (card.kind === "encounter") return { ...base, encounter: encounterSummary(card) };
   if (card.kind === "learn") return { ...base, learn: learnActSummary(card) };
   if (card.kind === "rewards") return { ...base, rewards: rewardsSummary(card) };
+  if (card.kind === "pivot") return { ...base, pivot: pivotSummary(card), plan: card.heldLine ? oracleLineSummary(card.heldLine) : null };
   if (card.unavailable) return { ...base, verdict: "unavailable", field: actSummary(card), plan: planSummary(card) };
   // The foe the fight plan is keeping that mon for: the win condition's answers, or the foes only it beats (#170).
   const saveFor = name => {

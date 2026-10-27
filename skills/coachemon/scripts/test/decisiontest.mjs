@@ -130,12 +130,8 @@ scene = game;
   assert.equal(__coachHud.stats().ticks.filter(t => t.why === "watch").length, 1, "one build for the whole decision");
 }
 
-// ---- a U-turn's party screen builds nothing, and the next turn's command builds
+// ---- the next turn's command builds
 {
-  const held = __coachHud.last();
-  assert.deepEqual(step("U-turn party screen", () => { g.phase = { phaseName: "SwitchPhase", isModal: true, doReturn: true, fieldIndex: 0 }; g.mode = UiMode.PARTY; g.handler = { partyUiMode: PartyUiMode.SWITCH }; }), []);
-  assert.equal(decisions().at(-1).kind, "command", "no record for a mid-turn switch-in pick");
-  assert.equal(__coachHud.last(), held, "the card is held through the switch-in pick");
   assert.deepEqual(step("next turn", () => { g.battle.turnCommands = {}; g.battle.turn = 2; g.phase = { phaseName: "CommandPhase", fieldIndex: 0 }; g.mode = UiMode.COMMAND; g.handler = {}; }),
     ["watch:battle", "road:battle"]);
   assert.equal(count("command"), 2);
@@ -617,6 +613,41 @@ scene = game;
     [2, false, decidedOn.verdict, { state: "on", turn: 2, of: 3 }]], "each checkpoint keeps the card its step was decided on");
   delete game.seed;
   delete full.species.speciesId;
+}
+
+// ---- a pivot's party screen is a decision of its own: its card says the turn read is withheld, is held until the pick,
+// and the mon the pick sends in redraws the battle card (#530)
+{
+  const machop = mon(34, "Machop", ["Fighting"], [52, 10]);
+  machop.getOpponents = () => [g.party[0]];
+  for (const p of [full, three]) p.isOnField = () => g.party[0] === p;
+  three.hp = 40;
+  const before = cards().length;
+  step("W14 T1's command", () => { g.battle = battle(14, 1); g.party = [full, three]; g.foes = [machop]; g.phase = { phaseName: "CommandPhase", fieldIndex: 0 }; g.mode = UiMode.COMMAND; g.handler = {}; g.handlers = {}; });
+  step("U-turn lands", () => { g.battle.turnCommands[BattlerIndex.ENEMY] = { move: 1 }; g.phase = { phaseName: "MoveEffectPhase" }; g.mode = UiMode.MESSAGE; });
+  const pivot = { phaseName: "SwitchPhase", isModal: true, doReturn: true, fieldIndex: 0 };
+  assert.deepEqual(step("the pivot's party screen fades in", () => { g.phase = pivot; }), []);
+  assert.deepEqual(step("its party screen is up", () => { g.mode = UiMode.PARTY; g.handler = { partyUiMode: PartyUiMode.FAINT_SWITCH }; }), ["watch:pivot"]);
+  assert.deepEqual(logged, ["built"]);
+  assert.equal(decisions().at(-1).kind, "pivot");
+  const card = __coachHud.last();
+  assert.equal(card.kind, "pivot");
+  // This page's nodes keep no children, so the rows are read off the summary.
+  const { text } = __coachHud.card(), { pivot: said } = __coachHud.summary();
+  console.log(said);
+  assert.match(text, /mid-turn, no turn read/, "the card says it was built mid-turn, without a turn read");
+  assert.match(said, /Bulbasaur 40% Grass\/Poison hit by Machop's Fire ×2/, "the bench member, its HP and types, and the foe's known threat");
+  assert.doesNotMatch(`${text}\n${said}`, /Ember|Scratch/, "no exact enemy move");
+  const streamed = cards().slice(before).filter(c => c.kind === "pivot").map(c => [c.key, c.verdict, c.oracleLine]);
+  assert.deepEqual(streamed, [["14|1|0|Charmeleon", "your pick", null]], "the pivot card streams once");
+  assert.deepEqual(step("the cursor moves", () => { g.handler = { partyUiMode: PartyUiMode.FAINT_SWITCH, cursor: 1 }; }), []);
+  assert.deepEqual(step("Bulbasaur picked", () => { g.phase = { phaseName: "SwitchSummonPhase" }; g.mode = UiMode.MESSAGE; g.handler = {}; }), []);
+  assert.equal(__coachHud.last(), card, "held until the pick sends a mon in");
+  assert.deepEqual(step("Bulbasaur comes in", () => { g.party = [three, full]; }), ["send-in:battle"]);
+  assert.equal(__coachHud.last()?.kind, "battle", "the send-in redraws the battle card");
+  three.hp = 100;
+  g.party = [full, three];
+  for (const p of g.party) p.isOnField = () => true;
 }
 
 // ---- `stop()` unhooks the frame callback

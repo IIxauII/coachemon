@@ -5,7 +5,6 @@ fight menu                           ·
 target select                        · 
 commit window                        · 
 the enemy has chosen                 #1 command/battle w7 ready 16 input 16 drawn 16 end 80 
-U-turn party screen                  · 
 next turn                            #2 command/battle w7 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
 turn 3, the card alone               #3 command/battle w7 ready 0 input 0 drawn 0 end null | watch:battle ‖ built
 pressed at once                      #3 command/battle w7 ready 0 input 0 drawn 0 end 16 
@@ -111,4 +110,12 @@ W13 T2, a boss comes in              · | send-in:battle ‖ redrawn
 W13 T3, the foe at 45                #51 command/battle w13 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
 T3 | ! Paras 40/100, came 45/100
 journalled [[1,true,"unavailable",{"state":"on","turn":1,"of":3}],[2,false,"unavailable",{"state":"on","turn":2,"of":3}]]
+W14 T1's command                     #52 command/battle w14 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
+U-turn lands                         #52 command/battle w14 ready 0 input 0 drawn 0 end 16 
+the pivot's party screen fades in    #53 pivot/pivot w14 ready null input null drawn null end null 
+its party screen is up               #53 pivot/pivot w14 ready 16 input 16 drawn 16 end null | watch:pivot ‖ built
+your pick — mid-turn, no turn read: the foe has already chosen its move · Bulbasaur 40% Grass/Poison hit by Machop's Fire ×2
+the cursor moves                     · 
+Bulbasaur picked                     #53 pivot/pivot w14 ready 16 input 16 drawn 16 end 48 
+Bulbasaur comes in                   · | send-in:battle ‖ redrawn
 after stop: watch frames 0, refreshes 0

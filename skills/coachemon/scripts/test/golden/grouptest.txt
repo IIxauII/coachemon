@@ -185,4 +185,21 @@ act | Now | Swamp · Construction Site
     · Swamp
     · Construction Site
     reading the game's biome tables…
+== pivot · three on the bench, no oracle line
+act | Now | Scizor leaves the field · your pick — mid-turn, no turn read: the foe has already chosen its move
+    ⚠ Ferrothorn 60% Grass Steel hit by Arcanine's Fire ×4
+    · Vaporeon 100% Water
+    ✓ Heatran 35% Fire Steel resists every foe attack type
+foes | Foes | —
+    · Arcanine 70% Fire attacks: Fire Normal
+== pivot · a held oracle line names the pick
+act | Now | Scizor leaves the field · your pick — mid-turn, no turn read: the foe has already chosen its move
+    ⚠ Ferrothorn 60% Grass Steel hit by Arcanine's Fire ×4
+    · Vaporeon 100% Water
+    ✓ Heatran 35% Fire Steel resists every foe attack type
+foes | Foes | —
+    · Arcanine 70% Fire attacks: Fire Normal
+plan | Plan | ~ oracle line wins in 2 turns · 2 of 3 left
+    ▸ T3 Scizor Bug U-turn · send Vaporeon for Scizor → ~ Vaporeon 300/300
+    · T4 Vaporeon Water Surf
 ok
