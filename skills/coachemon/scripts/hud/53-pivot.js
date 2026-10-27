@@ -55,6 +55,13 @@ const foesMoved = (m, against) => {
   return [...against.filter(f => !now.has(f.id)).map(f => `${f.name} ${m.fallen.includes(f.id) ? "fell" : "left the field"}`),
     ...m.foes.filter(f => !then.has(f.id)).map(f => `${f.name} came in`)].join(", ");
 };
+// A pick planned for an expected KO (`afterKo`) was planned for the field after it too: the foe down, and its send-in,
+// which the game brings after the turn (game-code.md §9), either not yet in or in already.
+const koHeld = (m, against, k) => {
+  if (!k || !m.fallen.includes(k.fell.id)) return false;
+  const left = against.filter(f => f.id !== k.fell.id);
+  return !foesMoved(m, left) || !foesMoved(m, [...left, k.next]);
+};
 // `from`: the battle card built for the last battle decision. Its field plan's pick for the mon leaving holds only on
 // this turn, still on the bench, against the foes it was planned on; otherwise `unplanned` says why.
 export const pivotPlanned = (m, from) => {
@@ -64,7 +71,7 @@ export const pivotPlanned = (m, from) => {
   if (!pick) return no(`the plan at the command sent no one in for ${m.out?.name ?? "the mon leaving"}`);
   if (!m.bench.some(b => b.id === pick.id)) return no(`${pick.name}, planned at the command, is ${m.down.includes(pick.id) ? "down" : "already in"}`);
   const moved = foesMoved(m, from.against ?? []);
-  return moved ? no(`planned for ${pick.name}, but ${moved}`) : { planned: pick, unplanned: null };
+  return moved && !koHeld(m, from.against ?? [], pick.afterKo) ? no(`planned for ${pick.name}, but ${moved}`) : { planned: pick, unplanned: null };
 };
 
 const effText = e => `×${+e.toFixed(2)}`;

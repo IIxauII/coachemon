@@ -202,6 +202,16 @@ const verdictOf = m => cardSummary(m).verdict;
   assert.equal(pivotPlanned(at({ out: { id: 1, name: "Scizor" }, bench: [pika(5)] }), from).unplanned,
     "Pikachu, planned at the command, is already in");
   assert.equal(pivotPlanned(at({ turn: 4 }), from).unplanned, "no plan from this turn's command");
+
+  // A pick planned for an expected KO holds on the field after it: the foe down, its send-in not yet in, or in already.
+  const koFrom = { ...from, field: { slots: [from.field.slots[0],
+    { ...from.field.slots[1], pivot: { id: 4, name: "Vaporeon", afterKo: { fell: { id: 9, name: "Arcanine" }, next: { id: 11, name: "Gyarados" } } } }] } };
+  assert.equal(pivotPlanned(at({ foes: [], fallen: [9] }), koFrom).planned?.id, 4, "Arcanine fell, as planned, and no one is in yet");
+  assert.equal(pivotPlanned(at({ foes: [{ id: 11, name: "Gyarados" }], fallen: [9] }), koFrom).planned?.id, 4, "the send-in it was planned for came first");
+  assert.equal(pivotPlanned(at({ foes: [{ id: 12, name: "Onix" }], fallen: [9] }), koFrom).unplanned,
+    "planned for Vaporeon, but Arcanine fell, Onix came in", "another send-in is not the field it was planned for");
+  assert.equal(pivotPlanned(at({ foes: [], fallen: [9] }), from).unplanned, "planned for Vaporeon, but Arcanine fell",
+    "a KO the plan did not expect still drops it");
 }
 
 // ---- A shop with no free rewards is still a rewards screen; a closed one, its rows spliced out, is not

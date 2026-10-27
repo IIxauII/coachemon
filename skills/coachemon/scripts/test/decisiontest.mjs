@@ -659,11 +659,12 @@ scene = game;
   const ours = [scizor, lapras, pidgey];
   for (const p of ours) p.isOnField = () => g.party[0] === p;
   // Planned at W`wave`'s command, then `change` between U-turn and its party screen; the pivot card the screen built.
-  const uTurn = (wave, change = () => {}) => {
+  // `setup(paras)`: the field at the command, past the wild single with Paras alone.
+  const uTurn = (wave, change = () => {}, setup = () => {}) => {
     // The enemy AI's call, off the prototype as the game has it: the command's card is planned, not `unavailable`.
     const paras = Object.setPrototypeOf(foe(40 + wave), { getNextMove: () => ({ move: 10, targets: [BattlerIndex.PLAYER] }) });
     for (const p of ours) p.hp = 100;
-    step(`W${wave} T1's command`, () => { g.battle = battle(wave, 1); g.party = [...ours]; g.foes = [paras]; g.phase = { phaseName: "CommandPhase", fieldIndex: 0 }; g.mode = UiMode.COMMAND; g.handler = {}; g.handlers = {}; });
+    step(`W${wave} T1's command`, () => { g.battle = battle(wave, 1); g.party = [...ours]; g.foes = [paras]; setup(paras); g.phase = { phaseName: "CommandPhase", fieldIndex: 0 }; g.mode = UiMode.COMMAND; g.handler = {}; g.handlers = {}; });
     const planned = __coachHud.last().field.slots[0];
     step("U-turn lands", () => { g.battle.turnCommands[BattlerIndex.ENEMY] = { move: 1 }; g.phase = { phaseName: "MoveEffectPhase" }; g.mode = UiMode.MESSAGE; change(paras, planned.pivot); });
     step("its party screen is up", () => { g.phase = { phaseName: "SwitchPhase", isModal: true, doReturn: true, fieldIndex: 0 }; g.mode = UiMode.PARTY; g.handler = { partyUiMode: PartyUiMode.FAINT_SWITCH }; });
@@ -685,6 +686,19 @@ scene = game;
   assert.equal(replaced.ev.verdict, "your pick", "a plan that no longer holds is no call");
   const down = uTurn(17, (_, planned) => { ours.find(p => p.name === planned.name).hp = 0; });
   assert.ok(down.said.startsWith(`your pick — ${pick}, planned at the command, is down`), down.said);
+  // A trainer's Paras that U-turn KOs: the pick is planned for Onix, sent in after the turn, so it holds while Paras
+  // is down and Onix not yet in.
+  const trainer = { getName: () => "Bugsy", config: {}, isDouble: () => false, getPartyMemberMatchupScores: () => [[1, 1]],
+    getSortedPartyMemberMatchupScores: x => x, getNextSummonIndex: () => 1 };
+  const expected = uTurn(18, paras => { paras.hp = 0; }, paras => {
+    const reserve = foe(38, "Onix");
+    reserve.isOnField = () => false;
+    paras.hp = 30;
+    g.battle.trainer = trainer;
+    g.foes = [paras, reserve];
+  });
+  assert.equal(expected.planned.pivot?.afterKo?.next.name, "Onix", `the command planned for Onix: ${JSON.stringify(expected.planned.pivot)}`);
+  assert.ok(expected.said.startsWith(`send ${expected.planned.pivot.name} (planned at the command)`), expected.said);
   g.foes = [foe(21)];
   g.party = [full, three];
 }

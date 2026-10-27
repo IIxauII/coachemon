@@ -130,4 +130,8 @@ W17 T1's command                     #58 command/battle w17 ready 0 input 0 draw
 U-turn lands                         #58 command/battle w17 ready 0 input 0 drawn 0 end 16 
 its party screen is up               #59 pivot/pivot w17 ready 0 input 0 drawn 0 end null | watch:pivot ‖ built
 U-turn → Pidgey | your pick — Pidgey, planned at the command, is down · mid-turn, no turn read: the turn is still resolving · Lapras 100% Water/Ice | your pick
+W18 T1's command                     #60 command/battle w18 ready 0 input 0 drawn 0 end null | watch:battle road:battle ‖ built, road landed
+U-turn lands                         #60 command/battle w18 ready 0 input 0 drawn 0 end 16 
+its party screen is up               #61 pivot/pivot w18 ready 0 input 0 drawn 0 end null | watch:pivot ‖ built
+U-turn → Pidgey | send Pidgey (planned at the command) · Lapras 100% Water/Ice · Pidgey 100% Normal/Flying | send Pidgey
 after stop: watch frames 0, refreshes 0
