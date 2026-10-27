@@ -6,8 +6,10 @@ const ordinal = n => `${n}${n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st",
 const learnNote = n => n.replace(/^(\d+)× (\w+)$/, (_, k, t) => `${ordinal(+k)} ${t} move`);
 const powerTitle = x => [`base ${x.power}${x.hits > 1 ? ` × ${x.hits} hits` : ""}`, x.acc < 100 ? `${x.acc}% acc` : null,
   x.stab ? "STAB" : null, x.fixed ? "fixed damage" : null].filter(Boolean).join(" · ");
+const stats = m => (m.atk != null ? `Atk ${m.atk} / SpA ${m.spa}` : null);
 export const captionLearn = m => caption("🎓", `${m.name} learns`, mon(m.icon, m.name, ICON.mon),
-  m.atk != null ? h("span", { ...dim, fontWeight: "normal" }, `Atk ${m.atk} / SpA ${m.spa}`) : null);
+  stats(m) ? h("span", { ...dim, fontWeight: "normal" }, stats(m)) : null);
+const learnCaptionText = m => [m.name, stats(m)].filter(Boolean).join(" · ");
 
 export const drawLearn = m => {
   const slot = m.forget >= 0 ? m.forget : m.compare;
@@ -44,12 +46,12 @@ export const drawLearn = m => {
   // The oracle line's answer is the call (extension-distribution.md §11.1), and the card's own forget gives way to it.
   const pick = m.oracleLine?.learning;
   if (pick) return [
-    some("act", "Now", learnActSummary(m), [...drawOracleStep(m.oracleLine), row(m.move, "·", false)]),
+    some("act", "Now", learnActSummary(m), [...drawOracleStep(m.oracleLine), row(m.move, "·", false)], learnCaptionText(m)),
     some("options", "Moves", null, m.moves.map((x, i) => row(x, i === pick.forgetSlot ? "✗" : "·", false))),
     some("notes", "Notes", null, [blind]),
   ].filter(Boolean);
   return [
-    some("act", "Now", learnActSummary(m), [row(m.move, "✓", false, gain)]),
+    some("act", "Now", learnActSummary(m), [row(m.move, "✓", false, gain)], learnCaptionText(m)),
     some("options", "Moves", null,
       m.moves.map((x, i) => (i === m.forget ? row(x, "✗", warnAt(i)) : i === slot ? row(x, "★", warnAt(i)) : row(x, "·")))),
     some("audit", "Team", null, [teamLine(teamParts)]),

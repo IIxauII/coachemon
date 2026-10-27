@@ -166,6 +166,9 @@ const hand = (label, line) => {
 
 const { cardEvent } = globalThis.__hud["60-card"];
 const { strip } = globalThis.__hud["90-render"];
+// The wire's act group with the call as the strip draws it: the wire's summary leads with the caption's words
+// (extension-distribution.md §11.1).
+const drawnCall = (groups, drawn) => ({ ...groups.find(g => g.id === "act"), summary: drawn.find(g => g.id === "act").summary });
 const flat = n => (n == null ? "" : typeof n !== "object" ? String(n) : (n.children ?? []).map(flat).filter(Boolean).join(" "));
 const tyranitar = confidence => ({ icon: null, name: "Tyranitar", lv: 90, types: ["Rock", "Dark"], hp: 60, tera: false, boss: false, status: null,
   traps: [], weak: [], avoid: [], likely: { move: "Stone Edge", type: "Rock", pct: 40, first: 100, at: null, hits: 0, confidence }, pick: null, notes: [] });
@@ -173,7 +176,7 @@ const now = (label, s, over) => {
   const c = cardAt(s, over);
   const drawn = drawBattle(c);
   const groups = flatGroups(drawn);
-  const act = groups.find(x => x.id === "act");
+  const act = drawnCall(groups, drawn);
   const shown = flat(strip(c, null, drawn));
   console.log(`== ${label}`);
   console.log(`strip | ${shown}`);
@@ -562,7 +565,7 @@ const prompt = (label, s) => {
   console.log(`== ${label}`);
   console.log(`strip | ${shown}`);
   for (const g of groups) for (const x of g.rows) console.log(`  ${g.id.padEnd(8)}${x}`);
-  return { card: c, groups, strip: shown, act: groups.find(g => g.id === "act") };
+  return { card: c, groups, strip: shown, act: drawnCall(groups, drawn) };
 };
 
 // ---- At the move prompt itself the oracle line's answer is the learn card's call, though the turn has moved on

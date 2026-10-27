@@ -33,16 +33,14 @@ const headingOf = g => (g.id === "act" ? g.summary
   : g.summary && g.label ? `${g.label}: ${g.summary}` : g.label || g.summary) || null;
 
 // The card as `__coachHud.card()` sends it, each row with its hover titles inline as `{…}`, under one line for the
-// event and one for the strip's head (#894).
+// event.
 const cardText = el => {
   const ev = globalThis.__coachHud.card();
   const failed = el.textContent ? [`TEXT ${el.textContent}`] : [];
   if (!ev) return ["card none", ...failed].join("\n");
   const drawn = [...(globalThis.__hud["98-watch"].watchShown()?.groups ?? [])];
-  const head = (el.kids?.length ?? 0) >= 2 ? el.kids[1].children?.[0] : null;
   const out = [`card ${ev.kind} W${ev.wave ?? "-"} ${ev.verdict ?? "-"}${ev.randomized ? " randomized" : ""}${ev.oracleLine
     ? ` line ${ev.oracleLine.state} ${ev.oracleLine.turn}/${ev.oracleLine.of}` : ""}`];
-  if (head) out.push(`strip ${clean(walk(head).titled)}`);
   const plain = [];
   for (const wire of ev.groups) {
     const index = drawn.findIndex(d => d.id === wire.id);

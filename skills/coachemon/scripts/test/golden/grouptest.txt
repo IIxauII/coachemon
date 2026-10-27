@@ -43,7 +43,7 @@ catch | Catch | —
     · escape ends a fight that costs a member
     · team verdict coming with the road
 == trainer · fight plan
-act | Now | Blastoise Wave Crash → Garchomp · 2 hits
+act | Now | W89 · Cynthia · we send Blastoise › Venusaur · Blastoise Wave Crash → Garchomp · 2 hits
     ⚔ Blastoise Water Wave Crash → Garchomp 2 hits
 foes | Foes | —
     foes weak to: Ice ×2 Fire ×1
@@ -69,7 +69,7 @@ road | Road | W90 wild — Toxicroak L71 · gym leader in 6 (W95) watch — noth
     ✓ full heal entering W100 — HP, status, PP, revives, Tera
     · luck 3 (C) — 6% tier upgrade per reward
 == trainer · an oracle line in place of the fight plan
-act | Now | ⚔ ~ T5/6 · Lapras Tera Ice + Ice Beam · then send Blastoise
+act | Now | W89 · Cynthia · ⚔ ~ T5/6 · Lapras Tera Ice + Ice Beam · then send Blastoise
     ⚔ T5 Lapras Tera Ice + Ice Ice Beam → ~ Blastoise 362/362 · Garchomp 120/420
     ⤵ then send Blastoise at the faint prompt
     · Tera: ← from Fight to the Tera button
@@ -81,7 +81,7 @@ plan | Plan | ~ oracle line wins in 3 turns · 3 of 4 left
     ▸ T5 Lapras Tera Ice + Ice Ice Beam · send Blastoise → ~ Blastoise 362/362 · Garchomp 120/420
     · T6 no input
 == trainer · off the oracle line
-act | Now | off the line · ! re-solving… · Charizard Flamethrower → Lycanroc · 2 hits
+act | Now | W89 · Cynthia · off the line · ! re-solving… · Charizard Flamethrower → Lycanroc · 2 hits
     ✗ T5 Garchomp expected 120/420 Def −1 · came 160/420 Def 0
     ⚔ Charizard Fire Flamethrower → Lycanroc 2 hits
 foes | Foes | —
@@ -89,7 +89,7 @@ foes | Foes | —
 plan | Plan | winnable
     Fight plan winnable
 == double · a return from the other slot
-act | Now | Blastoise Wave Crash → Ludicolo · 2 hits ; Venusaur Power Whip → Arcanine · 2 hits
+act | Now | W89 · Tester · Blastoise Wave Crash → Ludicolo · 2 hits ; Venusaur Power Whip → Arcanine · 2 hits
     ⇄ Arcanine → Gyarados returns from the other slot — moves aimed at it
     ⚔ Blastoise Water Wave Crash → Ludicolo 2 hits
     ⚔ Venusaur ⚠ Fire ×2 88% Grass Power Whip → Arcanine 2 hits
@@ -99,7 +99,7 @@ foes | Foes | ⚠ Venusaur ← Arcanine Flare Blitz
 == unavailable
 act | Now | no advice — the enemy AI call threw
 == learn · a team line, and a big fight it couldn't read
-act | Now | Learn → forget Bite · ⚠ loses only Dark move
+act | Now | Espeon · Atk 65 / SpA 130 · Learn → forget Bite · ⚠ loses only Dark move
     ✓ Ground Earth Power SE on Rock/Steel/Fire… power 117 +87 power
 options | Moves | —
     ✗ Dark Bite ⚠ weak Atk power 30
@@ -109,13 +109,13 @@ audit | Team | —
 notes | Notes | —
     next big fight unread: the run seed is past the pinned build
 == learn · no team line, no notes
-act | Now | Learn → forget Bite
+act | Now | Espeon · Atk 65 / SpA 130 · Learn → forget Bite
     ✓ Ground Earth Power SE on Rock/Steel/Fire… power 117 +87 power
 options | Moves | —
     ✗ Dark Bite weak Atk power 30
     · Psychic Psychic only Psychic move on team power 191
 == rewards · a TM to take and a potion to buy
-act | Now | take TM Fire Fang → Morpeko (forget Tackle) · buy Super Potion
+act | Now | $1200 → $950 · 👑 boss next · take TM Fire Fang → Morpeko (forget Tackle) · buy Super Potion
     buy first — taking the free reward closes the shop
     ✓ Super Potion $250 Charizard tops up the carry
     ★ TM Fire Fang Morpeko → forget Tackle · +25 power
@@ -125,7 +125,7 @@ audit | Team | 1 issue: nothing hits Ground
     Team audit vs W35 Giovanni
     ✗ nothing hits Ground
 == encounter · a chest worth opening
-act | Now | Mysterious Chest: take Open it — pick of 3 Ultra items · avoid Leave
+act | Now | Common tier · Mysterious Chest: take Open it — pick of 3 Ultra items · avoid Leave
 options | Options | —
     ★ Open it — pick of 3 Ultra items
     1 in 4 it bites
@@ -134,7 +134,7 @@ options | Options | —
 notes | Notes | —
     · the trap is rolled on the option, not before it
 == encounter · not judged yet
-act | Now | Mysterious Chest: not judged · avoid Leave
+act | Now | Common tier · Mysterious Chest: not judged · avoid Leave
 options | Options | —
     ✓ Open it — pick of 3 Ultra items
     1 in 4 it bites
@@ -143,7 +143,7 @@ options | Options | —
 notes | Notes | —
     not judged yet: options and requirements only
 == starters · a proposal, a pick made and a cursor
-act | Now | best: Gible (carry) + Magikarp · 10/10 pts · weak Ice
+act | Now | spent 4/10 pts · best: Gible (carry) + Magikarp · 10/10 pts · weak Ice
     ✓ picked: Gible
 options | Proposals | —
     ★ best 10 pts · SE vs 9 types · weak Ice
@@ -153,7 +153,7 @@ options | Proposals | —
 notes | Notes | —
     Fresh Start: no passives, egg moves or luck
 == starters · nothing to add
-act | Now | nothing to add
+act | Now | spent 4/10 pts · nothing to add
     ✓ picked: Gible · team full
 == fusion · two candidates and a Spliced note
 act | Now | Garchomp ← Dragonite (+2.1 turns) · pick Garchomp first, then Dragonite
@@ -165,7 +165,7 @@ options | Fusions | —
 notes | Notes | —
     Spliced Endless: unfused mons run on half their base stats
 == biome · swamp over construction site, one fainted
-act | Now | Swamp 72 pick — Garchomp resists · Construction Site 55
+act | Now | from Slum · Swamp 72 pick — Garchomp resists · Construction Site 55
 options | Biomes | —
     ★ Swamp Water 40% Poison 30% 72
     · mostly Wooper 22%
@@ -175,7 +175,7 @@ options | Biomes | —
 notes | Notes | —
     ⚠ judged without 1 fainted — no revive at the next heal
 == biome · nobody fainted
-act | Now | Swamp 72 pick — Garchomp resists
+act | Now | from Slum · Swamp 72 pick — Garchomp resists
 options | Biomes | —
     ★ Swamp Water 40% Poison 30% 72
     · mostly Wooper 22%

@@ -53,7 +53,7 @@ const show = (label, card, draw = drawBattle) => {
   assert.ok(groups[0].summary, "act is never empty");
   // Only the act summary's leading clause must fit the strip (#349): the clamp only ever eats the end, so what follows
   // the first ` · ` may clip.
-  const clause = groups[0].summary.split(" · ")[0];
+  const clause = drawn.find(g => g.id === "act").summary.split(" · ")[0];
   assert.ok(clause.length <= 115, `${label}: the act summary's leading clause is ${clause.length} > 115: ${clause}`);
   // The watch CLI prints the text's first line per event.
   const lines = wire.text.split("\n");
@@ -209,7 +209,7 @@ const catchAdvice = {
   assert.deepEqual(groups.map(g => g.id), ["act", "foes", "plan"]);
   assert.equal(groups[2].summary, "~ oracle line wins in 3 turns · 3 of 4 left");
   assert.deepEqual(groups[2].rows.map(r => [...r][0]), ["✓", "▸", "·"]);
-  assert.equal(groups[0].summary, "⚔ ~ T5/6 · Lapras Tera Ice + Ice Beam · then send Blastoise");
+  assert.equal(groups[0].summary, "W89 · Cynthia · ⚔ ~ T5/6 · Lapras Tera Ice + Ice Beam · then send Blastoise");
 }
 
 // ---- Off the oracle line, Now shows what it expected against what came, ahead of the turn line, and the fight plan is back
@@ -217,7 +217,7 @@ const catchAdvice = {
   const offTheLine = { turn: 5, of: 19, mark: "!", misses: [{ icon: null, name: "Garchomp", expected: "120/420 Def −1", came: "160/420 Def 0" }] };
   const teamPlan = { result: "win", summary: "winnable", win: null, reserve: [], only: [], sacrifice: [], prefers: null, warnings: [], notes: [], steps: [] };
   const { groups } = show("trainer · off the oracle line", battle({ trainer: true, verdict: "trainer", title: "W89 · Cynthia", teamPlan, offTheLine }));
-  assert.ok(groups[0].summary.startsWith("off the line · ! re-solving… · "), groups[0].summary);
+  assert.ok(groups[0].summary.startsWith("W89 · Cynthia · off the line · ! re-solving… · "), groups[0].summary);
   assert.equal(groups[0].rows[0], "✗ T5 Garchomp expected 120/420 Def −1 · came 160/420 Def 0");
   assert.equal(groups.find(g => g.id === "plan").summary, "winnable");
 }
@@ -266,7 +266,7 @@ const learn = (over = {}) => ({
   const { groups, text } = show("learn · a team line, and a big fight it couldn't read", card, drawLearn);
   assert.deepEqual(groups.map(g => g.id), ["act", "options", "audit", "notes"]);
   // The only-type loss rides in the verdict string, and the slot that loses it carries a bare ⚠ (#351).
-  assert.equal(groups[0].summary, "Learn → forget Bite · ⚠ loses only Dark move");
+  assert.equal(groups[0].summary, "Espeon · Atk 65 / SpA 130 · Learn → forget Bite · ⚠ loses only Dark move");
   assert.ok(!groups.some(g => g.rows.some(r => r.includes("Learn → forget"))), "the verdict line has left the rows");
   assert.ok(groups[0].rows.some(r => r.includes("Earth Power") && r.includes("+87 power")), groups[0].rows.join("\n"));
   assert.deepEqual([groups[1].summary, groups[3].summary], [null, null]);
@@ -279,7 +279,7 @@ const learn = (over = {}) => ({
 {
   const { groups } = show("learn · no team line, no notes", learn({ team: null, blind: null }), drawLearn);
   assert.deepEqual(groups.map(g => g.id), ["act", "options"]);
-  assert.equal(groups[0].summary, "Learn → forget Bite");
+  assert.equal(groups[0].summary, "Espeon · Atk 65 / SpA 130 · Learn → forget Bite");
 }
 
 // ---- Rewards: act · options · audit (#352)
@@ -298,7 +298,7 @@ const learn = (over = {}) => ({
   };
   const { groups } = show("rewards · a TM to take and a potion to buy", card, drawRewards);
   assert.deepEqual(groups.map(g => g.id), ["act", "options", "audit"]);
-  assert.equal(groups[0].summary, "take TM Fire Fang → Morpeko (forget Tackle) · buy Super Potion");
+  assert.equal(groups[0].summary, "$1200 → $950 · 👑 boss next · take TM Fire Fang → Morpeko (forget Tackle) · buy Super Potion");
   assert.equal(groups[2].summary, "1 issue: nothing hits Ground");
 }
 
@@ -316,7 +316,7 @@ const encounter = (over = {}) => ({
   const card = encounter();
   const { groups, text } = show("encounter · a chest worth opening", card, drawEncounter);
   assert.deepEqual(groups.map(g => g.id), ["act", "options", "notes"]);
-  assert.equal(groups[0].summary, "Mysterious Chest: take Open it — pick of 3 Ultra items · avoid Leave");
+  assert.equal(groups[0].summary, "Common tier · Mysterious Chest: take Open it — pick of 3 Ultra items · avoid Leave");
   assert.ok(groups[1].rows.some(r => r.includes("Open it")), groups[1].rows.join("\n"));
   assert.deepEqual([groups[1].summary, groups[2].summary], [null, null]);
   assert.ok(text.includes("\nOptions\n★ Open it — pick of 3 Ultra items\n"), text);
@@ -327,7 +327,7 @@ const encounter = (over = {}) => ({
 {
   const { groups } = show("encounter · not judged yet", encounter({ known: false, pick: -1, notes: [] }), drawEncounter);
   assert.deepEqual(groups.map(g => g.id), ["act", "options", "notes"]);
-  assert.equal(groups[0].summary, "Mysterious Chest: not judged · avoid Leave");
+  assert.equal(groups[0].summary, "Common tier · Mysterious Chest: not judged · avoid Leave");
 }
 
 // ---- Starters: *Picked* joins `act`, and the species under the cursor is a row in `options`.
@@ -344,7 +344,7 @@ const starters = (over = {}) => ({
   const card = starters();
   const { groups, text } = show("starters · a proposal, a pick made and a cursor", card, drawStarters);
   assert.deepEqual(groups.map(g => g.id), ["act", "options", "notes"]);
-  assert.equal(groups[0].summary, "best: Gible (carry) + Magikarp · 10/10 pts · weak Ice");
+  assert.equal(groups[0].summary, "spent 4/10 pts · best: Gible (carry) + Magikarp · 10/10 pts · weak Ice");
   assert.ok(groups[0].rows.some(r => r.includes("picked: Gible")), groups[0].rows.join("\n"));
   assert.ok(groups[1].rows.some(r => r.includes("Rattata")), groups[1].rows.join("\n"));
   assert.ok(text.includes("\nProposals\n★ best"), text);
@@ -354,7 +354,7 @@ const starters = (over = {}) => ({
 {
   const { groups } = show("starters · nothing to add", starters({ picks: [], full: true, room: 0, viewing: null }), drawStarters);
   assert.deepEqual(groups.map(g => g.id), ["act"]);
-  assert.equal(groups[0].summary, "nothing to add");
+  assert.equal(groups[0].summary, "spent 4/10 pts · nothing to add");
 }
 
 // ---- Fusion: the call line leaves the rows, because `act.summary` carries it.
@@ -379,7 +379,7 @@ const biomeOption = (over = {}) => ({ label: "Swamp", id: 1, score: 72, offense:
     options: [biomeOption(), biomeOption({ label: "Construction Site", id: 2, score: 55, verdict: "worse", common: [], reasons: [{ good: false, text: "Lapras weak" }] })] };
   const { groups, text } = show("biome · swamp over construction site, one fainted", card, drawBiome);
   assert.deepEqual(groups.map(g => g.id), ["act", "options", "notes"]);
-  assert.equal(groups[0].summary, "Swamp 72 pick — Garchomp resists · Construction Site 55");
+  assert.equal(groups[0].summary, "from Slum · Swamp 72 pick — Garchomp resists · Construction Site 55");
   assert.ok(text.includes("\nBiomes\n★ Swamp"), text);
   assert.ok(text.endsWith("\nNotes\n⚠ judged without 1 fainted — no revive at the next heal"), text);
 }
