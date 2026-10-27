@@ -185,4 +185,45 @@ act | Now | Swamp · Construction Site
     · Swamp
     · Construction Site
     reading the game's biome tables…
+== pivot · three on the bench, no oracle line
+act | Now | Scizor leaves the field · your pick — mid-turn, no turn read: the turn is still resolving
+    ⚠ Ferrothorn 60% Grass Steel hit by Arcanine's Fire ×4
+    · Vaporeon 100% Water
+    ✓ Heatran 35% Fire Steel resists every foe attack type
+foes | Foes | —
+    · Arcanine 70% Fire attacks: Fire Normal
+== pivot · the command planned Vaporeon
+act | Now | Scizor leaves the field · send Vaporeon (planned at the command)
+    ⚠ Ferrothorn 60% Grass Steel hit by Arcanine's Fire ×4
+    · Vaporeon 100% Water
+    ✓ Heatran 35% Fire Steel resists every foe attack type
+foes | Foes | —
+    · Arcanine 70% Fire attacks: Fire Normal
+== pivot · the plan no longer holds
+act | Now | Scizor leaves the field · your pick — planned for Vaporeon, but Arcanine fell, Gyarados came in · mid-turn, no turn read: the turn is still resolving
+    ⚠ Ferrothorn 60% Grass Steel hit by Arcanine's Fire ×4
+    · Vaporeon 100% Water
+    ✓ Heatran 35% Fire Steel resists every foe attack type
+foes | Foes | —
+    · Arcanine 70% Fire attacks: Fire Normal
+== pivot · a held oracle line that names no pivot here
+act | Now | Scizor leaves the field · your pick — mid-turn, no turn read: the turn is still resolving
+    ⚠ Ferrothorn 60% Grass Steel hit by Arcanine's Fire ×4
+    · Vaporeon 100% Water
+    ✓ Heatran 35% Fire Steel resists every foe attack type
+foes | Foes | —
+    · Arcanine 70% Fire attacks: Fire Normal
+plan | Plan | ~ oracle line wins in 2 turns · 2 of 3 left
+    ▸ T3 Scizor Bug U-turn · send Vaporeon for Scizor → ~ Vaporeon 300/300
+    · T4 Vaporeon Water Surf
+== pivot · the held oracle line answers this pivot
+act | Now | Scizor leaves the field · ⚔ ~ T3/4 · send Vaporeon for Scizor
+    ⚠ Ferrothorn 60% Grass Steel hit by Arcanine's Fire ×4
+    · Vaporeon 100% Water
+    ✓ Heatran 35% Fire Steel resists every foe attack type
+foes | Foes | —
+    · Arcanine 70% Fire attacks: Fire Normal
+plan | Plan | ~ oracle line wins in 2 turns · 2 of 3 left
+    ▸ T3 Scizor Bug U-turn · send Vaporeon for Scizor → ~ Vaporeon 300/300
+    · T4 Vaporeon Water Surf
 ok

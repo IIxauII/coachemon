@@ -10,6 +10,10 @@ const isAttr = (x, name) => {
   return false;
 };
 const attrsNamed = (mv, name) => (mv?.attrs ?? []).filter(a => isAttr(a, name));
+// U-turn, Baton Pass and the rest: the game asks for a pivot once it lands (CONTEXT.md, `Pivot`). Parting Shot keeps its
+// switch on `switchAttr`.
+const selfSwitch = a => isAttr(a, "ForceSwitchOutAttr") && a.selfSwitch === true;
+export const switchesUser = mv => (mv?.attrs ?? []).some(a => selfSwitch(a) || selfSwitch(a?.switchAttr));
 const firstAttr = (mv, name) => attrsNamed(mv, name)[0] ?? null;
 const hasAbAttr = (p, attr) => { try { return !!p?.hasAbilityWithAttr?.(attr); } catch { return false; } };
 const heldStackOf = (p, name) => {

@@ -73,15 +73,19 @@ const verdictOf = m => cardSummary(m).verdict;
       options: [{ label: "Open it", verdict: "take", outcome: "pick of 3 Ultra items" }, { label: "Leave", verdict: "avoid" }] },
     starters: { kind: "starters", wave: null, limit: 10, picks: [{ label: "best", cost: 10, weak: [], members: [{ name: "Gible", role: "carry" }] }] },
     fusion: { kind: "fusion", wave: 40, picked: null, better: null, rows: [{ base: { name: "Garchomp" }, other: { name: "Dragonite" }, value: 2.1, fuse: true }] },
+    pivot: { kind: "pivot", wave: 24, turn: 3, slot: 0, out: { name: "Scizor" }, foes: [{ name: "Arcanine", attacks: ["Fire"] }],
+      bench: [{ name: "Ferrothorn", hp: 60, types: ["Grass", "Steel"], hits: [{ from: "Arcanine", type: "Fire", e: 4 }], resists: false },
+        { name: "Vaporeon", hp: 100, types: ["Water"], hits: [], resists: true }] },
   };
+  const OWN = { battle: "verdict", learn: "learn", rewards: "rewards", biome: "biome", encounter: "encounter", starters: "starters", fusion: "fusion", pivot: "pivot" };
   const declared = summaryKeys();
   for (const [kind, model] of Object.entries(kinds)) {
     const s = cardSummary(model);
     assert.deepEqual(Object.keys(s), declared, `${kind} summary keys`);
     assert.equal(s.kind, kind);
-    const own = { battle: "verdict", learn: "learn", rewards: "rewards", biome: "biome", encounter: "encounter", starters: "starters", fusion: "fusion" }[kind];
+    const own = OWN[kind];
     assert.notEqual(s[own], null, `${kind} fills ${own}`);
-    for (const k of ["learn", "rewards", "encounter", "biome", "fusion", "starters"]) {
+    for (const k of ["learn", "rewards", "encounter", "biome", "fusion", "starters", "pivot"]) {
       if (k !== own) assert.equal(s[k], null, `${kind} leaves ${k} null`);
     }
   }
@@ -89,7 +93,7 @@ const verdictOf = m => cardSummary(m).verdict;
   console.log(`contract ok: ${declared.join(" ")}`);
   for (const [kind, model] of Object.entries(kinds)) {
     const s = cardSummary(model);
-    const own = { battle: "verdict", learn: "learn", rewards: "rewards", biome: "biome", encounter: "encounter", starters: "starters", fusion: "fusion" }[kind];
+    const own = OWN[kind];
     console.log(`${kind}: ${s[own]}`);
   }
 }
@@ -125,10 +129,11 @@ const verdictOf = m => cardSummary(m).verdict;
 // ---- Each card but a battle carries the leading call of its own summary field as its event's verdict, read off its model (extension-distribution.md §11.1)
 {
   const { cardEvent } = globalThis.__hud["60-card"];
-  const slotOf = { learn: "learn", reward: "rewards", biome: "biome", encounter: "encounter", starters: "starters", fusion: "fusion" };
+  const slotOf = { learn: "learn", reward: "rewards", biome: "biome", encounter: "encounter", starters: "starters", fusion: "fusion", pivot: "pivot" };
   const first = s => s.split(" · ")[0];
   const oracle = {
     learn: first, reward: first, starters: first, fusion: first,
+    pivot: s => first(s).split(" — ")[0].replace(/ \(planned at the command\)$/, ""),
     biome: s => s.split(" · ").find(o => o.includes(" pick — "))?.replace(/ -?\d+ pick — [\s\S]*$/, "") ?? null,
     encounter: s => first(s.slice(s.indexOf(": ") + 2)).split(" — ")[0],
   };
@@ -142,6 +147,8 @@ const verdictOf = m => cardSummary(m).verdict;
   const starters = over => ({ kind: "starters", wave: null, limit: 10, picks: [], full: false, room: 3, ...over });
   const pair = { base: { name: "Garchomp" }, other: { name: "Dragonite" }, value: 2.1, fuse: true };
   const fusion = over => ({ kind: "fusion", wave: 40, picked: null, better: null, unread: null, rows: [], ...over });
+  const pivot = over => ({ kind: "pivot", wave: 24, turn: 3, slot: 0, out: { name: "Scizor" }, foes: [], fallen: [],
+    bench: [{ name: "Vaporeon", hp: 100, types: ["Water"], hits: [], resists: false }], ...over });
   const cases = [
     [{ kind: "learn", wave: 14, name: "Charmeleon", move: { name: "Flamethrower" }, verdict: "Learn → forget Ember", forget: 1, team: { onlyType: "Dark" } },
       "Learn → forget Ember"],
@@ -166,6 +173,9 @@ const verdictOf = m => cardSummary(m).verdict;
     [fusion({ rows: [pair] }), "Garchomp ← Dragonite (+2.1 turns)"],
     [fusion({ picked: { name: "Gible" } }), "nothing to fuse Gible with"],
     [fusion({ unread: "no party" }), "no team read here: no party"],
+    // No pick is judged mid-turn (#530): the call is the pick the command planned, or none.
+    [pivot({ planned: { name: "Vaporeon" }, unplanned: null }), "send Vaporeon"],
+    [pivot({ planned: null, unplanned: "no plan from this turn's command" }), "your pick"],
   ];
   const seen = new Set();
   for (const [card, expected] of cases) {
@@ -176,6 +186,32 @@ const verdictOf = m => cardSummary(m).verdict;
     assert.strictEqual(ev.verdict, expected, `${card.kind}'s call`);
   }
   assert.deepStrictEqual(EVENT_KINDS.filter(k => k !== "battle" && !seen.has(k)), [], "every streamed kind but a battle has a card here");
+}
+
+// ---- A pivot card takes the command's pick by the mons' ids, and tells a pick that is down from one already in (#530)
+{
+  const { pivotPlanned } = globalThis.__hud["53-pivot"];
+  const pika = id => ({ id, name: "Pikachu", hp: 100, types: ["Electric"], hits: [], resists: false });
+  const from = { kind: "battle", wave: 24, turn: 3, against: [{ id: 9, name: "Arcanine" }],
+    field: { slots: [{ id: 1, name: "Scizor", pivot: { id: 3, name: "Pikachu" } }, { id: 2, name: "Scizor", pivot: { id: 4, name: "Vaporeon" } }] } };
+  const at = over => ({ kind: "pivot", wave: 24, turn: 3, slot: 1, out: { id: 2, name: "Scizor" }, foes: [{ id: 9, name: "Arcanine" }],
+    bench: [pika(3), pika(5), { ...pika(4), name: "Vaporeon" }], down: [], fallen: [], ...over });
+  assert.equal(pivotPlanned(at(), from).planned?.id, 4, "the leaving mon's own slot, though its partner shares its name");
+  assert.equal(pivotPlanned(at({ out: { id: 1, name: "Scizor" }, bench: [pika(5)], down: [3] }), from).unplanned,
+    "Pikachu, planned at the command, is down", "a namesake on the bench is not the pick");
+  assert.equal(pivotPlanned(at({ out: { id: 1, name: "Scizor" }, bench: [pika(5)] }), from).unplanned,
+    "Pikachu, planned at the command, is already in");
+  assert.equal(pivotPlanned(at({ turn: 4 }), from).unplanned, "no plan from this turn's command");
+
+  // A pick planned for an expected KO holds on the field after it: the foe down, its send-in not yet in, or in already.
+  const koFrom = { ...from, field: { slots: [from.field.slots[0],
+    { ...from.field.slots[1], pivot: { id: 4, name: "Vaporeon", afterKo: { fell: { id: 9, name: "Arcanine" }, next: { id: 11, name: "Gyarados" } } } }] } };
+  assert.equal(pivotPlanned(at({ foes: [], fallen: [9] }), koFrom).planned?.id, 4, "Arcanine fell, as planned, and no one is in yet");
+  assert.equal(pivotPlanned(at({ foes: [{ id: 11, name: "Gyarados" }], fallen: [9] }), koFrom).planned?.id, 4, "the send-in it was planned for came first");
+  assert.equal(pivotPlanned(at({ foes: [{ id: 12, name: "Onix" }], fallen: [9] }), koFrom).unplanned,
+    "planned for Vaporeon, but Arcanine fell, Onix came in", "another send-in is not the field it was planned for");
+  assert.equal(pivotPlanned(at({ foes: [], fallen: [9] }), from).unplanned, "planned for Vaporeon, but Arcanine fell",
+    "a KO the plan did not expect still drops it");
 }
 
 // ---- A shop with no free rewards is still a rewards screen; a closed one, its rows spliced out, is not
@@ -191,10 +227,10 @@ const verdictOf = m => cardSummary(m).verdict;
 // ---- Each card states where the run stands: a battle's wave is still to win, a card after it stands past it (#587, #877)
 {
   const { clearedOn } = globalThis.__hud["60-card"];
-  const standing = Object.fromEntries(["battle", "rewards", "biome", "encounter", "fusion", "learn", "starters"]
+  const standing = Object.fromEntries(["battle", "rewards", "biome", "encounter", "fusion", "learn", "starters", "pivot"]
     .map(k => [k, clearedOn(k)]));
   assert.deepStrictEqual(standing, { battle: false, rewards: true, biome: true, encounter: true, fusion: true,
-    learn: null, starters: null });
+    learn: null, starters: null, pivot: null });
 }
 
 assert.throws(() => mountHud({ secne: {} }), /^TypeError: mountHud: unknown option secne \(it takes scene, rnd, stored, expose\)$/);

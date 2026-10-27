@@ -33,7 +33,7 @@ export type CoachErrorDetail = { build: string; message: string };
  * A hand-kept copy of `hud/60-card.js`'s `EVENT_KINDS`, since the panel is bundled rather than imported; `cardtest.mjs`
  * pins the two (extension-distribution.md §11.1).
  */
-export const EVENT_KINDS = ["battle", "learn", "reward", "biome", "encounter"] as const;
+export const EVENT_KINDS = ["battle", "learn", "reward", "biome", "encounter", "pivot"] as const;
 
 /** Closed (#349). A hand-kept copy of `hud/90-render.js`'s `GROUP_IDS`, pinned by `grouptest.mjs`. */
 export const GROUP_IDS = ["act", "foes", "catch", "plan", "options", "audit", "road", "notes"] as const;

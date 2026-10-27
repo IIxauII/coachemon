@@ -1146,13 +1146,25 @@ doReturn true)` (`check-switch-phase.ts:69`).
 |---|---|---|---|
 | Switch command | `TurnStartPhase` orders non-FIGHT commands first (`src/phases/turn-start-phase.ts:28-45`) and unshifts `SwitchSummonPhase(SWITCH or BATON_PASS, slot, cursor, true, isPlayer)` (`:122-130`) | yes: every enemy move this turn (targets are battler indices) | old field this turn; new field next turn |
 | Faint replacement (ours) | `FaintPhase.doFaint` → `pushNew("SwitchPhase", SWITCH, slot, isModal true, doReturn false)` (`src/phases/faint-phase.ts:181`), level 0, after `TurnEndPhase` | no (the turn is over) | new field |
-| Trainer post-KO send-in | `pushNew("SwitchSummonPhase", SWITCH, slot, -1, false, false)` (`src/phases/faint-phase.ts:192`); `preSummon` resolves −1 with `getNextSummonIndex` (`src/phases/switch-summon-phase.ts:56-60`), a seed fork | — | its new mon decides next turn against our field then |
+| Trainer post-KO send-in | `pushNew("SwitchSummonPhase", SWITCH, slot, -1, false, false)` (`src/phases/faint-phase.ts:192`); `preSummon` resolves −1 with `getNextSummonIndex` (`src/phases/switch-summon-phase.ts:56-60`): the reserve with the best `getMatchupScore` against our field at that moment, a seeded draw only on a tie (`src/field/trainer.ts:545-617`) | — | its new mon decides next turn against our field then |
 | U-turn / Volt Switch / Flip Turn / Baton Pass / Shed Tail | `ForceSwitchOutAttr.apply` → `leaveField`, `queueDeferred("SwitchPhase", type, slot, true, true)` (`src/data/moves/move.ts:7245,7294-7303`); Baton Pass transfers stages in `SwitchSummonPhase.onEnd` (`src/phases/switch-summon-phase.ts:247-248`) | yes, if the enemy moves later in the turn (its command was chosen against the old mon's slot) | old field this turn; new field next turn |
 | Wimp Out / Emergency Exit | `PostDamageForceSwitchAbAttr` → `ForceSwitchOutHelper.switchOutLogic` → `queueDeferred("SwitchPhase", SWITCH, slot, true, true)` (`src/data/abilities/ab-attrs.ts:6044,5771-5785`) | same as above | same |
 | Roar / Dragon Tail on us | `ForceSwitchOutAttr.apply` with `FORCE_SWITCH`: `queueDeferred("SwitchSummonPhase", …)` to a bench mon drawn with `user.randBattleSeedInt` (`src/data/moves/move.ts:7284-7293`) | same as above | same |
 
 The faint-replacement `SwitchPhase` is also idle UI (the party screen), so game calls are safe there. Tell it apart
 from a mid-turn `SwitchPhase` by `isModal && !doReturn`; the check-switch one has `!isModal`.
+
+**A switch-out move that KOs its target still asks for the pivot.** `ForceSwitchOutAttr.apply` never calls `canApply`,
+the only check on a fainted target, and switches our user out whenever it still has HP and an allowed bench mon
+(`src/data/moves/move.ts:1750-1752,7258-7303`). The target's `FaintPhase` is deferred first, at the same level, so it
+runs before the party screen (`src/phases/move-effect-phase.ts:617-619,764`; `src/phase-tree.ts:66-73`).
+- The trainer's send-in for that slot goes to level 0, after `TurnEndPhase` (`src/phases/faint-phase.ts:184-193`). At
+  the pivot's party screen the slot still holds the fainted foe, off the field, and the send-in is not yet chosen. Its
+  `getNextSummonIndex` runs at its `preSummon`, against our field then: the pivot.
+- With no one left to send, a wild foe or a trainer's last mon, `VictoryPhase` queues the battle's end at level 0, so
+  the party screen still comes first (`src/phases/victory-phase.ts:43-51`; the game's `u-turn.test.ts:86-100`).
+- Not checked live: both `SwitchSummonPhase`s share the speed-ordered queue, so a fainted foe faster than our user may
+  bring its send-in right after the pick, ahead of the pivot.
 
 **A switch-in lands with fresh summon data.** `SwitchSummonPhase` calls `resetSummonData()` on the mon it sends in,
 whatever the switch type (`src/phases/switch-summon-phase.ts:128-134`; `src/field/pokemon.ts:5361-5369`), so its stat

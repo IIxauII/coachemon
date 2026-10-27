@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { mountHud, panelText } from "./fake-page.mjs";
-import { mon, outcomeFrom, TY } from "./fake-mon.mjs";
+import { attr, mon, outcomeFrom, TY } from "./fake-mon.mjs";
 import { fakeTurn } from "./fake-turn.mjs";
 import { benchMatchupScore } from "./game-proto.mjs";
 import { Command } from "../../../../src/enums/generated.ts";
@@ -2538,6 +2538,144 @@ Object.assign(TABLE, {
   assert.match(slow.line, /Mega Kick → Rayquaza 75%$/, `shown with no hits count: ${slow.line}`);
   assert.equal(slow.summary, "Quaquaval Mega Kick → Rayquaza · 75%");
   assert.match(pick("Mega Kick", 200, 0.996).summary, / · 99%$/, "a pick below 100% never reads 100%");
+}
+
+// ---- A move that switches its user out names the pivot, priced as a switch-in against the foe's own move (#530).
+{
+  class ForceSwitchOutAttr { constructor() { this.selfSwitch = true; } }
+  class ChillyReceptionAttr extends ForceSwitchOutAttr {}
+  // As the pinned game declares them: Parting Shot's switch sits on its `switchAttr`, Chilly Reception's attr is a subclass.
+  const ATTRS = { "U-turn": () => [new ForceSwitchOutAttr()], "Parting Shot": () => [Object.assign(attr("PartingShotAttr"), { switchAttr: new ForceSwitchOutAttr() })],
+    "Chilly Reception": () => [new ChillyReceptionAttr()] };
+  const pick = (move, bench = true) => {
+    const uTurn = [move, "Bug", 70, "P"];
+    const party = [
+      mon("Scizor", 80, ["Bug", "Steel"], [270, 250, 200, 110, 160, 200], [uTurn], true),
+      ...(bench ? [
+        mon("Ferrothorn", 80, ["Grass", "Steel"], [290, 180, 250, 100, 230, 40], [["Power Whip", "Grass", 120, "P"]], false),
+        mon("Vaporeon", 80, ["Water"], [400, 120, 140, 220, 190, 120], [["Surf", "Water", 90, "S"]], false),
+      ] : []),
+    ];
+    const pm = party[0].moveset[0], built = pm.getMove;
+    pm.getMove = () => ({ ...built(), attrs: ATTRS[move]?.() ?? [] });
+    const foes = [mon("Arcanine", 80, ["Fire"], [300, 230, 160, 200, 160, 150], [["Flare Blitz", "Fire", 120, "P"]], true)];
+    const table = {
+      [`Scizor>${move}>Arcanine`]: [[110], 1, 1], "Arcanine>Flare Blitz>Scizor": [[90], 1, 1],
+      "Arcanine>Flare Blitz>Ferrothorn": [[600], 1, 4], "Arcanine>Flare Blitz>Vaporeon": [[70], 1, 0.5],
+      "Ferrothorn>Power Whip>Arcanine": [[40], 1, 0.5], "Vaporeon>Surf>Arcanine": [[160], 1, 2],
+    };
+    const out = render({ party, foes, live: true, stubOutcome: outcomeFrom(table), switches: () => new Map(),
+      dist: () => [{ name: "Flare Blitz", type: "Fire", p: 1, score: 10, targets: [0] }] });
+    const slot = out.card.field.slots[0];
+    return { slot, line: out.field.find(l => /^⚔ Scizor/.test(l)) ?? "", summary: globalThis.__planner.cardSummary(out.card).field };
+  };
+  const u = pick("U-turn");
+  console.log(`== a pivot named\n${u.line}\n${u.summary}`);
+  assert.equal(u.slot.pivot?.name, "Vaporeon", "Vaporeon takes the Flare Blitz Ferrothorn can't");
+  assert.equal(u.slot.then, null, "a mon that leaves has no follow-up move of its own");
+  assert.match(u.line, /then send .*Vaporeon/, "the ⚔ line names who to send");
+  assert.match(u.summary, /^Scizor U-turn → Arcanine.*, then send Vaporeon/, "and so does the act summary");
+  assert.doesNotMatch(u.summary, / hits?\b/, "a mon that leaves after one hit counts no KO turns of its own");
+  for (const move of ["Parting Shot", "Chilly Reception"]) assert.equal(pick(move).slot.pivot?.name, "Vaporeon", `${move} switches its user out too`);
+  assert.equal(pick("X-Scissor").slot.pivot, null, "a move that stays in names no pivot");
+  {
+    const uTurner = (name, types) => {
+      const m = mon(name, 80, types, [270, 250, 200, 110, 160, 200], [["U-turn", "Bug", 70, "P"]], true);
+      const built = m.moveset[0].getMove;
+      m.moveset[0].getMove = () => ({ ...built(), attrs: ATTRS["U-turn"]() });
+      return m;
+    };
+    const party = [uTurner("Scizor", ["Bug", "Steel"]), uTurner("Yanmega", ["Bug", "Flying"]),
+      mon("Ferrothorn", 80, ["Grass", "Steel"], [290, 180, 250, 100, 230, 40], [["Power Whip", "Grass", 120, "P"]], false),
+      mon("Vaporeon", 80, ["Water"], [400, 120, 140, 220, 190, 120], [["Surf", "Water", 90, "S"]], false)];
+    const foes = [mon("Arcanine", 80, ["Fire"], [300, 230, 160, 200, 160, 150], [["Flare Blitz", "Fire", 120, "P"]], true),
+      mon("Ninetales", 80, ["Fire"], [280, 150, 160, 230, 200, 200], [["Flamethrower", "Fire", 90, "S"]], true)];
+    const table = {};
+    for (const us of ["Scizor", "Yanmega"]) for (const f of ["Arcanine", "Ninetales"]) table[`${us}>U-turn>${f}`] = [[200], 1, 1];
+    for (const [f, mv] of [["Arcanine", "Flare Blitz"], ["Ninetales", "Flamethrower"]]) {
+      Object.assign(table, { [`${f}>${mv}>Scizor`]: [[90], 1, 1], [`${f}>${mv}>Yanmega`]: [[90], 1, 1],
+        [`${f}>${mv}>Ferrothorn`]: [[600], 1, 4], [`${f}>${mv}>Vaporeon`]: [[70], 1, 0.5] });
+      table[`Ferrothorn>Power Whip>${f}`] = [[40], 1, 0.5];
+      table[`Vaporeon>Surf>${f}`] = [[160], 1, 2];
+    }
+    const out = render({ party, foes, live: true, double: true, stubOutcome: outcomeFrom(table), switches: () => new Map(),
+      dist: e => [{ name: e.moveset[0].getName(), type: "Fire", p: 1, score: 10, targets: [0] }] });
+    const pivots = out.card.field.slots.map(sl => `${sl.name} ${sl.move} → ${sl.pivot?.name ?? "none"}`);
+    console.log(`== two pivots in a double\n${pivots.join("\n")}`);
+    const sent = out.card.field.slots.map(sl => sl.pivot?.name).filter(Boolean);
+    assert.equal(new Set(sent).size, sent.length, `two slots never send the same mon: ${pivots.join(", ")}`);
+  }
+  assert.equal(pick("U-turn", false).slot.pivot, null, "nobody on the bench, nobody to name");
+}
+
+// ---- A pivot is priced on the turns it comes in on: after a KO, against the trainer's send-in; never where the foe
+// moved first and KO'd the user, since no pivot comes then (#530).
+{
+  class ForceSwitchOutAttr { constructor() { this.selfSwitch = true; } }
+  const uTurner = (stats, moves = [["U-turn", "Bug", 70, "P"]]) => {
+    const m = mon("Scizor", 80, ["Bug", "Steel"], stats, moves, true);
+    const built = m.moveset[0].getMove;
+    m.moveset[0].getMove = () => ({ ...built(), attrs: [new ForceSwitchOutAttr()] });
+    return m;
+  };
+  const arcanine = () => mon("Arcanine", 80, ["Fire"], [300, 230, 160, 200, 160, 150], [["Flare Blitz", "Fire", 120, "P"]], true);
+  const flareBlitz = () => [{ name: "Flare Blitz", type: "Fire", p: 1, score: 10, targets: [0] }];
+
+  // A speed tie: each side moves first half the time. Flare Blitz KOs Scizor, so half of turn 1 brings no pivot.
+  {
+    const scizor = uTurner([280, 250, 200, 110, 160, 150]), foe = arcanine();
+    const table = { "Scizor>U-turn>Arcanine": [[110], 1, 1], "Arcanine>Flare Blitz>Scizor": [[400], 1, 4] };
+    const { scene } = render({ party: [scizor], foes: [foe], live: true, stubOutcome: outcomeFrom(table), switches: () => new Map(), dist: flareBlitz });
+    const { pivot } = globalThis.__planner.exchange(scene, scizor, scizor.moveset[0], foe).turn1;
+    console.log(`== a switch-out's turn 1 on a speed tie, KO'd moving second\n${JSON.stringify(pivot)}`);
+    assert.deepEqual(pivot, { ko: 0, hit: 0.5, clear: 0, down: 0.5, flinched: 0, fizzled: 0 }, "moving second, Scizor falls before U-turn goes off");
+  }
+  {
+    const scizor = uTurner([280, 250, 200, 110, 160, 150]), foe = arcanine();
+    const table = { "Scizor>U-turn>Arcanine": [[110], 1, 1], "Arcanine>Flare Blitz>Scizor": [[90], 1, 1] };
+    const { scene } = render({ party: [scizor], foes: [foe], live: true, stubOutcome: outcomeFrom(table), switches: () => new Map(), dist: flareBlitz });
+    const { pivot } = globalThis.__planner.exchange(scene, scizor, scizor.moveset[0], foe).turn1;
+    assert.deepEqual(pivot, { ko: 0, hit: 0.5, clear: 0.5, down: 0, flinched: 0, fizzled: 0 }, "surviving it, the pivot comes in on a clear field");
+    table["Scizor>U-turn>Arcanine"] = [[110], 0.5, 1];
+    const missing = globalThis.__planner.exchange(scene, { ...scizor, id: "Scizor, missing" }, scizor.moveset[0], foe).turn1.pivot;
+    assert.deepEqual(missing, { ko: 0, hit: 0.25, clear: 0.25, down: 0, flinched: 0, fizzled: 0.5 }, "a miss sends in no pivot");
+  }
+
+  // U-turn KOs Arcanine before it moves, so the pivot meets the trainer's next mon, Gyarados: Jolteon, not Vaporeon.
+  const koPivot = withReserve => {
+    const party = [
+      uTurner([270, 250, 200, 110, 160, 200]),
+      mon("Jolteon", 80, ["Electric"], [270, 120, 120, 250, 190, 260], [["Thunderbolt", "Electric", 90, "S"]], false),
+      mon("Vaporeon", 80, ["Water"], [400, 120, 140, 220, 190, 120], [["Surf", "Water", 90, "S"]], false),
+    ];
+    const gyarados = mon("Gyarados", 80, ["Water", "Flying"], [380, 250, 160, 120, 200, 160], [["Waterfall", "Water", 80, "P"]], false);
+    const table = {
+      "Scizor>U-turn>Arcanine": [[400], 1, 1], "Arcanine>Flare Blitz>Scizor": [[90], 1, 1],
+      "Arcanine>Flare Blitz>Vaporeon": [[70], 1, 0.5], "Arcanine>Flare Blitz>Jolteon": [[200], 1, 1],
+      "Vaporeon>Surf>Arcanine": [[160], 1, 2], "Jolteon>Thunderbolt>Arcanine": [[120], 1, 1],
+      "Gyarados>Waterfall>Vaporeon": [[50], 1, 0.5], "Gyarados>Waterfall>Jolteon": [[100], 1, 1], "Gyarados>Waterfall>Scizor": [[60], 1, 1],
+      "Vaporeon>Surf>Gyarados": [[60], 1, 0.5], "Jolteon>Thunderbolt>Gyarados": [[400], 1, 4], "Scizor>U-turn>Gyarados": [[100], 1, 1],
+    };
+    const out = render({ party, foes: [arcanine(), ...(withReserve ? [gyarados] : [])], live: true, stubOutcome: outcomeFrom(table), switches: () => new Map(),
+      dist: e => (e.name === "Gyarados" ? [{ name: "Waterfall", type: "Water", p: 1, score: 10, targets: [0] }] : flareBlitz()) });
+    return out.card.field.slots[0];
+  };
+  const ko = koPivot(true);
+  console.log(`== a U-turn that KOs: the pivot meets the send-in\n${ko.name} ${ko.move} → ${ko.pivot?.name ?? "none"} ${JSON.stringify(ko.pivot?.afterKo ?? null)}`);
+  assert.equal(ko.pivot?.name, "Jolteon", "priced against Gyarados, who comes in after the KO, not Arcanine, who falls");
+  assert.deepEqual(ko.pivot?.afterKo, { fell: { id: "Arcanine", name: "Arcanine" }, next: { id: "Gyarados", name: "Gyarados" } },
+    "and the pick says the field it was planned for");
+  const last = koPivot(false).pivot;
+  assert.equal(last?.afterKo, undefined, "with nobody left to send, the battle ends after the pivot: no field to plan for");
+  assert.equal(last?.name, "Vaporeon", "so the rest of turn 1 ranks the pick, not party order");
+
+  // With the duel won either way, a move that stays in finishes the foe; U-turn leaves the rest of its bar to the team.
+  {
+    const scizor = uTurner([270, 250, 200, 110, 160, 200], [["U-turn", "Bug", 70, "P"], ["X-Scissor", "Bug", 70, "P"]]);
+    const table = { "Scizor>U-turn>Arcanine": [[110], 1, 1], "Scizor>X-Scissor>Arcanine": [[110], 1, 1], "Arcanine>Flare Blitz>Scizor": [[40], 1, 1] };
+    const out = render({ party: [scizor], foes: [arcanine()], live: true, stubOutcome: outcomeFrom(table), switches: () => new Map(), dist: flareBlitz });
+    assert.equal(out.card.field.slots[0].move, "X-Scissor", "U-turn's one hit is worth less than the KO the same hit leads to");
+  }
 }
 
 // ---- Gordie W180 T16: the card calls Tera Water + Hydro Pump, and its fight plan presses the Tera on step 1 (#649)

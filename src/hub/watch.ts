@@ -20,6 +20,7 @@ const LABEL: Record<string, string> = {
   rewards: "REWARDS",
   biome: "BIOME",
   encounter: "ENCOUNTER",
+  pivot: "PIVOT",
 };
 
 /** Null for a kind the stream never carries (`starters`, `fusion`), which a late-join read can still land on. */

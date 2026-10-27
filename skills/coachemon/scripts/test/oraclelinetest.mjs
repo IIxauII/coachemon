@@ -730,6 +730,7 @@ const eternaDecide = (seed, turn, cp) => { const s = eternaAt(seed, turn, { cp }
 const eternaTweak = (turn, tweak) => { const cp = structuredClone(ETERNA_CP[turn]); tweak(cp); return cp; };
 const AS_SAID = { 3: [{ move: "DRAGON_ASCENT", targets: [BattlerIndex.ENEMY] }, { move: "BEHEMOTH_BLADE", tera: true }] };
 const FAINT = field => ({ phaseName: "SwitchPhase", isModal: true, doReturn: false, fieldIndex: field });
+const PIVOT = field => ({ phaseName: "SwitchPhase", isModal: true, doReturn: true, fieldIndex: field });
 
 // ---- A double's step holds both field slots' commands, each slot's own null, and its replacements by field slot; one out of shape is ignored
 {
@@ -884,6 +885,12 @@ const FAINT = field => ({ phaseName: "SwitchPhase", isModal: true, doReturn: fal
   const { act: t1 } = now("W200 T1, Rayquaza pivoting out", scene);
   assert.equal(t1.summary, "⚔ ~ T1/5 · Rayquaza Dragon Ascent · then send Blissey for Rayquaza");
   assert.ok(t1.rows.some(r => r.startsWith("⤵ then send Blissey for Rayquaza at the switch-out prompt")), t1.rows.join("\n"));
+  // At the prompt itself the step's pivot is the call, as a faint prompt's replacement is.
+  const prompt = oracleLineModel(eternaAt(seed, 1, { phase: PIVOT(0) }));
+  console.log(`at the switch-out prompt | ${oracleStepSummary(prompt)}`);
+  assert.equal(prompt.pivoting?.name, "Blissey");
+  assert.equal(oracleStepSummary(prompt), "⚔ ~ T1/5 · send Blissey for Rayquaza");
+  assert.equal(oracleLineModel(scene).pivoting, null, "the command asks no pivot");
   hand("T3's Zacian pivots to Snorlax", eternaLine(seed, { 3: double([ASCENT, BLADE], { pivots: [pivot(3, "SNORLAX", 1)] }) }));
   assert.equal(now("W200 T3, Zacian pivoting out", eternaAt(seed, 3)).act.summary,
     "⚔ ~ T3/5 · Rayquaza Dragon Ascent ; Zacian Behemoth Blade · then send Snorlax for Zacian");

@@ -1333,6 +1333,7 @@ export const HUD: Area = {
         "src/ui/handlers/party-ui-handler.ts#PartyUiHandler.selectFilter",
       ],
     },
+    { name: "selfSwitch", kind: "field", at: ["src/data/moves/move.ts#ForceSwitchOutAttr.selfSwitch"] },
     { name: "selfTarget", kind: "field", at: ["src/data/moves/move.ts#MoveAttr.selfTarget"] },
     { name: "setup", kind: "method", at: [], from: "ours", note: "our turn.mon().setup() and learn plan" },
     { name: "shinyCatchMultiplier", kind: "field", at: ["src/@types/game-events.ts#TimedEvent.shinyCatchMultiplier"] },
@@ -1432,6 +1433,7 @@ export const HUD: Area = {
         "src/data/pokemon-species.ts#PokemonSpecies.subLegendary",
       ],
     },
+    { name: "switchAttr", kind: "field", at: ["src/data/moves/move.ts#PartingShotAttr.switchAttr"] },
     { name: "tag", kind: "field", at: ["src/data/abilities/ab-attrs.ts#PreApplyBattlerTagAbAttrParams.tag"] },
     { name: "targetIndex", kind: "field", at: ["src/data/positional-tags/positional-tag.ts#PositionalTag.targetIndex"] },
     {

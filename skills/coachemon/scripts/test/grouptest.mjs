@@ -11,6 +11,7 @@ const { drawEncounter } = globalThis.__hud["96-render-encounter"];
 const { drawStarters } = globalThis.__hud["96-render-starters"];
 const { drawFusion } = globalThis.__hud["96-render-fusion"];
 const { drawBiome } = globalThis.__hud["97-render-biome"];
+const { drawPivot } = globalThis.__hud["96-render-pivot"];
 const { GROUP_IDS, MARKS, flatGroups, wireCard } = globalThis.__hud["90-render"];
 const { EVENT_KINDS, cardEvent, streamable } = globalThis.__hud["60-card"];
 
@@ -398,6 +399,45 @@ const biomeOption = (over = {}) => ({ label: "Swamp", id: 1, score: 72, offense:
   const { groups } = show("biome · no spawn data yet", card, drawBiome);
   assert.deepEqual(groups.map(g => g.id), ["act"]);
   assert.equal(groups[0].summary, "Swamp · Construction Site");
+}
+
+// ---- Pivot: the bench is `act`, the foes' attacking types `foes`, and a held oracle line `plan`, the call only where its
+// step names this pivot (#530).
+{
+  const pivot = (over = {}) => ({ kind: "pivot", wave: 24, turn: 3, slot: 0, out: { icon: null, name: "Scizor" },
+    foes: [{ icon: null, name: "Arcanine", hp: 70, types: ["Fire"], attacks: ["Fire", "Normal"] }],
+    bench: [{ icon: null, name: "Ferrothorn", hp: 60, types: ["Grass", "Steel"], hits: [{ from: "Arcanine", type: "Fire", e: 4 }], resists: false },
+      { icon: null, name: "Vaporeon", hp: 100, types: ["Water"], hits: [], resists: false },
+      { icon: null, name: "Heatran", hp: 35, types: ["Fire", "Steel"], hits: [], resists: true }],
+    heldLine: null, ...over });
+  const { groups, text } = show("pivot · three on the bench, no oracle line", pivot(), drawPivot);
+  assert.deepEqual(groups.map(g => g.id), ["act", "foes"]);
+  assert.equal(groups[0].summary, "Scizor leaves the field · your pick — mid-turn, no turn read: the turn is still resolving");
+  const planned = show("pivot · the command planned Vaporeon", pivot({ planned: { icon: null, name: "Vaporeon" }, unplanned: null }), drawPivot);
+  assert.equal(planned.groups[0].summary, "Scizor leaves the field · send Vaporeon (planned at the command)");
+  const lapsed = show("pivot · the plan no longer holds", pivot({ planned: null, unplanned: "planned for Vaporeon, but Arcanine fell, Gyarados came in" }), drawPivot);
+  assert.equal(lapsed.groups[0].summary,
+    "Scizor leaves the field · your pick — planned for Vaporeon, but Arcanine fell, Gyarados came in · mid-turn, no turn read: the turn is still resolving");
+  assert.ok(text.includes("⚠ Ferrothorn 60% Grass Steel hit by Arcanine's Fire ×4"), text);
+  assert.ok(text.includes("✓ Heatran 35% Fire Steel resists every foe attack type"), text);
+  assert.ok(text.includes("\nFoes\n· Arcanine 70% Fire attacks: Fire Normal"), text);
+  const ref = name => ({ icon: null, name });
+  const heldLine = { id: 1, mark: "~", faintPick: false, sending: null, learning: null, last: 4, turns: 2, left: 2, of: 3, steps: [
+    { turn: 3, at: "now", act: { kind: "move", by: ref("Scizor"), move: "U-turn", type: "Bug", tera: null }, learns: [], sends: [],
+      pivots: [{ ...ref("Vaporeon"), field: 0, for: ref("Scizor") }], after: [{ ...ref("Vaporeon"), hp: 300, maxHp: 300 }] },
+    { turn: 4, at: "later", act: { kind: "move", by: ref("Vaporeon"), move: "Surf", type: "Water", tera: null }, learns: [], pivots: [], sends: [], after: [] }] };
+  const held = show("pivot · a held oracle line that names no pivot here", pivot({ heldLine }), drawPivot);
+  assert.deepEqual(held.groups.map(g => g.id), ["act", "foes", "plan"]);
+  assert.ok(held.text.includes("send Vaporeon for Scizor"), held.text);
+  assert.deepEqual([cardEvent(pivot({ heldLine })).verdict, cardEvent(pivot({ heldLine })).oracleLine], ["your pick", null], "the line is drawn, not the call");
+  // As 57-oracle-line.js's `oracleLineModel` answers at the switch-out prompt its step names, the command's plan aside.
+  const answered = { ...heldLine, pivoting: heldLine.steps[0].pivots[0] };
+  const leads = pivot({ heldLine: answered, oracleLine: answered, planned: { icon: null, name: "Heatran" }, unplanned: null });
+  const led = show("pivot · the held oracle line answers this pivot", leads, drawPivot);
+  assert.deepEqual(led.groups.map(g => g.id), ["act", "foes", "plan"]);
+  assert.equal(led.groups[0].summary, "Scizor leaves the field · ⚔ ~ T3/4 · send Vaporeon for Scizor");
+  assert.deepEqual([cardEvent(leads).verdict, cardEvent(leads).oracleLine], ["send Vaporeon", { state: "on", turn: 3, of: 4 }],
+    "the oracle line leads, one answer per turn (#113)");
 }
 
 // A kind leaving `EVENT_KINDS` moves both sides of this, so it is caught by the relay pin in `cardtest.mjs` instead.

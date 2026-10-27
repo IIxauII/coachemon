@@ -611,6 +611,16 @@ Aura Wheel ×4 into a Gyarados that survives at 1, Enigma: 63 HP bar 0 (100%)
 == inaccurate pick
 ⚔ Quaquaval Normal Mega Kick → Rayquaza 2 hits · 75%
 Quaquaval Mega Kick → Rayquaza · 2 hits · 75%
+== a pivot named
+⚔ Scizor Bug U-turn → Arcanine then send Vaporeon
+Scizor U-turn → Arcanine, then send Vaporeon
+== two pivots in a double
+Scizor U-turn → Vaporeon
+Yanmega U-turn → Ferrothorn
+== a switch-out's turn 1 on a speed tie, KO'd moving second
+{"ko":0,"hit":0.5,"clear":0,"down":0.5,"flinched":0,"fizzled":0}
+== a U-turn that KOs: the pivot meets the send-in
+Scizor U-turn → Jolteon {"fell":{"id":"Arcanine","name":"Arcanine"},"next":{"id":"Gyarados","name":"Gyarados"}}
 == gordie w180 t16, Tera left
 ⚔ Gyarados Tera Water + Water Hydro Pump → Tyranitar 2 hits
 Tyranitar Tyranitar L179 Rock Dark 60% ▲ Water ↯ Rock Stone Edge → Gyarados 100% likely · moves after
