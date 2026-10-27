@@ -16,8 +16,8 @@ const node = () => {
 };
 const seeded = () => ({ _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } });
 
-// Without `titles`, `flatten` copies `90-render.js`'s `rowText`, and `clean` and `headingOf` its `clean` and
-// `headingText`. `card()` asserts all three against the wire, so a change there fails here instead of drifting.
+// `flatten` and `clean` copy `90-render.js`'s `rowText` and `clean`, and `headingOf` its `headingText`. `card()`
+// asserts all three against the wire, so a change there fails here instead of drifting.
 const flatten = (n, titles) => {
   if (n == null) return "";
   if (typeof n !== "object") return String(n);
@@ -28,7 +28,7 @@ const flatten = (n, titles) => {
 };
 const clean = l => l.replace(/\s+/g, " ").trim();
 
-/** `titles` adds every node's hover title inline as `{…}`, which the wire's text never carries (#894). */
+/** `titles` adds every node's hover title inline as `{…}` (#894). */
 export const panelText = (n, { titles = false } = {}) => clean(flatten(n, titles));
 const headingOf = g => (g.id === "act" ? g.summary
   : g.summary && g.label ? `${g.label}: ${g.summary}` : g.label || g.summary) || null;

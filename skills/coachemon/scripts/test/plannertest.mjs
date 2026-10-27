@@ -87,7 +87,7 @@ const render = ({ party, foes, live, arena, dist, switches, double = false, phas
   const turn = stubTurn({ party, foes, live, double, trainer, arena, phase, fieldIndex, turnCommands, preTurnCommands, exact, ourTera });
   globalThis.__planner = plannerApi(turn);
   const card = { ...globalThis.__hud["60-card"].composeBattleCard(turn, null), wave: 200 };
-  // Rows only, with each node's tooltip as `{title}`: the card's plain text drops it, and several assertions read it.
+  // Rows only, titles on: several assertions read a tooltip.
   const rowsOf = g => g.rows.map(n => panelText(n, { titles: true })).filter(Boolean);
   const groups = globalThis.__hud["96-render-battle"].drawBattle(card);
   const lines = groups.flatMap(rowsOf);
