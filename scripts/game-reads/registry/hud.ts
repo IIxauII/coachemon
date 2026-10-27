@@ -1974,6 +1974,13 @@ export const HUD: Area = {
     },
     { ours: "skills/coachemon/scripts/hud/30-planner.js#stat-abbr", of: ["src/enums/stat.ts#Stat"] },
     {
+      ours: "skills/coachemon/scripts/hud/30-planner.js#once-ko-boost",
+      of: [
+        "src/data/abilities/init-abilities.ts#initAbilities",
+        "src/data/abilities/apply-ab-attrs.ts#applySingleAbAttrs",
+      ],
+    },
+    {
       ours: "skills/coachemon/scripts/hud/30-planner.js#thieves",
       of: [
         "src/modifier/modifier.ts#ContactHeldItemTransferChanceModifier",
