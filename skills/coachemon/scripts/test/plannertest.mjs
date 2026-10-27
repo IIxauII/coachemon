@@ -3,7 +3,7 @@ import { mountHud, panelText } from "./fake-page.mjs";
 import { attr, mon, outcomeFrom, TY } from "./fake-mon.mjs";
 import { fakeTurn } from "./fake-turn.mjs";
 import { benchMatchupScore } from "./game-proto.mjs";
-import { Command } from "../../../../src/enums/generated.ts";
+import { AbilityId, Command, SpeciesId, Stat } from "../../../../src/enums/generated.ts";
 
 // The tables a scenario sets: `outcome` what each move does, `dist` the enemy AI's pick, `switches` the trainer's
 // switch-in, `heal` a turn end's cost, `benefit` the game's own score for a move of ours. `__stub` is rebound per
@@ -1346,6 +1346,40 @@ Object.assign(TABLE, {
   for (const [field, why] of [[boosted, "with the boost"], [plain, "without the boost"]]) {
     assert.match(field.find(l => /^now: ⇄/.test(l)) ?? "", /Mamoswine out › Crobat in · takes ~6% · resists Lunge/, `switch to Crobat ${why}:\n${field.join("\n")}`);
   }
+}
+
+// ---- A KO boost counts only where its condition admits the holder, and Battle Bond's for one KO (#924).
+{
+  const { koBoost, koStageFactor } = globalThis.__planner;
+  const PV = "PostVictoryStatStageChangeAbAttr";
+  // The game's own condition (game-code.md §18).
+  const bondBoost = {
+    changes: [Stat.ATK, Stat.SPATK, Stat.SPD].map(stat => ({ stat, stages: 1 })),
+    getCondition: () => p => ((p.species.speciesId !== SpeciesId.BATTLE_BOND_GRENINJA && !p.isFusion()) || p.isFusion())
+      && !p.summonData.abilitiesApplied.has(AbilityId.BATTLE_BOND),
+  };
+  const battleBond = { id: AbilityId.BATTLE_BOND, name: "Battle Bond", getAttrs: a => (a === PV ? [bondBoost] : []) };
+  const greninja = ({ fusion = false, applied = [] } = {}) => mon("Greninja", 80, ["Water", "Dark"], [250, 200, 150, 200, 150, 250], [], false, undefined, {
+    species: { speciesId: SpeciesId.BATTLE_BOND_GRENINJA }, isFusion: () => fusion,
+    hasAbilityWithAttr: a => a === PV, getAbility: () => battleBond,
+  }, { statStages: [0, 0, 0, 0, 0, 0, 0], types: [], abilitiesApplied: new Set(applied) });
+  assert.equal(koBoost(greninja()), null, "an unfused Battle Bond Greninja changes form instead");
+  const fused = greninja({ fusion: true });
+  assert.deepEqual(koBoost(fused)?.up, { [Stat.ATK]: 1, [Stat.SPATK]: 1, [Stat.SPD]: 1 }, "a fused Battle Bond Greninja gets the boost");
+  assert.deepEqual([1, 2, 3].map(n => koStageFactor(fused, koBoost(fused), n, Stat.ATK)), [1.5, 1.5, 1.5], "Battle Bond fires once, not once per KO");
+  assert.equal(koBoost(greninja({ fusion: true, applied: [AbilityId.BATTLE_BOND] })), null, "nor again once it has fired this summon");
+  // The game skips a passive that repeats the ability (game-code.md §0), and hands both getters the same ability.
+  const twice = Object.assign(greninja({ fusion: true }), { hasPassive: () => true, getPassiveAbility: () => battleBond });
+  assert.deepEqual(koBoost(twice)?.up, { [Stat.ATK]: 1, [Stat.SPATK]: 1, [Stat.SPD]: 1 }, "Battle Bond as ability and passive counts once");
+
+  // Beside Moxie, only Battle Bond's share stops at one KO: Atk +2, +3, +4 after 1 / 2 / 3 KOs, SpA +1 throughout.
+  const moxie = { id: AbilityId.MOXIE, name: "Moxie", getAttrs: a => (a === PV ? [{ changes: [{ stat: Stat.ATK, stages: 1 }] }] : []) };
+  const both = Object.assign(greninja({ fusion: true }), { getAbility: () => moxie, hasPassive: () => true, getPassiveAbility: () => battleBond });
+  const factors = st => [1, 2, 3].map(n => koStageFactor(both, koBoost(both), n, st));
+  assert.deepEqual([factors(Stat.ATK), factors(Stat.SPATK)], [[2, 2.5, 3], [1.5, 1.5, 1.5]], "Moxie counts every KO, Battle Bond its first");
+  // No `abilitiesApplied`, so Battle Bond's condition throws.
+  const thin = Object.assign(greninja({ fusion: true }), { summonData: { statStages: [0, 0, 0, 0, 0, 0, 0], types: [] }, getAbility: () => moxie, hasPassive: () => true, getPassiveAbility: () => battleBond });
+  assert.deepEqual(koBoost(thin), { up: { [Stat.ATK]: 1 }, ability: "Moxie", any: false }, "a condition that throws costs only its own boost");
 }
 
 // ---- The summary's second danger level: a likely KO after our mon acts, naming what it is saved for (#90).

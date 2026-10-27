@@ -484,34 +484,63 @@ export const laterUse = t => (t?.laterAt
   ? mixLanding(Array.from({ length: SPEND_USES }, (_, i) => ({ x: t.laterAt(i + 1), p: 1 / SPEND_USES })))
   : t?.later ?? null);
 
-// The stat stages `p` gains a KO (game-code.md §18): { up: { [stat 1–5]: stages }, ability, any }, `any` when every
-// faint counts and not only its own KOs. Speed is in `up` for the note; the damage factors leave it out.
+// The game's skip of an attribute whose condition fails (game-code.md §0). A throw fails that attribute alone, not the
+// mon's other boosts.
+const attrHolds = (x, p) => {
+  try {
+    const cond = x.getCondition?.();
+    return !cond || !!cond(p);
+  } catch { return false; }
+};
+
+// The game gives these once a summon, behind a gate inside the condition that can't be read off the attribute
+// (game-code.md §18). Counted for one KO a fight (#924).
+const ONCE_KO_BOOST = new Set([AbilityId.BATTLE_BOND]);
+
+// The stat stages `p` gains a KO (game-code.md §18): { up: { [stat 1–5]: stages }, ability, any, once? }, `any` when
+// every faint counts and not only its own KOs, `once` the share of `up` that only its first KO gives. Speed is in `up`
+// for the note; the damage factors leave it out.
 export const koBoost = p => {
   if (!p) return null;
-  const up = {};
+  const up = {}, once = {};
   let name = null, any = false;
   try {
+    // A passive that repeats the ability applies once (game-code.md §0).
+    const ability = p.getAbility?.(), passive = p.hasPassive?.() ? p.getPassiveAbility?.() : null;
+    const repeats = passive === ability || (passive?.id != null && passive.id === ability?.id);
     for (const [attr, whose] of [["PostVictoryStatStageChangeAbAttr", false], ["PostKnockOutStatStageChangeAbAttr", true]]) {
       if (!p.hasAbilityWithAttr?.(attr)) continue;
-      for (const a of [p.getAbility?.(), p.hasPassive?.() ? p.getPassiveAbility?.() : null]) {
+      for (const a of [ability, repeats ? null : passive]) {
         for (const x of a?.getAttrs?.(attr) ?? []) {
+          if (!attrHolds(x, p)) continue;
           const changes = whose
             ? [{ stat: typeof x.stat === "function" ? x.stat(p) : x.stat, stages: x.stages }]
             : typeof x.changes === "function" ? x.changes(p) : x.changes ?? [];
-          for (const c of changes) if (c.stat >= Stat.ATK && c.stat <= Stat.SPD && c.stages) up[c.stat] = (up[c.stat] ?? 0) + c.stages;
+          const into = ONCE_KO_BOOST.has(a.id) ? [up, once] : [up];
+          for (const c of changes) {
+            if (c.stat >= Stat.ATK && c.stat <= Stat.SPD && c.stages) for (const t of into) t[c.stat] = (t[c.stat] ?? 0) + c.stages;
+          }
           name ??= a.name;
           any ||= whose;
         }
       }
     }
   } catch { return null; }
-  return Object.keys(up).length ? { up, ability: name, any } : null;
+  if (!Object.keys(up).length) return null;
+  return Object.keys(once).length ? { up, ability: name, any, once } : { up, ability: name, any };
 };
 export const koStageFactor = (p, boost, n, st) => {
   const k = boost?.up?.[st] ?? 0;
   if (!k || !(n > 0)) return 1;
+  const once = boost.once?.[st] ?? 0;
   const s0 = p?.isOnField?.() ? p.summonData?.statStages?.[st - 1] ?? 0 : 0;
-  return stage(Math.max(-6, Math.min(6, s0 + k * n))) / stage(s0);
+  return stage(Math.max(-6, Math.min(6, s0 + (k - once) * n + once))) / stage(s0);
+};
+// What the KO after `n` earlier ones adds, shaped as `koBoost`'s; null when nothing is left.
+export const koBoostAfter = (boost, n) => {
+  if (!boost?.once || !(n > 0)) return boost;
+  const up = Object.fromEntries(Object.entries(boost.up).map(([st, k]) => [st, k - (boost.once[st] ?? 0)]).filter(([, k]) => k));
+  return Object.keys(up).length ? { up, ability: boost.ability, any: boost.any } : null;
 };
 // @mirrors stat-abbr
 const STAT_ABBR = ["HP", "Atk", "Def", "SpA", "SpD", "Spe"];
