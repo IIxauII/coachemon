@@ -108,6 +108,13 @@ describe("the combatant adapter against the game (#989)", () => {
     expectHeldOn(hitAtLaterFight(game, game.field.getPlayerPokemon()));
   });
 
+  it("a Sturdy member at full health is raced as down in two by a later foe's one-hit KO (#991)", async () => {
+    await game.classicMode.startBattle(SpeciesId.MAGIKARP);
+    const member = combatantOf({ mon: game.field.getPlayerPokemon() });
+    const foe = combatantOf({ species: speciesDataRegistry.getSpecies(SpeciesId.MEWTWO), level: 100, moves: [MoveId.PSYSTRIKE], player: false });
+    expect(inRunRead(game, duel => duel(member, foe)).taken).toBe(2);
+  });
+
   it("a Sturdy member under Gastro Acid still holds on against a later foe's one-hit KO", async () => {
     game.override.enemyMoveset(MoveId.GASTRO_ACID);
     await game.classicMode.startBattle(SpeciesId.MAGIKARP);

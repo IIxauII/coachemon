@@ -400,6 +400,21 @@ const shown = x => x.map(o => `${o.name} ×${o.e} ${o.max}${o.pKo ? ` pKo ${o.pK
     "a member whose ability the field suppresses today still brings its attrs to a later fight (#989)");
 }
 
+// ---- A full-health Sturdy member races a hit past its HP as down in two, and a hurt one as down in one (#991)
+{
+  const { duel: raced } = globalThis.__hud["12-value"];
+  const run = { scene, memo: (_, __, build) => build() };
+  const nuke = combatantOf({ species: GARCHOMP, level: 50, ivs: [31, 31, 31, 31, 31, 31], nature: 3, moves: [EARTHQUAKE], player: false });
+  const member = extra => combatantOf({ species: SNORLAX, level: 10, moves: [BODY_SLAM], ...extra });
+  assert.equal(duel(nuke, member({})).at(0).pKo, 1, "the Earthquake flattens it on its own");
+  const full = raced(run, member({ ability: 5 }), nuke);
+  const hurt = raced(run, member({ ability: 5, hp: 52 }), nuke);
+  assert.equal(raced(run, member({}), nuke).taken, 1, "without Sturdy it goes down to the first");
+  assert.equal(full.taken, 2, "Sturdy keeps it up on 1 HP for the second");
+  assert.equal(hurt.taken, 1, "and a HP short of full there is no Sturdy left to keep it up");
+  console.log(`sturdy race | full ${full.taken} | hurt ${hurt.taken}`);
+}
+
 // ---- A passive Trace is the member's own, not the passive it copied on the field
 {
   const snorlax = () => live("Snorlax", SNORLAX, 10, [53, 28, 19, 19, 28, 12], { ability: "Immunity", passive: "Intimidate" });

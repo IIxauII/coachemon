@@ -17,7 +17,7 @@ const tpSpread = use => {
 };
 // `feeds`: the target eats its Enigma Berry after a super-effective use, as our pick prices it and the foe's AI does
 // not (#652).
-const tpTurns = (turn, o, target, feeds = false) => koTurns(koCurve(turn.mon(target), useOf(o), { se: feeds ? ((o.e ?? 1) >= 2 ? 1 : 0) : null }).by);
+const tpTurns = (turn, o, target, feeds = false) => koTurns(koCurve(turn.mon(target), useOf(o), { se: feeds ? ((o.e ?? 1) >= 2 ? 1 : 0) : null, ignoresSturdy: o.ignoresSturdy }).by);
 const tpFastest = (turn, list, target, turns = o => tpTurns(turn, o, target), dmg = o => o.dmg) => list
   .map(o => ({ o, n: turns(o) }))
   .reduce((b, x) => (!b || x.n < b.n || (x.n === b.n && dmg(x.o) > dmg(b.o)) ? x : b), null)?.o ?? null;

@@ -252,16 +252,18 @@ export const hitOn = (state, dmg) => {
 // `stop`: the branch's use has ended (a revive). `left` / `sitrus`: the Enigma / Sitrus Berries it still holds.
 const branch = (hp, bar, revived, tok, p, stop = false, left = 0, sitrus = 0) => ({ hp, bar, revived, tok, p, stop, left, sitrus });
 // Pushes what stands onto `out` and returns the probability that goes down. `luck` false: turn-end chip, an indirect
-// KO, so no endure token, Focus Band or Reviver Seed (game-code.md §21).
+// KO, so no Sturdy, endure token, Focus Band or Reviver Seed (game-code.md §21).
 const land = (f, b, d, out, luck = true) => {
   const [dealt, bar] = barStep(f, b.hp, b.bar, Math.max(0, d));
   const endure = luck && !b.tok && d >= b.hp ? f.pEndure : 0;
-  if (b.hp - dealt > 0) {
-    // A roll on a hit the bar clamp already stops still spends the token (game-code.md §3).
-    if (endure) out.push(branch(b.hp - dealt, bar, b.revived, true, b.p * endure, false, b.left, b.sitrus));
-    if (endure < 1) out.push(branch(b.hp - dealt, bar, b.revived, b.tok, b.p * (1 - endure), false, b.left, b.sitrus));
+  // A roll on a hit the bar clamp or Sturdy already stops still spends the token (game-code.md §3).
+  const stands = hp => {
+    if (endure) out.push(branch(hp, bar, b.revived, true, b.p * endure, false, b.left, b.sitrus));
+    if (endure < 1) out.push(branch(hp, bar, b.revived, b.tok, b.p * (1 - endure), false, b.left, b.sitrus));
     return 0;
-  }
+  };
+  if (b.hp - dealt > 0) return stands(b.hp - dealt);
+  if (luck && f.sturdy && b.hp >= f.maxHp) return stands(1);
   let gone = b.p;
   if (luck) {
     if (endure) out.push(branch(1, bar, b.revived, true, b.p * endure, false, b.left, b.sitrus));
@@ -306,8 +308,9 @@ export const shares = (list, fallback) => {
 // at each turn end that finds it below half, where it eats the Enigma, a Pouch keeping it the same way; null eats none,
 // and otherwise it counts the Sitrus Berries steals have taken off the target by use n's turn end, n from 1 and 0 for
 // before the curve: a number, or a function of n. A branch's `sitrus` is the Sitrus Berries it still holds.
-export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 1, act = () => 1, turnEnd = 0, beforeBerry = 0, firstKo = null, cat = null, useAt = null, chain = null, se = null, preHeal = null, sitrus = null } = {}) => {
-  const f = rec.facts;
+// `ignoresSturdy`: the uses go through the target's Sturdy, as a record's own says of a Mold Breaker's hit.
+export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 1, act = () => 1, turnEnd = 0, beforeBerry = 0, firstKo = null, cat = null, useAt = null, chain = null, se = null, preHeal = null, sitrus = null, ignoresSturdy = false } = {}) => {
+  const f = ignoresSturdy && rec.facts.sturdy ? { ...rec.facts, sturdy: false } : rec.facts;
   const berry = se != null && f.enigma?.heal > 0 ? f.enigma : null;
   const held = f.enigma?.left ?? 0;
   const seAt = i => (typeof se === "function" ? se(i) : se);
@@ -814,7 +817,8 @@ const fromGame = (env, atk, def, pm, opts) => {
   if (disguise) { perHit[0] = new Map([[0, 1]]); maxes[0] = 0; }
 
   const facts = targetFacts(env, def, ignoreAbility);
-  const f = fixed && facts.sturdy && fixedIgnoresSturdy(env) ? { ...facts, sturdy: false } : facts;
+  const ignoresSturdy = ignoreAbility || (fixed && fixedIgnoresSturdy(env));
+  const f = ignoresSturdy && facts.sturdy ? { ...facts, sturdy: false } : facts;
   const ends = resolve(f, perHit, dist, acc, checkAll, ohko);
   const expected = f.hp - ends.reduce((t, x) => t + x.p * Math.max(0, x.hp), 0);
   const pKo = f.revive ? 0 : ends.filter(x => x.hp <= 0).reduce((t, x) => t + x.p, 0);
@@ -871,7 +875,7 @@ const fromGame = (env, atk, def, pm, opts) => {
     ...base, acc, crit, dist, semi, self, selfKo, drain,
     perHit: maxes.map((max, k) => ({ max, min: Math.min(max, lows[k] ?? Math.floor(max * 0.85)) })), targetHp: f.hp,
     expected, uncapped, max: f.hp - Math.max(0, worst.hp), pKo, revive: f.revive, costs, notes,
-    use, focus: f.pFocus, flinch: flinchChance(atk, def, move, ignoreAbility),
+    use, focus: f.pFocus, ignoresSturdy, flinch: flinchChance(atk, def, move, ignoreAbility),
   };
 };
 

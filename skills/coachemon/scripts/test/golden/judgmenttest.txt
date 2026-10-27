@@ -257,7 +257,7 @@
   standard half alone            swap  Wailord     dV +1.0  release 0.0  net +1.0  
       + Poison exposure        +2.2  Poison now beats 5 of 6, down from 6
       + physical wall exposure +2.2  the physical wall now beats 5 of 6, down from 6
-  and the roster half            swap  Wailord     dV +3.7  release 0.0  net +3.7  
+  and the roster half            swap  Wailord     dV +3.5  release 0.0  net +3.5  
       + Jolteon L40 exposure   +1.8  Jolteon L40 now beats 4 of 6, down from 5 (Lt. Surge W50~)
       + Electivire L40 exposure +1.8  Electivire L40 now beats 4 of 6, down from 5 (Lt. Surge W50~)
   Jolteon L40    Meganium    s +1.0 backup Lanturn     -0.7  beaten 5  row -4.3
