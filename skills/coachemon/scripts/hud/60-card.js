@@ -165,7 +165,6 @@ export const readCard = (s, account, { road = true, estimate = false, decided = 
   } else if (pivot) {
     // Mid-turn, like a learn: a run read alone, never a turn read (CONTEXT.md, `Turn read`).
     card = readRun(s, run => pivotModel(run, pivot), { cleared: KINDS.pivot.cleared });
-    card.wave = s.currentBattle?.waveIndex ?? null;
     Object.assign(card, pivotPlanned(card, decided));
     readOracleLine(s, card);
   } else {

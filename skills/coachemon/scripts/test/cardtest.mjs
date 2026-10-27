@@ -188,6 +188,22 @@ const verdictOf = m => cardSummary(m).verdict;
   assert.deepStrictEqual(EVENT_KINDS.filter(k => k !== "battle" && !seen.has(k)), [], "every streamed kind but a battle has a card here");
 }
 
+// ---- A pivot card takes the command's pick by the mons' ids, and tells a pick that is down from one already in (#530)
+{
+  const { pivotPlanned } = globalThis.__hud["53-pivot"];
+  const pika = id => ({ id, name: "Pikachu", hp: 100, types: ["Electric"], hits: [], resists: false });
+  const from = { kind: "battle", wave: 24, turn: 3, against: [{ id: 9, name: "Arcanine" }],
+    field: { slots: [{ id: 1, name: "Scizor", pivot: { id: 3, name: "Pikachu" } }, { id: 2, name: "Scizor", pivot: { id: 4, name: "Vaporeon" } }] } };
+  const at = over => ({ kind: "pivot", wave: 24, turn: 3, slot: 1, out: { id: 2, name: "Scizor" }, foes: [{ id: 9, name: "Arcanine" }],
+    bench: [pika(3), pika(5), { ...pika(4), name: "Vaporeon" }], down: [], fallen: [], ...over });
+  assert.equal(pivotPlanned(at(), from).planned?.id, 4, "the leaving mon's own slot, though its partner shares its name");
+  assert.equal(pivotPlanned(at({ out: { id: 1, name: "Scizor" }, bench: [pika(5)], down: [3] }), from).unplanned,
+    "Pikachu, planned at the command, is down", "a namesake on the bench is not the pick");
+  assert.equal(pivotPlanned(at({ out: { id: 1, name: "Scizor" }, bench: [pika(5)] }), from).unplanned,
+    "Pikachu, planned at the command, is already in");
+  assert.equal(pivotPlanned(at({ turn: 4 }), from).unplanned, "no plan from this turn's command");
+}
+
 // ---- A shop with no free rewards is still a rewards screen; a closed one, its rows spliced out, is not
 {
   const { rewardsScreen } = globalThis.__hud["02-screens"];

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { mountHud, panelText } from "./fake-page.mjs";
-import { mon, outcomeFrom, TY } from "./fake-mon.mjs";
+import { attr, mon, outcomeFrom, TY } from "./fake-mon.mjs";
 import { fakeTurn } from "./fake-turn.mjs";
 import { benchMatchupScore } from "./game-proto.mjs";
 import { Command } from "../../../../src/enums/generated.ts";
@@ -2542,8 +2542,13 @@ Object.assign(TABLE, {
 
 // ---- A move that switches its user out names the pivot, priced as a switch-in against the foe's own move (#530).
 {
+  class ForceSwitchOutAttr { constructor() { this.selfSwitch = true; } }
+  class ChillyReceptionAttr extends ForceSwitchOutAttr {}
+  // As the pinned game declares them: Parting Shot's switch sits on its `switchAttr`, Chilly Reception's attr is a subclass.
+  const ATTRS = { "U-turn": () => [new ForceSwitchOutAttr()], "Parting Shot": () => [Object.assign(attr("PartingShotAttr"), { switchAttr: new ForceSwitchOutAttr() })],
+    "Chilly Reception": () => [new ChillyReceptionAttr()] };
   const pick = (move, bench = true) => {
-    const uTurn = [move, "Bug", 70, "P", 0, { attrs: move === "U-turn" ? [["ForceSwitchOutAttr", { selfSwitch: true }]] : [] }];
+    const uTurn = [move, "Bug", 70, "P"];
     const party = [
       mon("Scizor", 80, ["Bug", "Steel"], [270, 250, 200, 110, 160, 200], [uTurn], true),
       ...(bench ? [
@@ -2551,6 +2556,8 @@ Object.assign(TABLE, {
         mon("Vaporeon", 80, ["Water"], [400, 120, 140, 220, 190, 120], [["Surf", "Water", 90, "S"]], false),
       ] : []),
     ];
+    const pm = party[0].moveset[0], built = pm.getMove;
+    pm.getMove = () => ({ ...built(), attrs: ATTRS[move]?.() ?? [] });
     const foes = [mon("Arcanine", 80, ["Fire"], [300, 230, 160, 200, 160, 150], [["Flare Blitz", "Fire", 120, "P"]], true)];
     const table = {
       [`Scizor>${move}>Arcanine`]: [[110], 1, 1], "Arcanine>Flare Blitz>Scizor": [[90], 1, 1],
@@ -2568,7 +2575,36 @@ Object.assign(TABLE, {
   assert.equal(u.slot.then, null, "a mon that leaves has no follow-up move of its own");
   assert.match(u.line, /then send .*Vaporeon/, "the ⚔ line names who to send");
   assert.match(u.summary, /^Scizor U-turn → Arcanine.*, then send Vaporeon/, "and so does the act summary");
+  assert.doesNotMatch(u.summary, / hits?\b/, "a mon that leaves after one hit counts no KO turns of its own");
+  for (const move of ["Parting Shot", "Chilly Reception"]) assert.equal(pick(move).slot.pivot?.name, "Vaporeon", `${move} switches its user out too`);
   assert.equal(pick("X-Scissor").slot.pivot, null, "a move that stays in names no pivot");
+  {
+    const uTurner = (name, types) => {
+      const m = mon(name, 80, types, [270, 250, 200, 110, 160, 200], [["U-turn", "Bug", 70, "P"]], true);
+      const built = m.moveset[0].getMove;
+      m.moveset[0].getMove = () => ({ ...built(), attrs: ATTRS["U-turn"]() });
+      return m;
+    };
+    const party = [uTurner("Scizor", ["Bug", "Steel"]), uTurner("Yanmega", ["Bug", "Flying"]),
+      mon("Ferrothorn", 80, ["Grass", "Steel"], [290, 180, 250, 100, 230, 40], [["Power Whip", "Grass", 120, "P"]], false),
+      mon("Vaporeon", 80, ["Water"], [400, 120, 140, 220, 190, 120], [["Surf", "Water", 90, "S"]], false)];
+    const foes = [mon("Arcanine", 80, ["Fire"], [300, 230, 160, 200, 160, 150], [["Flare Blitz", "Fire", 120, "P"]], true),
+      mon("Ninetales", 80, ["Fire"], [280, 150, 160, 230, 200, 200], [["Flamethrower", "Fire", 90, "S"]], true)];
+    const table = {};
+    for (const us of ["Scizor", "Yanmega"]) for (const f of ["Arcanine", "Ninetales"]) table[`${us}>U-turn>${f}`] = [[110], 1, 1];
+    for (const [f, mv] of [["Arcanine", "Flare Blitz"], ["Ninetales", "Flamethrower"]]) {
+      Object.assign(table, { [`${f}>${mv}>Scizor`]: [[90], 1, 1], [`${f}>${mv}>Yanmega`]: [[90], 1, 1],
+        [`${f}>${mv}>Ferrothorn`]: [[600], 1, 4], [`${f}>${mv}>Vaporeon`]: [[70], 1, 0.5] });
+      table[`Ferrothorn>Power Whip>${f}`] = [[40], 1, 0.5];
+      table[`Vaporeon>Surf>${f}`] = [[160], 1, 2];
+    }
+    const out = render({ party, foes, live: true, double: true, stubOutcome: outcomeFrom(table), switches: () => new Map(),
+      dist: e => [{ name: e.moveset[0].getName(), type: "Fire", p: 1, score: 10, targets: [0] }] });
+    const pivots = out.card.field.slots.map(sl => `${sl.name} ${sl.move} → ${sl.pivot?.name ?? "none"}`);
+    console.log(`== two pivots in a double\n${pivots.join("\n")}`);
+    const sent = out.card.field.slots.map(sl => sl.pivot?.name).filter(Boolean);
+    assert.equal(new Set(sent).size, sent.length, `two slots never send the same mon: ${pivots.join(", ")}`);
+  }
   assert.equal(pick("U-turn", false).slot.pivot, null, "nobody on the bench, nobody to name");
 }
 

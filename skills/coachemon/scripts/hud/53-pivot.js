@@ -22,7 +22,7 @@ export const pivotScreen = s => {
 const benchOf = (m, foes) => {
   const attacks = foes.flatMap(f => f.attacks.map(type => ({ from: f.name, type, e: effectiveness(type, m) })));
   return {
-    name: m.name, icon: iconOf(m), hp: pctOf(m), types: tryDo(() => typesOf(m), []),
+    id: m.id, name: m.name, icon: iconOf(m), hp: pctOf(m), types: tryDo(() => typesOf(m), []),
     hits: attacks.filter(a => a.e >= 2),
     resists: attacks.length > 0 && attacks.every(a => a.e <= 0.5),
   };
@@ -38,12 +38,14 @@ export const pivotModel = (run, ph) => {
   const out = party[ph.fieldIndex] ?? null;
   return {
     kind: "pivot",
+    wave: b?.waveIndex ?? null,
     turn: b?.turn ?? null,
     slot: ph.fieldIndex ?? 0,
-    out: out ? { name: out.name, icon: iconOf(out) } : null,
+    out: out ? { id: out.id, name: out.name, icon: iconOf(out) } : null,
     // The party screen sends only from past the field (game-code.md §9).
     bench: party.slice(field).filter(p => p && p.hp > 0).map(p => benchOf(p, foes)),
     foes,
+    down: party.filter(p => p && p.hp <= 0).map(p => p.id),
     fallen: enemies.filter(f => f && f.hp <= 0).map(f => f.id),
   };
 };
@@ -58,9 +60,9 @@ const foesMoved = (m, against) => {
 export const pivotPlanned = (m, from) => {
   const no = unplanned => ({ planned: null, unplanned });
   if (from?.kind !== "battle" || !from.field || from.wave !== m.wave || from.turn !== m.turn) return no("no plan from this turn's command");
-  const pick = from.field.slots.find(sl => sl.name === m.out?.name)?.pivot;
+  const pick = from.field.slots.find(sl => sl.id === m.out?.id)?.pivot;
   if (!pick) return no(`the plan at the command sent no one in for ${m.out?.name ?? "the mon leaving"}`);
-  if (!m.bench.some(b => b.name === pick.name)) return no(`${pick.name}, planned at the command, is down`);
+  if (!m.bench.some(b => b.id === pick.id)) return no(`${pick.name}, planned at the command, is ${m.down.includes(pick.id) ? "down" : "already in"}`);
   const moved = foesMoved(m, from.against ?? []);
   return moved ? no(`planned for ${pick.name}, but ${moved}`) : { planned: pick, unplanned: null };
 };

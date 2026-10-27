@@ -2,12 +2,11 @@
 // `turn.memo`. Against an approximate turn every answer still comes back, labelled `live: false`.
 import { ABILITY_IMMUNE, ABILITY_IMMUNE_FLAG, CONTACT_PUNISH, FIELD_TRAPS, MOVE_TRAPS, SPREAD_TARGETS, STATUS_FRAMES, TYPES, UNGROUNDED, abilitiesOf, battleMoveset, effectiveness, hitsUngrounded, iconOf, isBerry, lessOneBerry, lumsHeld, moveHasFlag, movesetOf, squeezeDist, stackOf, stage, stat, typesOf, vs } from "./01-core.js";
 import { gameTables } from "./04-game-tables.js";
-import { moveTraits } from "./07-move-traits.js";
+import { moveTraits, switchesUser } from "./07-move-traits.js";
 import { addShare, healingCharm, koChanceAt, koCurve, koTurn, koTurns, rawMax, shares, useOf } from "./10-damage.js";
 
 const pmName = pm => pm?.getName?.() ?? pm?.name ?? "";
-// U-turn, Baton Pass and the rest: the game asks for a pivot once it lands (CONTEXT.md, `Pivot`).
-const switchesOut = o => (o?.pm?.getMove?.()?.attrs ?? []).some(a => a?.constructor?.name === "ForceSwitchOutAttr" && a.selfSwitch === true);
+const switchesOut = o => switchesUser(o?.pm?.getMove?.());
 const bossBarsLeft = p => (p.isBoss?.() && p.bossSegments > 1 ? Math.max(1, (p.bossSegmentIndex ?? p.bossSegments - 1) + 1) : 1);
 // Turn-end HP change, signed: heals +, chip −. `dealt`: damage `p` deals a turn (Shell Bell). Never with
 // `tookSuperEffective`: `koCurve` eats the Enigma Berry, branch by branch, and under `sitrus` false the Sitrus too.
@@ -2000,17 +1999,26 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   };
   // The pivot a move that switches its user out asks for (CONTEXT.md, `Pivot`): each mon left on the bench priced as a
   // paid switch-in, which takes the foe's move only where our user moves first (game-code.md §9).
-  const pivotOf = p => {
+  const clearMemo = new Map();
+  const clearOf = m => {
+    if (!clearMemo.has(m)) clearMemo.set(m, top(options(m, true, null, null, null, false)));
+    return clearMemo.get(m);
+  };
+  // `sent`: the pivots named for the slots before this one, which a second switch-out can't send again.
+  const pivotOf = (p, sent) => {
     if (!switchesOut(p.move)) return null;
     const busy = best.picks.map(q => q.me);
     const pFirst = p.trade?.pFirst ?? 1;
-    const valued = party.filter(m => m.hp > 0 && !current.includes(m) && !busy.includes(m)).map(m => {
-      const hit = top(opt(m, true)), clear = top(options(m, true, null, null, null, false));
+    const valued = party.filter(m => m.hp > 0 && !current.includes(m) && !busy.includes(m) && !sent.includes(m)).map(m => {
+      const hit = top(opt(m, true)), clear = clearOf(m);
       return { m, v: pFirst * (hit?.score ?? -99) + (1 - pFirst) * (clear?.score ?? -99) };
     });
     const pick = valued.reduce((b, c) => (!b || c.v > b.v ? c : b), null);
-    return pick ? { icon: iconOf(pick.m), name: pick.m.name } : null;
+    if (!pick) return null;
+    sent.push(pick.m);
+    return { id: pick.m.id, icon: iconOf(pick.m), name: pick.m.name };
   };
+  const sent = [];
   const swaps = plan => {
     const chosen = plan.picks.map(p => p.me);
     const outs = current.filter(p => !chosen.includes(p));
@@ -2101,13 +2109,14 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
         const mv = sup?.pm.getMove();
         const helped = helps.has(p);
         return {
-          icon: iconOf(p.me), name: p.me.name, out: !!p.me.isOnField?.(), enter,
+          id: p.me.id, icon: iconOf(p.me), name: p.me.name, out: !!p.me.isOnField?.(), enter,
           tera: sup ? null : p.tera ?? null,
           move: sup ? pmName(sup.pm) : p.move?.name ?? null, type: sup ? TYPES[mv.type] ?? null : p.move?.type ?? null, cat: sup ? "status" : p.move?.cat ?? null,
           target: sup || p.target === null || p.self ? null : p.target === "both" ? "both" : { icon: iconOf(active[p.target]), name: active[p.target].name },
           then: sup ? null : p.then?.name ?? null,
-          pivot: sup ? null : pivotOf(p),
-          ko: sup || each ? 0 : helped && typeof p.target === "number" ? 1 : p.hits <= 3 ? p.hits : 0,
+          pivot: sup ? null : pivotOf(p, sent),
+          // A mon that switches out hits once, so only a one-hit KO is its own.
+          ko: sup || each ? 0 : helped && typeof p.target === "number" ? 1 : p.hits <= (switchesOut(p.move) ? 1 : 3) ? p.hits : 0,
           accPct: sup || !(p.move?.acc < 1) ? null : Math.min(99, Math.round(p.move.acc * 100)),
           helped,
           koEach: sup || p.target !== "both" || !p.each ? null : p.each.map(n => (n <= 3 ? n : 0)),

@@ -1433,6 +1433,7 @@ export const HUD: Area = {
         "src/data/pokemon-species.ts#PokemonSpecies.subLegendary",
       ],
     },
+    { name: "switchAttr", kind: "field", at: ["src/data/moves/move.ts#PartingShotAttr.switchAttr"] },
     { name: "tag", kind: "field", at: ["src/data/abilities/ab-attrs.ts#PreApplyBattlerTagAbAttrParams.tag"] },
     { name: "targetIndex", kind: "field", at: ["src/data/positional-tags/positional-tag.ts#PositionalTag.targetIndex"] },
     {
