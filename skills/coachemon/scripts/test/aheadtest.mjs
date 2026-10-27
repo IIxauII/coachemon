@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mountHud } from "./fake-page.mjs";
+import { mountHud, panelText } from "./fake-page.mjs";
 import { TY } from "./fake-mon.mjs";
 
 const hash = str => { let h = 2166136261; for (const c of str) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0; return h >>> 0; };
@@ -135,8 +135,7 @@ const mount = opts => {
 };
 
 const team = () => [pk("Milotic", 18, ["Water"], ["Surf", "Ice Beam"]), pk("Lucario", 18, ["Fighting", "Steel"], ["Earthquake"])];
-const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
-const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n");
+const card = (ah, m) => ah.drawAhead(m).map(n => panelText(n)).filter(Boolean).join("\n");
 
 // ---- The schedule follows the calendar's precedence and the run's gym offset
 {

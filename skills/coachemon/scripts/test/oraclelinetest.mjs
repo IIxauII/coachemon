@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mountHud } from "./fake-page.mjs";
+import { mountHud, panelText } from "./fake-page.mjs";
 import { BattlerIndex, Command, MoveId, PokemonType, SpeciesId } from "../../../../src/enums/generated.ts";
 import { GORDIE_LINE, GORDIE_SEED } from "../../../../src/game/fixtures/oracle-line.ts";
 import { pageOracleLine } from "../../../../src/game/oracle-line.ts";
@@ -169,7 +169,6 @@ const { strip } = globalThis.__hud["90-render"];
 // The wire's act group with the call as the strip draws it: the wire's summary leads with the caption's words
 // (extension-distribution.md §11.1).
 const drawnCall = (groups, drawn) => ({ ...groups.find(g => g.id === "act"), summary: drawn.find(g => g.id === "act").summary });
-const flat = n => (n == null ? "" : typeof n !== "object" ? String(n) : (n.children ?? []).map(flat).filter(Boolean).join(" "));
 const tyranitar = confidence => ({ icon: null, name: "Tyranitar", lv: 90, types: ["Rock", "Dark"], hp: 60, tera: false, boss: false, status: null,
   traps: [], weak: [], avoid: [], likely: { move: "Stone Edge", type: "Rock", pct: 40, first: 100, at: null, hits: 0, confidence }, pick: null, notes: [] });
 const now = (label, s, over) => {
@@ -177,7 +176,7 @@ const now = (label, s, over) => {
   const drawn = drawBattle(c);
   const groups = flatGroups(drawn);
   const act = drawnCall(groups, drawn);
-  const shown = flat(strip(c, null, drawn));
+  const shown = panelText(strip(c, null, drawn));
   console.log(`== ${label}`);
   console.log(`strip | ${shown}`);
   for (const r of act.rows) console.log(`    ${r}`);
@@ -561,7 +560,7 @@ const prompt = (label, s) => {
   readOracleLine(s, c);
   const drawn = drawLearn(c);
   const groups = flatGroups(drawn);
-  const shown = flat(strip(c, captionLearn(c), drawn));
+  const shown = panelText(strip(c, captionLearn(c), drawn));
   console.log(`== ${label}`);
   console.log(`strip | ${shown}`);
   for (const g of groups) for (const x of g.rows) console.log(`  ${g.id.padEnd(8)}${x}`);

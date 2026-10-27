@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mountHud } from "./fake-page.mjs";
+import { mountHud, panelText } from "./fake-page.mjs";
 import { onGame } from "./game-proto.mjs";
 import { cat, TY } from "./fake-mon.mjs";
 
@@ -100,10 +100,9 @@ const tables = () => {
   return { registry: { getSpecies: id => byId.get(id) ?? null, getAllSpecies: () => list, getEvolutions: () => [] }, moves };
 };
 
-const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
 const show = (label, advice) => {
   console.log(`== ${label}`);
-  console.log(globalThis.__ca.drawCatch(advice).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n"));
+  console.log(globalThis.__ca.drawCatch(advice).map(n => panelText(n)).filter(Boolean).join("\n"));
 };
 const jsonSafe = (x, label) => assert.equal(JSON.stringify(JSON.parse(JSON.stringify(x))), JSON.stringify(x), `${label}: JSON-safe`);
 

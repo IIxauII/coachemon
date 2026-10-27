@@ -16,19 +16,20 @@ const node = () => {
 };
 const seeded = () => ({ _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } });
 
-// `plain` copies `90-render.js`'s `rowText`, and `clean` and `headingOf` its `clean` and `headingText`. `card()`
-// asserts all three against the wire, so a change there fails here instead of drifting.
-const walk = n => {
-  if (n == null) return { plain: "", titled: "" };
-  if (typeof n !== "object") return { plain: String(n), titled: String(n) };
-  if (String(n.tagName ?? "").toUpperCase() === "IMG") return { plain: String(n.title ?? ""), titled: String(n.title ?? "") };
-  const kids = (n.childNodes ? Array.prototype.slice.call(n.childNodes) : n.children ?? []).map(walk);
-  const leaf = String(n.textContent ?? "");
-  const join = half => (kids.length ? kids.map(k => k[half]).filter(Boolean).join(" ") : leaf);
-  const titled = join("titled");
-  return { plain: join("plain"), titled: n.title ? `${titled} {${n.title}}` : titled };
+// Without `titles`, `flatten` copies `90-render.js`'s `rowText`, and `clean` and `headingOf` its `clean` and
+// `headingText`. `card()` asserts all three against the wire, so a change there fails here instead of drifting.
+const flatten = (n, titles) => {
+  if (n == null) return "";
+  if (typeof n !== "object") return String(n);
+  if (String(n.tagName ?? "").toUpperCase() === "IMG") return String(n.title ?? "");
+  const kids = (n.childNodes ? Array.prototype.slice.call(n.childNodes) : n.children ?? []).map(k => flatten(k, titles));
+  const text = kids.length ? kids.filter(Boolean).join(" ") : String(n.textContent ?? "");
+  return titles && n.title ? `${text} {${n.title}}` : text;
 };
 const clean = l => l.replace(/\s+/g, " ").trim();
+
+/** `titles` adds every node's hover title inline as `{…}`, which the wire's text never carries (#894). */
+export const panelText = (n, { titles = false } = {}) => clean(flatten(n, titles));
 const headingOf = g => (g.id === "act" ? g.summary
   : g.summary && g.label ? `${g.label}: ${g.summary}` : g.label || g.summary) || null;
 
@@ -45,8 +46,8 @@ const cardText = el => {
   for (const wire of ev.groups) {
     const index = drawn.findIndex(d => d.id === wire.id);
     assert.ok(index >= 0, `card(): the wire has a ${wire.id} group the panel never drew`);
-    const rows = drawn.splice(index, 1)[0].rows.map(walk)
-      .map(w => ({ plain: clean(w.plain), titled: clean(w.titled) })).filter(r => r.plain);
+    const rows = drawn.splice(index, 1)[0].rows
+      .map(r => ({ plain: panelText(r), titled: panelText(r, { titles: true }) })).filter(r => r.plain);
     assert.deepEqual(rows.map(r => r.plain), wire.rows, `card(): ${wire.id}'s rows walk differently from the wire`);
     plain.push([headingOf(wire), ...wire.rows].filter(Boolean).join("\n"));
     out.push(...[headingOf(wire), ...rows.map(r => r.titled)].filter(Boolean));

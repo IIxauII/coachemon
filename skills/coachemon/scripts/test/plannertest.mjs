@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mountHud } from "./fake-page.mjs";
+import { mountHud, panelText } from "./fake-page.mjs";
 import { mon, outcomeFrom, TY } from "./fake-mon.mjs";
 import { fakeTurn } from "./fake-turn.mjs";
 import { benchMatchupScore } from "./game-proto.mjs";
@@ -87,10 +87,8 @@ const render = ({ party, foes, live, arena, dist, switches, double = false, phas
   const turn = stubTurn({ party, foes, live, double, trainer, arena, phase, fieldIndex, turnCommands, preTurnCommands, exact, ourTera });
   globalThis.__planner = plannerApi(turn);
   const card = { ...globalThis.__hud["60-card"].composeBattleCard(turn, null), wave: 200 };
-  const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
-  // Rows only, and `txt` keeps a node's tooltip as `{title}`: the card's plain text drops it, and several assertions
-  // read it.
-  const rowsOf = g => g.rows.map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean);
+  // Rows only, with each node's tooltip as `{title}`: the card's plain text drops it, and several assertions read it.
+  const rowsOf = g => g.rows.map(n => panelText(n, { titles: true })).filter(Boolean);
   const groups = globalThis.__hud["96-render-battle"].drawBattle(card);
   const lines = groups.flatMap(rowsOf);
   // `field`: the act group's rows, the supporting lines only — not the strip's caption or its call (#356). `scene` is
