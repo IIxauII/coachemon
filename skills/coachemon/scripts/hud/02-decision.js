@@ -3,7 +3,7 @@
 import { learnAsked } from "./01-core.js";
 const CARD_OF = {
   command: "battle", "free-switch": "battle", replacement: "battle", reward: "rewards", fusion: "fusion",
-  learn: "learn", biome: "biome", encounter: "encounter", starter: "starters",
+  learn: "learn", biome: "biome", encounter: "encounter", starter: "starters", pivot: "pivot",
 };
 
 // `k1`…`k4` hold each kind's key from #537's table as #544 and #714 widened it, in its order, and are compared by `===`. One
@@ -40,8 +40,10 @@ const partyMoves = (party, sig) => {
   return sig;
 };
 
-// A faint's replacement. `doReturn` is a mid-turn switch-in pick: U-turn's, Baton Pass's or Wimp Out's (game-code.md §9).
+// The game opens one party screen for both: `doReturn` alone tells a pivot (CONTEXT.md, `Pivot`) from a faint's
+// replacement (game-code.md §9).
 export const isReplacement = ph => ph?.phaseName === "SwitchPhase" && !!ph.isModal && !ph.doReturn;
+export const isPivot = ph => ph?.phaseName === "SwitchPhase" && !!ph.isModal && !!ph.doReturn;
 
 export const detect = s => {
   const ph = s?.ui ? s.phaseManager?.getCurrentPhase?.() : null;
@@ -57,6 +59,8 @@ export const detect = s => {
       return set("free-switch", b, ph.fieldIndex, null, null, mode === UiMode.CONFIRM && enemyFree(b), true);
     case "SwitchPhase":
       if (!ph.isModal) return set("free-switch", b, ph.fieldIndex, null, null, mode === UiMode.PARTY && enemyFree(b), true);
+      // Mid-turn, so the enemy has already chosen: a pivot never waits on `enemyFree`.
+      if (isPivot(ph)) return set("pivot", ph, null, null, null, mode === UiMode.PARTY, true);
       if (!isReplacement(ph)) return none();
       return set("replacement", ph, null, null, null, mode === UiMode.PARTY && enemyFree(b), true);
     case "SelectModifierPhase": {

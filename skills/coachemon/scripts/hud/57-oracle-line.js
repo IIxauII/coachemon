@@ -1,7 +1,7 @@
 // The oracle line handed to the overlay, drawn only for the one fight it was solved for (CONTEXT.md, `Oracle line`),
 // and scored at each decision against the checkpoint before it. It reads the game and writes nothing to it.
 import { hasMove, iconOf, STAT_NAMES, STATUS_FRAMES, TYPES } from "./01-core.js";
-import { isReplacement } from "./02-decision.js";
+import { isPivot, isReplacement } from "./02-decision.js";
 import { gameTables } from "./04-game-tables.js";
 import { learnMoveById } from "./40-learn.js";
 
@@ -310,13 +310,17 @@ export const oracleLineModel = s => {
       after: [...inFront(st.checkpoint.ours, ours), ...inFront(st.checkpoint.foes, theirs)],
     };
   });
-  const last = line.steps[line.steps.length - 1], sends = steps.find(st => st.at === "now")?.sends ?? [];
+  const last = line.steps[line.steps.length - 1], nowStep = steps.find(st => st.at === "now"), sends = nowStep?.sends ?? [];
+  const ph = phaseOf(s), pivotField = isPivot(ph) ? ph.fieldIndex ?? 0 : null;
+  const leaving = pivotField === null ? null : tryDo(() => party[pivotField].name);
   return {
     id: h.id,
     mark: markOf(line),
     faintPick,
     // The replacement this faint prompt asks for: the one for its field slot, and none where the line names none.
     sending: faintPick ? sends.find(x => x.field === replacingField(s)) ?? null : null,
+    // The pivot this switch-out prompt asks for: the one for its field slot taking out the mon leaving.
+    pivoting: pivotField === null ? null : nowStep?.pivots.find(x => x.field === pivotField && x.for?.name === leaving) ?? null,
     learning: prompt ? steps[line.steps.indexOf(prompt.st)].learns[picksOf(line, prompt.st).indexOf(prompt.pick)] : null,
     last: last.turn,
     turns: last.turn - line.steps[0].turn + 1,
@@ -356,11 +360,16 @@ export const oracleStepSummary = m => {
   if (m.learning) return `⚔ ${at} · ${pickText(m.learning)}`;
   const sends = sendsToCome(m, st).map(x => `then ${sendWords(x)}`);
   if (m.sending) return [`⚔ ${at}`, sendWords(m.sending), ...sends].join(" · ");
+  if (m.pivoting) {
+    const after = st.pivots.slice(st.pivots.indexOf(m.pivoting) + 1).map(x => `then ${sendWords(x)}`);
+    return [`⚔ ${at}`, sendWords(m.pivoting), ...after, ...st.learns.map(p => `then ${pickText(p)}`), ...sends].join(" · ");
+  }
   const then = [...st.pivots.map(x => `then ${sendWords(x)}`), ...st.learns.map(p => `then ${pickText(p)}`), ...sends];
   if (!st.act) return [at, "no input", ...then, `expect ${expectText(st.after)}`].filter(Boolean).join(" · ");
   return [`⚔ ${at}`, actText(st.act), ...then].filter(Boolean).join(" · ");
 };
 export const oracleLearnCall = m => (m?.learning ? pickText(m.learning) : null);
+export const oraclePivotCall = m => (m?.pivoting ? `send ${m.pivoting.name}` : null);
 
 // The card event's `oracleLine` (extension-distribution.md §11.1).
 export const oracleLineState = (m, off) => {

@@ -50,6 +50,7 @@ export const drawBattle = m => {
     ...(sl.move ? [badge(sl.type), h("span", { fontWeight: "bold" }, sl.move)] : [h("span", dim, deadEndText(sl))]),
     ...(sl.target === "both" ? [h("span", { ...ink.ours, marginLeft: "4px" }, "→ both")]
       : sl.target ? [h("span", { ...ink.ours, margin: "0 2px 0 4px" }, "→"), mon(sl.target.icon, sl.target.name, ICON.mon)] : []),
+    ...(sl.pivot ? [h("span", { ...ink.ours, margin: "0 3px 0 4px" }, "then send"), mon(sl.pivot.icon, sl.pivot.name, ICON.mon)] : []),
     h("span", { flex: "1" }),
     sl.ko || sl.accPct != null ? h("span", dim, [sl.ko ? hitsText(sl.ko) : null, sl.accPct != null ? `${sl.accPct}%` : null].filter(Boolean).join(" · ")) : null,
     sl.notes?.length ? h("span", { ...dim, marginLeft: "4px" }, sl.notes.join(" · ")) : null);
