@@ -38,7 +38,7 @@ const mon = (name, types, base, ability, moves, f = {}, spliced = false) => {
     getSpeciesForm: () => species, getTypes: () => species.type2 == null ? [species.type1] : [species.type1, species.type2],
     getAbility: () => ({ name: ability, attrs: f.noFusion ? [{ constructor: { name: "NoFusionAbilityAbAttr" } }] : [] }),
     // `copy` is what a passive Trace copied on the field, which `getPassiveAbility` answers first (game-code.md §24).
-    // The game holds it as an ability id, and this as a name: there is no ability table here.
+    // The game holds it as an ability id; this holds a name.
     hasPassive: () => !!f.passive, getPassiveAbility() { return { name: this.summonData?.passiveAbility || f.passive, attrs: [] }; },
     ...(f.copy ? { summonData: { passiveAbility: f.copy } } : {}),
     getStat: () => 100, getIconAtlasKey: () => "pokemon_icons_1", getIconId: () => name,
@@ -49,8 +49,8 @@ const mon = (name, types, base, ability, moves, f = {}, spliced = false) => {
     moveset: moves.map(id => new PokemonMove(id)),
   };
 };
-// `tweak` maps a member's name to options laid over its own.
-const party = (spliced = false, tweak = {}) => {
+// `overrides` maps a member's name to options laid over its own.
+const party = (spliced = false, overrides = {}) => {
   monId = 0;
   const mons = [
     ["Garchomp", ["Dragon", "Ground"], [108, 130, 95, 80, 85, 102], "Rough Skin", [MV.dragonClaw, MV.earthquake], { level: 50, nature: 3, passive: "Sand Force" }],
@@ -60,7 +60,7 @@ const party = (spliced = false, tweak = {}) => {
     ["Azumarill", ["Water", "Fairy"], [100, 50, 80, 60, 80, 50], "Huge Power", [MV.aquaTail, MV.playRough], { level: 42 }],
     ["Mimikyu", ["Ghost", "Fairy"], [55, 90, 80, 50, 105, 96], "Disguise", [MV.shadowClaw], { level: 30, noFusion: true }],
   ];
-  return mons.map(([name, types, base, ability, moves, f]) => mon(name, types, base, ability, moves, { ...f, ...tweak[name] }, spliced));
+  return mons.map(([name, types, base, ability, moves, f]) => mon(name, types, base, ability, moves, { ...f, ...overrides[name] }, spliced));
 };
 
 // Every name is in the randbats snapshot, which is joined on name alone, and none is a party species above, so
