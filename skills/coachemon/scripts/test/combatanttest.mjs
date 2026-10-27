@@ -411,7 +411,8 @@ const shown = x => x.map(o => `${o.name} ×${o.e} ${o.max}${o.pKo ? ` pKo ${o.pK
   const hurt = pairScore(run, member({ ability: 5, hp: 52 }), nuke);
   assert.equal(pairScore(run, member({}), nuke).taken, 1, "without Sturdy it goes down to the first");
   assert.equal(full.taken, 2, "Sturdy keeps it up on 1 HP for the second");
-  assert.equal(hurt.taken, 1, "and a HP short of full there is no Sturdy left to keep it up");  console.log(`sturdy duel taken | full ${full.taken} | hurt ${hurt.taken}`);
+  assert.equal(hurt.taken, 1, "and a HP short of full there is no Sturdy left to keep it up");
+  console.log(`sturdy duel taken | full ${full.taken} | hurt ${hurt.taken}`);
 }
 
 // ---- A passive Trace is the member's own, not the passive it copied on the field

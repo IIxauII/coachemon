@@ -462,7 +462,6 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
     // Battler indices: the game's own answer, not a share.
     targets: exactRow ? [...(exactRow.targets ?? [])] : null,
     revive: Math.max(0, ...kos.map(k => k.revive)),
-    // A curve takes one answer for every use, so a mix of moves keeps Sturdy unless each of them goes through it.
     ignoresSturdy: moves.some(m => m.o) && moves.every(m => !m.o || !!m.o.ignoresSturdy),
     boost: Object.keys(boost).length ? boost : null,
     // HP its drain moves give it back a turn; negative into Liquid Ooze.
