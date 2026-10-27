@@ -195,6 +195,13 @@ const bigHit = move(1, "Big Hit", 14, 120);
   const mold = mon("mold", { abilities: ["MoveAbilityBypassAbAttr"] });
   setup(mold, sturdy);
   assert.equal(moveOutcome(scene, mold, sturdy, nuke, { crit: false }).pKo, 1, "Mold Breaker ignores Sturdy");
+  const curveOf = a => {
+    setup(a, sturdy);
+    const o = moveOutcome(scene, a, sturdy, nuke, { crit: false });
+    return koCurve(sturdy, useOf(o), { ignoresSturdy: o.ignoresSturdy }).by.slice(0, 2);
+  };
+  assert.deepEqual(curveOf(atk), [0, 1], "a record's curve keeps Sturdy");
+  assert.deepEqual(curveOf(mold), [1, 1], "and a Mold Breaker's curve goes through it, as its record does");
   const band = mon("band", { hp: 100, items: [new SurviveDamageModifier()] });
   setup(atk, band);
   near(moveOutcome(scene, atk, band, nuke, { crit: false }).pKo, 0.9, "Focus Band");
@@ -807,6 +814,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   const sure = (d, n) => [{ d, p: 1, ...(n ? { n } : {}) }];
   const seed = held("PokemonInstantReviveModifier");
   const boss3 = (hp = 300) => mon("boss3", { hp, maxHp: 300, boss: 3, player: false });
+  const sturdy = (hp, extra = {}) => mon(`sturdy${hp}`, { hp, maxHp: 100, abilities: ["PreDefendFullHpEndureAbAttr"], ...extra });
   // [what, target, use, options, P(down) by use]
   const TABLE = [
     ["plain 2HKO", mon("t", { hp: 100 }), sure(60), {}, [0, 1]],
@@ -829,6 +837,10 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
     ["a wild boss's Def rises as a bar breaks", mon("b", { hp: 200, boss: 2, player: false }), sure(100), { cat: "physical" }, [0, 0, 1]],
     ["…a trainer's doesn't", Object.assign(mon("b", { hp: 200, boss: 2, player: false }), { hasTrainer: () => true }), sure(100), { cat: "physical" }, [0, 1]],
     ["lost turns deal nothing", mon("t", { hp: 100 }), sure(100), { act: i => (i === 0 ? 0.5 : 1) }, [0.5, 1]],
+    ["Sturdy keeps a full-HP target up on 1 HP", sturdy(100), sure(300), {}, [0, 1]],
+    ["…but not a hurt one", sturdy(99), sure(300), {}, [1]],
+    ["…nor through the second of two lethal hits in one use", sturdy(100), sure(600, 2), {}, [1]],
+    ["…nor through turn-end chip", sturdy(100), sure(0), { turnEnd: -150 }, [1]],
   ];
   for (const [what, target, use, opts, want] of TABLE) {
     setup(mon("a"), target);
@@ -851,6 +863,11 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.deepEqual(koCurve(mon("b", { hp: 200, boss: 2, player: false }), sure(150)).after1.map(x => [x.hp, x.bar]), [[100, 0]]);
   // A boss's status chip is clamped at the bar (game-code.md §3).
   assert.deepEqual(koCurve(mon("bar", { hp: 220, maxHp: 400, boss: 2, player: false }), sure(0), { turnEnd: -30 }).after1.map(x => [x.hp, x.bar]), [[200, 0]]);
+  // A miss leaves Sturdy standing for use 2: 0.9 × 0.9 down by then.
+  const missOr = [{ d: 0, p: 0.1, n: 0 }, { d: 300, p: 0.9 }];
+  assert.deepEqual(round(koCurve(sturdy(100), missOr).by).slice(0, 2), [0, 0.81], "Sturdy on every use from full HP");
+  assert.deepEqual(round(koCurve(sturdy(100), missOr, { firstKo: 0 }).by).slice(0, 2), [0, 0.81],
+    "firstKo, which holds Sturdy already, lands use 1's survivors on 1 HP as the curve does");
   // `start`: an earlier turn's branches.
   assert.deepEqual(round(koCurve(mon("t", { hp: 100 }), sure(60), { start: [{ hp: 50, p: 0.5 }, { hp: 100, p: 0.5 }] }).by).slice(0, 2), [0.5, 1]);
   scene.enemyModifiers = [held("EnemyEndureChanceModifier", { chance: 50 })];
@@ -860,6 +877,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   scene.enemyModifiers = [held("EnemyEndureChanceModifier", { chance: 100 })];
   assert.deepEqual(koCurve(tough, sure(300)).by.slice(0, 2), [0, 1], "a sure token saves use 1, use 2 KOs");
   assert.equal(koCurve(tough, sure(600, 2)).by[0], 1,"two lethal hits in one use: the first is saved, the second KOs");
+  assert.deepEqual(koCurve(sturdy(100, { player: false }), sure(300)).by.slice(0, 2), [0, 1], "Sturdy saves use 1 and still spends the token");
   const tokBoss = mon("tokboss", { hp: 200, boss: 2, player: false });
   assert.deepEqual(koCurve(tokBoss, sure(250)).by.slice(0, 2), [0, 1], "a proc on a hit the bar clamp stops spends the token");
   scene.enemyModifiers = [];
