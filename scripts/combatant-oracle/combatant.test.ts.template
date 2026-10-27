@@ -160,4 +160,16 @@ describe("the combatant adapter against the game (#989)", () => {
     expect(hit.raw).toBeGreaterThan(hit.targetHp);
     expect(hit.pKo).toBe(1);
   });
+
+  it("a member holding a passive Trace's copy whose own passive is no longer Trace, as after an evolution, is named by the passive it has (#992)", async () => {
+    game.override.ability(AbilityId.BALL_FETCH).passiveAbility(AbilityId.TRACE).enemyAbility(AbilityId.STURDY);
+    await game.classicMode.startBattle(SpeciesId.MAGIKARP);
+    const mon = game.field.getPlayerPokemon();
+    game.override.passiveAbility(AbilityId.NONE).hasPassiveAbility(true);
+    expect(mon.getPassiveAbility().id).toBe(AbilityId.STURDY);
+
+    const own = allAbilities[mon.species.getPassiveAbility(mon.formIndex)];
+    expect(own.id).not.toBe(AbilityId.TRACE);
+    expect(combatantOf({ mon }).getPassiveAbility().name).toBe(own.name);
+  });
 });

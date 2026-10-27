@@ -138,11 +138,10 @@ const boostSlot = (pm, by) => {
 export const itemKeyOf = m => [m?.constructor?.name ?? null, stacksOf(m), pricingOf(m), m?.stats ?? null,
   m?.multiplier ?? null, m?.moveType ?? null, m?.species ?? null, m?.isTransferable ?? null];
 
-// `mon` with its passive Trace's copy from the field masked off, which `getPassiveAbility` answers first and
-// `hasAbilityWithAttr` asks whatever `ignoreOverride` says (game-code.md §24), so a copy reached a later fight's duel
-// (#992). The game's own calls on the view answer the member's own passive, and nothing is written to `mon`.
+// `mon` with its passive Trace's copy from the field masked off (game-code.md §24), which reached a later fight's duel
+// (#992). Nothing is written to `mon`.
 const untraced = mon => (mon?.summonData?.passiveAbility
-  ? Object.create(mon, { summonData: { value: Object.create(mon.summonData, { passiveAbility: { value: undefined } }) } })
+  ? Object.create(mon, { summonData: { value: Object.create(mon.summonData, { passiveAbility: { value: undefined, writable: true } }) } })
   : mon);
 
 // A slot built from a move id has none of its PP spent, which is what `plainUsable` reads it by.
@@ -234,10 +233,10 @@ export const combatantOf = (spec = {}) => {
           : abilityNameOf(firstAbility(form));
   // The passive stays the base half's, fused or not (game-code.md §24), but it is the *species*' own, so an evolved
   // member brings the evolved species' passive rather than the one it has now (game-code.md §23).
-  const self = untraced(mon);
+  const ownMon = untraced(mon);
   const passive = spec.passive !== undefined ? abilityNameOf(spec.passive)
     : mon && tryDo(() => mon.hasPassive(), false)
-      ? abilityNameOf(evolved ? tryDo(() => species.getPassiveAbility(formIndex)) : tryDo(() => self.getPassiveAbility()))
+      ? abilityNameOf(evolved ? tryDo(() => species.getPassiveAbility(formIndex)) : tryDo(() => ownMon.getPassiveAbility()))
       : null;
   const given = statRowOf(spec.stats);
   // A live member's own call folds in its vitamins, its fusion and the Flip Stat challenge (game-code.md §20) — all
@@ -272,7 +271,7 @@ export const combatantOf = (spec = {}) => {
   // fight's duel, and past a Worry Seed's swap as the name is (#989). Without `canApply` the game's refusal of a fused
   // form-change ability goes too (game-code.md §24).
   const hasAttr = spec.ability === undefined && !other && !evolved && mon
-    ? a => tryDo(() => self.hasAbilityWithAttr(a, false, true), false)
+    ? a => tryDo(() => ownMon.hasAbilityWithAttr(a, false, true), false)
     : a => attrs.has(a);
   return {
     // Everything the duel reads, so a pair score memoised on it cannot be served to a different duel. The held items
