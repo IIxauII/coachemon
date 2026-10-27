@@ -6,6 +6,8 @@ import { moveTraits } from "./07-move-traits.js";
 import { addShare, healingCharm, koChanceAt, koCurve, koTurn, koTurns, rawMax, shares, useOf } from "./10-damage.js";
 
 const pmName = pm => pm?.getName?.() ?? pm?.name ?? "";
+// U-turn, Baton Pass and the rest: the game asks for a pivot once it lands (CONTEXT.md, `Pivot`).
+const switchesOut = o => (o?.pm?.getMove?.()?.attrs ?? []).some(a => a?.constructor?.name === "ForceSwitchOutAttr" && a.selfSwitch === true);
 const bossBarsLeft = p => (p.isBoss?.() && p.bossSegments > 1 ? Math.max(1, (p.bossSegmentIndex ?? p.bossSegments - 1) + 1) : 1);
 // Turn-end HP change, signed: heals +, chip −. `dealt`: damage `p` deals a turn (Shell Bell). Never with
 // `tookSuperEffective`: `koCurve` eats the Enigma Berry, branch by branch, and under `sitrus` false the Sitrus too.
@@ -1321,15 +1323,15 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     return inMemo.get(me);
   };
 
-  // `entering`: switched in by choice this turn, so it takes the incoming hit and moves next turn. `mine`: slot 0's
-  // locked command, when `me` is that slot.
-  const options = (me, entering, mine = null, hyp = null, teraAt = null) => {
+  // `entering`: switched in by choice this turn, so it takes the incoming hit and moves next turn, unless `hit` is
+  // false: a pivot sent in after the foe has moved takes none. `mine`: slot 0's locked command, when `me` is that slot.
+  const options = (me, entering, mine = null, hyp = null, teraAt = null, hit = true) => {
     // `hyp`: `at`, the state written on; `lost`, the attempts the status costs each foe, index 0 this turn's. Under it
     // the search stops at this turn, and `incoming` stays on the real turn: the entry hit lands before the status does.
     // `teraAt`: the turn our Tera lands on, which the search runs on whole.
     const turn = teraAt ?? turnOf(hyp);
     const assumed = !!hyp;
-    const inc = entering ? incoming(me) : { dmg: 0, ko: 0 };
+    const inc = entering && hit ? incoming(me) : { dmg: 0, ko: 0 };
     const hp = Math.min(me.getMaxHp?.() ?? Infinity, me.hp - inc.dmg);
     const beforeActing = hp <= 0 ? 1 : 1 - active.reduce((keep, f) => {
       const t = threatFrom(turn, f, me, null, { next: true, entered: true });
@@ -1386,7 +1388,8 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     // beats repeating the move by `DEPTH_GAIN`; `then` names the follow-up.
     const deeper = x => {
       const o = x.move, f = active[x.target], t1 = x.trade?.turn1;
-      if (!t1 || o.traits?.charge || o.traits?.recharge || o.traits?.lock || o.traits?.selfKo || o.semi || actDelay(me)) return x;
+      // A move that switches its user out leaves the follow-up to the pivot.
+      if (!t1 || o.traits?.charge || o.traits?.recharge || o.traits?.lock || o.traits?.selfKo || o.semi || actDelay(me) || switchesOut(o)) return x;
       const standing = 1 - t1.we - t1.they;
       if (standing < 0.05) return x;
       // The joint scoring only sees this turn's hits, so a follow-up that hits our partner is out.
@@ -1995,6 +1998,19 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     const t = ts.reduce((a, b) => (b.expected > a.expected ? b : a));
     return { pct: Math.min(999, Math.round(incoming(me).dmg / me.getMaxHp() * 100)), move: t.move.name, type: t.move.type, e: t.move.e };
   };
+  // The pivot a move that switches its user out asks for (CONTEXT.md, `Pivot`): each mon left on the bench priced as a
+  // paid switch-in, which takes the foe's move only where our user moves first (game-code.md §9).
+  const pivotOf = p => {
+    if (!switchesOut(p.move)) return null;
+    const busy = best.picks.map(q => q.me);
+    const pFirst = p.trade?.pFirst ?? 1;
+    const valued = party.filter(m => m.hp > 0 && !current.includes(m) && !busy.includes(m)).map(m => {
+      const hit = top(opt(m, true)), clear = top(options(m, true, null, null, null, false));
+      return { m, v: pFirst * (hit?.score ?? -99) + (1 - pFirst) * (clear?.score ?? -99) };
+    });
+    const pick = valued.reduce((b, c) => (!b || c.v > b.v ? c : b), null);
+    return pick ? { icon: iconOf(pick.m), name: pick.m.name } : null;
+  };
   const swaps = plan => {
     const chosen = plan.picks.map(p => p.me);
     const outs = current.filter(p => !chosen.includes(p));
@@ -2090,6 +2106,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
           move: sup ? pmName(sup.pm) : p.move?.name ?? null, type: sup ? TYPES[mv.type] ?? null : p.move?.type ?? null, cat: sup ? "status" : p.move?.cat ?? null,
           target: sup || p.target === null || p.self ? null : p.target === "both" ? "both" : { icon: iconOf(active[p.target]), name: active[p.target].name },
           then: sup ? null : p.then?.name ?? null,
+          pivot: sup ? null : pivotOf(p),
           ko: sup || each ? 0 : helped && typeof p.target === "number" ? 1 : p.hits <= 3 ? p.hits : 0,
           accPct: sup || !(p.move?.acc < 1) ? null : Math.min(99, Math.round(p.move.acc * 100)),
           helped,

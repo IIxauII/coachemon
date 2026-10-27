@@ -2540,6 +2540,38 @@ Object.assign(TABLE, {
   assert.match(pick("Mega Kick", 200, 0.996).summary, / · 99%$/, "a pick below 100% never reads 100%");
 }
 
+// ---- A move that switches its user out names the pivot, priced as a switch-in against the foe's own move (#530).
+{
+  const pick = (move, bench = true) => {
+    const uTurn = [move, "Bug", 70, "P", 0, { attrs: move === "U-turn" ? [["ForceSwitchOutAttr", { selfSwitch: true }]] : [] }];
+    const party = [
+      mon("Scizor", 80, ["Bug", "Steel"], [270, 250, 200, 110, 160, 200], [uTurn], true),
+      ...(bench ? [
+        mon("Ferrothorn", 80, ["Grass", "Steel"], [290, 180, 250, 100, 230, 40], [["Power Whip", "Grass", 120, "P"]], false),
+        mon("Vaporeon", 80, ["Water"], [400, 120, 140, 220, 190, 120], [["Surf", "Water", 90, "S"]], false),
+      ] : []),
+    ];
+    const foes = [mon("Arcanine", 80, ["Fire"], [300, 230, 160, 200, 160, 150], [["Flare Blitz", "Fire", 120, "P"]], true)];
+    const table = {
+      [`Scizor>${move}>Arcanine`]: [[110], 1, 1], "Arcanine>Flare Blitz>Scizor": [[90], 1, 1],
+      "Arcanine>Flare Blitz>Ferrothorn": [[600], 1, 4], "Arcanine>Flare Blitz>Vaporeon": [[70], 1, 0.5],
+      "Ferrothorn>Power Whip>Arcanine": [[40], 1, 0.5], "Vaporeon>Surf>Arcanine": [[160], 1, 2],
+    };
+    const out = render({ party, foes, live: true, stubOutcome: outcomeFrom(table), switches: () => new Map(),
+      dist: () => [{ name: "Flare Blitz", type: "Fire", p: 1, score: 10, targets: [0] }] });
+    const slot = out.card.field.slots[0];
+    return { slot, line: out.field.find(l => /^⚔ Scizor/.test(l)) ?? "", summary: globalThis.__planner.cardSummary(out.card).field };
+  };
+  const u = pick("U-turn");
+  console.log(`== a pivot named\n${u.line}\n${u.summary}`);
+  assert.equal(u.slot.pivot?.name, "Vaporeon", "Vaporeon takes the Flare Blitz Ferrothorn can't");
+  assert.equal(u.slot.then, null, "a mon that leaves has no follow-up move of its own");
+  assert.match(u.line, /then send .*Vaporeon/, "the ⚔ line names who to send");
+  assert.match(u.summary, /^Scizor U-turn → Arcanine.*, then send Vaporeon/, "and so does the act summary");
+  assert.equal(pick("X-Scissor").slot.pivot, null, "a move that stays in names no pivot");
+  assert.equal(pick("U-turn", false).slot.pivot, null, "nobody on the bench, nobody to name");
+}
+
 // ---- Gordie W180 T16: the card calls Tera Water + Hydro Pump, and its fight plan presses the Tera on step 1 (#649)
 // The table keys a Terastallized mon as `name*`: Hydro Pump gains Tera STAB (×1.5 → ×2), and Stone Edge into Water
 // alone is ×1, not Water/Flying's ×2.

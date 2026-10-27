@@ -1333,6 +1333,7 @@ export const HUD: Area = {
         "src/ui/handlers/party-ui-handler.ts#PartyUiHandler.selectFilter",
       ],
     },
+    { name: "selfSwitch", kind: "field", at: ["src/data/moves/move.ts#ForceSwitchOutAttr.selfSwitch"] },
     { name: "selfTarget", kind: "field", at: ["src/data/moves/move.ts#MoveAttr.selfTarget"] },
     { name: "setup", kind: "method", at: [], from: "ours", note: "our turn.mon().setup() and learn plan" },
     { name: "shinyCatchMultiplier", kind: "field", at: ["src/@types/game-events.ts#TimedEvent.shinyCatchMultiplier"] },
