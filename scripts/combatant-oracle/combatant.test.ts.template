@@ -1,0 +1,150 @@
+// Runs inside the pinned clone, never this repo: `testInClone` copies it in and removes it again, so every `#…` import
+// is upstream's.
+import { readFileSync } from "node:fs";
+import { allAbilities, allMoves } from "#data/data-lists";
+import { AbilityId } from "#enums/ability-id";
+import { MoveId } from "#enums/move-id";
+import { SpeciesId } from "#enums/species-id";
+import { timedEventManager } from "#app/global-event-manager";
+import { speciesDataRegistry } from "#app/global-species-data-registry";
+import { GameManager } from "#test/framework/game-manager";
+import { trainerConfigs } from "#trainers/trainer-config";
+import Phaser from "phaser";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+
+const g = globalThis as any;
+
+function loadHud() {
+  if (g.__hud) {
+    return g.__hud;
+  }
+  g.window = globalThis;
+  (0, eval)(readFileSync(process.env.COACH_BUNDLE as string, "utf8"));
+  // Under vitest there are no `/assets/*.js` chunks for the HUD's shape scan to find: hand it the game's own tables.
+  g.__hud["04-game-tables"].setGameTables({
+    species: speciesDataRegistry,
+    events: timedEventManager,
+    trainers: trainerConfigs,
+    moves: allMoves,
+    abilities: allAbilities,
+  });
+  return g.__hud;
+}
+
+const combatantOf = (spec: object) => loadHud()["09-combatant"].combatantOf(spec);
+
+/** `fn` handed the team-value duel and the approx outcomes, inside one run read as a card's own. */
+function inRunRead<T>(game: GameManager, fn: (duel: (m: unknown, t: unknown) => any, outcomes: (a: unknown, d: unknown) => any[]) => T): T {
+  const hud = loadHud();
+  return hud["26-run"].readRun(
+    game.scene,
+    (run: unknown) =>
+      fn(
+        (m, t) => hud["12-value"].duel(run, m, t),
+        (a, d) => hud["10-damage"].approxOutcomes(hud["09-combatant"].duelEnv(game.scene), a, d),
+      ),
+    { cleared: false },
+  );
+}
+
+/** A later foe's Psystrike into `mon`, built as a combatant at full health: a level-5 member goes down to it in one hit. */
+const hitAtLaterFight = (game: GameManager, mon: unknown) =>
+  inRunRead(game, (_, outcomes) =>
+    outcomes(
+      combatantOf({ species: speciesDataRegistry.getSpecies(SpeciesId.MEWTWO), level: 100, moves: [MoveId.PSYSTRIKE], player: false }),
+      combatantOf({ mon }),
+    )[0],
+  );
+
+function expectHeldOn(hit: any) {
+  expect(hit.raw).toBeGreaterThan(hit.targetHp);
+  expect(hit.pKo).toBe(0);
+}
+
+describe("the combatant adapter against the game (#989)", () => {
+  let phaserGame: Phaser.Game;
+  let game: GameManager;
+
+  beforeAll(() => {
+    phaserGame = new Phaser.Game({ type: Phaser.HEADLESS });
+  });
+
+  beforeEach(() => {
+    game = new GameManager(phaserGame);
+    game.override
+      .battleStyle("single")
+      .criticalHits(false)
+      .startingLevel(5)
+      .enemyLevel(5)
+      .ability(AbilityId.STURDY)
+      .moveset(MoveId.SPLASH)
+      .enemySpecies(SpeciesId.MAGIKARP)
+      .enemyAbility(AbilityId.BALL_FETCH)
+      .enemyMoveset(MoveId.SPLASH);
+  });
+
+  it.each([
+    ["Tackle", MoveId.TACKLE],
+    ["Earthquake", MoveId.EARTHQUAKE],
+    ["Rollout", MoveId.ROLLOUT],
+  ])("a member with Parental Bond is scored by the team-value duel, its %s striking as often as the game's", async (_, move) => {
+    game.override.ability(AbilityId.PARENTAL_BOND).moveset(move).enemySpecies(SpeciesId.SNORLAX);
+    await game.classicMode.startBattle(SpeciesId.KANGASKHAN);
+    const mon = game.field.getPlayerPokemon();
+    const member = combatantOf({ mon });
+    const foe = combatantOf({ mon: game.field.getEnemyPokemon() });
+
+    const { pair, hit } = inRunRead(game, (duel, outcomes) => ({ pair: duel(member, foe), hit: outcomes(member, foe)[0] }));
+    expect(pair.unavailable).toBeUndefined();
+    expect(pair.s).toEqual(expect.any(Number));
+
+    game.move.select(move);
+    await game.phaseInterceptor.to("MoveEndPhase", false);
+    expect(hit.traits.hits.mean).toBe(mon.turnData.hitCount);
+  });
+
+  it("a Sturdy member holds on against a later foe's one-hit KO", async () => {
+    await game.classicMode.startBattle(SpeciesId.MAGIKARP);
+    expectHeldOn(hitAtLaterFight(game, game.field.getPlayerPokemon()));
+  });
+
+  it("a Sturdy member under Gastro Acid still holds on against a later foe's one-hit KO", async () => {
+    game.override.enemyMoveset(MoveId.GASTRO_ACID);
+    await game.classicMode.startBattle(SpeciesId.MAGIKARP);
+    const mon = game.field.getPlayerPokemon();
+    game.move.select(MoveId.SPLASH);
+    await game.toNextTurn();
+    expect(mon.summonData.abilitySuppressed).toBe(true);
+
+    expectHeldOn(hitAtLaterFight(game, mon));
+  });
+
+  it("a Sturdy member on the field under a foe's Neutralizing Gas still holds on against a later foe's one-hit KO", async () => {
+    game.override.enemyAbility(AbilityId.NEUTRALIZING_GAS);
+    await game.classicMode.startBattle(SpeciesId.MAGIKARP);
+    const mon = game.field.getPlayerPokemon();
+    expect(mon.hasAbilityWithAttr("PreDefendFullHpEndureAbAttr")).toBe(false);
+
+    expectHeldOn(hitAtLaterFight(game, mon));
+  });
+
+  it("a fainted Sturdy member, back on its feet, holds on against a later foe's one-hit KO", async () => {
+    await game.classicMode.startBattle(SpeciesId.MAGIKARP, SpeciesId.GEODUDE);
+    const mon = game.scene.getPlayerParty()[1];
+    mon.hp = 0;
+    expect(mon.hasAbilityWithAttr("PreDefendFullHpEndureAbAttr")).toBe(false);
+
+    expectHeldOn(hitAtLaterFight(game, mon));
+  });
+
+  it("a Sturdy member whose ability Worry Seed replaced still holds on against a later foe's one-hit KO", async () => {
+    game.override.enemyMoveset(MoveId.WORRY_SEED);
+    await game.classicMode.startBattle(SpeciesId.MAGIKARP);
+    const mon = game.field.getPlayerPokemon();
+    game.move.select(MoveId.SPLASH);
+    await game.toNextTurn();
+    expect(mon.getAbility().id).toBe(AbilityId.INSOMNIA);
+
+    expectHeldOn(hitAtLaterFight(game, mon));
+  });
+});

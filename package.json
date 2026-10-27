@@ -23,6 +23,7 @@
     "clone:smoke": "node scripts/clone-smoke/run.ts",
     "oracle:battle": "node scripts/battle-oracle/run.ts",
     "oracle:encounter": "node scripts/encounter-oracle/run.ts",
+    "oracle:combatant": "node scripts/combatant-oracle/run.ts",
     "oracle:preview": "node scripts/preview-stability/run.ts",
     "recheck:promote": "node scripts/recheck/promote-run.ts",
     "library:replay": "node scripts/library-replay/run.ts",

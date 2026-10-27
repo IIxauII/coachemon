@@ -62,7 +62,15 @@ const hitShape = (mv, user, party, target) => {
     : type === MultiHitType.TWO_TO_FIVE ? (skillLink ? [{ n: 5, p: 1 }] : [{ n: 2, p: 0.35 }, { n: 3, p: 0.35 }, { n: 4, p: 0.15 }, { n: 5, p: 0.15 }])
     : [{ n: type === MultiHitType.TWO ? 2 : type === MultiHitType.THREE ? 3 : type === MultiHitType.TEN ? 10 : Math.max(1, beatUp()), p: 1 }];
   const spread = SPREAD_TARGETS.includes(mv?.moveTarget);
-  const enhanced = (...args) => (typeof mv?.canBeMultiStrikeEnhanced === "function" ? !!mv.canBeMultiStrikeEnhanced(...args) : !mh && !spread);
+  // The game's spread check reads the user's targets off the field, which a combatant built off it has none of, and the
+  // throw put a Parental Bond member out of every duel (#989). Asked again without it: an off-field duel has one foe,
+  // which a spread move strikes alone.
+  const ask = (...args) => !!mv.canBeMultiStrikeEnhanced(...args);
+  const enhanced = (user, restrictSpread = false, at) => {
+    try { return ask(user, restrictSpread, at); } catch {}
+    // game-less-backed
+    try { return ask(user, false, at); } catch { return !mh && !spread; }
+  };
   const lenses = heldStackOf(user, "PokemonMultiHitModifier");
   const lensStrikes = lenses && enhanced(user) ? lenses : 0;
   const extra = (hasAbAttr(user, "AddSecondStrikeAbAttr") && enhanced(user, true, target ?? undefined) ? 1 : 0) + lensStrikes;

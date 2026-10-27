@@ -262,8 +262,11 @@ export const combatantOf = (spec = {}) => {
   // An overridden ability is no longer the live member's, so only an untouched one may answer off the member. A
   // fusion answers by name too: its ability is the other half's and its passive the base's, and neither mon alone
   // holds both. An evolved member's pair is the evolved species', which the member cannot be asked about either.
+  // Asked without `canApply`, which read today's field — a Gastro Acid, a Neutralizing Gas, a faint — into a later
+  // fight's duel, and past a Worry Seed's swap as the name is (#989). Without `canApply` the game's refusal of a fused
+  // form-change ability goes too (game-code.md §24).
   const hasAttr = spec.ability === undefined && !other && !evolved && mon
-    ? a => tryDo(() => mon.hasAbilityWithAttr(a), false)
+    ? a => tryDo(() => mon.hasAbilityWithAttr(a, false, true), false)
     : a => attrs.has(a);
   return {
     // Everything the duel reads, so a pair score memoised on it cannot be served to a different duel. The held items

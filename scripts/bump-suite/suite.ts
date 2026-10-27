@@ -27,6 +27,7 @@ export const steps = (version: string): Step[] => {
     },
     { name: "clone:smoke", command: "npm run clone:smoke", env: at },
     { name: "oracle:encounter", command: "npm run oracle:encounter", env: at },
+    { name: "oracle:combatant", command: "npm run oracle:combatant", env: at },
     {
       name: "oracle:preview",
       command: `npm run oracle:preview -- --out ${path.join(logsAt(version), "preview-stability.json")}`,
