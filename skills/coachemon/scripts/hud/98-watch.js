@@ -207,7 +207,7 @@ const build = (road, sendIn = false) => {
     // Before `readCard`: `previewArm` and `rerollArm` overwrite the prediction these two score, and the card draws the
     // oracle line as its checkpoint left it.
     stage("check", () => { rerollCheck(s); previewCheck(s); journalScored(s, oracleLineCheck(s)); });
-    const card = stage("read", () => readCard(s, accountRead(s), { road, estimate: sendIn }));
+    const card = stage("read", () => readCard(s, accountRead(s), { road, estimate: sendIn, decided: decided?.card ?? null }));
     screenNote(s, card);
     stage("arm", () => {
       armPreview(card);

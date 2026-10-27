@@ -476,6 +476,7 @@ T1 pivots to Blissey                    held
 strip | trainer ⚔ ~ T1/5 · Rayquaza Dragon Ascent · then send Blissey for Rayquaza
     ⚔ T1 Rayquaza Flying Dragon Ascent → ~ Rayquaza 300/400 · Eternatus 400/1600
     ⤵ then send Blissey for Rayquaza at the switch-out prompt
+at the switch-out prompt | ⚔ ~ T1/5 · send Blissey for Rayquaza
 T3's Zacian pivots to Snorlax           held
 == W200 T3, Zacian pivoting out
 strip | trainer ⚔ ~ T3/5 · Rayquaza Dragon Ascent ; Zacian Behemoth Blade · then send Snorlax for Zacian

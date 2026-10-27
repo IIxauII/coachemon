@@ -133,7 +133,7 @@ const verdictOf = m => cardSummary(m).verdict;
   const first = s => s.split(" · ")[0];
   const oracle = {
     learn: first, reward: first, starters: first, fusion: first,
-    pivot: s => first(s).split(" — ")[0],
+    pivot: s => first(s).split(" — ")[0].replace(/ \(planned at the command\)$/, ""),
     biome: s => s.split(" · ").find(o => o.includes(" pick — "))?.replace(/ -?\d+ pick — [\s\S]*$/, "") ?? null,
     encounter: s => first(s.slice(s.indexOf(": ") + 2)).split(" — ")[0],
   };
@@ -147,6 +147,8 @@ const verdictOf = m => cardSummary(m).verdict;
   const starters = over => ({ kind: "starters", wave: null, limit: 10, picks: [], full: false, room: 3, ...over });
   const pair = { base: { name: "Garchomp" }, other: { name: "Dragonite" }, value: 2.1, fuse: true };
   const fusion = over => ({ kind: "fusion", wave: 40, picked: null, better: null, unread: null, rows: [], ...over });
+  const pivot = over => ({ kind: "pivot", wave: 24, turn: 3, slot: 0, out: { name: "Scizor" }, foes: [], fallen: [],
+    bench: [{ name: "Vaporeon", hp: 100, types: ["Water"], hits: [], resists: false }], ...over });
   const cases = [
     [{ kind: "learn", wave: 14, name: "Charmeleon", move: { name: "Flamethrower" }, verdict: "Learn → forget Ember", forget: 1, team: { onlyType: "Dark" } },
       "Learn → forget Ember"],
@@ -171,9 +173,9 @@ const verdictOf = m => cardSummary(m).verdict;
     [fusion({ rows: [pair] }), "Garchomp ← Dragonite (+2.1 turns)"],
     [fusion({ picked: { name: "Gible" } }), "nothing to fuse Gible with"],
     [fusion({ unread: "no party" }), "no team read here: no party"],
-    // No pick is judged mid-turn (#530), so the call names none, whoever the bench holds.
-    [{ kind: "pivot", wave: 24, turn: 3, slot: 0, out: { name: "Scizor" }, foes: [],
-      bench: [{ name: "Vaporeon", hp: 100, types: ["Water"], hits: [], resists: false }] }, "your pick"],
+    // No pick is judged mid-turn (#530): the call is the pick the command planned, or none.
+    [pivot({ planned: { name: "Vaporeon" }, unplanned: null }), "send Vaporeon"],
+    [pivot({ planned: null, unplanned: "no plan from this turn's command" }), "your pick"],
   ];
   const seen = new Set();
   for (const [card, expected] of cases) {

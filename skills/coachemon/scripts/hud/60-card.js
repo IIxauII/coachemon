@@ -17,9 +17,9 @@ import { aheadModel, learnRoster, aheadSummary } from "./49-ahead.js";
 import { auditJob, auditStep, auditSummary } from "./50-audit.js";
 import { spliceScreen, fusionLeadingCall, fusionModel, fusionSummary } from "./49-fusion.js";
 import { rewardsLeadingCall, rewardsModel, rewardsSummary } from "./52-shop.js";
-import { pivotLeadingCall, pivotModel, pivotScreen, pivotSummary } from "./53-pivot.js";
+import { pivotLeadingCall, pivotModel, pivotPickSummary, pivotPlanned, pivotScreen, pivotSummary } from "./53-pivot.js";
 import { starterScreen, starterModel, startersLeadingCall, startersSummary } from "./51-starters.js";
-import { offTheLineModel, offTheLineSummary, oracleLearnCall, oracleLineModel, oracleLineState, oracleLineSummary, oracleStepSummary } from "./57-oracle-line.js";
+import { offTheLineModel, offTheLineSummary, oracleLearnCall, oracleLineModel, oraclePivotCall, oracleLineState, oracleLineSummary, oracleStepSummary } from "./57-oracle-line.js";
 
 export const hitsText = n => `${n} hit${n === 1 ? "" : "s"}`;
 // A spread move KOing the two foes on different turns carries `koEach` instead of one `ko`: the slower one counts.
@@ -69,9 +69,10 @@ export const readOracleLine = (s, card) => {
     card.oracleLine = m?.learning ? m : null;
     return;
   }
-  // Drawn for its pick, never the card's call, so the card event's `oracleLine` stays null (§11.1).
+  // Drawn whole in `plan`, and the card's call only where its step names this pivot (#113).
   if (card?.kind === "pivot") {
     card.heldLine = oracleLineModel(s);
+    card.oracleLine = card.heldLine?.pivoting ? card.heldLine : null;
     return;
   }
   if (card?.kind !== "battle") return;
@@ -134,9 +135,9 @@ export const readAuditChunk = (s, card, job) => readRun(s, run => {
 
 // `account`: the run's own data, read once a refresh by 98-watch.js, which only the catch and Mystery Encounter cards
 // weigh a mon by. `road: false` leaves the road group to `readRoad`; `estimate` reads a battle card's turn without the
-// game. Answers on any screen, not only at a decision: the send-in redraw calls it between decisions and the first build
+// game; `decided` is the battle card built for the last battle decision, whose pick a pivot card carries. Answers on any screen, not only at a decision: the send-in redraw calls it between decisions and the first build
 // on whatever screen is up, so it reads the screen itself, where `detect(s)` would answer nothing (#888).
-export const readCard = (s, account, { road = true, estimate = false } = {}) => {
+export const readCard = (s, account, { road = true, estimate = false, decided = null } = {}) => {
   if (!s?.ui) return null;
   const handler = s.ui.getHandler();
   const starters = starterScreen(s);
@@ -164,6 +165,8 @@ export const readCard = (s, account, { road = true, estimate = false } = {}) => 
   } else if (pivot) {
     // Mid-turn, like a learn: a run read alone, never a turn read (CONTEXT.md, `Turn read`).
     card = readRun(s, run => pivotModel(run, pivot), { cleared: KINDS.pivot.cleared });
+    card.wave = s.currentBattle?.waveIndex ?? null;
+    Object.assign(card, pivotPlanned(card, decided));
     readOracleLine(s, card);
   } else {
     const b = s.currentBattle;
@@ -188,6 +191,8 @@ const turnLineSummary = card => (card.unavailable ? `no advice — ${card.unavai
 export const actSummary = card => oracleStepSummary(card.oracleLine)
   ?? ([offTheLineSummary(card.offTheLine), turnLineSummary(card)].filter(Boolean).join(" · ") || null);
 export const learnActSummary = card => oracleStepSummary(card.oracleLine) ?? learnSummary(card);
+export const pivotActSummary = card => oracleStepSummary(card.oracleLine) ?? pivotPickSummary(card);
+const pivotCall = card => oraclePivotCall(card.oracleLine) ?? pivotLeadingCall(card);
 
 // A mon the turn both attacks with and switches out carries its threat on two rows, so identical clauses collapse.
 export const foesSummary = card => {
@@ -244,7 +249,7 @@ const KINDS = {
   fusion: { event: null, cleared: true, key: wave, call: fusionLeadingCall },
   // One turn can ask twice in a field, after a U-turn and then the Emergency Exit of the mon it sent in: the leaver
   // tells them apart.
-  pivot: { event: "pivot", cleared: null, call: pivotLeadingCall,
+  pivot: { event: "pivot", cleared: null, call: pivotCall,
     key: card => `${wave(card)}|${card.turn ?? ""}|${card.slot}|${card.out?.name ?? ""}` },
 };
 // @only tests: clearedOn
@@ -279,7 +284,7 @@ export const cardSummary = card => {
   if (card.kind === "encounter") return { ...base, encounter: encounterSummary(card) };
   if (card.kind === "learn") return { ...base, learn: learnActSummary(card) };
   if (card.kind === "rewards") return { ...base, rewards: rewardsSummary(card) };
-  if (card.kind === "pivot") return { ...base, pivot: pivotSummary(card), plan: card.heldLine ? oracleLineSummary(card.heldLine) : null };
+  if (card.kind === "pivot") return { ...base, pivot: pivotSummary(card, pivotActSummary(card)), plan: card.heldLine ? oracleLineSummary(card.heldLine) : null };
   if (card.unavailable) return { ...base, verdict: "unavailable", field: actSummary(card), plan: planSummary(card) };
   // The foe the fight plan is keeping that mon for: the win condition's answers, or the foes only it beats (#170).
   const saveFor = name => {

@@ -2449,6 +2449,9 @@ export const battleModel = (baseTurn, { team = null } = {}) => {
     })),
     ifStay: ifStay ? ifStay.view.slots : null,
     title: `W${wave}${trainer ? ` · ${trainer.getName()}` : ""}`,
+    // What a pivot card checks the field plan's pick against (53-pivot.js, `pivotPlanned`).
+    turn: baseTurn.facts.turn ?? null,
+    against: facing.map(f => ({ id: f.id, name: f.name })),
     order: [...new Set(sendIns)].map(me => ({ icon: iconOf(me), name: me.name })),
     team: Object.entries(teamWeak).sort((x, y) => y[1] - x[1]).slice(0, 4),
     rows,

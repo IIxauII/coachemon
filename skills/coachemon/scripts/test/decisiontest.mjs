@@ -25,7 +25,11 @@ globalThis.clearTimeout = () => {};
 const MOVES = {
   10: ["Scratch", "Normal", 40, 0], 22: ["Vine Whip", "Grass", 45, 0], 33: ["Tackle", "Normal", 40, 0], 45: ["Growl", "Normal", 0, 2],
   52: ["Ember", "Fire", 40, 1], 53: ["Flamethrower", "Fire", 90, 1], 166: ["Sketch", "Normal", 0, 2], 225: ["Dragon Breath", "Dragon", 60, 1],
+  369: ["U-turn", "Bug", 70, 0],
 };
+// The planner tells a move that switches its user out by this class's name.
+class ForceSwitchOutAttr { constructor() { this.selfSwitch = true; } }
+const ATTRS = { 369: () => [new ForceSwitchOutAttr()] };
 // A class, because `learnState` builds the offered move through its moveset's own constructor.
 class Move {
   constructor(id) { this.moveId = id; this.ppUsed = 0; }
@@ -33,7 +37,7 @@ class Move {
   getMovePp() { return 10; }
   getMove() {
     const [name, t, power, category] = MOVES[this.moveId];
-    return { id: this.moveId, name, type: TY.indexOf(t), power, category, accuracy: 100, moveTarget: 3, isChargingMove: () => false, attrs: [] };
+    return { id: this.moveId, name, type: TY.indexOf(t), power, category, accuracy: 100, moveTarget: 3, isChargingMove: () => false, attrs: ATTRS[this.moveId]?.() ?? [] };
   }
 }
 const mon = (id, name, types, moves) => ({ id, name, level: 30, hp: 100, getMaxHp: () => 100, getTypes: () => types.map(t => TY.indexOf(t)),
@@ -647,6 +651,42 @@ scene = game;
   three.hp = 100;
   g.party = [full, three];
   for (const p of g.party) p.isOnField = () => true;
+}
+
+// ---- the pivot card carries the pick the command's battle card planned, while the field it was planned on holds (#530)
+{
+  const scizor = mon(31, "Scizor", ["Bug", "Steel"], [369]), lapras = mon(32, "Lapras", ["Water", "Ice"], [33]), pidgey = mon(33, "Pidgey", ["Normal", "Flying"], [33]);
+  const ours = [scizor, lapras, pidgey];
+  for (const p of ours) p.isOnField = () => g.party[0] === p;
+  // Planned at W`wave`'s command, then `change` between U-turn and its party screen; the pivot card the screen built.
+  const uTurn = (wave, change = () => {}) => {
+    // The enemy AI's call, off the prototype as the game has it: the command's card is planned, not `unavailable`.
+    const paras = Object.setPrototypeOf(foe(40 + wave), { getNextMove: () => ({ move: 10, targets: [BattlerIndex.PLAYER] }) });
+    for (const p of ours) p.hp = 100;
+    step(`W${wave} T1's command`, () => { g.battle = battle(wave, 1); g.party = [...ours]; g.foes = [paras]; g.phase = { phaseName: "CommandPhase", fieldIndex: 0 }; g.mode = UiMode.COMMAND; g.handler = {}; g.handlers = {}; });
+    const planned = __coachHud.last().field.slots[0];
+    step("U-turn lands", () => { g.battle.turnCommands[BattlerIndex.ENEMY] = { move: 1 }; g.phase = { phaseName: "MoveEffectPhase" }; g.mode = UiMode.MESSAGE; change(paras, planned.pivot); });
+    step("its party screen is up", () => { g.phase = { phaseName: "SwitchPhase", isModal: true, doReturn: true, fieldIndex: 0 }; g.mode = UiMode.PARTY; g.handler = { partyUiMode: PartyUiMode.FAINT_SWITCH }; });
+    const said = __coachHud.summary().pivot, ev = cards().filter(c => c.kind === "pivot").at(-1);
+    console.log(`${planned.move} → ${planned.pivot?.name} | ${said} | ${ev.verdict}`);
+    return { planned, card: __coachHud.last(), said, ev };
+  };
+  const carried = uTurn(15);
+  assert.equal(carried.planned.move, "U-turn");
+  assert.ok(carried.planned.pivot, "the command's plan names who to send");
+  const pick = carried.planned.pivot.name;
+  assert.equal(carried.card.planned?.name, pick);
+  assert.ok(carried.said.startsWith(`send ${pick} (planned at the command)`), carried.said);
+  assert.deepEqual([carried.ev.verdict, carried.ev.oracleLine], [`send ${pick}`, null], "the planned pick is the card's call");
+  const onix = foe(39, "Onix");
+  const replaced = uTurn(16, paras => { paras.hp = 0; g.foes = [paras, onix]; });
+  assert.equal(replaced.card.planned, null);
+  assert.ok(replaced.said.startsWith(`your pick — planned for ${pick}, but Paras fell, Onix came in · mid-turn, no turn read`), replaced.said);
+  assert.equal(replaced.ev.verdict, "your pick", "a plan that no longer holds is no call");
+  const down = uTurn(17, (_, planned) => { ours.find(p => p.name === planned.name).hp = 0; });
+  assert.ok(down.said.startsWith(`your pick — ${pick}, planned at the command, is down`), down.said);
+  g.foes = [foe(21)];
+  g.party = [full, three];
 }
 
 // ---- `stop()` unhooks the frame callback
