@@ -4,6 +4,7 @@ import { mountHud, panelText } from "./fake-page.mjs";
 import { benchMatchupScore, onGame } from "./game-proto.mjs";
 import { cat, mon as fakeMon, outcomeFrom, TY } from "./fake-mon.mjs";
 import { fakeTurn } from "./fake-turn.mjs";
+import { fightState } from "./fake-fight.mjs";
 
 // moves: as fake-mon.mjs's `mon` takes them.
 const mon = (name, lv, types, ability, [hp, atk, def, spa, spd, spe], moves, field, curHp, boss = 0, next) => onGame({
@@ -170,10 +171,10 @@ assert.equal(plan.approxDoubles, false);
   const kept = { base: 0, pre: 0, sitrus: 50, enigma: 0 };
   const base = { theirs: [[{ dmg: 10, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [null], foeHeal: [kept] };
   // A 60 into 100 HP: it eats its Sitrus at 40, read off the `fb` that fight leaves (#847).
-  const fb = tpFight({ ...base, ours: [[{ dmg: 60, e: 1 }]] }, { oh: [100], ob: [0], fh: [100], fs: [0], fb: [0] }, 0, 0, "free").ends.win.fb;
+  const fb = tpFight({ ...base, ours: [[{ dmg: 60, e: 1 }]] }, fightState({ oh: [100], ob: [0], fh: [100], fs: [0], fb: [0] }), 0, 0, "free").ends.win.fb;
   const T = { ...base, ours: [[{ dmg: 50, steals: true }]], foeHealBy: [[kept, { ...kept, sitrus: 0 }]], stealHeal: [[[50]]],
     stealHealAfter: [[new Map([[1, []]])]] };
-  const won = used => tpFight(T, { oh: [100], ob: [0], fh: [100], fs: [0], fb: [used] }, 0, 0, "free").ends.win.mh;
+  const won = used => tpFight(T, fightState({ oh: [100], ob: [0], fh: [100], fs: [0], fb: [used] }), 0, 0, "free").ends.win.mh;
   const [held, eaten] = [won(0), won(fb)];
   console.log(`== bug bite after the foe ate its own Sitrus\nwe end on ${eaten} (${held} when it still held it)`);
   // Two Bug Bites fell it, and its one hit lands between them: 100 − 10, plus 50 for a Sitrus still there to steal.
@@ -185,10 +186,10 @@ assert.equal(plan.approxDoubles, false);
   const kept = { base: 0, pre: 0, sitrus: 0, enigma: 50, enigmas: 1 };
   const base = { theirs: [[{ dmg: 10, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [null], foeHeal: [kept] };
   // A super-effective 60 into 100 HP: it eats its Enigma at 40 and goes down on the third hit.
-  const fb = tpFight({ ...base, ours: [[{ dmg: 60, e: 2 }]] }, { oh: [100], ob: [0], fh: [100], fs: [0], fb: [0] }, 0, 0, "free").ends.win.fb;
+  const fb = tpFight({ ...base, ours: [[{ dmg: 60, e: 2 }]] }, fightState({ oh: [100], ob: [0], fh: [100], fs: [0], fb: [0] }), 0, 0, "free").ends.win.fb;
   const T = { ...base, ours: [[{ dmg: 50, steals: true }]], foeHealBy: [[kept, { ...kept, enigma: 0, enigmas: 0 }]], stealHeal: [[[50]]],
     stealHealAfter: [[new Map([[2, []]])]] };
-  const won = bits => tpFight(T, { oh: [100], ob: [0], fh: [100], fs: [0], fb: [bits] }, 0, 0, "free").ends.win.mh;
+  const won = bits => tpFight(T, fightState({ oh: [100], ob: [0], fh: [100], fs: [0], fb: [bits] }), 0, 0, "free").ends.win.mh;
   assert.deepEqual([won(0), won(fb)], [140, 90], `no heal for an Enigma already eaten (fb ${fb})`);
 }
 // A switch-in's entry turn ends before our Bug Bite has gone off, so the foe still eats its own Sitrus then (#646).
@@ -197,7 +198,7 @@ assert.equal(plan.approxDoubles, false);
   const kept = { base: 0, sitrus: 50, enigma: 0 };
   const T = { ours: [[{ dmg: 100, steals: true }]], theirs: [[{ dmg: 10, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [null],
     foeHeal: [kept], foeHealBy: [[kept, { ...kept, sitrus: 0 }]], stealHeal: [[[0]]] };
-  const st = { oh: [200], ob: [0], fh: [90], fs: [0], fb: [0] };
+  const st = fightState({ oh: [200], ob: [0], fh: [90], fs: [0], fb: [0] });
   const [switched, free] = ["switch", "free"].map(e => tpFight(T, st, 0, 0, e));
   console.log(`== a bug bite switch-in's entry turn\nswitch: won in ${switched.ends.win.turns} · free: won in ${free.ends.win.turns}`);
   assert.equal(switched.ends.win.turns, 2, "the Sitrus eaten at the entry turn's end takes a second Bug Bite");
@@ -210,7 +211,7 @@ assert.equal(plan.approxDoubles, false);
   // The foe outspeeds; half its hits fell our 150 HP before we move, half take 50.
   const T = { ours: [[{ dmg: 40, steals: true }]], theirs: [[{ dmg: 100, e: 1, use: [{ r: 2, p: 0.5 }, { r: 0.5, p: 0.5 }] }]], first: [[1]],
     ourMax: [200], foeMax: [200], ourHeal: [null], foeHeal: [kept], foeHealBy: [[kept, gone]], stealHeal: [[[0]]] };
-  const r = tpFight(T, { oh: [150], ob: [0], fh: [90], fs: [0], fb: [0] }, 0, 0, "free");
+  const r = tpFight(T, fightState({ oh: [150], ob: [0], fh: [90], fs: [0], fb: [0] }), 0, 0, "free");
   console.log(`== bug bite that never went off\nlost with the foe on ${r.ends.loss.fh} on average`);
   // Felled on turn 1 (½): it ate its Sitrus, 140. Felled on turn 2 (¼) or 3 (¼) after our steal: 50, then 10.
   assert.equal(r.ends.loss.fh, 85, "the foe eats its own Sitrus where our Bug Bite never landed, and not where it did");
@@ -221,7 +222,7 @@ assert.equal(plan.approxDoubles, false);
   const kept = { base: 0, pre: 0, sitrus: 50, enigma: 0 }, gone = { ...kept, sitrus: 0 };
   const T = { ours: [[{ dmg: 80, steals: false }]], theirs: [[{ dmg: 1, e: 1 }]], first: [[0]],
     ourMax: [200], foeMax: [200], ourHeal: [null], foeHeal: [kept], foeHealBy: [[kept, gone]], stealHeal: [[[0]]] };
-  const fight = over => tpFight(T, { oh: [200], ob: [0], fh: [200], fs: [0], fb: [0] }, 0, 0, "free", over).ends.win.turns;
+  const fight = over => tpFight(T, fightState({ oh: [200], ob: [0], fh: [200], fs: [0], fb: [0] }), 0, 0, "free", over).ends.win.turns;
   const [own, pinned] = [null, { dmg: 80, steals: true }].map(fight);
   console.log(`== a pinned bug bite\nthe pairing's own pick wins in ${own} · a pinned Bug Bite in ${pinned}`);
   assert.deepEqual([own, pinned], [4, 3], "200 → 120 → 40, and only the pinned steal keeps its Sitrus from bringing it back to 90");
@@ -232,7 +233,7 @@ assert.equal(plan.approxDoubles, false);
   const kept = { base: 0, pre: 0, sitrus: 50, enigma: 0 }, gone = { ...kept, sitrus: 0 };
   const T = { ours: [[{ dmg: 30, steals: true }]], theirs: [[{ dmg: 20, e: 1 }]], first: [[0]],
     ourMax: [200], foeMax: [200], ourHeal: [null], foeHeal: [kept], foeHealBy: [[kept, kept, gone]], stealHeal: [[[30, 30]]] };
-  const r = tpFight(T, { oh: [150], ob: [0], fh: [200], fs: [0], fb: [0] }, 0, 0, "free");
+  const r = tpFight(T, fightState({ oh: [150], ob: [0], fh: [200], fs: [0], fb: [0] }), 0, 0, "free");
   console.log(`== bug bite into a Sitrus x2\nwon in ${r.ends.win.turns} on ${r.ends.win.mh} HP · ${r.fl} berries gone`);
   assert.equal(r.ends.win.turns, 7, "two steals by turn 2, so the foe at 80 on turn 4 has no Sitrus left: seven 30s fell it");
   // 150, +30 −20, +30 −20, then four more of its hits: 90.
@@ -244,7 +245,7 @@ assert.equal(plan.approxDoubles, false);
 {
   const { tpFight } = globalThis.__tp;
   const T = { ours: [[{ dmg: 100 }]], theirs: [[{ dmg: 100, entry: 100, e: 1 }]], first: [[1]], ourMax: [150], foeMax: [200], ourHeal: [null], foeHeal: [null] };
-  const st = () => ({ oh: [150], ob: [0], fh: [200], fs: [0], fb: [0] });
+  const st = () => fightState({ oh: [150], ob: [0], fh: [200], fs: [0], fb: [0] });
   const fight = (entry, entering) => tpFight(T, st(), 0, 0, entry, null, entering);
   const [stays, enters] = [false, true].map(e => fight("stay", e));
   console.log(`== a foe's entry turn\nstay: ${stays.pWin} win at ${stays.mh} · into a switch-in: ${enters.pWin} win at ${enters.mh}`);
@@ -261,7 +262,7 @@ assert.equal(plan.approxDoubles, false);
   const { tpFight } = globalThis.__tp;
   const T = ourEntry => ({ ours: [[{ name: "Surf", dmg: 50 }]], theirs: [[{ dmg: 100, entry: 100, e: 1 }]], first: [[0]], ourMax: [150], foeMax: [200],
     ourHeal: [null], foeHeal: [null], ...(ourEntry ? { ourEntry: [[ourEntry]] } : {}) });
-  const st = () => ({ oh: [150], ob: [0], fh: [200], fs: [0], fb: [0] });
+  const st = () => fightState({ oh: [150], ob: [0], fh: [200], fs: [0], fb: [0] });
   const entry = { Surf: { name: "Surf", dmg: 100, e: 2 } };
   const [plain, priced] = [null, entry].map(x => tpFight(T(x), st(), 0, 0, "stay", null, true));
   console.log(`== a tera switch-in's entry hit\nat its tera: ${plain.pWin} win, foe at ${plain.fh} · at its entry typing: ${priced.pWin} win at ${priced.mh}`);
@@ -303,7 +304,7 @@ assert.equal(plan.approxDoubles, false);
 {
   const { tpSendScore } = globalThis.__tp;
   const T = { send: [[{ base: 3, outspeed: false }], [{ base: 3, outspeed: true }]], foeMax: [100, 100], ourMax: [200] };
-  const at = (ourHp, fi) => Math.round(tpSendScore(T, { oh: [ourHp], fh: [30, 30] }, fi, 0) * 1000) / 1000;
+  const at = (ourHp, fi) => Math.round(tpSendScore(T, fightState({ oh: [ourHp], fh: [30, 30] }), fi, 0) * 1000) / 1000;
   assert.deepEqual([at(200, 0), at(20, 0), at(200, 1), at(20, 1)], [0.45, 1.8, 1.125, 3], "the HP factor follows the simulated HP");
 }
 // The plan's send-in score at any HP it reaches is the game's there (#464): a slower foe at 30 % HP is halved once.
@@ -317,7 +318,7 @@ assert.equal(plan.approxDoubles, false);
   const turn = fakeTurn({ party: [me], foes, sendIn: (f, p) => sceneSendInScore(null, f, p) });
   const T = tpTables(turn, [me], foes);
   for (const ourHp of [100, 200]) {
-    const st = { oh: [ourHp], fh: foes.map(f => f.hp) };
+    const st = fightState({ oh: [ourHp], fh: foes.map(f => f.hp) });
     for (const [fi, f] of foes.entries()) {
       const want = f.getMatchupScore(Object.assign(Object.create(me), { hp: ourHp }));
       const got = tpSendScore(T, st, fi, 0);
@@ -330,11 +331,11 @@ assert.equal(plan.approxDoubles, false);
   const { tpFight } = globalThis.__tp;
   const rolls = [{ r: 0.92, p: 0.5 }, { r: 1.08, p: 0.5 }];
   const T = { ours: [[{ dmg: 100, use: rolls }]], theirs: [[{ dmg: 100, e: 1, use: rolls }]], first: [[0.5]], ourMax: [200], foeMax: [200], ourHeal: [null], foeHeal: [null] };
-  const r = tpFight(T, { oh: [200], ob: [0], fh: [200], fs: [0], fb: [0] }, 0, 0, "free");
+  const r = tpFight(T, fightState({ oh: [200], ob: [0], fh: [200], fs: [0], fb: [0] }), 0, 0, "free");
   console.log(`== mirror at a speed tie\nwin ${r.pWin.toFixed(3)} · loss ${r.pLoss.toFixed(3)}`);
   assert.ok(Math.abs(r.pWin - r.pLoss) < 1e-9 && Math.abs(r.pWin + r.pLoss - 1) < 1e-9, `symmetric (${r.pWin}, ${r.pLoss})`);
   T.first = [[0]];
-  const faster = tpFight(T, { oh: [200], ob: [0], fh: [200], fs: [0], fb: [0] }, 0, 0, "free");
+  const faster = tpFight(T, fightState({ oh: [200], ob: [0], fh: [200], fs: [0], fb: [0] }), 0, 0, "free");
   assert.ok(faster.pWin > 0.8 && faster.pWin < 1, `outspeeding wins most, not all: ${faster.pWin}`);
 }
 // An ending's HP is its pool's mean, and its berries the likeliest combination's (#527). We win on turn 2 at 116 with
@@ -343,7 +344,7 @@ assert.equal(plan.approxDoubles, false);
   const { tpFight } = globalThis.__tp;
   const T = { ours: [[{ dmg: 100 }]], theirs: [[{ dmg: 120, e: 1, use: [{ r: 0.7, p: 0.4 }, { r: 0.9, p: 0.3 }, { r: 1, p: 0.3 }] }]],
     first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [{ base: 0, sitrus: 50 }], foeHeal: [null] };
-  const r = tpFight(T, { oh: [200], ob: [0], fh: [200], fs: [0], fb: [0] }, 0, 0, "free");
+  const r = tpFight(T, fightState({ oh: [200], ob: [0], fh: [200], fs: [0], fb: [0] }), 0, 0, "free");
   console.log(`== an ending's one branch\nwin ${r.pWin} · ${r.ends.win.mh.toFixed(2)} HP · berry ${r.ends.win.mb ? "eaten" : "kept"}`);
   assert.equal(r.pWin, 1);
   assert.ok(Math.abs(r.ends.win.mh - (0.4 * 116 + 0.3 * 142 + 0.3 * 130)) < 1e-9, `HP is the pool's mean: ${r.ends.win.mh}`);
@@ -356,7 +357,7 @@ assert.equal(plan.approxDoubles, false);
   const { tpFight, tpActs } = globalThis.__tp;
   const T = { ours: [[{ dmg: 50 }]], theirs: [[{ dmg: 100, e: 1, use: [{ r: 0.9, p: 0.1 }, { r: 1, p: 0.6 }, { r: 1.1, p: 0.3 }] }]],
     first: [[1]], ourMax: [80], foeMax: [101], ourHeal: [null], foeHeal: [null] };
-  const r = tpFight(T, { oh: [80], ob: [0], fh: [101], fs: [0], fb: [0] }, 0, 0, "free");
+  const r = tpFight(T, fightState({ oh: [80], ob: [0], fh: [101], fs: [0], fb: [0] }), 0, 0, "free");
   assert.equal(r.pLoss, 1);
   assert.ok(r.fh < 101 && r.fh > 101 - 1e-9, `the knife edge is still there: ${r.fh}`);
   assert.equal(tpActs(r, 101), false, "no hit landed");
@@ -367,7 +368,7 @@ assert.equal(plan.approxDoubles, false);
 {
   const { tpFight } = globalThis.__tp;
   const T = drain => ({ ours: [[{ dmg: 100 }]], theirs: [[{ dmg: 60, e: 1, drain }]], first: [[0]], ourMax: [400], foeMax: [300], ourHeal: [null], foeHeal: [null] });
-  const st = () => ({ oh: [400], ob: [0], fh: [300], fs: [0], fb: [0] });
+  const st = () => fightState({ oh: [400], ob: [0], fh: [300], fs: [0], fb: [0] });
   const [plain, drained] = [0, 0.5].map(d => tpFight(T(d), st(), 0, 0, "free"));
   console.log(`== drain\n${plain.turns} → ${drained.turns} turns`);
   assert.deepEqual([plain.turns, drained.turns], [3, 4], "the foe's drain costs us a turn");
@@ -392,7 +393,7 @@ assert.equal(plan.approxDoubles, false);
   const blastoise = mon("Blastoise", 100, ["Water"], "Torrent", [400,150,300,150,300,250], [["Hydro Pump","Water",110,"S"]], false);
   const hitsOn = (foe, fk) => {
     const T = globalThis.__tp.readTurn(s, turn => tpTables(turn, [blastoise], [foe], false));
-    return 400 - tpFight(T, { oh: [400], ob: [0], fh: [400], fs: [0], fb: [0], ok: [0], fk: [fk] }, 0, 0, "free").mh;
+    return 400 - tpFight(T, fightState({ oh: [400], ob: [0], fh: [400], fs: [0], fb: [0], fk: [fk] }), 0, 0, "free").mh;
   };
   const boosted = [0, 1, 2].map(k => hitsOn(buzzwole(beastBoost), k));
   const plainHits = [0, 1, 2].map(k => hitsOn(buzzwole({}), k));
@@ -424,7 +425,7 @@ assert.equal(plan.approxDoubles, false);
   // Two uses that fell Golem in the same number of turns, the second of them first: the order is part of what a move
   // costs, so the tie goes to Mach Punch rather than to whichever use the moveset lists first.
   const even = tablesFor([UPPERCUT, MACH]);
-  const fight = move => tpFight(T, { oh: [40], ob: [0], fh: [300], fs: [0], fb: [0] }, 0, 0, "free", move);
+  const fight = move => tpFight(T, fightState({ oh: [40], ob: [0], fh: [300], fs: [0], fb: [0] }), 0, 0, "free", move);
   const slow = fight(T.ours[0][0]), quick = fight(mach);
   console.log(`== a priority move from a slower mon (#650)\n${T.ours[0][0].name} at ${T.first[0][0]} leaves ${slow.fh}` +
     ` · ${mach.name} at ${T.firstBy[0][0][mach.name]} leaves ${Math.round(quick.fh)}`);
@@ -596,7 +597,7 @@ assert.equal(plan.approxDoubles, false);
 // capped before the chip.
 {
   const { tpFight } = globalThis.__tp;
-  const st = (fh = 200) => ({ oh: [400], ob: [0], fh: [fh], fs: [0], fb: [0] });
+  const st = (fh = 200) => fightState({ oh: [400], ob: [0], fh: [fh], fs: [0], fb: [0] });
   const T = (us, them, foeHeal) => ({ ours: [[us]], theirs: [[them]], first: [[0]], ourMax: [400], foeMax: [200], ourHeal: [null], foeHeal: [foeHeal] });
   const enigma = (n, base = 0) => ({ base, sitrus: 0, enigma: 50, enigmas: n });
   // 70 a turn into 200: 130 → 180 → 110 → 40 → down on turn 4 with one berry; the second puts 50 back on turn 2.
@@ -628,7 +629,7 @@ assert.equal(plan.approxDoubles, false);
   const turn = fakeTurn({ live: true, party, foes: [chomp], outcome: stub, heal: (p, o) => sceneTurnEndHp({ field: [] }, p, o),
     moves: e => [{ name: "Earthquake", type: "Ground", p: 1, score: 10, targets: [0] }] });
   const T = globalThis.__tp.tpTables(turn, party, [chomp], false);
-  const fight = mi => globalThis.__tp.tpFight(T, { oh: [300, 300], ob: [0, 0], fh: [300], fs: [0], fb: [0] }, mi, 0, "free");
+  const fight = mi => globalThis.__tp.tpFight(T, fightState({ oh: [300, 300], ob: [0, 0], fh: [300], fs: [0], fb: [0] }), mi, 0, "free");
   const [blocked, eaten] = [0, 1].map(fight);
   console.log(`== an Unnerve in its own pairing\nthe Unnerve on the field fells Garchomp in ${blocked.turns} turns, the one on the bench without it in ${eaten.turns}`);
   assert.equal(T.foeHeal[0].enigma, 75, "the profile keeps the berry an Unnerve on the field would block");
@@ -656,7 +657,7 @@ assert.equal(plan.approxDoubles, false);
   const { tpFight } = globalThis.__tp;
   const T = keep => ({ ours: [[{ dmg: 100, e: 1 }]], theirs: [[{ dmg: 120, e: 2 }]], first: [[0]], ourMax: [400], foeMax: [300],
     ourHeal: [{ base: 0, sitrus: 0, enigma: 100, enigmas: 1, ...(keep == null ? {} : { keep }) }], foeHeal: [null] });
-  const fight = keep => tpFight(T(keep), { oh: [400], ob: [0], fh: [300], fs: [0], fb: [0] }, 0, 0, "free");
+  const fight = keep => tpFight(T(keep), fightState({ oh: [400], ob: [0], fh: [300], fs: [0], fb: [0] }), 0, 0, "free");
   const [old, none, one, three] = [null, 0, 0.3, 0.9].map(fight);
   console.log(`== a Berry Pouch keeps our Enigma Berry (#822)\nwe win on ${none.ends.win.mh} HP with no Pouch, ` +
     `${one.ends.win.mh.toFixed(1)} with one stack, ${three.ends.win.mh.toFixed(1)} with three`);
@@ -672,7 +673,7 @@ assert.equal(plan.approxDoubles, false);
   const { tpFight } = globalThis.__tp;
   const T = keep => ({ ours: [[{ dmg: 100, e: 1 }]], theirs: [[{ dmg: 120, e: 1 }]], first: [[0]], ourMax: [400], foeMax: [500],
     ourHeal: [{ base: 0, pre: 0, sitrus: 100, enigma: 0, ...(keep == null ? {} : { keep }) }], foeHeal: [null] });
-  const fight = keep => tpFight(T(keep), { oh: [400], ob: [0], fh: [500], fs: [0], fb: [0] }, 0, 0, "free");
+  const fight = keep => tpFight(T(keep), fightState({ oh: [400], ob: [0], fh: [500], fs: [0], fb: [0] }), 0, 0, "free");
   const [old, none, one, three] = [null, 0, 0.3, 0.9].map(fight);
   const near = (x, want, msg) => assert.ok(Math.abs(x - want) < 1e-9, `${msg}: ${x}`);
   console.log(`== a Berry Pouch keeps our Sitrus Berry (#847)\nwe win on ${none.ends.win.mh} HP with no Pouch, ` +
