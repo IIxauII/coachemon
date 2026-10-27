@@ -132,7 +132,7 @@ One named part of a **card**, drawn from one closed set of eight: `act`, what to
 
 ## Strip
 
-The line of a **card** that stays in front of the player whatever else they have open or shut: its **caption** — the kind's emoji and what the card is about — the first line of its act **group**, and, where the card has one, its **verdict**. While a randomizer challenge is on, the strip also says the run is randomized, since a species' moves and abilities are then not what the coach knows of it. The thing to do now is never a click away.
+The line of a **card** that stays in front of the player whatever else they have open or shut: its **caption** — the kind's emoji and what the card is about — the first line of its act **group**, and, on a battle card, its **verdict**, unless that is unavailable. While a randomizer challenge is on, the strip also says the run is randomized, since a species' moves and abilities are then not what the coach knows of it. The thing to do now is never a click away.
 
 ## Drawer
 
@@ -155,12 +155,12 @@ Only a battle card has a verdict. It is that card's **leading call**; every othe
 The call a **card** leads with: one per card, saying in a few words what the card comes to, and never adding advice the card doesn't show. What it is depends on the card's kind:
 
 - **battle** — its **verdict**.
-- **learn** — the learn call: learn the move and forget which, skip it, or leave it to the player where nothing can be scored. At a move prompt a held **oracle line** answers, it is that line's **learn pick** instead (`Bulbasaur skips Leech Seed`), except on the oracle line's last step, whose picks are no claim.
+- **learn** — the learn call: learn the move, naming the one to forget, skip it, or leave it to the player where nothing can be scored. At a move prompt a held **oracle line** answers, it is that line's **learn pick** instead (`Bulbasaur skips Leech Seed`), except on the oracle line's last step, whose picks are no claim.
 - **rewards** — the first clause of the rewards line.
 - **biome** — the biome the coach picks.
 - **encounter** — `take` and the option the coach picks, `your call` on an encounter it judges without picking one, or `not judged` on one it can't judge.
 
-Starters and fusion cards lead with their top pick too, but neither kind is streamed.
+Starters and fusion cards have a leading call too, but the card event never sends those kinds.
 
 The card event the overlay streams carries the leading call in its field named `verdict`, for every kind it sends. The field keeps that name because renaming it breaks every reader of the stream. Only a battle's leading call is a verdict, so an **oracle** answer can be a learn card's leading call but never a verdict.
 
