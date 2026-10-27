@@ -159,7 +159,7 @@ The call a **card** leads with: one per card, saying in a few words what the car
 - **rewards** — the first clause of the rewards line.
 - **biome** — the biome the coach picks.
 - **encounter** — `take` and the option the coach picks, `your call` on an encounter it judges without picking one, or `not judged` on one it can't judge.
-- **pivot** — `send X`, the pick the battle card planned at that turn's command, while the field it was planned on still holds; `your pick` otherwise, since a **pivot** is picked without a **turn read** and the card judges none of its own. A held **oracle line** whose step names this pivot leads instead (`send Vaporeon`), as it leads the battle card.
+- **pivot** — `send X`, the pick the battle card planned at that turn's command, while the field it was planned on still holds (for a move expected to KO its target, the field after that KO as well); `your pick` otherwise, since a **pivot** is picked without a **turn read** and the card judges none of its own. A held **oracle line** whose step names this pivot leads instead (`send Vaporeon`), as it leads the battle card.
 
 Starters and fusion cards have a leading call too, but the card event never sends those kinds.
 
