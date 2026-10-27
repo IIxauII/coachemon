@@ -618,7 +618,7 @@ Scizor U-turn → Arcanine, then send Vaporeon
 Scizor U-turn → Vaporeon
 Yanmega U-turn → Ferrothorn
 == a switch-out's turn 1 on a speed tie, KO'd moving second
-{"ko":0,"hit":0.5,"clear":0,"down":0.5,"flinched":0,"stuck":0}
+{"ko":0,"hit":0.5,"clear":0,"down":0.5,"flinched":0,"fizzled":0}
 == a U-turn that KOs: the pivot meets the send-in
 Scizor U-turn → Jolteon {"fell":{"id":"Arcanine","name":"Arcanine"},"next":{"id":"Gyarados","name":"Gyarados"}}
 == gordie w180 t16, Tera left

@@ -2628,18 +2628,17 @@ Object.assign(TABLE, {
     const { scene } = render({ party: [scizor], foes: [foe], live: true, stubOutcome: outcomeFrom(table), switches: () => new Map(), dist: flareBlitz });
     const { pivot } = globalThis.__planner.exchange(scene, scizor, scizor.moveset[0], foe).turn1;
     console.log(`== a switch-out's turn 1 on a speed tie, KO'd moving second\n${JSON.stringify(pivot)}`);
-    assert.deepEqual(pivot, { ko: 0, hit: 0.5, clear: 0, down: 0.5, flinched: 0, stuck: 0 }, "moving second, Scizor falls before U-turn goes off");
+    assert.deepEqual(pivot, { ko: 0, hit: 0.5, clear: 0, down: 0.5, flinched: 0, fizzled: 0 }, "moving second, Scizor falls before U-turn goes off");
   }
   {
     const scizor = uTurner([280, 250, 200, 110, 160, 150]), foe = arcanine();
     const table = { "Scizor>U-turn>Arcanine": [[110], 1, 1], "Arcanine>Flare Blitz>Scizor": [[90], 1, 1] };
     const { scene } = render({ party: [scizor], foes: [foe], live: true, stubOutcome: outcomeFrom(table), switches: () => new Map(), dist: flareBlitz });
     const { pivot } = globalThis.__planner.exchange(scene, scizor, scizor.moveset[0], foe).turn1;
-    assert.deepEqual(pivot, { ko: 0, hit: 0.5, clear: 0.5, down: 0, flinched: 0, stuck: 0 }, "surviving it, the pivot comes in on a clear field");
-    // A U-turn that misses half the time switches no one out half the time.
+    assert.deepEqual(pivot, { ko: 0, hit: 0.5, clear: 0.5, down: 0, flinched: 0, fizzled: 0 }, "surviving it, the pivot comes in on a clear field");
     table["Scizor>U-turn>Arcanine"] = [[110], 0.5, 1];
     const missing = globalThis.__planner.exchange(scene, { ...scizor, id: "Scizor, missing" }, scizor.moveset[0], foe).turn1.pivot;
-    assert.deepEqual(missing, { ko: 0, hit: 0.25, clear: 0.25, down: 0, flinched: 0, stuck: 0.5 }, "a miss sends in no pivot");
+    assert.deepEqual(missing, { ko: 0, hit: 0.25, clear: 0.25, down: 0, flinched: 0, fizzled: 0.5 }, "a miss sends in no pivot");
   }
 
   // U-turn KOs Arcanine before it moves, so the pivot meets the trainer's next mon, Gyarados: Jolteon, not Vaporeon.

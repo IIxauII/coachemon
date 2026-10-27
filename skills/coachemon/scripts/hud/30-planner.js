@@ -1263,6 +1263,8 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     turn1: (() => {
       // The curve front-loaded every use's self-cost, and turn 1 has only paid one.
       const self = opener?.self ?? 0;
+      // P(our switch-out move goes off and lands, or KOs).
+      const off = Math.max(goes, qWe);
       const me1 = freeThey || !theirs ? [{ hp, p: 1 }]
         : theirs.after1.map(x => ({ ...x, hp: x.revived ? x.hp : Math.min(maxHp, x.hp + selfSpent - self) }));
       return {
@@ -1271,16 +1273,16 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
         // How turn 1 goes for a move that switches its user out (CONTEXT.md, `Pivot`), the six summing to 1: `ko`, our
         // hit fells the target; `hit`, we move first and it stands, so the pivot takes its move; `clear`, it moved
         // first and we stand. No pivot comes where it moved first and stopped our move, `down` a KO and `flinched`, or
-        // where our move never went off or missed, `stuck`.
+        // where our move never went off or missed, `fizzled`.
         pivot: (() => {
           const landed = Math.max(0, goes - qWe), standing = (1 - pFField) * (1 - qThey) * (1 - flinch);
           return {
             ko: weFirst, hit: pFField * landed, clear: standing * landed,
-            down: (1 - pFField) * qThey, flinched: (1 - pFField) * (1 - qThey) * flinch, stuck: (pFField + standing) * Math.max(0, 1 - Math.max(goes, qWe)),
+            down: (1 - pFField) * qThey, flinched: (1 - pFField) * (1 - qThey) * flinch, fizzled: (pFField + standing) * Math.max(0, 1 - off),
           };
         })(),
         // P(a move that switches its user out takes it off the field before the foe's hit).
-        leaves: pFField * Math.max(goes, qWe),
+        leaves: pFField * off,
       };
     })(),
   };
@@ -1390,7 +1392,8 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const leftShare = left.reduce((t, b) => t + b.p * b.hp, 0) / foeMax;
       const barLeft = down + flinched + Math.max(0, 1 - we - down - flinched) * leftShare;
       const maxHp = me.getMaxHp?.() || hp || 1;
-      // `self` is charged as `cost`, so `kept` leaves it out, as `exchange`'s `hpKept` does; `turn1.hp` has it taken.
+      // `self` is charged on its own term below, so `kept` leaves it out, as `exchange`'s `hpKept` does; `turn1.hp` has
+      // it taken.
       const kept = (leaves * hp + (1 - leaves) * Math.min(maxHp, hpHit + self)) / maxHp;
       return lasts - 1 - FOE_BAR * barLeft - lost + edgeOf(we, down) - Math.min(1, self / maxHp) - cost(o) - feed(f) * down - hpSpent(kept);
     };
