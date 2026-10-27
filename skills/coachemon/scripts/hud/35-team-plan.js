@@ -319,10 +319,10 @@ const tpHeal = (hp, max, prof, used, se, extra = 0) => {
 // turn costs no entry hit (#846), and our hit that turn is `T.ourEntry`'s where it has one (#825).
 export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => {
   const faints = st.oh.filter(hp => hp < 1).length + st.fh.filter(hp => hp < 1).length;
-  const nUs = T.ourKo?.[mi] ? (T.ourKo[mi].any ? faints : st.ok?.[mi] ?? 0) : 0;
-  const nFoe = T.foeKo?.[fi] ? (T.foeKo[fi].any ? faints : st.fk?.[fi] ?? 0) : 0;
-  const key = !over && T.memo && [mi, fi, entry, entering, Math.round(st.oh[mi]), st.ob[mi], Math.round(st.fh[fi]), st.fs[fi], st.fb[fi], st.fl?.[fi] ?? 0, nUs, nFoe,
-    ...[st.ox?.[mi], st.od?.[mi], st.og?.[mi], st.fd?.[fi], st.fg?.[fi]].map(x => Math.round((x ?? 0) * 20))].join();
+  const nUs = T.ourKo?.[mi] ? (T.ourKo[mi].any ? faints : st.ok[mi]) : 0;
+  const nFoe = T.foeKo?.[fi] ? (T.foeKo[fi].any ? faints : st.fk[fi]) : 0;
+  const key = !over && T.memo && [mi, fi, entry, entering, Math.round(st.oh[mi]), st.ob[mi], Math.round(st.fh[fi]), st.fs[fi], st.fb[fi], st.fl[fi], nUs, nFoe,
+    ...[st.ox[mi], st.od[mi], st.og[mi], st.fd[fi], st.fg[fi]].map(x => Math.round(x * 20))].join();
   if (key && T.memo.has(key)) return T.memo.get(key);
   const us = over ?? T.ours[mi][fi], them = T.theirs[fi][mi], foeState = T.foeState?.[fi] ?? { bar: 0 };
   // On-KO Speed boosts are not modelled.
@@ -340,8 +340,7 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
   // move may land before a foe that outspeeds the pairing's own pick (#650).
   const foeFirst = T.firstBy?.[mi]?.[fi]?.[us?.name] ?? T.first[mi][fi];
   const foeFirstSlowed = T.firstParaBy?.[mi]?.[fi]?.[us?.name] ?? T.firstPara?.[mi]?.[fi] ?? foeFirst;
-  // A hand-built table or state carries no wear, so every wear field is optional.
-  const ox0 = st.ox?.[mi] ?? 0;
+  const ox0 = st.ox[mi];
   const entryHit = entry === "switch" && !entering;
   const foeIdle = entering && entry !== "switch";
   const atEntry = foeIdle && us ? T.ourEntry?.[mi]?.[fi]?.[us.name] ?? null : null;
@@ -392,7 +391,7 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
     else list.push(b);
   };
   let standing = [];
-  const start = { p: 1, mh: st.oh[mi], mb: st.ob[mi], fh: st.fh[fi], fs: st.fs[fi], fb: st.fb[fi], ox: ox0, od: st.od?.[mi] ?? 0, og: st.og?.[mi] ?? 0, fd: st.fd?.[fi] ?? 0, fg: st.fg?.[fi] ?? 0, fl: st.fl?.[fi] ?? 0 };
+  const start = { p: 1, mh: st.oh[mi], mb: st.ob[mi], fh: st.fh[fi], fs: st.fs[fi], fb: st.fb[fi], ox: ox0, od: st.od[mi], og: st.og[mi], fd: st.fd[fi], fg: st.fg[fi], fl: st.fl[fi] };
   if (entryHit) {
     for (const t of theirUse) { const b = { ...start, p: t.p }; foeHit(b, t.r, t.se, them.entry ?? them.dmg); endTurn(b); settle(b, standing); }
     standing = tpMerge(standing, TP_BRANCHES, T, mi, fi);
@@ -483,13 +482,13 @@ const tpFoeLeft = r => r.pLoss * (r.ends.loss?.fh ?? 0) + r.pStall * (r.ends.sta
 // flip the win-condition warning between "keep X healthy" and "chip it with X" (#527).
 export const tpActs = (r, hp) => hp - r.fh >= 1;
 
-const tpClone = st => ({ ...st, oh: st.oh.slice(), ob: st.ob.slice(), fh: st.fh.slice(), fs: st.fs.slice(), fb: st.fb.slice(), fl: st.fl?.slice() ?? st.fh.map(() => 0),
+const tpClone = st => ({ ...st, oh: st.oh.slice(), ob: st.ob.slice(), fh: st.fh.slice(), fs: st.fs.slice(), fb: st.fb.slice(), fl: st.fl.slice(),
   ox: st.ox.slice(), od: st.od.slice(), og: st.og.slice(), fd: st.fd.slice(), fg: st.fg.slice(),
-  ok: st.ok?.slice() ?? st.oh.map(() => 0), fk: st.fk?.slice() ?? st.fh.map(() => 0) });
+  ok: st.ok.slice(), fk: st.fk.slice() });
 const tpApply = (c, mi, fi, r) => {
-  if (c.ok && c.fh[fi] >= 1 && r.fh < 1) c.ok[mi]++;
-  if (c.fk && c.oh[mi] >= 1 && r.mh < 1) c.fk[fi]++;
-  c.oh[mi] = r.mh; c.ob[mi] = r.mb; c.fh[fi] = r.fh; c.fs[fi] = r.fs; c.fb[fi] = r.fb; c.fl[fi] = r.fl ?? 0;
+  if (c.fh[fi] >= 1 && r.fh < 1) c.ok[mi]++;
+  if (c.oh[mi] >= 1 && r.mh < 1) c.fk[fi]++;
+  c.oh[mi] = r.mh; c.ob[mi] = r.mb; c.fh[fi] = r.fh; c.fs[fi] = r.fs; c.fb[fi] = r.fb; c.fl[fi] = r.fl;
   c.ox[mi] = r.ox; c.od[mi] = r.od; c.og[mi] = r.og; c.fd[fi] = r.fd; c.fg[fi] = r.fg;
 };
 const tpAlive = hps => hps.flatMap((hp, i) => (hp >= 1 ? [i] : []));

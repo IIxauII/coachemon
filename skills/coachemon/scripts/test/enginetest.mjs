@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { fightState } from "./fake-fight.mjs";
 import { mountHud } from "./fake-page.mjs";
 import { GAME_PROTO } from "./game-proto.mjs";
 
@@ -216,7 +217,7 @@ const log = (...a) => console.log(...a);
 
   // Team plan: the same exchange, turn by turn.
   const T = { ours: [[{ dmg: 35, recharge: true }]], theirs: [[{ dmg: 1, e: 1 }]], first: [[0]], ourMax: [300], foeMax: [100], ourHeal: [null], foeHeal: [null] };
-  const st = { oh: [300], ob: [0], fh: [100], fs: [0], fb: [0] };
+  const st = fightState({ oh: [300], ob: [0], fh: [100], fs: [0], fb: [0] });
   const withRecharge = E.tpFight(T, st, 0, 0, "free").turns;
   T.ours[0][0] = { dmg: 35 };
   const plain = E.tpFight(T, st, 0, 0, "free").turns;
