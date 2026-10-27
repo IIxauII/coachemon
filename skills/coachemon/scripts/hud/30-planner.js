@@ -1062,6 +1062,8 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   const trainerBoss = foe.hasTrainer?.() ?? !!turn.facts.trainer;
   let turnsWe = 9, hitsWe = 9, delay = 0, selfSpent = 0, defUp = 1, foeMult = null, foeAfter1 = after?.foe ?? null;
   let weBy = () => 0, qWe = 0, usesBy = () => 0, downAt = [], opener = mine;
+  // P(our move goes off and lands on turn 1), given we still stand to use it.
+  const goes = actDelay(me) || mt.charge ? 0 : now * (mine?.acc ?? 1);
   // An exchange `after` another follows a turn on another move, so this lock starts at its first use.
   const ourLock = mt.lock ? OUR_LOCK : null;
   // The berry a landed Bug Bite / Pluck eats (#646): the landing odds are the hit's own, and a knockout still eats.
@@ -1266,13 +1268,19 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
       return {
         we: weFirst, they: theyFirst, me: me1, hp: me1.reduce((t, x) => t + x.p * x.hp, 0), self,
         foe: foeAfter1 ?? [{ hp: foe.hp, p: 1 }],
-        // How turn 1 goes for a move that switches its user out (CONTEXT.md, `Pivot`), the five summing to 1: `ko`, our
+        // How turn 1 goes for a move that switches its user out (CONTEXT.md, `Pivot`), the six summing to 1: `ko`, our
         // hit fells the target; `hit`, we move first and it stands, so the pivot takes its move; `clear`, it moved
-        // first and we stand. No pivot comes where it moved first and stopped our move: `down`, a KO; `flinched`.
-        pivot: {
-          ko: weFirst, hit: pFField * (1 - qWe), clear: (1 - pFField) * (1 - qThey) * (1 - flinch) * (1 - qWe),
-          down: (1 - pFField) * qThey, flinched: (1 - pFField) * (1 - qThey) * flinch,
-        },
+        // first and we stand. No pivot comes where it moved first and stopped our move, `down` a KO and `flinched`, or
+        // where our move never went off or missed, `stuck`.
+        pivot: (() => {
+          const landed = Math.max(0, goes - qWe), standing = (1 - pFField) * (1 - qThey) * (1 - flinch);
+          return {
+            ko: weFirst, hit: pFField * landed, clear: standing * landed,
+            down: (1 - pFField) * qThey, flinched: (1 - pFField) * (1 - qThey) * flinch, stuck: (pFField + standing) * Math.max(0, 1 - Math.max(goes, qWe)),
+          };
+        })(),
+        // P(a move that switches its user out takes it off the field before the foe's hit).
+        leaves: pFField * Math.max(goes, qWe),
       };
     })(),
   };
@@ -1331,9 +1339,9 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
 
   // `entering`: switched in by choice this turn, so it takes the incoming hit and moves next turn, unless `hit` is
   // false: a pivot sent in after the foe has moved takes none. `mine`: slot 0's locked command, when `me` is that slot.
-  // `optionsOn` takes the foes to search against, for a pivot facing the send-in after a KO; the hit it takes is still
-  // the field's (`incoming`).
-  const optionsOn = (active, attackers) => (me, entering, mine = null, hyp = null, teraAt = null, hit = true) => {
+  // `optionsOn` takes the foes to search against, for a pivot facing the field after a KO. The entry hit `hit` adds is
+  // still the whole field's (`incoming`), so such a caller passes false.
+  const optionsOn = (active, attackers, pair = double && active.length === 2) => (me, entering, mine = null, hyp = null, teraAt = null, hit = true) => {
     // `hyp`: `at`, the state written on; `lost`, the attempts the status costs each foe, index 0 this turn's. Under it
     // the search stops at this turn, and `incoming` stays on the real turn: the entry hit lands before the status does.
     // `teraAt`: the turn our Tera lands on, which the search runs on whole.
@@ -1377,22 +1385,23 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     // turn costs, with the foe's bar it leaves standing going to the rest of the team at `FOE_BAR`, as an unlanded
     // hit's does.
     const oneTurn = (x, o, f) => {
-      const { we, hp: hpHit, self, foe: left, pivot: { down } } = x.turn1;
+      const { we, hp: hpHit, self, foe: left, leaves, pivot: { down, flinched } } = x.turn1;
       const foeMax = f.getMaxHp?.() || f.hp || 1;
       const leftShare = left.reduce((t, b) => t + b.p * b.hp, 0) / foeMax;
-      const barLeft = down + Math.max(0, 1 - we - down) * leftShare;
+      const barLeft = down + flinched + Math.max(0, 1 - we - down - flinched) * leftShare;
       const maxHp = me.getMaxHp?.() || hp || 1;
-      // Moving first, our user leaves before the hit lands.
-      const kept = (x.pFirst * Math.max(0, hp - self) + (1 - x.pFirst) * hpHit) / maxHp;
+      // `self` is charged as `cost`, so `kept` leaves it out, as `exchange`'s `hpKept` does; `turn1.hp` has it taken.
+      const kept = (leaves * hp + (1 - leaves) * Math.min(maxHp, hpHit + self)) / maxHp;
       return lasts - 1 - FOE_BAR * barLeft - lost + edgeOf(we, down) - Math.min(1, self / maxHp) - cost(o) - feed(f) * down - hpSpent(kept);
     };
     const one = (o, fi) => {
       const x = trade(o, active[fi]);
-      const turns = x.turnsWe + lost;
+      // A mon that switches out hits once: a KO of its own is a one-hit KO, or none.
+      const hits = switchesOut(o) ? (x.turnsWe <= 1 ? 1 : 9) : x.turnsWe;
       const score = switchesOut(o) ? oneTurn(x, o, active[fi])
         : lasts - x.eTurnsWe - unlanded(x.pNeverUsed) - lost + edgeOf(x.pWeKoFirst, x.pTheyKoFirst) - (x.cost ?? 0) - cost(o) - feed(active[fi]) * x.pTheyKoFirst
           - hpSpent(x.hpKept);
-      return { me, move: o, target: fi, turns, hits: x.turnsWe, score, hp, trade: x };
+      return { me, move: o, target: fi, turns: hits + lost, hits, score, hp, trade: x };
     };
     // The redirect (CONTEXT.md, `Spare hit`; game-code.md §18): `redirScore` is what the hit is worth on the survivor,
     // and `mix` prices the blend (#236). A move the survivor is immune to scores the empty turn.
@@ -2028,12 +2037,19 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     if (!clearMemo.has(m)) clearMemo.set(m, top(options(m, true, null, null, null, false)));
     return clearMemo.get(m);
   };
-  // A KO by a switch-out move brings the trainer's send-in after the turn, picked against the pivot then in, which came
-  // in on no hit (game-code.md §9). Null in a double, or with no one left to send: the battle ends, or another foe
-  // still stands, and that branch prices no pick.
+  // The pivot after its move KOs `X`, which came in on no hit from it (game-code.md §9). In a single, against the
+  // trainer's send-in, picked against the pivot after the turn; in a double, against the foes still standing. Null
+  // with no foe to face: the battle ends after the pivot.
+  const koMemo = new Map();
   const afterKo = (m, X) => {
-    const next = slots === 1 ? lockSendIn(turn, m, X) : null;
-    return next && { next, score: top(optionsOn([next], [next])(m, true, null, null, null, false))?.score ?? -99 };
+    const k = `${m.id}|${X.id}`;
+    if (!koMemo.has(k)) {
+      const next = double ? null : lockSendIn(turn, m, X);
+      const rest = next ? [next] : double ? active.filter(f => f !== X) : [];
+      const hitters = next ? [next] : attackers.filter(f => f !== X);
+      koMemo.set(k, rest.length ? { next, score: top(optionsOn(rest, hitters)(m, true, null, null, null, false))?.score ?? -99 } : null);
+    }
+    return koMemo.get(k);
   };
   // `sent`: the pivots named for the slots before this one, which a second switch-out can't send again.
   const pivotOf = (p, sent) => {
@@ -2042,15 +2058,18 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     // Turn 1's branches the pivot comes in on; the share where none comes is left out (`exchange`, `turn1.pivot`).
     const w = p.trade?.turn1?.pivot ?? { ko: 0, hit: 1, clear: 0 };
     const X = typeof p.target === "number" ? active[p.target] : null;
+    // A KO that ends the battle prices no pick, so the rest of turn 1 ranks alone, by its own split when it has one.
+    const rest = w.hit + w.clear, hitShare = rest > 0 ? w.hit / rest : p.trade?.pFirst ?? 1;
     const valued = party.filter(m => m.hp > 0 && !current.includes(m) && !busy.includes(m) && !sent.includes(m)).map(m => {
-      const hit = top(opt(m, true)), clear = clearOf(m), ko = w.ko > 0 && X ? afterKo(m, X) : null;
-      return { m, ko, v: w.hit * (hit?.score ?? -99) + w.clear * (clear?.score ?? -99) + (ko ? w.ko * ko.score : 0) };
+      const hit = top(opt(m, true))?.score ?? -99, clear = clearOf(m)?.score ?? -99, ko = w.ko > 0 && X ? afterKo(m, X) : null;
+      return { m, ko, v: ko ? w.hit * hit + w.clear * clear + w.ko * ko.score : hitShare * hit + (1 - hitShare) * clear };
     });
     const pick = valued.reduce((b, c) => (!b || c.v > b.v ? c : b), null);
     if (!pick) return null;
     sent.push(pick.m);
     // A KO expected: the pivot card holds this pick on the field after it too (53-pivot.js, `pivotPlanned`).
-    const fell = w.ko >= 0.5 && pick.ko ? { fell: { id: X.id, name: X.name }, next: { id: pick.ko.next.id, name: pick.ko.next.name } } : null;
+    const fell = w.ko >= 0.5 && pick.ko
+      ? { fell: { id: X.id, name: X.name }, next: pick.ko.next ? { id: pick.ko.next.id, name: pick.ko.next.name } : null } : null;
     return { id: pick.m.id, icon: iconOf(pick.m), name: pick.m.name, ...(fell ? { afterKo: fell } : {}) };
   };
   const sent = [];

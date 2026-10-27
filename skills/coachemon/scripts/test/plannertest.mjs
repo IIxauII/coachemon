@@ -2628,22 +2628,26 @@ Object.assign(TABLE, {
     const { scene } = render({ party: [scizor], foes: [foe], live: true, stubOutcome: outcomeFrom(table), switches: () => new Map(), dist: flareBlitz });
     const { pivot } = globalThis.__planner.exchange(scene, scizor, scizor.moveset[0], foe).turn1;
     console.log(`== a switch-out's turn 1 on a speed tie, KO'd moving second\n${JSON.stringify(pivot)}`);
-    assert.deepEqual(pivot, { ko: 0, hit: 0.5, clear: 0, down: 0.5, flinched: 0 }, "moving second, Scizor falls before U-turn goes off");
+    assert.deepEqual(pivot, { ko: 0, hit: 0.5, clear: 0, down: 0.5, flinched: 0, stuck: 0 }, "moving second, Scizor falls before U-turn goes off");
   }
   {
     const scizor = uTurner([280, 250, 200, 110, 160, 150]), foe = arcanine();
     const table = { "Scizor>U-turn>Arcanine": [[110], 1, 1], "Arcanine>Flare Blitz>Scizor": [[90], 1, 1] };
     const { scene } = render({ party: [scizor], foes: [foe], live: true, stubOutcome: outcomeFrom(table), switches: () => new Map(), dist: flareBlitz });
     const { pivot } = globalThis.__planner.exchange(scene, scizor, scizor.moveset[0], foe).turn1;
-    assert.deepEqual(pivot, { ko: 0, hit: 0.5, clear: 0.5, down: 0, flinched: 0 }, "surviving it, the pivot comes in on a clear field");
+    assert.deepEqual(pivot, { ko: 0, hit: 0.5, clear: 0.5, down: 0, flinched: 0, stuck: 0 }, "surviving it, the pivot comes in on a clear field");
+    // A U-turn that misses half the time switches no one out half the time.
+    table["Scizor>U-turn>Arcanine"] = [[110], 0.5, 1];
+    const missing = globalThis.__planner.exchange(scene, { ...scizor, id: "Scizor, missing" }, scizor.moveset[0], foe).turn1.pivot;
+    assert.deepEqual(missing, { ko: 0, hit: 0.25, clear: 0.25, down: 0, flinched: 0, stuck: 0.5 }, "a miss sends in no pivot");
   }
 
   // U-turn KOs Arcanine before it moves, so the pivot meets the trainer's next mon, Gyarados: Jolteon, not Vaporeon.
   const koPivot = withReserve => {
     const party = [
       uTurner([270, 250, 200, 110, 160, 200]),
-      mon("Vaporeon", 80, ["Water"], [400, 120, 140, 220, 190, 120], [["Surf", "Water", 90, "S"]], false),
       mon("Jolteon", 80, ["Electric"], [270, 120, 120, 250, 190, 260], [["Thunderbolt", "Electric", 90, "S"]], false),
+      mon("Vaporeon", 80, ["Water"], [400, 120, 140, 220, 190, 120], [["Surf", "Water", 90, "S"]], false),
     ];
     const gyarados = mon("Gyarados", 80, ["Water", "Flying"], [380, 250, 160, 120, 200, 160], [["Waterfall", "Water", 80, "P"]], false);
     const table = {
@@ -2662,7 +2666,9 @@ Object.assign(TABLE, {
   assert.equal(ko.pivot?.name, "Jolteon", "priced against Gyarados, who comes in after the KO, not Arcanine, who falls");
   assert.deepEqual(ko.pivot?.afterKo, { fell: { id: "Arcanine", name: "Arcanine" }, next: { id: "Gyarados", name: "Gyarados" } },
     "and the pick says the field it was planned for");
-  assert.equal(koPivot(false).pivot?.afterKo, undefined, "with nobody left to send, the battle ends after the pivot: no field to plan for");
+  const last = koPivot(false).pivot;
+  assert.equal(last?.afterKo, undefined, "with nobody left to send, the battle ends after the pivot: no field to plan for");
+  assert.equal(last?.name, "Vaporeon", "so the rest of turn 1 ranks the pick, not party order");
 
   // With the duel won either way, a move that stays in finishes the foe; U-turn leaves the rest of its bar to the team.
   {

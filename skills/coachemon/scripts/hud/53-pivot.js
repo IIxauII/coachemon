@@ -55,12 +55,12 @@ const foesMoved = (m, against) => {
   return [...against.filter(f => !now.has(f.id)).map(f => `${f.name} ${m.fallen.includes(f.id) ? "fell" : "left the field"}`),
     ...m.foes.filter(f => !then.has(f.id)).map(f => `${f.name} came in`)].join(", ");
 };
-// A pick planned for an expected KO (`afterKo`) was planned for the field after it too: the foe down, and its send-in,
-// which the game brings after the turn (game-code.md §9), either not yet in or in already.
+// A pick planned for an expected KO (`afterKo`) was planned for the field after it too: the foe down, and the send-in
+// it was planned against, if any, which the game brings after the turn (game-code.md §9), either not yet in or in.
 const koHeld = (m, against, k) => {
   if (!k || !m.fallen.includes(k.fell.id)) return false;
   const left = against.filter(f => f.id !== k.fell.id);
-  return !foesMoved(m, left) || !foesMoved(m, [...left, k.next]);
+  return !foesMoved(m, left) || (!!k.next && !foesMoved(m, [...left, k.next]));
 };
 // `from`: the battle card built for the last battle decision. Its field plan's pick for the mon leaving holds only on
 // this turn, still on the bench, against the foes it was planned on; otherwise `unplanned` says why.
