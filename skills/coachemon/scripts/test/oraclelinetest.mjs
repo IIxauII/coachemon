@@ -876,6 +876,34 @@ const PIVOT = field => ({ phaseName: "SwitchPhase", isModal: true, doReturn: tru
     ["Blissey in front · benched", "Snorlax benched · in front"]);
 }
 
+// ---- A single's switch-in is the mon its faint takes down: a replacement other than the line's is the player's, its survival the line's own miss (#923)
+{
+  // T2 switches Zacian in for Rayquaza, Eternatus fells it, and Blissey takes its place.
+  const swapLine = seed => {
+    const line = eternaLine(seed, { 2: { kind: "switch", to: { slot: 1, species: SpeciesId.ZACIAN }, replacement: { slot: 2, species: SpeciesId.BLISSEY } } });
+    line.steps[1].checkpoint = { ...ETERNA_CP[1], ours: [state("BLISSEY", 0, true, 600, 600), state("RAYQUAZA", 1, false, 300, 400),
+      state("ZACIAN", 2, false, 0, 350), state("SNORLAX", 3, false, 500, 500)] };
+    return line;
+  };
+  const decided = (label, ours) => {
+    const seed = `a W200 run, Zacian in, ${label}`;
+    scene = eternaAt(seed, 2);
+    hand(seed, swapLine(seed));
+    eternaPlay(seed, 2, [{ switchTo: 1 }]);
+    const s = eternaAt(seed, 3, { cp: { ...ETERNA_CP[1], ours }, battlers: 1 });
+    scored = oracleLineCheck(s);
+    console.log(`scored ${scoredText(scored)}`);
+    return [scored.wrong, offTheLineModel(s).mark];
+  };
+  assert.deepEqual(decided("Rayquaza back", [state("RAYQUAZA", 0, true, 300, 400), state("ZACIAN", 1, false, 0, 350),
+    state("BLISSEY", 2, false, 600, 600), state("SNORLAX", 3, false, 500, 500)]), [false, "~"]);
+  assert.deepEqual(scored.misses.map(m => `${m.name} ${m.expected} · ${m.came}`), ["Blissey in front · benched", "Rayquaza benched · in front"]);
+  assert.deepEqual(decided("Snorlax sent", [state("SNORLAX", 0, true, 500, 500), state("RAYQUAZA", 1, false, 300, 400),
+    state("BLISSEY", 2, false, 600, 600), state("ZACIAN", 3, false, 0, 350)]), [false, "~"]);
+  assert.deepEqual(decided("Zacian standing", [state("ZACIAN", 0, true, 120, 350), state("RAYQUAZA", 1, false, 300, 400),
+    state("BLISSEY", 2, false, 600, 600), state("SNORLAX", 3, false, 500, 500)]), [true, "!"]);
+}
+
 // ---- A pivot is named after the turn's call and at the switch-out prompt's turn, in a single as in a double; one out of shape is ignored
 {
   const seed = "a W200 run, pivoting";

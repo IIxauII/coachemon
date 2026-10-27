@@ -471,6 +471,12 @@ strip | trainer off the line · ! re-solving… · Golbat Venoshock → Tyranita
     ⚔ Golbat Poison Venoshock → Tyranitar 3 hits
 a W200 run, Snorlax sent                held
 scored T4/5 miss Blissey in front · benched; Snorlax benched · in front
+a W200 run, Zacian in, Rayquaza back    held
+scored T2/5 miss Blissey in front · benched; Rayquaza benched · in front
+a W200 run, Zacian in, Snorlax sent     held
+scored T2/5 miss Blissey in front · benched; Snorlax benched · in front
+a W200 run, Zacian in, Zacian standing  held
+scored T2/5 miss ! Blissey in front · benched; Zacian benched 0/350 · in front 120/350
 T1 pivots to Blissey                    held
 == W200 T1, Rayquaza pivoting out
 strip | trainer ⚔ ~ T1/5 · Rayquaza Dragon Ascent · then send Blissey for Rayquaza
