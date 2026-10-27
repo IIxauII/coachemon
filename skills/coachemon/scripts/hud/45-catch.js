@@ -147,7 +147,7 @@ const accountReasons = (account, foe) => {
 
 const CHIP = 1;
 const fastestHit = (turn, a, target) => turn.outcomes(a, target).filter(x => x.dmg > 0)
-  .map(x => ({ x, turns: koTurn(koCurve(turn.mon(target), useOf(x)).by) }))
+  .map(x => ({ x, turns: koTurn(koCurve(turn.mon(target), useOf(x), { ignoresSturdy: x.ignoresSturdy }).by) }))
   .reduce((b, y) => (!b || y.turns < b.turns || (y.turns === b.turns && y.x.dmg > b.x.dmg) ? y : b), null);
 // `p`: one throw's chance with the cheapest ball this catch deserves.
 const escapeReason = (turn, foe, party, p) => {
