@@ -76,7 +76,7 @@ const live = (name, sp, level, stats, { ivs, nature = 0, moves = [], ability = "
   fusionSpecies: fusion, fusionFormIndex,
   getMaxHp: () => stats[0], getStat: i => stats[i] ?? 0, getNature: () => nature,
   getTypes: () => types ?? [sp.type1, sp.type2].filter(t => t != null),
-  getAbility: () => abilityNamed(ability, abilityAttrs), hasPassive: () => !!passive, getPassiveAbility: () => (passive ? { name: passive } : null),
+  getAbility: () => ({ name: ability, attrs: abilityAttrs }), hasPassive: () => !!passive, getPassiveAbility: () => (passive ? { name: passive } : null),
   hasAbilityWithAttr: (a, canApply = true, ignoreOverride = false) => attrs.includes(a) && (!field || (!canApply && ignoreOverride)),
   getHeldItems: () => items, getTag: () => null,
   calculateBaseStats: () => (base ?? sp.baseStats).slice(),
@@ -404,22 +404,32 @@ const shown = x => x.map(o => `${o.name} ×${o.e} ${o.max}${o.pKo ? ` pKo ${o.pK
     "a member whose ability the field suppresses today still brings its attrs to a later fight (#989)");
 }
 
-// ---- A passive Trace is the member's own, not the passive it copied on the field
+// ---- A member's passive is its own, not the one a passive Trace copied on the field
 {
-  const snorlax = () => live("Snorlax", SNORLAX, 10, [53, 28, 19, 19, 28, 12], { ability: "Immunity", passive: "Intimidate" });
-  const traced = snorlax();
-  traced.summonData.passiveAbility = ABILITIES.findIndex(a => a?.name === "Intimidate");
+  const idOf = name => ABILITIES.findIndex(a => a?.name === name);
+  // Shaped as the game's own on the calls a copy goes through (game-code.md §24).
+  const member = (ability, passive, copy = null) => {
+    const mon = live("Snorlax", SNORLAX, 10, [53, 28, 19, 19, 28, 12], { ability, passive });
+    mon.summonData.passiveAbility = copy && idOf(copy);
+    return Object.assign(mon, {
+      getAbility(ignoreOverride = false) { return ABILITIES[(!ignoreOverride && this.summonData.ability) || idOf(ability)]; },
+      getPassiveAbility() { return ABILITIES[this.summonData.passiveAbility || idOf(passive)]; },
+      hasAbilityWithAttr(a, _canApply = true, ignoreOverride = false) {
+        return this.getAbility(ignoreOverride).hasAttr(a) || (this.hasPassive() && this.getPassiveAbility().hasAttr(a));
+      },
+    });
+  };
+  const traced = member("Immunity", "Trace", "Sturdy");
   assert.equal(combatantOf({ mon: traced }).getPassiveAbility().name, "Trace", "the copy stays on the field");
-  assert.equal(combatantOf({ mon: snorlax() }).getPassiveAbility().name, "Intimidate", "an untraced passive is the member's own");
-  // The game's own `hasAbilityWithAttr` asks the passive through `getPassiveAbility`, so it answers a copied Sturdy
-  // whatever `ignoreOverride` says (#992): `attrs` is that answer.
-  const copied = live("Snorlax", SNORLAX, 10, [53, 28, 19, 19, 28, 12], { ability: "Immunity", passive: "Intimidate", attrs: [ENDURE] });
-  copied.summonData.passiveAbility = ABILITIES.findIndex(a => a?.name === "Sturdy");
-  assert.equal(combatantOf({ mon: copied }).hasAbilityWithAttr(ENDURE), false, "and so do the copy's attrs (#992)");
-  const sturdy = live("Snorlax", SNORLAX, 10, [53, 28, 19, 19, 28, 12],
-    { ability: "Sturdy", abilityAttrs: attrsOf(ENDURE), passive: "Intimidate", attrs: [ENDURE] });
-  sturdy.summonData.passiveAbility = ABILITIES.findIndex(a => a?.name === "Intimidate");
-  assert.equal(combatantOf({ mon: sturdy }).hasAbilityWithAttr(ENDURE), true, "while a traced member's own ability still answers");
+  assert.equal(combatantOf({ mon: traced }).hasAbilityWithAttr(ENDURE), false, "and so do the copy's attrs (#992)");
+  assert.equal(traced.getPassiveAbility().name, "Sturdy", "and the member is left holding it");
+  const swapped = member("Sturdy", "Trace", "Intimidate");
+  swapped.summonData.ability = idOf("Immunity");
+  assert.equal(combatantOf({ mon: swapped }).hasAbilityWithAttr(ENDURE), true, "a traced member's own ability still answers, past a swap");
+  assert.equal(combatantOf({ mon: member("Immunity", "Levitate", "Sturdy") }).getPassiveAbility().name, "Levitate",
+    "a member that evolved since it traced brings the passive it has now");
+  assert.equal(combatantOf({ mon: member("Immunity", "Intimidate") }).getPassiveAbility().name, "Intimidate",
+    "an untraced passive is the member's own");
 }
 
 // ---- Stat stages are the ones asked for, and a member is adapted off the field, not on it

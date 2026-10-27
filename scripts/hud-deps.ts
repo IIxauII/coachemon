@@ -338,6 +338,8 @@ export const HUD_DEPS = {
     `${P}#Pokemon.getAbility`,
     `${P}#Pokemon.canApplyAbility`,
     `${P}#Pokemon.hasPassive`,
+    `${P}#Pokemon.getPassiveAbility`,
+    `${P}#Pokemon.hasAbilityWithAttr`,
     `${P}#Pokemon.getTypes`,
     `${P}#Pokemon.getBaseTypes`,
     `${P}#PlayerPokemon.fuse`,

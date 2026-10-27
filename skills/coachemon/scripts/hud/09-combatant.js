@@ -138,6 +138,13 @@ const boostSlot = (pm, by) => {
 export const itemKeyOf = m => [m?.constructor?.name ?? null, stacksOf(m), pricingOf(m), m?.stats ?? null,
   m?.multiplier ?? null, m?.moveType ?? null, m?.species ?? null, m?.isTransferable ?? null];
 
+// `mon` with its passive Trace's copy from the field masked off, which `getPassiveAbility` answers first and
+// `hasAbilityWithAttr` asks whatever `ignoreOverride` says (game-code.md §24), so a copy reached a later fight's duel
+// (#992). The game's own calls on the view answer the member's own passive, and nothing is written to `mon`.
+const untraced = mon => (mon?.summonData?.passiveAbility
+  ? Object.create(mon, { summonData: { value: Object.create(mon.summonData, { passiveAbility: { value: undefined } }) } })
+  : mon);
+
 // A slot built from a move id has none of its PP spent, which is what `plainUsable` reads it by.
 const slotOf = (id, table) => {
   const mv = table?.[id];
@@ -227,12 +234,10 @@ export const combatantOf = (spec = {}) => {
           : abilityNameOf(firstAbility(form));
   // The passive stays the base half's, fused or not (game-code.md §24), but it is the *species*' own, so an evolved
   // member brings the evolved species' passive rather than the one it has now (game-code.md §23).
-  // `getPassiveAbility` answers what a passive Trace copied on the field (§24).
-  const traced = !!mon?.summonData?.passiveAbility;
-  const ownPassive = () => (traced ? abilityOf(AbilityId.TRACE) : mon.getPassiveAbility());
+  const self = untraced(mon);
   const passive = spec.passive !== undefined ? abilityNameOf(spec.passive)
     : mon && tryDo(() => mon.hasPassive(), false)
-      ? abilityNameOf(evolved ? tryDo(() => species.getPassiveAbility(formIndex)) : tryDo(ownPassive))
+      ? abilityNameOf(evolved ? tryDo(() => species.getPassiveAbility(formIndex)) : tryDo(() => self.getPassiveAbility()))
       : null;
   const given = statRowOf(spec.stats);
   // A live member's own call folds in its vitamins, its fusion and the Flip Stat challenge (game-code.md §20) — all
@@ -265,12 +270,10 @@ export const combatantOf = (spec = {}) => {
   // holds both. An evolved member's pair is the evolved species', which the member cannot be asked about either.
   // Asked without `canApply`, which read today's field — a Gastro Acid, a Neutralizing Gas, a faint — into a later
   // fight's duel, and past a Worry Seed's swap as the name is (#989). Without `canApply` the game's refusal of a fused
-  // form-change ability goes too (game-code.md §24). `ignoreOverride` never reaches the passive half, which still
-  // answers a passive Trace's copy, so a traced member asks its own two abilities instead (#992).
-  const ownAttr = traced
-    ? a => tryDo(() => mon.getAbility(true).hasAttr(a), false) || (!!passive && tryDo(() => ownPassive().hasAttr(a), false))
-    : a => tryDo(() => mon.hasAbilityWithAttr(a, false, true), false);
-  const hasAttr = spec.ability === undefined && !other && !evolved && mon ? ownAttr : a => attrs.has(a);
+  // form-change ability goes too (game-code.md §24).
+  const hasAttr = spec.ability === undefined && !other && !evolved && mon
+    ? a => tryDo(() => self.hasAbilityWithAttr(a, false, true), false)
+    : a => attrs.has(a);
   return {
     // Everything the duel reads, so a pair score memoised on it cannot be served to a different duel. The held items
     // are in it whole: the boosted stats and moveset above carry only the ones the adapter prices, while the duel
