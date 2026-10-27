@@ -584,8 +584,8 @@ member judged in the form it evolves into (see **Level projection**) brings the 
 passive and ability — the last at the member's own ability index, which an evolution keeps — and leaves its own
 base-stat row behind, so the investment it has been fed does not reach the form it will be. A
 combatant is built off the field and carries base stat stages, even where the member behind it is standing on raised
-ones. A foe in a preview is the one built from no species at all — a preview holds plain data, never a game object —
-so its stat row is handed over whole rather than computed, and the row is what the duel then scores it by. A fusion is
+ones, and its own ability, even where today's field suppresses it, swaps it or the member has fainted. A foe in a
+preview is the one built from no species at all — a preview holds plain data, never a game object — so its stat row is handed over whole rather than computed, and the row is what the duel then scores it by. A fusion is
 the one combatant built out of two: the base half's level, IVs, nature, moves and passive, the other
 half's ability, and half of every base stat off each half's species — so the investment either half has been fed is
 left behind, the game folding a fusion's base stats out of the species' own.

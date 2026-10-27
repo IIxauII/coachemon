@@ -15,10 +15,10 @@ test("every step that reads the game runs at the version named, and nothing else
   const all = steps("9.1.0");
   assert.deepEqual(
     all.map(s => s.name),
-    ["typecheck", "unit tests", "HUD goldens", "enums:gen --check", "clone:smoke", "oracle:encounter", "oracle:preview"],
+    ["typecheck", "unit tests", "HUD goldens", "enums:gen --check", "clone:smoke", "oracle:encounter", "oracle:combatant", "oracle:preview"],
   );
   const atVersion = all.filter(s => s.env?.COACHEMON_GAME_VERSION === "9.1.0").map(s => s.name);
-  assert.deepEqual(atVersion, ["clone:smoke", "oracle:encounter", "oracle:preview"]);
+  assert.deepEqual(atVersion, ["clone:smoke", "oracle:encounter", "oracle:combatant", "oracle:preview"]);
   const enums = all.find(s => s.name === "enums:gen --check")!;
   assert.match(enums.command, /--check --version 9\.1\.0 --source \S*\.cache\/pokerogue\/v9\.1\.0$/);
 });

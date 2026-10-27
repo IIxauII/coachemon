@@ -125,6 +125,13 @@ const counts = t => t.hits.dist.map(x => `${x.n}@${x.p}`).join(" ");
   // Extra strikes (game-code.md §2).
   const tackle = move({ name: "Tackle" });
   assert.equal(moveTraits(tackle, mon({ abilities: ["AddSecondStrikeAbAttr"] })).hits.mean, 2);
+  // The game's own check, on a user it cannot read targets off: its spread check throws (#989).
+  const offField = (excluded, spreads = false) => ({ ...tackle, moveTarget: spreads ? MoveTarget.ALL_NEAR_OTHERS : MoveTarget.NEAR_OTHER,
+    canBeMultiStrikeEnhanced: (_, restrictSpread) => { if (restrictSpread) throw new TypeError("user.getOpponents is not a function"); return !excluded; } });
+  const bond = mon({ abilities: ["AddSecondStrikeAbAttr"] });
+  assert.equal(moveTraits(offField(false), bond).hits.mean, 2, "a user off the field still takes the second strike");
+  assert.equal(moveTraits(offField(false, true), bond).hits.mean, 2, "on a spread move too, its one foe struck alone");
+  assert.equal(moveTraits(offField(true), bond).hits.mean, 1, "and the game's own exclusions still hold");
   assert.equal(moveTraits(tackle, mon({ items: [lens(2)] })).hits.mean, 3);
   assert.equal(moveTraits(twoToFive, mon({ items: [lens(2)] })).hits.mean, 3.1, "a multi-hit move takes no lens strikes");
   // Water Shuriken is three hits on BATTLE_BOND_GRENINJA's form 1 only, a separate species from plain Greninja, whose

@@ -64,15 +64,17 @@ const pmOf = id => ({ moveId: id, getMove: () => MOVES[id], getName: () => MOVES
 // there and nowhere else, and `stats` is the array the game left on it at `level`.
 // `fusion` is the other half of a fusion the game has already made: `base` is then the fused base stats its
 // `calculateBaseStats()` answers, `types` its fused types and `ability` the other half's (game-code.md §24).
+// `field`: the field suppresses or swaps its ability right now.
 const live = (name, sp, level, stats, { ivs, nature = 0, moves = [], ability = "x", passive = null, attrs = [], hp,
   boss = 0, player = true, stages = [0, 0, 0, 0, 0, 0, 0], items = [], base = null, formIndex = 0, id = 1,
-  abilityAttrs = [], types = null, fusion = null, fusionFormIndex = 0 } = {}) => ({
+  abilityAttrs = [], types = null, fusion = null, fusionFormIndex = 0, field = false } = {}) => ({
   id, name, level, species: sp, formIndex, ivs, stats, hp: hp ?? stats[0], moveset: moves.map(pmOf),
   fusionSpecies: fusion, fusionFormIndex,
   getMaxHp: () => stats[0], getStat: i => stats[i] ?? 0, getNature: () => nature,
   getTypes: () => types ?? [sp.type1, sp.type2].filter(t => t != null),
   getAbility: () => ({ name: ability, attrs: abilityAttrs }), hasPassive: () => !!passive, getPassiveAbility: () => (passive ? { name: passive } : null),
-  hasAbilityWithAttr: a => attrs.includes(a), getHeldItems: () => items, getTag: () => null,
+  hasAbilityWithAttr: (a, canApply = true, ignoreOverride = false) => attrs.includes(a) && (!field || (!canApply && ignoreOverride)),
+  getHeldItems: () => items, getTag: () => null,
   calculateBaseStats: () => (base ?? sp.baseStats).slice(),
   summonData: { statStages: stages, abilitiesApplied: new Set(), tags: [] },
   waveData: { abilitiesApplied: new Set(), abilityRevealed: true, endured: false },
@@ -393,6 +395,9 @@ const shown = x => x.map(o => `${o.name} ×${o.e} ${o.max}${o.pKo ? ` pKo ${o.pK
   const over = combatantOf({ mon, ability: "Sturdy" });
   assert.equal(over.hasAbilityWithAttr("PreDefendFullHpEndureAbAttr"), true, "...unless the name brings the attr itself");
   assert.equal(combatantOf({ mon, passive: "Sturdy" }).hasAbilityWithAttr("PreDefendFullHpEndureAbAttr"), true, "a passive Sturdy brings it too");
+  const gassed = live("Snorlax", SNORLAX, 10, [53, 28, 19, 19, 28, 12], { ability: "Sturdy", attrs: ["PreDefendFullHpEndureAbAttr"], field: true });
+  assert.equal(combatantOf({ mon: gassed }).hasAbilityWithAttr("PreDefendFullHpEndureAbAttr"), true,
+    "a member whose ability the field suppresses today still brings its attrs to a later fight (#989)");
 }
 
 // ---- A passive Trace is the member's own, not the passive it copied on the field

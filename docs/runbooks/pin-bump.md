@@ -88,15 +88,15 @@ npm run bump:suite -- --version <new>
 ```
 
 It runs, at `<new>`, everything but the stamp's harness re-check and the live run: the typecheck, the unit tests, the
-HUD goldens, `enums:gen --check` against the `<new>` checkout, `clone:smoke`, `oracle:encounter` and `oracle:preview`.
-Each step's output goes to its own log under `.cache/bump-suite/v<new>/`; the summary names each step's result,
-duration and log, and a failed step prints its log's tail. It exits 1 on any failure. At 1.12.0.11 it took 16 minutes
-on the dev's Mac, 15 of them `oracle:preview`.
+HUD goldens, `enums:gen --check` against the `<new>` checkout, `clone:smoke`, `oracle:encounter`, `oracle:combatant` and
+`oracle:preview`. Each step's output goes to its own log under `.cache/bump-suite/v<new>/`; the summary names each
+step's result, duration and log, and a failed step prints its log's tail. It exits 1 on any failure. At 1.12.0.11 it
+took 16 minutes on the dev's Mac, 15 of them `oracle:preview`.
 
-The clone steps run off the pin through `COACHEMON_GAME_VERSION=<new>`, which any of them takes alone:
-`oracle:encounter` and `oracle:preview` run in the `<new>` checkout with its own pnpm, and `clone:smoke` sets a player's
-clone up from a pin read off that checkout, in `.cache/coachemon-home` so the player's own clone in `~/.coachemon` is
-left alone. `enums:gen --check` fails until the enums are regenerated at `<new>`, which the bump does.
+The clone steps run off the pin through `COACHEMON_GAME_VERSION=<new>`, which any of them takes alone: the three oracles
+run in the `<new>` checkout with its own pnpm, and `clone:smoke` sets a player's clone up from a pin read off that
+checkout, in `.cache/coachemon-home` so the player's own clone in `~/.coachemon` is left alone. `enums:gen --check`
+fails until the enums are regenerated at `<new>`, which the bump does.
 
 ## The stamp
 
