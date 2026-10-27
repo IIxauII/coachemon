@@ -47,14 +47,13 @@ function inRunRead<T>(game: GameManager, fn: (duel: (m: unknown, t: unknown) => 
   );
 }
 
-/** A later foe's Psystrike into `mon`, built as a combatant at full health: a level-5 member goes down to it in one hit. */
+/** A level-5 member goes down to its Psystrike in one hit. */
+const laterFoe = () =>
+  combatantOf({ species: speciesDataRegistry.getSpecies(SpeciesId.MEWTWO), level: 100, moves: [MoveId.PSYSTRIKE], player: false });
+
+/** A later foe's Psystrike into `mon`, built as a combatant at full health. */
 const hitAtLaterFight = (game: GameManager, mon: unknown) =>
-  inRunRead(game, (_, outcomes) =>
-    outcomes(
-      combatantOf({ species: speciesDataRegistry.getSpecies(SpeciesId.MEWTWO), level: 100, moves: [MoveId.PSYSTRIKE], player: false }),
-      combatantOf({ mon }),
-    )[0],
-  );
+  inRunRead(game, (_, outcomes) => outcomes(laterFoe(), combatantOf({ mon }))[0]);
 
 function expectHeldOn(hit: any) {
   expect(hit.raw).toBeGreaterThan(hit.targetHp);
@@ -108,11 +107,10 @@ describe("the combatant adapter against the game (#989)", () => {
     expectHeldOn(hitAtLaterFight(game, game.field.getPlayerPokemon()));
   });
 
-  it("a Sturdy member at full health is raced as down in two by a later foe's one-hit KO (#991)", async () => {
+  it("a Sturdy member at full health has a later foe's one-hit KO land on the second turn of its duel (#991)", async () => {
     await game.classicMode.startBattle(SpeciesId.MAGIKARP);
     const member = combatantOf({ mon: game.field.getPlayerPokemon() });
-    const foe = combatantOf({ species: speciesDataRegistry.getSpecies(SpeciesId.MEWTWO), level: 100, moves: [MoveId.PSYSTRIKE], player: false });
-    expect(inRunRead(game, duel => duel(member, foe)).taken).toBe(2);
+    expect(inRunRead(game, duel => duel(member, laterFoe())).taken).toBe(2);
   });
 
   it("a Sturdy member under Gastro Acid still holds on against a later foe's one-hit KO", async () => {

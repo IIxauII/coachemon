@@ -462,6 +462,8 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
     // Battler indices: the game's own answer, not a share.
     targets: exactRow ? [...(exactRow.targets ?? [])] : null,
     revive: Math.max(0, ...kos.map(k => k.revive)),
+    // A curve takes one answer for every use, so a mix of moves keeps Sturdy unless each of them goes through it.
+    ignoresSturdy: moves.some(m => m.o) && moves.every(m => !m.o || !!m.o.ignoresSturdy),
     boost: Object.keys(boost).length ? boost : null,
     // HP its drain moves give it back a turn; negative into Liquid Ooze.
     drain: drained,
@@ -891,7 +893,7 @@ export const foeCurve = (turn, t, me, hp, { dealt = 0, foe = null, mult = null, 
     sitrus: foe && unnervedBy(turn, me, foe) ? null : gone ?? 0,
     scale: mult || ramp ? i => (mult ? mult(i + 1) : 1) * (ramp ? ramp(i + 1) : 1) : undefined,
     firstKo: t?.expected > 0 && !start ? threatKoAt(t, hp) * act(0) * (t.lockAct ? t.lockAct(0) : 1) : null,
-    useAt: t?.later || t?.own ? i => useOn(threatUse(t, i + usesBefore)) : null, preHeal,
+    useAt: t?.later || t?.own ? i => useOn(threatUse(t, i + usesBefore)) : null, preHeal, ignoresSturdy: t?.ignoresSturdy,
   });
 };
 const foeTurns = (turn, t, me, hp, opts = {}) => koTurns(foeCurve(turn, t, me, hp, opts).by);

@@ -308,7 +308,7 @@ export const shares = (list, fallback) => {
 // at each turn end that finds it below half, where it eats the Enigma, a Pouch keeping it the same way; null eats none,
 // and otherwise it counts the Sitrus Berries steals have taken off the target by use n's turn end, n from 1 and 0 for
 // before the curve: a number, or a function of n. A branch's `sitrus` is the Sitrus Berries it still holds.
-// `ignoresSturdy`: the uses go through the target's Sturdy, as a record's own says of a Mold Breaker's hit.
+// `ignoresSturdy`: the record's own.
 export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 1, act = () => 1, turnEnd = 0, beforeBerry = 0, firstKo = null, cat = null, useAt = null, chain = null, se = null, preHeal = null, sitrus = null, ignoresSturdy = false } = {}) => {
   const f = ignoresSturdy && rec.facts.sturdy ? { ...rec.facts, sturdy: false } : rec.facts;
   const berry = se != null && f.enigma?.heal > 0 ? f.enigma : null;

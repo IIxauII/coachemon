@@ -287,6 +287,22 @@ const log = (...a) => console.log(...a);
   assert.deepEqual([miss.turnsWe, reach.turnsWe, after.turnsWe], [2, 1, 1]);
 }
 
+// ---- A foe's KO curve on a full-health Sturdy member stops at Sturdy, and a Mold Breaker's goes through it (#991)
+{
+  const holder = mon("Sudowoodo", { hp: 100, spe: 30, abilities: ["PreDefendFullHpEndureAbAttr"], moves: [move(33, "Tackle", 10)] });
+  const foe = abilities => mon("Excadrill", { player: false, hp: 300, spe: 90, abilities, moves: [move(157, "Rock Slide", 75, { acc: 90 })] });
+  TABLE = { "Excadrill>Rock Slide>Sudowoodo": 200 };
+  // From `start`, so no use of it is pinned to this turn's exact odds.
+  const curve = f => {
+    setup([holder], [f]);
+    return ask(t => P.foeCurve(t, P.threatFrom(t, f, holder), holder, holder.hp, { start: [{ hp: holder.hp, p: 1 }] })).by.slice(0, 2).map(r2);
+  };
+  const plain = curve(foe([])), breaker = curve(foe(["MoveAbilityBypassAbAttr"]));
+  log(`G Rock Slide into a full-health Sturdy holder, down by use 1 and 2: ${plain} · from a Mold Breaker ${breaker}`);
+  assert.deepEqual(plain, [0, 0.81], "a hit leaves it on 1 HP, a miss on full health and Sturdy");
+  assert.deepEqual(breaker, [0.9, 0.99], "a Mold Breaker's hit lands as it would on anyone");
+}
+
 // ---- Picking a fainted mon's replacement: the foe's AI has nobody to aim at, so the threat comes from the replay.
 {
   phase = { phaseName: "SwitchPhase", isModal: true, doReturn: false };
