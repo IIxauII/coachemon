@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mountHud } from "./fake-page.mjs";
+import { mountHud, panelText } from "./fake-page.mjs";
 import { mon, species } from "./fixtures/party.mjs";
 import { cat as CAT, TY } from "./fake-mon.mjs";
 
@@ -169,8 +169,7 @@ const TRIO = () => [
 {
   const { drawRewards } = globalThis.__hud["96-render-rewards"];
   const { rewardsSummary } = globalThis.__hud["52-shop"];
-  const txt = n => (n == null || n === false ? "" : typeof n === "string" ? n : (n.children ?? []).map(txt).join(" "));
-  const actOf = m => drawRewards(m).find(g => g.id === "act").rows.map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean);
+  const actOf = m => drawRewards(m).find(g => g.id === "act").rows.map(n => panelText(n)).filter(Boolean);
   const card = (lead, buys = []) => ({ kind: "rewards", money: 900, left: 900 - buys.reduce((t, b) => t + b.cost, 0), buys,
     free: [{ name: "Potion", icon: "potion", v: 5, why: "heals Swampert" }], pick: 0, reroll: null, rerollAhead: null,
     bossNext: false, gauntlet: false, luck: null, wave: 44, affordable: 1, ahead: null, audit: null, lead });

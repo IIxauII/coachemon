@@ -4,7 +4,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { Challenges } from "../../../../src/enums/generated.ts";
 import { bundle } from "../hud-bundle.mjs";
-import { mountHud } from "./fake-page.mjs";
+import { mountHud, panelText } from "./fake-page.mjs";
 import { cat, TY } from "./fake-mon.mjs";
 const HUD = fileURLToPath(new URL("../hud", import.meta.url));
 const mv = ([n, t, p, c, a = 100]) => ({ name: n, type: TY.indexOf(t), power: p, category: cat[c], accuracy: a, moveTarget: 3, isChargingMove: () => false, attrs: [] });
@@ -12,7 +12,7 @@ const pk = (name, types, atk, spa, moves) => ({ name, level: 30, hp: 100, getMax
 
 const PANEL_KEY = "coach-hud-panel";
 const SHUT = { [PANEL_KEY]: JSON.stringify({ view: "drawer", closed: true, group: "act" }) };
-const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
+const titled = n => panelText(n, { titles: true });
 let store = new Map();
 const mount = (scene, { expose = false, stored = {} } = {}) => {
   const page = mountHud({ scene, expose, stored });
@@ -20,7 +20,7 @@ const mount = (scene, { expose = false, stored = {} } = {}) => {
   return page.el;
 };
 // A drawn panel is `[controls, strip, bar, pane]`; the strip view stops after the strip, and a dismissal is one glyph.
-const lines = el => (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
+const lines = el => (el.kids ?? []).map(titled).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
 
 // Learn: Tackle is the clear drop for Flamethrower.
 const charmeleon = pk("Charmeleon", ["Fire"], 64, 80, [["Tackle","Normal",40,"P"],["Ember","Fire",40,"S"],["Dragon Breath","Dragon",60,"S"],["Scratch","Normal",40,"P"]]);
@@ -147,33 +147,32 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   const { strip } = globalThis.__hud["90-render"];
   const [head, call] = el.kids[1].children;
   const [dot, word, caption] = head.children;
-  const flat = n => txt(n).replace(/\s+/g, " ").trim();
-  console.log(`== strip\nhead ${flat(head)}\ncall ${flat(call)}\ndot ${dot.style.background} ${dot.style.width} ${dot.style.borderRadius}`);
+  console.log(`== strip\nhead ${titled(head)}\ncall ${titled(call)}\ndot ${dot.style.background} ${dot.style.width} ${dot.style.borderRadius}`);
   assert.equal(dot.style.background, "#f8b050");
-  assert.equal(flat(word), "trainer");
+  assert.equal(titled(word), "trainer");
   // The caption's list is **our** mons, never the foes the card is about.
   assert.equal(caption.style.color, "#f8b050");
-  assert.ok(flat(caption).startsWith("🎯 W15 · Youngster"), flat(caption));
-  assert.ok(flat(caption).includes("Charizard") && !/Paras|Oddish/.test(flat(caption)), flat(caption));
+  assert.ok(titled(caption).startsWith("🎯 W15 · Youngster"), titled(caption));
+  assert.ok(titled(caption).includes("Charizard") && !/Paras|Oddish/.test(titled(caption)), titled(caption));
   // On a double that list is the pair on the field, in the same arrow-separated shape.
-  assert.equal(flat(captionBattle({ kind: "battle", title: "W89 · Tester", trainer: true, double: true,
+  assert.equal(titled(captionBattle({ kind: "battle", title: "W89 · Tester", trainer: true, double: true,
     field: { slots: [{ name: "Blastoise" }, { name: "Venusaur" }] },
     order: [{ icon: null, name: "Blastoise" }, { icon: null, name: "Venusaur" }] })),
     "🎯 W89 · Tester Blastoise › Venusaur");
   // The call is `act.summary` verbatim, clamped to two lines by the browser: nothing on the panel truncates a string.
   const act = drawBattle(globalThis.__coachHud.last()).find(g => g.id === "act");
-  assert.equal(flat(call), act.summary);
+  assert.equal(titled(call), act.summary);
   assert.equal(call.style.WebkitLineClamp, "2");
   assert.deepEqual([call.style.display, call.style.overflow], ["-webkit-box", "hidden"]);
   // Only the reasoning after the first ` · ` may clip, so the node gets the whole string and the clamp eats the tail;
   // `overflowWrap` makes an unbroken run clip too, instead of pushing past the panel's edge.
   const long = { id: "act", summary: "Blastoise Wave Crash → Garchomp · 2 hits · Garchomp outspeeds and Earthquake takes 88% · switch costs the turn" };
   const longCall = strip({ verdict: "danger" }, captionBattle({ kind: "battle", title: "W89" }), [long]).children[1];
-  assert.equal(flat(longCall), long.summary, "the panel hands the browser the whole string, never a cut one");
-  assert.ok(flat(longCall).startsWith(long.summary.split(" · ")[0]), "the leading clause leads it");
+  assert.equal(titled(longCall), long.summary, "the panel hands the browser the whole string, never a cut one");
+  assert.ok(titled(longCall).startsWith(long.summary.split(" · ")[0]), "the leading clause leads it");
   assert.equal(longCall.style.overflowWrap, "anywhere");
   const [, paneBox] = el.kids.slice(2);
-  assert.ok(!(paneBox.children ?? []).some(n => flat(n) === act.summary), "the act pane does not repeat the call");
+  assert.ok(!(paneBox.children ?? []).some(n => titled(n) === act.summary), "the act pane does not repeat the call");
 }
 
 // ---- A randomizer challenge tags the strip (#723).
@@ -183,7 +182,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
     ui: { mode: 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes });
   const learn = challenges => ({ gameMode: { challenges }, currentBattle: { waveIndex: 12, double: false }, getEnemyParty: () => [], getPlayerParty: () => [charmeleon],
     ui: { mode: 9, getHandler: () => ({ summaryUiMode: 1, pokemon: charmeleon, newMove: mv(["Flamethrower","Fire",90,"S"]) }) } });
-  const head = scene => txt(mount(scene).kids[1].children[0]).replace(/\s+/g, " ").trim();
+  const head = scene => titled(mount(scene).kids[1].children[0]);
   for (const [what, challenges] of [["Moveset Randomizer", [{ id: Challenges.MOVESET_RANDOMIZER, value: 1 }]],
     ["Ability Randomizer", [{ id: Challenges.ABILITY_RANDOMIZER, value: 3 }]]]) {
     for (const [kind, scene] of [["battle", battle], ["learn", learn]]) {
@@ -206,15 +205,14 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   const el = mount(scene, { expose: true });
   const { drawer, openGroup } = globalThis.__hud["90-render"];
   const { drawBattle } = globalThis.__hud["96-render-battle"];
-  const flat = n => txt(n).replace(/\s+/g, " ").trim();
   const [bar, paneBox] = el.kids.slice(2);
   const tabs = bar.children;
-  console.log(`== drawer\ntabs ${tabs.map(flat).join(" | ")}\nopen ${openGroup()}\npane ${paneBox.children.map(flat).join(" / ")}`);
+  console.log(`== drawer\ntabs ${tabs.map(titled).join(" | ")}\nopen ${openGroup()}\npane ${paneBox.children.map(titled).join(" / ")}`);
   console.log(`bar ${tabs.map(t => `${t.style.fontWeight} ${t.style.color}`).join(" | ")}`);
   console.log(`pane cap ${paneBox.style.maxHeight} ${paneBox.style.overflowY}`);
   const groups = drawBattle(globalThis.__coachHud.last());
-  assert.deepEqual(tabs.map(flat), ["Now", "Foes", "Plan"]);
-  assert.deepEqual(tabs.map(flat), globalThis.__hud["90-render"].GROUP_IDS
+  assert.deepEqual(tabs.map(titled), ["Now", "Foes", "Plan"]);
+  assert.deepEqual(tabs.map(titled), globalThis.__hud["90-render"].GROUP_IDS
     .flatMap(id => groups.filter(g => g.id === id)).map(g => g.label), "the bar is in the fixed global order");
   assert.equal(bar.style.flexWrap, "nowrap", "the bar never wraps");
   assert.equal(bar.style.overflow, "hidden", "and never scrolls: there is no overflow menu");
@@ -223,18 +221,18 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   assert.deepEqual([tabs[0].style.fontWeight, tabs[0].style.color], ["bold", "#f8f8f8"]);
   assert.deepEqual([tabs[1].style.fontWeight, tabs[1].style.color], ["normal", "#a0a0a0"]);
   assert.ok(!tabs.some(t => t.style.color === "#f8b050"), "gold never says which tab is open");
-  assert.deepEqual(tabs.map(t => flat(t).replace(/[A-Za-z]/g, "")), tabs.map(() => ""), "labels only: no mark, no count");
+  assert.deepEqual(tabs.map(t => titled(t).replace(/[A-Za-z]/g, "")), tabs.map(() => ""), "labels only: no mark, no count");
   assert.deepEqual([paneBox.style.maxHeight, paneBox.style.overflowY], ["calc(0.40 * min(100vw, 177.78vh) - 8px)", "auto"],
     "the pane is what scrolls, past the budget the game's message box leaves");
   assert.deepEqual([el.style.maxHeight, el.style.overflowY], [undefined, undefined], "and the panel itself no longer does");
   // A tab click opens that group's pane and nothing else: the panel never switches the open group by itself.
   tabs[1].onclick({ stopPropagation() {} });
   const [bar2, pane2] = el.kids.slice(2);
-  console.log(`== drawer · foes\ntabs ${bar2.children.map(flat).join(" | ")}\nopen ${openGroup()}\npane ${pane2.children.map(flat).join(" / ")}`);
+  console.log(`== drawer · foes\ntabs ${bar2.children.map(titled).join(" | ")}\nopen ${openGroup()}\npane ${pane2.children.map(titled).join(" / ")}`);
   assert.equal(openGroup(), "foes");
   // With no summary the pane's heading is the group's label, on one line.
   const foesGroup = groups.find(g => g.id === "foes");
-  assert.equal(flat(pane2.children[0]), foesGroup.label);
+  assert.equal(titled(pane2.children[0]), foesGroup.label);
   assert.equal(foesGroup.summary, null, "and this one concluded nothing");
   assert.deepEqual([pane2.children[0].style.whiteSpace, pane2.children[0].style.overflow, pane2.children[0].style.textOverflow],
     ["nowrap", "hidden", "ellipsis"]);
@@ -242,14 +240,14 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   const said = "\u{1f480} Charizard ← Butterfree Gust";
   const [, saidPane] = drawer([{ id: "act", label: "Now", summary: "switch", rows: [] }, { id: "foes", label: "Foes", summary: said, rows: [] }]);
   assert.equal(openGroup(), "foes", "and the group the player is on stays open across a new card that has it");
-  assert.equal(flat(saidPane.children[0]), said);
+  assert.equal(titled(saidPane.children[0]), said);
   // A card without the open group moves the drawer to `act`, and it does not jump back when the group returns.
   const one = [{ id: "act", label: "Now", summary: "no advice — the enemy AI call threw", rows: [] }];
   const [oneBar, onePane] = drawer(one);
-  console.log(`== drawer · one group\ntabs ${oneBar.children.map(flat).join(" | ")}\nopen ${openGroup()}\npane ${onePane.children.map(flat).join(" / ")}`);
-  assert.deepEqual(oneBar.children.map(flat), ["Now"], "a whole-card replacement draws a bar with one tab");
+  console.log(`== drawer · one group\ntabs ${oneBar.children.map(titled).join(" | ")}\nopen ${openGroup()}\npane ${onePane.children.map(titled).join(" / ")}`);
+  assert.deepEqual(oneBar.children.map(titled), ["Now"], "a whole-card replacement draws a bar with one tab");
   assert.equal(openGroup(), "act");
-  assert.deepEqual(drawer(groups)[0].children.map(flat), ["Now", "Foes", "Plan"]);
+  assert.deepEqual(drawer(groups)[0].children.map(titled), ["Now", "Foes", "Plan"]);
   assert.equal(openGroup(), "act", "and the drawer does not jump back to the group the fallback left");
 }
 
@@ -258,10 +256,10 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   const scene = { currentBattle: { waveIndex: 12, double: false }, ui: { mode: 9, getHandler: () => ({ summaryUiMode: 1, pokemon: charmeleon, newMove: mv(["Flamethrower","Fire",90,"S"]) }) }, getEnemyParty: () => [], getPlayerParty: () => [charmeleon] };
   const el = mount(scene);
   const [head, call] = el.kids[1].children;
-  console.log(`== strip · no verdict\nhead ${txt(head).replace(/\s+/g, " ").trim()}\ncall ${txt(call)}`);
+  console.log(`== strip · no verdict\nhead ${titled(head)}\ncall ${titled(call)}`);
   assert.equal(head.children.length, 1, "the caption alone: no dot and no word");
   assert.equal(head.children[0].style.color, "#f8b050", "and the one thing on it is the caption");
-  assert.ok(txt(call).startsWith("Learn → forget"), txt(call));
+  assert.ok(titled(call).startsWith("Learn → forget"), titled(call));
 }
 
 // ---- The colour law holds, and the palette is closed.
@@ -286,12 +284,12 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   assert.equal(el.style.padding, `${rungs(0.75)} ${RUNG}`, "one row's padding stands between the gold rule and the law frame");
   assert.equal(pane.style.padding, `${rungs(0.5)} ${rungs(0.75)}`, "and the frame keeps the rows off itself");
   assert.deepEqual(GUTTER_INK, { good: "#78c850", bad: "#e13d3d", flat: "#a0a0a0" });
-  const gutter = mark => { const g = line(mark).children[0]; return `${txt(g) || "·blank·"} ${g.style.color || "·none·"}`; };
+  const gutter = mark => { const g = line(mark).children[0]; return `${titled(g) || "·blank·"} ${g.style.color || "·none·"}`; };
   console.log(`gutter ${[..."⚔➜★✓▲", "|", ..."↯✗✦⚠▼", "|", ..."⇄⤵≈↺·▸", IMMUNE, "|", "💀", "👑", "🎲", "🔒", ""].map(m => (m === "|" ? "|" : gutter(m))).join(" ")}`);
   for (const m of "⚔➜★✓▲") assert.equal(line(m).children[0].style.color, GUTTER_INK.good, m);
   for (const m of "↯✗✦⚠▼") assert.equal(line(m).children[0].style.color, GUTTER_INK.bad, m);
   for (const m of [..."⇄⤵≈↺·▸", IMMUNE]) assert.equal(line(m).children[0].style.color, GUTTER_INK.flat, m);
-  assert.equal(txt(line(IMMUNE).children[0]).trim(), "▼", "immune is a mark, not a shape: it wears ▼'s glyph");
+  assert.equal(titled(line(IMMUNE).children[0]), "▼", "immune is a mark, not a shape: it wears ▼'s glyph");
   for (const m of ["💀", "👑", "🎲", "🔒"]) assert.equal(line(m).children[0].style.color, "", `${m} forfeits the ink`);
   assert.equal(line("").children[0].style.color, "", "a blank gutter makes no claim, so it takes no ink");
   // A mark added to `MARKS` and to neither set above would otherwise fall through to grey unnoticed.
@@ -394,7 +392,6 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
     ui: { mode: 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes });
   // A learn card has no `foes` group.
   const learn = () => ({ currentBattle: { waveIndex: 12, double: false }, ui: { mode: 9, getHandler: () => ({ summaryUiMode: 1, pokemon: charmeleon, newMove: mv(["Flamethrower","Fire",90,"S"]) }) }, getEnemyParty: () => [], getPlayerParty: () => [charmeleon] });
-  const flat = n => txt(n).replace(/\s+/g, " ").trim();
   const remembers = () => JSON.parse(store.get(PANEL_KEY));
   const open = () => globalThis.__hud["90-render"].openGroup();
   const state = el => (el.kids.length === 1 ? "closed" : el.kids.length === 2 ? "strip" : "drawer");
@@ -430,18 +427,18 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
     click(tabs(el)[1]);
     assert.deepEqual(remembers(), { view: "drawer", closed: false, group: "foes" });
     const back = mount(battle(), { expose: true, stored: Object.fromEntries(store) });
-    console.log(`== remembers · reload on foes\ntabs ${tabs(back).map(flat).join(" | ")}\nopen ${open()}`);
+    console.log(`== remembers · reload on foes\ntabs ${tabs(back).map(titled).join(" | ")}\nopen ${open()}`);
     assert.equal(open(), "foes");
     assert.deepEqual(tabs(back).map(t => t.style.fontWeight), ["normal", "bold", "normal"]);
 
     // A card with no group of that id falls back to `act`, and stays there when the group returns.
     const moved = mount(learn(), { expose: true, stored: Object.fromEntries(store) });
-    console.log(`== remembers · the fallback\ntabs ${tabs(moved).map(flat).join(" | ")}\nopen ${open()}`);
+    console.log(`== remembers · the fallback\ntabs ${tabs(moved).map(titled).join(" | ")}\nopen ${open()}`);
     assert.equal(open(), "act");
     assert.deepEqual(remembers(), { view: "drawer", closed: false, group: "act" }, "the move is written back, so it survives too");
     const returned = mount(battle(), { expose: true, stored: Object.fromEntries(store) });
     assert.equal(open(), "act", "and no jump back when the group returns");
-    assert.ok(tabs(returned).map(flat).includes("Foes"), "the tab is there to be picked again");
+    assert.ok(tabs(returned).map(titled).includes("Foes"), "the tab is there to be picked again");
   }
 
   // Shutting the drawer with the caret keeps the strip.
@@ -456,11 +453,11 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
     const shut = mount(battle(), { expose: true, stored: Object.fromEntries(store) });
     assert.equal(state(shut), "strip", "a reload comes back to the strip the player left");
     // The caret says what the click does: one shape shuts the drawer, the other shows it.
-    assert.deepEqual([flat(caret(el)), flat(caret(shut))].map(m => m.split(" ")[0]), ["⌄", "⌄"]);
+    assert.deepEqual([titled(caret(el)), titled(caret(shut))].map(m => m.split(" ")[0]), ["⌄", "⌄"]);
     click(caret(shut));
     assert.equal(state(shut), "drawer");
     assert.equal(open(), "foes", "on the group the drawer was left on");
-    assert.equal(flat(caret(shut)).split(" ")[0], "⌃", "and the caret now shuts what it opened");
+    assert.equal(titled(caret(shut)).split(" ")[0], "⌃", "and the caret now shuts what it opened");
   }
 
   // Closing dismisses the panel to a bare glyph, and reopening restores the drawer that was there.

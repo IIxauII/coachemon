@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mountHud } from "./fake-page.mjs";
+import { mountHud, panelText } from "./fake-page.mjs";
 import { MoveFlags } from "../../../../src/enums/generated.ts";
 import { TY } from "./fake-mon.mjs";
 
@@ -282,9 +282,8 @@ for (const [label, sc] of Object.entries(scenarios)) {
   assert.ok(!el.textContent, `${label}: panel error ${el.textContent}`);
   const m = readRun(scene, run => rewardsModel(run, handler), { cleared: true });
   if (sc.ahead) m.audit = readRun(scene, run => teamAudit(run, sc.ahead), { cleared: true });
-  const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
   console.log(`== ${label}\n` + drawRewards({ ...m, wave: sc.wave, preview: readRun(scene, previewNext) }).flatMap(pane)
-    .map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n"));
+    .map(n => panelText(n)).filter(Boolean).join("\n"));
   const a = m.audit;
   for (const f of a.findings) console.log(`${f.level === "high" ? "✗" : "·"} ${f.kind} ${f.text}${f.relearn ? ` ↺ ${f.relearn.move} over ${f.relearn.forget ?? "(free slot)"} +${f.relearn.gain}` : ""}`);
   // The judgment's own ladder, weakest first: the member "first to replace" names above is this line's head, not a

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mountHud } from "./fake-page.mjs";
+import { mountHud, panelText } from "./fake-page.mjs";
 import { PokemonType } from "../../../../src/enums/generated.ts";
 import { ATTRS } from "./fixtures/party.mjs";
 import { cat as CAT, TY } from "./fake-mon.mjs";
@@ -583,11 +583,10 @@ const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.doub
 
 // ---- The card and its one-line summary, which mark an estimate `≈` and never `?` (#678).
 {
-  const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
   for (const from of [12, 19, 7, 20, 34]) {
     const { scene, pv } = mount({ wave: from });
     const m = pv.previewNext(scene);
-    const card = pv.drawPreview(m).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n");
+    const card = pv.drawPreview(m).map(n => panelText(n, { titles: true })).filter(Boolean).join("\n");
     const summary = pv.previewSummary(m);
     if (Object.values(m.confidence).includes("estimate")) {
       assert.ok(card.includes("≈") && summary.includes("≈"), `an estimate is marked ≈:\n${card}\n${summary}`);

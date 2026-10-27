@@ -1,6 +1,6 @@
 // The boss Weavile outspeeds and KOs all four of ours.
 import assert from "node:assert/strict";
-import { mountHud } from "./fake-page.mjs";
+import { mountHud, panelText } from "./fake-page.mjs";
 import { benchMatchupScore, onGame } from "./game-proto.mjs";
 import { cat, mon as fakeMon, outcomeFrom, TY } from "./fake-mon.mjs";
 import { fakeTurn } from "./fake-turn.mjs";
@@ -46,11 +46,10 @@ const run = (phase, { party: ours = party, foes: theirs = foes, double = false, 
   return { plan, scene, nodes: globalThis.__tp.drawTeamPlan(plan) };
 };
 
-const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
 const t0 = performance.now();
 const { plan, scene, nodes } = run(null);
 const ms = performance.now() - t0;
-console.log(nodes.map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n"));
+console.log(nodes.map(n => panelText(n)).filter(Boolean).join("\n"));
 
 assert.equal(JSON.stringify(JSON.parse(JSON.stringify(plan))), JSON.stringify(plan), "plan is JSON-safe");
 assert.equal(plan.win?.name, "Weavile", "Weavile is the win condition");
