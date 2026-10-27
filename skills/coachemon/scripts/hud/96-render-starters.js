@@ -1,8 +1,9 @@
 import { ptsText, startersSummary } from "./51-starters.js";
 import { caption, dim, group, h, ICON, ink, line, mon, sep, some } from "./90-render.js";
 
-export const captionStarters = m => caption("🌱", "Starters",
-  h("span", { ...dim, fontWeight: "normal" }, `${ptsText(m.spent)}/${m.limit} pts`));
+const spent = m => `${ptsText(m.spent)}/${m.limit} pts`;
+export const captionStarters = m => caption("🌱", "Starters", h("span", { ...dim, fontWeight: "normal" }, spent(m)));
+const startersCaptionText = m => `spent ${spent(m)}`;
 
 export const drawStarters = m => {
   const best = m.picks[0];
@@ -10,7 +11,7 @@ export const drawStarters = m => {
     ? line("✓", h("span", { ...dim, marginRight: "3px" }, "picked:"), ...m.chosen.map(x => mon(x.icon, x.name, ICON.mon)),
         m.full ? h("span", dim, "· team full") : m.room <= 0 ? h("span", dim, "· no points left") : null)
     : null;
-  if (!best) return [group("act", "Now", startersSummary(m), [chosen])];
+  if (!best) return [group("act", "Now", startersSummary(m), [chosen], startersCaptionText(m))];
   const teamTail = t => [h("span", { ...dim, marginLeft: "4px" }, `${ptsText(t.cost)} pts · SE vs ${t.covers} types`),
     t.weak.length ? h("span", { ...ink.ours, marginLeft: "4px" }, `· weak ${t.weak.join("/")}`) : null,
     t.noCarry ? h("span", { ...ink.ours, marginLeft: "4px" }, "· no carry") : null];
@@ -36,7 +37,7 @@ export const drawStarters = m => {
   const noteText = [m.fresh ? "Fresh Start: no passives, egg moves or luck" : null, m.mono ? "single type: shared weaknesses not counted" : null,
     m.inverse ? "Inverse Battle: coverage inverted" : null, m.data ? null : "final forms estimated until the game's tables load"].filter(Boolean);
   return [
-    some("act", "Now", startersSummary(m), [chosen]),
+    some("act", "Now", startersSummary(m), [chosen], startersCaptionText(m)),
     some("options", "Proposals", null, options),
     some("notes", "Notes", null, noteText.length ? [line("", h("span", dim, noteText.join(" · ")))] : []),
   ].filter(Boolean);

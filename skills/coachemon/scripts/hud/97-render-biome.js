@@ -1,8 +1,8 @@
 import { biomeSummary } from "./47-biome.js";
 import { badge, caption, dim, group, h, ICON, ink, line, mon, some } from "./90-render.js";
 
-export const captionBiome = m => caption("🗺", "Next biome",
-  m.from ? h("span", { ...dim, fontWeight: "normal" }, `from ${m.from}`) : null);
+const from = m => (m.from ? `from ${m.from}` : null);
+export const captionBiome = m => caption("🗺", "Next biome", from(m) ? h("span", { ...dim, fontWeight: "normal" }, from(m)) : null);
 
 export const drawBiome = m => {
   const fainted = m.fainted
@@ -11,7 +11,7 @@ export const drawBiome = m => {
     return [group("act", "Now", biomeSummary(m), [
       ...m.options.map(o => line("·", h("span", {}, o.label))),
       line("", h("span", dim,
-        m.unread ? `unread: ${m.unread}` : m.data ? "no spawn data for these biomes" : "reading the game's biome tables…"))])];
+        m.unread ? `unread: ${m.unread}` : m.data ? "no spawn data for these biomes" : "reading the game's biome tables…"))], from(m))];
   }
   const MARK = { pick: "★", close: "≈", worse: "·" };
   const options = [];
@@ -45,7 +45,7 @@ export const drawBiome = m => {
     }
   }
   return [
-    some("act", "Now", biomeSummary(m), []),
+    some("act", "Now", biomeSummary(m), [], from(m)),
     some("options", "Biomes", null, options),
     some("notes", "Notes", null, [fainted]),
   ].filter(Boolean);

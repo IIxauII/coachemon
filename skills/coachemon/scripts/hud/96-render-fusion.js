@@ -3,6 +3,7 @@ import { badge, caption, dim, h, ICON, ink, line, mon, sep, some } from "./90-re
 
 export const captionFusion = m => caption("🧬", "Splice", m.picked ? mon(m.picked.icon, m.picked.name, ICON.mon) : null,
   m.picked ? h("span", { ...dim, fontWeight: "normal" }, "with") : null);
+const fusionCaptionText = m => (m.picked ? `${m.picked.name} picked first` : null);
 
 export const drawFusion = m => {
   const row = (f, i) => line(i ? "·" : f.fuse ? "★" : "·",
@@ -15,7 +16,7 @@ export const drawFusion = m => {
   const options = m.rows.flatMap((f, i) => [i ? h("div", sep) : null, row(f, i), detail(f)]);
   const notes = m.spliced ? [line("", h("span", dim, "Spliced Endless: unfused mons run on half their base stats"))] : [];
   return [
-    some("act", "Now", fusionSummary(m), []),
+    some("act", "Now", fusionSummary(m), [], fusionCaptionText(m)),
     some("options", "Fusions", null, options),
     some("notes", "Notes", null, notes),
   ].filter(Boolean);

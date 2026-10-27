@@ -10,10 +10,19 @@ import { drawReroll } from "./95-render-reroll.js";
 
 const note = text => h("span", { ...dim, fontWeight: "normal" }, text);
 
-export const captionRewards = m => caption("🛒", `$${m.money}`, m.buys.length ? h("span", dim, `→ $${m.left}`) : null,
-  !m.buys.length && m.affordable === 0 ? note("nothing affordable") : null,
-  !m.free.length ? note("no free reward") : null,
-  m.bossNext ? h("span", {}, "👑 boss next") : null);
+const captionParts = m => ({
+  money: `$${m.money}`, left: m.buys.length ? `→ $${m.left}` : null,
+  notes: [!m.buys.length && m.affordable === 0 ? "nothing affordable" : null, !m.free.length ? "no free reward" : null].filter(Boolean),
+  boss: m.bossNext ? "👑 boss next" : null,
+});
+export const captionRewards = m => {
+  const p = captionParts(m);
+  return caption("🛒", p.money, p.left ? h("span", dim, p.left) : null, ...p.notes.map(note), p.boss ? h("span", {}, p.boss) : null);
+};
+const rewardsCaptionText = m => {
+  const p = captionParts(m);
+  return [[p.money, p.left].filter(Boolean).join(" "), ...p.notes, p.boss].filter(Boolean).join(" · ");
+};
 
 export const drawRewards = m => {
   const p = m.pick >= 0 ? m.free[m.pick] : null;
@@ -54,7 +63,7 @@ export const drawRewards = m => {
     some("act", "Now", rewardsSummary(m), [
       first && m.free.length ? h("div", dim, `${first} first — taking the free reward closes the shop`) : null,
       ...buyRows, ...leadRows, first ? h("div", sep) : null, take,
-      ...drawReroll(m)]),
+      ...drawReroll(m)], rewardsCaptionText(m)),
     some("options", "Others", null, others),
     // Owed, the group keeps what it drew before, or its tab alone, until every chunk is in (#922).
     m.auditOwed && !m.auditBefore ? some("audit", "Team", "checking the team", [])
