@@ -6,11 +6,15 @@ import { TY } from "./fake-mon.mjs";
 
 // `abilities` and `moves` are indexed by id, as the game's own tables are.
 const ABILITIES = [];
-// Disguise is one of the abilities that doesn't work on a fusion, and carries the attr the game refuses it by.
-const NO_FUSION = [{ constructor: { name: "NoFusionAbilityAbAttr" } }];
-for (const [id, name, attrs = []] of [[5, "Sturdy"], [8, "Sand Veil"], [17, "Immunity"], [22, "Intimidate"],
-  [26, "Levitate"], [36, "Trace"], [39, "Rough Skin"], [61, "Shed Skin"], [110, "Inner Focus"], [136, "Multiscale"],
-  [209, "Disguise", NO_FUSION]]) ABILITIES[id] = { name, attrs };
+// Disguise is one of the abilities that doesn't work on a fusion, and carries the attr the game refuses it by; Sturdy
+// carries the one the duel asks it for. `hasAttr` matches by class name, where the game's matches by `instanceof`.
+const attrsOf = (...names) => names.map(name => ({ constructor: { name } }));
+const NO_FUSION = attrsOf("NoFusionAbilityAbAttr");
+const ENDURE = "PreDefendFullHpEndureAbAttr";
+const abilityNamed = (name, attrs = []) => ({ name, attrs, hasAttr: a => attrs.some(x => x.constructor.name === a) });
+for (const [id, name, attrs = []] of [[5, "Sturdy", attrsOf(ENDURE)], [8, "Sand Veil"], [17, "Immunity"],
+  [22, "Intimidate"], [26, "Levitate"], [36, "Trace"], [39, "Rough Skin"], [61, "Shed Skin"], [110, "Inner Focus"],
+  [136, "Multiscale"], [209, "Disguise", NO_FUSION]]) ABILITIES[id] = abilityNamed(name, attrs);
 const MOVES = [];
 const move = (id, name, type, power, { pp = 10, cat = 0, acc = 100 } = {}) =>
   (MOVES[id] = { id, name, type: TY.indexOf(type), power, accuracy: acc, category: cat, pp, moveTarget: 3, priority: 0, flags: 0, attrs: [] });
@@ -72,7 +76,7 @@ const live = (name, sp, level, stats, { ivs, nature = 0, moves = [], ability = "
   fusionSpecies: fusion, fusionFormIndex,
   getMaxHp: () => stats[0], getStat: i => stats[i] ?? 0, getNature: () => nature,
   getTypes: () => types ?? [sp.type1, sp.type2].filter(t => t != null),
-  getAbility: () => ({ name: ability, attrs: abilityAttrs }), hasPassive: () => !!passive, getPassiveAbility: () => (passive ? { name: passive } : null),
+  getAbility: () => abilityNamed(ability, abilityAttrs), hasPassive: () => !!passive, getPassiveAbility: () => (passive ? { name: passive } : null),
   hasAbilityWithAttr: (a, canApply = true, ignoreOverride = false) => attrs.includes(a) && (!field || (!canApply && ignoreOverride)),
   getHeldItems: () => items, getTag: () => null,
   calculateBaseStats: () => (base ?? sp.baseStats).slice(),
@@ -407,6 +411,15 @@ const shown = x => x.map(o => `${o.name} ×${o.e} ${o.max}${o.pKo ? ` pKo ${o.pK
   traced.summonData.passiveAbility = ABILITIES.findIndex(a => a?.name === "Intimidate");
   assert.equal(combatantOf({ mon: traced }).getPassiveAbility().name, "Trace", "the copy stays on the field");
   assert.equal(combatantOf({ mon: snorlax() }).getPassiveAbility().name, "Intimidate", "an untraced passive is the member's own");
+  // The game's own `hasAbilityWithAttr` asks the passive through `getPassiveAbility`, so it answers a copied Sturdy
+  // whatever `ignoreOverride` says (#992): `attrs` is that answer.
+  const copied = live("Snorlax", SNORLAX, 10, [53, 28, 19, 19, 28, 12], { ability: "Immunity", passive: "Intimidate", attrs: [ENDURE] });
+  copied.summonData.passiveAbility = ABILITIES.findIndex(a => a?.name === "Sturdy");
+  assert.equal(combatantOf({ mon: copied }).hasAbilityWithAttr(ENDURE), false, "and so do the copy's attrs (#992)");
+  const sturdy = live("Snorlax", SNORLAX, 10, [53, 28, 19, 19, 28, 12],
+    { ability: "Sturdy", abilityAttrs: attrsOf(ENDURE), passive: "Intimidate", attrs: [ENDURE] });
+  sturdy.summonData.passiveAbility = ABILITIES.findIndex(a => a?.name === "Intimidate");
+  assert.equal(combatantOf({ mon: sturdy }).hasAbilityWithAttr(ENDURE), true, "while a traced member's own ability still answers");
 }
 
 // ---- Stat stages are the ones asked for, and a member is adapted off the field, not on it

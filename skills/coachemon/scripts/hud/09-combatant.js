@@ -228,7 +228,8 @@ export const combatantOf = (spec = {}) => {
   // The passive stays the base half's, fused or not (game-code.md §24), but it is the *species*' own, so an evolved
   // member brings the evolved species' passive rather than the one it has now (game-code.md §23).
   // `getPassiveAbility` answers what a passive Trace copied on the field (§24).
-  const ownPassive = () => (mon.summonData?.passiveAbility ? AbilityId.TRACE : mon.getPassiveAbility());
+  const traced = !!mon?.summonData?.passiveAbility;
+  const ownPassive = () => (traced ? abilityOf(AbilityId.TRACE) : mon.getPassiveAbility());
   const passive = spec.passive !== undefined ? abilityNameOf(spec.passive)
     : mon && tryDo(() => mon.hasPassive(), false)
       ? abilityNameOf(evolved ? tryDo(() => species.getPassiveAbility(formIndex)) : tryDo(ownPassive))
@@ -264,10 +265,12 @@ export const combatantOf = (spec = {}) => {
   // holds both. An evolved member's pair is the evolved species', which the member cannot be asked about either.
   // Asked without `canApply`, which read today's field — a Gastro Acid, a Neutralizing Gas, a faint — into a later
   // fight's duel, and past a Worry Seed's swap as the name is (#989). Without `canApply` the game's refusal of a fused
-  // form-change ability goes too (game-code.md §24).
-  const hasAttr = spec.ability === undefined && !other && !evolved && mon
-    ? a => tryDo(() => mon.hasAbilityWithAttr(a, false, true), false)
-    : a => attrs.has(a);
+  // form-change ability goes too (game-code.md §24). `ignoreOverride` never reaches the passive half, which still
+  // answers a passive Trace's copy, so a traced member asks its own two abilities instead (#992).
+  const ownAttr = traced
+    ? a => tryDo(() => mon.getAbility(true).hasAttr(a), false) || (!!passive && tryDo(() => ownPassive().hasAttr(a), false))
+    : a => tryDo(() => mon.hasAbilityWithAttr(a, false, true), false);
+  const hasAttr = spec.ability === undefined && !other && !evolved && mon ? ownAttr : a => attrs.has(a);
   return {
     // Everything the duel reads, so a pair score memoised on it cannot be served to a different duel. The held items
     // are in it whole: the boosted stats and moveset above carry only the ones the adapter prices, while the duel
