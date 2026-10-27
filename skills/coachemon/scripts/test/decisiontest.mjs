@@ -615,8 +615,7 @@ scene = game;
   delete full.species.speciesId;
 }
 
-// ---- a pivot's party screen is a decision of its own: its card says the turn read is withheld, is held until the pick,
-// and the mon the pick sends in redraws the battle card (#530)
+// ---- a pivot's party screen builds its own card, held until the pick, and the mon sent in redraws the battle card (#530)
 {
   const machop = mon(34, "Machop", ["Fighting"], [52, 10]);
   machop.getOpponents = () => [g.party[0]];

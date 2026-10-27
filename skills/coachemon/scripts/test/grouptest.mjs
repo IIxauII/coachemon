@@ -401,18 +401,17 @@ const biomeOption = (over = {}) => ({ label: "Swamp", id: 1, score: 72, offense:
   assert.equal(groups[0].summary, "Swamp · Construction Site");
 }
 
-// ---- Pivot: the bench is `act`, with what needs no turn read, and the foes' attacking types are `foes` (#530). A held
-// oracle line is `plan`, its step naming the pick, and is never the card's call.
+// ---- Pivot: the bench is `act`, the foes' attacking types `foes`, and a held oracle line `plan`, never the call (#530).
 {
   const pivot = (over = {}) => ({ kind: "pivot", wave: 24, turn: 3, slot: 0, out: { icon: null, name: "Scizor" },
-    withheld: "mid-turn", foes: [{ icon: null, name: "Arcanine", hp: 70, types: ["Fire"], attacks: ["Fire", "Normal"] }],
+    foes: [{ icon: null, name: "Arcanine", hp: 70, types: ["Fire"], attacks: ["Fire", "Normal"] }],
     bench: [{ icon: null, name: "Ferrothorn", hp: 60, types: ["Grass", "Steel"], hits: [{ from: "Arcanine", type: "Fire", e: 4 }], resists: false },
       { icon: null, name: "Vaporeon", hp: 100, types: ["Water"], hits: [], resists: false },
       { icon: null, name: "Heatran", hp: 35, types: ["Fire", "Steel"], hits: [], resists: true }],
     heldLine: null, ...over });
   const { groups, text } = show("pivot · three on the bench, no oracle line", pivot(), drawPivot);
   assert.deepEqual(groups.map(g => g.id), ["act", "foes"]);
-  assert.equal(groups[0].summary, "Scizor leaves the field · your pick — mid-turn, no turn read: the foe has already chosen its move");
+  assert.equal(groups[0].summary, "Scizor leaves the field · your pick — mid-turn, no turn read: the turn is still resolving");
   assert.ok(text.includes("⚠ Ferrothorn 60% Grass Steel hit by Arcanine's Fire ×4"), text);
   assert.ok(text.includes("✓ Heatran 35% Fire Steel resists every foe attack type"), text);
   assert.ok(text.includes("\nFoes\n· Arcanine 70% Fire attacks: Fire Normal"), text);

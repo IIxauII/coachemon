@@ -1,6 +1,5 @@
-// The pivot card (CONTEXT.md, `Pivot`): who comes in after U-turn, Volt Switch, Flip Turn, Parting Shot, Baton Pass,
-// Wimp Out or Emergency Exit. The pick is asked mid-turn, after the foe has chosen, so no turn read is opened for it
-// (CONTEXT.md, `Turn read`). The card shows only what needs none, the type chart's facts, and judges no pick (#530).
+// The pivot card (CONTEXT.md, `Pivot`). The pick is asked while the turn is still resolving, so no turn read is opened
+// for it (CONTEXT.md, `Turn read`): the card shows only the type chart's facts, and judges no pick (#530).
 import { effectiveness, iconOf, typesOf } from "./01-core.js";
 import { isPivot } from "./02-decision.js";
 import { damagingTypes } from "./08-party.js";
@@ -8,7 +7,8 @@ import { damagingTypes } from "./08-party.js";
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 const pctOf = p => { const max = tryDo(() => p.getMaxHp(), 0); return max > 0 ? Math.round((100 * p.hp) / max) : 0; };
 
-export const WITHHELD = "mid-turn, no turn read: the foe has already chosen its move";
+// Not "the foe has chosen": an Emergency Exit from end-of-turn damage asks before the next turn's choice.
+const WITHHELD = "mid-turn, no turn read: the turn is still resolving";
 export const pivotLeadingCall = () => "your pick";
 
 // The pivot's own phase, from its first frame: the party screen's fade included, so nothing builds a battle card there.
@@ -17,8 +17,6 @@ export const pivotScreen = s => {
   return isPivot(ph) ? ph : null;
 };
 
-// `hits`: each foe's attacking type that hits this member super effectively, `×2` or `×4`. `resists`: every attacking
-// type the foes carry lands at `×½` or less on it.
 const benchOf = (m, foes) => {
   const attacks = foes.flatMap(f => f.attacks.map(type => ({ from: f.name, type, e: effectiveness(type, m) })));
   return {
@@ -41,14 +39,13 @@ export const pivotModel = (run, ph) => {
     turn: b?.turn ?? null,
     slot: ph.fieldIndex ?? 0,
     out: out ? { name: out.name, icon: iconOf(out) } : null,
-    withheld: WITHHELD,
     // The party screen sends only from past the field (game-code.md §9).
     bench: party.slice(field).filter(p => p && p.hp > 0).map(p => benchOf(p, foes)),
     foes,
   };
 };
 
-export const effText = e => `×${+e.toFixed(2)}`;
+const effText = e => `×${+e.toFixed(2)}`;
 export const hitsText = m => (m.hits.length ? `hit by ${m.hits.map(x => `${x.from}'s ${x.type} ${effText(x.e)}`).join(", ")}`
   : m.resists ? "resists every foe attack type" : null);
 const benchText = m => [`${m.name} ${m.hp}%`, m.types.join("/"), hitsText(m)].filter(Boolean).join(" ");
