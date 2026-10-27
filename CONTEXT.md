@@ -132,7 +132,7 @@ One named part of a **card**, drawn from one closed set of eight: `act`, what to
 
 ## Strip
 
-The line of a **card** that stays in front of the player whatever else they have open or shut: its **caption** — the kind's emoji and what the card is about — the first line of its act **group**, and, where the card has one, its **verdict**. While a randomizer challenge is on, the strip also says the run is randomized, since a species' moves and abilities are then not what the coach knows of it. The thing to do now is never a click away.
+The line of a **card** that stays in front of the player whatever else they have open or shut: its **caption** — the kind's emoji and what the card is about — the first line of its act **group**, and, on a battle card, its **verdict**, unless that is unavailable. While a randomizer challenge is on, the strip also says the run is randomized, since a species' moves and abilities are then not what the coach knows of it. The thing to do now is never a click away.
 
 ## Drawer
 
@@ -144,7 +144,25 @@ One turn of a **continuous encounter**: an encounter that re-opens its own scree
 
 ## Verdict
 
-A battle card's one-word call on the wave: **easy**, **trainer**, **danger**, **catch** or **fight**. It lets whoever watches alongside the coach stay quiet on an easy wave and speak up on a dangerous one. A verdict sums the card up; it never adds advice the card doesn't show.
+A battle card's one-word call on the wave: **easy**, **trainer**, **danger**, **catch**, **fight** or **unavailable**. It lets whoever watches alongside the coach stay quiet on an easy wave and speak up on a dangerous one. A verdict sums the card up; it never adds advice the card doesn't show.
+
+**Unavailable** is the call when the coach can't read the enemy's move exactly: the card, the **fight plan** and the catch advice stop together and say why. The **strip** shows no verdict for it, since the card's act line already says why.
+
+Only a battle card has a verdict. It is that card's **leading call**; every other kind of card has a leading call of its own.
+
+## Leading call
+
+The call a **card** leads with: one per card, saying in a few words what the card comes to, and never adding advice the card doesn't show. What it is depends on the card's kind:
+
+- **battle** — its **verdict**.
+- **learn** — the learn call: learn the move, naming the one to forget, skip it, or leave it to the player where nothing can be scored. At a move prompt a held **oracle line** answers, it is that line's **learn pick** instead (`Bulbasaur skips Leech Seed`), except on the oracle line's last step, whose picks are no claim.
+- **rewards** — the first clause of the rewards line.
+- **biome** — the biome the coach picks.
+- **encounter** — `take` and the option the coach picks, `your call` on an encounter it judges without picking one, or `not judged` on one it can't judge.
+
+Starters and fusion cards have a leading call too, but the card event never sends those kinds.
+
+The card event the overlay streams carries the leading call in its field named `verdict`, for every kind it sends. The field keeps that name because renaming it breaks every reader of the stream. Only a battle's leading call is a verdict, so an **oracle** answer can be a learn card's leading call but never a verdict.
 
 ## Driver
 
