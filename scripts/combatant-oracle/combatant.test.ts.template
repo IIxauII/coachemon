@@ -48,8 +48,18 @@ function inRunRead<T>(game: GameManager, fn: (duel: (m: unknown, t: unknown) => 
 }
 
 /** A level-5 member goes down to its Psystrike in one hit. */
-const laterFoe = () =>
-  combatantOf({ species: speciesDataRegistry.getSpecies(SpeciesId.MEWTWO), level: 100, moves: [MoveId.PSYSTRIKE], player: false });
+const laterFoe = (spec: object = {}) =>
+  combatantOf({ species: speciesDataRegistry.getSpecies(SpeciesId.MEWTWO), level: 100, moves: [MoveId.PSYSTRIKE], player: false, ...spec });
+
+/** A level-100 Mewtwo's ability and its one move, each a one-hit KO on a level-5 Magikarp, and the hits a full-health Sturdy one takes to go down. */
+const STURDY_BYPASS: [string, string, number, AbilityId, MoveId][] = [
+  ["Mold Breaker", "Psystrike", 1, AbilityId.MOLD_BREAKER, MoveId.PSYSTRIKE],
+  ["Teravolt", "Psystrike", 1, AbilityId.TERAVOLT, MoveId.PSYSTRIKE],
+  ["Turboblaze", "Psystrike", 1, AbilityId.TURBOBLAZE, MoveId.PSYSTRIKE],
+  ["Pressure", "Moongeist Beam", 1, AbilityId.PRESSURE, MoveId.MOONGEIST_BEAM],
+  ["Pressure", "Psystrike", 2, AbilityId.PRESSURE, MoveId.PSYSTRIKE],
+  ["Mycelium Might", "Psystrike", 2, AbilityId.MYCELIUM_MIGHT, MoveId.PSYSTRIKE],
+];
 
 /** A later foe's Psystrike into `mon`, built as a combatant at full health. */
 const hitAtLaterFight = (game: GameManager, mon: unknown) =>
@@ -111,6 +121,35 @@ describe("the combatant adapter against the game (#989)", () => {
     await game.classicMode.startBattle(SpeciesId.MAGIKARP);
     const member = combatantOf({ mon: game.field.getPlayerPokemon() });
     expect(inRunRead(game, duel => duel(member, laterFoe())).taken).toBe(2);
+  });
+
+  it.each(STURDY_BYPASS)("a foe's %s %s puts a full-health Sturdy member down in %i in its duel, as the game's own hit does (#995)", async (_, __, n, ability, move) => {
+    game.override.enemySpecies(SpeciesId.MEWTWO).enemyLevel(100).enemyAbility(ability).enemyHasPassiveAbility(false).enemyMoveset(move);
+    await game.classicMode.startBattle(SpeciesId.MAGIKARP);
+    const mon = game.field.getPlayerPokemon();
+    const member = combatantOf({ mon });
+    const taken = inRunRead(game, duel => ({
+      live: duel(member, combatantOf({ mon: game.field.getEnemyPokemon() })).taken,
+      byName: duel(member, laterFoe({ ability, moves: [move] })).taken,
+    }));
+
+    // Not `MoveEndPhase`: a hit that fells our only member ends the run before one comes.
+    game.move.select(MoveId.SPLASH);
+    await game.phaseInterceptor.to("MoveEffectPhase");
+    expect(mon.hp).toBe(n === 1 ? 0 : 1);
+    expect(taken).toEqual({ live: n, byName: n });
+  });
+
+  it.each(STURDY_BYPASS)("a member's %s %s puts a full-health Sturdy foe down in %i in its duel, as the game's own hit does (#995)", async (_, __, n, ability, move) => {
+    game.override.startingLevel(100).ability(ability).hasPassiveAbility(false).moveset(move).enemyAbility(AbilityId.STURDY);
+    await game.classicMode.startBattle(SpeciesId.MEWTWO);
+    const foe = game.field.getEnemyPokemon();
+    const turns = inRunRead(game, duel => duel(combatantOf({ mon: game.field.getPlayerPokemon() }), combatantOf({ mon: foe })).turns);
+
+    game.move.use(move);
+    await game.toEndOfTurn();
+    expect(foe.hp).toBe(n === 1 ? 0 : 1);
+    expect(turns).toBe(n);
   });
 
   it("a Sturdy member under Gastro Acid still holds on against a later foe's one-hit KO", async () => {

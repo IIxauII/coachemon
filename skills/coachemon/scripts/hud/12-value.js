@@ -41,7 +41,7 @@ const koRace = (env, atk, def) => {
   const best = bestHit(approxOutcomes(env, atk, def).filter(o => o.dmg > 0));
   if (!best) return { turns: NO_KO, best: null };
   const rec = { facts: targetFacts(env, def), bars: (st, n) => barBreakFactors(def, st, n) };
-  return { turns: koTurns(koCurve(rec, useOf(best), { cat: best.cat }).by), best };
+  return { turns: koTurns(koCurve(rec, useOf(best), { cat: best.cat, ignoresSturdy: best.ignoresSturdy }).by), best };
 };
 
 // Who moves first, by the move each would actually use and then by speed: true for `me`, false for `foe`, null where

@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { mountHud } from "./fake-page.mjs";
 import { TY } from "./fake-mon.mjs";
+import { MoveFlags, MoveId } from "../../../../src/enums/generated.ts";
 
 // `abilities` and `moves` are indexed by id, as the game's own tables are.
 const ABILITIES = [];
@@ -16,10 +17,12 @@ for (const [id, name, attrs = []] of [[5, "Sturdy", attrsOf(ENDURE)], [8, "Sand 
   [22, "Intimidate"], [26, "Levitate"], [36, "Trace"], [39, "Rough Skin"], [61, "Shed Skin"], [110, "Inner Focus"],
   [136, "Multiscale"], [209, "Disguise", NO_FUSION]]) ABILITIES[id] = abilityNamed(name, attrs);
 const MOVES = [];
-const move = (id, name, type, power, { pp = 10, cat = 0, acc = 100 } = {}) =>
-  (MOVES[id] = { id, name, type: TY.indexOf(type), power, accuracy: acc, category: cat, pp, moveTarget: 3, priority: 0, flags: 0, attrs: [] });
+const move = (id, name, type, power, { pp = 10, cat = 0, acc = 100, flags = 0 } = {}) =>
+  (MOVES[id] = { id, name, type: TY.indexOf(type), power, accuracy: acc, category: cat, pp, moveTarget: 3, priority: 0, flags, attrs: [] });
 const [EARTHQUAKE, DRAGON_CLAW, BODY_SLAM, GROWL] = [89, 337, 34, 45];
+const SUNSTEEL_STRIKE = MoveId.SUNSTEEL_STRIKE;
 move(EARTHQUAKE, "Earthquake", "Ground", 100);
+move(SUNSTEEL_STRIKE, "Sunsteel Strike", "Steel", 100, { pp: 5, flags: MoveFlags.IGNORE_ABILITIES });
 move(DRAGON_CLAW, "Dragon Claw", "Dragon", 80, { pp: 15 });
 move(BODY_SLAM, "Body Slam", "Normal", 85, { pp: 15 });
 move(GROWL, "Growl", "Normal", 0, { pp: 40, cat: 2 });
@@ -417,6 +420,41 @@ const shown = x => x.map(o => `${o.name} ×${o.e} ${o.max}${o.pKo ? ` pKo ${o.pK
   assert.equal(full.taken, 2, "Sturdy keeps it up on 1 HP for the second");
   assert.equal(hurt.taken, 1, "and a HP short of full there is no Sturdy left to keep it up");
   console.log(`sturdy duel taken | full ${full.taken} | hurt ${hurt.taken}`);
+}
+
+// ---- A hit that ignores abilities, by its user's ability or its own flag, puts a full-health Sturdy member or foe down in one (#995)
+{
+  const { duel: pairScore } = globalThis.__hud["12-value"];
+  const run = { scene, memo: (_, __, build) => build() };
+  const hitter = (ability, extra = {}) =>
+    combatantOf({ species: GARCHOMP, level: 50, ivs: [31, 31, 31, 31, 31, 31], nature: 3, moves: [EARTHQUAKE], ability, ...extra });
+  const sturdy = extra => combatantOf({ species: SNORLAX, level: 10, moves: [BODY_SLAM], ability: 5, ...extra });
+  // [taken, turns]: the hitter as a foe into our Sturdy member, then as our member into a Sturdy foe.
+  const both = (ability, extra = {}) => [
+    pairScore(run, sturdy({}), hitter(ability, { player: false, ...extra })).taken,
+    pairScore(run, hitter(ability, extra), sturdy({ player: false })).turns,
+  ];
+  const cases = [
+    ["Mold Breaker", "Mold Breaker", {}, 1],
+    ["Teravolt", "Teravolt", {}, 1],
+    ["Turboblaze", "Turboblaze", {}, 1],
+    ["Sunsteel Strike", "Sand Veil", { moves: [SUNSTEEL_STRIKE] }, 1],
+    ["Pressure", "Pressure", {}, 2],
+    // The game's Mycelium Might carries the bypass attr too, for status moves only (game-code.md §1).
+    ["Mycelium Might", "Mycelium Might", { attrs: ["MoveAbilityBypassAbAttr"] }, 2],
+  ];
+  const seen = cases.map(([label, ability, extra, n]) => {
+    const got = both(ability, extra);
+    assert.deepEqual(got, [n, n], label);
+    return `${label} ${got.join("/")}`;
+  });
+  const record = ability => {
+    const o = approxOutcomes(env, hitter(ability), sturdy({ player: false }))[0];
+    return { ignoresSturdy: o.ignoresSturdy, pKo: o.pKo, max: o.max };
+  };
+  assert.deepEqual(record("Mold Breaker"), { ignoresSturdy: true, pKo: 1, max: 53 }, "the record's own odds and max go through its 53 HP");
+  assert.deepEqual(record("Pressure"), { ignoresSturdy: false, pKo: 0, max: 52 }, "and stop on 1 HP where the hit keeps Sturdy");
+  console.log(`sturdy bypass taken/turns | ${seen.join(" | ")}`);
 }
 
 // ---- A member's passive is its own, not the one a passive Trace copied on the field

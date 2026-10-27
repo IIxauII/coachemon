@@ -1658,6 +1658,12 @@ export const HUD: Area = {
         "src/data/abilities/init-abilities.ts#initAbilities",
       ],
     },
+    {
+      ours: "skills/coachemon/scripts/hud/01-core.js#mold-breakers",
+      of: [
+        "src/data/abilities/init-abilities.ts#initAbilities",
+      ],
+    },
     { ours: "skills/coachemon/scripts/hud/01-core.js#chart", of: ["src/data/type.ts#getTypeDamageMultiplier"] },
     { ours: "skills/coachemon/scripts/hud/01-core.js#natures", of: ["src/enums/nature.ts#Nature"] },
     {
@@ -2114,12 +2120,6 @@ export const HUD: Area = {
       ours: "skills/coachemon/scripts/hud/40-learn.js#heal-blocked",
       of: [
         "src/data/moves/invalid-moves.ts#healBlockedMoves",
-      ],
-    },
-    {
-      ours: "skills/coachemon/scripts/hud/40-learn.js#mold-breakers",
-      of: [
-        "src/data/abilities/init-abilities.ts#initAbilities",
       ],
     },
     {

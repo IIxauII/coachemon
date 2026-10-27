@@ -1,5 +1,5 @@
 // The learn decision, for the level-up prompt and a TM alike, judged without battle state.
-import { ABILITY_IMMUNE, CHART, SPREAD_TARGETS, STAT_NAMES, STATUS_FRAMES, TYPES, UNGROUNDED, abilitiesOf, battleMoveset, effectiveness, iconOf, moveHasFlag, typesOf, vs } from "./01-core.js";
+import { ABILITY_IMMUNE, CHART, SPREAD_TARGETS, STAT_NAMES, STATUS_FRAMES, TYPES, UNGROUNDED, abilitiesOf, battleMoveset, effectiveness, hasMoldBreaker, iconOf, moveHasFlag, typesOf, vs } from "./01-core.js";
 import { RANDBATS } from "./05-randbats.js";
 import { costNotes, moveTraits } from "./07-move-traits.js";
 import { partyProfile } from "./08-party.js";
@@ -185,8 +185,6 @@ const inflictsStatus = mv => moveTraits(mv).inflicts.some(x => x.cls === "Status
 const doublesNote = share => `${Math.round(share * 100)}% doubles ahead`;
 
 // The roster a status move will face (#122), judged by the rules in game-code.md §16.
-// @mirrors mold-breakers
-const MOLD_BREAKERS = ["Mold Breaker", "Teravolt", "Turboblaze"];
 // @mirrors unsuppressable
 const UNSUPPRESSABLE = new Set(["Comatose", "Shields Down"]);
 const SIDE_TARGETS = new Set([MoveTarget.USER_SIDE, MoveTarget.ENEMY_SIDE, MoveTarget.BOTH_SIDES]);
@@ -218,7 +216,7 @@ export const blockedByHealBlock = mv => HEAL_BLOCKED.some(n => moveTraits(mv).at
 
 const foeAbilities = (pk, foe) => {
   const all = [foe.ability, foe.passive].filter(Boolean);
-  return abilitiesOf(pk).some(a => MOLD_BREAKERS.includes(a)) ? all.filter(a => UNSUPPRESSABLE.has(a)) : all;
+  return hasMoldBreaker(pk) ? all.filter(a => UNSUPPRESSABLE.has(a)) : all;
 };
 const statusMoveBlocked = (pk, mv, foe) => {
   const ab = foeAbilities(pk, foe);
