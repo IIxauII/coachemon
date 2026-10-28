@@ -1348,7 +1348,7 @@ Object.assign(TABLE, {
   }
 }
 
-// ---- A KO boost counts only where its condition admits the holder, and Battle Bond's for one KO (#924).
+// ---- A KO boost counts only where the game applies it, and Battle Bond's for one KO (#924).
 {
   const { koBoost, koBoostAfter, koStageFactor } = globalThis.__planner;
   const PV = "PostVictoryStatStageChangeAbAttr";
@@ -1380,10 +1380,9 @@ Object.assign(TABLE, {
   // No `abilitiesApplied`, so Battle Bond's condition throws.
   const thin = Object.assign(greninja({ fusion: true }), { summonData: { statStages: [0, 0, 0, 0, 0, 0, 0], types: [] }, getAbility: () => moxie, hasPassive: () => true, getPassiveAbility: () => battleBond });
   assert.deepEqual(koBoost(thin), { up: { [Stat.ATK]: 1 }, ability: "Moxie", any: false }, "a condition that throws costs only its own boost");
-  // Battle Bond is unsuppressable, so `hasAbilityWithAttr` still answers through it while Moxie is suppressed.
+  // Battle Bond is unsuppressable (game-code.md §18): `hasAbilityWithAttr` passes through it with Moxie suppressed.
   const gassed = Object.assign(greninja({ fusion: true }), { getAbility: () => moxie, hasPassive: () => true, getPassiveAbility: () => battleBond, canApplyAbility: passive => passive });
   assert.deepEqual(koBoost(gassed)?.up, { [Stat.ATK]: 1, [Stat.SPATK]: 1, [Stat.SPD]: 1 }, "a suppressed Moxie gives nothing beside Battle Bond");
-  // Each ability names its own stages: both on the first KO, Moxie's alone after it.
   const bondFirst = Object.assign(greninja({ fusion: true }), { hasPassive: () => true, getPassiveAbility: () => moxie });
   assert.equal(koBoost(bondFirst)?.ability, "Battle Bond + Moxie", "the first KO feeds both");
   assert.deepEqual(koBoostAfter(koBoost(bondFirst), 1), { up: { [Stat.ATK]: 1 }, ability: "Moxie", any: false }, "a later KO feeds Moxie alone");

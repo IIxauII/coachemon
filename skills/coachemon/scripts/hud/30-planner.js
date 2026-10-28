@@ -512,14 +512,14 @@ export const koBoost = p => {
   if (!p) return null;
   const parts = [];
   try {
-    // Each slot is gated on its own, and a passive that repeats the ability applies once (game-code.md §0).
+    // Ability and passive are gated separately, and a passive that repeats the ability applies once (game-code.md §0).
     const ability = p.getAbility?.(), passive = p.hasPassive?.() ? p.getPassiveAbility?.() : null;
     const repeats = passive === ability || (passive?.id != null && passive.id === ability?.id);
-    const slots = [[ability, false], [repeats ? null : passive, true]]
+    const applying = [[ability, false], [repeats ? null : passive, true]]
       .filter(([a, isPassive]) => a && p.canApplyAbility?.(isPassive) !== false).map(([a]) => a);
     for (const [attr, whose] of [["PostVictoryStatStageChangeAbAttr", false], ["PostKnockOutStatStageChangeAbAttr", true]]) {
       if (!p.hasAbilityWithAttr?.(attr)) continue;
-      for (const a of slots) {
+      for (const a of applying) {
         for (const x of a.getAttrs?.(attr) ?? []) {
           if (!attrHolds(x, p)) continue;
           const changes = (whose

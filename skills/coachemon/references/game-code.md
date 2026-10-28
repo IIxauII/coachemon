@@ -93,7 +93,9 @@ have four kinds of hidden effect, even on the "simulated" paths.
 
    A caller that leaves `passive` out gets one pass for the ability and one for the passive
    (`src/data/abilities/apply-ab-attrs.ts:97-100`), and the passive pass returns at once when its id is the ability's
-   (`:28`), so an ability held as both applies once. Each pass skips an attr whose `getCondition()` fails for the pokemon
+   (`:28`), so an ability held as both applies once. On the same line each pass returns when
+   `pokemon.canApplyAbility(passive)` is false, so the ability and the passive are gated each on its own (suppression,
+   Neutralizing Gas, a passive-less mon). Each pass skips an attr whose `getCondition()` fails for the pokemon
    or whose `canApply(params)` is false (`:41-47`). `Pokemon.getAbilityAttrs` makes no such skip
    (`src/field/pokemon.ts:2283-2295`), and both ability getters hand out the shared `allAbilities[id]` (`:2211-2272`),
    whose `getAttrs` filters its stored attrs (`src/data/abilities/ability.ts:176-183`): a repeated ability's attrs come
@@ -2297,7 +2299,8 @@ Golisopod out-healed the damage the HUD promised, and a Buzzwole with Beast Boos
      - Grim Neigh +1 SpA (`:1824-1825`);
      - As One (Glastrier) +1 Atk and As One (Spectrier) +1 SpA (`:1828-1846`);
      - Battle Bond +1 Atk/SpA/Spe on a holder that isn't the Battle Bond Greninja form, or on any fusion (from
-       1.12.2.0, a fusion with Battle Bond Greninja too), once (`abilitiesApplied`, `:1457-1460`);
+       1.12.2.0, a fusion with Battle Bond Greninja too), once (`abilitiesApplied`, `:1457-1460`), and unsuppressable
+       (`:1466`);
    - or a function of the holder: Beast Boost and Eelevate use `beastBoostHighestStatCalc`, +1 on the highest of Atk,
      Def, SpA, SpD, Spe by `getStat(s, false)`, the first on a tie (`:1567-1568,2184-2186,2400-2410`).
 
