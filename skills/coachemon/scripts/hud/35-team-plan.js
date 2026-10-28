@@ -3,7 +3,7 @@
 // one foe at a time.
 import { battleMoveset, iconOf, squeezeDist } from "./01-core.js";
 import { berryPouch, hitOn, koCurve, koTurns, useOf } from "./10-damage.js";
-import { actionOrder, afterSteals, attemptsLost, berryTypesOf, berryWalk, entryOutcomes, hitsOn, koBoost, koBoostText, koStageFactor, laterUse, lessBerry, ourTeraTurn, overWalk, paralysed, sendInAt, sendInBase, stealCounts, stealRates, stealsBerry, stolenDraws, threatFrom, tokenOdds, tokenShift, unnervedBy } from "./30-planner.js";
+import { actionOrder, afterSteals, attemptsLost, berryTypesOf, berryWalk, entryOutcomes, hitsOn, koBoost, koBoostAfter, koBoostText, koStageFactor, laterUse, lessBerry, ourTeraTurn, overWalk, paralysed, sendInAt, sendInBase, stealCounts, stealRates, stealsBerry, stolenDraws, threatFrom, tokenOdds, tokenShift, unnervedBy } from "./30-planner.js";
 
 // @only tests: tpHealProfile, tpSendScore, tpFight, tpTables, tpActs
 const TP_BEAM = 24;
@@ -557,7 +557,7 @@ const tpSearch = (T, start, reserve, pin = null) => {
         // Only the likelier ending goes on, so `val` banks every ending the line drops: valued by its last step's
         // endings alone, a line that ends on a gamble forgot the earlier step's win (#651).
         const c = child(r);
-        c.steps = [...st.steps, { mi, fi, entry, entering, hp: r.mh, foeFrom: st.fh[fi], foeHp: r.fh, turns: r.turns, odds: r.fh < 1 ? r.pWin : r.mh < 1 ? r.pLoss : r.pStall }];
+        c.steps = [...st.steps, { mi, fi, entry, entering, hp: r.mh, foeFrom: st.fh[fi], foeHp: r.fh, foeKos: st.fk[fi], turns: r.turns, odds: r.fh < 1 ? r.pWin : r.mh < 1 ? r.pLoss : r.pStall }];
         const norm = Math.max(1e-9, (r.ends.win ? r.pWin : 0) + (r.ends.loss ? r.pLoss : 0) + (r.ends.stall ? r.pStall : 0));
         let banked = st.banked ?? 0, kept = 0;
         for (const [k, p] of [["win", r.pWin], ["loss", r.pLoss], ["stall", r.pStall]]) {
@@ -747,7 +747,7 @@ const tpView = (M, plan, pinned, tera = null) => {
     if (x.foeHp < 1) why.push(x.hp >= 1 ? `KO${odds} · ${pctOf(x.hp, T.ourMax[x.mi])}% left` : `trade${odds}`);
     else if (x.hp < 1) why.push(sacrifice ? `sacrifice → ${party[nextStep.mi].name} in free` : `falls${odds} · foe at ${pctOf(x.foeHp, T.foeMax[x.fi])}%`);
     else why.push(`stalls${odds}`);
-    const fed = x.hp < 1 && x.foeHp >= 1 && nextStep ? T.foeKo?.[x.fi] : null;
+    const fed = x.hp < 1 && x.foeHp >= 1 && nextStep ? koBoostAfter(T.foeKo?.[x.fi], x.foeKos) : null;
     if (fed) why.push(`feeds ${fed.ability} ${koBoostText(fed)}`);
     return {
       vs: ref(foes[x.fi]), send: ref(party[x.mi]), entry: x.entry,

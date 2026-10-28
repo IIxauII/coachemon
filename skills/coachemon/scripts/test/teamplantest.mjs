@@ -5,6 +5,7 @@ import { benchMatchupScore, onGame } from "./game-proto.mjs";
 import { cat, mon as fakeMon, outcomeFrom, TY } from "./fake-mon.mjs";
 import { fakeTurn } from "./fake-turn.mjs";
 import { fightState } from "./fake-fight.mjs";
+import { AbilityId } from "../../../../src/enums/generated.ts";
 
 // moves: as fake-mon.mjs's `mon` takes them.
 const mon = (name, lv, types, ability, [hp, atk, def, spa, spd, spe], moves, field, curHp, boss = 0, next) => onGame({
@@ -400,6 +401,13 @@ assert.equal(plan.approxDoubles, false);
   console.log(`== beast boost\nBlastoise loses ${boosted.map(Math.round).join(" / ")} HP after 0 / 1 / 2 KOs (no ability: ${plainHits.map(Math.round).join(" / ")})`);
   assert.ok(plainHits.every(x => x === plainHits[0]), "no ability, no change");
   assert.ok(boosted[0] === plainHits[0] && boosted[1] > boosted[0] && boosted[2] > boosted[1], "each KO fed makes its hits hurt more");
+  const bond = { changes: [1, 3, 5].map(stat => ({ stat, stages: 1 })) };
+  const battleBond = {
+    hasAbilityWithAttr: a => a === "PostVictoryStatStageChangeAbAttr",
+    getAbility: () => ({ id: AbilityId.BATTLE_BOND, name: "Battle Bond", getAttrs: a => (a === "PostVictoryStatStageChangeAbAttr" ? [bond] : []) }),
+  };
+  const bonded = [0, 1, 2].map(k => hitsOn(buzzwole(battleBond), k));
+  assert.ok(bonded[0] === plainHits[0] && bonded[1] === boosted[1] && bonded[2] === bonded[1], `Battle Bond counts one KO: ${bonded.join(" / ")}`);
   // The plan names the step that feeds it: a worn Pidgey chips Buzzwole past half and falls, and Blastoise comes in
   // free.
   const fodder = mon("Pidgey", 20, ["Normal","Flying"], "Keen Eye", [60,450,30,30,30,300], [["Brave Bird","Flying",120,"P"]], true, 10);
@@ -409,6 +417,13 @@ assert.equal(plan.approxDoubles, false);
   const fed = plan.steps.find(x => x.send.name === "Pidgey");
   assert.ok(fed && fed.hp === 0, `Pidgey falls to Buzzwole: ${JSON.stringify(plan.steps)}`);
   assert.match(fed.why, /feeds Beast Boost \+1 Atk/, "a fall into Beast Boost is named");
+  const fodder2 = mon("Rattata", 20, ["Normal"], "Guts", [60,450,30,30,30,300], [["Double-Edge","Normal",120,"P"]], false, 10);
+  const bondPuncher = Object.assign(mon("Buzzwole", 100, ["Bug","Fighting"], "Battle Bond", [400,300,300,100,100,200], [["Lunge","Bug",80,"P"],["Thunder Punch","Electric",75,"P"]], true), battleBond);
+  const bondPlan = run(null, { party: [fodder, fodder2, blastoise], foes: [bondPuncher] }).plan;
+  console.log(`== feeding Battle Bond\n${bondPlan.steps.map(x => `${x.send.name} → ${x.vs.name}: ${x.why}`).join("\n")}`);
+  const falls = bondPlan.steps.filter(x => x.hp === 0);
+  assert.equal(falls.length, 2, `both worn mons fall to Buzzwole: ${JSON.stringify(bondPlan.steps)}`);
+  assert.deepEqual(falls.map(x => /feeds Battle Bond/.test(x.why)), [true, false], "only the first fall feeds Battle Bond");
 }
 // A priority move from a slower mon lands before the faster foe that KOs it: the order is taken per move, not per
 // pairing (#650). Hitmonchan at 40 of 100 is outsped and one-shot by Golem's Rock Slide. Close Combat is the pairing's
