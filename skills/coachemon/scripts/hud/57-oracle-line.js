@@ -56,12 +56,12 @@ const promptOf = (s, h) => {
   return null;
 };
 const moverOf = (h, i) => (i ? h.line.steps[i - 1].checkpoint.ours.find(m => m.onField)?.species ?? null : h.lead);
-// Who stands in field slot `f` of `side` going into step `i` of a double.
+// Who stands in field slot `f` of `side` going into step `i`.
 const standing = (h, i, side, f) => (i ? h.line.steps[i - 1].checkpoint[side].find(m => m.onField && m.slot === f)?.species ?? null
   : h.field?.[side][f] ?? null);
 // The mon a faint in field slot `f` takes down: the one it switched in that turn, else the one standing there.
 const outOf = (h, i, f) => {
-  const c = h.line.steps[i].input?.commands?.[f];
+  const input = h.line.steps[i].input, c = input?.kind === "double" ? input.commands[f] : input;
   return c?.kind === "switch" ? c.to.species : standing(h, i, "ours", f);
 };
 const isObject = v => typeof v === "object" && v !== null;
