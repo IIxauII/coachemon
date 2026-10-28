@@ -1,6 +1,6 @@
 // Calls game code but never decides when that is allowed: 25-turn opens the one sandbox, predicts Tera and keys every
 // answer before a `scene*` export runs, and `env` is its `sceneEnv`. Every other export is pure.
-import { SPREAD_TARGETS, TYPES, abilitiesOf, effectiveness, forcedRng, gameVersionOf, keepTurnData, lumsHeld, movesetOf, squeezeDist, stage, stat, typesOf, versionAtLeast } from "./01-core.js";
+import { SPREAD_TARGETS, TYPES, abilitiesOf, effectiveness, forcedRng, gameVersionOf, hasMoldBreaker, keepTurnData, lumsHeld, movesetOf, squeezeDist, stage, stat, typesOf, versionAtLeast } from "./01-core.js";
 import { costNotes, moveTraits } from "./07-move-traits.js";
 
 const reliability = (mv, t = moveTraits(mv)) => {
@@ -903,13 +903,17 @@ const approx = (a, d, pm) => {
   if (ab.includes("Strong Jaw") && /bite|crunch|fang|jaw/i.test(pm.getName())) dmg *= 1.5;
   return { name: pm.getName(), type, cat: phys ? "physical" : "special", e, dmg, spread: SPREAD_TARGETS.includes(mv.moveTarget), priority: mv.priority ?? 0 };
 };
+// By ability name and move flag, never `ignoresAbilities`: a combatant can't answer the game's call, and here it would
+// run unsandboxed (#995).
+const approxIgnoresAbilities = (atk, mv) => hasMoldBreaker(atk) || hasFlag(mv, MoveFlags.IGNORE_ABILITIES);
 const fromApprox = (env, atk, def, pm) => {
   const x = approx(atk, def, pm);
   if (!x) return null;
   const mv = pm.getMove();
   const acc = mv.accuracy > 0 ? mv.accuracy / 100 : 1;
   const max = Math.floor(x.dmg);
-  const facts = targetFacts(env, def);
+  const ignoresSturdy = approxIgnoresAbilities(atk, mv);
+  const facts = targetFacts(env, def, ignoresSturdy);
   const end = applyHit(facts, max);
   const { revive, pFocus } = facts;
   const rolls = new Map();
@@ -922,7 +926,7 @@ const fromApprox = (env, atk, def, pm) => {
     acc, crit: 0, dist: [{ n: 1, p: 1 }], perHit: [{ max, min: Math.floor(max * 0.85) }], targetHp: def.hp,
     expected: Math.min(def.hp - end.hp, max * 0.925) * acc, uncapped: max * 0.925 * acc, max: def.hp - end.hp, pKo: end.ko && !revive ? acc : 0, revive,
     costs: costNotes(t, { type: x.type }), notes: ["estimate"], live: false,
-    use: useDist([rolls], [{ n: 1, p: 1 }], acc, false), focus: pFocus, flinch: flinchChance(atk, def, mv, false), drain: drainRatio(env, atk, def, t),
+    use: useDist([rolls], [{ n: 1, p: 1 }], acc, false), focus: pFocus, ignoresSturdy, flinch: flinchChance(atk, def, mv, false), drain: drainRatio(env, atk, def, t),
   };
 };
 
