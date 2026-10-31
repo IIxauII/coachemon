@@ -10,8 +10,8 @@ CONTRIBUTING.md, so a byte-identical refactor would only move code, and adding a
 one fold and one report in one file is a single, reviewable change.
 
 The split came out of the architecture review after #971 (#972). Its case was that every new statistic threads through
-the summary type, the fold and the report, so two statistics PRs touch the same lines; its own caveat was that it "pays
-off only if more statistics are coming", and that otherwise it is one adapter's worth of seam. The statistics planned in
+the summary type, the fold and the report, so two statistics PRs touch the same lines; its own caveat was that it pays
+off only if more statistics are coming, and that otherwise it is one adapter's worth of seam. The statistics planned in
 #932 have all shipped, so that case has nothing to stand on.
 
 Reopen only when a new tally statistic is actually being added and collides with another in flight.
