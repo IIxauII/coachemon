@@ -5,13 +5,14 @@ bands for all of its statistics. It is not split into a section per statistic, e
 
 ## Why this is out of scope
 
-The split was architecture-review candidate 3 after #971. Its case was that every new statistic threads through the
-summary type, the fold and the report in one file, so two statistics PRs touch the same lines; its own caveat was that
-it "pays off only if more statistics are coming", and that two sections today would be one adapter's worth of seam.
+The split buys nothing a reader of the report can see. The tally's report text is pinned by its tests and described in
+CONTRIBUTING.md, so a byte-identical refactor would only move code, and adding a statistic through one summary type,
+one fold and one report in one file is a single, reviewable change.
 
-No more statistics are coming. The statistics planned in #932 have all shipped, and the tally's report text is pinned
-by its tests and described in CONTRIBUTING.md, so a byte-identical refactor would move code and change nothing a
-reader of the report can see. The seam waits for a third statistic that wants it. Until one lands, the decision stands.
+The split came out of the architecture review after #971 (#972). Its case was that every new statistic threads through
+the summary type, the fold and the report, so two statistics PRs touch the same lines; its own caveat was that it "pays
+off only if more statistics are coming", and that otherwise it is one adapter's worth of seam. The statistics planned in
+#932 have all shipped, so that case has nothing to stand on.
 
 Reopen only when a new tally statistic is actually being added and collides with another in flight.
 
