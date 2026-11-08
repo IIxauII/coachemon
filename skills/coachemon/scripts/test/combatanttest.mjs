@@ -22,6 +22,7 @@ const move = (id, name, type, power, { pp = 10, cat = 0, acc = 100, flags = 0 } 
 const [EARTHQUAKE, DRAGON_CLAW, BODY_SLAM, GROWL] = [89, 337, 34, 45];
 move(EARTHQUAKE, "Earthquake", "Ground", 100);
 move(MoveId.SUNSTEEL_STRIKE, "Sunsteel Strike", "Steel", 100, { pp: 5, flags: MoveFlags.IGNORE_ABILITIES });
+move(MoveId.HYPER_VOICE, "Hyper Voice", "Normal", 90, { cat: 1, flags: MoveFlags.SOUND_BASED });
 move(DRAGON_CLAW, "Dragon Claw", "Dragon", 80, { pp: 15 });
 move(BODY_SLAM, "Body Slam", "Normal", 85, { pp: 15 });
 move(GROWL, "Growl", "Normal", 0, { pp: 40, cat: 2 });
@@ -454,6 +455,43 @@ const shown = x => x.map(o => `${o.name} ×${o.e} ${o.max}${o.pKo ? ` pKo ${o.pK
   assert.deepEqual(record("Mold Breaker"), { ignoresSturdy: true, pKo: 1, max: 53 }, "the record's own odds and max go through its 53 HP");
   assert.deepEqual(record("Pressure"), { ignoresSturdy: false, pKo: 0, max: 52 }, "and stop on 1 HP where the hit keeps Sturdy");
   console.log(`sturdy bypass taken/turns | ${seen.join(" | ")}`);
+}
+
+// ---- A hit that ignores abilities goes through the type chart's ability immunities too, Prism Armor aside (#1000)
+{
+  const { duel: pairScore } = globalThis.__hud["12-value"];
+  const run = { scene, memo: (_, __, build) => build() };
+  const hitter = (ability, extra = {}) =>
+    combatantOf({ species: GARCHOMP, level: 50, ivs: [31, 31, 31, 31, 31, 31], nature: 3, moves: [EARTHQUAKE], ability, ...extra });
+  const target = (ability, extra = {}) => combatantOf({ species: SNORLAX, level: 10, moves: [BODY_SLAM], ability, player: false, ...extra });
+  const e = (atk, def) => approxOutcomes(env, atk, def)[0].e;
+  const cases = [
+    ["Mold Breaker", hitter("Mold Breaker"), "Levitate", 1],
+    ["Teravolt", hitter("Teravolt"), "Levitate", 1],
+    ["Turboblaze", hitter("Turboblaze"), "Levitate", 1],
+    // Levitate never stops a Steel move, so the flag's own case is the immunity that would.
+    ["Sunsteel Strike", hitter("Sand Veil", { moves: [MoveId.SUNSTEEL_STRIKE] }), "Levitate", 1],
+    ["Sunsteel Strike", hitter("Sand Veil", { moves: [MoveId.SUNSTEEL_STRIKE] }), "Wonder Guard", 1],
+    ["Mold Breaker sound", hitter("Mold Breaker", { moves: [MoveId.HYPER_VOICE] }), "Soundproof", 1],
+    ["Pressure", hitter("Pressure"), "Levitate", 0],
+    ["Pressure sound", hitter("Pressure", { moves: [MoveId.HYPER_VOICE] }), "Soundproof", 0],
+    // Its attr as the game gives it (game-code.md §1).
+    ["Mycelium Might", hitter("Mycelium Might", { attrs: ["MoveAbilityBypassAbAttr"] }), "Levitate", 0],
+  ];
+  const seen = cases.map(([label, atk, ability, want]) => {
+    const got = e(atk, target(ability));
+    assert.equal(got, want, `${label} into ${ability}`);
+    return `${label}→${ability} ×${got}`;
+  });
+  const rotom = ability => combatantOf({ species: ROTOM, level: 10, moves: [BODY_SLAM], ability, player: false });
+  assert.equal(e(hitter("Mold Breaker"), rotom("Solid Rock")), 2, "Mold Breaker goes through Solid Rock");
+  assert.equal(e(hitter("Pressure"), rotom("Solid Rock")), 1.5, "which holds without it");
+  assert.equal(e(hitter("Mold Breaker"), rotom("Prism Armor")), 1.5, "Prism Armor can't be ignored");
+  const floater = extra => target("Levitate", extra);
+  const taken = pairScore(run, floater({ player: true }), hitter("Mold Breaker", { player: false })).taken;
+  const turns = pairScore(run, hitter("Mold Breaker"), floater()).turns;
+  assert.ok(taken < 9 && turns < 9, `the KO race finishes short of the no-KO score 9: taken ${taken}, turns ${turns}`);
+  console.log(`ability bypass ×e | ${seen.join(" | ")} | race ${taken}/${turns}`);
 }
 
 // ---- A member's passive is its own, not the one a passive Trace copied on the field
