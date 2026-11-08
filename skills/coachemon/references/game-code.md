@@ -2300,9 +2300,17 @@ Golisopod out-healed the damage the HUD promised, and a Buzzwole with Beast Boos
      - As One (Glastrier) +1 Atk and As One (Spectrier) +1 SpA (`:1828-1846`);
      - Battle Bond +1 Atk/SpA/Spe on a holder that isn't the Battle Bond Greninja form, or on any fusion (from
        1.12.2.0, a fusion with Battle Bond Greninja too), once (`abilitiesApplied`, `:1457-1460`), and unsuppressable
-       (`:1466`);
+       (`:1466`). An unfused Battle Bond Greninja gets a form change instead (below);
    - or a function of the holder: Beast Boost and Eelevate use `beastBoostHighestStatCalc`, +1 on the highest of Atk,
      Def, SpA, SpD, Spe by `getStat(s, false)`, the first on a tie (`:1567-1568,2184-2186,2400-2410`).
+
+   The same step runs `PostVictoryFormChangeAbAttr` (`src/data/abilities/ab-attrs.ts:2105-2124`), held only by Battle
+   Bond on an unfused Battle Bond Greninja (`src/data/abilities/init-abilities.ts:1442-1446`). It changes the holder to
+   form 1, Ash-Greninja, and `canApply` refuses when it is already there. The change is quiet
+   (`src/data/balance/species/generation-07.ts:12111-12127`), and `Pokemon.changeForm` recalculates stats at once
+   (`src/field/pokemon.ts:4651-4679`). It reverts to form 0 at battle init and on faint
+   (`src/data/abilities/init-abilities.ts:1447-1456`). Base rows (`generation-07.ts:12061-12105`): Battle Bond
+   72/95/67/103/71/122 (530), Ash 72/145/67/153/71/132 (640), so Atk ×1.53, SpA ×1.49, Spe ×1.08.
 
 Both attributes unshift `StatStageChangePhase` (±6 cap), and the stages last until the mon leaves the field. The
 move's own `PostVictoryStatStageChangeAttr` (Fell Stinger) comes after and isn't read

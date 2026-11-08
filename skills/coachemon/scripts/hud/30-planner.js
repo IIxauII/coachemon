@@ -484,12 +484,12 @@ export const laterUse = t => (t?.laterAt
   ? mixLanding(Array.from({ length: SPEND_USES }, (_, i) => ({ x: t.laterAt(i + 1), p: 1 / SPEND_USES })))
   : t?.later ?? null);
 
-// The game's skip of an attribute whose condition fails (game-code.md §0). A throw fails that attribute alone, not the
-// mon's other boosts.
-const attrHolds = (x, p) => {
+// The game's skip of an attribute whose condition fails or whose `canApply` refuses (game-code.md §0). A throw fails
+// that attribute alone, not the mon's other boosts.
+const attrApplies = (x, p) => {
   try {
     const cond = x.getCondition?.();
-    return !cond || !!cond(p);
+    return (!cond || !!cond(p)) && (!x.canApply || !!x.canApply({ pokemon: p }));
   } catch { return false; }
 };
 
@@ -497,6 +497,12 @@ const attrHolds = (x, p) => {
 // (game-code.md §18). Counted for one KO a fight (#924).
 // @mirrors once-ko-boost
 const ONCE_KO_BOOST = new Set([AbilityId.BATTLE_BOND]);
+
+// A KO's form change as stat stages, counted once a fight (game-code.md §18, #999).
+// @mirrors ko-form-change
+const KO_FORM_CHANGE = {
+  [AbilityId.BATTLE_BOND]: { name: "Ash-Greninja", changes: [Stat.ATK, Stat.SPATK, Stat.SPD].map(stat => ({ stat, stages: 1 })) },
+};
 
 const koBoostOf = parts => {
   if (!parts.length) return null;
@@ -523,11 +529,19 @@ export const koBoost = p => {
       if (!p.hasAbilityWithAttr?.(attr)) continue;
       for (const a of applying) {
         for (const x of a.getAttrs?.(attr) ?? []) {
-          if (!attrHolds(x, p)) continue;
+          if (!attrApplies(x, p)) continue;
           const changes = (whose
             ? [{ stat: typeof x.stat === "function" ? x.stat(p) : x.stat, stages: x.stages }]
             : typeof x.changes === "function" ? x.changes(p) : x.changes ?? []).filter(c => c.stat >= Stat.ATK && c.stat <= Stat.SPD && c.stages);
           if (changes.length) parts.push({ name: a.name, allFaints: whose, once: ONCE_KO_BOOST.has(a.id), changes });
+        }
+      }
+    }
+    if (p.hasAbilityWithAttr?.("PostVictoryFormChangeAbAttr")) {
+      for (const a of applying) {
+        const form = KO_FORM_CHANGE[a.id];
+        if (form && (a.getAttrs?.("PostVictoryFormChangeAbAttr") ?? []).some(x => attrApplies(x, p))) {
+          parts.push({ name: form.name, allFaints: false, once: true, changes: form.changes });
         }
       }
     }
@@ -551,7 +565,8 @@ export const koStageFactor = (p, boost, n, st) => {
 const STAT_ABBR = ["HP", "Atk", "Def", "SpA", "SpD", "Spe"];
 export const koBoostText = b => Object.entries(b.up).map(([st, n]) => `${n > 0 ? "+" : "−"}${Math.abs(n)} ${STAT_ABBR[st]}`).join(" ");
 // What feeding `foe` one KO costs the fight still to come, in turns of ours.
-const feedCost = (foe, others) => {
+// @only tests: feedCost
+export const feedCost = (foe, others) => {
   const b = others > 0 ? koBoost(foe) : null;
   if (!b) return 0;
   return Object.entries(b.up).reduce((t, [st, n]) => t + Math.max(0, n) * ([Stat.DEF, Stat.SPDEF].includes(+st) ? 0.5 : 1), 0) * FEED_COST;
