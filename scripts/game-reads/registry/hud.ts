@@ -199,7 +199,12 @@ export const HUD: Area = {
     {
       name: "canApply",
       kind: "method",
-      at: ["src/data/abilities/ab-attrs.ts#MoveHealBoostAbAttr.canApply", "src/data/abilities/ab-attrs.ts#PostVictoryFormChangeAbAttr.canApply"],
+      at: [
+        "src/data/abilities/ab-attrs.ts#MoveHealBoostAbAttr.canApply",
+        "src/data/abilities/ab-attrs.ts#PostKnockOutAbAttr.canApply",
+        "src/data/abilities/ab-attrs.ts#PostVictoryAbAttr.canApply",
+        "src/data/abilities/ab-attrs.ts#PostVictoryFormChangeAbAttr.canApply",
+      ],
     },
     { name: "canApplyAbility", kind: "method", at: ["src/field/pokemon.ts#Pokemon.canApplyAbility"] },
     { name: "canBeMultiStrikeEnhanced", kind: "method", at: ["src/data/moves/move.ts#Move.canBeMultiStrikeEnhanced"] },

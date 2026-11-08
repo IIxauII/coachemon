@@ -484,12 +484,12 @@ export const laterUse = t => (t?.laterAt
   ? mixLanding(Array.from({ length: SPEND_USES }, (_, i) => ({ x: t.laterAt(i + 1), p: 1 / SPEND_USES })))
   : t?.later ?? null);
 
-// The game's skip of an attribute whose condition fails (game-code.md §0). A throw fails that attribute alone, not the
-// mon's other boosts.
-const attrHolds = (x, p) => {
+// The game's skip of an attribute whose condition fails or whose `canApply` refuses (game-code.md §0). A throw fails
+// that attribute alone, not the mon's other boosts.
+const attrApplies = (x, p) => {
   try {
     const cond = x.getCondition?.();
-    return !cond || !!cond(p);
+    return (!cond || !!cond(p)) && (!x.canApply || !!x.canApply({ pokemon: p }));
   } catch { return false; }
 };
 
@@ -498,14 +498,10 @@ const attrHolds = (x, p) => {
 // @mirrors once-ko-boost
 const ONCE_KO_BOOST = new Set([AbilityId.BATTLE_BOND]);
 
-// A KO's form change as stat stages, counted once a fight: the new form doesn't change again (game-code.md §18, #999).
+// A KO's form change as stat stages, counted once a fight (game-code.md §18, #999).
 // @mirrors ko-form-change
 const KO_FORM_CHANGE = {
   [AbilityId.BATTLE_BOND]: { name: "Ash-Greninja", changes: [Stat.ATK, Stat.SPATK, Stat.SPD].map(stat => ({ stat, stages: 1 })) },
-};
-// The game's own check that the form a KO changes `p` to isn't the one it has (game-code.md §18).
-const changesForm = (x, p) => {
-  try { return !!x.canApply?.({ pokemon: p }); } catch { return false; }
 };
 
 const koBoostOf = parts => {
@@ -531,7 +527,7 @@ export const koBoost = p => {
       if (!p.hasAbilityWithAttr?.(attr)) continue;
       for (const a of applying) {
         for (const x of a.getAttrs?.(attr) ?? []) {
-          if (!attrHolds(x, p)) continue;
+          if (!attrApplies(x, p)) continue;
           const changes = (whose
             ? [{ stat: typeof x.stat === "function" ? x.stat(p) : x.stat, stages: x.stages }]
             : typeof x.changes === "function" ? x.changes(p) : x.changes ?? []).filter(c => c.stat >= Stat.ATK && c.stat <= Stat.SPD && c.stages);
@@ -542,7 +538,7 @@ export const koBoost = p => {
     if (p.hasAbilityWithAttr?.("PostVictoryFormChangeAbAttr")) {
       for (const a of applying) {
         const form = KO_FORM_CHANGE[a.id];
-        if (form && (a.getAttrs?.("PostVictoryFormChangeAbAttr") ?? []).some(x => attrHolds(x, p) && changesForm(x, p))) {
+        if (form && (a.getAttrs?.("PostVictoryFormChangeAbAttr") ?? []).some(x => attrApplies(x, p))) {
           parts.push({ name: form.name, any: false, once: true, changes: form.changes });
         }
       }

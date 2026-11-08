@@ -1358,7 +1358,7 @@ Object.assign(TABLE, {
     getCondition: () => p => ((p.species.speciesId !== SpeciesId.BATTLE_BOND_GRENINJA && !p.isFusion()) || p.isFusion())
       && !p.summonData.abilitiesApplied.has(AbilityId.BATTLE_BOND),
   };
-  // Its form change to Ash-Greninja, form 1, and only from another form.
+  // The game's own form change (game-code.md §18).
   const ashForm = {
     getCondition: () => p => p.species.speciesId === SpeciesId.BATTLE_BOND_GRENINJA && !p.isFusion(),
     canApply: ({ pokemon }) => pokemon.formIndex !== 1,
@@ -1369,7 +1369,6 @@ Object.assign(TABLE, {
     species: { speciesId: SpeciesId.BATTLE_BOND_GRENINJA }, isFusion: () => fusion, formIndex,
     hasAbilityWithAttr: a => a === PV || a === FC, getAbility: () => battleBond,
   }, { statStages: [0, 0, 0, 0, 0, 0, 0], types: [], abilitiesApplied: new Set(applied) });
-  // The unfused one changes form instead (#999).
   const ash = koBoost(greninja());
   assert.deepEqual(ash, { up: { [Stat.ATK]: 1, [Stat.SPATK]: 1, [Stat.SPD]: 1 }, ability: "Ash-Greninja", any: false, later: null }, "an unfused Battle Bond Greninja is fed its form change");
   assert.deepEqual([1, 2, 3].map(n => koStageFactor(greninja(), ash, n, Stat.SPATK)), [1.5, 1.5, 1.5], "it changes form once");

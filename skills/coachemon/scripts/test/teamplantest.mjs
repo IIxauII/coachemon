@@ -418,24 +418,19 @@ assert.equal(plan.approxDoubles, false);
   assert.ok(fed && fed.hp === 0, `Pidgey falls to Buzzwole: ${JSON.stringify(plan.steps)}`);
   assert.match(fed.why, /feeds Beast Boost \+1 Atk/, "a fall into Beast Boost is named");
   const fodder2 = mon("Rattata", 20, ["Normal"], "Guts", [60,450,30,30,30,300], [["Double-Edge","Normal",120,"P"]], false, 10);
-  const bondPuncher = Object.assign(mon("Buzzwole", 100, ["Bug","Fighting"], "Battle Bond", [400,300,300,100,100,200], [["Lunge","Bug",80,"P"],["Thunder Punch","Electric",75,"P"]], true), battleBond);
-  const bondPlan = run(null, { party: [fodder, fodder2, blastoise], foes: [bondPuncher] }).plan;
-  console.log(`== feeding Battle Bond\n${bondPlan.steps.map(x => `${x.send.name} → ${x.vs.name}: ${x.why}`).join("\n")}`);
-  const falls = bondPlan.steps.filter(x => x.hp === 0);
-  assert.equal(falls.length, 2, `both worn mons fall to Buzzwole: ${JSON.stringify(bondPlan.steps)}`);
-  assert.deepEqual(falls.map(x => /feeds Battle Bond/.test(x.why)), [true, false], "only the first fall feeds Battle Bond");
-  // An unfused Battle Bond Greninja gets no stat boost; its first KO changes it to Ash-Greninja instead (#999).
   const ashForm = { canApply: ({ pokemon }) => pokemon.formIndex !== 1 };
   const ashBond = {
     hasAbilityWithAttr: a => a === "PostVictoryFormChangeAbAttr", formIndex: 0,
     getAbility: () => ({ id: AbilityId.BATTLE_BOND, name: "Battle Bond", getAttrs: a => (a === "PostVictoryFormChangeAbAttr" ? [ashForm] : []) }),
   };
-  const ashPuncher = Object.assign(mon("Buzzwole", 100, ["Bug","Fighting"], "Battle Bond", [400,300,300,100,100,200], [["Lunge","Bug",80,"P"],["Thunder Punch","Electric",75,"P"]], true), ashBond);
-  const ashPlan = run(null, { party: [fodder, fodder2, blastoise], foes: [ashPuncher] }).plan;
-  console.log(`== feeding Ash-Greninja\n${ashPlan.steps.map(x => `${x.send.name} → ${x.vs.name}: ${x.why}`).join("\n")}`);
-  const ashFalls = ashPlan.steps.filter(x => x.hp === 0);
-  assert.equal(ashFalls.length, 2, `both worn mons fall to Buzzwole:${JSON.stringify(ashPlan.steps)}`);
-  assert.deepEqual(ashFalls.map(x => /feeds Ash-Greninja \+1 Atk \+1 SpA \+1 Spe/.test(x.why)), [true, false], "only the first fall feeds the form change");
+  for (const [fed, holder, note] of [["Battle Bond", battleBond, /feeds Battle Bond/], ["Ash-Greninja", ashBond, /feeds Ash-Greninja \+1 Atk \+1 SpA \+1 Spe/]]) {
+    const fedFoe = Object.assign(mon("Buzzwole", 100, ["Bug","Fighting"], "Battle Bond", [400,300,300,100,100,200], [["Lunge","Bug",80,"P"],["Thunder Punch","Electric",75,"P"]], true), holder);
+    const { steps } = run(null, { party: [fodder, fodder2, blastoise], foes: [fedFoe] }).plan;
+    console.log(`== feeding ${fed}\n${steps.map(x => `${x.send.name} → ${x.vs.name}: ${x.why}`).join("\n")}`);
+    const falls = steps.filter(x => x.hp === 0);
+    assert.equal(falls.length, 2, `both worn mons fall to Buzzwole: ${JSON.stringify(steps)}`);
+    assert.deepEqual(falls.map(x => note.test(x.why)), [true, false], `only the first fall feeds ${fed}`);
+  }
 }
 // A priority move from a slower mon lands before the faster foe that KOs it: the order is taken per move, not per
 // pairing (#650). Hitmonchan at 40 of 100 is outsped and one-shot by Golem's Rock Slide. Close Combat is the pairing's
