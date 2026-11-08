@@ -215,7 +215,8 @@ export const tpTables = (turn, party, foes, double = false, facing = null, enter
     stealHealAfter: steals.map(row => row.map(s => s?.after ?? null)),
     ourUnnerve: party.map(p => !!turn.mon(p).facts.unnerve), foeUnnerve: foes.map(f => !!turn.mon(f).facts.unnerve),
     foeStart: foes.map(f => f.hp),
-    // `koMult`: the factor both sides' on-KO boosts put on a hit, after `atkN` and `defN` KOs, at physical share `phys`.
+    // `koMult`: the factor both sides' on-KO boosts put on a hit, after `atkN` and `defN` KOs (counts as `koStageFactor`
+    // takes them), at physical share `phys`.
     ourKo: party.map(koBoost), foeKo: foes.map(koBoost),
     koMult: (atkMon, atkBoost, atkN, defMon, defBoost, defN, phys) => {
       const f = (p, b, n, st) => koStageFactor(p, b, n, st);
@@ -319,9 +320,15 @@ const tpHeal = (hp, max, prof, used, se, extra = 0) => {
 // turn costs no entry hit (#846), and our hit that turn is `T.ourEntry`'s where it has one (#825).
 export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => {
   const faints = st.oh.filter(hp => hp < 1).length + st.fh.filter(hp => hp < 1).length;
-  const nUs = T.ourKo?.[mi] ? (T.ourKo[mi].any ? faints : st.ok[mi]) : 0;
-  const nFoe = T.foeKo?.[fi] ? (T.foeKo[fi].any ? faints : st.fk[fi]) : 0;
-  const key = !over && T.memo && [mi, fi, entry, entering, Math.round(st.oh[mi]), st.ob[mi], Math.round(st.fh[fi]), st.fs[fi], st.fb[fi], st.fl[fi], nUs, nFoe,
+  // (game-code.md §18, #1004)
+  const koN = (b, own) => {
+    if (!b) return 0;
+    if (!b.split) return b.allFaints ? faints : own;
+    return own || faints ? { own, all: faints } : 0;
+  };
+  const nUs = koN(T.ourKo?.[mi], st.ok[mi]), nFoe = koN(T.foeKo?.[fi], st.fk[fi]);
+  const nKey = n => (typeof n === "object" ? `${n.own}/${n.all}` : n);
+  const key = !over && T.memo && [mi, fi, entry, entering, Math.round(st.oh[mi]), st.ob[mi], Math.round(st.fh[fi]), st.fs[fi], st.fb[fi], st.fl[fi], nKey(nUs), nKey(nFoe),
     ...[st.ox[mi], st.od[mi], st.og[mi], st.fd[fi], st.fg[fi]].map(x => Math.round(x * 20))].join();
   if (key && T.memo.has(key)) return T.memo.get(key);
   const us = over ?? T.ours[mi][fi], them = T.theirs[fi][mi], foeState = T.foeState?.[fi] ?? { bar: 0 };

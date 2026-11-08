@@ -1317,8 +1317,8 @@ Object.assign(TABLE, {
   const beastBoost = ability("Beast Boost", "PostVictoryStatStageChangeAbAttr", { changes: p => [{ stat: p.getStat(1) >= p.getStat(3) ? 1 : 3, stages: 1 }] });
   const soulHeart = ability("Soul-Heart", "PostKnockOutStatStageChangeAbAttr", { stat: 3, stages: 1 });
   const buzzwole = extra => mon("Buzzwole", 80, ["Bug", "Fighting"], [300, 250, 250, 100, 100, 150], [["Lunge", "Bug", 80, "P"]], true, undefined, { ...beastBoost, ...extra });
-  assert.deepEqual(koBoost(buzzwole()), { up: { 1: 1 }, ability: "Beast Boost", any: false });
-  assert.deepEqual(koBoost(mon("Magearna", 80, ["Steel", "Fairy"], [300, 100, 100, 250, 100, 100], [], true, undefined, soulHeart)), { up: { 3: 1 }, ability: "Soul-Heart", any: true });
+  assert.deepEqual(koBoost(buzzwole()), { up: { 1: 1 }, ability: "Beast Boost", allFaints: false });
+  assert.deepEqual(koBoost(mon("Magearna", 80, ["Steel", "Fairy"], [300, 100, 100, 250, 100, 100], [], true, undefined, soulHeart)), { up: { 3: 1 }, ability: "Soul-Heart", allFaints: true });
   assert.equal(koBoost(buzzwole({ hasAbilityWithAttr: () => false })), null, "a suppressed ability gives nothing");
 
   // Mamoswine (140 HP) is faster but Lunge (68–80) takes it in two; its Earthquake needs three on Buzzwole. Staying
@@ -1379,14 +1379,31 @@ Object.assign(TABLE, {
   assert.deepEqual([factors(Stat.ATK), factors(Stat.SPATK)], [[2, 2.5, 3], [1.5, 1.5, 1.5]], "Moxie counts every KO, Battle Bond its first");
   // No `abilitiesApplied`, so Battle Bond's condition throws.
   const thin = Object.assign(greninja({ fusion: true }), { summonData: { statStages: [0, 0, 0, 0, 0, 0, 0], types: [] }, getAbility: () => moxie, hasPassive: () => true, getPassiveAbility: () => battleBond });
-  assert.deepEqual(koBoost(thin), { up: { [Stat.ATK]: 1 }, ability: "Moxie", any: false }, "a condition that throws costs only its own boost");
+  assert.deepEqual(koBoost(thin), { up: { [Stat.ATK]: 1 }, ability: "Moxie", allFaints: false }, "a condition that throws costs only its own boost");
   // Battle Bond is unsuppressable (game-code.md §18): `hasAbilityWithAttr` passes through it with Moxie suppressed.
   const gassed = Object.assign(greninja({ fusion: true }), { getAbility: () => moxie, hasPassive: () => true, getPassiveAbility: () => battleBond, canApplyAbility: passive => passive });
   assert.deepEqual(koBoost(gassed)?.up, { [Stat.ATK]: 1, [Stat.SPATK]: 1, [Stat.SPD]: 1 }, "a suppressed Moxie gives nothing beside Battle Bond");
   const bondFirst = Object.assign(greninja({ fusion: true }), { hasPassive: () => true, getPassiveAbility: () => moxie });
   assert.equal(koBoost(bondFirst)?.ability, "Battle Bond + Moxie", "the first KO feeds both");
-  assert.deepEqual(koBoostAfter(koBoost(bondFirst), 1), { up: { [Stat.ATK]: 1 }, ability: "Moxie", any: false }, "a later KO feeds Moxie alone");
+  assert.deepEqual(koBoostAfter(koBoost(bondFirst), 1), { up: { [Stat.ATK]: 1 }, ability: "Moxie", allFaints: false }, "a later KO feeds Moxie alone");
   assert.equal(koBoostAfter(koBoost(fused), 1), null, "and Battle Bond alone has nothing left to feed");
+
+  // Soul-Heart beside an own-KO boost (game-code.md §18, #1004).
+  const PK = "PostKnockOutStatStageChangeAbAttr";
+  const soulHeart = { id: AbilityId.SOUL_HEART, name: "Soul-Heart", getAttrs: a => (a === PK ? [{ stat: Stat.SPATK, stages: 1 }] : []) };
+  const beside = other => Object.assign(greninja({ fusion: true }), {
+    hasAbilityWithAttr: a => a === PV || a === PK, getAbility: () => other, hasPassive: () => true, getPassiveAbility: () => soulHeart,
+  });
+  const elsewhere = { own: 0, all: 1 };
+  const withMoxie = beside(moxie), withBond = beside(battleBond);
+  assert.deepEqual([Stat.ATK, Stat.SPATK].map(st => koStageFactor(withMoxie, koBoost(withMoxie), elsewhere, st)), [1, 1.5],
+    "a faint elsewhere raises Soul-Heart's SpA, not Moxie's Atk");
+  assert.deepEqual([Stat.ATK, Stat.SPATK, Stat.SPD].map(st => koStageFactor(withBond, koBoost(withBond), elsewhere, st)), [1, 1.5, 1],
+    "nor credits Battle Bond");
+  // Its own KO feeds both: Moxie's Atk once, Soul-Heart's SpA for its victim's faint too.
+  assert.deepEqual([Stat.ATK, Stat.SPATK].map(st => koStageFactor(withMoxie, koBoost(withMoxie), { own: 1, all: 2 }, st)), [1.5, 2]);
+  assert.deepEqual([Stat.ATK, Stat.SPATK].map(st => koStageFactor(withBond, koBoost(withBond), { own: 2, all: 2 }, st)), [1.5, 2.5],
+    "Battle Bond still for one KO, Soul-Heart for both");
 }
 
 // ---- The summary's second danger level: a likely KO after our mon acts, naming what it is saved for (#90).
