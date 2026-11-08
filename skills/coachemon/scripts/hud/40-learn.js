@@ -1,5 +1,5 @@
 // The learn decision, for the level-up prompt and a TM alike, judged without battle state.
-import { ABILITY_IMMUNE, CHART, SPREAD_TARGETS, STAT_NAMES, STATUS_FRAMES, TYPES, UNGROUNDED, abilitiesOf, battleMoveset, effectiveness, hasMoldBreaker, iconOf, moveHasFlag, typesOf, vs } from "./01-core.js";
+import { ABILITY_IMMUNE, CHART, SPREAD_TARGETS, STAT_NAMES, STATUS_FRAMES, TYPES, UNGROUNDED, abilitiesOf, battleMoveset, effectiveness, bypassesAbilities, iconOf, moveHasFlag, typesOf, vs } from "./01-core.js";
 import { RANDBATS } from "./05-randbats.js";
 import { costNotes, moveTraits } from "./07-move-traits.js";
 import { partyProfile } from "./08-party.js";
@@ -214,12 +214,12 @@ const STATUS_FLOOR = 0.3, DISRUPT_HIT = 1.4, DISRUPT_SPREAD = 0.4, DISRUPT_NONE 
 const HEAL_BLOCKED = ["HealAttr", "RestAttr", "VariableHealAttr", "HealOnAllyAttr", "WishAttr", "HitHealAttr"];
 export const blockedByHealBlock = mv => HEAL_BLOCKED.some(n => moveTraits(mv).attrNames.has(n));
 
-const foeAbilities = (pk, foe) => {
+const foeAbilities = (pk, mv, foe) => {
   const all = [foe.ability, foe.passive].filter(Boolean);
-  return hasMoldBreaker(pk) ? all.filter(a => UNSUPPRESSABLE.has(a)) : all;
+  return bypassesAbilities(pk, mv) ? all.filter(a => UNSUPPRESSABLE.has(a)) : all;
 };
 const statusMoveBlocked = (pk, mv, foe) => {
-  const ab = foeAbilities(pk, foe);
+  const ab = foeAbilities(pk, mv, foe);
   const types = foe.types ?? [];
   const type = TYPES[mv.type];
   if (ab.includes("Good as Gold") && !SIDE_TARGETS.has(mv.moveTarget)) return true;
@@ -236,14 +236,14 @@ const statusLands = (pk, mv, effect, foe) => {
   const types = foe.types ?? [];
   const corrosion = POISONS.includes(effect) && abilitiesOf(pk).includes("Corrosion");
   if (!corrosion && (STATUS_TYPES[effect] ?? []).some(t => types.includes(t))) return false;
-  return !foeAbilities(pk, foe).some(a => {
+  return !foeAbilities(pk, mv, foe).some(a => {
     const blocks = STATUS_ABILITIES[a];
     if (!blocks || (a === "Flower Veil" && !types.includes("Grass"))) return false;
     return !blocks.length || blocks.includes(effect);
   });
 };
 const tagLands = (pk, mv, tag, foe) => !statusMoveBlocked(pk, mv, foe)
-  && !foeAbilities(pk, foe).some(a => (TAG_ABILITIES[a] ?? []).includes(tag))
+  && !foeAbilities(pk, mv, foe).some(a => (TAG_ABILITIES[a] ?? []).includes(tag))
   && !(tag === "TRAPPED" && neverTrapped(foe));
 
 const weightOf = foe => Math.max(1, foe.segments ?? 0);
@@ -314,13 +314,13 @@ const typeFit = (pk, mv, change, name, roster, ours) => {
 // only while its move runs (§1), and the chip lands at the turn end.
 const CURSE_TWICE = SALT_DOUBLED.map(t => TYPES[t]);
 // @mirrors curse-blocked
-const curseOf = (pk, tr, roster) => {
+const curseOf = (pk, mv, tr, roster) => {
   if (!tr.tags.some(x => x.tag === "SALT_CURED" && !(x.self || x.side))) return null;
   if (abilitiesOf(pk).includes("Sheer Force")) return { value: 0, notes: ["no curse with Sheer Force"] };
   const value = STATUS_VALUE[StatusEffect.POISON] / 2;
   if (!roster) return { value, notes: ["curse 1/16 a turn"] };
   const { foes, wave } = roster;
-  const hurts = f => ![f.ability, f.passive].includes("Magic Guard") && !foeAbilities(pk, f).includes("Shield Dust");
+  const hurts = f => ![f.ability, f.passive].includes("Magic Guard") && !foeAbilities(pk, mv, f).includes("Shield Dust");
   const twice = f => hurts(f) && (f.types ?? []).some(t => CURSE_TWICE.includes(t));
   const hurtCount = foes.filter(hurts).length, twiceCount = foes.filter(twice).length, all = foes.length;
   const rate = !twiceCount ? "curse 1/16 a turn"
@@ -520,7 +520,7 @@ const moveScore = (pk, mv, others, double, ctx = {}) => {
   }
   if (loss) times(Math.max(0.7, 1 - loss));
   value *= drag;
-  const curse = curseOf(pk, tr, ctx.roster?.foes?.length ? ctx.roster : null);
+  const curse = curseOf(pk, mv, tr, ctx.roster?.foes?.length ? ctx.roster : null);
   if (curse) { value += curse.value * acc; notes.push(...curse.notes); }
   const drawbacks = [...costNotes(tr, { sun, type }), ...(movesLast ? [movesLast] : [])];
   notes.push(...drawbacks);

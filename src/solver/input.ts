@@ -13,7 +13,7 @@ export type SolveInput = {
   liveExport?: SessionSave;
   cloneVersion: string;
   budget: Budget;
-  /** The search's own `LDS` and `PORTFOLIO` where unset; a `null` discrepancy search runs the beams alone. */
+  /** Where unset, `resolveSearchSettings` fills this and `portfolio`; for `null`, see `SearchInput.lds`. */
   lds?: Lds | null;
   portfolio?: readonly Beam[];
 };

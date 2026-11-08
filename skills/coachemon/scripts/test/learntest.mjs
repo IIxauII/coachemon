@@ -422,6 +422,18 @@ const DRAGON_DANCE = ["Dragon Dance","Dragon",-1,"X",-1,[statChange([1, 5], 1, t
   const bouncer = at30(foe("Espeon", ["Psychic"], { ability: "Magic Bounce" }));
   assert.ok(judge(TWAVE, bouncer).notes.includes("can't land at W30"));
   assert.ok(!judge(TWAVE, bouncer, "Mold Breaker").notes.some(n => /W30/.test(n)), "Mold Breaker ignores Magic Bounce");
+  // (game-code.md §1)
+  const gholdengo = at30(foe("Gholdengo", ["Steel","Ghost"], { ability: "Good as Gold" }));
+  const limber = at30(foe("Persian", ["Normal"], { ability: "Limber" }));
+  const comatose = at30(foe("Komala", ["Normal"], { ability: "Comatose" }));
+  const veiled = at30(foe("Aromatisse", ["Fairy"], { ability: "Aroma Veil", segments: 2, statusMoves: ["Wish"], healMoves: ["Wish"] }));
+  for (const [move, roster] of [[TWAVE, bouncer], [WISP, gholdengo], [TWAVE, limber], [TAUNT, oblivious], [TAUNT, veiled]]) {
+    assert.notEqual(judge(move, roster).value, judge(move, roster, "Mold Breaker").value, `${roster.foes[0].ability} blocks without a bypass`);
+    assert.equal(judge(move, roster, "Mycelium Might").value, judge(move, roster, "Mold Breaker").value, `Mycelium Might past ${roster.foes[0].ability}`);
+  }
+  for (const ability of ["Mold Breaker", "Mycelium Might"]) for (const move of [TWAVE, WISP]) {
+    assert.ok(judge(move, comatose, ability).notes.includes("can't land at W30"), `${ability} ${move[0]} doesn't get past Comatose`);
+  }
   const SPORE = ["Spore","Grass",-1,"X",100,[["StatusEffectAttr",{ effect: 4 }]],false,3,{ flags: 262144 | 2048 }];
   assert.ok(judge(SPORE, at30(foe("Venusaur", ["Grass","Poison"]), foe("Snorlax", ["Normal"]))).notes.includes("lands on 1 of 2 at W30"));
 
@@ -568,6 +580,7 @@ const DRAGON_DANCE = ["Dragon Dance","Dragon",-1,"X",-1,[statChange([1, 5], 1, t
   const vivillon = at50(foe("Vivillon", ["Bug","Flying"], { ability: "Shield Dust" }));
   assert.equal(judge(SALT_CURE, vivillon).value, bare.value, "Shield Dust");
   assert.equal(judge(SALT_CURE, vivillon, "Mold Breaker").value - judge(BARE, null, "Mold Breaker").value, curse(blind), "Mold Breaker gets past it");
+  assert.equal(judge(SALT_CURE, vivillon, "Mycelium Might").value, judge(BARE, null, "Mycelium Might").value, "Mycelium Might's bypass is status-only");
   const forced = judge(SALT_CURE, null, "Sheer Force");
   assert.equal(forced.value, judge(BARE, null, "Sheer Force").value, "Sheer Force");
   assert.ok(forced.notes.includes("no curse with Sheer Force"), `${forced.notes}`);

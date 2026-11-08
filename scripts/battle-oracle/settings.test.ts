@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { DEFAULT_BUDGET } from "../../src/solver/solver.ts";
+import { DEFAULT_BUDGET } from "../../src/solver/search.ts";
 import { searchSettings } from "./settings.ts";
 
 test("no search flags solve on the default budget and leave the discrepancy search and the beam list to the search (#935)", () => {

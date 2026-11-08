@@ -39,11 +39,13 @@ export const moveHasFlag = (mv, f) => (typeof mv?.hasFlag === "function" ? mv.ha
 
 export const typesOf = p => p.getTypes().map(t => TYPES[t]).filter(Boolean);
 export const abilitiesOf = p => [p.getAbility()?.name, p.hasPassive?.() ? p.getPassiveAbility()?.name : null].filter(Boolean);
-// Bypasses that cover every move. Mycelium Might's covers status moves alone, so a caller judging a status move has to
-// ask for it as well (game-code.md §1).
 // @mirrors mold-breakers
 const MOLD_BREAKERS = ["Mold Breaker", "Teravolt", "Turboblaze"];
+// Blind to Mycelium Might: a caller holding the move asks `bypassesAbilities`.
 export const hasMoldBreaker = p => abilitiesOf(p).some(a => MOLD_BREAKERS.includes(a));
+// (game-code.md §1)
+export const bypassesAbilities = (p, mv) =>
+  hasMoldBreaker(p) || (mv?.category === MoveCategory.STATUS && abilitiesOf(p).includes("Mycelium Might"));
 export const vs = (atk, def) => {
   const [se, nve, none] = CHART[atk] ?? [[], [], []];
   return none.includes(def) ? 0 : se.includes(def) ? 2 : nve.includes(def) ? 0.5 : 1;
@@ -52,9 +54,14 @@ export const vs = (atk, def) => {
 export const defenderOf = x => (typeof x?.getTypes === "function"
   ? { types: typesOf(x), abilities: abilitiesOf(x) }
   : { types: x?.types ?? [], abilities: (x?.abilities ?? [x?.ability, x?.passive]).filter(Boolean) });
+// An ability `effectiveness` starts reading joins this set unless it is `.ignorable()` (game-code.md §1).
+// @mirrors unignorable-defenses
+const UNIGNORABLE_DEFENSES = new Set(["Prism Armor"]);
 // Pass `mv` wherever the move is known: without it, Soundproof and the other flag immunities never apply.
-export const effectiveness = (type, defender, mv) => {
-  const { types, abilities: ab } = defenderOf(defender);
+// `ignoreAbilities` is the caller's answer: nothing here looks for Mold Breaker or `mv`'s `IGNORE_ABILITIES` flag.
+export const effectiveness = (type, defender, mv, { ignoreAbilities = false } = {}) => {
+  const { types, abilities } = defenderOf(defender);
+  const ab = ignoreAbilities ? abilities.filter(a => UNIGNORABLE_DEFENSES.has(a)) : abilities;
   const arrows = !!mv && hitsUngrounded(mv);
   if (ab.some(a => (ABILITY_IMMUNE[a] === type && !(arrows && UNGROUNDED.has(a)))
     || (mv && ABILITY_IMMUNE_FLAG[a] && moveHasFlag(mv, ABILITY_IMMUNE_FLAG[a])))) return 0;

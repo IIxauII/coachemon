@@ -9,7 +9,8 @@ import { noAnswer, Unanswered } from "./no-answer.ts";
 import type { Input } from "./oracle-line.ts";
 import type { TurnTimes, WorkerPool } from "./pool.ts";
 import type { Clone } from "./replay.ts";
-import { DEFAULT_BUDGET, gate, solve, type SolveReport } from "./solver.ts";
+import { DEFAULT_BUDGET } from "./search.ts";
+import { gate, solve, type SolveReport } from "./solver.ts";
 
 const RECHECKED = reviewed.recheck.gameVersion;
 const drayton: { live: Battle; liveExport: SessionSave; save: SessionSave } = JSON.parse(

@@ -392,22 +392,47 @@ assert.equal(plan.approxDoubles, false);
   const buzzwole = extra => Object.assign(mon("Buzzwole", 100, ["Bug","Fighting"], "Beast Boost", [400,300,300,100,100,200], [["Lunge","Bug",80,"P"]], true), extra);
   // Blastoise is faster and 2HKOs only on high rolls, so it takes about two Lunges however many KOs Buzzwole has had.
   const blastoise = mon("Blastoise", 100, ["Water"], "Torrent", [400,150,300,150,300,250], [["Hydro Pump","Water",110,"S"]], false);
-  const hitsOn = (foe, fk) => {
-    const T = globalThis.__tp.readTurn(s, turn => tpTables(turn, [blastoise], [foe], false));
-    return 400 - tpFight(T, fightState({ oh: [400], ob: [0], fh: [400], fs: [0], fb: [0], fk: [fk] }), 0, 0, "free").mh;
+  const hitsOn = (foe, kos, fallen = []) => {
+    const T = globalThis.__tp.readTurn(s, turn => tpTables(turn, [blastoise, ...fallen], [foe], false));
+    const zeros = fallen.map(() => 0);
+    return kos.map(fk => 400 - tpFight(T, fightState({ oh: [400, ...zeros], ob: [0, ...zeros], fh: [400], fs: [0], fb: [0], fk: [fk] }), 0, 0, "free").mh);
   };
-  const boosted = [0, 1, 2].map(k => hitsOn(buzzwole(beastBoost), k));
-  const plainHits = [0, 1, 2].map(k => hitsOn(buzzwole({}), k));
+  const boosted = hitsOn(buzzwole(beastBoost), [0, 1, 2]);
+  const plainHits = hitsOn(buzzwole({}), [0, 1, 2]);
   console.log(`== beast boost\nBlastoise loses ${boosted.map(Math.round).join(" / ")} HP after 0 / 1 / 2 KOs (no ability: ${plainHits.map(Math.round).join(" / ")})`);
   assert.ok(plainHits.every(x => x === plainHits[0]), "no ability, no change");
   assert.ok(boosted[0] === plainHits[0] && boosted[1] > boosted[0] && boosted[2] > boosted[1], "each KO fed makes its hits hurt more");
+  const PV = "PostVictoryStatStageChangeAbAttr", PK = "PostKnockOutStatStageChangeAbAttr";
+  const holding = (ability, passive) => ({
+    hasAbilityWithAttr: a => [ability, passive].some(x => x?.getAttrs(a).length), getAbility: () => ability,
+    hasPassive: () => !!passive, getPassiveAbility: () => passive,
+  });
   const bond = { changes: [1, 3, 5].map(stat => ({ stat, stages: 1 })) };
-  const battleBond = {
-    hasAbilityWithAttr: a => a === "PostVictoryStatStageChangeAbAttr",
-    getAbility: () => ({ id: AbilityId.BATTLE_BOND, name: "Battle Bond", getAttrs: a => (a === "PostVictoryStatStageChangeAbAttr" ? [bond] : []) }),
-  };
-  const bonded = [0, 1, 2].map(k => hitsOn(buzzwole(battleBond), k));
+  const bondA = { id: AbilityId.BATTLE_BOND, name: "Battle Bond", getAttrs: a => (a === PV ? [bond] : []) };
+  const battleBond = holding(bondA);
+  const bonded = hitsOn(buzzwole(battleBond), [0, 1, 2]);
   assert.ok(bonded[0] === plainHits[0] && bonded[1] === boosted[1] && bonded[2] === bonded[1], `Battle Bond counts one KO: ${bonded.join(" / ")}`);
+  // Soul-Heart beside an own-KO boost (game-code.md §18, #1004): our benched Pidgey has fainted.
+  const moxieA = { name: "Moxie", getAttrs: a => (a === PV ? [{ changes: [{ stat: 1, stages: 1 }] }] : []) };
+  const soulA = { name: "Soul-Heart", getAttrs: a => (a === PK ? [{ stat: 3, stages: 1 }] : []) };
+  const fainted = [mon("Pidgey", 20, ["Normal","Flying"], "Keen Eye", [60,50,30,30,30,60], [["Tackle","Normal",40,"P"]], false, 0)];
+  const lunges = foe => hitsOn(buzzwole(foe), [0, 1, 2], fainted);
+  const [none] = hitsOn(buzzwole({}), [0], fainted);
+  const withMoxie = { alone: lunges(holding(moxieA)), beside: lunges(holding(moxieA, soulA)) };
+  const withBond = { alone: lunges(holding(bondA)), beside: lunges(holding(bondA, soulA)) };
+  const bugBuzzer = extra => Object.assign(mon("Buzzwole", 100, ["Bug","Fighting"], "Soul-Heart", [400,300,300,300,100,200], [["Bug Buzz","Bug",90,"S"]], true), extra);
+  const [plainBuzz, soulBuzz, besideMoxieBuzz] = [{}, holding(soulA), holding(moxieA, soulA)].map(foe => hitsOn(bugBuzzer(foe), [0], fainted)[0]);
+  const hp = xs => xs.map(Math.round).join(" / ");
+  console.log(`== Soul-Heart beside an own-KO boost (#1004)\nBlastoise loses ${Math.round(none)} HP to a plain Buzzwole's Lunge; ` +
+    `${hp(withMoxie.beside)} after 0 / 1 / 2 own KOs beside Moxie (alone: ${hp(withMoxie.alone)}), ` +
+    `${hp(withBond.beside)} beside Battle Bond (alone: ${hp(withBond.alone)}); ` +
+    `Bug Buzz ${Math.round(plainBuzz)} → ${Math.round(soulBuzz)} with Soul-Heart, ${Math.round(besideMoxieBuzz)} beside Moxie`);
+  assert.deepEqual([withMoxie.beside[0], withBond.beside[0]], [none, none], "a faint elsewhere feeds neither Moxie nor Battle Bond");
+  assert.ok(withMoxie.alone[1] > none && withMoxie.alone[2] > withMoxie.alone[1], "Moxie still counts each own KO");
+  assert.deepEqual([withMoxie.beside, withBond.beside], [withMoxie.alone, withBond.alone],
+    "beside Soul-Heart each counts its own KOs as alone, one plan's memo across the counts");
+  assert.ok(soulBuzz > plainBuzz, "Soul-Heart still counts the faint elsewhere");
+  assert.equal(besideMoxieBuzz, soulBuzz, "and beside Moxie too");
   // The plan names the step that feeds it: a worn Pidgey chips Buzzwole past half and falls, and Blastoise comes in
   // free.
   const fodder = mon("Pidgey", 20, ["Normal","Flying"], "Keen Eye", [60,450,30,30,30,300], [["Brave Bird","Flying",120,"P"]], true, 10);
