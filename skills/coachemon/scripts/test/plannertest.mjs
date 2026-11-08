@@ -1358,13 +1358,26 @@ Object.assign(TABLE, {
     getCondition: () => p => ((p.species.speciesId !== SpeciesId.BATTLE_BOND_GRENINJA && !p.isFusion()) || p.isFusion())
       && !p.summonData.abilitiesApplied.has(AbilityId.BATTLE_BOND),
   };
-  const battleBond = { id: AbilityId.BATTLE_BOND, name: "Battle Bond", getAttrs: a => (a === PV ? [bondBoost] : []) };
-  const greninja = ({ fusion = false, applied = [] } = {}) => mon("Greninja", 80, ["Water", "Dark"], [250, 200, 150, 200, 150, 250], [], false, undefined, {
-    species: { speciesId: SpeciesId.BATTLE_BOND_GRENINJA }, isFusion: () => fusion,
-    hasAbilityWithAttr: a => a === PV, getAbility: () => battleBond,
+  // Its form change to Ash-Greninja, form 1, and only from another form.
+  const ashForm = {
+    getCondition: () => p => p.species.speciesId === SpeciesId.BATTLE_BOND_GRENINJA && !p.isFusion(),
+    canApply: ({ pokemon }) => pokemon.formIndex !== 1,
+  };
+  const FC = "PostVictoryFormChangeAbAttr";
+  const battleBond = { id: AbilityId.BATTLE_BOND, name: "Battle Bond", getAttrs: a => (a === PV ? [bondBoost] : a === FC ? [ashForm] : []) };
+  const greninja = ({ fusion = false, applied = [], formIndex = 0 } = {}) => mon("Greninja", 80, ["Water", "Dark"], [250, 200, 150, 200, 150, 250], [], false, undefined, {
+    species: { speciesId: SpeciesId.BATTLE_BOND_GRENINJA }, isFusion: () => fusion, formIndex,
+    hasAbilityWithAttr: a => a === PV || a === FC, getAbility: () => battleBond,
   }, { statStages: [0, 0, 0, 0, 0, 0, 0], types: [], abilitiesApplied: new Set(applied) });
-  assert.equal(koBoost(greninja()), null, "an unfused Battle Bond Greninja changes form instead");
+  // The unfused one changes form instead, priced as the stages it is closest to: Ash's Atk and SpA rows are 1.53 and
+  // 1.49 times its own, a +1 stage 1.5 (#999).
+  const ash = koBoost(greninja());
+  assert.deepEqual(ash, { up: { [Stat.ATK]: 1, [Stat.SPATK]: 1, [Stat.SPD]: 1 }, ability: "Ash-Greninja", any: false, later: null }, "an unfused Battle Bond Greninja is fed its form change");
+  assert.deepEqual([1, 2, 3].map(n => koStageFactor(greninja(), ash, n, Stat.SPATK)), [1.5, 1.5, 1.5], "it changes form once");
+  assert.equal(koBoostAfter(ash, 1), null, "and has nothing left to feed after");
+  assert.equal(koBoost(greninja({ formIndex: 1 })), null, "Ash-Greninja has already changed");
   const fused = greninja({ fusion: true });
+  assert.equal(koBoost(fused)?.ability, "Battle Bond", "a fusion keeps the stat boost, not the form change");
   assert.deepEqual(koBoost(fused)?.up, { [Stat.ATK]: 1, [Stat.SPATK]: 1, [Stat.SPD]: 1 }, "a fused Battle Bond Greninja gets the boost");
   assert.deepEqual([1, 2, 3].map(n => koStageFactor(fused, koBoost(fused), n, Stat.ATK)), [1.5, 1.5, 1.5], "Battle Bond fires once, not once per KO");
   assert.equal(koBoost(greninja({ fusion: true, applied: [AbilityId.BATTLE_BOND] })), null, "nor again once it has fired this summon");

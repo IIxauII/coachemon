@@ -196,7 +196,11 @@ export const HUD: Area = {
     { name: "calculateBattleAccuracy", kind: "method", at: ["src/data/moves/move.ts#Move.calculateBattleAccuracy"] },
     { name: "calculateStabMultiplier", kind: "method", at: ["src/field/pokemon.ts#Pokemon.calculateStabMultiplier"] },
     { name: "calculateStats", kind: "method", at: ["src/field/pokemon.ts#Pokemon.calculateStats"] },
-    { name: "canApply", kind: "method", at: ["src/data/abilities/ab-attrs.ts#MoveHealBoostAbAttr.canApply"] },
+    {
+      name: "canApply",
+      kind: "method",
+      at: ["src/data/abilities/ab-attrs.ts#MoveHealBoostAbAttr.canApply", "src/data/abilities/ab-attrs.ts#PostVictoryFormChangeAbAttr.canApply"],
+    },
     { name: "canApplyAbility", kind: "method", at: ["src/field/pokemon.ts#Pokemon.canApplyAbility"] },
     { name: "canBeMultiStrikeEnhanced", kind: "method", at: ["src/data/moves/move.ts#Move.canBeMultiStrikeEnhanced"] },
     { name: "cancelled", kind: "field", at: ["src/@types/damage-result.ts#DamageCalculationResult.cancelled"] },
@@ -1984,6 +1988,13 @@ export const HUD: Area = {
       of: [
         "src/data/abilities/init-abilities.ts#initAbilities",
         "src/data/abilities/apply-ab-attrs.ts#applySingleAbAttrs",
+      ],
+    },
+    {
+      ours: "skills/coachemon/scripts/hud/30-planner.js#ko-form-change",
+      of: [
+        "src/data/abilities/init-abilities.ts#initAbilities",
+        "src/data/balance/species/generation-07.ts#initGenerationSeven",
       ],
     },
     {
