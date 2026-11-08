@@ -483,17 +483,15 @@ const shown = x => x.map(o => `${o.name} ×${o.e} ${o.max}${o.pKo ? ` pKo ${o.pK
     assert.equal(got, want, `${label} into ${ability}`);
     return `${label}→${ability} ×${got}`;
   });
-  // Rotom is Electric, so the Earthquake is super effective into it: what Solid Rock and Prism Armor cut.
   const rotom = ability => combatantOf({ species: ROTOM, level: 10, moves: [BODY_SLAM], ability, player: false });
   assert.equal(e(hitter("Mold Breaker"), rotom("Solid Rock")), 2, "Mold Breaker goes through Solid Rock");
   assert.equal(e(hitter("Pressure"), rotom("Solid Rock")), 1.5, "which holds without it");
   assert.equal(e(hitter("Mold Breaker"), rotom("Prism Armor")), 1.5, "Prism Armor can't be ignored");
-  // The KO race finishes both ways round, where an immune hit never would.
   const floater = extra => target("Levitate", extra);
   const taken = pairScore(run, floater({ player: true }), hitter("Mold Breaker", { player: false })).taken;
   const turns = pairScore(run, hitter("Mold Breaker"), floater()).turns;
-  assert.ok(Number.isFinite(taken) && Number.isFinite(turns), `the KO race finishes: taken ${taken}, turns ${turns}`);
-  console.log(`ability bypass ×e | ${seen.join(" | ")} | solid rock/prism armor ×2/×1.5 | race ${taken}/${turns}`);
+  assert.ok(taken < 9 && turns < 9, `the KO race finishes short of the no-KO score 9: taken ${taken}, turns ${turns}`);
+  console.log(`ability bypass ×e | ${seen.join(" | ")} | race ${taken}/${turns}`);
 }
 
 // ---- A member's passive is its own, not the one a passive Trace copied on the field

@@ -14,7 +14,7 @@ given row L94 238/115/116/117/118/119 | Earthquake ×1 99, Dragon Claw ×1 80
 snorlax 227/122/77/77/122/42 | 1 bar 144 | 2 bars 113 | 2 bars, last 144
 sturdy duel taken | full 2 | hurt 1
 sturdy bypass taken/turns | Mold Breaker 1/1 | Teravolt 1/1 | Turboblaze 1/1 | Sunsteel Strike 1/1 | Pressure 2/2 | Mycelium Might 2/2
-ability bypass ×e | Mold Breaker→Levitate ×1 | Teravolt→Levitate ×1 | Turboblaze→Levitate ×1 | Sunsteel Strike→Levitate ×1 | Sunsteel Strike→Wonder Guard ×1 | Mold Breaker sound→Soundproof ×1 | Pressure→Levitate ×0 | Pressure sound→Soundproof ×0 | Mycelium Might→Levitate ×0 | solid rock/prism armor ×2/×1.5 | race 1/1
+ability bypass ×e | Mold Breaker→Levitate ×1 | Teravolt→Levitate ×1 | Turboblaze→Levitate ×1 | Sunsteel Strike→Levitate ×1 | Sunsteel Strike→Wonder Guard ×1 | Mold Breaker sound→Soundproof ×1 | Pressure→Levitate ×0 | Pressure sound→Soundproof ×0 | Mycelium Might→Levitate ×0 | race 1/1
 eviolite 73/52/61/44/66/44 | thick club 135/200/130/70/100/65 | soft sand ×3 Earthquake 160 | focus band ×3 saves 0.3
 keys apart: 19
 combatant: ok

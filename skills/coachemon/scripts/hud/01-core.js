@@ -52,11 +52,11 @@ export const vs = (atk, def) => {
 export const defenderOf = x => (typeof x?.getTypes === "function"
   ? { types: typesOf(x), abilities: abilitiesOf(x) }
   : { types: x?.types ?? [], abilities: (x?.abilities ?? [x?.ability, x?.passive]).filter(Boolean) });
-// Not `.ignorable()` (game-code.md §1).
+// An ability `effectiveness` starts reading joins this set unless it is `.ignorable()` (game-code.md §1).
 // @mirrors unignorable-defenses
 const UNIGNORABLE_DEFENSES = new Set(["Prism Armor"]);
 // Pass `mv` wherever the move is known: without it, Soundproof and the other flag immunities never apply.
-// `ignoreAbilities` is the caller's answer: nothing here looks for Mold Breaker.
+// `ignoreAbilities` is the caller's answer: nothing here looks for Mold Breaker or `mv`'s `IGNORE_ABILITIES` flag.
 export const effectiveness = (type, defender, mv, { ignoreAbilities = false } = {}) => {
   const { types, abilities } = defenderOf(defender);
   const ab = ignoreAbilities ? abilities.filter(a => UNIGNORABLE_DEFENSES.has(a)) : abilities;
