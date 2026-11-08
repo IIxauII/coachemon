@@ -1,5 +1,5 @@
 // The learn decision, for the level-up prompt and a TM alike, judged without battle state.
-import { ABILITY_IMMUNE, CHART, SPREAD_TARGETS, STAT_NAMES, STATUS_FRAMES, TYPES, UNGROUNDED, abilitiesOf, battleMoveset, effectiveness, iconOf, ignoresAbilities, moveHasFlag, typesOf, vs } from "./01-core.js";
+import { ABILITY_IMMUNE, CHART, SPREAD_TARGETS, STAT_NAMES, STATUS_FRAMES, TYPES, UNGROUNDED, abilitiesOf, battleMoveset, effectiveness, bypassesAbilities, iconOf, moveHasFlag, typesOf, vs } from "./01-core.js";
 import { RANDBATS } from "./05-randbats.js";
 import { costNotes, moveTraits } from "./07-move-traits.js";
 import { partyProfile } from "./08-party.js";
@@ -216,7 +216,7 @@ export const blockedByHealBlock = mv => HEAL_BLOCKED.some(n => moveTraits(mv).at
 
 const foeAbilities = (pk, mv, foe) => {
   const all = [foe.ability, foe.passive].filter(Boolean);
-  return ignoresAbilities(pk, mv) ? all.filter(a => UNSUPPRESSABLE.has(a)) : all;
+  return bypassesAbilities(pk, mv) ? all.filter(a => UNSUPPRESSABLE.has(a)) : all;
 };
 const statusMoveBlocked = (pk, mv, foe) => {
   const ab = foeAbilities(pk, mv, foe);

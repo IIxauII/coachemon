@@ -42,9 +42,9 @@ export const abilitiesOf = p => [p.getAbility()?.name, p.hasPassive?.() ? p.getP
 // (game-code.md §1)
 // @mirrors mold-breakers
 const MOLD_BREAKERS = ["Mold Breaker", "Teravolt", "Turboblaze"];
-// Blind to Mycelium Might: a caller holding the move asks `ignoresAbilities`.
+// Blind to Mycelium Might: a caller holding the move asks `bypassesAbilities`.
 export const hasMoldBreaker = p => abilitiesOf(p).some(a => MOLD_BREAKERS.includes(a));
-export const ignoresAbilities = (p, mv) =>
+export const bypassesAbilities = (p, mv) =>
   hasMoldBreaker(p) || (mv?.category === MoveCategory.STATUS && abilitiesOf(p).includes("Mycelium Might"));
 export const vs = (atk, def) => {
   const [se, nve, none] = CHART[atk] ?? [[], [], []];
