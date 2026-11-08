@@ -320,8 +320,12 @@ const tpHeal = (hp, max, prof, used, se, extra = 0) => {
 // turn costs no entry hit (#846), and our hit that turn is `T.ourEntry`'s where it has one (#825).
 export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => {
   const faints = st.oh.filter(hp => hp < 1).length + st.fh.filter(hp => hp < 1).length;
-  // game-code.md §18, #1004.
-  const koN = (b, own) => (!b ? 0 : b.split ? { own, all: faints } : b.any ? faints : own);
+  // (game-code.md §18, #1004)
+  const koN = (b, own) => {
+    if (!b) return 0;
+    if (!b.split) return b.allFaints ? faints : own;
+    return own || faints ? { own, all: faints } : 0;
+  };
   const nUs = koN(T.ourKo?.[mi], st.ok[mi]), nFoe = koN(T.foeKo?.[fi], st.fk[fi]);
   const nKey = n => (typeof n === "object" ? `${n.own}/${n.all}` : n);
   const key = !over && T.memo && [mi, fi, entry, entering, Math.round(st.oh[mi]), st.ob[mi], Math.round(st.fh[fi]), st.fs[fi], st.fb[fi], st.fl[fi], nKey(nUs), nKey(nFoe),

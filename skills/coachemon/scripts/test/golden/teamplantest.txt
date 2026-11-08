@@ -40,7 +40,7 @@ win 1 · 128.00 HP · berry eaten
 == beast boost
 Blastoise loses 191 / 287 / 400 HP after 0 / 1 / 2 KOs (no ability: 191 / 191 / 191)
 == Soul-Heart beside an own-KO boost (#1004)
-Blastoise loses 191 HP to a plain Buzzwole's Lunge, 191 beside Moxie, 191 beside Battle Bond, 287 to Moxie after its own KO; Bug Buzz 215 → 322 with Soul-Heart, 322 beside Moxie
+Blastoise loses 191 HP to a plain Buzzwole's Lunge; 191 / 287 / 400 after 0 / 1 / 2 own KOs beside Moxie (alone: 191 / 287 / 400), 191 / 287 / 287 beside Battle Bond (alone: 191 / 287 / 287); Bug Buzz 215 → 322 with Soul-Heart, 322 beside Moxie
 == feeding Beast Boost
 Pidgey → Buzzwole: falls · foe at 47% · feeds Beast Boost +1 Atk
 Blastoise → Buzzwole: KO · 82% left

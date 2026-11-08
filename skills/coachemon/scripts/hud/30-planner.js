@@ -502,13 +502,14 @@ const koBoostOf = parts => {
   if (!parts.length) return null;
   const up = {};
   for (const { changes } of parts) for (const c of changes) up[c.stat] = (up[c.stat] ?? 0) + c.stages;
-  return { up, ability: [...new Set(parts.map(x => x.name))].join(" + "), any: parts.some(x => x.any) };
+  const boost = { up, ability: [...new Set(parts.map(x => x.name))].join(" + "), allFaints: parts.some(x => x.allFaints) };
+  return parts.some(x => x.once) ? { ...boost, later: koBoostOf(parts.filter(x => !x.once)) } : boost;
 };
 
-// The stat stages `p` gains a KO (game-code.md §18): { up: { [stat 1–5]: stages }, ability, any, later?, split? }, `any`
-// when every faint counts and not only its own KOs. `later`, the same shape or null, is what each KO after the first
-// gives where that differs. `split`, only where both kinds are there: { own, all }, each the same shape, the own-KO
-// parts and the every-faint ones (#1004). Speed is in `up` for the note; the damage factors leave it out.
+// The stat stages `p` gains a KO (game-code.md §18): { up: { [stat 1–5]: stages }, ability, allFaints, later?, split? },
+// `allFaints` when every faint counts and not only its own KOs. `later`, the same shape or null, is what each KO after
+// the first gives where that differs. `split`, only where both kinds are there: { own, all }, each the same shape, the
+// own-KO parts and the every-faint ones (#1004). Speed is in `up` for the note; the damage factors leave it out.
 export const koBoost = p => {
   if (!p) return null;
   const parts = [];
@@ -526,17 +527,13 @@ export const koBoost = p => {
           const changes = (whose
             ? [{ stat: typeof x.stat === "function" ? x.stat(p) : x.stat, stages: x.stages }]
             : typeof x.changes === "function" ? x.changes(p) : x.changes ?? []).filter(c => c.stat >= Stat.ATK && c.stat <= Stat.SPD && c.stages);
-          if (changes.length) parts.push({ name: a.name, any: whose, once: ONCE_KO_BOOST.has(a.id), changes });
+          if (changes.length) parts.push({ name: a.name, allFaints: whose, once: ONCE_KO_BOOST.has(a.id), changes });
         }
       }
     }
   } catch { return null; }
-  const boost = ps => {
-    const first = koBoostOf(ps);
-    return first && ps.some(x => x.once) ? { ...first, later: koBoostOf(ps.filter(x => !x.once)) } : first;
-  };
-  const merged = boost(parts), own = parts.filter(x => !x.any), all = parts.filter(x => x.any);
-  return merged && own.length && all.length ? { ...merged, split: { own: boost(own), all: boost(all) } } : merged;
+  const merged = koBoostOf(parts), own = parts.filter(x => !x.allFaints), all = parts.filter(x => x.allFaints);
+  return own.length && all.length ? { ...merged, split: { own: koBoostOf(own), all: koBoostOf(all) } } : merged;
 };
 // What the KO after `n` earlier ones gives, shaped as `koBoost`'s; null when nothing.
 export const koBoostAfter = (boost, n) => (n > 0 && boost?.later !== undefined ? boost.later : boost);
