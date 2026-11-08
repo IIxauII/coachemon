@@ -2,7 +2,17 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { noAnswer, Unanswered } from "./no-answer.ts";
 import type { Beam, Input, Outcome, ReplayResult } from "./oracle-line.ts";
-import { type Action, type Child, type Lds, type Pool, type Position, type Progress, type SearchStatistics, search } from "./search.ts";
+import {
+  type Action,
+  type Child,
+  type Lds,
+  type Pool,
+  type Position,
+  type Progress,
+  resolveSearchSettings,
+  type SearchStatistics,
+  search,
+} from "./search.ts";
 
 /**
  * What a move does from a path: our side's HP fraction and the foe's total HP lost so far, each side's stat stages if
@@ -614,6 +624,21 @@ test("progress counts the discrepancy search's budget, then goes on from what it
   // Weighing our HP at 0.5, the discrepancy search follows SLAM and loses on turn 2; the beams then play their 10.
   assert.deepEqual(spent.slice(0, 2), [2, 4]);
   assert.equal(spent.at(-1), 4 + 10);
+});
+
+test("a search with its discrepancy search and beams unset runs under the ones resolveSearchSettings gives (#973)", async () => {
+  const { root, pool } = tree(["SLAM", "PECK"], {
+    "": { SLAM: [0.5, 0.4], PECK: [0.1, 1] },
+    PECK: { PECK: [0.2, 1] },
+    "PECK PECK": { PECK: "won" },
+  });
+  const { lds, portfolio } = resolveSearchSettings({ budget: BUDGET });
+  const seen: Progress[] = [];
+
+  await search({ root, pool, validate: replaysAll().validate, budget: BUDGET, progress: p => seen.push(p) });
+
+  assert.ok(seen.length > 0);
+  assert.ok(seen.every(p => p.budget === (lds?.expansions ?? 0) + BUDGET.expansions * portfolio.length));
 });
 
 test("a turn the game plays for us is a step with no input, and stays out of the inputs replayed (#662)", async () => {
