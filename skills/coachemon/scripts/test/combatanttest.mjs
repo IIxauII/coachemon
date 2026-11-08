@@ -22,8 +22,7 @@ const move = (id, name, type, power, { pp = 10, cat = 0, acc = 100, flags = 0 } 
 const [EARTHQUAKE, DRAGON_CLAW, BODY_SLAM, GROWL] = [89, 337, 34, 45];
 move(EARTHQUAKE, "Earthquake", "Ground", 100);
 move(MoveId.SUNSTEEL_STRIKE, "Sunsteel Strike", "Steel", 100, { pp: 5, flags: MoveFlags.IGNORE_ABILITIES });
-const HYPER_VOICE = MoveId.HYPER_VOICE;
-move(HYPER_VOICE, "Hyper Voice", "Normal", 90, { cat: 1, flags: MoveFlags.SOUND_BASED });
+move(MoveId.HYPER_VOICE, "Hyper Voice", "Normal", 90, { cat: 1, flags: MoveFlags.SOUND_BASED });
 move(DRAGON_CLAW, "Dragon Claw", "Dragon", 80, { pp: 15 });
 move(BODY_SLAM, "Body Slam", "Normal", 85, { pp: 15 });
 move(GROWL, "Growl", "Normal", 0, { pp: 40, cat: 2 });
@@ -473,9 +472,9 @@ const shown = x => x.map(o => `${o.name} ×${o.e} ${o.max}${o.pKo ? ` pKo ${o.pK
     // Levitate never stops a Steel move, so the flag's own case is the immunity that would.
     ["Sunsteel Strike", hitter("Sand Veil", { moves: [MoveId.SUNSTEEL_STRIKE] }), "Levitate", 1],
     ["Sunsteel Strike", hitter("Sand Veil", { moves: [MoveId.SUNSTEEL_STRIKE] }), "Wonder Guard", 1],
-    ["Mold Breaker sound", hitter("Mold Breaker", { moves: [HYPER_VOICE] }), "Soundproof", 1],
+    ["Mold Breaker sound", hitter("Mold Breaker", { moves: [MoveId.HYPER_VOICE] }), "Soundproof", 1],
     ["Pressure", hitter("Pressure"), "Levitate", 0],
-    ["Pressure sound", hitter("Pressure", { moves: [HYPER_VOICE] }), "Soundproof", 0],
+    ["Pressure sound", hitter("Pressure", { moves: [MoveId.HYPER_VOICE] }), "Soundproof", 0],
     // Its attr as the game gives it (game-code.md §1).
     ["Mycelium Might", hitter("Mycelium Might", { attrs: ["MoveAbilityBypassAbAttr"] }), "Levitate", 0],
   ];

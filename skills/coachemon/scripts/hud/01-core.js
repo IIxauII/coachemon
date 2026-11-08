@@ -52,14 +52,14 @@ export const vs = (atk, def) => {
 export const defenderOf = x => (typeof x?.getTypes === "function"
   ? { types: typesOf(x), abilities: abilitiesOf(x) }
   : { types: x?.types ?? [], abilities: (x?.abilities ?? [x?.ability, x?.passive]).filter(Boolean) });
-// The one ability `effectiveness` reads that an attacker ignoring abilities can't get past (game-code.md §1).
-// @mirrors unignorable-defences
-const UNIGNORABLE_DEFENCES = new Set(["Prism Armor"]);
+// Not `.ignorable()` (game-code.md §1).
+// @mirrors unignorable-defenses
+const UNIGNORABLE_DEFENSES = new Set(["Prism Armor"]);
 // Pass `mv` wherever the move is known: without it, Soundproof and the other flag immunities never apply.
-// `ignoreAbilities`: the attacker ignores abilities for this move (Mold Breaker and the rest).
+// `ignoreAbilities` is the caller's answer: nothing here looks for Mold Breaker.
 export const effectiveness = (type, defender, mv, { ignoreAbilities = false } = {}) => {
   const { types, abilities } = defenderOf(defender);
-  const ab = ignoreAbilities ? abilities.filter(a => UNIGNORABLE_DEFENCES.has(a)) : abilities;
+  const ab = ignoreAbilities ? abilities.filter(a => UNIGNORABLE_DEFENSES.has(a)) : abilities;
   const arrows = !!mv && hitsUngrounded(mv);
   if (ab.some(a => (ABILITY_IMMUNE[a] === type && !(arrows && UNGROUNDED.has(a)))
     || (mv && ABILITY_IMMUNE_FLAG[a] && moveHasFlag(mv, ABILITY_IMMUNE_FLAG[a])))) return 0;

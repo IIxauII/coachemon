@@ -1659,7 +1659,7 @@ export const HUD: Area = {
       ],
     },
     {
-      ours: "skills/coachemon/scripts/hud/01-core.js#unignorable-defences",
+      ours: "skills/coachemon/scripts/hud/01-core.js#unignorable-defenses",
       of: [
         "src/data/abilities/init-abilities.ts#initAbilities",
       ],
