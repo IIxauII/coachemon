@@ -560,7 +560,8 @@ export const koStageFactor = (p, boost, n, st) => {
 const STAT_ABBR = ["HP", "Atk", "Def", "SpA", "SpD", "Spe"];
 export const koBoostText = b => Object.entries(b.up).map(([st, n]) => `${n > 0 ? "+" : "−"}${Math.abs(n)} ${STAT_ABBR[st]}`).join(" ");
 // What feeding `foe` one KO costs the fight still to come, in turns of ours.
-const feedCost = (foe, others) => {
+// @only tests: feedCost
+export const feedCost = (foe, others) => {
   const b = others > 0 ? koBoost(foe) : null;
   if (!b) return 0;
   return Object.entries(b.up).reduce((t, [st, n]) => t + Math.max(0, n) * ([Stat.DEF, Stat.SPDEF].includes(+st) ? 0.5 : 1), 0) * FEED_COST;

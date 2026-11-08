@@ -1350,7 +1350,7 @@ Object.assign(TABLE, {
 
 // ---- A KO boost counts only where the game applies it, and Battle Bond's for one KO (#924).
 {
-  const { koBoost, koBoostAfter, koStageFactor } = globalThis.__planner;
+  const { feedCost, koBoost, koBoostAfter, koStageFactor } = globalThis.__planner;
   const PV = "PostVictoryStatStageChangeAbAttr";
   // The game's own condition (game-code.md §18).
   const bondBoost = {
@@ -1373,6 +1373,7 @@ Object.assign(TABLE, {
   assert.deepEqual(ash, { up: { [Stat.ATK]: 1, [Stat.SPATK]: 1, [Stat.SPD]: 1 }, ability: "Ash-Greninja", any: false, later: null }, "an unfused Battle Bond Greninja is fed its form change");
   assert.deepEqual([1, 2, 3].map(n => koStageFactor(greninja(), ash, n, Stat.SPATK)), [1.5, 1.5, 1.5], "it changes form once");
   assert.equal(koBoostAfter(ash, 1), null, "and has nothing left to feed after");
+  assert.equal(feedCost(greninja(), 1), 1.5, "feeding it a KO costs the fight 1.5 turns");
   assert.equal(koBoost(greninja({ formIndex: 1 })), null, "Ash-Greninja has already changed");
   const fused = greninja({ fusion: true });
   assert.equal(koBoost(fused)?.ability, "Battle Bond", "a fusion keeps the stat boost, not the form change");
