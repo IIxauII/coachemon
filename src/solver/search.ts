@@ -48,11 +48,10 @@ export const LDS: Lds = { ours: 1, alternatives: 2, discrepancies: 2, expansions
 
 export const DEFAULT_BUDGET: Budget = { expansions: 3000, turns: 40 };
 
-/** The settings a search runs under; `lds` null runs the beams alone. */
-export type SearchSettings = { budget: Budget; lds: Lds | null; portfolio: readonly Beam[] };
+export type ResolvedSettings = { budget: Budget; lds: Lds | null; portfolio: readonly Beam[] };
 
-/** The one place unset settings take their defaults: the search and the statistics entry both resolve here (#973). */
-export function resolveSettings({ budget = DEFAULT_BUDGET, lds = LDS, portfolio = PORTFOLIO }: Partial<SearchSettings> = {}): SearchSettings {
+/** The one place unset search settings take their defaults (#973). */
+export function resolveSettings({ budget = DEFAULT_BUDGET, lds = LDS, portfolio = PORTFOLIO }: Partial<ResolvedSettings> = {}): ResolvedSettings {
   return { budget, lds, portfolio };
 }
 

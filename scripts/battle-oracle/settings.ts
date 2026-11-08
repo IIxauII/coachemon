@@ -1,6 +1,6 @@
 import type { SolveInput } from "../../src/solver/input.ts";
 import type { Beam } from "../../src/solver/oracle-line.ts";
-import { DEFAULT_BUDGET, LDS } from "../../src/solver/search.ts";
+import { LDS, resolveSettings } from "../../src/solver/search.ts";
 
 export type SearchFlags = { budget?: string; turns?: string; lds?: string; beams?: string };
 
@@ -34,10 +34,11 @@ const beams = (value: string): Beam[] =>
 
 export function searchSettings(flags: SearchFlags): { ok: true; settings: SearchSettings } | { ok: false; why: string } {
   try {
+    const { budget } = resolveSettings();
     const settings: SearchSettings = {
       budget: {
-        expansions: flags.budget === undefined ? DEFAULT_BUDGET.expansions : count("budget", flags.budget),
-        turns: flags.turns === undefined ? DEFAULT_BUDGET.turns : count("turns", flags.turns),
+        expansions: flags.budget === undefined ? budget.expansions : count("budget", flags.budget),
+        turns: flags.turns === undefined ? budget.turns : count("turns", flags.turns),
       },
     };
     if (flags.lds === "none") settings.lds = null;

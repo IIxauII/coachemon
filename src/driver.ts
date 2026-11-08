@@ -25,7 +25,7 @@ import { withCapture } from "./solver/capture.ts";
 import { CLONE_JOB, cloneJob } from "./solver/clone.ts";
 import { isOverwriteConfirm, planSlot, slotLabel } from "./slots.ts";
 import { CALL_BUDGET_MS, settle, type SettleResult } from "./settle.ts";
-import { DEFAULT_BUDGET } from "./solver/search.ts";
+import { resolveSettings } from "./solver/search.ts";
 import { gate, type NoAnswer, type OracleLine, type SessionSave, type SolveInput, type SolveResult } from "./solver/solver.ts";
 import { noAnswer } from "./solver/no-answer.ts";
 import { fightEnded, FightPool } from "./solver/fight-pool.ts";
@@ -313,7 +313,7 @@ export class Driver {
       live: { wave: session.wave as number, battleSeed: session.battleSeed as string },
       liveExport: session.export as SessionSave,
       cloneVersion: PINNED_GAME_VERSION,
-      budget: DEFAULT_BUDGET,
+      budget: resolveSettings().budget,
     };
     if (extras === null) {
       if (session.waveStart === null) throw noAnswerRefusal(noAnswer({ code: "no_wave_start" }));

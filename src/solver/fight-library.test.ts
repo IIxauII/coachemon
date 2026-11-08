@@ -238,7 +238,6 @@ test("each finish appends its own statistics entry under the settings it ran wit
   const [, second, third] = entries.map(e => e.statistics);
   assert.deepEqual([second.turn, second.ended, second.budget, second.lds, second.portfolio], [1, NO_WIN, { expansions: 40000, turns: 60 }, lds, [{ width: 4, ours: 1 }]]);
   assert.deepEqual([third.turn, third.ended, third.lds], [5, WON, null]);
-  // The entry records the settings the search resolves for the same input, so a moved default can't split them (#973).
   assert.deepEqual(
     entries.map(({ statistics: { budget, lds, portfolio } }) => ({ budget, lds, portfolio })),
     inputs.map(resolveSettings),
