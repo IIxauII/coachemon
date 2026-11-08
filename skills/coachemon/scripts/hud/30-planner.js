@@ -498,15 +498,13 @@ const attrHolds = (x, p) => {
 // @mirrors once-ko-boost
 const ONCE_KO_BOOST = new Set([AbilityId.BATTLE_BOND]);
 
-// A KO's form change, priced as the stages closest to it. Ash-Greninja's Atk and SpA rows are 1.53 and 1.49 times
-// Battle Bond Greninja's, a +1 stage 1.5 (game-code.md §18). Speed is 1.08, kept at +1 for the note. Counted once: the
-// new form doesn't change again (#999).
+// A KO's form change as stat stages, counted once a fight: the new form doesn't change again (game-code.md §18, #999).
 // @mirrors ko-form-change
 const KO_FORM_CHANGE = {
   [AbilityId.BATTLE_BOND]: { name: "Ash-Greninja", changes: [Stat.ATK, Stat.SPATK, Stat.SPD].map(stat => ({ stat, stages: 1 })) },
 };
 // The game's own check that the form a KO changes `p` to isn't the one it has (game-code.md §18).
-const formChanges = (x, p) => {
+const changesForm = (x, p) => {
   try { return !!x.canApply?.({ pokemon: p }); } catch { return false; }
 };
 
@@ -544,7 +542,7 @@ export const koBoost = p => {
     if (p.hasAbilityWithAttr?.("PostVictoryFormChangeAbAttr")) {
       for (const a of applying) {
         const form = KO_FORM_CHANGE[a.id];
-        if (form && (a.getAttrs?.("PostVictoryFormChangeAbAttr") ?? []).some(x => attrHolds(x, p) && formChanges(x, p))) {
+        if (form && (a.getAttrs?.("PostVictoryFormChangeAbAttr") ?? []).some(x => attrHolds(x, p) && changesForm(x, p))) {
           parts.push({ name: form.name, any: false, once: true, changes: form.changes });
         }
       }

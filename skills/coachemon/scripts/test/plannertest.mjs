@@ -1369,8 +1369,7 @@ Object.assign(TABLE, {
     species: { speciesId: SpeciesId.BATTLE_BOND_GRENINJA }, isFusion: () => fusion, formIndex,
     hasAbilityWithAttr: a => a === PV || a === FC, getAbility: () => battleBond,
   }, { statStages: [0, 0, 0, 0, 0, 0, 0], types: [], abilitiesApplied: new Set(applied) });
-  // The unfused one changes form instead, priced as the stages it is closest to: Ash's Atk and SpA rows are 1.53 and
-  // 1.49 times its own, a +1 stage 1.5 (#999).
+  // The unfused one changes form instead (#999).
   const ash = koBoost(greninja());
   assert.deepEqual(ash, { up: { [Stat.ATK]: 1, [Stat.SPATK]: 1, [Stat.SPD]: 1 }, ability: "Ash-Greninja", any: false, later: null }, "an unfused Battle Bond Greninja is fed its form change");
   assert.deepEqual([1, 2, 3].map(n => koStageFactor(greninja(), ash, n, Stat.SPATK)), [1.5, 1.5, 1.5], "it changes form once");

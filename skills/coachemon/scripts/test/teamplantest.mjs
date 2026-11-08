@@ -434,7 +434,7 @@ assert.equal(plan.approxDoubles, false);
   const ashPlan = run(null, { party: [fodder, fodder2, blastoise], foes: [ashPuncher] }).plan;
   console.log(`== feeding Ash-Greninja\n${ashPlan.steps.map(x => `${x.send.name} → ${x.vs.name}: ${x.why}`).join("\n")}`);
   const ashFalls = ashPlan.steps.filter(x => x.hp === 0);
-  assert.equal(ashFalls.length, 2, `both worn mons fall to the Greninja: ${JSON.stringify(ashPlan.steps)}`);
+  assert.equal(ashFalls.length, 2, `both worn mons fall to Buzzwole:${JSON.stringify(ashPlan.steps)}`);
   assert.deepEqual(ashFalls.map(x => /feeds Ash-Greninja \+1 Atk \+1 SpA \+1 Spe/.test(x.why)), [true, false], "only the first fall feeds the form change");
 }
 // A priority move from a slower mon lands before the faster foe that KOs it: the order is taken per move, not per

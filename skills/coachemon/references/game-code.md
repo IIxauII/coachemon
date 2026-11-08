@@ -2317,8 +2317,7 @@ move's own `PostVictoryStatStageChangeAttr` (Fell Stinger) comes after and isn't
 (`src/phases/faint-phase.ts:148-153`). `Pokemon.hasAbilityWithAttr` respects suppression
 (`src/field/pokemon.ts:2450`). The planner prices a KO it would score on us at `FEED_COST` (0.5 turns) a stage on an
 attacking stat or Speed, half that on a defence, times P(it KOs us first), while someone is left to face it. The team
-plan counts each side's KOs and scales later exchanges' hits by the stages (Speed left out). The planner prices the
-Ash-Greninja form change as +1 Atk, SpA and Spe for one KO, the stages closest to its rows (#999).
+plan counts each side's KOs and scales later exchanges' hits by the stages (Speed left out).
 
 **A move aimed at a fainted mon.** In a double, `FaintPhase.doFaint` calls `redirectPokemonMoves(pokemon, ally)` when
 the fainted mon has an ally (`src/phases/faint-phase.ts:197-201`); a mon forced out or fleeing does the same
