@@ -1,7 +1,7 @@
 /** The fight library's statistics entry: imported by `fight-library.ts` alone, which re-exports what callers need. */
 import { z } from "zod";
 import { PLUGIN_VERSION } from "../plugin-version.ts";
-import { resolveSettings } from "./search.ts";
+import { resolveSearchSettings } from "./search.ts";
 import type { Reason, SolveInput, SolveReport, SolveResult } from "./solver.ts";
 
 // Contract: this schema is the baseline, and the entry type is inferred from it. A field added later, at any depth, goes
@@ -119,7 +119,7 @@ export function entryOf(input: SolveInput, turn: number, ended: SolveEnd, report
     schema: 1 as const,
     turn,
     at: recorder.now().toISOString(),
-    ...resolveSettings(input),
+    ...resolveSearchSettings(input),
     pluginVersion: recorder.pluginVersion,
     gameVersion: input.cloneVersion,
   };

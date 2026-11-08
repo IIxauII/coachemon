@@ -15,7 +15,7 @@ import {
   type Why,
 } from "./fight-library.ts";
 import type { Script } from "./script.ts";
-import { resolveSettings } from "./search.ts";
+import { resolveSearchSettings } from "./search.ts";
 import type { SessionSave, SolveInput, SolveReport } from "./solver.ts";
 
 const temp = (name: string) => mkdtempSync(path.join(tmpdir(), `coachemon-fight-library-${name}-`));
@@ -240,7 +240,7 @@ test("each finish appends its own statistics entry under the settings it ran wit
   assert.deepEqual([third.turn, third.ended, third.lds], [5, WON, null]);
   assert.deepEqual(
     entries.map(({ statistics: { budget, lds, portfolio } }) => ({ budget, lds, portfolio })),
-    inputs.map(resolveSettings),
+    inputs.map(resolveSearchSettings),
   );
 });
 

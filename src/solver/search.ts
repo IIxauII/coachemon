@@ -48,10 +48,10 @@ export const LDS: Lds = { ours: 1, alternatives: 2, discrepancies: 2, expansions
 
 export const DEFAULT_BUDGET: Budget = { expansions: 3000, turns: 40 };
 
-export type ResolvedSettings = { budget: Budget; lds: Lds | null; portfolio: readonly Beam[] };
+export type ResolvedSearchSettings = { budget: Budget; lds: Lds | null; portfolio: readonly Beam[] };
 
-/** The one place unset search settings take their defaults (#973). */
-export function resolveSettings({ budget = DEFAULT_BUDGET, lds = LDS, portfolio = PORTFOLIO }: Partial<ResolvedSettings> = {}): ResolvedSettings {
+/** The search and the statistics entry both resolve here, so an entry records the settings its search ran under (#973). */
+export function resolveSearchSettings({ budget = DEFAULT_BUDGET, lds = LDS, portfolio = PORTFOLIO }: Partial<ResolvedSearchSettings> = {}): ResolvedSearchSettings {
   return { budget, lds, portfolio };
 }
 
@@ -298,7 +298,7 @@ export async function search({
   now = () => performance.now(),
   ...settings
 }: SearchInput): Promise<Found | NoAnswer> {
-  const { budget, lds, portfolio } = resolveSettings(settings);
+  const { budget, lds, portfolio } = resolveSearchSettings(settings);
   const trail: Trail = {
     unreplayed: [],
     dropped: 0,
