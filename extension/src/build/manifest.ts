@@ -3,6 +3,7 @@
  * written by the build hook (extension-distribution.md §5.2, §5.3).
  */
 import type { Flavour, Target } from "../../../src/protocol/wire.ts";
+import { commandsFor } from "../keyprobe/commands.ts";
 
 /** The listing's fixed disclaimer (extension-distribution.md §3). */
 export const DESCRIPTION =
@@ -11,7 +12,8 @@ export const DESCRIPTION =
 export const HOMEPAGE = "https://github.com/IIxauII/coachemon";
 
 /** Permanent once AMO has seen it (extension-distribution.md §5.3). */
-export const GECKO_ID = "coachemon@iixauii.github.io";
+// The key probe (#1018) has its own id, so it never stands in for an installed Coachemon or shares its origin.
+export const GECKO_ID = "coachemon-keyprobe@iixauii.github.io";
 
 /** A test pins this wording (extension-distribution.md §8.4). */
 export const ACTION_TITLE = "Coachemon: click once to let a local AI agent read this game";
@@ -47,15 +49,16 @@ export function manifestFor(o: { target: Target; flavour: Flavour; version: stri
   const common: Manifest = {
     // No `manifest_version`: WXT sets it from `manifestVersion: 3` in `wxt.config.ts`, and warns if a manifest sets it
     // too (extension-distribution.md §5.2).
-    name: "Coachemon",
+    name: "Coachemon key probe",
     version: storeVersion(o.version),
     description: DESCRIPTION,
     homepage_url: HOMEPAGE,
     icons: { 16: "icons/16.png", 32: "icons/32.png", 48: "icons/48.png", 128: "icons/128.png" },
     content_scripts: [
       { matches: MATCHES, js: ["relay.js"], run_at: "document_start", world: "ISOLATED" },
-      { matches: MATCHES, js: ["page.js", "hud.js"], run_at: "document_idle", world: "MAIN" },
+      { matches: MATCHES, js: ["page.js", "hud.js", "keyprobe.js"], run_at: "document_idle", world: "MAIN" },
     ],
+    commands: commandsFor(o.target),
     ...perTarget(o.target),
   };
   // extension-distribution.md §5.4.
@@ -67,7 +70,12 @@ export function manifestFor(o: { target: Target; flavour: Flavour; version: stri
 function perTarget(target: Target): Manifest {
   if (target === "chrome") {
     // 111 is `world: "MAIN"`'s floor, and nothing pins the extension id, so no `key` (extension-distribution.md §5.3).
-    return { minimum_chrome_version: "111", background: { service_worker: "background.js" } };
+    // The probe's `action`: the toolbar click is the baseline route, and `_execute_action` needs one.
+    return {
+      minimum_chrome_version: "111",
+      background: { service_worker: "background.js" },
+      action: { default_title: "Coachemon key probe" },
+    };
   }
   if (target === "firefox") {
     return {

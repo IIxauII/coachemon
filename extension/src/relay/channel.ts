@@ -11,6 +11,11 @@ export const EVENT = {
   card: "coachemon:card",
   coachError: "coachemon:coach-error",
   wrongWorld: "coachemon:wrong-world",
+  // Downward only, and absent from `EVENT_BY_KIND`: nothing about a grab travels up (#418).
+  grab: "coachemon:grab",
+  // The key probe's question to the background and its answer (#1018). Never reaches the hub.
+  probeAsk: "coachemon:probe-ask",
+  probeAnswer: "coachemon:probe-answer",
 } as const;
 
 /** extension-distribution.md §9.7's `too-large`. */

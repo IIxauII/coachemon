@@ -20,6 +20,10 @@ export type RelayDeps = {
 export type Relay = {
   /** Synchronous (extension-distribution.md §9.2). */
   command: (msg: CmdMessage) => RelayReply;
+  /** Hands the panel a grab. The relay never learns whether anything took it. */
+  grab: (detail: Record<string, unknown>) => void;
+  /** Hands the page the background's answer to a probe question. */
+  probeAnswer: (detail: Record<string, unknown>) => void;
   /** `null` until the page announces. */
   state: () => TabState | null;
 };
@@ -121,6 +125,8 @@ export function startRelay(d: RelayDeps): Relay {
       // (extension-distribution.md §9.2).
       return answer ?? { t: "reply", id: msg.id, ok: false, code: "no-handler", message: `no page handler answered ${msg.name}` };
     },
+    grab: detail => dispatch(EVENT.grab, detail),
+    probeAnswer: detail => dispatch(EVENT.probeAnswer, detail),
     state: () => state,
   };
 }

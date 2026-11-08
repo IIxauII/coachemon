@@ -1,6 +1,6 @@
 {
   "name": "coachemon-extension",
-  "version": "0.0.0-placeholder",
+  "version": "0.1010.1",
   "private": true,
   "license": "AGPL-3.0-only",
   "type": "module",

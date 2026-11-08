@@ -87,7 +87,8 @@ export default defineConfig({
     },
     "build:done": wxt => {
       const out = wxt.config.outDir;
-      const build = buildId(version, ["hud.js", "page.js"].map(f => readFileSync(join(out, f), "utf8")));
+      // `keyprobe.js` too, so a probe rebuild shows a new id on the box (#1018).
+      const build = buildId(version, ["hud.js", "page.js", "keyprobe.js"].map(f => readFileSync(join(out, f), "utf8")));
       // Every `.js`, not a list of names: a chunk left unwalked ships the placeholder.
       for (const rel of walk(out, name => name.endsWith(".js"))) {
         const path = join(out, rel);

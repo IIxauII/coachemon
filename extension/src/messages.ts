@@ -16,6 +16,27 @@ export type ToBackground = TabReport | Keepalive | EventReport;
 
 export type CmdMessage = { t: "cmd"; id: number; name: string; args: Record<string, unknown> };
 
+/**
+ * A **grab**, on its way down to one tab (#418's hop). The probe's carries which route fired, so the panel can log it.
+ * Nothing answers it, and it never reaches the hub.
+ */
+export type GrabMessage = {
+  t: "grab";
+  /** `command`: `commands.onCommand`. `action`: `action.onClicked`. */
+  route: "command" | "action";
+  name: string;
+  /** The background's `Date.now()` when the browser handed it the event. */
+  at: number;
+  /** Whether the tab came with the event, from `tabs.query`, or not at all. */
+  tabFrom: "event" | "query";
+};
+
+/** What the background sends down to a relay. */
+export type ToRelay = CmdMessage | GrabMessage;
+
+/** A question from the probe's panel or its options page to the background. The answer is JSON-able. */
+export type ProbeAsk = { t: "probe-ask"; ask: string };
+
 /** Ready to go on the wire as it stands. */
 export type RelayReply =
   | { t: "reply"; id: number; ok: true; result: unknown }
