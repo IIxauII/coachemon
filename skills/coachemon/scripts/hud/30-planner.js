@@ -505,9 +505,10 @@ const koBoostOf = parts => {
   return { up, ability: [...new Set(parts.map(x => x.name))].join(" + "), any: parts.some(x => x.any) };
 };
 
-// The stat stages `p` gains a KO (game-code.md §18): { up: { [stat 1–5]: stages }, ability, any, later? }, `any` when
-// every faint counts and not only its own KOs. `later`, the same shape or null, is what each KO after the first gives
-// where that differs. Speed is in `up` for the note; the damage factors leave it out.
+// The stat stages `p` gains a KO (game-code.md §18): { up: { [stat 1–5]: stages }, ability, any, later?, split? }, `any`
+// when every faint counts and not only its own KOs. `later`, the same shape or null, is what each KO after the first
+// gives where that differs. `split`, only where both kinds are there: { own, any }, each the same shape, the own-KO
+// parts and the every-faint ones (#1004). Speed is in `up` for the note; the damage factors leave it out.
 export const koBoost = p => {
   if (!p) return null;
   const parts = [];
@@ -530,14 +531,21 @@ export const koBoost = p => {
       }
     }
   } catch { return null; }
-  const first = koBoostOf(parts);
-  return first && parts.some(x => x.once) ? { ...first, later: koBoostOf(parts.filter(x => !x.once)) } : first;
+  const boost = ps => {
+    const first = koBoostOf(ps);
+    return first && ps.some(x => x.once) ? { ...first, later: koBoostOf(ps.filter(x => !x.once)) } : first;
+  };
+  const all = boost(parts), own = parts.filter(x => !x.any), any = parts.filter(x => x.any);
+  return all && own.length && any.length ? { ...all, split: { own: boost(own), any: boost(any) } } : all;
 };
 // What the KO after `n` earlier ones gives, shaped as `koBoost`'s; null when nothing.
 export const koBoostAfter = (boost, n) => (n > 0 && boost?.later !== undefined ? boost.later : boost);
+const koStages = (boost, n, st) => (n > 0 ? (boost?.up?.[st] ?? 0) + (koBoostAfter(boost, 1)?.up?.[st] ?? 0) * (n - 1) : 0);
+// `n`: the KOs that count, or `{ own, all }` for a `split` boost, its own KOs and every faint on the field.
 export const koStageFactor = (p, boost, n, st) => {
-  if (!(n > 0)) return 1;
-  const k = (boost?.up?.[st] ?? 0) + (koBoostAfter(boost, 1)?.up?.[st] ?? 0) * (n - 1);
+  const k = typeof n === "object"
+    ? koStages(boost?.split?.own, n.own, st) + koStages(boost?.split?.any, n.all, st)
+    : koStages(boost, n, st);
   if (!k) return 1;
   const s0 = p?.isOnField?.() ? p.summonData?.statStages?.[st - 1] ?? 0 : 0;
   return stage(Math.max(-6, Math.min(6, s0 + k))) / stage(s0);

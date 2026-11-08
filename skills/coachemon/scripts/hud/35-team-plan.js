@@ -319,9 +319,12 @@ const tpHeal = (hp, max, prof, used, se, extra = 0) => {
 // turn costs no entry hit (#846), and our hit that turn is `T.ourEntry`'s where it has one (#825).
 export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => {
   const faints = st.oh.filter(hp => hp < 1).length + st.fh.filter(hp => hp < 1).length;
-  const nUs = T.ourKo?.[mi] ? (T.ourKo[mi].any ? faints : st.ok[mi]) : 0;
-  const nFoe = T.foeKo?.[fi] ? (T.foeKo[fi].any ? faints : st.fk[fi]) : 0;
-  const key = !over && T.memo && [mi, fi, entry, entering, Math.round(st.oh[mi]), st.ob[mi], Math.round(st.fh[fi]), st.fs[fi], st.fb[fi], st.fl[fi], nUs, nFoe,
+  // Soul-Heart's part counts every faint on the field, an own-KO boost's only the holder's KOs (game-code.md §18). A
+  // boost with both kinds takes both counts (#1004).
+  const koN = (b, own) => (!b ? 0 : b.split ? { own, all: faints } : b.any ? faints : own);
+  const nUs = koN(T.ourKo?.[mi], st.ok[mi]), nFoe = koN(T.foeKo?.[fi], st.fk[fi]);
+  const nKey = n => (typeof n === "object" ? `${n.own}/${n.all}` : n);
+  const key = !over && T.memo && [mi, fi, entry, entering, Math.round(st.oh[mi]), st.ob[mi], Math.round(st.fh[fi]), st.fs[fi], st.fb[fi], st.fl[fi], nKey(nUs), nKey(nFoe),
     ...[st.ox[mi], st.od[mi], st.og[mi], st.fd[fi], st.fg[fi]].map(x => Math.round(x * 20))].join();
   if (key && T.memo.has(key)) return T.memo.get(key);
   const us = over ?? T.ours[mi][fi], them = T.theirs[fi][mi], foeState = T.foeState?.[fi] ?? { bar: 0 };

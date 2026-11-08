@@ -1387,6 +1387,24 @@ Object.assign(TABLE, {
   assert.equal(koBoost(bondFirst)?.ability, "Battle Bond + Moxie", "the first KO feeds both");
   assert.deepEqual(koBoostAfter(koBoost(bondFirst), 1), { up: { [Stat.ATK]: 1 }, ability: "Moxie", any: false }, "a later KO feeds Moxie alone");
   assert.equal(koBoostAfter(koBoost(fused), 1), null, "and Battle Bond alone has nothing left to feed");
+
+  // Soul-Heart counts every faint on the field, the boost beside it only the holder's own KOs (#1004). `{ own, all }`:
+  // no KO of its own, one faint elsewhere.
+  const PK = "PostKnockOutStatStageChangeAbAttr";
+  const soulHeart = { id: AbilityId.SOUL_HEART, name: "Soul-Heart", getAttrs: a => (a === PK ? [{ stat: Stat.SPATK, stages: 1 }] : []) };
+  const beside = other => Object.assign(greninja({ fusion: true }), {
+    hasAbilityWithAttr: a => a === PV || a === PK, getAbility: () => other, hasPassive: () => true, getPassiveAbility: () => soulHeart,
+  });
+  const elsewhere = { own: 0, all: 1 };
+  const withMoxie = beside(moxie), withBond = beside(battleBond);
+  assert.deepEqual([Stat.ATK, Stat.SPATK].map(st => koStageFactor(withMoxie, koBoost(withMoxie), elsewhere, st)), [1, 1.5],
+    "a faint elsewhere raises Soul-Heart's SpA, not Moxie's Atk");
+  assert.deepEqual([Stat.ATK, Stat.SPATK, Stat.SPD].map(st => koStageFactor(withBond, koBoost(withBond), elsewhere, st)), [1, 1.5, 1],
+    "nor credits Battle Bond");
+  // Its own KO feeds both: Moxie's Atk once, Soul-Heart's SpA for its victim's faint too.
+  assert.deepEqual([Stat.ATK, Stat.SPATK].map(st => koStageFactor(withMoxie, koBoost(withMoxie), { own: 1, all: 2 }, st)), [1.5, 2]);
+  assert.deepEqual([Stat.ATK, Stat.SPATK].map(st => koStageFactor(withBond, koBoost(withBond), { own: 2, all: 2 }, st)), [1.5, 2.5],
+    "Battle Bond still for one KO, Soul-Heart for both");
 }
 
 // ---- The summary's second danger level: a likely KO after our mon acts, naming what it is saved for (#90).

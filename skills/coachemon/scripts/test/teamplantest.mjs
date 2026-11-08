@@ -408,6 +408,32 @@ assert.equal(plan.approxDoubles, false);
   };
   const bonded = [0, 1, 2].map(k => hitsOn(buzzwole(battleBond), k));
   assert.ok(bonded[0] === plainHits[0] && bonded[1] === boosted[1] && bonded[2] === bonded[1], `Battle Bond counts one KO: ${bonded.join(" / ")}`);
+  // Soul-Heart's +1 SpA counts every faint on the field, the own-KO boost beside it only Buzzwole's own KOs (#1004).
+  // Our benched Pidgey has fainted and Buzzwole has no KO of its own.
+  const PV = "PostVictoryStatStageChangeAbAttr", PK = "PostKnockOutStatStageChangeAbAttr";
+  const moxieA = { name: "Moxie", getAttrs: a => (a === PV ? [{ changes: [{ stat: 1, stages: 1 }] }] : []) };
+  const bondA = { id: AbilityId.BATTLE_BOND, name: "Battle Bond", getAttrs: a => (a === PV ? [bond] : []) };
+  const soulA = { name: "Soul-Heart", getAttrs: a => (a === PK ? [{ stat: 3, stages: 1 }] : []) };
+  const holding = (ability, passive) => ({
+    hasAbilityWithAttr: a => [ability, passive].some(x => x?.getAttrs(a).length), getAbility: () => ability,
+    hasPassive: () => !!passive, getPassiveAbility: () => passive,
+  });
+  const fainted = mon("Pidgey", 20, ["Normal","Flying"], "Keen Eye", [60,50,30,30,30,60], [["Tackle","Normal",40,"P"]], false, 0);
+  const lost = (foe, fk) => {
+    const T = globalThis.__tp.readTurn(s, turn => tpTables(turn, [blastoise, fainted], [foe], false));
+    return 400 - tpFight(T, fightState({ oh: [400, 0], ob: [0, 0], fh: [400], fs: [0], fb: [0], fk: [fk] }), 0, 0, "free").mh;
+  };
+  const none = lost(buzzwole({}), 0);
+  const mixed = { moxie: lost(buzzwole(holding(moxieA, soulA)), 0), bond: lost(buzzwole(holding(bondA, soulA)), 0) };
+  const moxieKo = lost(buzzwole(holding(moxieA)), 1);
+  const special = (extra, moves = [["Bug Buzz","Bug",90,"S"]]) => Object.assign(mon("Buzzwole", 100, ["Bug","Fighting"], "Soul-Heart", [400,300,300,300,100,200], moves, true), extra);
+  const soulSpecial = [lost(special({}), 0), lost(special(holding(soulA)), 0)];
+  console.log(`== Soul-Heart beside an own-KO boost (#1004)\nBlastoise loses ${Math.round(none)} HP to a plain Buzzwole's Lunge, ` +
+    `${Math.round(mixed.moxie)} beside Moxie, ${Math.round(mixed.bond)} beside Battle Bond, ${Math.round(moxieKo)} to Moxie after its own KO; ` +
+    `Bug Buzz ${soulSpecial.map(Math.round).join(" → ")} with Soul-Heart`);
+  assert.deepEqual([mixed.moxie, mixed.bond], [none, none], "a faint elsewhere feeds neither Moxie nor Battle Bond");
+  assert.ok(moxieKo > none, "Moxie still counts its own KO");
+  assert.ok(soulSpecial[1] > soulSpecial[0], "Soul-Heart still counts the faint elsewhere");
   // The plan names the step that feeds it: a worn Pidgey chips Buzzwole past half and falls, and Blastoise comes in
   // free.
   const fodder = mon("Pidgey", 20, ["Normal","Flying"], "Keen Eye", [60,450,30,30,30,300], [["Brave Bird","Flying",120,"P"]], true, 10);
