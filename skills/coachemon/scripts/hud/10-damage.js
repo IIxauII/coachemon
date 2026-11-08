@@ -879,6 +879,9 @@ const fromGame = (env, atk, def, pm, opts) => {
   };
 };
 
+// By ability name and move flag, never `ignoresAbilities`: a combatant can't answer the game's call, and here it would
+// run unsandboxed (#995).
+const approxIgnoresAbilities = (atk, mv) => hasMoldBreaker(atk) || hasFlag(mv, MoveFlags.IGNORE_ABILITIES);
 // @mirrors ate
 const ATE = { Refrigerate: "Ice", Pixilate: "Fairy", Aerilate: "Flying", Galvanize: "Electric" };
 const approx = (a, d, pm) => {
@@ -895,7 +898,7 @@ const approx = (a, d, pm) => {
   if (phys && (ab.includes("Huge Power") || ab.includes("Pure Power"))) atk *= 2;
   if (phys && ab.includes("Hustle")) atk *= 1.5;
   const base = ((2 * a.level / 5 + 2) * power * atk / stat(d, phys ? Stat.DEF : Stat.SPDEF)) / 50 + 2;
-  const e = effectiveness(type, d, mv);
+  const e = effectiveness(type, d, mv, { ignoreAbilities: approxIgnoresAbilities(a, mv) });
   const stab = typesOf(a).includes(type) ? (ab.includes("Adaptability") ? 2 : 1.5) : 1;
   let dmg = base * stab * e;
   if (phys && ab.includes("Tough Claws")) dmg *= 1.3;
@@ -903,9 +906,6 @@ const approx = (a, d, pm) => {
   if (ab.includes("Strong Jaw") && /bite|crunch|fang|jaw/i.test(pm.getName())) dmg *= 1.5;
   return { name: pm.getName(), type, cat: phys ? "physical" : "special", e, dmg, spread: SPREAD_TARGETS.includes(mv.moveTarget), priority: mv.priority ?? 0 };
 };
-// By ability name and move flag, never `ignoresAbilities`: a combatant can't answer the game's call, and here it would
-// run unsandboxed (#995).
-const approxIgnoresAbilities = (atk, mv) => hasMoldBreaker(atk) || hasFlag(mv, MoveFlags.IGNORE_ABILITIES);
 const fromApprox = (env, atk, def, pm) => {
   const x = approx(atk, def, pm);
   if (!x) return null;
