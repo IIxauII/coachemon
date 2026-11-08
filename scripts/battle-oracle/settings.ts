@@ -1,7 +1,6 @@
 import type { SolveInput } from "../../src/solver/input.ts";
 import type { Beam } from "../../src/solver/oracle-line.ts";
-import { LDS } from "../../src/solver/search.ts";
-import { DEFAULT_BUDGET } from "../../src/solver/solver.ts";
+import { DEFAULT_BUDGET, LDS } from "../../src/solver/search.ts";
 
 export type SearchFlags = { budget?: string; turns?: string; lds?: string; beams?: string };
 

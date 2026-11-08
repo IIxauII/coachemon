@@ -15,6 +15,7 @@ import {
   type Why,
 } from "./fight-library.ts";
 import type { Script } from "./script.ts";
+import { resolveSettings } from "./search.ts";
 import type { SessionSave, SolveInput, SolveReport } from "./solver.ts";
 
 const temp = (name: string) => mkdtempSync(path.join(tmpdir(), `coachemon-fight-library-${name}-`));
@@ -208,9 +209,10 @@ test("each finish appends its own statistics entry under the settings it ran wit
   const home = temp("entries");
   const lds = { ours: 0.5, alternatives: 3, discrepancies: 1, expansions: 500 };
 
-  recordSolveStart({ home }, input(), RECORDER)?.finish({ ended: WON, report: null, oracleLine: line() });
-  recordSolveStart({ home }, input(1, {}, { budget: { expansions: 40000, turns: 60 }, lds, portfolio: [{ width: 4, ours: 1 }] }), RECORDER)?.finish({ ended: NO_WIN, report: null });
-  recordSolveStart({ home }, input(5, {}, { lds: null }), RECORDER)?.finish({ ended: WON, report: null, oracleLine: line() });
+  const inputs = [input(), input(1, {}, { budget: { expansions: 40000, turns: 60 }, lds, portfolio: [{ width: 4, ours: 1 }] }), input(5, {}, { lds: null })];
+  recordSolveStart({ home }, inputs[0], RECORDER)?.finish({ ended: WON, report: null, oracleLine: line() });
+  recordSolveStart({ home }, inputs[1], RECORDER)?.finish({ ended: NO_WIN, report: null });
+  recordSolveStart({ home }, inputs[2], RECORDER)?.finish({ ended: WON, report: null, oracleLine: line() });
 
   const { entries, unread } = statisticsEntriesIn({ home });
   assert.deepEqual(unread, []);
@@ -236,6 +238,11 @@ test("each finish appends its own statistics entry under the settings it ran wit
   const [, second, third] = entries.map(e => e.statistics);
   assert.deepEqual([second.turn, second.ended, second.budget, second.lds, second.portfolio], [1, NO_WIN, { expansions: 40000, turns: 60 }, lds, [{ width: 4, ours: 1 }]]);
   assert.deepEqual([third.turn, third.ended, third.lds], [5, WON, null]);
+  // The entry records the settings the search resolves for the same input, so a moved default can't split them (#973).
+  assert.deepEqual(
+    entries.map(({ statistics: { budget, lds, portfolio } }) => ({ budget, lds, portfolio })),
+    inputs.map(resolveSettings),
+  );
 });
 
 /** Every field of the solver's report filled, so one the schema doesn't know fails the strict read. */

@@ -46,6 +46,16 @@ export type Lds = { ours: number; alternatives: number; discrepancies: number; e
 // (#761)
 export const LDS: Lds = { ours: 1, alternatives: 2, discrepancies: 2, expansions: 3000 };
 
+export const DEFAULT_BUDGET: Budget = { expansions: 3000, turns: 40 };
+
+/** The settings a search runs under; `lds` null runs the beams alone. */
+export type SearchSettings = { budget: Budget; lds: Lds | null; portfolio: readonly Beam[] };
+
+/** The one place unset settings take their defaults: the search and the statistics entry both resolve here (#973). */
+export function resolveSettings({ budget = DEFAULT_BUDGET, lds = LDS, portfolio = PORTFOLIO }: Partial<SearchSettings> = {}): SearchSettings {
+  return { budget, lds, portfolio };
+}
+
 const STALL_TURNS = 6;
 
 // (#792)
@@ -283,14 +293,13 @@ export async function search({
   root,
   pool,
   validate,
-  budget,
-  lds = LDS,
-  portfolio = PORTFOLIO,
   paired = PAIRED,
   progress,
   statistics,
   now = () => performance.now(),
+  ...settings
 }: SearchInput): Promise<Found | NoAnswer> {
+  const { budget, lds, portfolio } = resolveSettings(settings);
   const trail: Trail = {
     unreplayed: [],
     dropped: 0,

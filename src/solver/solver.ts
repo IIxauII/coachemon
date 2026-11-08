@@ -35,8 +35,6 @@ export type SolveReport = {
   search?: SearchStatistics;
 };
 
-export const DEFAULT_BUDGET: Budget = { expansions: 3000, turns: 40 };
-
 const RECHECK: Recheck | null = "recheck" in reviewed ? (reviewed.recheck as Recheck) : null;
 
 /** The refusal gate `solve` opens with. */
