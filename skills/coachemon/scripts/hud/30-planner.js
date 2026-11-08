@@ -507,7 +507,7 @@ const koBoostOf = parts => {
 
 // The stat stages `p` gains a KO (game-code.md §18): { up: { [stat 1–5]: stages }, ability, any, later?, split? }, `any`
 // when every faint counts and not only its own KOs. `later`, the same shape or null, is what each KO after the first
-// gives where that differs. `split`, only where both kinds are there: { own, any }, each the same shape, the own-KO
+// gives where that differs. `split`, only where both kinds are there: { own, all }, each the same shape, the own-KO
 // parts and the every-faint ones (#1004). Speed is in `up` for the note; the damage factors leave it out.
 export const koBoost = p => {
   if (!p) return null;
@@ -535,8 +535,8 @@ export const koBoost = p => {
     const first = koBoostOf(ps);
     return first && ps.some(x => x.once) ? { ...first, later: koBoostOf(ps.filter(x => !x.once)) } : first;
   };
-  const all = boost(parts), own = parts.filter(x => !x.any), any = parts.filter(x => x.any);
-  return all && own.length && any.length ? { ...all, split: { own: boost(own), any: boost(any) } } : all;
+  const merged = boost(parts), own = parts.filter(x => !x.any), all = parts.filter(x => x.any);
+  return merged && own.length && all.length ? { ...merged, split: { own: boost(own), all: boost(all) } } : merged;
 };
 // What the KO after `n` earlier ones gives, shaped as `koBoost`'s; null when nothing.
 export const koBoostAfter = (boost, n) => (n > 0 && boost?.later !== undefined ? boost.later : boost);
@@ -544,7 +544,7 @@ const koStages = (boost, n, st) => (n > 0 ? (boost?.up?.[st] ?? 0) + (koBoostAft
 // `n`: the KOs that count, or `{ own, all }` for a `split` boost, its own KOs and every faint on the field.
 export const koStageFactor = (p, boost, n, st) => {
   const k = typeof n === "object"
-    ? koStages(boost?.split?.own, n.own, st) + koStages(boost?.split?.any, n.all, st)
+    ? koStages(boost?.split?.own, n.own, st) + koStages(boost?.split?.all, n.all, st)
     : koStages(boost, n, st);
   if (!k) return 1;
   const s0 = p?.isOnField?.() ? p.summonData?.statStages?.[st - 1] ?? 0 : 0;

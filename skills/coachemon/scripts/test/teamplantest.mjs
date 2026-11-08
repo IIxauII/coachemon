@@ -427,13 +427,14 @@ assert.equal(plan.approxDoubles, false);
   const mixed = { moxie: lost(buzzwole(holding(moxieA, soulA)), 0), bond: lost(buzzwole(holding(bondA, soulA)), 0) };
   const moxieKo = lost(buzzwole(holding(moxieA)), 1);
   const special = (extra, moves = [["Bug Buzz","Bug",90,"S"]]) => Object.assign(mon("Buzzwole", 100, ["Bug","Fighting"], "Soul-Heart", [400,300,300,300,100,200], moves, true), extra);
-  const soulSpecial = [lost(special({}), 0), lost(special(holding(soulA)), 0)];
+  const soulSpecial = [lost(special({}), 0), lost(special(holding(soulA)), 0), lost(special(holding(moxieA, soulA)), 0)];
   console.log(`== Soul-Heart beside an own-KO boost (#1004)\nBlastoise loses ${Math.round(none)} HP to a plain Buzzwole's Lunge, ` +
     `${Math.round(mixed.moxie)} beside Moxie, ${Math.round(mixed.bond)} beside Battle Bond, ${Math.round(moxieKo)} to Moxie after its own KO; ` +
-    `Bug Buzz ${soulSpecial.map(Math.round).join(" → ")} with Soul-Heart`);
+    `Bug Buzz ${soulSpecial.slice(0, 2).map(Math.round).join(" → ")} with Soul-Heart, ${Math.round(soulSpecial[2])} beside Moxie`);
   assert.deepEqual([mixed.moxie, mixed.bond], [none, none], "a faint elsewhere feeds neither Moxie nor Battle Bond");
   assert.ok(moxieKo > none, "Moxie still counts its own KO");
   assert.ok(soulSpecial[1] > soulSpecial[0], "Soul-Heart still counts the faint elsewhere");
+  assert.equal(soulSpecial[2], soulSpecial[1], "and beside Moxie too");
   // The plan names the step that feeds it: a worn Pidgey chips Buzzwole past half and falls, and Blastoise comes in
   // free.
   const fodder = mon("Pidgey", 20, ["Normal","Flying"], "Keen Eye", [60,450,30,30,30,300], [["Brave Bird","Flying",120,"P"]], true, 10);

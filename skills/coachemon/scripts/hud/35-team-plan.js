@@ -215,7 +215,8 @@ export const tpTables = (turn, party, foes, double = false, facing = null, enter
     stealHealAfter: steals.map(row => row.map(s => s?.after ?? null)),
     ourUnnerve: party.map(p => !!turn.mon(p).facts.unnerve), foeUnnerve: foes.map(f => !!turn.mon(f).facts.unnerve),
     foeStart: foes.map(f => f.hp),
-    // `koMult`: the factor both sides' on-KO boosts put on a hit, after `atkN` and `defN` KOs, at physical share `phys`.
+    // `koMult`: the factor both sides' on-KO boosts put on a hit, after `atkN` and `defN` KOs (counts as `koStageFactor`
+    // takes them), at physical share `phys`.
     ourKo: party.map(koBoost), foeKo: foes.map(koBoost),
     koMult: (atkMon, atkBoost, atkN, defMon, defBoost, defN, phys) => {
       const f = (p, b, n, st) => koStageFactor(p, b, n, st);
@@ -319,8 +320,7 @@ const tpHeal = (hp, max, prof, used, se, extra = 0) => {
 // turn costs no entry hit (#846), and our hit that turn is `T.ourEntry`'s where it has one (#825).
 export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => {
   const faints = st.oh.filter(hp => hp < 1).length + st.fh.filter(hp => hp < 1).length;
-  // Soul-Heart's part counts every faint on the field, an own-KO boost's only the holder's KOs (game-code.md §18). A
-  // boost with both kinds takes both counts (#1004).
+  // game-code.md §18, #1004.
   const koN = (b, own) => (!b ? 0 : b.split ? { own, all: faints } : b.any ? faints : own);
   const nUs = koN(T.ourKo?.[mi], st.ok[mi]), nFoe = koN(T.foeKo?.[fi], st.fk[fi]);
   const nKey = n => (typeof n === "object" ? `${n.own}/${n.all}` : n);
