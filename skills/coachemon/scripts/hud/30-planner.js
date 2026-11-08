@@ -541,7 +541,7 @@ export const koBoost = p => {
       for (const a of applying) {
         const form = KO_FORM_CHANGE[a.id];
         if (form && (a.getAttrs?.("PostVictoryFormChangeAbAttr") ?? []).some(x => attrApplies(x, p))) {
-          parts.push({ name: form.name, any: false, once: true, changes: form.changes });
+          parts.push({ name: form.name, allFaints: false, once: true, changes: form.changes });
         }
       }
     }

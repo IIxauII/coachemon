@@ -1370,7 +1370,7 @@ Object.assign(TABLE, {
     hasAbilityWithAttr: a => a === PV || a === FC, getAbility: () => battleBond,
   }, { statStages: [0, 0, 0, 0, 0, 0, 0], types: [], abilitiesApplied: new Set(applied) });
   const ash = koBoost(greninja());
-  assert.deepEqual(ash, { up: { [Stat.ATK]: 1, [Stat.SPATK]: 1, [Stat.SPD]: 1 }, ability: "Ash-Greninja", any: false, later: null }, "an unfused Battle Bond Greninja is fed its form change");
+  assert.deepEqual(ash, { up: { [Stat.ATK]: 1, [Stat.SPATK]: 1, [Stat.SPD]: 1 }, ability: "Ash-Greninja", allFaints: false, later: null }, "an unfused Battle Bond Greninja is fed its form change");
   assert.deepEqual([1, 2, 3].map(n => koStageFactor(greninja(), ash, n, Stat.SPATK)), [1.5, 1.5, 1.5], "it changes form once");
   assert.equal(koBoostAfter(ash, 1), null, "and has nothing left to feed after");
   assert.equal(feedCost(greninja(), 1), 1.5, "feeding it a KO costs the fight 1.5 turns");
