@@ -426,7 +426,8 @@ const DRAGON_DANCE = ["Dragon Dance","Dragon",-1,"X",-1,[statChange([1, 5], 1, t
   const gholdengo = at30(foe("Gholdengo", ["Steel","Ghost"], { ability: "Good as Gold" }));
   const limber = at30(foe("Persian", ["Normal"], { ability: "Limber" }));
   const comatose = at30(foe("Komala", ["Normal"], { ability: "Comatose" }));
-  for (const [move, roster] of [[TWAVE, bouncer], [WISP, gholdengo], [TWAVE, limber], [TAUNT, oblivious]]) {
+  const veiled = at30(foe("Aromatisse", ["Fairy"], { ability: "Aroma Veil", segments: 2, statusMoves: ["Wish"], healMoves: ["Wish"] }));
+  for (const [move, roster] of [[TWAVE, bouncer], [WISP, gholdengo], [TWAVE, limber], [TAUNT, oblivious], [TAUNT, veiled]]) {
     assert.notEqual(judge(move, roster).value, judge(move, roster, "Mold Breaker").value, `${roster.foes[0].ability} blocks without a bypass`);
     assert.equal(judge(move, roster, "Mycelium Might").value, judge(move, roster, "Mold Breaker").value, `Mycelium Might past ${roster.foes[0].ability}`);
   }
