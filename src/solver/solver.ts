@@ -2,7 +2,7 @@ import { availableParallelism } from "node:os";
 import reviewed from "../escape-ladder/reviewed.json" with { type: "json" };
 import { augmentedExport, withLiveFinalBoss } from "./extras.ts";
 import { type Carry, carryOf, refuse } from "./gate.ts";
-import type { Budget, Recheck, SolveInput } from "./input.ts";
+import type { Recheck, SolveInput } from "./input.ts";
 import type { Lease } from "./fight-pool.ts";
 import { noAnswer, Unanswered } from "./no-answer.ts";
 import type { Input, NoAnswer, Reason, SolveResult } from "./oracle-line.ts";
@@ -34,8 +34,6 @@ export type SolveReport = {
   cores: number;
   search?: SearchStatistics;
 };
-
-export const DEFAULT_BUDGET: Budget = { expansions: 3000, turns: 40 };
 
 const RECHECK: Recheck | null = "recheck" in reviewed ? (reviewed.recheck as Recheck) : null;
 
