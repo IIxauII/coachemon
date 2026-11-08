@@ -71,7 +71,9 @@ runs `! kill <server-pid>`.
 **The graph is committed.** `graphify-out/graph.json`, the graph of files, symbols and the links between them, is
 tracked, so every clone and worktree checks it out with its branch. `.githooks/pre-commit` rebuilds and stages it with
 each commit, in worktrees too; a clone runs `sh scripts/graphify/setup.sh` once to turn the hook and the graph's merge
-driver on. The rest of `graphify-out/` is built locally. Between commits the graph lags your uncommitted edits: run
+driver on. Never run `graphify hook install`: its post-commit hook rewrites the committed graph after every commit. The
+hook reads the working tree, so a partial commit (`git add -p`) carries a graph of the unstaged edits too. The rest of
+`graphify-out/` is built locally. Between commits the graph lags your uncommitted edits: run
 `graphify update .` before a structure question about code you just changed. Without graphify on `PATH` this whole
 section is skipped.
 
