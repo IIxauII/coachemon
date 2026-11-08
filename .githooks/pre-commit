@@ -1,0 +1,10 @@
+#!/bin/sh
+# https://docs.graphify.com/guides/team-workflows: rebuild graphify-out/graph.json and commit it with the code that changed it.
+[ "${GRAPHIFY_SKIP_HOOK:-0}" = "1" ] && exit 0
+# A sandbox or CI runner without graphify commits the graph it already has; the next commit made with graphify catches up.
+command -v graphify >/dev/null 2>&1 || exit 0
+[ -f graphify-out/graph.json ] || exit 0
+git diff --cached --name-only | grep -qv '^graphify-out/graph\.json$' || exit 0
+# The rebuild reads the working tree, not the index, so a partial commit carries a graph of the unstaged edits too.
+# PYTHONHASHSEED=0 keeps the output byte-identical across runs; without it every commit rewrites the whole graph.
+{ PYTHONHASHSEED=0 graphify update . && git add graphify-out/graph.json; } || exit 1

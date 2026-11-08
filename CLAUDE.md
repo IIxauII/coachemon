@@ -68,19 +68,28 @@ runs `! kill <server-pid>`.
 
 ## graphify
 
-**Only where `graphify-out/graph.json` exists.** The graph of files, symbols and the links between them is built
-per checkout and never committed, so a fresh clone has none; there this whole section is skipped. A worktree Claude
-Code creates gets a copy of the main checkout's graph through `.worktreeinclude`, as of the moment it was created, so
-it lacks the branch's own changes until `graphify update .` runs there. A worktree made with `git worktree add` gets
-no copy. graphify's git hooks rebuild only the main checkout's graph, never a worktree's.
+**The graph is committed.** `graphify-out/graph.json`, the graph of files, symbols and the links between them, is
+tracked, so every clone and worktree checks it out with its branch. `.githooks/pre-commit` rebuilds and stages it with
+each commit, in worktrees too; a clone runs `sh scripts/graphify/setup.sh` once to turn the hook and the graph's merge
+driver on. Never run `graphify hook install`: its post-commit hook rewrites the committed graph after every commit. The
+hook reads the working tree, so a partial commit (`git add -p`) carries a graph of the unstaged edits too. The rest of
+`graphify-out/` is built locally. Between commits the graph lags your uncommitted edits: run
+`graphify update .` before a structure question about code you just changed. Without graphify on `PATH` this whole
+section is skipped.
 
-**Query the graph before reading source.** Run `graphify query "<question>"` before your first grep, search or
-source-file read for a codebase question, and put this rule in every subagent prompt that explores code. Read raw
-files only for lines the graph or an earlier read already located. `graphify path "<A>" "<B>"` answers how two things
-connect, `graphify explain "<concept>"` one concept; both return a scoped subgraph, far smaller than raw grep output.
-`CONTEXT.md` and `docs/adr/` are read directly, as before, even when the hook's read nudge fires on them.
+**A structure question goes to the graph, a literal lookup to grep.** A *structure question* asks how code connects:
+who calls X, what X imports or re-exports, what depends on X, what a change to X reaches. Answer it with
+`graphify explain "<file or symbol>" --all` (every edge, with line numbers) or `graphify path "<A>" "<B>"`, then read
+only the lines those edges point at. Pass a node id when a bare name like `press()` matches several nodes, and use
+`graphify query "<question>"` only to find a starting node: its free-text matching drags in unrelated neighbours. A
+*literal lookup* (an error code or other string, a constant, an npm script, config, a doc line) goes straight to grep:
+the graph holds symbols and imports, not string literals or `package.json`. Confirm in source any edge marked
+`INFERRED` and any hop between processes (server → hub → extension → page), which the graph lacks. Put this split in
+every subagent brief that explores code. It overrides the hook's "MANDATORY: run graphify" nudge on a literal lookup.
+`CONTEXT.md` and `docs/adr/` are read directly.
+
+In a four-question comparison the graph matched grep on accuracy at about a quarter more tokens, and found more only
+on structure questions (a module's outside importers, which tool never takes the tab lock).
 
 **Broad navigation** goes through `graphify-out/wiki/index.md` when it exists, and `graphify-out/GRAPH_REPORT.md` only
-for an architecture review or when query, path and explain fall short.
-
-**After modifying code**, run `graphify update .` to keep the graph current (AST-only, no API cost).
+for an architecture review or when explain and path fall short.
