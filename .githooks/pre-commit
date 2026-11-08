@@ -1,0 +1,8 @@
+#!/bin/sh
+# https://docs.graphify.com/guides/team-workflows: rebuild graphify-out/graph.json and commit it with the code that changed it.
+[ "${GRAPHIFY_SKIP_HOOK:-0}" = "1" ] && exit 0
+# A sandbox or CI runner without graphify commits the graph it already has; the next commit made with graphify catches up.
+command -v graphify >/dev/null 2>&1 || exit 0
+[ -f graphify-out/graph.json ] || exit 0
+git diff --cached --name-only | grep -qv '^graphify-out/graph\.json$' || exit 0
+{ PYTHONHASHSEED=0 graphify update . && git add graphify-out/graph.json; } || exit 1
