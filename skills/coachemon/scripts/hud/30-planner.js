@@ -455,6 +455,8 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
     kos.push({ p, max: m.o.max, pKo: ko, acc: m.o.acc ?? 1, revive: m.o.revive ?? 0, cat: m.o.cat, hits, targetHp: me.hp, live });
   }
   const brief = m => m && { name: m.name, type: m.type, e: m.o?.e ?? null, p: m.p, hits: hitCounts(m.o), ...(m.fails ? { fails: true } : {}) };
+  // Gotcha: one `cut` for the mix, so a fixed-damage pick beside others is priced as theirs are.
+  const cutBy = moves.find(m => m.o && m.o.cut !== "never");
   return {
     expected, worst: worst?.o.max ?? 0, pKo, first, koFirst: pKo > 0 ? koFirst / pKo : first,
     move: brief(likely && { ...likely, p: pOf.get(likely.name) }), worstMove: brief(worst), moves: kos, hp: me.hp, from: foe.name, live, use, later,
@@ -463,7 +465,9 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
     targets: exactRow ? [...(exactRow.targets ?? [])] : null,
     revive: Math.max(0, ...kos.map(k => k.revive)),
     ignoresSturdy: moves.some(m => m.o) && moves.every(m => !m.o || !!m.o.ignoresSturdy),
+    ignoresAbility: moves.some(m => m.o) && moves.every(m => !m.o || !!m.o.ignoresAbility),
     ignoresDisguise: moves.some(m => m.o) && moves.every(m => !m.o || !!m.o.ignoresDisguise),
+    cut: cutBy ? cutBy.o.cut ?? null : moves.some(m => m.o) ? "never" : null,
     // A mix of moves has no one category or effectiveness: each point of `use` carries its own `se`.
     e: null, cat: null,
     boost: Object.keys(boost).length ? boost : null,

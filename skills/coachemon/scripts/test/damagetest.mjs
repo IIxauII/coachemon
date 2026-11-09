@@ -2,7 +2,7 @@
 // multi-hit attrs do: the numbers below are exact.
 import assert from "node:assert/strict";
 import { mountHud } from "./fake-page.mjs";
-import { HitResult, MoveId, MultiHitType } from "../../../../src/enums/generated.ts";
+import { AbilityId, HitResult, MoveId, MultiHitType } from "../../../../src/enums/generated.ts";
 import { GAME_PROTO } from "./game-proto.mjs";
 
 class MultiHitAttr { constructor(t) { this.multiHitType = t; } }
@@ -214,7 +214,7 @@ const bigHit = move(1, "Big Hit", 14, 120);
   floater.getAttackDamage = function (o) {
     return o.move.type === 4 ? { cancelled: false, result: HitResult.NO_EFFECT, damage: 0 } : hit.call(this, o);
   };
-  const unset = o => ["ignoresSturdy", "ignoresDisguise", "cat", "e"].filter(k => o[k] === undefined);
+  const unset = o => ["ignoresSturdy", "ignoresAbility", "ignoresDisguise", "cut", "cat", "e"].filter(k => o[k] === undefined);
   for (const estimate of [false, true]) {
     setup(atk, floater);
     const outs = readTurn(scene, t => t.outcomes(atk, floater), { estimate });
@@ -822,6 +822,40 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   const plain = mon("plain");
   setup(plain, foe);
   assert.equal(moveOutcome(scene, plain, foe, pmOf(quake), { crit: false }).e, 0, "Earthquake into Levitate");
+}
+
+// ---- A Multiscale holder's live record holds the cut the game asked it at full HP, so neither its curve nor its own odds halve it again, and its second hit lands whole (game-code.md §2, §8)
+{
+  // Multiscale as the game's call has it: ×0.5 at full HP, and gone while a Mold Breaker's move runs (game-code.md §1).
+  const scaled = (id, hp) => {
+    const p = mon(id, { hp, player: false, bi: 2 });
+    p.hasAbility = a => a === AbilityId.MULTISCALE && !(scene.arena.ignoreAbilities && scene.arena.ignoringEffectSource !== p.getBattlerIndex());
+    const whole = p.getAttackDamage;
+    p.getAttackDamage = function (o) {
+      const r = whole.call(this, o);
+      return !o.ignoreAbility && this.hp >= this.getMaxHp() && this.hasAbility(AbilityId.MULTISCALE) ? { ...r, damage: Math.max(1, Math.floor(r.damage / 2)) } : r;
+    };
+    return p;
+  };
+  const atk = mon("atk");
+  const dragonite = scaled("dragonite", 200);
+  setup(atk, dragonite);
+  const o = moveOutcome(scene, atk, dragonite, pmOf(bigHit), { crit: false });
+  assert.deepEqual([o.perHit[0].max, o.cut, o.ignoresAbility], [60, "in", false]);
+  const by = koCurve(dragonite, o).by;
+  console.log(`Multiscale, 200 HP, a 120 hit asked at full HP: ${o.perHit[0].max} · down by use ${by.slice(0, 3).map(x => x.toFixed(2)).join(" ")}`);
+  assert.deepEqual(by.slice(0, 3), [0, 0, 1]);
+  const twice = move(22, "Twin Hit", 0, 100, { attrs: [new MultiHitAttr(MultiHitType.TWO)] });
+  const lugia = scaled("lugia", 120);
+  setup(atk, lugia);
+  const two = moveOutcome(scene, atk, lugia, pmOf(twice), { crit: false });
+  assert.deepEqual(two.perHit.map(h => h.max), [50, 50], "both strikes asked at full HP");
+  assert.equal(two.pKo, 1, "the second strike lands whole");
+  const mold = mon("mold", { abilities: ["MoveAbilityBypassAbAttr"] });
+  setup(mold, dragonite);
+  const broken = moveOutcome(scene, mold, dragonite, pmOf(bigHit), { crit: false });
+  assert.deepEqual([broken.perHit[0].max, broken.cut, broken.ignoresAbility], [120, null, true], "Mold Breaker gets past it");
+  assert.deepEqual(koCurve(dragonite, broken).by.slice(0, 2), [0, 1], "and its curve halves nothing");
 }
 
 // ---- Drain is a share of the damage dealt, which Heal Block, Healing Charm and Liquid Ooze change (game-code.md §18)

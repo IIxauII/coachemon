@@ -5,6 +5,7 @@ down by hit n, one stack: 0.00 0.00 0.00 0.70 0.97 0.99 1.00 1.00 1.00
 == the KO curve eats a Sitrus (#883)
 from full, 70 a use: 0.00 0.00 0.00 1.00 1.00 1.00 1.00 1.00 1.00 · unnerved 0.00 0.00 1.00 1.00 1.00 1.00 1.00 1.00 1.00
 lum: toxic 0 · Bad Dreams 0 · Toxic Orb -10 · Unnerved toxic -30
+Multiscale, 200 HP, a 120 hit asked at full HP: 60 · down by use 0.00 0.00 1.00
 traits: recoil ≈−9% | recharge turn
 false swipe: 93–99 of 100 HP, pKo 0
 damage: ok

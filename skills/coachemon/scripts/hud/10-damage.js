@@ -18,6 +18,7 @@ const isA = (x, name) => {
   const attrs = (mv, name) => (mv.attrs || []).filter(a => isA(a, name));
   const hasFlag = (mv, f) => (typeof mv.hasFlag === "function" ? mv.hasFlag(f) : !!((mv.flags ?? 0) & f));
   const ability = (p, attr) => { try { return !!p.hasAbilityWithAttr?.(attr); } catch { return false; } };
+  const holds = (p, id) => { try { return !!p.hasAbility?.(id); } catch { return false; } };
   const items = p => { try { return p.getHeldItems?.() ?? []; } catch { return []; } };
   const stack = (p, name) => items(p).filter(m => m.constructor.name === name).reduce((t, m) => t + (m.getStackCount?.() ?? m.stackCount ?? 1), 0);
 // One gate for `sceneUsable` and `sceneRefused`, so the pool and the reason it shrank can never disagree. A condition
@@ -112,6 +113,8 @@ export const targetFacts = (env, t, ignoreAbility = false) => {
     minIdx: env?.finalBoss && !t.formIndex ? 1 : 0,
     finalBoss: enemy && !!env?.finalBoss && !t.formIndex,
     sturdy: !ignoreAbility && maxHp > 1 && ability(t, "PreDefendFullHpEndureAbAttr"),
+    multiscale: !ignoreAbility && holds(t, AbilityId.MULTISCALE),
+    shadowShield: holds(t, AbilityId.SHADOW_SHIELD),
     pFocus: Math.min(1, 0.1 * stack(t, "SurviveDamageModifier")),
     pEndure: endure ? Math.min(1, (endure.chance ?? 2) * (endure.getStackCount?.() ?? 1) / 100) : 0,
     // Reviver Seed (game-code.md §8).
@@ -172,12 +175,21 @@ const bust = (f, b, whole, out, down) => {
   down?.(b.p, { ...b, hp, busted: true }, hp, bar);
   return b.p;
 };
+// Multiscale and Shadow Shield (game-code.md §1, §8). Gotcha: a `cut` "in" hit is doubled back below full HP, which
+// can come out 1 HP short of the game's, its halving having been floored (§2).
+const cutOn = (f, hp, d, hit) => {
+  if (hit.cut === "never" || (!f.shadowShield && hit.ignoresAbility)) return d;
+  const full = hp >= f.maxHp;
+  if (hit.cut === "in") return full ? d : d * 2;
+  return full ? d * 0.5 : d;
+};
 // One hit of `d` on carrier `b`, in the game's order (game-code.md §3, §8). Pushes what stands onto `out`, a revive
 // among it with `stop` set, and returns the share that goes down, handing it to `down(p, b, hp, bar)` with the HP the
-// hit left. `luck` false: turn-end chip, which nothing survives on luck (§21). `whole`: down below 1 HP (#527), else
-// at 0 or less.
+// hit left. `luck` false: turn-end chip, which nothing survives on luck and no cut halves (§21). `whole`: down below
+// 1 HP (#527), else at 0 or less.
 const strike = (f, b, d, hit, whole, luck, out, down = null) => {
   if (luck && f.disguise && !b.busted && !hit.ignoresDisguise && d > 0) return bust(f, b, whole, out, down);
+  if (luck && (f.multiscale || f.shadowShield)) d = cutOn(f, b.hp, d, hit);
   const [dealt, bar] = barStep(f, b.hp, b.bar, Math.max(0, d), !!hit.ohko);
   const left = b.hp - dealt;
   // The token rolls on the damage before the bar clamps it, and a roll on a hit the clamp or Sturdy already stops
@@ -219,9 +231,10 @@ const landUse = (f, b, d, n, fac, hit, whole, down) => {
   return live;
 };
 // `use`: one point of a use's spread, `{ d, n }`, `d` the whole use before the target's HP or bars cut it. `hit`: the
-// hit record, its race facts read by name and an absent one off (`ignoresSturdy`, `ignoresDisguise`, `ohko`,
-// `factor(bar)`). Each outcome's `dealt` is what the use took through the bars, counted before a revive and without a
-// bust's chip, and `hits` the hits that landed.
+// hit record, its race facts read by name and an absent one off (`ignoresSturdy`, `ignoresAbility`, `ignoresDisguise`,
+// `cut`, `ohko`, `factor(bar)`); `cut` is "in" where its numbers already hold a full-HP holder's Multiscale or Shadow
+// Shield, and "never" where nothing halves it. Each outcome's `dealt` is what the use took through the bars, counted
+// before a revive and without a bust's chip, and `hits` the hits that landed.
 // @only 35-team-plan, tests: land, luckKey, landingKey
 export const land = (state, use, hit = NO_HIT, { whole = false } = {}) => {
   const d = use?.d, h = hit ?? NO_HIT, f = state?.facts ?? NO_HIT;
@@ -235,7 +248,7 @@ export const land = (state, use, hit = NO_HIT, { whole = false } = {}) => {
   for (const o of downs) outs.push(o);
   return outs;
 };
-export const luckKey = (s, f = s.facts) => `${+s.revived}${+s.tok}${f?.sturdy ? +(s.hp >= f.maxHp) : ""}${f?.disguise ? +s.busted : ""}`;
+export const luckKey = (s, f = s.facts) => `${+s.revived}${+s.tok}${f?.sturdy || f?.multiscale || f?.shadowShield ? +(s.hp >= f.maxHp) : ""}${f?.disguise ? +s.busted : ""}`;
 export const landingKey = (s, f = s.facts) => {
   let k = `${luckKey(s, f)}|${s.bar}`;
   for (const x of REST) k += `|${s[x]}`;
@@ -365,8 +378,8 @@ export const shares = (list, fallback) => {
   return t > 0 ? list.map(c => ({ s: c.s, p: c.p / t })) : fallback;
 };
 // `by[n − 1]`: P(the target is down by the end of use n). `rec` is `turn.mon(target)`, which carries no race
-// facts; `hit` is the hit record that does (`ignoresSturdy`, `ignoresDisguise`, `cat`, `e`, an absent one off), and
-// its use is `useOf`'s, a bare use array reading as `{ use }`. `scale(i, broken)`: the damage factor on use i (0-based)
+// facts; `hit` is the hit record that does (`land`'s, then `cat` and `e`, an absent one off), and its use is
+// `useOf`'s, a bare use array reading as `{ use }`. `scale(i, broken)`: the damage factor on use i (0-based)
 // with `broken` bars gone; `act(i)`: the chance use i happens at all. `turnEnd`: the signed HP change after
 // each use survived, or a function of the use count. `guard` false: a wild boss's defence never rises as its
 // bars break, which it otherwise does at the `cat` ("physical" or "special") of use 2's hit. `firstKo`: this
@@ -825,15 +838,18 @@ const fromGame = (env, atk, def, pm, opts) => {
   const first = call(0, false);
   const eGame = def.getMoveEffectiveness?.(atk, move, gameIgnore, true);
   const e = first.cancelled ? 0 : typeof eGame === "number" ? eGame : RESULT_MULT[first.result] ?? 1;
-  const base = { name: pm.getName(), type, cat, e, priority, spread, spreadApplied, traits: t, self: 0, bypassProtect: bypassesProtect(atk, def, move) };
   const ohko = first.result === HitResult.ONE_HIT_KO;
   const fixed = !ohko && attrs(move, "FixedDamageAttr").length > 0;
   const ignoresSturdy = ignoreAbility || (fixed && fixedIgnoresSturdy(env));
   // Disguise and Ice Face (game-code.md §8).
   const ignoresDisguise = ignoreAbility || fixed || ohko || !meetsBlock(def, atk, move);
+  const facts = targetFacts(env, def, ignoreAbility);
+  // (game-code.md §1, §2)
+  const cut = fixed || ohko ? "never" : !gameIgnore && facts.hp >= facts.maxHp && (facts.multiscale || facts.shadowShield) ? "in" : null;
+  const base = { name: pm.getName(), type, cat, e, priority, spread, spreadApplied, traits: t, self: 0, bypassProtect: bypassesProtect(atk, def, move), ignoresAbility: ignoreAbility, ignoresDisguise, cut };
   const blocked = cancelledBy(env, atk, def, move);
   if (first.cancelled || first.result === HitResult.NO_EFFECT || first.result === HitResult.IMMUNE || blocked) {
-    return { ...base, acc: 0, crit: 0, dist, perHit: [{ max: 0, min: 0 }], targetHp: def.hp, expected: 0, uncapped: 0, max: 0, pKo: 0, revive: 0, costs: [], notes: [blocked ? `stopped by ${blocked}` : "no effect"], use: [{ d: 0, p: 1, n: 0 }], focus: 0, ignoresSturdy, ignoresDisguise, flinch: 0 };
+    return { ...base, acc: 0, crit: 0, dist, perHit: [{ max: 0, min: 0 }], targetHp: def.hp, expected: 0, uncapped: 0, max: 0, pKo: 0, revive: 0, costs: [], notes: [blocked ? `stopped by ${blocked}` : "no effect"], use: [{ d: 0, p: 1, n: 0 }], focus: 0, ignoresSturdy, flinch: 0 };
   }
 
   const psywave = attrs(move, "RandomLevelDamageAttr").length > 0;
@@ -897,10 +913,9 @@ const fromGame = (env, atk, def, pm, opts) => {
   const checkAll = t.hits.checkAll;
   const use = useDist(perHit, dist, acc, checkAll);
 
-  const facts = targetFacts(env, def, ignoreAbility);
   const f = ignoresSturdy && facts.sturdy ? { ...facts, sturdy: false } : facts;
   // The simulated call ignores Disguise and Ice Face, which Landing applies (game-code.md §1).
-  const strikes = { ignoresSturdy, ignoresDisguise, ohko };
+  const strikes = { ignoresSturdy, ohko, ignoresAbility: ignoreAbility, ignoresDisguise, cut };
   const ends = resolve(facts, perHit, dist, acc, checkAll, strikes);
   const expected = f.hp - ends.reduce((t, x) => t + x.p * Math.max(0, x.hp), 0);
   const pKo = f.revive ? 0 : ends.filter(x => x.hp <= 0).reduce((t, x) => t + x.p, 0);
@@ -957,7 +972,7 @@ const fromGame = (env, atk, def, pm, opts) => {
     ...base, acc, crit, dist, semi, self, selfKo, drain,
     perHit: maxes.map((max, k) => ({ max, min: Math.min(max, lows[k] ?? Math.floor(max * 0.85)) })), targetHp: f.hp,
     expected, uncapped, max: f.hp - Math.max(0, worst.hp), pKo, revive: f.revive, costs, notes,
-    use, focus: f.pFocus, ignoresSturdy, ignoresDisguise, flinch: flinchChance(atk, def, move, ignoreAbility),
+    use, focus: f.pFocus, ignoresSturdy, flinch: flinchChance(atk, def, move, ignoreAbility),
   };
 };
 
@@ -1010,7 +1025,7 @@ const fromApprox = (env, atk, def, pm) => {
     acc, crit: 0, dist: [{ n: 1, p: 1 }], perHit: [{ max, min: Math.floor(max * 0.85) }], targetHp: def.hp,
     expected: Math.min(def.hp - end.hp, max * 0.925) * acc, uncapped: max * 0.925 * acc, max: def.hp - end.hp, pKo: end.ko && !revive ? acc : 0, revive,
     costs: costNotes(t, { type: x.type }), notes: ["estimate"], live: false,
-    use: useDist([rolls], [{ n: 1, p: 1 }], acc, false), focus: pFocus, ignoresSturdy, ignoresDisguise, flinch: flinchChance(atk, def, mv, false), drain: drainRatio(env, atk, def, t),
+    use: useDist([rolls], [{ n: 1, p: 1 }], acc, false), focus: pFocus, ignoresSturdy, ignoresAbility: ignoresSturdy, ignoresDisguise, cut: null, flinch: flinchChance(atk, def, mv, false), drain: drainRatio(env, atk, def, t),
   };
 };
 
