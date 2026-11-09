@@ -137,7 +137,7 @@ const sweep = fn => {
   for (const st of STATES) for (const use of USES) for (const hit of HITS) for (const whole of [false, true]) fn(st, use, hit, whole);
 };
 
-// ---- Every outcome's chance is above 0 and they sum to 1, and no input is changed
+// ---- Every outcome's chance is above 0 and they sum to 1, and no input is changed (#1027)
 {
   sweep((st, use, hit, whole) => {
     const before = JSON.stringify([st, use, hit]);
@@ -148,7 +148,7 @@ const sweep = fn => {
   });
 }
 
-// ---- A state already down and a miss come back as they were, with nothing dealt
+// ---- A state already down and a miss come back as they were, with nothing dealt (#1027)
 {
   const st = at();
   for (const use of [sure(0), sure(-5), sure(NaN), sure(Infinity), null]) assert.deepEqual(land(st, use), [{ state: st, p: 1, dealt: 0, hits: 0 }]);
@@ -159,7 +159,7 @@ const sweep = fn => {
   assert.deepEqual(land(stateOf({ maxHp: 100 }, 100), sure(150)).map(o => [o.state.hp, o.p]), [[0, 1]], "a facts record holding only maxHp is a plain HP pool");
 }
 
-// ---- Two states with equal landing keys differ in HP alone, and a Sturdy holder's full HP is its luck
+// ---- Two states with equal landing keys differ in HP alone, and a Sturdy holder's full HP is its luck (#1027)
 {
   const fields = s => Object.keys(s).filter(k => k !== "hp" && k !== "facts");
   const firsts = new Map();
@@ -182,7 +182,7 @@ const fresh = stateOf(factsOf());
 const DISCRETE = Object.keys(fresh).filter(k => !["hp", "bar", "facts"].includes(k));
 const spent = Object.fromEntries(DISCRETE.map(k => [k, typeof fresh[k] === "boolean" ? !fresh[k] : fresh[k] + 1]));
 
-// ---- stateOf carries every field of the discrete part from `from`, and never its HP or bar
+// ---- stateOf carries every field of the discrete part from `from`, and never its HP or bar (#1027)
 {
   console.log(`== the discrete part: ${DISCRETE.join(", ")}`);
   const s = stateOf(factsOf(), 40, 0, { ...spent, hp: 7, bar: 3 });
@@ -190,7 +190,7 @@ const spent = Object.fromEntries(DISCRETE.map(k => [k, typeof fresh[k] === "bool
   for (const k of DISCRETE) assert.equal(s[k], spent[k], k);
 }
 
-// ---- Every field of the discrete part survives a missed use from `after1` to the state `start` reopens
+// ---- Every field of the discrete part survives a missed use from `after1` to the state `start` reopens (#1027)
 {
   const rec = { facts: factsOf() };
   const miss = [{ d: 0, p: 1, n: 0 }];
@@ -234,7 +234,7 @@ const curve = by => by.slice(0, 4).map(x => x.toFixed(3)).join(" ");
 // The fight plan drops each branch under 1e-6 a turn, so on fixed damage the two agree only to the few that adds up to.
 const EXACT = 1e-5;
 
-// ---- The fight plan's chance the foe is down by each turn is KO pacing's, exactly on fixed damage and within 0.05 where the rolls vary (#1027)
+// ---- The fight plan's chance the foe is down by each turn is KO pacing's, on fixed damage up to the branches it drops, and within 0.05 where the rolls vary (#1027)
 {
   console.log("== KO pacing and the fight plan, on the foe");
   const ROWS = [
