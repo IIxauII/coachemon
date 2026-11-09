@@ -410,6 +410,7 @@ for each H = n + extra, k in 0..H-1:
    perHit[k] = def.getAttackDamage({ source: atk, move, simulated: true, isCritical }).damage
 ```
 For a CHECK_ALL_HITS move with per-strike hit chance `a`, expected damage is `Σ_k a^(k+1) · perHit[k]` (stops at the first miss); otherwise it is `a · Σ_k perHit[k]`. Resolve HP and segments one strike at a time (§3), never on the sum.
+Every `perHit[k]` is asked at `def`'s HP now, so from full HP each one carries Multiscale's or Shadow Shield's ×0.5, where the game halves only the first strike (§8).
 
 ---
 
@@ -882,7 +883,7 @@ The HUD's `predictSwitches` (`20-enemy-ai.js`) follows this rule. The pieces:
 | Enemy Endure Chance | `MoveEffectPhase` (`move-effect-phase.ts:677`), enemy target, damage ≥ hp, no substitute: `randBattleSeedInt(100) < 2·stack`, once per wave → `ENDURE_TOKEN` (`modifier.ts:3666`) | battle | `s.enemyModifiers` `EnemyEndureChanceModifier`, `!p.waveData.endured` |
 | Sturdy | `PreDefendFullHpEndureAbAttr` (`ab-attrs.ts:310`), non-simulated → `STURDY` tag → survive at 1 from full (`pokemon.ts:4092`) | no | `isFullHp() && getMaxHp()>1 && hasAbilityWithAttr(…)` unless Mold Breaker |
 | Disguise / Ice Face | `FormBlockDamageAbAttr` (`ab-attrs.ts:5449`), non-simulated: damage 0, form change; Disguise recoil `toDmgValue(maxHp/8)` (`init-abilities.ts:1432`), Ice Face none | no | `getAbility().getAttrs('FormBlockDamageAbAttr')` + `formIndex` |
-| Multiscale / Shadow Shield / Tera Shell | `ReceivedMoveDamageMultiplierAbAttr` ×0.5 at full HP (`ab-attrs.ts:355`); `FullHpResistTypeAbAttr` writes `turnData.moveEffectiveness` even simulated (`:537`) | no | inside getAttackDamage (sandbox for Tera Shell) |
+| Multiscale / Shadow Shield / Tera Shell | `ReceivedMoveDamageMultiplierAbAttr` at full HP (`isFullHp`, `hp >= getMaxHp()`, `pokemon.ts:1679-1681`): `toDmgValue(damage × 0.5)` (`ab-attrs.ts:355-373`; `init-abilities.ts:944-947`, `:1619-1621`), simulated too. Multiscale is `.ignorable()` and Shadow Shield is not, so Mold Breaker gets past Multiscale only (§1). Fixed damage and an OHKO return before it (§1). Each strike of a multi-hit use asks it again, at the HP the strike before it left (`move-effect-phase.ts:631-683`, `:880`), so a use from full HP has only its first strike halved. `FullHpResistTypeAbAttr` writes `turnData.moveEffectiveness` even simulated (`:537`) | no | inside getAttackDamage (sandbox for Tera Shell) |
 | Reviver Seed | `FaintPhase.start` after `resetSummonData` (`faint-phase.ts:60-74`) → `PokemonInstantReviveModifier.apply` (`modifier.ts:1907`) heals `toDmgValue(maxHp/2)`; **not** after an indirect KO (§21) | no | held item → `pKo 0`, `revive` |
 | Sitrus / Enigma | BerryPhase only (§21): `getBerryPredicate` (`src/data/berry.ts:23`) rounded HP ratio < 0.5 / hit super-effectively this turn → `toDmgValue(maxHp/4)`, Ripen ×2 (`:76`) | no | held items + §3 |
 | Lum | BerryPhase: status or confusion → cured | no | held item |
