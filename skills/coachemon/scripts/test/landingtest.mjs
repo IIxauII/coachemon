@@ -624,7 +624,7 @@ const sweep = fn => {
   for (const st of STATES) for (const use of USES) for (const hit of HITS) for (const whole of [false, true]) fn(st, use, hit, whole);
 };
 
-// ---- Every outcome's chance is above 0 and they sum to 1, and no input is changed, a user's included (#1027, #1029), a Shell Bell holder's too (#1030), and one its use costs (#1036)
+// ---- Every outcome's chance is above 0 and they sum to 1, and no input is changed, its user's included (#1027, #1029, #1030, #1036)
 {
   const users = [thief(180), ourUser(180, { bell: 2 })];
   sweep((st, use, hit, whole) => {
@@ -669,7 +669,7 @@ const sweep = fn => {
   assert.deepEqual(land(stateOf({ maxHp: 100 }, 100), sure(150)).map(o => [o.state.hp, o.p]), [[0, 1]], "a facts record holding only maxHp is a plain HP pool");
 }
 
-// ---- Two states with equal landing keys differ in HP alone, and a Sturdy holder's full HP is its luck (#1027), as a standing Substitute is (#1033)
+// ---- Two states with equal landing keys differ in HP alone, and a Sturdy holder's full HP and a standing Substitute are luck (#1027, #1033)
 {
   const fields = s => Object.keys(s).filter(k => k !== "hp" && k !== "facts");
   const firsts = new Map();
@@ -753,8 +753,9 @@ const race = ({ use, foe = {}, ours = null, token = 0, pouch = 0, hit = {} }) =>
 const sureUse = (d, n = 1) => [{ d, p: 1, n }];
 const rolls = (lo, hi) => Array.from({ length: 16 }, (_, r) => ({ d: lo + (hi - lo) * r / 15, p: 1 / 16, n: 1 }));
 const curve = by => by.slice(0, 4).map(x => x.toFixed(3)).join(" ");
-// The fight plan drops each branch under 1e-6 a turn, so on fixed damage the two agree only to the few that adds up to.
-const EXACT = 1e-5;
+// Gotcha: the fight plan drops each branch under 1e-6 a turn, so a row whose luck splits a fixed hit that fine agrees
+// only to what the dropped branches add up to, ten of them at most.
+const EXACT = 1e-9, PRUNED = 10 * 1e-6;
 
 // ---- KO pacing lands each use on a standing Substitute first, and turn-end chip on its owner (game-code.md §8, §21)
 {
@@ -798,14 +799,14 @@ const EXACT = 1e-5;
   assert.deepEqual(next.by.slice(0, 4), [0, 0, 1, 1]);
 }
 
-// ---- The fight plan's chance the foe is down by each turn is KO pacing's, on fixed damage up to the branches it drops, and within 0.05 where the rolls vary (#1027), a Substitute's included (#1033), a Bug Bite's steals (#1029), and our own recoil (#1036)
+// ---- The fight plan's chance the foe is down by each turn is KO pacing's, on fixed damage up to the branches it drops, and within 0.05 where the rolls vary (#1027)
 {
   console.log("== KO pacing and the fight plan, on the foe");
   const ROWS = [
     ["plain", { use: sureUse(60) }, EXACT],
     ["plain, rolled", { use: rolls(45, 60) }, 0.05],
     ["Sturdy", { use: sureUse(150), foe: { sturdy: true } }, EXACT],
-    ["Focus Band", { use: sureUse(150), foe: { band: 1 } }, EXACT],
+    ["Focus Band", { use: sureUse(150), foe: { band: 1 } }, PRUNED],
     ["endure token", { use: sureUse(150), token: 5 }, EXACT],
     ["Reviver Seed", { use: sureUse(150), foe: { seed: true } }, EXACT],
     ["two bars on a trainer", { use: sureUse(150), foe: { hp: 200, boss: 2 } }, EXACT],
@@ -816,7 +817,7 @@ const EXACT = 1e-5;
     ["Disguise", { use: sureUse(150), foe: { form: "disguise" } }, EXACT],
     ["two hits into Disguise", { use: sureUse(300, 2), foe: { form: "disguise" } }, EXACT],
     // By turn 2 its branches stand in five classes of luck, one past the branches the fight plan keeps for each.
-    ["every luck at once, half the uses missing", { use: [{ d: 0, p: 0.5, n: 0 }, { d: 150, p: 0.5, n: 1 }], foe: { sturdy: true, seed: true, band: 1 }, token: 5 }, EXACT],
+    ["every luck at once, half the uses missing", { use: [{ d: 0, p: 0.5, n: 0 }, { d: 150, p: 0.5, n: 1 }], foe: { sturdy: true, seed: true, band: 1 }, token: 5 }, PRUNED],
     ["Substitute", { use: sureUse(60), foe: { sub: 25 } }, EXACT],
     ["Substitute, rolled weak enough to leave it standing", { use: rolls(10, 30), foe: { hp: 40, sub: 20 } }, 0.05],
     ["two hits, through a Substitute into Sturdy", { use: sureUse(300, 2), foe: { sub: 25, sturdy: true } }, EXACT],
@@ -835,14 +836,14 @@ const EXACT = 1e-5;
   }
 }
 
-// ---- The fight plan's chance we are down by each turn is KO pacing's on us, the foe's multi-hit use landing hit by hit (#1027), our Substitute's included (#1033), and the foe's own recoil (#1036)
+// ---- The fight plan's chance we are down by each turn is KO pacing's on us, the foe's multi-hit use landing hit by hit (#1027)
 {
   console.log("== KO pacing and the fight plan, on us");
   const ROWS = [
     ["plain", { use: sureUse(60), ours: {} }, EXACT],
     ["plain, rolled", { use: rolls(45, 60), ours: {} }, 0.05],
     ["Sturdy", { use: sureUse(150), ours: { sturdy: true } }, EXACT],
-    ["Focus Band", { use: sureUse(150), ours: { band: 1 } }, EXACT],
+    ["Focus Band", { use: sureUse(150), ours: { band: 1 } }, PRUNED],
     ["Reviver Seed", { use: sureUse(150), ours: { seed: true } }, EXACT],
     ["the foe's two hits into Sturdy", { use: sureUse(300, 2), ours: { sturdy: true } }, EXACT],
     ["Multiscale", { use: sureUse(150), ours: { cut: "multiscale" } }, EXACT],

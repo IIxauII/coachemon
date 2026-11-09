@@ -84,7 +84,7 @@ assert.equal(globalThis.Phaser.Math.RND.state(), "!rnd,0", "sandbox restored the
 assert.ok(!plan.compact && plan.summary === null, "a lost fight is never compact");
 assert.equal(plan.approxDoubles, false);
 
-// A live read of a 4-vs-6 trainer fight, both sides' uses spread over their rolls, plans in under 500 ms (#1027).
+// ---- A live read of a 4-vs-6 trainer fight, both sides' uses spread over their rolls, plans in under 500 ms (#1027)
 {
   const ours = [
     mon("Garchomp", 100, ["Dragon","Ground"], "Rough Skin", [358,296,226,176,206,240], [["Earthquake","Ground",100,"P"],["Dragon Claw","Dragon",80,"P"]], true),
@@ -986,8 +986,7 @@ const pouched = (type, keep) => globalThis.__hud["10-damage"].stateOf({ maxHp: 4
   near(one.ends.win.mh, ends(0.3), "one stack");
   near(three.ends.win.mh, ends(0.9), "three stacks");
 }
-// A Focus Band holder our hit leaves on half an HP rolls its band as for any KO, so one time in ten it stands on 1 HP
-// and takes a second hit (game-code.md §3, #527).
+// ---- A Focus Band holder our hit leaves on half an HP rolls its band as for any KO, standing on 1 HP one time in ten (game-code.md §3, #527)
 {
   const { tpFight } = globalThis.__tp;
   const band = globalThis.__hud["10-damage"].stateOf({ maxHp: 10, pFocus: 0.1 }, 10);
@@ -996,8 +995,9 @@ const pouched = (type, keep) => globalThis.__hud["10-damage"].stateOf({ maxHp: 4
   console.log(`== a Focus Band holder hit to a sliver\ndown by turn 1: ${r.winBy[0].toFixed(3)} · by turn 2: ${r.winBy[1].toFixed(3)}`);
   assert.ok(Math.abs(r.winBy[0] - 0.9) < 1e-9 && Math.abs(r.winBy[1] - 0.99) < 1e-9, `${r.winBy}`);
 }
-// A Reviver Seed spent in one exchange stays spent in the next, and its revive is no KO (game-code.md §8, §18). Ours
-// move first and hit for 150; the foe's 1000 fells either. Garchomp's hit sends it back to 50, and it falls to Dragonite.
+// ---- A Reviver Seed spent in one exchange stays spent in the next, and its revive is no KO (game-code.md §8, §18)
+// Ours move first and hit for 150; the foe's 1000 fells either. Garchomp's hit sends it back to 50, and it falls to
+// Dragonite.
 {
   const { teamPlanner } = globalThis.__hud["35-team-plan"];
   const seed = new ({ PokemonInstantReviveModifier: class { getStackCount() { return 1; } } }).PokemonInstantReviveModifier();
@@ -1014,7 +1014,7 @@ const pouched = (type, keep) => globalThis.__hud["10-damage"].stateOf({ maxHp: 4
   assert.equal(view.result, "win", "Dragonite's hit meets no second revive");
   assert.deepEqual(end.ok, [0, 1], "the revive is no KO of Garchomp's");
 }
-// Two starts that differ only in a spent Reviver Seed never share a memoised fight, nor a place in the beam.
+// ---- Two starts that differ only in a spent Reviver Seed never share a memoised fight, nor a place in the beam (#1027)
 {
   const { tpFight, tpSig } = globalThis.__hud["35-team-plan"];
   const D = globalThis.__hud["10-damage"];
@@ -1029,8 +1029,7 @@ const pouched = (type, keep) => globalThis.__hud["10-damage"].stateOf({ maxHp: 4
   assert.notEqual(sig([spent]), sig([null]));
   assert.equal(sig([null]), sig([D.stateOf(T.foeState[0].facts, 50)]), "a fresh carry reads as none");
 }
-// A Disguise busted in one exchange meets the next one busted, apart from an intact one in the memo and the beam
-// (game-code.md §8).
+// ---- A Disguise busted in one exchange meets the next one busted, apart from an intact one in the memo and the beam (game-code.md §8)
 {
   const { tpFight, tpSig } = globalThis.__hud["35-team-plan"];
   const D = globalThis.__hud["10-damage"];
