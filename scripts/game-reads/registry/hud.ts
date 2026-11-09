@@ -1932,6 +1932,8 @@ export const HUD: Area = {
         "src/modifier/modifier.ts#SurviveDamageModifier.shouldApply",
         "src/modifier/modifier.ts#EnemyEndureChanceModifier.apply",
         "src/modifier/modifier.ts#PokemonInstantReviveModifier.apply",
+        "src/data/abilities/init-abilities.ts#initAbilities",
+        "src/data/abilities/ab-attrs.ts#ReceivedMoveDamageMultiplierAbAttr",
         "src/data/battler-tags.ts#SubstituteTag.onAdd",
         "src/phases/move-effect-phase.ts#MoveEffectPhase.applyMoveDamage",
         "src/phases/move-effect-phase.ts#MoveEffectPhase.updateSubstitutes",

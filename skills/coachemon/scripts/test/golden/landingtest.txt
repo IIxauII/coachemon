@@ -6,6 +6,13 @@ the final boss on its last bar, hit for 999: 1/0 p1 dealt 99 ×1
 == Sturdy
 full HP, hit for 150: 1/0 p1 dealt 99 ×1
 full HP, two hits of 150: 0/0 p1 dealt 100 ×2
+== Multiscale and Shadow Shield
+multiscale, full HP, hit for 150 of 200: 125/0 p1 dealt 75 ×1
+multiscale, full HP, hit for 300: 50/0 p1 dealt 150 ×1
+shadow shield, full HP, hit for 150 of 200: 125/0 p1 dealt 75 ×1
+shadow shield, full HP, hit for 300: 50/0 p1 dealt 150 ×1
+multiscale, full HP, two hits of 150: 0/0 p1 dealt 200 ×2
+multiscale, full HP, two hits the game asked at full HP for 75 each: 0/0 p1 dealt 200 ×2
 == the endure token
 10 % token, hit for 150 of 100: 1/0T p0.1 dealt 99 ×1 · 0/0 p0.9 dealt 100 ×1
 a 2-bar boss on 200, hit for 250: 100/0T p0.1 dealt 100 ×1 · 100/0 p0.9 dealt 100 ×1
@@ -21,6 +28,7 @@ a Focus Band holder on 10, hit for 9.5, whole: 1/0 p0.1 dealt 9 ×1 · 0.5/0 p0.
 == a Substitute
 a 25 HP Substitute hit for 20: 100/0 sub 5 p1 dealt 0 · sub lost 20 ×1
 …for 150, behind Sturdy, a Focus Band and a Reviver Seed: 100/0 sub 0 p1 dealt 0 · sub lost 25 ×1
+a 60 HP Substitute in front of Multiscale, three hits of 100: 50/0 sub 0 p1 dealt 50 · sub lost 60 ×3
 a 25 HP Substitute in front of Sturdy, three hits of 40: 20/0 sub 0 p1 dealt 80 · sub lost 25 ×3
 a hit past a 25 HP Substitute for 40: 60/0 sub 25 p1 dealt 40 · sub lost 0 ×1
 a 10 % token behind a 25 HP Substitute, hit for 150: 100/0 p1 dealt 0 ×1
@@ -35,6 +43,9 @@ endure token: KO pacing 0.900 1.000 1.000 1.000 · fight plan 0.900 1.000 1.000 
 Reviver Seed: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 two bars on a trainer: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 two hits into Sturdy: KO pacing 1.000 1.000 1.000 1.000 · fight plan 1.000 1.000 1.000 1.000
+Multiscale: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
+two hits into Shadow Shield: KO pacing 1.000 1.000 1.000 1.000 · fight plan 1.000 1.000 1.000 1.000
+Multiscale, the record asked at full HP: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 every luck at once, half the uses missing: KO pacing 0.000 0.000 0.084 0.226 · fight plan 0.000 0.000 0.084 0.226
 Substitute: KO pacing 0.000 0.000 1.000 1.000 · fight plan 0.000 0.000 1.000 1.000
 Substitute, rolled weak enough to leave it standing: KO pacing 0.000 0.000 0.250 0.733 · fight plan 0.000 0.000 0.275 0.699
@@ -47,6 +58,8 @@ Sturdy: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 Focus Band: KO pacing 0.900 0.990 0.999 1.000 · fight plan 0.900 0.990 0.999 1.000
 Reviver Seed: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 the foe's two hits into Sturdy: KO pacing 1.000 1.000 1.000 1.000 · fight plan 1.000 1.000 1.000 1.000
+Multiscale: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
+Multiscale, the record asked at full HP: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 Substitute: KO pacing 0.000 0.000 1.000 1.000 · fight plan 0.000 0.000 1.000 1.000
 the foe's sound move past our Substitute: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 == the probe
