@@ -771,7 +771,7 @@ const othersOf = (p, sitrus, enigma) => {
   return out.length ? out : null;
 };
 // In the game's own phase order (game-code.md §21).
-const endOfTurnSteps = (env, p, { hp = p.hp, dealt = 0, sitrus = true } = {}) => {
+const endOfTurnSteps = (env, p, { hp = p.hp, sitrus = true } = {}) => {
   const steps = [];
   if (hp <= 0) return steps;
   const max = p.getMaxHp();
@@ -796,9 +796,6 @@ const endOfTurnSteps = (env, p, { hp = p.hp, dealt = 0, sitrus = true } = {}) =>
   };
   // Heal Block doesn't stop a negative heal (game-code.md §18).
   const reverse = n => chip(Math.floor(n * charm));
-
-  const shellBells = stack(p, "HitHealModifier");
-  if (dealt > 0 && shellBells > 0) queued(frac(dealt * shellBells, 8));
 
   if (WEATHER_SPARED[weather] && !guard && !types.some(t => WEATHER_SPARED[weather].includes(t))
     && !abAttrs(p, "BlockWeatherDamageAttr").some(a => !a.weatherTypes?.length || inWeather(a))
@@ -865,8 +862,8 @@ const applyTurnEnd = (steps, hp, max) => {
   return cur;
 };
 // Signed, with no boss bars in the way, and no Enigma Berry: that is Landing's turn end's, as is the Sitrus under
-// `sitrus` false. `hp`: the HP it will have by then; `dealt`: this turn's damage dealt, for Shell Bell; `beforeBerries`: only the
-// part ahead of the BerryPhase. Reads fields and item and ability attributes only.
+// `sitrus` false, and no Shell Bell, which is Landing's use's (game-code.md §8). `hp`: the HP it will have by then;
+// `beforeBerries`: only the part ahead of the BerryPhase. Reads fields and item and ability attributes only.
 // @only 25-turn, tests: sceneTurnEndHp
 export const sceneTurnEndHp = (env, p, opts = {}) => {
   const hp = opts.hp ?? p.hp;

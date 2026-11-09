@@ -316,12 +316,14 @@ Fight plan steps approximate winnable
 ➜ 2.~ Garchomp Dragon Dragon Claw → Snorlax KO · 23% left
 == drain
 Meteor Mash into a draining Golisopod: 5 hits
+== drain by move order
+Venusaur on 160, faster: 3.9 turns · slower: 3
 == hp kept
 ⚔ Venusaur Grass Giga Drain → Snorlax 3 hits
 == Tera switch-in drain (single)
-no Tera 4 / 5, Tera 4 / 4.61
+no Tera 4 / 5.36, Tera 4 / 4.61
 == Tera switch-in drain (double)
-no Tera 3 / 4, Tera 3 / 3.61
+no Tera 3 / 4.36, Tera 3 / 3.61
 == on-KO boost
 ⚔ Mamoswine Ground Earthquake → Buzzwole 3 hits KO feeds Buzzwole's Beast Boost (+1 Atk)
 now: ⇄ Mamoswine out › Crobat in · takes ~6% · resists Lunge

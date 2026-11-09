@@ -1007,13 +1007,13 @@ The **party** judged as a whole: type tallies, luck, and the set of the party th
   - Focus Band 0.1·stack, and the enemy Endure token 0.02·stack, rolled when the hit would faint it.
   - A standing Substitute takes the hit ahead of all of these, unless the move gets past it (§8).
 - `moveOutcome(s, atk, def, pm)` → `{ type, cat, e: result→multiplier, perHit: [{max,min}], dist: [{n,p}], acc, expected, uncapped, max, pKo, revive, use, targetHp, name, priority, spread, traits, costs, notes }`. `traits` is 07-move-traits' record with the charging turn judged against this moment; `costs` is `costNotes` with this matchup's amounts, plus the target's contact chip; `notes` keeps the rest (hit counts, boss bars, Sturdy, Focus Band, a crit, an estimate). It combines the above; `targetHp` is the HP the odds were worked out for. It also sets `bypassProtect` from `move.doesFlagEffectApply({ flag: MoveFlags.IGNORE_PROTECT, user, target })` (`move.ts:903`; flag `1 << 1`, `src/enums/move-flags.ts:12`). A move cancelled by primordial weather or Psychic Terrain comes back as "no effect" (`stopped by weather` / `terrain`), from `arena.isMoveWeatherCancelled(user, move)` / `isMoveTerrainCancelled(user, targets, move)` (`src/field/arena.ts:330`, `:484`; §14).
-- `endOfTurnHp(p, { s, hp, dealt, beforeBerries })` → the signed turn-end HP change, following the game's phase order (`src/phase-manager.ts:231-237`), only step 1 with `beforeBerries`:
+- `endOfTurnHp(p, { s, hp, beforeBerries })` → the signed turn-end HP change, following the game's phase order (`src/phase-manager.ts:231-237`), only step 1 with `beforeBerries`:
   1. weather chip and Dry Skin / Solar Power (`WeatherEffectPhase`);
   2. berries (`BerryPhase`, §3: Sitrus below a rounded 50 %, Ripen, Unnerve), left out under `sitrus: false` for Landing's turn end, which eats the Enigma too;
   3. status chip (`CheckStatusEffectPhase`; orbs counted as already on);
   4. `TurnEndPhase.start` (`src/phases/turn-end-phase.ts:24-63`): Leftovers (`TurnHealModifier`), Grassy Terrain `toDmgValue(maxHp / 16)` when grounded, the enemy's `EnemyTurnHealModifier`, `PostTurnAbAttr`s.
 
-  Shell Bell (`HitHealModifier`) is applied from `dealt` at the end of the move (`move-effect-phase.ts:896`).
+  Shell Bell (`HitHealModifier`) is no turn-end step: Landing's `land` heals it at the end of the move (§8).
 - `statusMoves(s, atk, def)` → `[{ pm, name, type, acc, e, priority, bypassProtect, bounce, blocked }]`. These are the status moves `atk` can pick that would work on `def`:
   - usable per `PokemonMove.isUsable(pokemon, ignorePp, forSelection)` (`src/data/moves/pokemon-move.ts:57`) and `move.applyConditions(user, target, -1)` (`move.ts:954`);
   - `e` 0 for an immunity (`def.getMoveEffectiveness(atk, move)`, `pokemon.ts:2727`);
@@ -2290,9 +2290,9 @@ Golisopod out-healed the damage the HUD promised, and a Buzzwole with Beast Boos
 - **Liquid Ooze** (`ReverseDrainAbAttr`, `src/data/abilities/ab-attrs.ts:668-692`). `HitHealAttr.apply` returns without
   healing (`src/data/moves/move.ts:2830`). The target's PostDefend then unshifts the same amount as a negative heal on
   the attacker, unless the attacker has Magic Guard (`BlockNonDirectDamageAbAttr`), which cancels it.
-- **The HUD.** `10-damage.js` records a move's `drain`: the signed share of damage dealt. The planner adds
-  `drain × expected damage` a turn to the side's turn-end change, capped at max HP (a boss at its bar's top), and the
-  team plan heals each simulated hit by its share.
+- **The HUD.** `10-damage.js` records a move's `drain`: the signed share of damage dealt. Landing's `land` heals its
+  `user` by that share of what the use dealt. The planner's exchange adds a turn's expected drain as the move lands,
+  ahead of the other side's reply when the drainer moves first, and keeps Liquid Ooze's chip at the turn end.
 
 **On-KO boosts.** `FaintPhase.doFaint` (`src/phases/faint-phase.ts:96`) runs after a mon faints, in two steps.
 1. Every mon on the field, in speed order, runs `PostKnockOutAbAttr` (`:140-142`). That is Soul-Heart:
@@ -2675,7 +2675,7 @@ Nothing in §21 is pure. RNG, by stream:
 **The HUD's version** is `endOfTurnSteps` / `endOfTurnHp` in `10-damage.js`, and it follows the order above rather than
 summing it, because the order is what decides survival: the weather chip lands before the berry predicate reads the HP,
 and the berry before the status chip, so a mon that a chip-first reading buried walks away. The steps it carries, in
-order: the moves' own Shell Bell (`MoveEffectPhase.end`, before any turn-end phase), the weather chip and the two
+order: the weather chip and the two
 weather-lapse abilities, the berries (Sitrus on the *rounded* ratio, `< 0.495`; Enigma; a Lum, which cures the status
 before its chip; an opposing Unnerve skips all three), the status chip and the status orbs, the TURN_END tags (Leech
 Seed and its heal to the seeder — reversed by Liquid Ooze,
