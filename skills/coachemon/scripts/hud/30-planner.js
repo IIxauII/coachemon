@@ -822,6 +822,25 @@ const sitrusStolen = (me, steals) => {
   return j => Math.min(full, lost.reduce((t, f) => t + f(j), 0));
 };
 
+// `heal(p)` of `me` badly poisoned, at the turn end that takes its counter to k (game-code.md §14); null when `me` is not.
+const toxicRamp = (me, heal) => (me.status?.effect === StatusEffect.TOXIC
+  ? k => heal(Object.create(me, { status: { value: { ...me.status, effect: StatusEffect.TOXIC, toxicTurnCount: k - 1 } } }))
+  : null);
+// The course the fight plan lands `me`'s turn ends through, read live or not: `at(k)`, its signed HP change at the turn
+// end that takes its toxic counter to k, `counter` where that stands now, and `pre`, the part ahead of the berries.
+// Gotcha: read at three quarters of max HP, since a heal reads 0 at full HP and Landing's turn end caps it itself, and
+// without the Sitrus Berry, which Landing's turn end eats.
+// @only 35-team-plan: fightCourse
+export const fightCourse = (turn, me) => {
+  const hp = Math.ceil(me.getMaxHp() * 0.75);
+  const read = (p, beforeBerries = false) => {
+    try { return turn.turnEndHp(Object.create(p, { hp: { value: hp } }), { hp, beforeBerries, sitrus: false }) || 0; } catch { return 0; }
+  };
+  const base = read(me), pre = read(me, true), ramp = toxicRamp(me, read);
+  if (!ramp) return { base, pre, flat: true, at: () => base };
+  const seen = [];
+  return { base, pre, flat: false, counter: me.status.toxicTurnCount ?? 0, at: k => (seen[k] ??= ramp(k)) };
+};
 // `at(j)`: `me`'s turn-end HP change at the end of turn j (1 = this turn) of a fight with `foe`, `flat` when that never
 // moves. It moves with Toxic, a status the foe's hits may hand it, and items the foe may steal. `pre`: the part of `base`
 // ahead of the berries. `eaten`, from a berry `foe` eats off it a turn (#646): `byCount` as `berryGone` gives it, and
@@ -831,9 +850,8 @@ export const turnEndCourse = (turn, me, foe, hitsPerTurn, eaten = null) => {
   const heal = p => healAtEnd(turn, p, false);
   const base = heal(me);
   const pre = (turn.live ? turn.turnEndHp(me, { beforeBerries: true }) : 0) || 0;
-  const toxic = me.status?.effect === StatusEffect.TOXIC
-    ? j => heal(Object.create(me, { status: { value: { ...me.status, effect: StatusEffect.TOXIC, toxicTurnCount: (me.status.toxicTurnCount ?? 0) + j - 1 } } }))
-    : null;
+  const ramp = toxicRamp(me, heal);
+  const toxic = ramp && (j => ramp((me.status.toxicTurnCount ?? 0) + j));
   const berries = eaten?.byCount?.some(v => v !== base)
     ? j => eaten.counts(j).reduce((sum, p, k) => sum + p * (eaten.byCount[k] - base), 0)
     : null;
