@@ -6,6 +6,13 @@ the final boss on its last bar, hit for 999: 1/0 p1 dealt 99 ×1
 == Sturdy
 full HP, hit for 150: 1/0 p1 dealt 99 ×1
 full HP, two hits of 150: 0/0 p1 dealt 100 ×2
+== Multiscale and Shadow Shield
+multiscale, full HP, hit for 150 of 200: 125/0 p1 dealt 75 ×1
+multiscale, full HP, hit for 300: 50/0 p1 dealt 150 ×1
+shadow shield, full HP, hit for 150 of 200: 125/0 p1 dealt 75 ×1
+shadow shield, full HP, hit for 300: 50/0 p1 dealt 150 ×1
+multiscale, full HP, two hits of 150: 0/0 p1 dealt 200 ×2
+multiscale, full HP, two hits the game asked at full HP for 75 each: 0/0 p1 dealt 200 ×2
 == the endure token
 10 % token, hit for 150 of 100: 1/0T p0.1 dealt 99 ×1 · 0/0 p0.9 dealt 100 ×1
 a 2-bar boss on 200, hit for 250: 100/0T p0.1 dealt 100 ×1 · 100/0 p0.9 dealt 100 ×1
@@ -15,6 +22,12 @@ hit for 150 of 100: 1/0 p0.1 dealt 99 ×1 · 0/0 p0.9 dealt 100 ×1
 two hits of 150: 1/0 p0.01 dealt 99 ×2 · 0/0 p0.9 dealt 100 ×1 · 0/0 p0.09 dealt 100 ×2
 == Reviver Seed
 100 of 200, three hits of 100: 100/0R p1 dealt 100 ×1
+== Disguise
+full HP, hit for 150: 88/0B p1 dealt 0 ×1
+two hits of 150: 0/0B p1 dealt 88 ×2
+busted on 88, hit for 150: 0/0B p1 dealt 88 ×1
+10 of 100 with a Reviver Seed, two hits of 150: 50/0RB p1 dealt 0 ×1
+105 of a 2-bar 200, hit for 150: 80/0B p1 dealt 0 ×1
 == whole
 a Focus Band holder on 10, hit for 9.5, whole: 1/0 p0.1 dealt 9 ×1 · 0.5/0 p0.9 dealt 9.5 ×1
 …without: 0.5/0 p1 dealt 9.5 ×1
@@ -26,10 +39,11 @@ a Sitrus Berry at 98 of 200, one Pouch stack: 148/0 p0.7 · 148/0S1 p0.3
 hit super-effectively for 70: 130/0E1F p1 dealt 70 ×1
 …its turn end: 180/0 p1
 super-effective on 40 % of the use: 130/0E1 p0.6 dealt 70 ×1 · 130/0E1F p0.4 dealt 70 ×1
+a Disguise holder with an Enigma Berry, hit super-effectively for 70: 175/0BE1 p1 dealt 0 ×1
 == turn-end chip
 a 2-bar boss on 130 of 200, 50 of chip: 100/0 p1
 every luck at full HP, 150 of chip: 0/0 p1
-== the discrete part: revived, tok, sitrus, enigmas, fed
+== the discrete part: revived, tok, busted, sitrus, enigmas, fed
 == KO pacing and the fight plan, on the foe
 plain: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 plain, rolled: KO pacing 0.000 0.766 1.000 1.000 · fight plan 0.000 0.750 1.000 1.000
@@ -39,6 +53,11 @@ endure token: KO pacing 0.900 1.000 1.000 1.000 · fight plan 0.900 1.000 1.000 
 Reviver Seed: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 two bars on a trainer: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 two hits into Sturdy: KO pacing 1.000 1.000 1.000 1.000 · fight plan 1.000 1.000 1.000 1.000
+Multiscale: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
+two hits into Shadow Shield: KO pacing 1.000 1.000 1.000 1.000 · fight plan 1.000 1.000 1.000 1.000
+Multiscale, the record asked at full HP: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
+Disguise: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
+two hits into Disguise: KO pacing 1.000 1.000 1.000 1.000 · fight plan 1.000 1.000 1.000 1.000
 every luck at once, half the uses missing: KO pacing 0.000 0.000 0.084 0.226 · fight plan 0.000 0.000 0.084 0.226
 Sitrus Berry at 49.5 %: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 Sitrus Berry at 49.0 %: KO pacing 0.000 0.000 1.000 1.000 · fight plan 0.000 0.000 1.000 1.000
@@ -51,6 +70,9 @@ Sturdy: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 Focus Band: KO pacing 0.900 0.990 0.999 1.000 · fight plan 0.900 0.990 0.999 1.000
 Reviver Seed: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 the foe's two hits into Sturdy: KO pacing 1.000 1.000 1.000 1.000 · fight plan 1.000 1.000 1.000 1.000
+Multiscale: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
+Multiscale, the record asked at full HP: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
+Disguise: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 == the probe
 KO pacing:  sturdy 2.00 · seed 2.00 · band 1.11 · token 1.10
 fight plan: sturdy 2.00 · seed 2.00 · band 1.11 · token 1.10

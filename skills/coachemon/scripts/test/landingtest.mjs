@@ -3,7 +3,7 @@ import { mountHud } from "./fake-page.mjs";
 import { mon, TRAITS } from "./fake-mon.mjs";
 import { fakeTurn } from "./fake-turn.mjs";
 import { fightState } from "./fake-fight.mjs";
-import { BerryType } from "../../../../src/enums/generated.ts";
+import { AbilityId, BerryType } from "../../../../src/enums/generated.ts";
 
 mountHud({ scene: { currentBattle: { waveIndex: 10, turn: 1 }, getField: () => [], getPlayerParty: () => [], getEnemyParty: () => [] } });
 const D = globalThis.__hud["10-damage"];
@@ -13,12 +13,19 @@ const { tpTables, tpFight } = globalThis.__hud["35-team-plan"];
 const held = (name, n = 1) => new ({ [name]: class { getStackCount() { return n; } } })[name]();
 const tokens = n => (n ? [Object.assign(held("EnemyEndureChanceModifier", n), { chance: 2 })] : []);
 const berries = (type, n) => (n ? [Object.assign(held("BerryModifier", n), { berryType: type })] : []);
-// `token` is the wave's endure chance in stacks of 2 %; `sitrus` and `enigma` the berries held, and `pouch` the side's
-// Berry Pouch stacks; `moves` as fake-mon.mjs's `mon` takes them.
-const targetMon = ({ name = "target", hp = 100, maxHp = hp, boss = 0, idx, sturdy = false, band = 0, seed = false, sitrus = 0, enigma = 0, player = false, trainer = false, moves = [] } = {}) =>
+const BUST = { disguise: 0.125, iceFace: 0 };
+class FormBlockDamageAbAttr { constructor(recoil) { Object.assign(this, { formIndex: 0, recoil }); } }
+// `token` is the wave's endure chance in stacks of 2 %; `cut` "multiscale" or "shadow shield"; `form`: "disguise" or
+// "iceFace", held intact; `sitrus` and `enigma` the berries held, and `pouch` the side's Berry Pouch stacks; `moves` as
+// fake-mon.mjs's `mon` takes them.
+const CUTS = { multiscale: AbilityId.MULTISCALE, "shadow shield": AbilityId.SHADOW_SHIELD };
+const targetMon = ({ name = "target", hp = 100, maxHp = hp, boss = 0, idx, sturdy = false, cut = null, band = 0, seed = false, form = null, sitrus = 0, enigma = 0, player = false, trainer = false, moves = [] } = {}) =>
   mon(name, 50, ["Normal"], [maxHp, 100, 100, 100, 100, 100], moves, true, hp, {
     isPlayer: () => player, bossSegments: boss, bossSegmentIndex: idx ?? Math.max(0, boss - 1), formIndex: 0, waveData: {},
-    hasAbilityWithAttr: a => sturdy && a === "PreDefendFullHpEndureAbAttr", ...(trainer ? { hasTrainer: () => true } : {}),
+    hasAbilityWithAttr: a => (sturdy && a === "PreDefendFullHpEndureAbAttr") || (!!form && a === "FormBlockDamageAbAttr"),
+    hasAbility: id => !!cut && id === CUTS[cut],
+    getAbility: () => ({ name: "x", getAttrs: n => (form && n === "FormBlockDamageAbAttr" ? [new FormBlockDamageAbAttr(BUST[form])] : []) }),
+    ...(trainer ? { hasTrainer: () => true } : {}),
     getHeldItems: () => [...(band ? [held("SurviveDamageModifier", band)] : []), ...(seed ? [held("PokemonInstantReviveModifier")] : []),
       ...berries(BerryType.SITRUS, sitrus), ...berries(BerryType.ENIGMA, enigma)],
   });
@@ -27,9 +34,9 @@ const pouches = n => (n ? [held("PreserveBerryModifier", n)] : []);
 const factsOf = (o = {}) => D.targetFacts({ enemyModifiers: [...tokens(o.token ?? 0), ...pouches(o.pouch ?? 0)], finalBoss: !!o.finalBoss }, targetMon(o));
 const at = (o = {}) => stateOf(factsOf(o));
 const sure = (d, n = 1) => ({ d, n });
-// `[hp, bar, p, dealt, hits]` per outcome, with `R` for a spent Reviver Seed and `T` for a spent token.
-// `S`, `E`: the Sitrus and Enigma Berries held; `F`: a super-effective hit landed this turn.
-const marks = s => `${s.revived ? "R" : ""}${s.tok ? "T" : ""}${s.sitrus ? `S${s.sitrus}` : ""}${s.enigmas ? `E${s.enigmas}` : ""}${s.fed ? "F" : ""}`;
+// `[hp, bar, p, dealt, hits]` per outcome, with `R` for a spent Reviver Seed, `T` for a spent token and `B` for a busted
+// Disguise or Ice Face; `S`, `E`: the Sitrus and Enigma Berries held; `F`: a super-effective hit landed this turn.
+const marks = s => `${s.revived ? "R" : ""}${s.tok ? "T" : ""}${s.busted ? "B" : ""}${s.sitrus ? `S${s.sitrus}` : ""}${s.enigmas ? `E${s.enigmas}` : ""}${s.fed ? "F" : ""}`;
 const row = outs => outs.map(o => `${+o.state.hp.toFixed(3)}/${o.state.bar}${marks(o.state)} p${+o.p.toFixed(4)}${"dealt" in o ? ` dealt ${+o.dealt.toFixed(3)} ×${o.hits}` : ""}`).join(" · ");
 const show = (what, outs) => console.log(`${what}: ${row(outs)}`);
 const shape = outs => outs.map(o => [+o.state.hp.toFixed(6), o.state.bar, o.state.revived, o.state.tok, +o.p.toFixed(6), o.hits]);
@@ -78,6 +85,49 @@ const shape = outs => outs.map(o => [+o.state.hp.toFixed(6), o.state.bar, o.stat
   assert.deepEqual(shape(twice), [[0, 0, false, false, 1, 2]]);
 }
 
+// ---- Multiscale and Shadow Shield halve a hit while their holder is at full HP, and not once it is below it (game-code.md §8)
+{
+  console.log("== Multiscale and Shadow Shield");
+  for (const cut of ["multiscale", "shadow shield"]) {
+    const full = at({ hp: 200, cut });
+    const halved = land(full, sure(150));
+    show(`${cut}, full HP, hit for 150 of 200`, halved);
+    assert.deepEqual(shape(halved), [[125, 0, false, false, 1, 1]]);
+    assert.equal(halved[0].dealt, 75);
+    const lethal = land(full, sure(300));
+    show(`${cut}, full HP, hit for 300`, lethal);
+    assert.deepEqual(shape(lethal), [[50, 0, false, false, 1, 1]], "the cut stops a lethal hit");
+    assert.deepEqual(shape(land(stateOf(full.facts, 199), sure(150))), [[49, 0, false, false, 1, 1]], "below full HP");
+  }
+}
+
+// ---- A multi-hit use's second hit lands on a Multiscale holder below full HP, unhalved (game-code.md §8)
+{
+  const twice = land(at({ hp: 200, cut: "multiscale" }), sure(300, 2));
+  show("multiscale, full HP, two hits of 150", twice);
+  assert.deepEqual(shape(twice), [[0, 0, false, false, 1, 2]]);
+  assert.equal(twice[0].dealt, 200);
+}
+
+// ---- Mold Breaker gets past Multiscale and not Shadow Shield (game-code.md §1)
+{
+  const mold = { ignoresAbility: true };
+  assert.deepEqual(shape(land(at({ hp: 200, cut: "multiscale" }), sure(150), mold)), [[50, 0, false, false, 1, 1]], "Multiscale");
+  assert.deepEqual(shape(land(at({ hp: 200, cut: "shadow shield" }), sure(150), mold)), [[125, 0, false, false, 1, 1]], "Shadow Shield");
+}
+
+// ---- A hit whose numbers already hold the cut is not halved again at full HP and lands whole below it, and fixed damage never meets it (game-code.md §1, §2, §8)
+{
+  const full = at({ hp: 200, cut: "multiscale" });
+  const asked = { cut: "in" };
+  assert.deepEqual(shape(land(full, sure(75), asked)), [[125, 0, false, false, 1, 1]], "at full HP");
+  assert.deepEqual(shape(land(stateOf(full.facts, 199), sure(75), asked)), [[49, 0, false, false, 1, 1]], "below it");
+  const twice = land(full, sure(150, 2), asked);
+  show("multiscale, full HP, two hits the game asked at full HP for 75 each", twice);
+  assert.deepEqual(shape(twice), [[0, 0, false, false, 1, 2]]);
+  assert.deepEqual(shape(land(full, sure(150), { cut: "never" })), [[50, 0, false, false, 1, 1]], "fixed damage");
+}
+
 // ---- The endure token rolls on the hit's damage before the bar clamps it, is spent where the clamp or Sturdy already stops the hit, and only once a wave (game-code.md §3)
 {
   console.log("== the endure token");
@@ -120,6 +170,61 @@ const shape = outs => outs.map(o => [+o.state.hp.toFixed(6), o.state.bar, o.stat
   assert.deepEqual(shape(back), [[100, 0, true, false, 1, 1]]);
   assert.equal(back[0].dealt, 100, "dealt counts the HP the hit took before the revive");
   assert.deepEqual(shape(land(back[0].state, sure(300))), [[0, 0, true, false, 1, 1]], "once");
+}
+
+// ---- An intact Disguise takes a use's first hit whole, and busting it costs an eighth of max HP (game-code.md §8)
+{
+  console.log("== Disguise");
+  const first = land(at({ form: "disguise" }), sure(150));
+  show("full HP, hit for 150", first);
+  assert.deepEqual(shape(first), [[88, 0, false, false, 1, 1]]);
+  assert.equal(first[0].state.busted, true);
+  assert.equal(first[0].dealt, 0, "the bust's chip is no damage the hit dealt");
+}
+
+// ---- A use's second hit lands on the busted form, and a later use meets no disguise (game-code.md §8)
+{
+  const mimikyu = at({ form: "disguise" });
+  const twice = land(mimikyu, sure(300, 2));
+  show("two hits of 150", twice);
+  assert.deepEqual(shape(twice), [[0, 0, false, false, 1, 2]]);
+  assert.equal(twice[0].dealt, 88);
+  const [busted] = land(mimikyu, sure(150));
+  const later = land(busted.state, sure(150));
+  show("busted on 88, hit for 150", later);
+  assert.deepEqual(shape(later), [[0, 0, false, false, 1, 1]]);
+  assert.deepEqual(shape(land(stateOf(mimikyu.facts, 100, 0, busted.state), sure(150))), [[0, 0, false, false, 1, 1]], "the bust carries through `from`");
+}
+
+// ---- Ice Face's bust costs nothing; Disguise's chip lands through the bars on no Focus Band or token, and only a Reviver Seed outlives it (game-code.md §8)
+{
+  assert.deepEqual(shape(land(at({ form: "iceFace" }), sure(150))), [[100, 0, false, false, 1, 1]], "Ice Face");
+  const low = at({ hp: 10, maxHp: 100, form: "disguise", band: 10, token: 50 });
+  assert.deepEqual(shape(land(low, sure(150))), [[0, 0, false, false, 1, 1]], "12 of chip into 10 HP");
+  const seeded = land(at({ hp: 10, maxHp: 100, form: "disguise", seed: true }), sure(300, 2));
+  show("10 of 100 with a Reviver Seed, two hits of 150", seeded);
+  assert.deepEqual(shape(seeded), [[50, 0, true, false, 1, 1]]);
+  const boss = land(at({ hp: 105, maxHp: 200, boss: 2, form: "disguise" }), sure(150));
+  show("105 of a 2-bar 200, hit for 150", boss);
+  assert.deepEqual(shape(boss), [[80, 0, false, false, 1, 1]]);
+  assert.deepEqual(shape(land(at({ hp: 12.5, maxHp: 100, form: "disguise", band: 10 }), sure(5), {}, { whole: true })), [[0.5, 0, false, false, 1, 1]], "under `whole`, a chip leaving a sliver fells it");
+}
+
+// ---- A hit that ignores the form block, a Mold Breaker's or a fixed-damage one, lands whole and busts nothing, and a miss busts nothing (game-code.md §8)
+{
+  const mimikyu = at({ form: "disguise" });
+  const through = land(mimikyu, sure(60), { ignoresDisguise: true });
+  assert.deepEqual(shape(through), [[40, 0, false, false, 1, 1]]);
+  assert.equal(through[0].state.busted, false);
+  assert.deepEqual(land(mimikyu, sure(0)), [{ state: mimikyu, p: 1, dealt: 0, hits: 0 }]);
+}
+
+// ---- An intact Disguise is luck that can stop a lethal hit, so its luck key tells it from a busted one (#1034)
+{
+  const facts = factsOf({ form: "disguise" });
+  const [busted] = land(stateOf(facts), sure(150));
+  assert.notEqual(luckKey(stateOf(facts, 88)), luckKey(busted.state));
+  assert.equal(luckKey(stateOf(factsOf(), 88, 0, busted.state)), luckKey(stateOf(factsOf(), 88)), "no form block, nothing to tell");
 }
 
 // ---- Under `whole` a hit leaving under 1 HP is lethal and rolls the target's luck; without it the sliver stands (#527)
@@ -183,6 +288,15 @@ const ended = outs => outs.map(o => [+o.state.hp.toFixed(6), o.state.bar, o.stat
   assert.deepEqual(ended(landTurnEnd(land(st, { d: 0, se: 1 })[0].state)), [[200, 0, 0, 1, false, 1]], "a miss feeds nothing");
 }
 
+// ---- A strike a Disguise takes lands no damage, so it feeds no Enigma Berry, and the use's next strike does (game-code.md §3, §8)
+{
+  const st = stateOf(factsOf({ hp: 200, form: "disguise", enigma: 1 }));
+  const busted = land(st, { d: 70, se: 1 });
+  show("a Disguise holder with an Enigma Berry, hit super-effectively for 70", busted);
+  assert.deepEqual(busted.map(o => [o.state.busted, o.state.fed]), [[true, false]]);
+  assert.deepEqual(land(st, { d: 140, n: 2, se: 1 }).map(o => [o.state.busted, o.state.fed]), [[true, true]], "two strikes of 70");
+}
+
 // ---- Both berries read the HP from before either heals, between the change ahead of the berries and the rest (game-code.md §3, §21)
 {
   const both = stateOf(factsOf({ maxHp: 200, sitrus: 1, enigma: 1 }), 120);
@@ -220,9 +334,11 @@ const ended = outs => outs.map(o => [+o.state.hp.toFixed(6), o.state.bar, o.stat
 // The states the invariants sweep, and the uses and hits they take.
 const STATES = [at(), at({ sturdy: true }), at({ band: 2 }), at({ token: 5 }), at({ hp: 100, maxHp: 200, seed: true }), at({ hp: 300, boss: 3, token: 5 }),
   at({ hp: 300, boss: 3, sturdy: true, band: 1, token: 10, seed: true }), at({ hp: 10, band: 1 }), at({ hp: 100, finalBoss: true, band: 1 }),
-  at({ hp: 200, sitrus: 2, enigma: 1, pouch: 1 }), at({ hp: 200, boss: 2, sitrus: 1, enigma: 2, seed: true })];
+  at({ cut: "multiscale", sturdy: true, band: 1 }), at({ hp: 300, boss: 3, cut: "shadow shield", token: 5 }),
+  at({ form: "disguise" }), at({ hp: 10, maxHp: 100, form: "disguise", band: 1, seed: true }), at({ hp: 300, boss: 3, form: "disguise", token: 5 }),
+  at({ hp: 200, sitrus: 2, enigma: 1, pouch: 1 }), at({ hp: 200, boss: 2, sitrus: 1, enigma: 2, seed: true }), at({ hp: 200, form: "disguise", enigma: 1 })];
 const USES = [sure(0), sure(50), sure(99.5), sure(100), sure(150), sure(300, 2), sure(450, 3), { d: 151, n: 2.4 }, { d: 120, n: 1, se: 0.4 }, { d: 60, n: 2, se: 1 }];
-const HITS = [{}, { ignoresSturdy: true }, { ohko: true }, { factor: bar => 1 + bar / 2 }, { e: 2 }];
+const HITS = [{}, { ignoresSturdy: true }, { ignoresDisguise: true }, { ohko: true }, { factor: bar => 1 + bar / 2 }, { cut: "in" }, { cut: "never" }, { ignoresAbility: true }, { e: 2 }];
 const ENDS = [{}, { before: -30, after: 10 }, { before: 25, after: -60 }, { after: -500, eats: false }, { before: NaN, after: 40 }];
 const sweep = fn => {
   for (const st of STATES) for (const use of USES) for (const hit of HITS) for (const whole of [false, true]) fn(st, use, hit, whole);
@@ -286,6 +402,14 @@ const sweep = fn => {
   assert.equal(luckKey(stateOf(factsOf(), 100)), luckKey(stateOf(factsOf(), 99)));
 }
 
+// ---- A Multiscale or Shadow Shield holder's full HP is its luck (#1032)
+{
+  for (const cut of ["multiscale", "shadow shield"]) {
+    const f = factsOf({ cut });
+    assert.notEqual(luckKey(stateOf(f, 100)), luckKey(stateOf(f, 99)), cut);
+  }
+}
+
 // The discrete part, each field at a value a fresh state never has.
 const fresh = stateOf(factsOf());
 const DISCRETE = Object.keys(fresh).filter(k => !["hp", "bar", "facts"].includes(k));
@@ -312,18 +436,18 @@ const spent = Object.fromEntries(DISCRETE.map(k => [k, typeof fresh[k] === "bool
 }
 
 // One live fake turn feeds both engines: the KO curve on one side, the real tables and the fight plan on the other.
-// `use`: the attacker's one move's spread; the other side deals nothing.
+// `use`: the attacker's one move's spread, `hit` the race facts its record sets past these; the other side deals nothing.
 const ATTACKER = [400, 100, 100, 100, 100, 200];
-const hitRecord = (use, def, e = 1) => {
+const hitRecord = (use, def, hit) => {
   const mean = use.reduce((t, x) => t + x.d * x.p, 0), max = Math.max(...use.map(x => x.d / (x.n || 1)));
   const n = Math.max(...use.map(x => x.n ?? 1));
-  return { name: "Hit", type: "Normal", cat: "physical", e, ignoresSturdy: false, priority: 0, spread: false, acc: 1, dist: [{ n, p: 1 }],
+  return { name: "Hit", type: "Normal", cat: "physical", e: 1, ignoresSturdy: false, ignoresAbility: false, cut: null, priority: 0, spread: false, acc: 1, dist: [{ n, p: 1 }],
     perHit: Array(n).fill({ max, min: max }), expected: Math.min(mean, def.hp), uncapped: mean, max: Math.min(max * n, def.hp), pKo: 0,
-    use, traits: { ...TRAITS }, costs: [], notes: [], live: true };
+    use, traits: { ...TRAITS }, costs: [], notes: [], live: true, ...hit };
 };
-// `ours`: the foe hits us, and these are our luck; else we hit the foe, whose luck is `foe`. `e`: the hit's effectiveness;
-// `pouch`: the foe side's Berry Pouch stacks. KO pacing eats the Sitrus Berry with no steals.
-const race = ({ use, e = 1, foe = {}, ours = null, token = 0, pouch = 0 }) => {
+// `ours`: the foe hits us, and these are our luck; else we hit the foe, whose luck is `foe`. `pouch`: the foe side's Berry
+// Pouch stacks. KO pacing eats the Sitrus Berry with no steals.
+const race = ({ use, foe = {}, ours = null, token = 0, pouch = 0, hit = {} }) => {
   const hitter = (name, player) => mon(name, 50, ["Normal"], ATTACKER, [["Hit", "Normal", 80, "P"]], true, undefined, { isPlayer: () => player, hasTrainer: () => !player });
   const me = ours ? targetMon({ name: "us", player: true, ...ours }) : hitter("us", true);
   const target = ours ? hitter("foe", false) : targetMon({ name: "foe", trainer: true, ...foe });
@@ -331,7 +455,7 @@ const race = ({ use, e = 1, foe = {}, ours = null, token = 0, pouch = 0 }) => {
   target.getOpponents = () => [me];
   const turn = fakeTurn({ live: true, party: [me], foes: [target], enemyModifiers: [...tokens(token), ...pouches(pouch)],
     trainer: { getName: () => "Ace", config: { isBoss: false }, isDouble: () => false },
-    outcome: (a, d) => (a === atk ? hitRecord(use, d, e) : null),
+    outcome: (a, d) => (a === atk ? hitRecord(use, d, hit) : null),
     moves: e => (e === atk ? [{ name: "Hit", type: "Normal", p: 1, score: 10, targets: [0] }] : []) });
   const T = tpTables(turn, [me], [target], false);
   const by = koCurve(turn.mon(def), turn.outcomes(atk, def)[0], { sitrus: 0 }).by;
@@ -356,11 +480,16 @@ const EXACT = 1e-5;
     ["Reviver Seed", { use: sureUse(150), foe: { seed: true } }, EXACT],
     ["two bars on a trainer", { use: sureUse(150), foe: { hp: 200, boss: 2 } }, EXACT],
     ["two hits into Sturdy", { use: sureUse(300, 2), foe: { sturdy: true } }, EXACT],
+    ["Multiscale", { use: sureUse(150), foe: { cut: "multiscale" } }, EXACT],
+    ["two hits into Shadow Shield", { use: sureUse(150, 2), foe: { cut: "shadow shield" } }, EXACT],
+    ["Multiscale, the record asked at full HP", { use: sureUse(60), foe: { cut: "multiscale" }, hit: { cut: "in" } }, EXACT],
+    ["Disguise", { use: sureUse(150), foe: { form: "disguise" } }, EXACT],
+    ["two hits into Disguise", { use: sureUse(300, 2), foe: { form: "disguise" } }, EXACT],
     // By turn 2 its branches stand in five classes of luck, one past the branches the fight plan keeps for each.
     ["every luck at once, half the uses missing", { use: [{ d: 0, p: 0.5, n: 0 }, { d: 150, p: 0.5, n: 1 }], foe: { sturdy: true, seed: true, band: 1 }, token: 5 }, EXACT],
     ["Sitrus Berry at 49.5 %", { use: sureUse(101), foe: { hp: 200, sitrus: 1 } }, EXACT],
     ["Sitrus Berry at 49.0 %", { use: sureUse(102), foe: { hp: 200, sitrus: 1 } }, EXACT],
-    ["Enigma Berry", { use: sureUse(70), e: 2, foe: { hp: 200, enigma: 1 } }, EXACT],
+    ["Enigma Berry", { use: sureUse(70), hit: { e: 2 }, foe: { hp: 200, enigma: 1 } }, EXACT],
     ["Berry Pouch on a Sitrus Berry", { use: sureUse(70), foe: { hp: 200, sitrus: 1 }, pouch: 1 }, EXACT],
   ];
   for (const [what, setup, tol] of ROWS) {
@@ -380,6 +509,9 @@ const EXACT = 1e-5;
     ["Focus Band", { use: sureUse(150), ours: { band: 1 } }, EXACT],
     ["Reviver Seed", { use: sureUse(150), ours: { seed: true } }, EXACT],
     ["the foe's two hits into Sturdy", { use: sureUse(300, 2), ours: { sturdy: true } }, EXACT],
+    ["Multiscale", { use: sureUse(150), ours: { cut: "multiscale" } }, EXACT],
+    ["Multiscale, the record asked at full HP", { use: sureUse(60), ours: { cut: "multiscale" }, hit: { cut: "in" } }, EXACT],
+    ["Disguise", { use: sureUse(150), ours: { form: "disguise" } }, EXACT],
   ];
   for (const [what, setup, tol] of ROWS) {
     const { by, plan } = race(setup);

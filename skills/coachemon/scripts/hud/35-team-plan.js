@@ -27,7 +27,7 @@ const tpFastest = (turn, list, target, turns = o => tpTurns(turn, o, target), dm
 // the turn after each hit.
 const tpMoveOf = (o, extra) => {
   const use = useOf(o);
-  return { name: o.name, type: o.type, cat: o.cat, e: o.e, ignoresSturdy: !!o.ignoresSturdy, priority: o.priority ?? 0, dmg: use.reduce((t, x) => t + x.d * x.p, 0), use: tpSpread(use), drain: o.drain ?? 0,
+  return { name: o.name, type: o.type, cat: o.cat, e: o.e, ignoresSturdy: !!o.ignoresSturdy, ignoresAbility: !!o.ignoresAbility, ignoresDisguise: !!o.ignoresDisguise, cut: o.cut ?? null, priority: o.priority ?? 0, dmg: use.reduce((t, x) => t + x.d * x.p, 0), use: tpSpread(use), drain: o.drain ?? 0,
     self: o.self ?? 0, acc: o.acc ?? 1, steals: !!o.traits?.attrNames?.has("StealEatBerryAttr"),
     charge: !!o.traits?.charge, recharge: !!o.traits?.recharge || !!o.traits?.noRepeat, semiCharge: !!o.traits?.charge && !!o.traits?.semiCharge, ...extra };
 };
@@ -72,7 +72,7 @@ const tpTheirMove = (turn, f, me) => {
           dmg: mean > 0 ? mean : per.expected, entry: Number.isFinite(now?.expected) ? now.expected : t.expected, use: tpSpread(per.use),
           // `first` is the order against a move of ours at priority 0, which is all this table knows: `tpFoeFirst`
           // takes it again per move for anything out of that bracket (#650).
-          name: typeof t.move === "string" ? t.move : t.move?.name ?? null, e: t.move?.e ?? 1, ignoresSturdy: !!t.ignoresSturdy, cat: null,
+          name: typeof t.move === "string" ? t.move : t.move?.name ?? null, e: t.move?.e ?? 1, ignoresSturdy: !!t.ignoresSturdy, ignoresAbility: !!t.ignoresAbility, ignoresDisguise: !!t.ignoresDisguise, cut: t.cut ?? null, cat: null,
           first: t.first, priority: t.move?.priority ?? 0, hits: hitsOn(t),
           drain: t.expected > 0 ? (t.drain ?? 0) / t.expected : 0,
           phys: moved > 0 ? t.moves.reduce((sum, m) => sum + m.p * (m.cat === "special" ? 0 : 1), 0) / moved : 1,
@@ -81,7 +81,7 @@ const tpTheirMove = (turn, f, me) => {
     } catch {}
   }
   const m = tpFastest(turn, turn.outcomes(f, me).filter(x => x.dmg > 0), me);
-  return { dmg: m?.dmg ?? 0, name: m?.name ?? null, e: m?.e ?? 1, ignoresSturdy: !!m?.ignoresSturdy, cat: null, first: null, priority: m?.priority ?? 0,
+  return { dmg: m?.dmg ?? 0, name: m?.name ?? null, e: m?.e ?? 1, ignoresSturdy: !!m?.ignoresSturdy, ignoresAbility: !!m?.ignoresAbility, ignoresDisguise: !!m?.ignoresDisguise, cut: m?.cut ?? null, cat: null, first: null, priority: m?.priority ?? 0,
     hits: m?.dmg > 0 ? 1 : 0, drain: m?.drain ?? 0, phys: m?.cat === "special" ? 0 : 1 };
 };
 
