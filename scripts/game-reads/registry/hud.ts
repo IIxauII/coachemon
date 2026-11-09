@@ -1931,6 +1931,8 @@ export const HUD: Area = {
         "src/modifier/modifier.ts#SurviveDamageModifier.shouldApply",
         "src/modifier/modifier.ts#EnemyEndureChanceModifier.apply",
         "src/modifier/modifier.ts#PokemonInstantReviveModifier.apply",
+        "src/data/abilities/init-abilities.ts#initAbilities",
+        "src/data/abilities/ab-attrs.ts#ReceivedMoveDamageMultiplierAbAttr",
       ],
     },
     { ours: "skills/coachemon/scripts/hud/10-damage.js#with-dmg", of: ["src/field/pokemon.ts#Pokemon.getAttackDamage"] },
