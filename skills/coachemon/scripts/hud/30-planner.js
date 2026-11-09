@@ -1149,8 +1149,9 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     const course = turnEndCourse(turn, foe, me, steady * (mine.acc ?? 1) * ((mine.dist ?? []).reduce((sum, d) => sum + d.n * d.p, 0) || 1),
       theft && { byCount: theft.byCount, counts });
     // The foe's drain and Shell Bell heal it as its move lands (game-code.md §8, §18). Gotcha: a drain Liquid Ooze
-    // turns to chip stays at the turn end, where the game lands it with the move.
-    const foeOoze = Math.min(0, t?.drain ?? 0);
+    // turns to chip stays at the turn end, where the game lands it with the move, and so does what its use costs it, its
+    // recoil and our contact chip.
+    const foeOoze = Math.min(0, t?.drain ?? 0) - Math.max(0, t?.self ?? 0);
     const foeBack = Math.max(0, t?.drain ?? 0) + shellBellHeal(turn.mon(foe).facts.shellBell, t?.expected ?? 0);
     const heal = withDrain(course.flat ? course.base : course.at, foeOoze);
     const defStat = mine.cat === "special" ? Stat.SPDEF : Stat.DEF;
