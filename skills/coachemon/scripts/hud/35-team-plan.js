@@ -315,11 +315,15 @@ const tpHeal = (hp, max, prof, used, se, extra = 0) => {
 
 // Carried in `st` besides HP: `ox` the landed enemy hits each of ours has taken (wave status tokens), `od` / `og` the
 // Mini Black Hole and Grip Claw steals from it, `fd` / `fg` the same from each foe, `fl` the berries our Bug Bites have
-// taken off each foe, and `ok` / `fk` the KOs each side has scored for its on-KO boosts. Returns the likelier ending's
-// state with `pWin`, `pLoss`, `pStall` and all three `ends`. `over` pins our move for this exchange only (#113), and is
+// taken off each foe, `ok` / `fk` the KOs each side has scored for its on-KO boosts, and `ou` / `fu` each mon's last
+// Landing state, read for its discrete part alone (null for none yet). Returns the likelier ending's state with `pWin`,
+// `pLoss`, `pStall`, all three `ends`, and `winBy` / `lossBy`. `over` pins our move for this exchange only (#113), and is
 // never memoised: the key names the pair, not the move.
 // `entering`: the foe spends this exchange's first turn switching in and does not attack, so a switch of ours made that
 // turn costs no entry hit (#846), and our hit that turn is `T.ourEntry`'s where it has one (#825).
+// Where the tables hold no state, a side is a plain HP pool at its max HP.
+const tpOurFacts = (T, mi) => T.ourState?.[mi]?.facts ?? { maxHp: T.ourMax[mi] };
+const tpFoeFacts = (T, fi) => T.foeState?.[fi]?.facts ?? { maxHp: T.foeMax[fi] };
 export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => {
   const faints = st.oh.filter(hp => hp < 1).length + st.fh.filter(hp => hp < 1).length;
   // (game-code.md §18, #1004)
@@ -330,9 +334,8 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
   };
   const nUs = koN(T.ourKo?.[mi], st.ok[mi]), nFoe = koN(T.foeKo?.[fi], st.fk[fi]);
   const nKey = n => (typeof n === "object" ? `${n.own}/${n.all}` : n);
-  // Where the tables hold no state, a side is a plain HP pool at its max HP.
-  const ourFacts = T.ourState?.[mi]?.facts ?? { maxHp: T.ourMax[mi] }, foeFacts = T.foeState?.[fi]?.facts ?? { maxHp: T.foeMax[fi] };
-  const me0 = stateOf(ourFacts, st.oh[mi], 0), foe0 = stateOf(foeFacts, st.fh[fi], st.fs[fi]);
+  const ourFacts = tpOurFacts(T, mi), foeFacts = tpFoeFacts(T, fi);
+  const me0 = stateOf(ourFacts, st.oh[mi], 0, st.ou?.[mi]), foe0 = stateOf(foeFacts, st.fh[fi], st.fs[fi], st.fu?.[fi]);
   const key = !over && T.memo && [mi, fi, entry, entering, Math.round(st.oh[mi]), landingKey(me0), st.ob[mi], Math.round(st.fh[fi]), landingKey(foe0), st.fb[fi], st.fl[fi], nKey(nUs), nKey(nFoe),
     ...[st.ox[mi], st.od[mi], st.og[mi], st.fd[fi], st.fg[fi]].map(x => Math.round(x * 20))].join();
   if (key && T.memo.has(key)) return T.memo.get(key);
@@ -486,8 +489,11 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
     const mode = [...combos.values()].reduce((x, c) => (c.p > x.p ? c : x)).b;
     const at = (sum, k) => (p > 0 ? sum / p : k(list[0]));
     const mhAt = at(mh, b => b.me.hp), fhAt = at(fh, b => b.foe.hp);
-    return { mh: mhAt < 1 ? 0 : mhAt, mb: mode.mb, fh: fhAt < 1 ? 0 : fhAt, fs: mode.foe.bar, fb: mode.fb, fl: mode.fl, turns: Math.round(at(t, b => b.turns)),
-      ox: at(ox, b => b.ox), od: at(od, b => b.od), og: at(og, b => b.og), fd: at(fd, b => b.fd), fg: at(fg, b => b.fg) };
+    const [mhEnd, fhEnd] = [mhAt < 1 ? 0 : mhAt, fhAt < 1 ? 0 : fhAt];
+    // `us` / `foe`: each side's Landing state at the mode, at the pool's mean HP.
+    return { mh: mhEnd, mb: mode.mb, fh: fhEnd, fs: mode.foe.bar, fb: mode.fb, fl: mode.fl, turns: Math.round(at(t, b => b.turns)),
+      ox: at(ox, b => b.ox), od: at(od, b => b.od), og: at(og, b => b.og), fd: at(fd, b => b.fd), fg: at(fg, b => b.fg),
+      us: stateOf(ourFacts, mhEnd, 0, mode.me), foe: stateOf(foeFacts, fhEnd, mode.foe.bar, mode.foe) };
   };
   const ends = { win: one(pools.win), loss: one(pools.loss), stall: one(standing.map(b => ({ ...b, turns }))) };
   const pWin = mass(pools.win), pLoss = mass(pools.loss), pStall = Math.max(0, 1 - pWin - pLoss);
@@ -549,13 +555,20 @@ export const tpActs = (r, hp) => hp - r.fh >= 1;
 
 const tpClone = st => ({ ...st, oh: st.oh.slice(), ob: st.ob.slice(), fh: st.fh.slice(), fs: st.fs.slice(), fb: st.fb.slice(), fl: st.fl.slice(),
   ox: st.ox.slice(), od: st.od.slice(), og: st.og.slice(), fd: st.fd.slice(), fg: st.fg.slice(),
-  ok: st.ok.slice(), fk: st.fk.slice() });
+  ok: st.ok.slice(), fk: st.fk.slice(), ou: st.ou.slice(), fu: st.fu.slice() });
+// A revive is no KO: the ending's HP says so, as the game counts none (game-code.md §18).
 const tpApply = (c, mi, fi, r) => {
   if (c.fh[fi] >= 1 && r.fh < 1) c.ok[mi]++;
   if (c.oh[mi] >= 1 && r.mh < 1) c.fk[fi]++;
   c.oh[mi] = r.mh; c.ob[mi] = r.mb; c.fh[fi] = r.fh; c.fs[fi] = r.fs; c.fb[fi] = r.fb; c.fl[fi] = r.fl;
   c.ox[mi] = r.ox; c.od[mi] = r.od; c.og[mi] = r.og; c.fd[fi] = r.fd; c.fg[fi] = r.fg;
+  c.ou[mi] = r.us; c.fu[fi] = r.foe;
 };
+// The beam's dedupe key: two states that differ in either side's luck are two positions.
+// @only tests: tpSig
+export const tpSig = (T, c) => [c.cur.join("-"), c.act, c.fcur, ...c.oh.map(Math.round), ...c.fh.map(Math.round), ...c.ok, ...c.fk,
+  ...c.oh.map((hp, mi) => luckKey(stateOf(tpOurFacts(T, mi), hp, 0, c.ou[mi]))),
+  ...c.fh.map((hp, fi) => luckKey(stateOf(tpFoeFacts(T, fi), hp, c.fs[fi], c.fu[fi])))].join(",");
 const tpAlive = hps => hps.flatMap((hp, i) => (hp >= 1 ? [i] : []));
 
 // The trainer scores its send-in against our field (game-code.md §7). In a double the plan, one exchange at a time,
@@ -636,7 +649,7 @@ const tpSearch = (T, start, reserve, pin = null) => {
         c.mass = (st.mass ?? 1) * kept;
         c.val = banked + c.mass * tpValue(T, c, !!c.result);
         if (c.result) { done.push(c); continue; }
-        const sig = [c.cur.join("-"), c.act, c.fcur, ...c.oh.map(Math.round), ...c.fh.map(Math.round), ...c.ok, ...c.fk].join(",");
+        const sig = tpSig(T, c);
         if (!next.has(sig) || next.get(sig).val < c.val) next.set(sig, c);
       }
     }
@@ -671,6 +684,7 @@ const tpModel = (T, double, party, foes, facing, entering, teraOf = () => T) => 
     oh: party.map(p => p.hp), ob: party.map(() => 0),
     fh: foes.map(f => f.hp), fs: T.foeState.map(x => x.bar), fb: foes.map(() => 0), fl: foes.map(() => 0),
     ox: party.map(() => 0), od: party.map(() => 0), og: party.map(() => 0), fd: foes.map(() => 0), fg: foes.map(() => 0),
+    ou: party.map(() => null), fu: foes.map(() => null),
     ok: party.map(() => 0), fk: foes.map(() => 0),
     cur: party.flatMap((p, i) => (p.isOnField?.() ? [i] : [])), fcur: fcur >= 0 ? fcur : null, steps: [],
     // The foe that spends the first exchange's first turn switching in.

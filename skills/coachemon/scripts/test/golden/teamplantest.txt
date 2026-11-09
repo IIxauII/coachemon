@@ -88,6 +88,11 @@ we win on 260 HP with no Pouch, 290.0 with one stack, 350.0 with three
 we win on 20 HP with no Pouch, 62.0 with one stack, 264.0 with three
 == a Focus Band holder hit to a sliver
 down by turn 1: 0.900 · by turn 2: 0.990
+== a Reviver Seed spent in one exchange
+Garchomp → Snorlax: falls · foe at 50%
+Dragonite → Snorlax: KO · 100% left
+== a spent seed in the memo
+spent: down on turn 1 · still held: turn 2
 == an instant Tera on the bench (#648)
 Hydro Pump into Coalossal: ×4 as Fire/Rock, ×2 at Tera Rock
 ok

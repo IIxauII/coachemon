@@ -797,6 +797,39 @@ assert.equal(plan.approxDoubles, false);
   console.log(`== a Focus Band holder hit to a sliver\ndown by turn 1: ${r.winBy[0].toFixed(3)} · by turn 2: ${r.winBy[1].toFixed(3)}`);
   assert.ok(Math.abs(r.winBy[0] - 0.9) < 1e-9 && Math.abs(r.winBy[1] - 0.99) < 1e-9, `${r.winBy}`);
 }
+// A Reviver Seed spent in one exchange stays spent in the next, and its revive is no KO (game-code.md §8, §18). Ours
+// move first and hit for 150; the foe's 1000 fells either. Garchomp's hit sends it back to 50, and it falls to Dragonite.
+{
+  const { teamPlanner } = globalThis.__hud["35-team-plan"];
+  const seed = new ({ PokemonInstantReviveModifier: class { getStackCount() { return 1; } } }).PokemonInstantReviveModifier();
+  const ours = [fakeMon("Garchomp", 80, ["Dragon", "Ground"], [300, 200, 200, 100, 100, 200], [["Dragon Claw", "Dragon", 80, "P"]], true),
+    fakeMon("Dragonite", 80, ["Dragon", "Flying"], [300, 200, 200, 100, 100, 200], [["Dragon Claw", "Dragon", 80, "P"]], false)];
+  const foe = fakeMon("Snorlax", 80, ["Normal"], [100, 200, 200, 100, 100, 50], [["Body Slam", "Normal", 85, "P"]], true, undefined,
+    { isPlayer: () => false, getHeldItems: () => [seed], getOpponents: () => [ours[0]] });
+  const stub = outcomeFrom({ "Garchomp>Dragon Claw>Snorlax": [[150], 1, 1], "Dragonite>Dragon Claw>Snorlax": [[150], 1, 1],
+    "Snorlax>Body Slam>Garchomp": [[1000], 1, 1], "Snorlax>Body Slam>Dragonite": [[1000], 1, 1] });
+  const turn = fakeTurn({ live: true, party: ours, foes: [foe], outcome: stub, trainer: { getName: () => "Ace", config: { isBoss: false }, isDouble: () => false },
+    moves: () => [{ name: "Body Slam", type: "Normal", p: 1, score: 10, targets: [0] }] });
+  const planner = teamPlanner(turn), end = planner.at(null), view = planner.view(null);
+  console.log(`== a Reviver Seed spent in one exchange\n${view.steps.map(x => `${x.send.name} → ${x.vs.name}: ${x.why}`).join("\n")}`);
+  assert.equal(view.result, "win", "Dragonite's hit meets no second revive");
+  assert.deepEqual(end.ok, [0, 1], "the revive is no KO of Garchomp's");
+}
+// Two starts that differ only in a spent Reviver Seed never share a memoised fight, nor a place in the beam.
+{
+  const { tpFight, tpSig } = globalThis.__hud["35-team-plan"];
+  const D = globalThis.__hud["10-damage"];
+  const T = { ours: [[{ dmg: 150, e: 1 }]], theirs: [[{ dmg: 1, e: 1 }]], first: [[0]], ourMax: [400], foeMax: [100], ourHeal: [null], foeHeal: [null],
+    foeState: [D.stateOf({ maxHp: 100, revive: 50 }, 100)], memo: new Map() };
+  const at = fu => fightState({ oh: [400], ob: [0], fh: [50], fs: [0], fb: [0], fu });
+  const spent = D.stateOf(T.foeState[0].facts, 50, 0, { revived: true });
+  const [after, fresh] = [at([spent]), at([null])].map(st => tpFight(T, st, 0, 0, "free").ends.win.turns);
+  console.log(`== a spent seed in the memo\nspent: down on turn ${after} · still held: turn ${fresh}`);
+  assert.deepEqual([after, fresh], [1, 2]);
+  const sig = fu => tpSig(T, { ...at(fu), cur: [0], act: 0, fcur: 0 });
+  assert.notEqual(sig([spent]), sig([null]));
+  assert.equal(sig([null]), sig([D.stateOf(T.foeState[0].facts, 50)]), "a fresh carry reads as none");
+}
 // A bench mon the trainer Teras (#648, Gordie W180): Coalossal's team index is in `instantTeras`, so the plan prices our
 // hits at Tera Rock, Water ×2 — it Teras at its first FIGHT command, before anything hits it once sent in after a KO —
 // while the trainer scores it for that send-in at its Fire/Rock (game-code.md §7). Coalossal sits in slot 1 carrying
