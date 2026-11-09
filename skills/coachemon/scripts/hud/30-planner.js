@@ -1277,8 +1277,8 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   // An exchange `after` another has no turn of this one's.
   const usesBefore = after ? 1 : 0;
   const landed = i => threatUse(tThey, i + usesBefore).expected * (tThey.lockAct ? tThey.lockAct(i + usesBefore) : 1);
-  const hitOn = i => (tThey ? landed(i) * Math.min(1, taken - i) * defUp * boosted : 0);
-  const hitsTaken = () => Array.from({ length: Math.ceil(taken) }, (_, i) => hitOn(i)).reduce((sum, x) => sum + x, 0);
+  const takenAt = i => (tThey ? landed(i) * Math.min(1, taken - i) * defUp * boosted : 0);
+  const hitsTaken = () => Array.from({ length: Math.ceil(taken) }, (_, i) => takenAt(i)).reduce((sum, x) => sum + x, 0);
   // A stolen berry's heal is capped at max HP turn by turn, eaten before the turn's hit when we move first (#646), each
   // order on its own branch, and never on a thief that is down by then (#833, game-code.md §3).
   const stepped = () => {
@@ -1292,8 +1292,8 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
       for (const [h0, p] of hs) {
         if (h0 <= 0) { add(0, p); continue; }
         const h = h0 - cost * share;
-        add(h > 0 ? Math.max(0, Math.min(maxHp, h + back) - hitOn(i)) : 0, p * first);
-        const left = h - hitOn(i);
+        add(h > 0 ? Math.max(0, Math.min(maxHp, h + back) - takenAt(i)) : 0, p * first);
+        const left = h - takenAt(i);
         add(left > 0 ? Math.min(maxHp, left + back) : 0, p * (1 - first));
       }
       hs = next;

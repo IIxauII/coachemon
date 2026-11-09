@@ -77,7 +77,7 @@ const scene = {
 };
 mountHud({ scene });
 const D = globalThis.__hud["10-damage"];
-const { hitOn, koTurn, koTurns, useOf, koChanceAt } = D;
+const { koTurn, koTurns, useOf, koChanceAt } = D;
 const { gameVersionOf, versionAtLeast } = globalThis.__hud["01-core"];
 const { readTurn } = globalThis.__hud["25-turn"];
 
@@ -88,7 +88,6 @@ const statusMoves = (s, ...a) => ask(s, t => t.statusMoves(...a));
 const endOfTurnHp = (p, { s = scene, ...opts } = {}) => ask(s, t => t.turnEndHp(p, opts));
 const hits = (a, d) => ask(scene, t => t.outcomes(a, d));
 const recOf = (p, s = scene) => ask(s, t => t.mon(p));
-const stateOf = (p, hp, bar) => D.stateOf(recOf(p).facts, hp, bar);
 const koCurve = (target, use, opts) => D.koCurve(recOf(target), use, opts);
 
 const avgRoll = max => { let t = 0; for (let r = 85; r <= 100; r++) t += Math.max(1, Math.floor(max * r / 100)); return t / 16; };
@@ -173,10 +172,6 @@ const bigHit = move(1, "Big Hit", 14, 120);
   // 320 max: only rolls leaving ≥ 200 excess past the boundary (≥ 300 damage, rolls 94–100) break both bars.
   const big = moveOutcome(scene, atk, boss, pmOf(move(5, "Bigger Nuke", 0, 320)), { crit: false });
   near(big.pKo, 7 / 16, "boss break chance");
-  const once = hitOn(stateOf(boss), 150);
-  assert.deepEqual([once.hp, once.bar], [100, 0]);
-  assert.deepEqual([hitOn(once, 150).hp, hitOn(once, 150).bar], [0, 0]);
-  assert.equal(hitOn(stateOf(mon("plain", { hp: 200 })), 250).hp, 0);
 }
 
 // ---- Sturdy saves only at full HP and never past Mold Breaker, and Focus Band saves one time in ten
@@ -205,7 +200,6 @@ const bigHit = move(1, "Big Hit", 14, 120);
   const band = mon("band", { hp: 100, items: [new SurviveDamageModifier()] });
   setup(atk, band);
   near(moveOutcome(scene, atk, band, nuke, { crit: false }).pKo, 0.9, "Focus Band");
-  assert.equal(hitOn(stateOf(band), 300).hp, 0, "hitOn has no luck");
   const banded = koCurve(band, [{ d: 300, p: 1 }]).by;
   near(banded[0], 0.9, "Focus Band over a use");
   near(banded[1], 0.99, "Focus Band twice");
@@ -870,15 +864,8 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
     assert.deepEqual(by.slice(0, want.length), want, `${what}: ${by}`);
     assert.equal(by[want.length - 1], 1, `${what}: down by then`);
   }
-  // Three hits of 50 take the 3-bar boss 250 → 100; one hit of 150 stops at the bar, on 200.
-  const b = boss3(250);
-  const three = [50, 50, 50].reduce(hitOn, stateOf(b));
-  assert.deepEqual([three.hp, three.bar], [100, 0]);
-  assert.deepEqual([hitOn(stateOf(b), 150).hp, hitOn(stateOf(b), 150).bar], [200, 1]);
-  assert.equal(hitOn(stateOf(boss3()), 500).hp, 0, "a big enough hit KOs through the bars");
   scene.currentBattle.isClassicFinalBoss = true;
   const eternatus = mon("eternatus", { hp: 100, player: false });
-  assert.equal(hitOn(stateOf(eternatus), 999).hp, 1, "final boss floor");
   assert.ok(koCurve(eternatus, sure(999)).by.every(x => x === 0), "never down");
   delete scene.currentBattle.isClassicFinalBoss;
   assert.deepEqual(koCurve(mon("t", { hp: 100 }), sure(10), { turnEnd: 30 }).after1.map(x => x.hp), [100]);
@@ -890,6 +877,9 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.deepEqual(round(koCurve(sturdy(100), missOr).by).slice(0, 2), [0, 0.81], "Sturdy on every use from full HP");
   assert.deepEqual(round(koCurve(sturdy(100), missOr, { firstKo: 0 }).by).slice(0, 2), [0, 0.81],
     "firstKo, which holds Sturdy already, lands use 1's survivors on 1 HP as the curve does");
+  // The HP squeeze averaged the miss's full-HP branch into the 99 HP one, and use 2 then went through its Sturdy (#1027).
+  const chips = [{ d: 0, p: 0.2, n: 0 }, { d: 1, p: 0.2 }, { d: 10, p: 0.15 }, { d: 20, p: 0.15 }, { d: 40, p: 0.15 }, { d: 60, p: 0.15 }];
+  assert.deepEqual(round(koCurve(sturdy(100), chips, { useAt: () => sure(300) }).by).slice(0, 2), [0, 0.8], "the squeeze keeps the full-HP branch apart");
   // `start`: an earlier turn's branches.
   assert.deepEqual(round(koCurve(mon("t", { hp: 100 }), sure(60), { start: [{ hp: 50, p: 0.5 }, { hp: 100, p: 0.5 }] }).by).slice(0, 2), [0.5, 1]);
   scene.enemyModifiers = [held("EnemyEndureChanceModifier", { chance: 50 })];

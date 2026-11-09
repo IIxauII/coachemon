@@ -536,6 +536,10 @@ How quickly one side can faint a target from a given HP, told as the chance the 
 
 The **likely** KO turn is the first by which the target is more likely down than not; the **expected** KO turn weighs every turn by its chance, and is what advice is scored on.
 
+## Landing
+
+What one hit does to the side it lands on: the boss bar it stops at, and the luck it may be survived on (Sturdy at full health, a Focus Band, the enemy endure token, a Reviver Seed), each with its chance. Turn-end chip lands without luck. KO pacing and the fight plan step every hit through it.
+
 ## Move traits
 
 What a move does beyond its damage number, read once from the move and its user: the turns it spends (a charging turn, a recharge turn, a lock-in, not twice in a row), what it costs its user (recoil, HP, fainting, its own stat drops), when it fails (hit first, a target that doesn't attack, past the first turn), how many times it hits, and what a status move sets up (stat stages, a status, a heal, a hazard). Traits hold no battle state: whether a condition holds this turn, and what a trait is worth, belong to whoever reads them.

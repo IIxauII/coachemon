@@ -84,6 +84,43 @@ assert.equal(globalThis.Phaser.Math.RND.state(), "!rnd,0", "sandbox restored the
 assert.ok(!plan.compact && plan.summary === null, "a lost fight is never compact");
 assert.equal(plan.approxDoubles, false);
 
+// A live read of a 4-vs-6 trainer fight, both sides' uses spread over their rolls, plans in under 500 ms (#1027).
+{
+  const ours = [
+    mon("Garchomp", 100, ["Dragon","Ground"], "Rough Skin", [358,296,226,176,206,240], [["Earthquake","Ground",100,"P"],["Dragon Claw","Dragon",80,"P"]], true),
+    mon("Lapras", 100, ["Water","Ice"], "Water Absorb", [460,206,196,206,226,156], [["Surf","Water",90,"S"],["Ice Beam","Ice",90,"S"]], false),
+    mon("Metagross", 100, ["Steel","Psychic"], "Clear Body", [300,306,296,226,216,176], [["Meteor Mash","Steel",90,"P"],["Zen Headbutt","Psychic",80,"P"]], false),
+    mon("Gengar", 100, ["Ghost","Poison"], "Cursed Body", [260,166,156,296,186,256], [["Shadow Ball","Ghost",80,"S"],["Sludge Bomb","Poison",90,"S"]], false),
+  ];
+  const theirs = [
+    mon("Tyranitar", 100, ["Rock","Dark"], "Sand Stream", [404,306,256,226,236,156], [["Stone Edge","Rock",100,"P"],["Crunch","Dark",80,"P"]], true),
+    mon("Salamence", 100, ["Dragon","Flying"], "Intimidate", [394,306,196,256,196,236], [["Dragon Claw","Dragon",80,"P"],["Fly","Flying",90,"P"]], false),
+    mon("Starmie", 100, ["Water","Psychic"], "Natural Cure", [324,186,206,236,206,266], [["Surf","Water",90,"S"],["Psychic","Psychic",90,"S"]], false),
+    mon("Scizor", 100, ["Bug","Steel"], "Technician", [344,296,236,146,196,166], [["Bullet Punch","Steel",60,"P"],["X-Scissor","Bug",80,"P"]], false),
+    mon("Rotom", 100, ["Electric","Ghost"], "Levitate", [304,136,256,226,256,216], [["Thunderbolt","Electric",90,"S"],["Shadow Ball","Ghost",80,"S"]], false),
+    mon("Lucario", 100, ["Fighting","Steel"], "Inner Focus", [344,256,176,266,176,216], [["Aura Sphere","Fighting",80,"S"],["Close Combat","Fighting",120,"P"]], false),
+  ];
+  const table = {};
+  for (const [side, other] of [[ours, theirs], [theirs, ours]]) for (const a of side) for (const d of other) for (const pm of a.moveset) {
+    const mv = pm.getMove(), phys = mv.category === cat.P;
+    const hit = Math.floor((42 * mv.power * a.getStat(phys ? 1 : 3) / d.getStat(phys ? 2 : 4)) / 50 + 2);
+    table[`${a.name}>${pm.getName()}>${d.name}`] = [[hit], 0.95, 1];
+  }
+  const turnOf = () => fakeTurn({
+    live: true, wave: 120, party: ours, foes: theirs, outcome: outcomeFrom(table),
+    trainer: { getName: () => "Cynthia", config: { isBoss: true }, isDouble: () => false },
+    moves: e => e.moveset.map((pm, i) => ({ name: pm.getName(), type: TY[pm.getMove().type], p: i ? 0.4 : 0.6, score: 10, targets: [0] })),
+  });
+  const T = globalThis.__tp.tpTables(turnOf(), ours, theirs, false);
+  assert.ok(T.theirs.flat().every(t => t.use?.length > 1), "every foe summary is off its live threat, spread over its rolls");
+  const t1 = performance.now();
+  const read = globalThis.__tp.teamPlan(turnOf());
+  globalThis.__tp.drawTeamPlan(read);
+  const took = performance.now() - t1;
+  assert.ok(read?.steps.length > 0, "the live read plans");
+  assert.ok(took < 500, `cheap enough to run every turn on a live read (${took.toFixed(0)} ms)`);
+}
+
 // An early trainer with nothing to plan around: the plan is a win in two steps and no more. In a double battle the
 // plan is still one-on-one exchanges, and says so.
 {
@@ -749,6 +786,49 @@ assert.equal(plan.approxDoubles, false);
   assert.deepEqual(none, old, "a profile that carries no keep reads as no Pouch");
   near(one.ends.win.mh, 62, "one stack");
   near(three.ends.win.mh, 264, "three stacks");
+}
+// A Focus Band holder our hit leaves on half an HP rolls its band as for any KO, so one time in ten it stands on 1 HP
+// and takes a second hit (game-code.md §3, #527).
+{
+  const { tpFight } = globalThis.__tp;
+  const band = globalThis.__hud["10-damage"].stateOf({ maxHp: 10, pFocus: 0.1 }, 10);
+  const T = { ours: [[{ dmg: 9.5, e: 1 }]], theirs: [[{ dmg: 1, e: 1 }]], first: [[0]], ourMax: [400], foeMax: [10], ourHeal: [null], foeHeal: [null], foeState: [band] };
+  const r = tpFight(T, fightState({ oh: [400], ob: [0], fh: [10], fs: [0], fb: [0] }), 0, 0, "free");
+  console.log(`== a Focus Band holder hit to a sliver\ndown by turn 1: ${r.winBy[0].toFixed(3)} · by turn 2: ${r.winBy[1].toFixed(3)}`);
+  assert.ok(Math.abs(r.winBy[0] - 0.9) < 1e-9 && Math.abs(r.winBy[1] - 0.99) < 1e-9, `${r.winBy}`);
+}
+// A Reviver Seed spent in one exchange stays spent in the next, and its revive is no KO (game-code.md §8, §18). Ours
+// move first and hit for 150; the foe's 1000 fells either. Garchomp's hit sends it back to 50, and it falls to Dragonite.
+{
+  const { teamPlanner } = globalThis.__hud["35-team-plan"];
+  const seed = new ({ PokemonInstantReviveModifier: class { getStackCount() { return 1; } } }).PokemonInstantReviveModifier();
+  const ours = [fakeMon("Garchomp", 80, ["Dragon", "Ground"], [300, 200, 200, 100, 100, 200], [["Dragon Claw", "Dragon", 80, "P"]], true),
+    fakeMon("Dragonite", 80, ["Dragon", "Flying"], [300, 200, 200, 100, 100, 200], [["Dragon Claw", "Dragon", 80, "P"]], false)];
+  const foe = fakeMon("Snorlax", 80, ["Normal"], [100, 200, 200, 100, 100, 50], [["Body Slam", "Normal", 85, "P"]], true, undefined,
+    { isPlayer: () => false, getHeldItems: () => [seed], getOpponents: () => [ours[0]] });
+  const stub = outcomeFrom({ "Garchomp>Dragon Claw>Snorlax": [[150], 1, 1], "Dragonite>Dragon Claw>Snorlax": [[150], 1, 1],
+    "Snorlax>Body Slam>Garchomp": [[1000], 1, 1], "Snorlax>Body Slam>Dragonite": [[1000], 1, 1] });
+  const turn = fakeTurn({ live: true, party: ours, foes: [foe], outcome: stub, trainer: { getName: () => "Ace", config: { isBoss: false }, isDouble: () => false },
+    moves: () => [{ name: "Body Slam", type: "Normal", p: 1, score: 10, targets: [0] }] });
+  const planner = teamPlanner(turn), end = planner.at(null), view = planner.view(null);
+  console.log(`== a Reviver Seed spent in one exchange\n${view.steps.map(x => `${x.send.name} → ${x.vs.name}: ${x.why}`).join("\n")}`);
+  assert.equal(view.result, "win", "Dragonite's hit meets no second revive");
+  assert.deepEqual(end.ok, [0, 1], "the revive is no KO of Garchomp's");
+}
+// Two starts that differ only in a spent Reviver Seed never share a memoised fight, nor a place in the beam.
+{
+  const { tpFight, tpSig } = globalThis.__hud["35-team-plan"];
+  const D = globalThis.__hud["10-damage"];
+  const T = { ours: [[{ dmg: 150, e: 1 }]], theirs: [[{ dmg: 1, e: 1 }]], first: [[0]], ourMax: [400], foeMax: [100], ourHeal: [null], foeHeal: [null],
+    foeState: [D.stateOf({ maxHp: 100, revive: 50 }, 100)], memo: new Map() };
+  const at = fu => fightState({ oh: [400], ob: [0], fh: [50], fs: [0], fb: [0], fu });
+  const spent = D.stateOf(T.foeState[0].facts, 50, 0, { revived: true });
+  const [after, fresh] = [at([spent]), at([null])].map(st => tpFight(T, st, 0, 0, "free").ends.win.turns);
+  console.log(`== a spent seed in the memo\nspent: down on turn ${after} · still held: turn ${fresh}`);
+  assert.deepEqual([after, fresh], [1, 2]);
+  const sig = fu => tpSig(T, { ...at(fu), cur: [0], act: 0, fcur: 0 });
+  assert.notEqual(sig([spent]), sig([null]));
+  assert.equal(sig([null]), sig([D.stateOf(T.foeState[0].facts, 50)]), "a fresh carry reads as none");
 }
 // A bench mon the trainer Teras (#648, Gordie W180): Coalossal's team index is in `instantTeras`, so the plan prices our
 // hits at Tera Rock, Water ×2 — it Teras at its first FIGHT command, before anything hits it once sent in after a KO —
