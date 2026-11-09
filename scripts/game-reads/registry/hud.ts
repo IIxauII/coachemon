@@ -1543,6 +1543,7 @@ export const HUD: Area = {
       ],
     },
     { name: "useHp", kind: "field", at: ["src/data/moves/move.ts#RecoilAttr.useHp"] },
+    { name: "user", kind: "field", at: [], from: "ours", note: "our land() options and outcomes (the attacker's Landing state)" },
     {
       name: "val",
       kind: "field",

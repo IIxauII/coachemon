@@ -1714,10 +1714,14 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
   // What the turn-end model prices for a held berry (10-damage.js's `endOfTurnSteps`): a Sitrus heals a quarter, once a
   // holder however tall its stack, and nothing where the KO curve eats it (#883). No other berry here heals at all.
   const sitrusHeal = (p, o) => (o?.sitrus !== false && p.getHeldItems().some(m => m.constructor.name === "BerryModifier" && m.berryType === BERRY.SITRUS) ? Math.floor(p.getMaxHp() / 4) : 0);
-  // The outcome stub fabricates traits, so carry the move's own attr names as 07-move-traits does.
+  // The outcome stub fabricates traits, so carry the move's own attr names as 07-move-traits does, and its `steals` as
+  // 10-damage.js's records set it, Sticky Hold and a Mold Breaker's way past it included.
   const withAttrs = (a, d, pm, o) => {
     const x = outcome(a, d, pm, o);
-    return x && { ...x, traits: { ...x.traits, attrNames: new Set(pm.getMove().attrs.map(at => at.constructor.name)) } };
+    if (!x) return x;
+    const attrNames = new Set(pm.getMove().attrs.map(at => at.constructor.name));
+    const sticky = !!d.hasAbilityWithAttr?.("BlockItemTheftAbAttr") && !a.hasAbilityWithAttr?.("MoveAbilityBypassAbAttr");
+    return { ...x, traits: { ...x.traits, attrNames }, steals: attrNames.has("StealEatBerryAttr") && !sticky ? true : null };
   };
   const BUG_BITE = ["Bug Bite", "Bug", 60, "P", 0, { attrs: ["StealEatBerryAttr"] }];
   const beedrill = hp => mon("Beedrill", 80, ["Bug", "Poison"], [400, 180, 90, 100, 100, 200], [BUG_BITE, ["Pound", "Normal", 40, "P"]], true, hp);
@@ -1873,10 +1877,9 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
   assert.ok(holding > noBerry, `the Sitrus eaten below half buys turns (${holding} vs ${noBerry})`);
   assert.equal(unnerved, noBerry, "an opposing Unnerve keeps it uneaten");
 
-  // What the holder loses, read off the course the exchange builds for it — with the count pinned to exactly k berries
-  // gone, so the single draw's expectation shows plainly. The Sitrus is the KO curve's, so the course carries none of
-  // its heal, only `gone`, the Sitrus Berries stolen: two types are one half each, and a Liechi dilutes like a Lum
-  // (#883).
+  // What the holder loses, read off the course the exchange builds for it, with the count pinned to exactly k berries
+  // gone. The Sitrus is the KO curve's, and a Bug Bite's draw of it Landing's on each branch, so the course carries
+  // neither its heal nor a `gone` for the steals (#883, #915).
   const { berryGone, turnEndCourse } = globalThis.__planner;
   const { scene: courseScene } = render({ party: [beedrill(200)], foes: [shuckle([berryItem(BERRY.SITRUS)], {}, 280)], live: true,
     switches: () => new Map(), stubOutcome: withAttrs, heal: sitrusHeal, dist: () => [{ name: "Brine", type: "Water", p: 1, score: 10, targets: [0] }] });
@@ -1884,21 +1887,11 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
     const foe = shuckle(items, {}, 280);
     const eaten = { byCount: berryGone(foe, p => sitrusHeal(p, { sitrus: false })).byCount, counts: () => Array.from({ length: k + 1 }, (_, i) => (i === k ? 1 : 0)) };
     const course = turnEndCourse(courseScene, foe, null, -1, 0, eaten);
-    assert.equal(course.at(1), 0, "no Sitrus heal in the course");
-    return course.gone(1);
+    return [course.at(1), course.gone];
   };
-  const turnEnd = (label, items) => console.log(`${label.padEnd(26)} Sitrus stolen: none gone ${atTurn(items, 0)} · one gone ${atTurn(items, 1)} · two gone ${atTurn(items, 2)}`);
-  turnEnd("Sitrus x1", [berryItem(BERRY.SITRUS)]);
-  turnEnd("Sitrus x2", [berryItem(BERRY.SITRUS, 2)]);
-  turnEnd("Sitrus x1 + Lum x1", [berryItem(BERRY.SITRUS), berryItem(BERRY.LUM)]);
-  turnEnd("Sitrus x2 + Lum x1", [berryItem(BERRY.SITRUS, 2), berryItem(BERRY.LUM)]);
-  turnEnd("Sitrus x1 + Liechi x1", [berryItem(BERRY.SITRUS), berryItem(BERRY.LIECHI)]);
-  assert.equal(atTurn([berryItem(BERRY.SITRUS)], 1), 1, "the only Sitrus gone");
-  assert.equal(atTurn([berryItem(BERRY.SITRUS, 2)], 1), 1, "a Sitrus x2 holder keeps one after one steal");
-  assert.equal(atTurn([berryItem(BERRY.SITRUS, 2)], 2), 2, "…and loses it on the second");
-  assert.equal(atTurn([berryItem(BERRY.SITRUS), berryItem(BERRY.LUM)], 1), 0.5, "two types, one half each");
-  assert.equal(atTurn([berryItem(BERRY.SITRUS), berryItem(BERRY.LIECHI)], 1), 0.5, "a Liechi takes its share of the draw");
-  assert.equal(atTurn([berryItem(BERRY.SITRUS)], 0), 0, "nothing gone yet, nothing lost");
+  const stocks = [[berryItem(BERRY.SITRUS)], [berryItem(BERRY.SITRUS, 2)], [berryItem(BERRY.SITRUS), berryItem(BERRY.LUM)]];
+  const cases = stocks.flatMap(items => [0, 1, 2].map(k => atTurn(items, k)));
+  assert.deepEqual(cases, cases.map(() => [0, null]), "no Sitrus heal in the course, and no steal of one");
   assert.equal(turnEndCourse(courseScene, shuckle([berryItem(BERRY.LUM)], {}, 280), null, -1, 0, null).gone, null, "no Sitrus, nothing to steal");
   // A thief's item draws take the Sitrus too, each at its own time (game-code.md §8).
   const thiefWith = name => Object.assign(beedrill(200), { getHeldItems: () => [Object.assign(new ({ [name]: class { getStackCount() { return 1; } } })[name](), { chance: 0.1 })] });

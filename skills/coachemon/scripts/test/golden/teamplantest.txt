@@ -13,8 +13,8 @@ Fight plan likely lost
 ⚠ likely lost: nobody KOs Weavile 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Blastoise
 == easy trainer
 winnable · Charizard
-== a bug bite pairing's foe heal profile
-it keeps {"base":0,"pre":0} · its Sitrus heals 100 → 0 by steals · we eat 65
+== a bug bite pairing's tables
+we steal: true · a berry heals us {"0":65} · the foe holds 1 Sitrus
 == bug bite after the foe ate its own Sitrus
 we end on 90 (140 when it still held it)
 == a bug bite switch-in's entry turn
@@ -24,7 +24,9 @@ lost with the foe on 85 on average
 == a pinned bug bite
 the pairing's own pick wins in 4 · a pinned Bug Bite in 3
 == bug bite into a Sitrus x2
-won in 7 on 90 HP · 2 berries gone
+won in 7 on 90 HP · 0 Sitrus left
+== a thief's own chip
+a Bug Bite paying 30 a use from full wins on 170 HP in 2
 == a foe's entry turn
 stay: 0 win at 0 · into a switch-in: 1 win at 50
 == a tera switch-in's entry hit
