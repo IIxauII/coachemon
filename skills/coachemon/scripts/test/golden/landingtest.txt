@@ -22,6 +22,12 @@ hit for 150 of 100: 1/0 p0.1 dealt 99 ×1 · 0/0 p0.9 dealt 100 ×1
 two hits of 150: 1/0 p0.01 dealt 99 ×2 · 0/0 p0.9 dealt 100 ×1 · 0/0 p0.09 dealt 100 ×2
 == Reviver Seed
 100 of 200, three hits of 100: 100/0R p1 dealt 100 ×1
+== Disguise
+full HP, hit for 150: 88/0B p1 dealt 0 ×1
+two hits of 150: 0/0B p1 dealt 88 ×2
+busted on 88, hit for 150: 0/0B p1 dealt 88 ×1
+10 of 100 with a Reviver Seed, two hits of 150: 50/0RB p1 dealt 0 ×1
+105 of a 2-bar 200, hit for 150: 80/0B p1 dealt 0 ×1
 == whole
 a Focus Band holder on 10, hit for 9.5, whole: 1/0 p0.1 dealt 9 ×1 · 0.5/0 p0.9 dealt 9.5 ×1
 …without: 0.5/0 p1 dealt 9.5 ×1
@@ -29,11 +35,12 @@ a Focus Band holder on 10, hit for 9.5, whole: 1/0 p0.1 dealt 9 ×1 · 0.5/0 p0.
 a 25 HP Substitute hit for 20: 100/0 sub 5 p1 dealt 0 · sub lost 20 ×1
 …for 150, behind Sturdy, a Focus Band and a Reviver Seed: 100/0 sub 0 p1 dealt 0 · sub lost 25 ×1
 a 60 HP Substitute in front of Multiscale, three hits of 100: 50/0 sub 0 p1 dealt 50 · sub lost 60 ×3
+a 25 HP Substitute in front of a Disguise, three hits of 40: 48/0 sub 0 p1 dealt 40 · sub lost 25 ×3 · busted true
 a 25 HP Substitute in front of Sturdy, three hits of 40: 20/0 sub 0 p1 dealt 80 · sub lost 25 ×3
 a hit past a 25 HP Substitute for 40: 60/0 sub 25 p1 dealt 40 · sub lost 0 ×1
 a 10 % token behind a 25 HP Substitute, hit for 150: 100/0 p1 dealt 0 ×1
 …and again: 1/0T p0.1 dealt 99 ×1 · 0/0 p0.9 dealt 100 ×1
-== the discrete part: revived, tok, sub
+== the discrete part: revived, tok, busted, sub
 == KO pacing and the fight plan, on the foe
 plain: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 plain, rolled: KO pacing 0.000 0.766 1.000 1.000 · fight plan 0.000 0.750 1.000 1.000
@@ -46,6 +53,8 @@ two hits into Sturdy: KO pacing 1.000 1.000 1.000 1.000 · fight plan 1.000 1.00
 Multiscale: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 two hits into Shadow Shield: KO pacing 1.000 1.000 1.000 1.000 · fight plan 1.000 1.000 1.000 1.000
 Multiscale, the record asked at full HP: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
+Disguise: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
+two hits into Disguise: KO pacing 1.000 1.000 1.000 1.000 · fight plan 1.000 1.000 1.000 1.000
 every luck at once, half the uses missing: KO pacing 0.000 0.000 0.084 0.226 · fight plan 0.000 0.000 0.084 0.226
 Substitute: KO pacing 0.000 0.000 1.000 1.000 · fight plan 0.000 0.000 1.000 1.000
 Substitute, rolled weak enough to leave it standing: KO pacing 0.000 0.000 0.250 0.733 · fight plan 0.000 0.000 0.275 0.699
@@ -60,6 +69,7 @@ Reviver Seed: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 
 the foe's two hits into Sturdy: KO pacing 1.000 1.000 1.000 1.000 · fight plan 1.000 1.000 1.000 1.000
 Multiscale: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 Multiscale, the record asked at full HP: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
+Disguise: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 Substitute: KO pacing 0.000 0.000 1.000 1.000 · fight plan 0.000 0.000 1.000 1.000
 the foe's sound move past our Substitute: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 == the probe

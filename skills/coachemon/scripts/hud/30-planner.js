@@ -467,6 +467,7 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
     ignoresSturdy: moves.some(m => m.o) && moves.every(m => !m.o || !!m.o.ignoresSturdy),
     ignoresSub: moves.some(m => m.o) && moves.every(m => !m.o || !!m.o.ignoresSub),
     ignoresAbility: moves.some(m => m.o) && moves.every(m => !m.o || !!m.o.ignoresAbility),
+    ignoresDisguise: moves.some(m => m.o) && moves.every(m => !m.o || !!m.o.ignoresDisguise),
     cut: cutBy ? cutBy.o.cut ?? null : moves.some(m => m.o) ? "never" : null,
     // A mix of moves has no one category or effectiveness: each point of `use` carries its own `se`.
     e: null, cat: null,

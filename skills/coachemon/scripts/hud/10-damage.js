@@ -92,6 +92,18 @@ const fixedIgnoresSturdy = env => {
 const substituteHp = t => {
   try { const hp = t.getTag?.("SUBSTITUTE")?.hp; return hp > 0 ? hp : 0; } catch { return 0; }
 };
+// The current form's Disguise or Ice Face, where its ability applies (game-code.md §8).
+const formBlock = t => abAttrs(t, "FormBlockDamageAbAttr").find(a => a.formIndex === t.formIndex) ?? null;
+// An intact Disguise or Ice Face as `{ chip }`, the HP its bust costs, else null (game-code.md §8).
+const disguiseOf = (t, maxHp) => {
+  const b = formBlock(t);
+  return b ? { chip: b.recoil > 0 ? Math.max(1, Math.floor(maxHp * b.recoil)) : 0 } : null;
+};
+// Whether `def`'s form block, if any, stops `atk`'s `move`, by the attr's own condition (game-code.md §8).
+const meetsBlock = (def, atk, move) => {
+  const b = formBlock(def);
+  try { return typeof b?.condition !== "function" || !!b.condition(def, atk, move); } catch { return true; }
+};
 // @only 25-turn, 12-value, tests: targetFacts
 // @mirrors target-facts
 export const targetFacts = (env, t, ignoreAbility = false) => {
@@ -110,6 +122,7 @@ export const targetFacts = (env, t, ignoreAbility = false) => {
     pEndure: endure ? Math.min(1, (endure.chance ?? 2) * (endure.getStackCount?.() ?? 1) / 100) : 0,
     // Reviver Seed (game-code.md §8).
     revive: stack(t, "PokemonInstantReviveModifier") ? Math.max(1, Math.floor(maxHp / 2)) : 0,
+    disguise: ignoreAbility ? null : disguiseOf(t, maxHp),
     // The Substitute's HP left, 0 for none (game-code.md §8).
     sub: substituteHp(t),
     enigma: enigmaOf(env, t),
@@ -131,34 +144,51 @@ const barStep = (f, hp, bar, d, ohko = false) => {
 // Landing (CONTEXT.md, `Landing`): what one hit does to the side it lands on (game-code.md §2, §3, §8, §21). A Landing
 // state is `{ hp, bar, facts }` and the discrete part, made by `stateOf` and `land` and read, never written. Team value
 // lands no berries and no turn end (#1024).
-// The discrete part, at its fresh values for `f`. `revived`: the Reviver Seed is spent; `tok`: the enemy endure token
-// is spent for the wave; `sub`: the Substitute's HP left, 0 for none.
-const fresh = f => ({ revived: false, tok: false, sub: f?.sub > 0 ? f.sub : 0 });
-const DISCRETE = Object.keys(fresh(null));
-const LUCK = ["revived", "tok"];
+// The discrete part, at its fresh values, `sub` taken from the facts. `revived`: the Reviver Seed is spent; `tok`: the
+// enemy endure token is spent for the wave; `busted`: a Disguise or Ice Face has taken its hit; `sub`: the
+// Substitute's HP left, 0 for none.
+const FRESH = Object.freeze({ revived: false, tok: false, busted: false, sub: 0 });
+const DISCRETE = Object.keys(FRESH);
+const LUCK = ["revived", "tok", "busted"];
 const REST = DISCRETE.filter(k => !LUCK.includes(k));
 const NO_HIT = {};
 // `from` carries a discrete part to the new state, a Landing state, an `after1` entry or a search-state entry; its HP
 // and bar are never read.
 // @only 25-turn, 35-team-plan, tests: stateOf
 export const stateOf = (facts, hp = facts.hp, bar = null, from = null) => {
-  const s = { hp, bar: bar ?? facts.idx ?? 0, ...fresh(facts), facts };
+  const s = { hp, bar: bar ?? facts.idx ?? 0, ...FRESH, facts };
+  if (facts.sub > 0) s.sub = facts.sub;
   if (from) for (const k of DISCRETE) if (k in from) s[k] = from[k];
   return s;
 };
 // The state a side keeps once it leaves the field: its Substitute is gone (game-code.md §8).
 // @only 35-team-plan, tests: benched
 export const benched = s => (s.sub > 0 ? { ...s, sub: 0 } : s);
-// A carrier is a Landing state's fields, without `facts`, at its chance `p`, with `stop`, `dealt`, `subDealt` and
-// `hits`.
 // `reached(o)`, of a carrier or a `land` outcome: some hit of its use got past the target's Substitute, which an
 // Enigma Berry needs (game-code.md §8).
 // @only 35-team-plan, tests: reached
 export const reached = o => o.dealt > 0 || !(o.subDealt > 0);
-const fork = (b, hp, bar, p, taken, tok = b.tok) => ({ ...b, hp, bar, tok, p, dealt: b.dealt + taken, hits: b.hits + 1 });
+// A carrier is a Landing state's fields, without `facts`, at its chance `p`, with `stop`, `dealt`, `subDealt` and
+// `hits`.
+const fork =(b, hp, bar, p, taken, tok = b.tok) => ({ ...b, hp, bar, tok, p, dealt: b.dealt + taken, hits: b.hits + 1 });
 const stand = (b, hp, bar, endure, taken, out) => {
   if (endure) out.push(fork(b, hp, bar, b.p * endure, taken, true));
   if (endure < 1) out.push(fork(b, hp, bar, b.p * (1 - endure), taken));
+};
+// The hit an intact Disguise or Ice Face takes, and its bust's chip (game-code.md §8). Returns the share that goes
+// down, as `strike` does.
+const bust = (f, b, whole, out, down) => {
+  const left = b.hp - (f.disguise.chip || 0);
+  const bar = f.boss ? Math.max(0, Math.min(b.bar, Math.ceil(Math.max(0, left) / f.segSize) - 1)) : b.bar;
+  const c = Object.assign(fork(b, left, bar, b.p, 0), { busted: true });
+  if (whole ? left >= 1 : left > 0) { out.push(c); return 0; }
+  if (f.revive && !b.revived) {
+    out.push(Object.assign(c, { hp: f.revive, revived: true, stop: true }));
+    return 0;
+  }
+  const hp = Math.max(0, left);
+  down?.(b.p, { ...b, hp, busted: true }, hp, bar);
+  return b.p;
 };
 // Multiscale and Shadow Shield (game-code.md §1, §8). Gotcha: a `cut` "in" hit is doubled back below full HP, which
 // can come out 1 HP short of the game's, its halving having been floored (§2).
@@ -171,11 +201,13 @@ const cutOn = (f, hp, d, hit) => {
 // One hit of `d` on carrier `b`, in the game's order (game-code.md §3, §8). Pushes what stands onto `out`, a revive
 // among it with `stop` set, and returns the share that goes down, handing it to `down(p, b, hp, bar)` with the HP the
 // hit left. `luck` false: turn-end chip, which nothing survives on luck, no cut halves and no Substitute meets
-// (§21). `whole`: down below 1 HP (#527), else at 0 or less. A Substitute takes the hit as cut, whole, ahead of the
-// bars and the luck, and its loss is `subDealt` (§8).
+// (§21). `whole`: down below 1 HP (#527), else at 0 or less. A Substitute takes the hit as cut, whole, ahead of a
+// Disguise, the bars and the luck, and its loss is `subDealt` (§8).
 const strike = (f, b, d, hit, whole, luck, out, down = null) => {
+  const shielded = luck && b.sub > 0 && d > 0 && !hit.ignoresSub;
+  if (luck && !shielded && f.disguise && !b.busted && !hit.ignoresDisguise && d > 0) return bust(f, b, whole, out, down);
   if (luck && (f.multiscale || f.shadowShield)) d = cutOn(f, b.hp, d, hit);
-  if (luck && b.sub > 0 && d > 0 && !hit.ignoresSub) {
+  if (shielded) {
     out.push({ ...b, sub: Math.max(0, b.sub - d), subDealt: b.subDealt + Math.min(b.sub, d), hits: b.hits + 1 });
     return 0;
   }
@@ -220,11 +252,11 @@ const landUse = (f, b, d, n, fac, hit, whole, down) => {
   return live;
 };
 // `use`: one point of a use's spread, `{ d, n }`, `d` the whole use before the target's HP or bars cut it. `hit`: the
-// hit record, its race facts read by name and an absent one off (`ignoresSturdy`, `ignoresSub`, `ignoresAbility`, `cut`,
-// `ohko`, `factor(bar)`); `cut` is "in" where its numbers already hold a full-HP holder's Multiscale or Shadow Shield,
-// and "never" where nothing halves it. Each outcome's `dealt` is what the use took off its target through the bars,
-// counted before a revive, `subDealt` what it took off the target's Substitute, and `hits` the hits that landed, on
-// either.
+// hit record, its race facts read by name and an absent one off (`ignoresSturdy`, `ignoresSub`, `ignoresAbility`,
+// `ignoresDisguise`, `cut`, `ohko`, `factor(bar)`); `cut` is "in" where its numbers already hold a full-HP holder's
+// Multiscale or Shadow Shield, and "never" where nothing halves it. Each outcome's `dealt` is what the use took off its
+// target through the bars, counted before a revive and without a bust's chip, `subDealt` what it took off the target's
+// Substitute, and `hits` the hits that landed, on either.
 // @only 35-team-plan, tests: land, luckKey, landingKey
 export const land = (state, use, hit = NO_HIT, { whole = false } = {}) => {
   const d = use?.d, h = hit ?? NO_HIT, f = state?.facts ?? NO_HIT;
@@ -238,7 +270,7 @@ export const land = (state, use, hit = NO_HIT, { whole = false } = {}) => {
   for (const o of downs) outs.push(o);
   return outs;
 };
-export const luckKey = (s, f = s.facts) => `${+s.revived}${+s.tok}${f?.sturdy || f?.multiscale || f?.shadowShield ? +(s.hp >= f.maxHp) : ""}${s.sub > 0 ? "S" : ""}`;
+export const luckKey = (s, f = s.facts) => `${+s.revived}${+s.tok}${f?.sturdy || f?.multiscale || f?.shadowShield ? +(s.hp >= f.maxHp) : ""}${f?.disguise ? +s.busted : ""}${s.sub > 0 ? "S" : ""}`;
 // `sub` stands in for the state's own Substitute HP.
 const keyWith = (s, f, sub) => {
   let k = `${luckKey(s, f)}|${s.bar}`;
@@ -252,7 +284,7 @@ const resolve = (f, perHit, dist, acc, checkAll, hit = NO_HIT) => {
   const rf = { ...f, revive: 0 };
   const add = (m, st, p) => {
     if (!(p > 0)) return;
-    const k = `${st.hp}|${st.bar}|${st.tok}|${st.sub}`;
+    const k = `${st.hp}|${landingKey(st, rf)}`;
     const e = m.get(k);
     if (e) e.p += p; else m.set(k, { ...st, p });
   };
@@ -841,10 +873,12 @@ const fromGame = (env, atk, def, pm, opts) => {
   const fixed = !ohko && attrs(move, "FixedDamageAttr").length > 0;
   const ignoresSturdy = ignoreAbility || (fixed && fixedIgnoresSturdy(env));
   const ignoresSub = pastSub(atk, move);
+  // Disguise and Ice Face (game-code.md §8).
+  const ignoresDisguise = ignoreAbility || fixed || ohko || !meetsBlock(def, atk, move);
   const facts = targetFacts(env, def, ignoreAbility);
   // (game-code.md §1, §2)
   const cut = fixed || ohko ? "never" : !gameIgnore && facts.hp >= facts.maxHp && (facts.multiscale || facts.shadowShield) ? "in" : null;
-  const base = { name: pm.getName(), type, cat, e, priority, spread, spreadApplied, traits: t, self: 0, bypassProtect: bypassesProtect(atk, def, move), ignoresAbility: ignoreAbility, cut };
+  const base = { name: pm.getName(), type, cat, e, priority, spread, spreadApplied, traits: t, self: 0, bypassProtect: bypassesProtect(atk, def, move), ignoresAbility: ignoreAbility, ignoresDisguise, cut };
   const blocked = cancelledBy(env, atk, def, move);
   if (first.cancelled || first.result === HitResult.NO_EFFECT || first.result === HitResult.IMMUNE || blocked) {
     return { ...base, acc: 0, crit: 0, dist, perHit: [{ max: 0, min: 0 }], targetHp: def.hp, expected: 0, uncapped: 0, max: 0, pKo: 0, revive: 0, costs: [], notes: [blocked ? `stopped by ${blocked}` : "no effect"], use: [{ d: 0, p: 1, n: 0 }], focus: 0, ignoresSturdy, ignoresSub, flinch: 0 };
@@ -909,14 +943,11 @@ const fromGame = (env, atk, def, pm, opts) => {
   }
   const acc = accuracy(atk, def, move, ohko);
   const checkAll = t.hits.checkAll;
-  // Taken before Disguise zeroes the first hit: a later use meets no disguise.
   const use = useDist(perHit, dist, acc, checkAll);
-  // The simulated call ignores Disguise and Ice Face (game-code.md §1).
-  const disguise = !ignoreAbility && !!def.getAbility?.()?.getAttrs?.("FormBlockDamageAbAttr")?.some(a => a.formIndex === def.formIndex);
-  if (disguise) { perHit[0] = new Map([[0, 1]]); maxes[0] = 0; }
 
   const f = ignoresSturdy && facts.sturdy ? { ...facts, sturdy: false } : facts;
-  const strikes = { ignoresSturdy, ignoresSub, ohko, ignoresAbility: ignoreAbility, cut };
+  // The simulated call ignores Disguise and Ice Face, which Landing applies (game-code.md §1).
+  const strikes = { ignoresSturdy, ignoresSub, ohko, ignoresAbility: ignoreAbility, ignoresDisguise, cut };
   // What the use deals is priced past a Substitute, as `use` is; `pKo` is not (game-code.md §8).
   const shielded = facts.sub > 0 && !ignoresSub;
   const bare = shielded ? { ...facts, sub: 0 } : facts;
@@ -971,7 +1002,7 @@ const fromGame = (env, atk, def, pm, opts) => {
   if (f.pFocus) notes.push("focus band");
   if (f.revive) notes.push("reviver seed");
   if (shielded) notes.push("substitute");
-  if (disguise) notes.push("disguise");
+  if (f.disguise && !ignoresDisguise) notes.push("disguise");
   if (crit === 1) notes.push("crit");
   if (semi) notes.push("target semi-invulnerable");
   return {
@@ -1020,9 +1051,10 @@ const fromApprox = (env, atk, def, pm) => {
   const max = Math.floor(x.dmg);
   const ignoresSturdy = approxIgnoresAbilities(atk, mv);
   const ignoresSub = pastSub(atk, mv);
+  const ignoresDisguise = ignoresSturdy || !meetsBlock(def, atk, mv);
   const facts = targetFacts(env, def, ignoresSturdy);
   const shielded = facts.sub > 0 && !ignoresSub;
-  const once = f => resolve({ ...f, pFocus: 0, pEndure: 0 }, [new Map([[Math.max(0, max), 1]])], [{ n: 1, p: 1 }], 1, false)[0];
+  const once = f => resolve({ ...f, pFocus: 0, pEndure: 0 }, [new Map([[Math.max(0, max), 1]])], [{ n: 1, p: 1 }], 1, false, { ignoresDisguise, ignoresSub })[0];
   const hit = once({ ...facts, sub: 0 });
   const end = { hp: Math.max(0, hit.hp), ko: (shielded ? once(facts) : hit).hp <= 0 };
   const { revive, pFocus } = facts;
@@ -1036,7 +1068,7 @@ const fromApprox = (env, atk, def, pm) => {
     acc, crit: 0, dist: [{ n: 1, p: 1 }], perHit: [{ max, min: Math.floor(max * 0.85) }], targetHp: def.hp,
     expected: Math.min(def.hp - end.hp, max * 0.925) * acc, uncapped: max * 0.925 * acc, max: def.hp - end.hp, pKo: end.ko && !revive ? acc : 0, revive, sub: shielded ? facts.sub : 0,
     costs: costNotes(t, { type: x.type }), notes: ["estimate"], live: false,
-    use: useDist([rolls], [{ n: 1, p: 1 }], acc, false), focus: pFocus, ignoresSturdy, ignoresSub, ignoresAbility: ignoresSturdy, cut: null, flinch: flinchChance(atk, def, mv, false), drain: drainRatio(env, atk, def, t),
+    use: useDist([rolls], [{ n: 1, p: 1 }], acc, false), focus: pFocus, ignoresSturdy, ignoresSub, ignoresAbility: ignoresSturdy, ignoresDisguise, cut: null, flinch: flinchChance(atk, def, mv, false), drain: drainRatio(env, atk, def, t),
   };
 };
 

@@ -1934,6 +1934,7 @@ export const HUD: Area = {
         "src/modifier/modifier.ts#PokemonInstantReviveModifier.apply",
         "src/data/abilities/init-abilities.ts#initAbilities",
         "src/data/abilities/ab-attrs.ts#ReceivedMoveDamageMultiplierAbAttr",
+        "src/data/abilities/ab-attrs.ts#FormBlockDamageAbAttr.apply",
         "src/data/battler-tags.ts#SubstituteTag.onAdd",
         "src/phases/move-effect-phase.ts#MoveEffectPhase.applyMoveDamage",
         "src/phases/move-effect-phase.ts#MoveEffectPhase.updateSubstitutes",

@@ -95,6 +95,8 @@ Garchomp → Snorlax: falls · foe at 50%
 Dragonite → Snorlax: KO · 100% left
 == a spent seed in the memo
 spent: down on turn 1 · still held: turn 2
+== a busted Disguise in the carry
+busted: down on turn 1 · intact: turn 2
 == an instant Tera on the bench (#648)
 Hydro Pump into Coalossal: ×4 as Fire/Rock, ×2 at Tera Rock
 == a Substitute left behind
