@@ -787,6 +787,16 @@ assert.equal(plan.approxDoubles, false);
   near(one.ends.win.mh, 62, "one stack");
   near(three.ends.win.mh, 264, "three stacks");
 }
+// A Focus Band holder our hit leaves on half an HP rolls its band as for any KO, so one time in ten it stands on 1 HP
+// and takes a second hit (game-code.md §3, #527).
+{
+  const { tpFight } = globalThis.__tp;
+  const band = globalThis.__hud["10-damage"].stateOf({ maxHp: 10, pFocus: 0.1 }, 10);
+  const T = { ours: [[{ dmg: 9.5, e: 1 }]], theirs: [[{ dmg: 1, e: 1 }]], first: [[0]], ourMax: [400], foeMax: [10], ourHeal: [null], foeHeal: [null], foeState: [band] };
+  const r = tpFight(T, fightState({ oh: [400], ob: [0], fh: [10], fs: [0], fb: [0] }), 0, 0, "free");
+  console.log(`== a Focus Band holder hit to a sliver\ndown by turn 1: ${r.winBy[0].toFixed(3)} · by turn 2: ${r.winBy[1].toFixed(3)}`);
+  assert.ok(Math.abs(r.winBy[0] - 0.9) < 1e-9 && Math.abs(r.winBy[1] - 0.99) < 1e-9, `${r.winBy}`);
+}
 // A bench mon the trainer Teras (#648, Gordie W180): Coalossal's team index is in `instantTeras`, so the plan prices our
 // hits at Tera Rock, Water ×2 — it Teras at its first FIGHT command, before anything hits it once sent in after a KO —
 // while the trainer scores it for that send-in at its Fire/Rock (game-code.md §7). Coalossal sits in slot 1 carrying

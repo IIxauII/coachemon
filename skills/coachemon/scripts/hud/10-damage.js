@@ -308,11 +308,6 @@ const flinchChance = (atk, def, move, ignoreAbility) => {
   return c < 0 ? 1 : Math.min(1, c / 100);
 };
 
-// No luck: no Focus Band, endure token or Reviver Seed. A state without `facts` has no bars.
-export const hitOn = (state, dmg) => {
-  const [d, bar] = state.facts ? barStep(state.facts, state.hp, state.bar, Math.max(0, dmg)) : [Math.max(0, dmg), state.bar];
-  return { ...state, hp: Math.max(0, state.hp - d), bar };
-};
 // A KO-curve branch: a carrier with the Enigma and Sitrus Berries it still holds, `left` and `sitrus`, its discrete
 // part `from`'s.
 const branch = (hp, bar, from, p, left = 0, sitrus = 0) => {

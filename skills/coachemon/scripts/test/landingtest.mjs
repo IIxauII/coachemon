@@ -1,21 +1,25 @@
 import assert from "node:assert/strict";
 import { mountHud } from "./fake-page.mjs";
-import { mon } from "./fake-mon.mjs";
+import { mon, TRAITS } from "./fake-mon.mjs";
+import { fakeTurn } from "./fake-turn.mjs";
+import { fightState } from "./fake-fight.mjs";
 
 mountHud({ scene: { currentBattle: { waveIndex: 10, turn: 1 }, getField: () => [], getPlayerParty: () => [], getEnemyParty: () => [] } });
 const D = globalThis.__hud["10-damage"];
-const { stateOf, land, luckKey, landingKey, koCurve } = D;
+const { stateOf, land, luckKey, landingKey, koCurve, koTurns } = D;
+const { tpTables, tpFight } = globalThis.__hud["35-team-plan"];
 
 const held = (name, n = 1) => new ({ [name]: class { getStackCount() { return n; } } })[name]();
-// A target's facts as the fakes read them (fake-turn.mjs): `token` is the wave's endure chance in stacks of 2 %.
-const factsOf = ({ hp = 100, maxHp = hp, boss = 0, idx, sturdy = false, band = 0, seed = false, token = 0, finalBoss = false, player = false } = {}) => {
-  const p = mon("target", 50, ["Normal"], [maxHp, 100, 100, 100, 100, 100], [], true, hp, {
+const tokens = n => (n ? [Object.assign(held("EnemyEndureChanceModifier", n), { chance: 2 })] : []);
+// `token` is the wave's endure chance in stacks of 2 %; `moves` as fake-mon.mjs's `mon` takes them.
+const targetMon = ({ name = "target", hp = 100, maxHp = hp, boss = 0, idx, sturdy = false, band = 0, seed = false, player = false, trainer = false, moves = [] } = {}) =>
+  mon(name, 50, ["Normal"], [maxHp, 100, 100, 100, 100, 100], moves, true, hp, {
     isPlayer: () => player, bossSegments: boss, bossSegmentIndex: idx ?? Math.max(0, boss - 1), formIndex: 0, waveData: {},
-    hasAbilityWithAttr: a => sturdy && a === "PreDefendFullHpEndureAbAttr",
+    hasAbilityWithAttr: a => sturdy && a === "PreDefendFullHpEndureAbAttr", ...(trainer ? { hasTrainer: () => true } : {}),
     getHeldItems: () => [...(band ? [held("SurviveDamageModifier", band)] : []), ...(seed ? [held("PokemonInstantReviveModifier")] : [])],
   });
-  return D.targetFacts({ enemyModifiers: token ? [Object.assign(held("EnemyEndureChanceModifier", token), { chance: 2 })] : [], finalBoss }, p);
-};
+// A target's facts as the fakes read them (fake-turn.mjs).
+const factsOf = (o = {}) => D.targetFacts({ enemyModifiers: tokens(o.token ?? 0), finalBoss: !!o.finalBoss }, targetMon(o));
 const at = (o = {}) => stateOf(factsOf(o));
 const sure = (d, n = 1) => ({ d, n });
 // `[hp, bar, p, dealt, hits]` per outcome, with `R` for a spent Reviver Seed and `T` for a spent token.
@@ -39,6 +43,13 @@ const shape = outs => outs.map(o => [+o.state.hp.toFixed(6), o.state.bar, o.stat
   assert.deepEqual(shape(past), [[100, 0, false, false, 1, 1]]);
   const through = land(boss, sure(500));
   assert.deepEqual(shape(through), [[0, 0, false, false, 1, 1]], "a big enough hit KOs through every bar");
+  const hurt = stateOf(boss.facts, 250);
+  assert.deepEqual(shape(land(hurt, sure(150, 3))), [[100, 0, false, false, 1, 3]], "three hits of 50 from 250 clamp one by one");
+  assert.deepEqual(shape(land(hurt, sure(150))), [[200, 1, false, false, 1, 1]], "one of 150 stops at the bar");
+  const two2 = at({ hp: 200, boss: 2 });
+  const first = land(two2, sure(150));
+  assert.deepEqual(shape(first), [[100, 0, false, false, 1, 1]]);
+  assert.deepEqual(shape(land(first[0].state, sure(150))), [[0, 0, false, false, 1, 1]]);
   const eternatus = at({ hp: 100, finalBoss: true });
   const floor = land(eternatus, sure(999));
   show("the final boss on its last bar, hit for 999", floor);
@@ -189,6 +200,66 @@ const spent = Object.fromEntries(DISCRETE.map(k => [k, typeof fresh[k] === "bool
     assert.equal(after1.length, 1, what);
     for (const k of DISCRETE) assert.equal(after1[0][k], spent[k], `${what}: ${k}`);
   }
+}
+
+// One live fake turn feeds both engines: the KO curve on one side, the real tables and the fight plan on the other.
+// `use`: the attacker's one move's spread; the other side deals nothing.
+const ATTACKER = [400, 100, 100, 100, 100, 200];
+const hitRecord = (use, def) => {
+  const mean = use.reduce((t, x) => t + x.d * x.p, 0), max = Math.max(...use.map(x => x.d / (x.n || 1)));
+  const n = Math.max(...use.map(x => x.n ?? 1));
+  return { name: "Hit", type: "Normal", cat: "physical", e: 1, ignoresSturdy: false, priority: 0, spread: false, acc: 1, dist: [{ n, p: 1 }],
+    perHit: Array(n).fill({ max, min: max }), expected: Math.min(mean, def.hp), uncapped: mean, max: Math.min(max * n, def.hp), pKo: 0,
+    use, traits: { ...TRAITS }, costs: [], notes: [], live: true };
+};
+const race = ({ use, foe = {}, token = 0 }) => {
+  const me = mon("attacker", 50, ["Normal"], ATTACKER, [["Hit", "Normal", 80, "P"]], true);
+  const target = targetMon({ name: "foe", trainer: true, ...foe });
+  target.getOpponents = () => [me];
+  const turn = fakeTurn({ live: true, party: [me], foes: [target], enemyModifiers: tokens(token),
+    trainer: { getName: () => "Ace", config: { isBoss: false }, isDouble: () => false },
+    outcome: (atk, def) => (atk === me ? hitRecord(use, def) : null) });
+  const T = tpTables(turn, [me], [target], false);
+  const by = koCurve(turn.mon(target), turn.outcomes(me, target)[0]).by;
+  const plan = tpFight(T, fightState({ oh: [me.hp], ob: [0], fh: [target.hp], fs: [T.foeState[0].bar], fb: [0] }), 0, 0, "free");
+  return { by, plan: plan.winBy };
+};
+const sureUse = (d, n = 1) => [{ d, p: 1, n }];
+const rolls = (lo, hi) => Array.from({ length: 16 }, (_, r) => ({ d: lo + (hi - lo) * r / 15, p: 1 / 16, n: 1 }));
+const curve = by => by.slice(0, 4).map(x => x.toFixed(3)).join(" ");
+// The fight plan drops each branch under 1e-6 a turn, so on fixed damage the two agree only to the few that adds up to.
+const EXACT = 1e-5;
+
+// ---- The fight plan's chance the foe is down by each turn is KO pacing's, exactly on fixed damage and within 0.05 where the rolls vary (#1027)
+{
+  console.log("== KO pacing and the fight plan, on the foe");
+  const ROWS = [
+    ["plain", { use: sureUse(60) }, EXACT],
+    ["plain, rolled", { use: rolls(45, 60) }, 0.05],
+    ["Sturdy", { use: sureUse(150), foe: { sturdy: true } }, EXACT],
+    ["Focus Band", { use: sureUse(150), foe: { band: 1 } }, EXACT],
+    ["endure token", { use: sureUse(150), token: 5 }, EXACT],
+    ["Reviver Seed", { use: sureUse(150), foe: { seed: true } }, EXACT],
+    ["two bars on a trainer", { use: sureUse(150), foe: { hp: 200, boss: 2 } }, EXACT],
+    ["two hits into Sturdy", { use: sureUse(300, 2), foe: { sturdy: true } }, EXACT],
+    // By turn 2 its branches stand in five classes of luck, one past the branches the fight plan keeps for each.
+    ["every luck at once, half the uses missing", { use: [{ d: 0, p: 0.5, n: 0 }, { d: 150, p: 0.5, n: 1 }], foe: { sturdy: true, seed: true, band: 1 }, token: 5 }, EXACT],
+  ];
+  for (const [what, setup, tol] of ROWS) {
+    const { by, plan } = race(setup);
+    console.log(`${what}: KO pacing ${curve(by)} · fight plan ${curve(plan)}`);
+    for (let t = 0; t < 9; t++) assert.ok(Math.abs(by[t] - plan[t]) < tol);
+  }
+}
+
+// ---- A 100 HP foe hit for 150 takes as many turns in both engines with Sturdy, a Reviver Seed, a Focus Band or the endure token (#1027)
+{
+  const probe = [["sturdy", { foe: { sturdy: true } }], ["seed", { foe: { seed: true } }], ["band", { foe: { band: 1 } }], ["token", { token: 5 }]]
+    .map(([what, setup]) => ({ what, ...race({ use: sureUse(150), ...setup }) }));
+  const line = k => probe.map(x => `${x.what} ${koTurns(x[k]).toFixed(2)}`).join(" · ");
+  console.log(`== the probe\nKO pacing:  ${line("by")}\nfight plan: ${line("plan")}`);
+  assert.equal(line("plan"), line("by"));
+  assert.equal(line("by"), "sturdy 2.00 · seed 2.00 · band 1.11 · token 1.10");
 }
 
 console.log("ok");
