@@ -154,7 +154,7 @@ const fresh = (f, hp, bar) => ({ hp, bar, revived: false, tok: false, busted: fa
 const NO_OTHERS = [];
 const DISCRETE = Object.keys(fresh(null)).filter(k => k !== "hp" && k !== "bar" && k !== "facts");
 const LUCK = ["revived", "tok", "busted"];
-const REST = DISCRETE.filter(k => !LUCK.includes(k));
+const REST = DISCRETE.filter(k => !LUCK.includes(k) && k !== "others");
 const NO_HIT = {};
 // `from` carries a discrete part to the new state, a Landing state, an `after1` entry or a search-state entry; its HP
 // and bar are never read.
@@ -354,14 +354,13 @@ const landUse = (f, b, d, n, fac, hit, whole, down) => {
 export const land = (state, use, hit = NO_HIT, { whole = false, user = null } = {}) => {
   const d = use?.d, h = hit ?? NO_HIT, f = state?.facts ?? NO_HIT;
   const up = whole ? state?.hp >= 1 : state?.hp > 0;
-  const eater = user && (whole ? user.hp >= 1 : user.hp > 0) ? user : null;
-  const out = (st, p, dealt, subDealt, hits, stolen) => (user
-    ? { state: st, user: eater && stolen > 0 ? stateOf(user.facts, Math.min(user.facts?.maxHp ?? Infinity, user.hp + stolen), user.bar, user) : user, p, dealt, subDealt, hits }
-    : { state: st, p, dealt, subDealt, hits });
-  if (!up || !(d > 0) || !Number.isFinite(d)) return [out(state, 1, 0, 0, 0, 0)];
+  if (!up || !(d > 0) || !Number.isFinite(d)) return [user ? { state, user, p: 1, dealt: 0, subDealt: 0, hits: 0 } : { state, p: 1, dealt: 0, subDealt: 0, hits: 0 }];
   const heals = h.steals && typeof h.steals === "object" ? h.steals : null;
-  const downs = [];
-  const downed = (p, b, hp, bar) => downs.push(out(stateOf(f, hp, bar, b), p, b.dealt + (b.hp - hp), b.subDealt, b.hits + 1, b.stolen));
+  const downs = [], lost = user ? [] : null;
+  const downed = (p, b, hp, bar) => {
+    downs.push({ state: stateOf(f, hp, bar, b), p, dealt: b.dealt + (b.hp - hp), subDealt: b.subDealt, hits: b.hits + 1 });
+    if (lost) lost.push(b.stolen || 0);
+  };
   const stood = landUse(f, { ...state, p: 1, stop: false, dealt: 0, subDealt: 0, hits: 0 }, d, Math.max(1, Math.round(use.n ?? 1)), h.factor ?? null, h, whole,
     h.steals ? (p, b, hp, bar) => {
       const taken = [];
@@ -374,9 +373,17 @@ export const land = (state, use, hit = NO_HIT, { whole = false, user = null } = 
     fed = [];
     for (const c of stood) feed(c, c.dealt > 0 ? se : 0, fed);
   }
-  const outs = [];
-  for (const c of fed) outs.push(out(stateOf(f, c.hp, c.bar, c), c.p, c.dealt, c.subDealt, c.hits, c.stolen));
+  const outs = [], gains = user ? [] : null;
+  for (const c of fed) {
+    outs.push({ state: stateOf(f, c.hp, c.bar, c), p: c.p, dealt: c.dealt, subDealt: c.subDealt, hits: c.hits });
+    if (gains) gains.push(c.stolen || 0);
+  }
   for (const o of downs) outs.push(o);
+  if (gains) {
+    const eats = whole ? user.hp >= 1 : user.hp > 0, max = user.facts?.maxHp ?? Infinity;
+    for (const g of lost) gains.push(g);
+    outs.forEach((o, i) => { o.user = eats && gains[i] > 0 ? stateOf(user.facts, Math.min(max, user.hp + gains[i]), user.bar, user) : user; });
+  }
   return outs;
 };
 const num = x => (Number.isFinite(x) ? x : 0);
@@ -404,7 +411,7 @@ export const luckKey = (s, f = s.facts) => `${+s.revived}${+s.tok}${f?.sturdy ||
 const keyWith = (s, f, sub) => {
   let k = `${luckKey(s, f)}|${s.bar}`;
   for (const x of REST) k += `|${x === "sub" ? sub : s[x]}`;
-  return k;
+  return s.others?.length ? `${k}|${s.others.join()}` : k;
 };
 export const landingKey = (s, f = s.facts) => keyWith(s, f, s.sub);
 // `perHit[k]`: Map damage → p for hit k; `dist`: [{ n, p }] hit counts; `checkAll`: every hit rolls, else only the
