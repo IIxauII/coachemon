@@ -890,6 +890,9 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.deepEqual(round(koCurve(sturdy(100), missOr).by).slice(0, 2), [0, 0.81], "Sturdy on every use from full HP");
   assert.deepEqual(round(koCurve(sturdy(100), missOr, { firstKo: 0 }).by).slice(0, 2), [0, 0.81],
     "firstKo, which holds Sturdy already, lands use 1's survivors on 1 HP as the curve does");
+  // The HP squeeze averaged the miss's full-HP branch into the 99 HP one, and use 2 then went through its Sturdy (#1027).
+  const chips = [{ d: 0, p: 0.2, n: 0 }, { d: 1, p: 0.2 }, { d: 10, p: 0.15 }, { d: 20, p: 0.15 }, { d: 40, p: 0.15 }, { d: 60, p: 0.15 }];
+  assert.deepEqual(round(koCurve(sturdy(100), chips, { useAt: () => sure(300) }).by).slice(0, 2), [0, 0.8], "the squeeze keeps the full-HP branch apart");
   // `start`: an earlier turn's branches.
   assert.deepEqual(round(koCurve(mon("t", { hp: 100 }), sure(60), { start: [{ hp: 50, p: 0.5 }, { hp: 100, p: 0.5 }] }).by).slice(0, 2), [0.5, 1]);
   scene.enemyModifiers = [held("EnemyEndureChanceModifier", { chance: 50 })];

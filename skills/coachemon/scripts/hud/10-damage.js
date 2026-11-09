@@ -493,7 +493,7 @@ export const koCurve = (rec, hit, { hp, bar = null, start = null, scale = () => 
     const groups = new Map();
     const settle = b => {
       if (!b) return;
-      const key = `${b.bar}|${b.revived}|${b.tok}|${b.left}|${b.sitrus}${chain ? `|${b.s.key}` : ""}`;
+      const key = `${landingKey(b, f)}|${b.left}|${b.sitrus}${chain ? `|${b.s.key}` : ""}`;
       if (!groups.has(key)) groups.set(key, { b, pts: [] });
       groups.get(key).pts.push({ d: b.hp, p: b.p });
     };
