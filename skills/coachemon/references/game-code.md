@@ -894,7 +894,7 @@ The HUD's `predictSwitches` (`20-enemy-ai.js`) follows this rule. The pieces:
 | Quick Claw / Quick Draw | TurnStartPhase → `BYPASS_SPEED` → FIRST bracket (§5) | battle | held item / ability |
 | King's Rock | `applyHeldItemFlinchCheck` (`move-effect-phase.ts:855`): damaging move without `FlinchAttr`, no Shield Dust, no substitute; `randBattleSeedInt(100) < 10·stack` (`modifier.ts:1617`); `FLINCHED` ends at turn end, so only a holder moving first flinches | battle | held item |
 | Move effect chance (flinch) | `MoveEffectAttr.getMoveChance` (`move.ts:1768-1786`): `effectChanceOverride ?? move.chance`; then the user's `MoveEffectChanceMultiplierAbAttr` when > 0 (`ab-attrs.ts:1289-1297`: Serene Grace ×2, Sheer Force ×0, capped at 100; `init-abilities.ts:367`, `:891`); then the Pledge rainbow on the user's side, ×2 uncapped, skipped for a flinch move the ability already raised and for Secret Power (`move.ts:1778`, `arena-tag.ts:1443`); then the target's Shield Dust (`IgnoreMoveEffectsAbAttr`, ignorable, `init-abilities.ts:315`) → 0. Every ability is read through `pokemon.canApplyAbility`. Negative means always | no | `fl.getMoveChance(atk,def,move,false,false)` on live mons |
-| Leftovers / Shell Bell | TurnEndPhase queued heal `toDmgValue(maxHp/16)·stack` (§21) / `MoveEffectPhase.end` (`move-effect-phase.ts:896`) `toDmgValue(totalDamageDealt·stack/8)` (`modifier.ts:1744`) | no | held item |
+| Leftovers / Shell Bell | TurnEndPhase queued heal `toDmgValue(maxHp/16)·stack` (§21) / once a move, at `MoveEffectPhase.end` (`move-effect-phase.ts:896`) after its last strike, or the strike its target fell to (`:880-884`): `toDmgValue(totalDamageDealt·stack/8)` (`modifier.ts:1744`), the turn's damage dealt (reset by `resetTurnData`, `turn-init-phase.ts:65`), a Substitute's loss included, and only while the holder is below full HP as the move ends (`modifier.ts:1740`), before any heal its strikes queued has run. It is a `PokemonHealPhase` unshifted after the last strike's drain (§18), so it heals ahead of the next move and of every turn-end phase | no | held item |
 | Toxic / Flame Orb | TurnEndPhase `TurnStatusEffectModifier.apply` → `trySetStatus` (`modifier.ts:1712`); chip starts next turn (§21) | no | held item + `effect` |
 | Boss bar break | `EnemyPokemon.handleBossSegmentCleared` (`pokemon.ts:7257`), wild bosses only: +1 to a stat below +6 by `weightedPick` on `getStat(s,false)` (`:7272`); +2 on reaching index 0 with ≥3 bars, index 1 with ≥5 | global | expectation, on its defences (our hits) and Atk/SpA (its hits) |
 | Grip Claw | `MoveEffectPhase` after each hit of any attack move (`move-effect-phase.ts:815`), holder not fainted (`HeldItemTransferModifier.shouldApply`, `modifier.ts:3176-3178`): `randSeedFloat() <= 0.1·stack` (`modifier.ts:3306`), then `HeldItemTransferModifier.apply` (`:3187`) picks one transferable item. A hit whose recoil (`move-effect-phase.ts:581`) or whose target's Rough Skin / Iron Barbs (`:805`) felled the holder rolls nothing | global + battle | expectation: steals per landed hit |
@@ -2265,7 +2265,11 @@ Golisopod out-healed the damage the HUD promised, and a Buzzwole with Beast Boos
 **Drain.**
 - **The attribute.** `HitHealAttr` is a self-targeted `MoveEffectAttr` (`src/data/moves/move.ts:2809-2818`) with the
   default `POST_APPLY` trigger (`:1697-1698`). `MoveEffectPhase.applyMoveEffects` fires it after **every hit**
-  (`src/phases/move-effect-phase.ts:573-581`).
+  (`src/phases/move-effect-phase.ts:573-581`), whether or not a Substitute took the hit.
+- **When.** Phases unshifted during a phase run first-in, first-out once it ends (`src/phase-manager.ts:295-312`), so a
+  drain heals its user as soon as the strike's `MoveEffectPhase` ends: ahead of the next strike, which `end` unshifts
+  after it (`src/phases/move-effect-phase.ts:873-884`), and of the next move. Liquid Ooze's negative heal is unshifted
+  from the same strike's PostDefend (`:583`, `:841`), and Shell Bell's after the last strike's (§8).
 - **The amount.** `getHealAmount` is `toDmgValue(user.turnData.singleHitDamageDealt × healRatio)`
   (`src/data/moves/move.ts:2866-2869`): rounded down, at least 1. A drain is not a `HealAttr`, whose base
   amount rounds half up instead (`:2503-2505`). `singleHitDamageDealt` is `damageAndUpdate`'s return in `applyMoveDamage`,
