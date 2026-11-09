@@ -13,15 +13,19 @@
 import { EVENT, decode } from "../relay/channel.ts";
 import { PROBE_COMMANDS, UPDATE_TRY } from "./commands.ts";
 
-/** The letters and the digit the probe's chords use, by `event.code`. L is the `commands.update()` target. */
-const PROBE_CODES = new Set(["KeyK", "KeyJ", "KeyU", "KeyL", "Digit1"]);
+/**
+ * The letters and the digit the probe's chords use, by `event.code`. L is the `commands.update()` target. C is #405's
+ * old ⌥C, bound by hand on Chrome for one press (#1019); it is the game's stats key, so prevent mode takes it too.
+ */
+const PROBE_CODES = new Set(["KeyK", "KeyJ", "KeyU", "KeyL", "KeyC", "Digit1"]);
 const MODIFIERS: Record<string, string> = {
   ShiftLeft: "⇧", ShiftRight: "⇧", ControlLeft: "⌃", ControlRight: "⌃",
   AltLeft: "⌥", AltRight: "⌥", MetaLeft: "⌘", MetaRight: "⌘",
 };
 /** Arrivals closer than this belong to one press. The owner's script says to wait a second between presses. */
 const PRESS_GAP_MS = 1200;
-const MAX_PRESSES = 15;
+/** Enough for one engine's whole script, so a single *copy log* at the end holds every press of it. */
+const MAX_PRESSES = 200;
 const ASK_TIMEOUT_MS = 3000;
 
 type Line = { at: number; text: string };
@@ -53,6 +57,27 @@ export function startKeyProbePanel(o: { build: string; target: string }): void {
   let status: Record<string, unknown> | null = null;
   let statusError: string | null = null;
   let lastAction: string | null = null;
+  /** Every button result, for *copy log*. */
+  const actions: string[] = [];
+  const noteAction = (text: string): void => {
+    lastAction = text;
+    actions.push(`${new Date().toISOString().slice(11, 19)} ${text}`);
+  };
+  /**
+   * The background's log, gathered across refreshes. Chrome's service worker forgets its own when it stops, and only
+   * this log shows a grab that fired into a tab with no relay to deliver it to.
+   */
+  const bgLog: string[] = [];
+  const bgSeen = new Set<string>();
+  const gather = (recent: unknown): void => {
+    if (!Array.isArray(recent)) return;
+    for (const r of recent as { at: string; what: string }[]) {
+      const line = `${r.at} ${r.what}`;
+      if (bgSeen.has(line)) continue;
+      bgSeen.add(line);
+      bgLog.push(line);
+    }
+  };
 
   // ---- asking the background, through the relay ----
   let askId = 0;
@@ -74,7 +99,7 @@ export function startKeyProbePanel(o: { build: string; target: string }): void {
   });
   const refresh = async (): Promise<void> => {
     const a = await ask("status");
-    if (a.ok) { status = a; statusError = null; } else statusError = String(a.error);
+    if (a.ok) { status = a; statusError = null; gather(a.recent); } else statusError = String(a.error);
     draw();
   };
   let refreshTimer: ReturnType<typeof setTimeout> | null = null;
@@ -84,7 +109,7 @@ export function startKeyProbePanel(o: { build: string; target: string }): void {
   };
   const tryAsk = async (what: string, label: string): Promise<void> => {
     const a = await ask(what);
-    lastAction = `${label}: ${a.ok ? "ok" : `failed: ${String(a.error)}`}`;
+    noteAction(`${label}: ${a.ok ? "ok" : `failed: ${String(a.error)}`}`);
     if (Array.isArray(a.commands) && status) status = { ...status, commands: a.commands };
     draw();
     refreshSoon();
@@ -110,6 +135,8 @@ export function startKeyProbePanel(o: { build: string; target: string }): void {
 
   // The page route: first in line on every engine, for any chord the browser does not take before the page.
   const onKey = (e: KeyboardEvent): void => {
+    // The ⌘C into the copy fallback is not a press.
+    if (e.target instanceof Node && fallback.contains(e.target)) return;
     const modifier = MODIFIERS[e.code];
     if (!modifier && !PROBE_CODES.has(e.code)) return;
     const stop = prevent && !modifier;
@@ -163,6 +190,15 @@ export function startKeyProbePanel(o: { build: string; target: string }): void {
   // As the coach panel does: a click on the box is never a click on the game.
   for (const ev of ["click", "mousedown", "pointerdown", "touchstart", "mouseup", "pointerup"]) box.addEventListener(ev, e => e.stopPropagation());
   document.body.appendChild(box);
+  const fallback = document.createElement("div");
+  fallback.id = "coachemon-keyprobe-copy";
+  Object.assign(fallback.style, {
+    display: "none", position: "fixed", top: "8px", left: "8px", zIndex: "2147483647", width: "min(480px, 48vw)",
+    padding: "6px 8px", background: SKIN.fill, color: SKIN.body, border: `1px solid ${SKIN.warn}`,
+    font: "11px/1.35 ui-monospace, Menlo, monospace",
+  });
+  for (const ev of ["click", "mousedown", "pointerdown", "touchstart", "mouseup", "pointerup"]) fallback.addEventListener(ev, e => e.stopPropagation());
+  document.body.appendChild(fallback);
 
   const el = (tag: string, style: Partial<CSSStyleDeclaration>, ...kids: (Node | string | null)[]): HTMLElement => {
     const n = document.createElement(tag);
@@ -208,7 +244,6 @@ export function startKeyProbePanel(o: { build: string; target: string }): void {
     });
     const api = (status.api ?? {}) as Record<string, boolean>;
     const bg = (status.background ?? {}) as Record<string, boolean>;
-    const recent = Array.isArray(status.recent) ? (status.recent as { at: string; what: string }[]).slice(-8) : [];
     const kagi = typeof (window as unknown as { KAGI?: unknown }).KAGI;
     return el("div", {},
       el("div", {}, `browser: ${JSON.stringify(status.info)} · window.KAGI: ${kagi}`),
@@ -218,7 +253,7 @@ export function startKeyProbePanel(o: { build: string; target: string }): void {
       el("div", { color: SKIN.rule, marginTop: "4px" }, "commands.getAll(), as this browser registered them:"),
       el("pre", { margin: "0", font: "inherit", whiteSpace: "pre-wrap" }, ...rows),
       el("div", { color: SKIN.rule, marginTop: "4px" }, "background, latest last:"),
-      el("pre", { margin: "0", font: "inherit", whiteSpace: "pre-wrap", color: SKIN.dim }, recent.map(r => `${r.at} ${r.what}`).join("\n") || "—"),
+      el("pre", { margin: "0", font: "inherit", whiteSpace: "pre-wrap", color: SKIN.dim }, bgLog.slice(-8).join("\n") || "—"),
     );
   };
 
@@ -233,12 +268,35 @@ export function startKeyProbePanel(o: { build: string; target: string }): void {
     el("pre", { margin: "0", font: "inherit", whiteSpace: "pre-wrap" }, pressLines(p)));
 
   const asText = (): string => {
+    const api = (status?.api ?? {}) as Record<string, boolean>;
     const head = `Coachemon key probe · build ${o.build} · ${o.target}-flavoured build · page listener ${prevent ? "PREVENT" : "log only"} · accesskey ${accessOn ? "on" : "off"}\n` +
-      `browser: ${JSON.stringify(status?.info ?? null)} · ${navigator.userAgent}\n`;
+      `copied ${new Date().toISOString()}\n` +
+      `browser: ${JSON.stringify(status?.info ?? null)} · window.KAGI: ${typeof (window as unknown as { KAGI?: unknown }).KAGI} · ${navigator.userAgent}\n` +
+      `options page: ${String(status?.optionsUrl ?? "?")} · commands.update ${yn(api.update)} · reset ${yn(api.reset)} · openShortcutSettings ${yn(api.openShortcutSettings)} · action ${yn(api.action)}\n` +
+      `${statusError ? `last status error: ${statusError}\n` : ""}`;
     const all = Array.isArray(status?.commands) ? (status.commands as { name?: string; shortcut?: string }[]) : [];
     const cmds = all.map(c => `  ${c.name}: ${c.shortcut || "unassigned"}`).join("\n");
     const body = [...presses].reverse().map(p => `${pressSummary(p)}\n${pressLines(p)}`).join("\n");
-    return `${head}commands:\n${cmds}\n\n${body}\n`;
+    const list = (xs: string[]): string => (xs.length ? xs.map(x => `  ${x}`).join("\n") : "  —");
+    return `${head}commands:\n${cmds}\n\npresses, oldest first:\n${body}\n\nbuttons:\n${list(actions)}\n\nbackground, oldest first:\n${list(bgLog)}\n`;
+  };
+  /**
+   * Where the clipboard refuses, the text is selected in an overlay of its own for ⌘C. It sits outside the box, which
+   * redraws on every key, the ⌘ of ⌘C included, and would drop the selection.
+   */
+  const copyFallback = (text: string, why: string): void => {
+    fallback.replaceChildren();
+    const area = document.createElement("textarea");
+    area.value = text;
+    Object.assign(area.style, { width: "100%", height: "160px", font: "inherit", boxSizing: "border-box" });
+    const done = el("button", { font: "inherit", marginTop: "4px" }, "done") as HTMLButtonElement;
+    done.addEventListener("click", () => { fallback.style.display = "none"; fallback.replaceChildren(); });
+    fallback.append(el("div", {}, `copy failed (${why}): press ⌘C now, then done`), area, done);
+    fallback.style.display = "block";
+    area.focus();
+    area.select();
+    noteAction(`copy failed (${why}); offered the text for ⌘C`);
+    draw();
   };
 
   function draw(): void {
@@ -251,7 +309,7 @@ export function startKeyProbePanel(o: { build: string; target: string }): void {
       return;
     }
     const mode = el("div", { color: prevent ? SKIN.warn : SKIN.body, fontWeight: "bold", margin: "2px 0" },
-      `page listener: ${prevent ? "PREVENT (calls preventDefault on K J U L 1)" : "log only"} · accesskey ${accessOn ? "on" : "off"}`);
+      `page listener: ${prevent ? "PREVENT (calls preventDefault on K J U L C 1)" : "log only"} · accesskey ${accessOn ? "on" : "off"}`);
     const controls = el("div", {},
       button(prevent ? "switch to log only" : "switch to prevent", "The page listener's mode", () => { prevent = !prevent; draw(); }),
       access,
@@ -263,8 +321,9 @@ export function startKeyProbePanel(o: { build: string; target: string }): void {
       }),
       button("refresh", "Ask the background again", () => void refresh()),
       button("copy log", "Copy everything here as text", () => {
-        void navigator.clipboard.writeText(asText()).then(() => { lastAction = "copied the log"; draw(); },
-          e => { lastAction = `copy failed: ${String(e)}`; draw(); });
+        const text = asText();
+        void navigator.clipboard.writeText(text).then(() => { noteAction("copied the log"); draw(); },
+          e => copyFallback(text, String(e)));
       }),
       button("clear", "Forget every press", () => { presses.length = 0; current = null; draw(); }),
       button("hide", "Fold the probe away", () => { hidden = true; draw(); }),

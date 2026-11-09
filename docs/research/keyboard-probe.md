@@ -52,7 +52,18 @@ press 3 · 19:59:35 · 2 grabs · game heard: ⌥ K
 - Below the presses: `commands.getAll()` (what the browser actually bound: *unassigned* means it never took the key)
   and the background's own log (`→ tab 12: delivered`, or `not delivered`, for a grab that fired into a tab with no
   content scripts).
-- **copy log** puts all of it on the clipboard as text, for #1019.
+- **copy log** puts all of it on the clipboard as text, for #1019: the commands, every press of the sitting (the box
+  keeps 200), each button's result, and the background's log gathered across the sitting (Chrome's service worker
+  forgets its own when it stops). Where the clipboard refuses, the text appears selected in an overlay, top left: press
+  ⌘C, then *done*.
+
+## Handing the results back
+
+- **One *copy log* per engine**, at the end of its script, holds every press of it. On Orion, one per build.
+- **The options page's text**, with ⌘A ⌘C, each time the script opens it: the *found when opened* column is the
+  answer, and it changes on every open.
+- **What only eyes see**, in a line each: chords a shortcuts page refused, what Orion's shortcuts panel lists, whether
+  the game's stats opened on a ⇧ chord, dialog or tab for the options page, and anything that surprised you.
 
 ## Where the builds are
 
@@ -96,13 +107,16 @@ Each folder is emptied and refilled in place, never replaced, since Orion keys a
 6. ⇧⌘1 with the game focused, then again with Chrome in the background (click the Finder first), then come back.
    **Expect:** a `command:probe-global` line both times.
 7. Click the toolbar button. **Expect:** an `action` line.
-8. *switch to prevent*, then press ⌥K and ⇧⌘K again. **Expect:** no change from step 5.
-9. The options page, each way: `chrome://extensions` → the probe → *Details* → *Extension options* (a dialog);
-   right-click the toolbar button → *Options*; the box's *openOptionsPage()* and *options in a tab*. **Expect:** the
-   page draws. Note dialog or tab, and the *tabs.getCurrent* and *sender.tab* lines (unset in the dialog).
-10. Close the options page and open it again: the table's *found when opened* column should show the earlier record.
+8. *switch to prevent*, then press ⌥K and ⇧⌘K again. **Expect:** no change from step 5. Then *switch to log only*.
+9. **⌥C**, #405's old chord: on `chrome://extensions/shortcuts`, rebind `probe-opt-u` to ⌥C, click the game, press ⌥C.
+   **Expect:** `command:probe-opt-u`, no `page keydown C`, and the game hears ⌥ only. C is the game's stats key, so
+   its stats opening means the letter leaked.
+10. The options page, each way: `chrome://extensions` → the probe → *Details* → *Extension options* (a dialog);
+    right-click the toolbar button → *Options*; the box's *openOptionsPage()* and *options in a tab*. **Expect:** the
+    page draws. Note dialog or tab, and the *tabs.getCurrent* and *sender.tab* lines (unset in the dialog).
+11. Close the options page and open it again: the table's *found when opened* column should show the earlier record.
     Quit Chrome, reopen it, open the options page again, and note what survived.
-11. *copy log*, and paste it into #1019.
+12. *copy log* (before quitting Chrome in step 11, or the presses go with the tab).
 
 ## Firefox (159)
 
@@ -116,8 +130,8 @@ Each folder is emptied and refilled in place, never replaced, since Orion keys a
    **Expect** (§5.2): the `page keydown` first, then the `command:` line a few ms later: **2 grabs**, and the game
    hears the letter. ⌥U: a `page keydown` with `key="Dead"` and no command. ⇧⌘U: an `action` line and Firefox's
    data-consent prompt (cancel it).
-5. *switch to prevent*, and press ⌥K, ⌃K, ⇧⌘K and ⌃⌥K again. **Expect:** `[probe prevented it]`, no `command:`
-   line: 1 grab, and *prevented before the game: K*.
+5. *switch to prevent*, and press step 4's list again, every chord. **Expect:** `[probe prevented it]`, no `command:`
+   line: 1 grab, and *prevented before the game: K* (or J, U).
 6. Click **accesskey on**. Press ⌃⌥K in prevent mode, then *switch to log only* and press it again. **Expect:** no
    `accesskey click` while preventing; with log only, the accesskey and the command may both arrive.
 7. After ⇧⌘K and ⌃⌘K, look for the `page keyup` line: Firefox has an open bug that ⌘ swallows the keyup.
@@ -125,12 +139,14 @@ Each folder is emptied and refilled in place, never replaced, since Orion keys a
    press ⌥J (**expect** the same).
 9. The options page: `about:addons` → the probe → *Preferences* (embedded), and the box's two buttons. **Expect:** it
    draws. Close it, open it again, and check *found when opened*.
-10. *copy log*, and paste it into #1019.
+10. *copy log*.
 
 ## Orion (1.1.3)
 
 1. Orion › Tools › Extensions › **+** › *Install from Disk…* → the folder `~/Downloads/coachemon-keyprobe-orion` (it
-   holds the Chrome-flavoured build). Allow it on pokerogue.net.
+   holds the Chrome-flavoured build). Allow it on pokerogue.net. Already installed by #1018's smoke check: quit and
+   reopen Orion instead, since the folder now holds a newer build, and check in step 3 that the box heading names it
+   (`KEYPROBE.txt` in the folder has the id).
 2. Its per-extension shortcuts panel: note what Orion registered. Add the chords Chrome's step 2 binds by hand, if the
    panel lets you, and note which it refuses.
 3. Open `https://pokerogue.net/` in a **newly opened tab**, never a reloaded one: Orion gives a reloaded tab no
@@ -145,7 +161,8 @@ Each folder is emptied and refilled in place, never replaced, since Orion keys a
 7. The options page: Tools › Extensions › Manage Extensions → the probe's settings; the box's two buttons; and the
    *options page:* URL from the box, pasted into a new tab. **Expect:** it draws (Orion's tracker has empty options
    pages). Note the *origin* line.
-8. **Swap in the Firefox build.** Quit Orion, then in Terminal:
+8. **Swap in the Firefox build.** *copy log* first: quitting takes the presses with the tab. Quit Orion, then in
+   Terminal:
 
    ```sh
    rsync -a --delete ~/Downloads/coachemon-keyprobe-firefox/ ~/Downloads/coachemon-keyprobe-orion/
@@ -153,18 +170,20 @@ Each folder is emptied and refilled in place, never replaced, since Orion keys a
 
    Reopen Orion, check that the probe is still listed and allowed on pokerogue.net, and repeat steps 2–7 in a new
    tab. The options page's *found when opened* now says whether the dummy key survived the swap, and its *origin* line
-   whether the scheme flipped. Swap back with the same command, `-chrome/` for `-firefox/`.
-9. Quit and reopen Orion once more and open the options page: note what survived the restart.
-10. *copy log* after each build, and paste both into #1019.
+   whether the scheme flipped. *copy log* for this build too.
+9. Quit and reopen Orion once more and open the options page: note what survived the restart. Then swap back with
+   step 8's command, `-chrome/` for `-firefox/`, quit and reopen, and open the options page again: the restart check
+   for the Chrome-flavoured build, and the swap the other way.
 
 ## The automated smoke check
 
 `cd extension && node scripts/keyprobe-smoke.ts` loads the placed Chrome build into Chrome for Testing 148 (CDP,
 headless) and the Firefox build into Firefox (WebDriver BiDi, headless), each in a throwaway profile. It opens
 pokerogue.net, sends one CDP or BiDi key and one synthetic key, prints the probe box, tries `commands.update` and
-`reset` on Firefox, and opens the options page twice. It needs the network. Run on 2026-11-08 against the
-Chrome-flavoured build `0.1010.1+78ab4405f256` and the Firefox build `0.1010.1+7660ad306d9a` (the box and
-`KEYPROBE.txt` show which one is loaded):
+`reset` on Firefox, clicks *copy log* and reads what it copied, and opens the options page twice. It needs the network.
+Run on 2026-11-08 against the Chrome-flavoured build `0.1010.1+78ab4405f256` and the Firefox build
+`0.1010.1+7660ad306d9a`, and again on 2026-11-09, with the same results, against `0.1010.1+4fc238f54b3c` and
+`0.1010.1+e726ffc31a4c`, the builds #1019 presses (the box and `KEYPROBE.txt` show which one is loaded):
 
 | | Chrome for Testing 148 | Firefox 159 |
 |---|---|---|
@@ -176,6 +195,7 @@ Chrome-flavoured build `0.1010.1+78ab4405f256` and the Firefox build `0.1010.1+7
 | options page (as a tab) | draws; `sender.tab` set; dummy key survives a reopen in `localStorage` and IndexedDB | the same |
 | background reads the dummy key | IndexedDB yes; no `localStorage` in the service worker | both |
 | content scripts on pokerogue.net | ran | ran with no grant clicked: the MV3 temporary add-on had site access at install |
+| *copy log*, from a scripted click (2026-11-09) | the clipboard took it | the clipboard refused (no user activation); the fallback overlay held the full text, background log included |
 
 Also checked on these builds: `addons-linter` passes the Firefox build with 0 errors and 0 warnings. The store guard's
 banned keys and words pass for both. Its "dials the store hub" check fails, as it must, since the probe has no hub

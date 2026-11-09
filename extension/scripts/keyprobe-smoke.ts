@@ -80,6 +80,20 @@ const BOX = `(() => { const b = document.getElementById("coachemon-keyprobe"); r
 /** Ready once the background answered: the box then lists the commands. */
 const ready = (text: string | null) => (text && text.includes("probe-opt-k") ? text : null);
 const SYNTHETIC = `window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyJ", key: "j", keyCode: 74, bubbles: true })), "sent"`;
+const CLICK = (label: string) =>
+  `[...document.querySelectorAll("#coachemon-keyprobe button")].find(b => b.textContent.startsWith(${JSON.stringify(label)})).click(), "clicked"`;
+/**
+ * A scripted click carries no user activation, so the clipboard refuses and *copy log* falls back to its overlay: what
+ * it would have copied is then readable there. That checks the fallback and the copied text in one go.
+ */
+const COPIED = `(() => {
+  const a = document.querySelector("#coachemon-keyprobe-copy textarea");
+  if (a) return "from the fallback overlay:\\n" + a.value;
+  const b = document.getElementById("coachemon-keyprobe");
+  const line = b && /copied the log|copy failed.*/.exec(b.innerText);
+  return line ? "no overlay; the box says: " + line[0] : null;
+})()`;
+const showCopy = (text: unknown) => say(`\n--- copy log ---\n${text == null ? "BROKEN: no overlay and no copy result in the box" : String(text)}`);
 
 /** Waits for the browser to exit, so its throwaway profile can go with it. */
 async function stop(child: ChildProcess, profile: string): Promise<void> {
@@ -116,6 +130,9 @@ async function chrome(): Promise<void> {
     await evaluate(SYNTHETIC);
     await sleep(500);
     say(String(await evaluate(BOX)));
+    await evaluate(CLICK("copy log"));
+    await sleep(500);
+    showCopy(await evaluate(COPIED));
 
     const sw = await until("the extension's service worker", 10_000, async () => (await list()).find(t => t.url.startsWith("chrome-extension://") && t.url.endsWith("/background.js")) ?? null);
     const options = sw.url.replace(/background\.js$/, "options.html");
@@ -182,6 +199,9 @@ async function firefox(): Promise<void> {
     const reset = String(await evaluate(BOX));
     say(`\ncommands.update: probe-opt-j → ${optJ(updated)} (${/commands\.update: .*/.exec(updated)?.[0]})`);
     say(`commands.reset: probe-opt-j → ${optJ(reset)} (${/commands\.reset: .*/.exec(reset)?.[0]})`);
+    await click("copy log");
+    await sleep(500);
+    showCopy(await evaluate(COPIED));
     if (!optionsUrl) throw new Error("the box drew no options page URL");
     // BiDi may not navigate to a `moz-extension:` page, so the box's own button opens it, through the background.
     for (const round of ["first open", "reopened"]) {
