@@ -162,7 +162,12 @@ const NO_HIT = {};
 // @only 25-turn, 35-team-plan, tests: stateOf
 export const stateOf = (facts, hp = facts.hp, bar = null, from = null) => {
   const s = fresh(facts, hp, bar ?? facts.idx ?? 0);
-  if (from) for (const k of DISCRETE) if (k in from) s[k] = from[k];
+  if (from) {
+    for (const k of DISCRETE) {
+      const v = from[k];
+      if (v !== undefined || k in from) s[k] = v;
+    }
+  }
   return s;
 };
 // The state a side keeps once it leaves the field: its Substitute is gone (game-code.md §8).

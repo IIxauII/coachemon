@@ -422,37 +422,64 @@ const tpMerge = (list, k, T, mi, fi) => {
 };
 // Gotcha: a mean of full HP can land an ulp short of it, which would take a Sturdy holder out of its class.
 const tpMean = (s, hp) => {
+  if (hp === s.hp) return s;
   const m = stateOf(s.facts, hp, s.bar, s);
   return luckKey(m) === luckKey(s) ? m : s;
 };
 const tpMergeClass = (list, k, T, mi, fi) => {
   if (list.length <= k) return list;
-  const ids = new Map();
+  const ids = new Map(), sides = new Map();
+  const sideKey = s => {
+    let x = sides.get(s);
+    if (x === undefined) sides.set(s, (x = landingKey(s)));
+    return x;
+  };
   const idOf = b => {
-    const key = `${landingKey(b.me)},${landingKey(b.foe)}`;
+    const key = `${sideKey(b.me)},${sideKey(b.foe)}`;
     if (!ids.has(key)) ids.set(key, ids.size);
     return ids.get(key);
   };
   const out = list.slice(), keys = out.map(idOf), mhs = out.map(b => b.me.hp), fhs = out.map(b => b.foe.hp);
   const ourMax = T.ourMax[mi], foeMax = T.foeMax[fi];
-  while (out.length > k) {
-    let bi = 0, bj = 1, bd = Infinity;
-    for (let i = 0; i < out.length; i++) {
-      for (let j = i + 1; j < out.length; j++) {
-        const d = Math.abs(mhs[i] - mhs[j]) / ourMax + Math.abs(fhs[i] - fhs[j]) / foeMax + (keys[i] !== keys[j] ? 1 : 0);
-        if (d < bd) { bd = d; bi = i; bj = j; }
-      }
+  const far = (i, j) => Math.abs(mhs[i] - mhs[j]) / ourMax + Math.abs(fhs[i] - fhs[j]) / foeMax + (keys[i] !== keys[j] ? 1 : 0);
+  // Contract: `near[i]` is the first of the nearest branches after `i` and `gap[i]` how far, so the pair merged is the
+  // first nearest pair in index order, as a scan of every pair finds it.
+  const near = [], gap = [];
+  const scan = i => {
+    let bj = i + 1, bd = Infinity;
+    for (let j = i + 1; j < out.length; j++) {
+      const d = far(i, j);
+      if (d < bd) { bd = d; bj = j; }
     }
+    near[i] = bj;
+    gap[i] = bd;
+  };
+  for (let i = 0; i < out.length; i++) scan(i);
+  while (out.length > k) {
+    let bi = 0, bd = Infinity;
+    for (let i = 0; i < out.length - 1; i++) if (gap[i] < bd) { bd = gap[i]; bi = i; }
+    const bj = near[bi];
     const [a, b] = [out[bi], out[bj]];
     const p = a.p + b.p;
     const w = f => (p > 0 ? (f(a) * a.p + f(b) * b.p) / p : f(a));
     const big = a.p >= b.p ? a : b;
-    for (const xs of [out, keys, mhs, fhs]) xs.splice(bj, 1);
+    // `tpMean` keeps a state's luck, and so its landing key: the merged branch keeps `big`'s.
+    const id = big === a ? keys[bi] : keys[bj];
+    for (const xs of [out, keys, mhs, fhs, near, gap]) xs.splice(bj, 1);
     out[bi] = { ...big, p, me: tpMean(big.me, w(x => x.me.hp)), foe: tpMean(big.foe, w(x => x.foe.hp)),
       ox: w(x => x.ox), od: w(x => x.od), og: w(x => x.og), fd: w(x => x.fd), fg: w(x => x.fg) };
-    keys[bi] = idOf(out[bi]);
+    keys[bi] = id;
     mhs[bi] = out[bi].me.hp;
     fhs[bi] = out[bi].foe.hp;
+    for (let i = 0; i < out.length; i++) {
+      const j = near[i];
+      if (i === bi || j === bi || j === bj) { scan(i); continue; }
+      if (j > bj) near[i] = j - 1;
+      if (i < bi) {
+        const d = far(i, bi);
+        if (d < gap[i] || (d === gap[i] && bi < near[i])) { gap[i] = d; near[i] = bi; }
+      }
+    }
   }
   return out;
 };
