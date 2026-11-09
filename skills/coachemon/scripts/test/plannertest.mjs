@@ -1803,6 +1803,13 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
   assert.deepEqual(sticky, plain, "Sticky Hold keeps the berry, even on a knockout");
   assert.deepEqual(behind, plain, "the substitute is hit, so the berry is never reached");
   assert.deepEqual(exposed, sitrus, "…and no substitute steals as before");
+  // A Substitute with its HP lands in KO pacing as well (#1033): a Bug Bite it takes steals nothing, priced as a Pound
+  // into the same Substitute, and once it breaks the game removes it, so the next read steals as `exposed` does.
+  const sub = t => (t === "SUBSTITUTE" ? { tagType: t, hp: 70 } : null);
+  const intoSub = bite([berryItem(BERRY.SITRUS)], { getTag: sub });
+  assert.deepEqual(intoSub, bite([berryItem(BERRY.SITRUS)], { move: 1, getTag: sub }), "a hit the Substitute takes steals nothing");
+  const [held, broken] = [sub, () => null].map(getTag => bite([berryItem(BERRY.SITRUS)], { move: 1, getTag, full: true }).eTurnsWe);
+  assert.ok(held > broken, `and the Substitute takes the first hit: ${held} vs ${broken} turns`);
 
   // Depth 2: the second Bug Bite of a line draws from what the first left, and the first steal is never counted twice.
   // A Sitrus x1 holder has nothing left to lose, so the follow-up gains nothing and its turn ends are already short of

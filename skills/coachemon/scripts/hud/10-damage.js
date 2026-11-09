@@ -88,6 +88,9 @@ const fixedIgnoresSturdy = env => {
   return !!v && !versionAtLeast(v, STURDY_VS_FIXED_FROM);
 };
 
+const substituteHp = t => {
+  try { const hp = t.getTag?.("SUBSTITUTE")?.hp; return hp > 0 ? hp : 0; } catch { return 0; }
+};
 // @only 25-turn, 12-value, tests: targetFacts
 // @mirrors target-facts
 export const targetFacts = (env, t, ignoreAbility = false) => {
@@ -104,6 +107,8 @@ export const targetFacts = (env, t, ignoreAbility = false) => {
     pEndure: endure ? Math.min(1, (endure.chance ?? 2) * (endure.getStackCount?.() ?? 1) / 100) : 0,
     // Reviver Seed (game-code.md §8).
     revive: stack(t, "PokemonInstantReviveModifier") ? Math.max(1, Math.floor(maxHp / 2)) : 0,
+    // The Substitute's HP left, 0 for none (game-code.md §8).
+    sub: substituteHp(t),
     enigma: enigmaOf(env, t),
     sitrus: sitrusOf(env, t),
     unnerve: ability(t, "PreventBerryUseAbAttr"),
@@ -123,10 +128,10 @@ const barStep = (f, hp, bar, d, ohko = false) => {
 // Landing (CONTEXT.md, `Landing`): what one hit does to the side it lands on (game-code.md §2, §3, §8, §21). A Landing
 // state is `{ hp, bar, facts }` and the discrete part, made by `stateOf` and `land` and read, never written. Team value
 // lands no berries and no turn end (#1024).
-// The discrete part, at its fresh values. `revived`: the Reviver Seed is spent; `tok`: the enemy endure token is spent
-// for the wave.
-const FRESH = Object.freeze({ revived: false, tok: false });
-const DISCRETE = Object.keys(FRESH);
+// The discrete part, at its fresh values for `f`. `revived`: the Reviver Seed is spent; `tok`: the enemy endure token
+// is spent for the wave; `sub`: the Substitute's HP left, 0 for none.
+const fresh = f => ({ revived: false, tok: false, sub: f?.sub > 0 ? f.sub : 0 });
+const DISCRETE = Object.keys(fresh(null));
 const LUCK = ["revived", "tok"];
 const REST = DISCRETE.filter(k => !LUCK.includes(k));
 const NO_HIT = {};
@@ -134,11 +139,19 @@ const NO_HIT = {};
 // and bar are never read.
 // @only 25-turn, 35-team-plan, tests: stateOf
 export const stateOf = (facts, hp = facts.hp, bar = null, from = null) => {
-  const s = { hp, bar: bar ?? facts.idx ?? 0, ...FRESH, facts };
+  const s = { hp, bar: bar ?? facts.idx ?? 0, ...fresh(facts), facts };
   if (from) for (const k of DISCRETE) if (k in from) s[k] = from[k];
   return s;
 };
-// A carrier is a Landing state's fields, without `facts`, at its chance `p`, with `stop`, `dealt` and `hits`.
+// The state a side keeps once it leaves the field: its Substitute is gone (game-code.md §8).
+// @only 35-team-plan, tests: benched
+export const benched = s => (s.sub > 0 ? { ...s, sub: 0 } : s);
+// A carrier is a Landing state's fields, without `facts`, at its chance `p`, with `stop`, `dealt`, `subDealt` and
+// `hits`.
+// `reached(o)`, of a carrier or a `land` outcome: some hit of its use got past the target's Substitute, which an
+// Enigma Berry needs (game-code.md §8).
+// @only 35-team-plan, tests: reached
+export const reached = o => o.dealt > 0 || !(o.subDealt > 0);
 const fork = (b, hp, bar, p, taken, tok = b.tok) => ({ ...b, hp, bar, tok, p, dealt: b.dealt + taken, hits: b.hits + 1 });
 const stand = (b, hp, bar, endure, taken, out) => {
   if (endure) out.push(fork(b, hp, bar, b.p * endure, taken, true));
@@ -146,9 +159,14 @@ const stand = (b, hp, bar, endure, taken, out) => {
 };
 // One hit of `d` on carrier `b`, in the game's order (game-code.md §3, §8). Pushes what stands onto `out`, a revive
 // among it with `stop` set, and returns the share that goes down, handing it to `down(p, b, hp, bar)` with the HP the
-// hit left. `luck` false: turn-end chip, which nothing survives on luck (§21). `whole`: down below 1 HP (#527), else
-// at 0 or less.
+// hit left. `luck` false: turn-end chip, which nothing survives on luck and which never meets a Substitute (§21).
+// `whole`: down below 1 HP (#527), else at 0 or less. A Substitute takes the hit whole, ahead of everything else,
+// and its loss is `subDealt` (§8).
 const strike = (f, b, d, hit, whole, luck, out, down = null) => {
+  if (luck && b.sub > 0 && d > 0 && !hit.ignoresSub) {
+    out.push({ ...b, sub: Math.max(0, b.sub - d), subDealt: b.subDealt + Math.min(b.sub, d), hits: b.hits + 1 });
+    return 0;
+  }
   const [dealt, bar] = barStep(f, b.hp, b.bar, Math.max(0, d), !!hit.ohko);
   const left = b.hp - dealt;
   // The token rolls on the damage before the bar clamps it, and a roll on a hit the clamp or Sturdy already stops
@@ -190,41 +208,44 @@ const landUse = (f, b, d, n, fac, hit, whole, down) => {
   return live;
 };
 // `use`: one point of a use's spread, `{ d, n }`, `d` the whole use before the target's HP or bars cut it. `hit`: the
-// hit record, its race facts read by name and an absent one off (`ignoresSturdy`, `ohko`, `factor(bar)`). Each
-// outcome's `dealt` is what the use took through the bars, counted before a revive, and `hits` the hits that landed.
+// hit record, its race facts read by name and an absent one off (`ignoresSturdy`, `ignoresSub`, `ohko`, `factor(bar)`).
+// Each outcome's `dealt` is what the use took off its target through the bars, counted before a revive, `subDealt`
+// what it took off the target's Substitute, and `hits` the hits that landed, on either.
 // @only 35-team-plan, tests: land, luckKey, landingKey
 export const land = (state, use, hit = NO_HIT, { whole = false } = {}) => {
   const d = use?.d, h = hit ?? NO_HIT, f = state?.facts ?? NO_HIT;
   const up = whole ? state?.hp >= 1 : state?.hp > 0;
-  if (!up || !(d > 0) || !Number.isFinite(d)) return [{ state, p: 1, dealt: 0, hits: 0 }];
+  if (!up || !(d > 0) || !Number.isFinite(d)) return [{ state, p: 1, dealt: 0, subDealt: 0, hits: 0 }];
   const downs = [];
-  const stood = landUse(f, { ...state, p: 1, stop: false, dealt: 0, hits: 0 }, d, Math.max(1, Math.round(use.n ?? 1)), h.factor ?? null, h, whole,
-    (p, b, hp, bar) => downs.push({ state: stateOf(f, hp, bar, b), p, dealt: b.dealt + (b.hp - hp), hits: b.hits + 1 }));
+  const stood = landUse(f, { ...state, p: 1, stop: false, dealt: 0, subDealt: 0, hits: 0 }, d, Math.max(1, Math.round(use.n ?? 1)), h.factor ?? null, h, whole,
+    (p, b, hp, bar) => downs.push({ state: stateOf(f, hp, bar, b), p, dealt: b.dealt + (b.hp - hp), subDealt: b.subDealt, hits: b.hits + 1 }));
   const outs = [];
-  for (const c of stood) outs.push({ state: stateOf(f, c.hp, c.bar, c), p: c.p, dealt: c.dealt, hits: c.hits });
+  for (const c of stood) outs.push({ state: stateOf(f, c.hp, c.bar, c), p: c.p, dealt: c.dealt, subDealt: c.subDealt, hits: c.hits });
   for (const o of downs) outs.push(o);
   return outs;
 };
-export const luckKey = (s, f = s.facts) => `${+s.revived}${+s.tok}${f?.sturdy ? +(s.hp >= f.maxHp) : ""}`;
-export const landingKey = (s, f = s.facts) => {
+export const luckKey = (s, f = s.facts) => `${+s.revived}${+s.tok}${f?.sturdy ? +(s.hp >= f.maxHp) : ""}${s.sub > 0 ? "S" : ""}`;
+// `sub` stands in for the state's own Substitute HP.
+const keyWith = (s, f, sub) => {
   let k = `${luckKey(s, f)}|${s.bar}`;
-  for (const x of REST) k += `|${s[x]}`;
+  for (const x of REST) k += `|${x === "sub" ? sub : s[x]}`;
   return k;
 };
+export const landingKey = (s, f = s.facts) => keyWith(s, f, s.sub);
 // `perHit[k]`: Map damage → p for hit k; `dist`: [{ n, p }] hit counts; `checkAll`: every hit rolls, else only the
 // first. A miss or a faint ends the move (game-code.md §2). No revive: a seed holder's `pKo` of 0 prices its seed.
 const resolve = (f, perHit, dist, acc, checkAll, hit = NO_HIT) => {
   const rf = { ...f, revive: 0 };
   const add = (m, st, p) => {
     if (!(p > 0)) return;
-    const k = `${st.hp}|${st.bar}|${st.tok}`;
+    const k = `${st.hp}|${st.bar}|${st.tok}|${st.sub}`;
     const e = m.get(k);
     if (e) e.p += p; else m.set(k, { ...st, p });
   };
   const atLeast = n => dist.filter(x => x.n >= n).reduce((t, x) => t + x.p, 0);
   const done = new Map();
   let live = new Map();
-  add(live, { ...stateOf(rf, f.hp, f.idx), stop: false, dealt: 0, hits: 0 }, 1);
+  add(live, { ...stateOf(rf, f.hp, f.idx), stop: false, dealt: 0, subDealt: 0, hits: 0 }, 1);
   const hitsMax = Math.max(...dist.map(x => x.n));
   for (let k = 0; k < hitsMax && live.size; k++) {
     const go = (k ? atLeast(k + 1) / atLeast(k) : atLeast(1)) * (k === 0 || checkAll ? acc : 1);
@@ -314,7 +335,7 @@ const flinchChance = (atk, def, move, ignoreAbility) => {
 // A KO-curve branch: a carrier with the Enigma and Sitrus Berries it still holds, `left` and `sitrus`, its discrete
 // part `from`'s.
 const branch = (hp, bar, from, p, left = 0, sitrus = 0) => {
-  const b = { hp, bar, p, stop: false, dealt: 0, hits: 0, left, sitrus };
+  const b = { hp, bar, p, stop: false, dealt: 0, subDealt: 0, hits: 0, left, sitrus };
   for (const k of DISCRETE) b[k] = from[k];
   return b;
 };
@@ -335,8 +356,8 @@ export const shares = (list, fallback) => {
   return t > 0 ? list.map(c => ({ s: c.s, p: c.p / t })) : fallback;
 };
 // `by[n − 1]`: P(the target is down by the end of use n). `rec` is `turn.mon(target)`, which carries no race
-// facts; `hit` is the hit record that does (`ignoresSturdy`, `cat`, `e`, an absent one off), and its use is
-// `useOf`'s, a bare use array reading as `{ use }`. `scale(i, broken)`: the damage factor on use i (0-based)
+// facts; `hit` is the hit record that does (`ignoresSturdy`, `ignoresSub`, `cat`, `e`, an absent one off), and its
+// use is `useOf`'s, a bare use array reading as `{ use }`. `scale(i, broken)`: the damage factor on use i (0-based)
 // with `broken` bars gone; `act(i)`: the chance use i happens at all. `turnEnd`: the signed HP change after
 // each use survived, or a function of the use count. `guard` false: a wild boss's defence never rises as its
 // bars break, which it otherwise does at the `cat` ("physical" or "special") of use 2's hit. `firstKo`: this
@@ -453,7 +474,7 @@ export const koCurve = (rec, hit, { hp, bar = null, start = null, scale = () => 
           const fed = berry && x.d > 0 ? x.se ?? seOf(useHit) : 0;
           for (const b of branches) {
             b.stop = false;
-            pushFed(struck, b, to.s, fed);
+            pushFed(struck, b, to.s, reached(b) ? fed : 0);
           }
         }
       }
@@ -489,11 +510,14 @@ export const koCurve = (rec, hit, { hp, bar = null, start = null, scale = () => 
       return b;
     };
     const groups = new Map();
+    // A standing Substitute's HP is squeezed in place of its owner's, at the owner's exact HP: keyed exactly, a curve
+    // of weak rolled hits into one ran for seconds (#1033).
     const settle = b => {
       if (!b) return;
-      const key = `${landingKey(b, f)}|${b.left}|${b.sitrus}${chain ? `|${b.s.key}` : ""}`;
+      const shield = b.sub > 0;
+      const key = `${shield ? keyWith(b, f, `S${b.hp}`) : landingKey(b, f)}|${b.left}|${b.sitrus}${chain ? `|${b.s.key}` : ""}`;
       if (!groups.has(key)) groups.set(key, { b, pts: [] });
-      groups.get(key).pts.push({ d: b.hp, p: b.p });
+      groups.get(key).pts.push({ d: shield ? b.sub : b.hp, p: b.p });
     };
     const stolen = stealRate(i);
     for (let b of struck) {
@@ -525,7 +549,11 @@ export const koCurve = (rec, hit, { hp, bar = null, start = null, scale = () => 
         }
       }
     }
-    states = [...groups.values()].flatMap(({ b, pts }) => squeezeDist(pts, KO_LEVELS).filter(x => x.p > 1e-9).map(x => inChain(branch(x.d, b.bar, b, x.p, b.left, b.sitrus), b.s)));
+    states = [...groups.values()].flatMap(({ b, pts }) => squeezeDist(pts, KO_LEVELS).filter(x => x.p > 1e-9).map(x => {
+      const c = inChain(branch(b.sub > 0 ? b.hp : x.d, b.bar, b, x.p, b.left, b.sitrus), b.s);
+      if (b.sub > 0) c.sub = x.d;
+      return c;
+    }));
     downAt.push(fellTo ? [...fellTo.values()].filter(x => x.p > 0) : []);
     if (i === 0) {
       const p = states.reduce((t, x) => t + x.p, 0);
@@ -799,9 +827,10 @@ const fromGame = (env, atk, def, pm, opts) => {
   const ohko = first.result === HitResult.ONE_HIT_KO;
   const fixed = !ohko && attrs(move, "FixedDamageAttr").length > 0;
   const ignoresSturdy = ignoreAbility || (fixed && fixedIgnoresSturdy(env));
+  const ignoresSub = pastSub(atk, move);
   const blocked = cancelledBy(env, atk, def, move);
   if (first.cancelled || first.result === HitResult.NO_EFFECT || first.result === HitResult.IMMUNE || blocked) {
-    return { ...base, acc: 0, crit: 0, dist, perHit: [{ max: 0, min: 0 }], targetHp: def.hp, expected: 0, uncapped: 0, max: 0, pKo: 0, revive: 0, costs: [], notes: [blocked ? `stopped by ${blocked}` : "no effect"], use: [{ d: 0, p: 1, n: 0 }], focus: 0, ignoresSturdy, flinch: 0 };
+    return { ...base, acc: 0, crit: 0, dist, perHit: [{ max: 0, min: 0 }], targetHp: def.hp, expected: 0, uncapped: 0, max: 0, pKo: 0, revive: 0, costs: [], notes: [blocked ? `stopped by ${blocked}` : "no effect"], use: [{ d: 0, p: 1, n: 0 }], focus: 0, ignoresSturdy, ignoresSub, flinch: 0 };
   }
 
   const psywave = attrs(move, "RandomLevelDamageAttr").length > 0;
@@ -871,14 +900,18 @@ const fromGame = (env, atk, def, pm, opts) => {
 
   const facts = targetFacts(env, def, ignoreAbility);
   const f = ignoresSturdy && facts.sturdy ? { ...facts, sturdy: false } : facts;
-  const strikes = { ignoresSturdy, ohko };
-  const ends = resolve(facts, perHit, dist, acc, checkAll, strikes);
+  const strikes = { ignoresSturdy, ignoresSub, ohko };
+  // What the use deals is priced past a Substitute, as `use` is; `pKo` is not (game-code.md §8).
+  const shielded = facts.sub > 0 && !ignoresSub;
+  const bare = shielded ? { ...facts, sub: 0 } : facts;
+  const ends = resolve(bare, perHit, dist, acc, checkAll, strikes);
   const expected = f.hp - ends.reduce((t, x) => t + x.p * Math.max(0, x.hp), 0);
-  const pKo = f.revive ? 0 : ends.filter(x => x.hp <= 0).reduce((t, x) => t + x.p, 0);
+  const kos = shielded ? resolve(facts, perHit, dist, acc, checkAll, strikes) : ends;
+  const pKo = f.revive ? 0 : kos.filter(x => x.hp <= 0).reduce((t, x) => t + x.p, 0);
   // Expected damage a use before the target's HP or a bar cuts it: what later turns deal.
   const uncapped = perHit.reduce((t, m, k) => t + (k === 0 || checkAll ? acc ** (k + 1) : acc)
     * dist.filter(x => x.n > k).reduce((u, x) => u + x.p, 0) * [...m].reduce((u, [d, p]) => u + d * p, 0), 0);
-  const [worst] = resolve({ ...facts, pFocus: 0, pEndure: 0 }, maxes.map(d => new Map([[d, 1]])), [{ n: hitsMax, p: 1 }], 1, false, strikes);
+  const [worst] = resolve({ ...bare, pFocus: 0, pEndure: 0 }, maxes.map(d => new Map([[d, 1]])), [{ n: hitsMax, p: 1 }], 1, false, strikes);
 
   // Whether the order lets it land is the planner's (game-code.md §5).
   const semiTag = (def.summonData?.tags ?? []).find(t => isA(t, "SemiInvulnerableTag"));
@@ -921,20 +954,24 @@ const fromGame = (env, atk, def, pm, opts) => {
   if (f.sturdy && f.hp >= f.maxHp) notes.push("sturdy");
   if (f.pFocus) notes.push("focus band");
   if (f.revive) notes.push("reviver seed");
+  if (shielded) notes.push("substitute");
   if (disguise) notes.push("disguise");
   if (crit === 1) notes.push("crit");
   if (semi) notes.push("target semi-invulnerable");
   return {
     ...base, acc, crit, dist, semi, self, selfKo, drain,
     perHit: maxes.map((max, k) => ({ max, min: Math.min(max, lows[k] ?? Math.floor(max * 0.85)) })), targetHp: f.hp,
-    expected, uncapped, max: f.hp - Math.max(0, worst.hp), pKo, revive: f.revive, costs, notes,
-    use, focus: f.pFocus, ignoresSturdy, flinch: flinchChance(atk, def, move, ignoreAbility),
+    expected, uncapped, max: f.hp - Math.max(0, worst.hp), pKo, revive: f.revive, sub: shielded ? facts.sub : 0, costs, notes,
+    use, focus: f.pFocus, ignoresSturdy, ignoresSub, flinch: flinchChance(atk, def, move, ignoreAbility),
   };
 };
 
 // By ability name and move flag, never `ignoresAbilities`: a combatant can't answer the game's call, and here it would
 // run unsandboxed (#995).
 const approxIgnoresAbilities = (atk, mv) => hasMoldBreaker(atk) || hasFlag(mv, MoveFlags.IGNORE_ABILITIES);
+// A hit that gets past a Substitute: a sound move, one that ignores it, or an Infiltrator's (game-code.md §8).
+// @mirrors sub-bypass
+const pastSub = (atk, mv) => hasFlag(mv, MoveFlags.SOUND_BASED) || hasFlag(mv, MoveFlags.IGNORE_SUBSTITUTE) || ability(atk, "InfiltratorAbAttr");
 // @mirrors ate
 const ATE = { Refrigerate: "Ice", Pixilate: "Fairy", Aerilate: "Flying", Galvanize: "Electric" };
 const approx = (a, d, pm) => {
@@ -966,9 +1003,12 @@ const fromApprox = (env, atk, def, pm) => {
   const acc = mv.accuracy > 0 ? mv.accuracy / 100 : 1;
   const max = Math.floor(x.dmg);
   const ignoresSturdy = approxIgnoresAbilities(atk, mv);
+  const ignoresSub = pastSub(atk, mv);
   const facts = targetFacts(env, def, ignoresSturdy);
-  const [hit] = resolve({ ...facts, pFocus: 0, pEndure: 0 }, [new Map([[Math.max(0, max), 1]])], [{ n: 1, p: 1 }], 1, false);
-  const end = { hp: Math.max(0, hit.hp), ko: hit.hp <= 0 };
+  const shielded = facts.sub > 0 && !ignoresSub;
+  const once = f => resolve({ ...f, pFocus: 0, pEndure: 0 }, [new Map([[Math.max(0, max), 1]])], [{ n: 1, p: 1 }], 1, false)[0];
+  const hit = once({ ...facts, sub: 0 });
+  const end = { hp: Math.max(0, hit.hp), ko: (shielded ? once(facts) : hit).hp <= 0 };
   const { revive, pFocus } = facts;
   const rolls = new Map();
   addRolls(rolls, max, 1);
@@ -978,9 +1018,9 @@ const fromApprox = (env, atk, def, pm) => {
     raw: x.dmg,
     name: x.name, type: x.type, cat: x.cat, e: x.e, priority: x.priority, spread: x.spread, spreadApplied: false, traits: t, semi: false, self: 0,
     acc, crit: 0, dist: [{ n: 1, p: 1 }], perHit: [{ max, min: Math.floor(max * 0.85) }], targetHp: def.hp,
-    expected: Math.min(def.hp - end.hp, max * 0.925) * acc, uncapped: max * 0.925 * acc, max: def.hp - end.hp, pKo: end.ko && !revive ? acc : 0, revive,
+    expected: Math.min(def.hp - end.hp, max * 0.925) * acc, uncapped: max * 0.925 * acc, max: def.hp - end.hp, pKo: end.ko && !revive ? acc : 0, revive, sub: shielded ? facts.sub : 0,
     costs: costNotes(t, { type: x.type }), notes: ["estimate"], live: false,
-    use: useDist([rolls], [{ n: 1, p: 1 }], acc, false), focus: pFocus, ignoresSturdy, flinch: flinchChance(atk, def, mv, false), drain: drainRatio(env, atk, def, t),
+    use: useDist([rolls], [{ n: 1, p: 1 }], acc, false), focus: pFocus, ignoresSturdy, ignoresSub, flinch: flinchChance(atk, def, mv, false), drain: drainRatio(env, atk, def, t),
   };
 };
 
@@ -1048,12 +1088,12 @@ export const useOf = o => {
   return squeezeDist([...(acc < 1 ? [{ d: 0, p: 1 - acc, n: 0 }] : []), ...pts.map(x => ({ d: x.d * k, p: x.p, n }))], 12);
 };
 // A record's KO odds at another HP than its `targetHp`: linear across the roll range, all or nothing for an
-// approximation.
+// approximation. One priced into a Substitute (`sub`) keeps its own odds at any HP.
 export const koChanceAt = (o, hp) => {
   if (!o) return 0;
   if (hp <= 0) return 1;
   if (o.revive) return 0;
-  if (hp >= (o.targetHp ?? Infinity)) return o.pKo ?? 0;
+  if (o.sub > 0 || hp >= (o.targetHp ?? Infinity)) return o.pKo ?? 0;
   if (!(o.max >= hp)) return 0;
   return o.live === false ? 1 : Math.max(o.pKo ?? 0, (o.acc ?? 1) * Math.min(1, (o.max - hp) / (0.15 * o.max) + 1 / 16));
 };

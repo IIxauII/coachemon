@@ -1925,12 +1925,16 @@ export const HUD: Area = {
         "src/data/moves/move.ts#RandomLevelDamageAttr.getDamage",
       ],
     },
+    { ours: "skills/coachemon/scripts/hud/10-damage.js#sub-bypass", of: ["src/data/moves/move.ts#Move.hitsSubstitute"] },
     {
       ours: "skills/coachemon/scripts/hud/10-damage.js#target-facts",
       of: [
         "src/modifier/modifier.ts#SurviveDamageModifier.shouldApply",
         "src/modifier/modifier.ts#EnemyEndureChanceModifier.apply",
         "src/modifier/modifier.ts#PokemonInstantReviveModifier.apply",
+        "src/data/battler-tags.ts#SubstituteTag.onAdd",
+        "src/phases/move-effect-phase.ts#MoveEffectPhase.applyMoveDamage",
+        "src/phases/move-effect-phase.ts#MoveEffectPhase.updateSubstitutes",
       ],
     },
     { ours: "skills/coachemon/scripts/hud/10-damage.js#with-dmg", of: ["src/field/pokemon.ts#Pokemon.getAttackDamage"] },

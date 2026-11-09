@@ -334,7 +334,7 @@ export const PAGE: Area = {
         "src/ui/handlers/pokedex-page-ui-handler.ts#PokedexPageUiHandler.hasPassive",
       ],
     },
-    { name: "hp", kind: "field", at: ["src/field/pokemon.ts#Pokemon.hp"] },
+    { name: "hp", kind: "field", at: ["src/field/pokemon.ts#Pokemon.hp", "src/data/battler-tags.ts#SubstituteTag.hp"] },
     {
       name: "id",
       kind: "field",
