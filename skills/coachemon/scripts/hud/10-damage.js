@@ -156,7 +156,7 @@ const NO_OTHERS = [];
 const DISCRETE = Object.keys(fresh(null)).filter(k => k !== "hp" && k !== "bar" && k !== "facts");
 const LUCK = ["revived", "tok", "busted"];
 const REST = DISCRETE.filter(k => !LUCK.includes(k) && k !== "others");
-const NO_HIT = {};
+const NO_HIT = {}, NO_FACTS = {};
 // `from` carries a discrete part to the new state, a Landing state, an `after1` entry or a search-state entry; its HP
 // and bar are never read.
 // @only 25-turn, 35-team-plan, tests: stateOf
@@ -180,6 +180,10 @@ const seOf = h => ((h?.e ?? 1) >= 2 ? 1 : 0);
 // (game-code.md §8).
 // @only 30-planner: shellBellHeal
 export const shellBellHeal = (bell, dealt) => (bell?.stacks > 0 && dealt > 0 ? Math.floor(Math.max(1, Math.floor(dealt * bell.stacks / 8)) * (bell.charm ?? 1)) : 0);
+// Landing's down rule: with `whole`, a side is down below 1 HP (#527), else at 0 or less.
+const stands = (hp, whole) => (whole ? hp >= 1 : hp > 0);
+// A boss's bar once damage that passes its bars leaves it on `hp`, never above `bar` (game-code.md §3).
+const barAfter = (f, bar, hp) => (f.boss ? Math.max(0, Math.min(bar, Math.ceil(Math.max(0, hp) / f.segSize) - 1)) : bar);
 // The user's cost `d` off HP `hp` at bar `bar`, with no luck: through its bars, or with `past` beyond them, its bar then
 // following its HP (game-code.md §3, §8). Returns [hp, bar].
 const paid = (uf, hp, bar, d, past) => {
@@ -189,7 +193,7 @@ const paid = (uf, hp, bar, d, past) => {
     return [Math.max(0, hp - dd), after];
   }
   const left = Math.max(0, hp - (uf.finalBoss && bar < 1 ? Math.min(d, hp - 1) : d));
-  return [left, uf.boss ? Math.max(0, Math.min(bar, Math.ceil(left / uf.segSize) - 1)) : bar];
+  return [left, barAfter(uf, bar, left)];
 };
 // `user` after what its use did for it, in the game's order: what the use costs it, its recoil on `dealt` and what the
 // target's Substitute lost, then the chip of each of the `reached` strikes past that Substitute, then a landed use's own
@@ -199,16 +203,15 @@ const paid = (uf, hp, bar, d, past) => {
 // several strikes pays every strike's cost ahead of its first heal, where the game heals each strike's drain and berry
 // before the next strike's chip (§3, §18).
 const repaid = (user, hit, whole, stolen, dealt, subDealt, reached) => {
-  const uf = user.facts ?? NO_HIT, max = uf.maxHp ?? Infinity;
-  const up = hp => (whole ? hp >= 1 : hp > 0);
-  if (!up(user.hp)) return user;
+  const uf = user.facts ?? NO_FACTS, max = uf.maxHp ?? Infinity;
+  if (!stands(user.hp, whole)) return user;
   let hp = user.hp, bar = user.bar;
   const cost = hit.userCost;
   if (cost) {
     if (cost.recoil > 0 && dealt + subDealt > 0) [hp, bar] = paid(uf, hp, bar, Math.max(1, Math.floor((dealt + subDealt) * cost.recoil)), true);
     for (let k = 0; k < reached && cost.strike > 0; k++) [hp, bar] = paid(uf, hp, bar, cost.strike, false);
     [hp, bar] = paid(uf, hp, bar, cost.landed, true);
-    if (!up(hp)) return stateOf(uf, hp, bar, user);
+    if (!stands(hp, whole)) return stateOf(uf, hp, bar, user);
   }
   const room = hp < max;
   if (stolen > 0) hp = Math.min(max, hp + stolen);
@@ -219,7 +222,7 @@ const repaid = (user, hit, whole, stolen, dealt, subDealt, reached) => {
     hp = Math.max(0, hp - d);
     bar = after;
   }
-  const bell = room && up(hp) ? shellBellHeal(uf.shellBell, dealt + subDealt) : 0;
+  const bell = room && stands(hp, whole) ? shellBellHeal(uf.shellBell, dealt + subDealt) : 0;
   if (bell > 0) hp = Math.min(max, hp + bell);
   return hp === user.hp && bar === user.bar ? user : stateOf(uf, hp, bar, user);
 };
@@ -227,9 +230,9 @@ const repaid = (user, hit, whole, stolen, dealt, subDealt, reached) => {
 // Beam's half on a miss passes them in the game.
 const missedBy = (user, hit, whole) => {
   const d = hit.userCost?.missed;
-  if (!(d > 0) || !(whole ? user.hp >= 1 : user.hp > 0)) return user;
-  const [hp, bar] = paid(user.facts ?? NO_HIT, user.hp, user.bar, d, false);
-  return stateOf(user.facts ?? NO_HIT, hp, bar, user);
+  if (!(d > 0) || !stands(user.hp, whole)) return user;
+  const [hp, bar] = paid(user.facts ?? NO_FACTS, user.hp, user.bar, d, false);
+  return stateOf(user.facts ?? NO_FACTS, hp, bar, user);
 };
 // A carrier is a Landing state's fields, without `facts`, at its chance `p`, with `stop`, `dealt`, `subDealt`, `hits`,
 // and `subHits`, the hits its Substitute took.
@@ -242,9 +245,9 @@ const stand = (b, hp, bar, endure, taken, out) => {
 // down, as `strike` does.
 const bust = (f, b, whole, out, down) => {
   const left = b.hp - (f.disguise.chip || 0);
-  const bar = f.boss ? Math.max(0, Math.min(b.bar, Math.ceil(Math.max(0, left) / f.segSize) - 1)) : b.bar;
+  const bar = barAfter(f, b.bar, left);
   const c = Object.assign(fork(b, left, bar, b.p, 0), { busted: true });
-  if (whole ? left >= 1 : left > 0) { out.push(c); return 0; }
+  if (stands(left, whole)) { out.push(c); return 0; }
   if (f.revive && !b.revived) {
     out.push(Object.assign(c, { hp: f.revive, revived: true, stop: true }));
     return 0;
@@ -278,8 +281,8 @@ const strike = (f, b, d, hit, whole, luck, out, down = null) => {
   const left = b.hp - dealt;
   // The token rolls on the damage before the bar clamps it, and a roll on a hit the clamp or Sturdy already stops
   // still spends it (game-code.md §3).
-  const endure = luck && !b.tok && (whole ? b.hp - d < 1 : d >= b.hp) ? f.pEndure || 0 : 0;
-  if (whole ? left >= 1 : left > 0) { stand(b, left, bar, endure, dealt, out); return 0; }
+  const endure = luck && !b.tok && !stands(b.hp - d, whole) ? f.pEndure || 0 : 0;
+  if (stands(left, whole)) { stand(b, left, bar, endure, dealt, out); return 0; }
   if (luck && f.sturdy && !hit.ignoresSturdy && b.hp >= f.maxHp) { stand(b, 1, bar, endure, b.hp - 1, out); return 0; }
   const focus = luck ? f.pFocus || 0 : 0;
   if (endure) out.push(fork(b, 1, bar, b.p * endure, b.hp - 1, true));
@@ -342,11 +345,11 @@ const shift = (f, b, d, whole, out, down) => {
   out.push(b);
 };
 // One turn end on carrier `b`, onto `out` with its mark cleared: the signed change `before`, then the berries, both
-// reading the HP from before either heals, then the rest of `total` (game-code.md §3, §21). `sit` / `nig`: the Sitrus
-// and Enigma Berry facts it may eat, null for none. `between(b, out)`: a step of the caller's ahead of the berries.
-// Gotcha: with nothing it could eat, `total` lands as one change.
-const endTurn = (f, b, before, total, sit, nig, whole, out, down = null, between = null) => {
-  const eatsE = !!nig && b.fed && b.enigmas > 0;
+// reading the HP from before either heals, then the rest of `total` (game-code.md §3, §21). `sit` / `enigma`: the
+// Sitrus and Enigma Berry facts it may eat, null for none. `between(b, out)`: a step of the caller's ahead of the
+// berries. Gotcha: with nothing it could eat, `total` lands as one change.
+const endTurn = (f, b, before, total, sit, enigma, whole, out, down = null, between = null) => {
+  const eatsE = !!enigma && b.fed && b.enigmas > 0;
   b.fed = false;
   if (!eatsE && !(sit && b.sitrus > 0)) {
     shift(f, b, total, whole, out, down);
@@ -355,10 +358,10 @@ const endTurn = (f, b, before, total, sit, nig, whole, out, down = null, between
   const mid = [], standing = [];
   shift(f, b, before, whole, mid, down);
   for (const c of mid) if (between) between(c, standing); else standing.push(c);
-  const keepE = eatsE && nig.keep > 0 ? nig.keep : 0, keepS = sit?.keep > 0 ? sit.keep : 0;
+  const keepE = eatsE && enigma.keep > 0 ? enigma.keep : 0, keepS = sit?.keep > 0 ? sit.keep : 0;
   for (const r of standing) {
     const eatsS = !!sit && r.sitrus > 0 && belowHalf(r.hp, f.maxHp);
-    const heal = (eatsE ? nig.heal : 0) + (eatsS ? sit.heal : 0);
+    const heal = (eatsE ? enigma.heal : 0) + (eatsS ? sit.heal : 0);
     const ate = keepE ? [{ ...r, p: r.p * keepE }, r] : [r];
     if (eatsE) {
       if (keepE) r.p *= 1 - keepE;
@@ -400,6 +403,16 @@ const landUse = (f, b, d, n, fac, hit, whole, down) => {
   }
   return live;
 };
+// Contract: every hit record sets each race fact, `null` allowed, so none is left off (#995). `raceFacts(o)` sets
+// them off `o`, a flag false and any other null where `o` has none.
+const RACE_FLAGS = ["ignoresSturdy", "ignoresSub", "ignoresAbility", "ignoresDisguise"];
+// @only 35-team-plan, tests: RACE_FACTS, raceFacts
+export const RACE_FACTS = [...RACE_FLAGS, "cut", "cat", "e", "steals", "userCost"];
+export const raceFacts = o => {
+  const x = {};
+  for (const k of RACE_FACTS) x[k] = RACE_FLAGS.includes(k) ? !!o?.[k] : o?.[k] ?? null;
+  return x;
+};
 // `use`: one point of a use's spread, `{ d, n, se }`, `d` the whole use before the target's HP or bars cut it, and `se`
 // its super-effective share. `hit`: the hit record, its race facts read by name and an absent one off (`ignoresSturdy`,
 // `ignoresSub`, `ignoresAbility`, `ignoresDisguise`, `cut`, `ohko`, `factor(bar)`, `steals`, and `e`, which stands in for
@@ -417,17 +430,20 @@ const landUse = (f, b, d, n, fac, hit, whole, down) => {
 // Gotcha: a hit a Substitute takes drains 0 here, where the game heals at least 1 off the user's last hit (§8).
 // @only 35-team-plan, tests: land, landTurnEnd, luckKey, landingKey
 export const land = (state, use, hit = NO_HIT, { whole = false, user = null } = {}) => {
-  const d = use?.d, h = hit ?? NO_HIT, f = state?.facts ?? NO_HIT;
-  const up = whole ? state?.hp >= 1 : state?.hp > 0;
+  const d = use?.d, h = hit ?? NO_HIT, f = state?.facts ?? NO_FACTS;
+  const up = stands(state?.hp, whole);
   if (!up || !(d > 0) || !Number.isFinite(d)) {
     return [user ? { state, user: up ? missedBy(user, h, whole) : user, p: 1, dealt: 0, subDealt: 0, hits: 0 } : { state, p: 1, dealt: 0, subDealt: 0, hits: 0 }];
   }
   const heals = h.steals && typeof h.steals === "object" ? h.steals : null;
-  // Beside each outcome, for its user: the berry it stole and the strikes that reached past the Substitute.
-  const downs = [], lost = user ? [] : null;
+  // Outcome `o` off carrier `c`, with its user after the berries `c` stole and the `reached` strikes past the Substitute.
+  const outcome = (o, c, reached) => {
+    if (user) o.user = repaid(user, h, whole, c.stolen || 0, o.dealt, o.subDealt, reached);
+    return o;
+  };
+  const downs = [];
   const downed = (p, b, hp, bar) => {
-    downs.push({ state: stateOf(f, hp, bar, b), p, dealt: b.dealt + (b.hp - hp), subDealt: b.subDealt, hits: b.hits + 1 });
-    if (lost) lost.push(b.stolen || 0, b.hits + 1 - b.subHits);
+    downs.push(outcome({ state: stateOf(f, hp, bar, b), p, dealt: b.dealt + (b.hp - hp), subDealt: b.subDealt, hits: b.hits + 1 }, b, b.hits + 1 - b.subHits));
   };
   const stood = landUse(f, { ...state, p: 1, stop: false, dealt: 0, subDealt: 0, hits: 0, subHits: 0 }, d, Math.max(1, Math.round(use.n ?? 1)), h.factor ?? null, h, whole,
     h.steals ? (p, b, hp, bar) => {
@@ -441,16 +457,9 @@ export const land = (state, use, hit = NO_HIT, { whole = false, user = null } = 
     fed = [];
     for (const c of stood) feed(c, c.dealt > 0 ? se : 0, fed);
   }
-  const outs = [], gains = user ? [] : null;
-  for (const c of fed) {
-    outs.push({ state: stateOf(f, c.hp, c.bar, c), p: c.p, dealt: c.dealt, subDealt: c.subDealt, hits: c.hits });
-    if (gains) gains.push(c.stolen || 0, c.hits - c.subHits);
-  }
+  const outs = [];
+  for (const c of fed) outs.push(outcome({ state: stateOf(f, c.hp, c.bar, c), p: c.p, dealt: c.dealt, subDealt: c.subDealt, hits: c.hits }, c, c.hits - c.subHits));
   for (const o of downs) outs.push(o);
-  if (gains) {
-    for (const g of lost) gains.push(g);
-    outs.forEach((o, i) => { o.user = repaid(user, h, whole, gains[2 * i], o.dealt, o.subDealt, gains[2 * i + 1]); });
-  }
   return outs;
 };
 const num = x => (Number.isFinite(x) ? x : 0);
@@ -460,14 +469,14 @@ const num = x => (Number.isFinite(x) ? x : 0);
 // keeps each berry it eats on an outcome of its own. Chip lands through the bars with no luck. `whole` is `land`'s. A
 // state already down comes back as it was.
 export const landTurnEnd = (state, { before = 0, after = 0, eats = true, whole = false } = {}) => {
-  const f = state?.facts ?? NO_HIT;
-  if (!(whole ? state?.hp >= 1 : state?.hp > 0)) return [{ state, p: 1 }];
+  const f = state?.facts ?? NO_FACTS;
+  if (!stands(state?.hp, whole)) return [{ state, p: 1 }];
   const pre = num(before), total = pre + num(after);
   const ate = x => (eats && x?.heal > 0 ? x : null);
-  const sit = ate(f.sitrus), nig = ate(f.enigma);
+  const sit = ate(f.sitrus), enigma = ate(f.enigma);
   if (!total && !state.fed && !(sit && state.sitrus > 0)) return [{ state, p: 1 }];
   const outs = [], downs = [];
-  endTurn(f, { ...state, p: 1, stop: false, dealt: 0, subDealt: 0, hits: 0 }, pre, total, sit, nig, whole, outs,
+  endTurn(f, { ...state, p: 1, stop: false, dealt: 0, subDealt: 0, hits: 0 }, pre, total, sit, enigma, whole, outs,
     (p, c, hp, bar) => downs.push({ state: stateOf(f, hp, bar, c), p }));
   const res = outs.map(c => ({ state: stateOf(f, c.hp, c.bar, c), p: c.p }));
   for (const d of downs) res.push(d);

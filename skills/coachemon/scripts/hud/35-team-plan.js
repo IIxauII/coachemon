@@ -2,7 +2,7 @@
 // The enemy's choices are not branched, it never switches mid-exchange, and a double is planned one of ours against
 // one foe at a time.
 import { battleMoveset, iconOf, squeezeDist } from "./01-core.js";
-import { benched, koCurve, koTurns, land, landTurnEnd, landingKey, luckKey, stateOf, useOf } from "./10-damage.js";
+import { benched, koCurve, koTurns, land, landTurnEnd, landingKey, luckKey, raceFacts, stateOf, useOf } from "./10-damage.js";
 import { actionOrder, afterSteals, attemptsLost, entryOutcomes, fightCourse, hitsOn, koBoost, koBoostAfter, koBoostText, koStageFactor, laterUse, ourTeraTurn, paralysed, sendInAt, sendInBase, stealCounts, stealHeals, stealRates, threatFrom, tokenOdds, tokenShift, unnervedBy } from "./30-planner.js";
 
 // @only tests: tpSendScore, tpFight, tpTables, tpActs
@@ -27,9 +27,8 @@ const tpFastest = (turn, list, target, turns = o => tpTurns(turn, o, target), dm
 // the turn after each hit.
 const tpMoveOf = (o, extra) => {
   const use = useOf(o);
-  return { name: o.name, type: o.type, cat: o.cat, e: o.e, ignoresSturdy: !!o.ignoresSturdy, ignoresSub: !!o.ignoresSub, ignoresAbility: !!o.ignoresAbility, ignoresDisguise: !!o.ignoresDisguise, cut: o.cut ?? null, priority: o.priority ?? 0, dmg: use.reduce((t, x) => t + x.d * x.p, 0), use: tpSpread(use), drain: o.drain ?? 0,
-    userCost: o.userCost ?? null, acc: o.acc ?? 1, steals: o.steals ?? null,
-    charge: !!o.traits?.charge, recharge: !!o.traits?.recharge || !!o.traits?.noRepeat, semiCharge: !!o.traits?.charge && !!o.traits?.semiCharge, ...extra };
+  return { name: o.name, type: o.type, ...raceFacts(o), priority: o.priority ?? 0, dmg: use.reduce((t, x) => t + x.d * x.p, 0), use: tpSpread(use), drain: o.drain ?? 0,
+    acc: o.acc ?? 1, charge: !!o.traits?.charge, recharge: !!o.traits?.recharge || !!o.traits?.noRepeat, semiCharge: !!o.traits?.charge && !!o.traits?.semiCharge, ...extra };
 };
 
 // `them` is what the foe is bringing back, so the order weighs beside the pace rather than the pace alone (#650).
@@ -72,8 +71,7 @@ const tpTheirMove = (turn, f, me) => {
           dmg: mean > 0 ? mean : per.expected, entry: Number.isFinite(now?.expected) ? now.expected : t.expected, use: tpSpread(per.use),
           // `first` is the order against a move of ours at priority 0, which is all this table knows: `tpFoeFirst`
           // takes it again per move for anything out of that bracket (#650).
-          name: typeof t.move === "string" ? t.move : t.move?.name ?? null, e: t.move?.e ?? 1, ignoresSturdy: !!t.ignoresSturdy, ignoresSub: !!t.ignoresSub, ignoresAbility: !!t.ignoresAbility, ignoresDisguise: !!t.ignoresDisguise, cut: t.cut ?? null, cat: null, steals: null,
-          userCost: t.userCost ?? null, first: t.first, priority: t.move?.priority ?? 0, hits: hitsOn(t),
+          name: typeof t.move === "string" ? t.move : t.move?.name ?? null, ...raceFacts(t), e: t.move?.e ?? 1, cat: null, steals: null, first: t.first, priority: t.move?.priority ?? 0, hits: hitsOn(t),
           drain: t.expected > 0 ? (t.drain ?? 0) / t.expected : 0,
           phys: moved > 0 ? t.moves.reduce((sum, m) => sum + m.p * (m.cat === "special" ? 0 : 1), 0) / moved : 1,
         };
@@ -82,7 +80,7 @@ const tpTheirMove = (turn, f, me) => {
   }
   const m = tpFastest(turn, turn.outcomes(f, me).filter(x => x.dmg > 0), me);
   // Gotcha: as the threat's, no steal of the foe's is priced.
-  return { dmg: m?.dmg ?? 0, name: m?.name ?? null, e: m?.e ?? 1, ignoresSturdy: !!m?.ignoresSturdy, ignoresSub: !!m?.ignoresSub, ignoresAbility: !!m?.ignoresAbility, ignoresDisguise: !!m?.ignoresDisguise, cut: m?.cut ?? null, cat: null, steals: null, userCost: m?.userCost ?? null, first: null, priority: m?.priority ?? 0,
+  return { dmg: m?.dmg ?? 0, name: m?.name ?? null, ...raceFacts(m), e: m?.e ?? 1, cat: null, steals: null, first: null, priority: m?.priority ?? 0,
     hits: m?.dmg > 0 ? 1 : 0, drain: m?.drain ?? 0, phys: m?.cat === "special" ? 0 : 1 };
 };
 
@@ -265,8 +263,8 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
   const foeIdle = entering && entry !== "switch";
   const atEntry = foeIdle && us ? T.ourEntry?.[mi]?.[fi]?.[us.name] ?? null : null;
   // A stealing move lands with what each berry heals us, where the tables hold it.
-  const landed = mv => (mv?.steals ? { ...mv, steals: T.steals?.[mi]?.[fi] ?? mv.steals } : mv);
-  const usHit = landed(us), entryUse = landed(atEntry);
+  const withSteals = mv => (mv?.steals ? { ...mv, steals: T.steals?.[mi]?.[fi] ?? mv.steals } : mv);
+  const usHit = withSteals(us), entryUse = withSteals(atEntry);
   let turns = 0;
   // P(token status by the end of turn `t`); `t` 0 is before this exchange.
   const by = t => (!tok ? 0 : tok.odds.by(ox0 + (entryHit ? them.hits ?? 0 : 0) + (them.hits ?? 0) * Math.max(0, t - (foeIdle ? 1 : 0))));

@@ -243,7 +243,7 @@ const bigHit = move(1, "Big Hit", 14, 120);
   floater.getAttackDamage = function (o) {
     return o.move.type === 4 ? { cancelled: false, result: HitResult.NO_EFFECT, damage: 0 } : hit.call(this, o);
   };
-  const unset = o => ["ignoresSturdy", "ignoresSub", "ignoresAbility", "ignoresDisguise", "cut", "cat", "e", "steals", "userCost"].filter(k => o[k] === undefined);
+  const unset = o => D.RACE_FACTS.filter(k => o[k] === undefined);
   for (const estimate of [false, true]) {
     setup(atk, floater);
     const outs = readTurn(scene, t => t.outcomes(atk, floater), { estimate });
