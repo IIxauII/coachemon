@@ -28,7 +28,7 @@ const tpFastest = (turn, list, target, turns = o => tpTurns(turn, o, target), dm
 const tpMoveOf = (o, extra) => {
   const use = useOf(o);
   return { name: o.name, type: o.type, cat: o.cat, e: o.e, ignoresSturdy: !!o.ignoresSturdy, ignoresSub: !!o.ignoresSub, ignoresAbility: !!o.ignoresAbility, ignoresDisguise: !!o.ignoresDisguise, cut: o.cut ?? null, priority: o.priority ?? 0, dmg: use.reduce((t, x) => t + x.d * x.p, 0), use: tpSpread(use), drain: o.drain ?? 0,
-    self: o.self ?? 0, acc: o.acc ?? 1, steals: o.steals ?? null,
+    userCost: o.userCost ?? null, acc: o.acc ?? 1, steals: o.steals ?? null,
     charge: !!o.traits?.charge, recharge: !!o.traits?.recharge || !!o.traits?.noRepeat, semiCharge: !!o.traits?.charge && !!o.traits?.semiCharge, ...extra };
 };
 
@@ -73,7 +73,7 @@ const tpTheirMove = (turn, f, me) => {
           // `first` is the order against a move of ours at priority 0, which is all this table knows: `tpFoeFirst`
           // takes it again per move for anything out of that bracket (#650).
           name: typeof t.move === "string" ? t.move : t.move?.name ?? null, e: t.move?.e ?? 1, ignoresSturdy: !!t.ignoresSturdy, ignoresSub: !!t.ignoresSub, ignoresAbility: !!t.ignoresAbility, ignoresDisguise: !!t.ignoresDisguise, cut: t.cut ?? null, cat: null, steals: null,
-          first: t.first, priority: t.move?.priority ?? 0, hits: hitsOn(t),
+          userCost: t.userCost ?? null, first: t.first, priority: t.move?.priority ?? 0, hits: hitsOn(t),
           drain: t.expected > 0 ? (t.drain ?? 0) / t.expected : 0,
           phys: moved > 0 ? t.moves.reduce((sum, m) => sum + m.p * (m.cat === "special" ? 0 : 1), 0) / moved : 1,
         };
@@ -82,7 +82,7 @@ const tpTheirMove = (turn, f, me) => {
   }
   const m = tpFastest(turn, turn.outcomes(f, me).filter(x => x.dmg > 0), me);
   // Gotcha: as the threat's, no steal of the foe's is priced.
-  return { dmg: m?.dmg ?? 0, name: m?.name ?? null, e: m?.e ?? 1, ignoresSturdy: !!m?.ignoresSturdy, ignoresSub: !!m?.ignoresSub, ignoresAbility: !!m?.ignoresAbility, ignoresDisguise: !!m?.ignoresDisguise, cut: m?.cut ?? null, cat: null, steals: null, first: null, priority: m?.priority ?? 0,
+  return { dmg: m?.dmg ?? 0, name: m?.name ?? null, e: m?.e ?? 1, ignoresSturdy: !!m?.ignoresSturdy, ignoresSub: !!m?.ignoresSub, ignoresAbility: !!m?.ignoresAbility, ignoresDisguise: !!m?.ignoresDisguise, cut: m?.cut ?? null, cat: null, steals: null, userCost: m?.userCost ?? null, first: null, priority: m?.priority ?? 0,
     hits: m?.dmg > 0 ? 1 : 0, drain: m?.drain ?? 0, phys: m?.cat === "special" ? 0 : 1 };
 };
 
@@ -249,7 +249,6 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
     ...[st.ox[mi], st.od[mi], st.og[mi], st.fd[fi], st.fg[fi]].map(x => Math.round(x * 20))].join();
   if (key && T.memo.has(key)) return T.memo.get(key);
   const us = over ?? T.ours[mi][fi], them = T.theirs[fi][mi];
-  const meAt = (b, hp) => (hp === b.me.hp ? b.me : stateOf(ourFacts, hp, 0, b.me));
   // On-KO Speed boosts are not modelled.
   const usMul = us && (nUs || nFoe) && T.koMult ? T.koMult(T.party[mi], T.ourKo[mi], nUs, T.foes[fi], T.foeKo[fi], nFoe, us.cat === "special" ? 0 : 1) : 1;
   const themMul = (nUs || nFoe) && T.koMult ? T.koMult(T.foes[fi], T.foeKo[fi], nFoe, T.party[mi], T.ourKo[mi], nUs, them.phys ?? 1) : 1;
@@ -271,22 +270,23 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
   let turns = 0;
   // P(token status by the end of turn `t`); `t` 0 is before this exchange.
   const by = t => (!tok ? 0 : tok.odds.by(ox0 + (entryHit ? them.hits ?? 0 : 0) + (them.hits ?? 0) * Math.max(0, t - (foeIdle ? 1 : 0))));
-  const ourBell = !!ourFacts.shellBell, foeRepaid = !!them.drain || !!foeFacts.shellBell;
-  // Lands our use point `o` on the foe, one branch per outcome. A stealing use pays its own chip first, since the berry
-  // it eats heals us after it (game-code.md §3).
+  const ourBell = !!ourFacts.shellBell, foeRepaid = !!them.drain || !!them.userCost || !!foeFacts.shellBell;
+  // Lands our use point `o` on the foe, one branch per outcome, our side paying what the use costs it and taking what it
+  // wins back through Landing's `user`.
   const hitFoe = (b, o, mv = usHit) => {
-    const user = mv.steals || mv.drain || ourBell ? (mv.steals && mv.self ? meAt(b, b.me.hp - mv.self) : b.me) : null;
+    const user = mv.steals || mv.drain || mv.userCost || ourBell ? b.me : null;
     const outs = land(b.foe, { d: mv.dmg * o.r * usMul, n: o.n, se: o.se }, mv, user ? { whole: true, user } : WHOLE);
     return outs.map(x => {
       const c = outs.length === 1 ? b : { ...b, p: b.p * x.p };
       if (user) c.me = x.user;
       c.fg += (robFoe?.perHit ?? 0) * x.hits;
-      // Recoil is paid whether or not the hit finished the foe.
-      if (mv.self && !mv.steals) c.me = meAt(c, c.me.hp - mv.self);
       c.foe = x.state;
       return c;
     });
   };
+  // A use point of ours that goes off: one that lands, or a miss where missing costs us (a crash). `idle` is a turn our
+  // mon spends without using it.
+  const goesOff = (o, mv) => !o.idle && (o.r > 0 || mv.userCost?.missed > 0);
   // Lands the foe's use point `t` on us, hit by hit, one branch per outcome.
   const foeHit = (b, t, dmg = them.dmg) => {
     const outs = land(b.me, { d: dmg * t.r * themMul, n: t.n, se: t.se }, them, foeRepaid ? { whole: true, user: b.foe } : WHOLE);
@@ -349,7 +349,7 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
     const hidden = !!us && !hits && !!us.semiCharge;
     const mv = atEntry && turns === 1 ? entryUse : usHit;
     const use = mv === usHit ? ourUse : mv.use ?? [{ r: 1, p: 1 }];
-    const ours = hits ? [...(act < 1 ? [{ r: 0, p: 1 - act }] : []), ...use.map(x => ({ ...x, p: x.p * act }))] : [{ r: 0, p: 1 }];
+    const ours = hits ? [...(act < 1 ? [{ r: 0, p: 1 - act, idle: true }] : []), ...use.map(x => ({ ...x, p: x.p * act }))] : [{ r: 0, p: 1, idle: true }];
     const next = [];
     for (const b of standing) {
       for (const [foeFirst, w] of [[false, 1 - pFoe], [true, pFoe]]) {
@@ -357,14 +357,14 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
         for (const o of ours) {
           if (!foeFirst) {
             const a0 = { ...b, p: b.p * w * o.p };
-            for (const a of o.r > 0 ? hitFoe(a0, o, mv) : [a0]) {
+            for (const a of goesOff(o, mv) ? hitFoe(a0, o, mv) : [a0]) {
               if (a.foe.hp < 1 || hidden || foeIdleNow) { close(a, next); continue; }
               for (const t of theirUse) for (const c of foeHit({ ...a, p: a.p * t.p }, t)) close(c, next);
             }
           } else {
             for (const t of theirUse) {
               for (const c0 of foeHit({ ...b, p: b.p * w * o.p * t.p }, t)) {
-                for (const c of c0.me.hp >= 1 && o.r > 0 ? hitFoe(c0, o, mv) : [c0]) close(c, next);
+                for (const c of c0.me.hp >= 1 && goesOff(o, mv) ? hitFoe(c0, o, mv) : [c0]) close(c, next);
               }
             }
           }

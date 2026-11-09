@@ -175,14 +175,37 @@ const seOf = h => ((h?.e ?? 1) >= 2 ? 1 : 0);
 // (game-code.md §8).
 // @only 30-planner: shellBellHeal
 export const shellBellHeal = (bell, dealt) => (bell?.stacks > 0 && dealt > 0 ? Math.floor(Math.max(1, Math.floor(dealt * bell.stacks / 8)) * (bell.charm ?? 1)) : 0);
-// `user` after what its use did for it, in the game's order: the berries it stole, its drain on `dealt`, then its Shell
-// Bell on `dealt` and what the target's Substitute lost, which asks for full HP before either heal has run (game-code.md
-// §3, §8, §18). A user down gets nothing, and a negative drain (Liquid Ooze) lands through its bars with no luck (§21).
-const repaid = (user, hit, whole, stolen, dealt, subDealt) => {
+// The user's cost `d` off HP `hp` at bar `bar`, with no luck: through its bars, or with `past` beyond them, its bar then
+// following its HP (game-code.md §3, §8). Returns [hp, bar].
+const paid = (uf, hp, bar, d, past) => {
+  if (!(d > 0)) return [hp, bar];
+  if (!past) {
+    const [dd, after] = barStep(uf, hp, bar, d);
+    return [Math.max(0, hp - dd), after];
+  }
+  const left = Math.max(0, hp - (uf.finalBoss && bar < 1 ? Math.min(d, hp - 1) : d));
+  return [left, uf.boss ? Math.max(0, Math.min(bar, Math.ceil(left / uf.segSize) - 1)) : bar];
+};
+// `user` after what its use did for it, in the game's order: what the use costs it, its recoil on `dealt` and what the
+// target's Substitute lost, then the chip of each of the `reached` strikes past that Substitute, then a landed use's own
+// cost; then the berries it stole, its drain on `dealt`, and its Shell Bell on `dealt` and the Substitute's loss, which
+// asks for its HP below full once the costs are paid and before either heal has run (game-code.md §3, §8, §18). A user
+// down gets nothing, and a negative drain (Liquid Ooze) lands through its bars with no luck (§21). Gotcha: a use of
+// several strikes pays every strike's cost ahead of its first heal, where the game heals each strike's drain and berry
+// before the next strike's chip (§3, §18).
+const repaid = (user, hit, whole, stolen, dealt, subDealt, reached) => {
   const uf = user.facts ?? NO_HIT, max = uf.maxHp ?? Infinity;
   const up = hp => (whole ? hp >= 1 : hp > 0);
   if (!up(user.hp)) return user;
   let hp = user.hp, bar = user.bar;
+  const cost = hit.userCost;
+  if (cost) {
+    if (cost.recoil > 0 && dealt + subDealt > 0) [hp, bar] = paid(uf, hp, bar, Math.max(1, Math.floor((dealt + subDealt) * cost.recoil)), true);
+    for (let k = 0; k < reached && cost.strike > 0; k++) [hp, bar] = paid(uf, hp, bar, cost.strike, false);
+    [hp, bar] = paid(uf, hp, bar, cost.landed, true);
+    if (!up(hp)) return stateOf(uf, hp, bar, user);
+  }
+  const room = hp < max;
   if (stolen > 0) hp = Math.min(max, hp + stolen);
   const drain = dealt > 0 && Number.isFinite(hit.drain) ? dealt * hit.drain : 0;
   if (drain > 0) hp = Math.min(max, hp + drain);
@@ -191,12 +214,20 @@ const repaid = (user, hit, whole, stolen, dealt, subDealt) => {
     hp = Math.max(0, hp - d);
     bar = after;
   }
-  const bell = user.hp < max && up(hp) ? shellBellHeal(uf.shellBell, dealt + subDealt) : 0;
+  const bell = room && up(hp) ? shellBellHeal(uf.shellBell, dealt + subDealt) : 0;
   if (bell > 0) hp = Math.min(max, hp + bell);
   return hp === user.hp && bar === user.bar ? user : stateOf(uf, hp, bar, user);
 };
-// A carrier is a Landing state's fields, without `facts`, at its chance `p`, with `stop`, `dealt`, `subDealt` and
-// `hits`.
+// `user` after a use that missed its standing target: its crash, through its bars (game-code.md §8). Gotcha: Steel
+// Beam's half on a miss passes them in the game.
+const missedBy = (user, hit, whole) => {
+  const d = hit.userCost?.missed;
+  if (!(d > 0) || !(whole ? user.hp >= 1 : user.hp > 0)) return user;
+  const [hp, bar] = paid(user.facts ?? NO_HIT, user.hp, user.bar, d, false);
+  return stateOf(user.facts ?? NO_HIT, hp, bar, user);
+};
+// A carrier is a Landing state's fields, without `facts`, at its chance `p`, with `stop`, `dealt`, `subDealt`, `hits`,
+// and `subHits`, the hits its Substitute took.
 const fork = (b, hp, bar, p, taken, tok = b.tok) => ({ ...b, hp, bar, tok, p, dealt: b.dealt + taken, hits: b.hits + 1 });
 const stand = (b, hp, bar, endure, taken, out) => {
   if (endure) out.push(fork(b, hp, bar, b.p * endure, taken, true));
@@ -235,7 +266,7 @@ const strike = (f, b, d, hit, whole, luck, out, down = null) => {
   if (luck && !shielded && f.disguise && !b.busted && !hit.ignoresDisguise && d > 0) return bust(f, b, whole, out, down);
   if (luck && (f.multiscale || f.shadowShield)) d = cutOn(f, b.hp, d, hit);
   if (shielded) {
-    out.push({ ...b, sub: Math.max(0, b.sub - d), subDealt: b.subDealt + Math.min(b.sub, d), hits: b.hits + 1 });
+    out.push({ ...b, sub: Math.max(0, b.sub - d), subDealt: b.subDealt + Math.min(b.sub, d), hits: b.hits + 1, subHits: b.subHits + 1 });
     return 0;
   }
   const [dealt, bar] = barStep(f, b.hp, b.bar, Math.max(0, d), !!hit.ohko);
@@ -369,25 +400,31 @@ const landUse = (f, b, d, n, fac, hit, whole, down) => {
 // `ignoresSub`, `ignoresAbility`, `ignoresDisguise`, `cut`, `ohko`, `factor(bar)`, `steals`, and `e`, which stands in for
 // a missing `se`); `cut` is "in" where its numbers already hold a full-HP holder's Multiscale or Shadow Shield, and
 // "never" where nothing halves it. `steals`: a Bug Bite's or Pluck's, each strike that reaches the target takes one of its
-// berries, a knockout's included (game-code.md §3); `drain`, the signed share of `dealt` its user wins back. Each
+// berries, a knockout's included (game-code.md §3); `drain`, the signed share of `dealt` its user wins back; `userCost`,
+// what the use costs its user, null for nothing: `recoil`, its share of what the use dealt; `strike`, the HP each strike
+// that reaches the target costs it (Rough Skin, Iron Barbs); `landed`, what a use that lands costs it beside those
+// (Chloroblast, Steel Beam); `missed`, what a miss costs it (a crash), each absent one 0 (game-code.md §8). Each
 // outcome's `dealt` is what the use took off its target through the bars, counted before a revive and without a bust's
 // chip, `subDealt` what it took off the target's Substitute, and `hits` the hits that landed, on either. What stands
 // having taken damage on a super-effective share is marked for an Enigma Berry it holds. `user`: the attacker's Landing
-// state, its chip for the use already paid, where `steals` holds the heal each berry type gives it; each outcome's `user`
-// is it after the berries it stole, its drain and its Shell Bell, all only while it stands (game-code.md §3, §8, §18).
+// state, where `steals` holds the heal each berry type gives it; each outcome's `user` is it after what the use cost it,
+// then the berries it stole, its drain and its Shell Bell, all only while it stands (game-code.md §3, §8, §18).
 // Gotcha: a hit a Substitute takes drains 0 here, where the game heals at least 1 off the user's last hit (§8).
 // @only 35-team-plan, tests: land, landTurnEnd, luckKey, landingKey
 export const land = (state, use, hit = NO_HIT, { whole = false, user = null } = {}) => {
   const d = use?.d, h = hit ?? NO_HIT, f = state?.facts ?? NO_HIT;
   const up = whole ? state?.hp >= 1 : state?.hp > 0;
-  if (!up || !(d > 0) || !Number.isFinite(d)) return [user ? { state, user, p: 1, dealt: 0, subDealt: 0, hits: 0 } : { state, p: 1, dealt: 0, subDealt: 0, hits: 0 }];
+  if (!up || !(d > 0) || !Number.isFinite(d)) {
+    return [user ? { state, user: up ? missedBy(user, h, whole) : user, p: 1, dealt: 0, subDealt: 0, hits: 0 } : { state, p: 1, dealt: 0, subDealt: 0, hits: 0 }];
+  }
   const heals = h.steals && typeof h.steals === "object" ? h.steals : null;
+  // Beside each outcome, for its user: the berry it stole and the strikes that reached past the Substitute.
   const downs = [], lost = user ? [] : null;
   const downed = (p, b, hp, bar) => {
     downs.push({ state: stateOf(f, hp, bar, b), p, dealt: b.dealt + (b.hp - hp), subDealt: b.subDealt, hits: b.hits + 1 });
-    if (lost) lost.push(b.stolen || 0);
+    if (lost) lost.push(b.stolen || 0, b.hits + 1 - b.subHits);
   };
-  const stood = landUse(f, { ...state, p: 1, stop: false, dealt: 0, subDealt: 0, hits: 0 }, d, Math.max(1, Math.round(use.n ?? 1)), h.factor ?? null, h, whole,
+  const stood = landUse(f, { ...state, p: 1, stop: false, dealt: 0, subDealt: 0, hits: 0, subHits: 0 }, d, Math.max(1, Math.round(use.n ?? 1)), h.factor ?? null, h, whole,
     h.steals ? (p, b, hp, bar) => {
       const taken = [];
       pluck(f, { ...b, p }, heals, taken);
@@ -402,12 +439,12 @@ export const land = (state, use, hit = NO_HIT, { whole = false, user = null } = 
   const outs = [], gains = user ? [] : null;
   for (const c of fed) {
     outs.push({ state: stateOf(f, c.hp, c.bar, c), p: c.p, dealt: c.dealt, subDealt: c.subDealt, hits: c.hits });
-    if (gains) gains.push(c.stolen || 0);
+    if (gains) gains.push(c.stolen || 0, c.hits - c.subHits);
   }
   for (const o of downs) outs.push(o);
   if (gains) {
     for (const g of lost) gains.push(g);
-    outs.forEach((o, i) => { o.user = repaid(user, h, whole, gains[i], o.dealt, o.subDealt); });
+    outs.forEach((o, i) => { o.user = repaid(user, h, whole, gains[2 * i], o.dealt, o.subDealt, gains[2 * i + 1]); });
   }
   return outs;
 };
@@ -540,7 +577,7 @@ const flinchChance = (atk, def, move, ignoreAbility) => {
 
 // A KO-curve branch: a carrier, its discrete part `from`'s.
 const branch = (hp, bar, from, p) => {
-  const b = { hp, bar, p, stop: false, dealt: 0, subDealt: 0, hits: 0 };
+  const b = { hp, bar, p, stop: false, dealt: 0, subDealt: 0, hits: 0, subHits: 0 };
   for (const k of DISCRETE) b[k] = from[k];
   return b;
 };
@@ -996,7 +1033,7 @@ const fromGame = (env, atk, def, pm, opts) => {
   const facts = targetFacts(env, def, ignoreAbility);
   // (game-code.md §1, §2)
   const cut = fixed || ohko ? "never" : !gameIgnore && facts.hp >= facts.maxHp && (facts.multiscale || facts.shadowShield) ? "in" : null;
-  const base = { name: pm.getName(), type, cat, e, priority, spread, spreadApplied, traits: t, self: 0, bypassProtect: bypassesProtect(atk, def, move), ignoresAbility: ignoreAbility, ignoresDisguise, cut,
+  const base = { name: pm.getName(), type, cat, e, priority, spread, spreadApplied, traits: t, self: 0, userCost: null, bypassProtect: bypassesProtect(atk, def, move), ignoresAbility: ignoreAbility, ignoresDisguise, cut,
     steals: stealsOff(t, def, ignoreAbility) };
   const blocked = cancelledBy(env, atk, def, move);
   if (first.cancelled || first.result === HitResult.NO_EFFECT || first.result === HitResult.IMMUNE || blocked) {
@@ -1093,21 +1130,36 @@ const fromGame = (env, atk, def, pm, opts) => {
     : acc * dist.reduce((t, x) => t + x.n * x.p, 0);
   const contact = flagApplies(move, MoveFlags.MAKES_CONTACT, atk, def, hasFlag(move, MoveFlags.MAKES_CONTACT));
   const fromTarget = [];
+  // Landing's `userCost`, what a use costs its user once it lands or misses (game-code.md §8).
+  const cost = { strike: 0, recoil: 0, landed: 0, missed: 0 };
+  const half = Math.max(1, Math.floor(maxHp / 2));
   if (contact && !t.guarded && maxHp && ability(def, "PostDefendContactDamageAbAttr")) {
     const [abName, ratio] = [def.getAbility?.(), def.hasPassive?.() ? def.getPassiveAbility?.() : null]
       .flatMap(a => (a?.getAttrs?.("PostDefendContactDamageAbAttr") ?? []).map(x => [a.name, x.damageRatio])).find(Boolean) ?? ["contact", 8];
-    const chip = Math.max(1, Math.floor(maxHp / (ratio || 8))) * landed;
+    cost.strike = Math.max(1, Math.floor(maxHp / (ratio || 8)));
+    const chip = cost.strike * landed;
     self += chip;
     fromTarget.push(`${abName}: ≈−${Math.round(chip / maxHp * 100)}%`);
   }
   let recoilShare = null;
   if (t.recoil && !t.recoil.blocked && maxHp) {
-    const hurt = t.recoil.useHp ? Math.max(1, Math.floor(maxHp * t.recoil.ratio)) * acc : expected * t.recoil.ratio;
+    const fixed = Math.max(1, Math.floor(maxHp * t.recoil.ratio));
+    if (t.recoil.useHp) cost.landed += fixed;
+    else cost.recoil = t.recoil.ratio;
+    const hurt = t.recoil.useHp ? fixed * acc : expected * t.recoil.ratio;
     self += hurt;
     recoilShare = hurt / maxHp;
   }
-  if (t.halfSac && maxHp) self += Math.max(1, Math.floor(maxHp / 2));
-  if (t.crash && maxHp && acc < 1) self += Math.max(1, Math.floor(maxHp / 2)) * (1 - acc);
+  if (t.halfSac && maxHp) {
+    self += half;
+    cost.landed += half;
+    cost.missed += half;
+  }
+  if (t.crash && maxHp) {
+    if (acc < 1) self += half * (1 - acc);
+    cost.missed += half;
+  }
+  const userCost = cost.strike || cost.recoil || cost.landed || cost.missed ? cost : null;
   const selfKo = t.selfKo === "onHit" ? acc : t.selfKo === "always" ? 1 : 0;
   const costs = [...fromTarget, ...costNotes(t, { recoil: recoilShare, type })];
   const drain = drainRatio(env, atk, def, t);
@@ -1125,7 +1177,7 @@ const fromGame = (env, atk, def, pm, opts) => {
   if (crit === 1) notes.push("crit");
   if (semi) notes.push("target semi-invulnerable");
   return {
-    ...base, acc, crit, dist, semi, self, selfKo, drain,
+    ...base, acc, crit, dist, semi, self, userCost, selfKo, drain,
     perHit: maxes.map((max, k) => ({ max, min: Math.min(max, lows[k] ?? Math.floor(max * 0.85)) })), targetHp: f.hp,
     expected, uncapped, max: f.hp - Math.max(0, worst.hp), pKo, revive: f.revive, sub: shielded ? facts.sub : 0, costs, notes,
     use, focus: f.pFocus, ignoresSturdy, ignoresSub, flinch: flinchChance(atk, def, move, ignoreAbility),
@@ -1186,7 +1238,7 @@ const fromApprox = (env, atk, def, pm) => {
   return {
     // `raw`: the estimate before the target's HP cuts it, which is what a `dmg` for the rows is taken from.
     raw: x.dmg,
-    name: x.name, type: x.type, cat: x.cat, e: x.e, priority: x.priority, spread: x.spread, spreadApplied: false, traits: t, semi: false, self: 0,
+    name: x.name, type: x.type, cat: x.cat, e: x.e, priority: x.priority, spread: x.spread, spreadApplied: false, traits: t, semi: false, self: 0, userCost: null,
     acc, crit: 0, dist: [{ n: 1, p: 1 }], perHit: [{ max, min: Math.floor(max * 0.85) }], targetHp: def.hp,
     expected: Math.min(def.hp - end.hp, max * 0.925) * acc, uncapped: max * 0.925 * acc, max: def.hp - end.hp, pKo: end.ko && !revive ? acc : 0, revive, sub: shielded ? facts.sub : 0,
     costs: costNotes(t, { type: x.type }), notes: ["estimate"], live: false,

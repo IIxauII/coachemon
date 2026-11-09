@@ -462,28 +462,29 @@ const BITE = { steals: true };
 const HEALS = { steals: { [BerryType.SITRUS]: 50, [BerryType.LUM]: 0 } };
 const thief = hp => stateOf({ maxHp: 200 }, hp);
 
-// ---- A steal heals its user what the berry it drew is worth, after the chip the use already cost it, up to its max HP (game-code.md §3)
+// ---- A steal heals its user what the berry it drew is worth after the chip the use costs it, through Landing alone, up to its max HP (game-code.md §3, §8)
 {
   console.log("== a steal's user");
-  // 200 HP, and 170 once its own 30 of chip is paid: the Sitrus brings it to 200, where a heal ahead of the chip would
-  // leave it on 170.
-  const user = thief(170);
-  const outs = land(at({ hp: 200, sitrus: 1, lum: 1 }), sure(30), HEALS, { user });
-  console.log(`a Sitrus and a Lum, hit for 30 by a thief on 170 of 200: ${outs.map(o => `S${o.state.sitrus} O${o.state.others.join("")} → us ${o.user.hp} p${o.p}`).join(" · ")}`);
+  // From full 200, its own 30 of chip first, then the Sitrus's 50: back to 200, where a heal ahead of the chip would be
+  // capped at 200 and leave it on 170.
+  const user = thief(200);
+  const chipped = { ...HEALS, userCost: { strike: 30 } };
+  const outs = land(at({ hp: 200, sitrus: 1, lum: 1 }), sure(30), chipped, { user });
+  console.log(`a Sitrus and a Lum, hit for 30 by a thief on 200 of 200 that pays 30 of chip: ${outs.map(o => `S${o.state.sitrus} O${o.state.others.join("")} → us ${o.user.hp} p${o.p}`).join(" · ")}`);
   assert.deepEqual(outs.map(o => [o.state.sitrus, o.state.others.join(), o.user.hp, o.p]), [[0, "1", 200, 0.5], [1, "0", 170, 0.5]]);
-  assert.equal(outs[1].user, user, "a berry worth nothing leaves it as it was");
-  const felled = land(at({ sitrus: 1 }), sure(150), HEALS, { user: thief(100) });
-  assert.deepEqual(felled.map(o => [o.state.hp, o.user.hp]), [[0, 150]], "a knockout's steal heals it too");
-  const missed = land(at({ sitrus: 1 }), sure(0), HEALS, { user });
-  assert.deepEqual(missed, [{ state: missed[0].state, user, p: 1, dealt: 0, subDealt: 0, hits: 0 }], "a miss heals nothing");
+  const free = thief(170);
+  assert.equal(land(at({ hp: 200, sitrus: 1, lum: 1 }), sure(30), HEALS, { user: free })[1].user, free, "a berry worth nothing, at no cost, leaves it as it was");
+  const felled = land(at({ sitrus: 1 }), sure(150), chipped, { user: thief(100) });
+  assert.deepEqual(felled.map(o => [o.state.hp, o.user.hp]), [[0, 120]], "a knockout's steal heals it too, after the felling strike's chip");
+  const missed = land(at({ sitrus: 1 }), sure(0), chipped, { user });
+  assert.deepEqual(missed, [{ state: missed[0].state, user, p: 1, dealt: 0, subDealt: 0, hits: 0 }], "a miss costs nothing and heals nothing");
 }
 
-// ---- A user its own chip downed eats nothing, though the berry is gone (game-code.md §3)
+// ---- A user its own chip downs eats nothing, though the berry is gone (game-code.md §3)
 {
-  for (const [hp, whole] of [[0.5, true], [0, false]]) {
-    const user = thief(hp);
-    const outs = land(at({ hp: 200, sitrus: 1 }), sure(30), HEALS, { whole, user });
-    assert.deepEqual(outs.map(o => [o.state.sitrus, o.user]), [[0, user]], `on ${hp} HP${whole ? ", whole" : ""}`);
+  for (const [hp, whole] of [[30.5, true], [30, false]]) {
+    const outs = land(at({ hp: 200, sitrus: 1 }), sure(30), { ...HEALS, userCost: { strike: 30 } }, { whole, user: thief(hp) });
+    assert.deepEqual(outs.map(o => [o.state.sitrus, +o.user.hp.toFixed(3)]), [[0, +(hp - 30).toFixed(3)]], `on ${hp} HP${whole ? ", whole" : ""}`);
   }
 }
 
@@ -549,6 +550,63 @@ const userHp = outs => outs.map(o => +o.user.hp.toFixed(3));
   assert.deepEqual(userHp(land(at({ hp: 200 }), sure(80), ooze, { user: ourUser(30, { bell: 1 }) })), [0], "a holder the Ooze downs heals nothing");
 }
 
+// ---- A use's recoil takes its share of what the use dealt, its target's Substitute's loss included, floored and at least 1, once after its last strike and past its user's bars (game-code.md §8)
+{
+  console.log("== recoil");
+  const recoil = r => ({ userCost: { recoil: r } });
+  const rows = [["a quarter of 80", at({ hp: 200 }), sure(80)], ["of 3", at({ hp: 200 }), sure(3)], ["of three hits of 1", at({ hp: 200 }), sure(3, 3)],
+    ["into a 25 HP Substitute", at({ hp: 200, sub: 25 }), sure(80)], ["of the 60 a knockout took", at({ hp: 60 }), sure(150)]];
+  const left = rows.map(([what, target, use]) => {
+    const outs = land(target, use, recoil(0.25), { user: ourUser(200) });
+    console.log(`${what}: ${outs.map(o => `dealt ${o.dealt} + ${o.subDealt} → us ${o.user.hp}`).join(" · ")}`);
+    return userHp(outs)[0];
+  });
+  assert.deepEqual(left, [180, 199, 199, 194, 185]);
+  assert.deepEqual(userHp(land(at({ hp: 200 }), sure(0), recoil(0.25), { user: ourUser(200) })), [200], "a miss deals nothing to take it from");
+  const boss = land(at({ hp: 200 }), sure(80), recoil(0.5), { user: stateOf(factsOf({ hp: 200, boss: 2 }), 120) })[0].user;
+  assert.deepEqual([boss.hp, boss.bar], [80, 0], "past a boss's bar, which follows its HP");
+  assert.deepEqual(userHp(land(at({ hp: 200 }), sure(80), recoil(0.25), { user: ourUser(200, { bell: 1 }) })), [190], "a Shell Bell holder its recoil took off full HP heals on its bell");
+  assert.ok(!("user" in land(at({ hp: 200 }), sure(80), recoil(0.25))[0]), "without a user, KO pacing's, the record prices it");
+}
+
+// ---- Rough Skin or Iron Barbs chips its attacker on each strike that reaches past a Substitute, the one that fells its holder too, and a boss attacker's bar stops it (game-code.md §8)
+{
+  console.log("== contact chip");
+  const barbs = { userCost: { strike: 25 } };
+  const rows = [["two hits", at({ hp: 200 }), sure(80, 2)], ["a knockout", at({ hp: 60 }), sure(150)],
+    ["two hits, the first into a 25 HP Substitute", at({ hp: 200, sub: 25 }), sure(60, 2)], ["into a Disguise", at({ hp: 200, form: "disguise" }), sure(80)]];
+  const left = rows.map(([what, target, use]) => {
+    const outs = land(target, use, barbs, { user: ourUser(200) });
+    console.log(`${what}: ${outs.map(o => `×${o.hits} → us ${o.user.hp}`).join(" · ")}`);
+    return userHp(outs)[0];
+  });
+  assert.deepEqual(left, [150, 175, 175, 175]);
+  const boss = land(at({ hp: 200 }), sure(80, 2), barbs, { user: stateOf(factsOf({ hp: 200, boss: 2 }), 120) })[0].user;
+  assert.deepEqual([boss.hp, boss.bar], [75, 0], "the first chip stops at the bar, the second lands below it");
+  assert.deepEqual(userHp(land(at({ hp: 200 }), sure(80), barbs, { user: ourUser(20, { band: 10, seed: true }) })), [0], "no Focus Band or Reviver Seed outlives it");
+}
+
+// ---- A user its own recoil fells heals nothing back, and no Sturdy, Focus Band or Reviver Seed saves it (game-code.md §8, §18)
+{
+  const hit = { drain: 0.5, userCost: { recoil: 0.25 } };
+  assert.deepEqual(userHp(land(at({ hp: 200 }), sure(80), hit, { user: ourUser(20, { bell: 1 }) })), [0], "its 20 of recoil fells it ahead of its drain and its Shell Bell");
+  assert.deepEqual(userHp(land(at({ hp: 200 }), sure(80), hit, { whole: true, user: ourUser(20.5) })), [0.5], "under `whole` the half HP it leaves is down");
+  const lucky = stateOf(factsOf({ hp: 80, player: true, sturdy: true, band: 10, seed: true }), 80);
+  assert.deepEqual(userHp(land(at({ hp: 200 }), sure(200), { userCost: { recoil: 0.5 } }, { user: lucky })), [0]);
+}
+
+// ---- A miss costs its user its crash, and a use that lands what it costs beside recoil and contact chip, Steel Beam's half or Chloroblast's (game-code.md §8)
+{
+  const crash = { userCost: { missed: 100 } }, beam = { userCost: { landed: 100 } };
+  assert.deepEqual(userHp(land(at({ hp: 200 }), sure(0), crash, { user: ourUser(200) })), [100], "a miss crashes");
+  assert.deepEqual(userHp(land(at({ hp: 200 }), sure(80), crash, { user: ourUser(200) })), [200], "a use that lands doesn't");
+  assert.deepEqual(userHp(land(at({ hp: 200 }), sure(80), beam, { user: ourUser(200) })), [100], "a landed Steel Beam costs its half");
+  assert.deepEqual(userHp(land(at({ hp: 200 }), sure(0), beam, { user: ourUser(200) })), [200], "and a miss costs only `missed`");
+  assert.deepEqual(userHp(land(stateOf(factsOf({ hp: 200 }), 0), sure(0), crash, { user: ourUser(200) })), [200], "a target already down meets no use");
+  const boss = land(at({ hp: 200 }), sure(0), crash, { user: stateOf(factsOf({ hp: 200, boss: 2 }), 120) })[0].user;
+  assert.deepEqual([boss.hp, boss.bar], [100, 0], "a boss's bar stops a crash");
+}
+
 // The states the invariants sweep, and the uses and hits they take.
 const STATES = [at(), at({ sturdy: true }), at({ band: 2 }), at({ token: 5 }), at({ hp: 100, maxHp: 200, seed: true }), at({ hp: 300, boss: 3, token: 5 }),
   at({ hp: 300, boss: 3, sturdy: true, band: 1, token: 10, seed: true }), at({ hp: 10, band: 1 }), at({ hp: 100, finalBoss: true, band: 1 }),
@@ -559,13 +617,14 @@ const STATES = [at(), at({ sturdy: true }), at({ band: 2 }), at({ token: 5 }), a
   at({ sub: 25, form: "disguise" }), at({ hp: 200, sub: 50, enigma: 1 }), at({ hp: 200, sitrus: 2, enigma: 1, lum: 1 }), at({ sub: 25, sitrus: 1, lum: 2, seed: true })];
 const USES = [sure(0), sure(50), sure(99.5), sure(100), sure(150), sure(300, 2), sure(450, 3), { d: 151, n: 2.4 }, { d: 120, n: 1, se: 0.4 }, { d: 60, n: 2, se: 1 }];
 const HITS = [{}, { ignoresSturdy: true }, { ignoresDisguise: true }, { ohko: true }, { factor: bar => 1 + bar / 2 }, { cut: "in" }, { cut: "never" }, { ignoresAbility: true },
-  { ignoresSub: true }, { e: 2 }, { steals: true }, { steals: true, ignoresSub: true }, HEALS, { drain: 0.5 }, { drain: -0.75 }];
+  { ignoresSub: true }, { e: 2 }, { steals: true }, { steals: true, ignoresSub: true }, HEALS, { drain: 0.5 }, { drain: -0.75 },
+  { userCost: { strike: 20, recoil: 0.25, landed: 10, missed: 30 } }, { ...HEALS, drain: 0.5, userCost: { strike: 30 } }];
 const ENDS = [{}, { before: -30, after: 10 }, { before: 25, after: -60 }, { after: -500, eats: false }, { before: NaN, after: 40 }];
 const sweep = fn => {
   for (const st of STATES) for (const use of USES) for (const hit of HITS) for (const whole of [false, true]) fn(st, use, hit, whole);
 };
 
-// ---- Every outcome's chance is above 0 and they sum to 1, and no input is changed, a user's included (#1027, #1029), a Shell Bell holder's too (#1030)
+// ---- Every outcome's chance is above 0 and they sum to 1, and no input is changed, a user's included (#1027, #1029), a Shell Bell holder's too (#1030), and one its use costs (#1036)
 {
   const users = [thief(180), ourUser(180, { bell: 2 })];
   sweep((st, use, hit, whole) => {
@@ -576,7 +635,7 @@ const sweep = fn => {
       assert.ok(Math.abs(outs.reduce((t, o) => t + o.p, 0) - 1) < 1e-12);
       assert.equal(JSON.stringify([st, use, hit, users]), before);
       const user = opts.user;
-      assert.ok(outs.every(o => ("user" in o) === !!user && (!user || ((hit.drain < 0 || o.user.hp >= user.hp) && o.user.hp >= 0 && o.user.hp <= 200))));
+      assert.ok(outs.every(o => ("user" in o) === !!user && (!user || ((hit.drain < 0 || hit.userCost || o.user.hp >= user.hp) && o.user.hp >= 0 && o.user.hp <= 200))));
     }
   });
 }
@@ -739,7 +798,7 @@ const EXACT = 1e-5;
   assert.deepEqual(next.by.slice(0, 4), [0, 0, 1, 1]);
 }
 
-// ---- The fight plan's chance the foe is down by each turn is KO pacing's, on fixed damage up to the branches it drops, and within 0.05 where the rolls vary (#1027), a Substitute's included (#1033), and a Bug Bite's steals (#1029)
+// ---- The fight plan's chance the foe is down by each turn is KO pacing's, on fixed damage up to the branches it drops, and within 0.05 where the rolls vary (#1027), a Substitute's included (#1033), a Bug Bite's steals (#1029), and our own recoil (#1036)
 {
   console.log("== KO pacing and the fight plan, on the foe");
   const ROWS = [
@@ -767,6 +826,7 @@ const EXACT = 1e-5;
     ["Enigma Berry", { use: sureUse(70), hit: { e: 2 }, foe: { hp: 200, enigma: 1 } }, EXACT],
     ["Berry Pouch on a Sitrus Berry", { use: sureUse(70), foe: { hp: 200, sitrus: 1 }, pouch: 1 }, EXACT],
     ["Bug Bite into a Sitrus x2 and a Lum, from 98 of 200", { use: sureUse(30), foe: { hp: 98, maxHp: 200, sitrus: 2, lum: 1 }, hit: { steals: true } }, EXACT],
+    ["our recoil and contact chip, which land on us alone", { use: sureUse(60), hit: { userCost: { strike: 10, recoil: 0.25, landed: 0, missed: 0 } } }, EXACT],
   ];
   for (const [what, setup, tol] of ROWS) {
     const { by, plan } = race(setup);
@@ -775,7 +835,7 @@ const EXACT = 1e-5;
   }
 }
 
-// ---- The fight plan's chance we are down by each turn is KO pacing's on us, the foe's multi-hit use landing hit by hit (#1027), our Substitute's included (#1033)
+// ---- The fight plan's chance we are down by each turn is KO pacing's on us, the foe's multi-hit use landing hit by hit (#1027), our Substitute's included (#1033), and the foe's own recoil (#1036)
 {
   console.log("== KO pacing and the fight plan, on us");
   const ROWS = [
@@ -790,6 +850,7 @@ const EXACT = 1e-5;
     ["Disguise", { use: sureUse(150), ours: { form: "disguise" } }, EXACT],
     ["Substitute", { use: sureUse(60), ours: { sub: 25 } }, EXACT],
     ["the foe's sound move past our Substitute", { use: sureUse(60), ours: { sub: 25 }, hit: { ignoresSub: true } }, EXACT],
+    ["the foe's recoil and contact chip, which land on it alone", { use: sureUse(60), ours: {}, hit: { userCost: { strike: 10, recoil: 0.25, landed: 0, missed: 0 } } }, EXACT],
   ];
   for (const [what, setup, tol] of ROWS) {
     const { by, plan } = race(setup);

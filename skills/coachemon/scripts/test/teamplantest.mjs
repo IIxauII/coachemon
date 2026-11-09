@@ -330,7 +330,7 @@ const bugBite = (dmg, heal = 0, extra = {}) => ({ dmg, steals: { 0: heal, 2: hea
 // use's 30 stands. A heal ahead of the chip would be capped at 200 and end it on 140.
 {
   const { tpFight } = globalThis.__tp;
-  const T = { ours: [[bugBite(120, 50, { self: 30 })]], theirs: [[{ dmg: 0, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourCourse: [null], ...berryFoe(200, 1) };
+  const T = { ours: [[bugBite(120, 50, { userCost: { strike: 30 } })]], theirs: [[{ dmg: 0, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourCourse: [null], ...berryFoe(200, 1) };
   const r = tpFight(T, fightState({ oh: [200], fh: [200], fs: [0] }), 0, 0, "free");
   console.log(`== a thief's own chip\na Bug Bite paying 30 a use from full wins on ${r.ends.win.mh} HP in ${r.ends.win.turns}`);
   assert.deepEqual([r.ends.win.turns, r.ends.win.mh], [2, 170]);
@@ -338,7 +338,7 @@ const bugBite = (dmg, heal = 0, extra = {}) => ({ dmg, steals: { 0: heal, 2: hea
 // A thief its own chip downs eats nothing, and the berry is gone all the same (game-code.md §3): 30 of chip off 20 HP.
 {
   const { tpFight } = globalThis.__tp;
-  const T = { ours: [[bugBite(120, 50, { self: 30 })]], theirs: [[{ dmg: 0, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourCourse: [null], ...berryFoe(200, 1) };
+  const T = { ours: [[bugBite(120, 50, { userCost: { strike: 30 } })]], theirs: [[{ dmg: 0, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourCourse: [null], ...berryFoe(200, 1) };
   const r = tpFight(T, fightState({ oh: [20], fh: [200], fs: [0] }), 0, 0, "free");
   assert.deepEqual([r.pLoss, r.ends.loss.mh, r.ends.loss.foe.sitrus], [1, 0, 0]);
 }
@@ -370,7 +370,8 @@ const bugBite = (dmg, heal = 0, extra = {}) => ({ dmg, steals: { 0: heal, 2: hea
   console.log(`== a tera switch-in's entry hit\nat its tera: ${plain.pWin} win, foe at ${plain.fh} · at its entry typing: ${priced.pWin} win at ${priced.mh}`);
   assert.deepEqual([plain.pLoss, plain.fh], [1, 50], "priced at its Tera, four uses are one too many");
   assert.deepEqual([priced.pWin, priced.mh], [1, 50], "the entry turn's 100 then two uses at 50 win, after one hit taken");
-  const recoil = tpFight({ ...T({ Surf: { ...entry.Surf, self: 10 } }), ours: [[{ name: "Surf", dmg: 50, self: 5 }]] }, st(), 0, 0, "stay", null, true);
+  const tenth = { userCost: { recoil: 0.1 } };
+  const recoil = tpFight({ ...T({ Surf: { ...entry.Surf, ...tenth } }), ours: [[{ name: "Surf", dmg: 50, ...tenth }]] }, st(), 0, 0, "stay", null, true);
   assert.equal(recoil.mh, 30, "recoil follows the damage: 10 off the entry hit, 5 off each use after");
   for (const [kind, entering, over] of [["stay", false, null], ["switch", true, null], ["stay", true, { name: "Muddy Water", dmg: 50 }]]) {
     assert.deepEqual(tpFight(T(entry), st(), 0, 0, kind, over, entering), tpFight(T(null), st(), 0, 0, kind, over, entering),
@@ -480,8 +481,75 @@ const bugBite = (dmg, heal = 0, extra = {}) => ({ dmg, steals: { 0: heal, 2: hea
   assert.equal(tpFight(ours, { ...st(), oh: [200] }, 0, 0, "free").mh, 230, "our drain heals on every hit");
   assert.equal(tpFight(ours, { ...st(), oh: [390] }, 0, 0, "free").mh, 380, "never past max");
   // Recoil (#235): 400 − 2×60 = 280 for a cost-free move, and 3 × 20 less for one that spends 20 a use.
-  const recoil = self => tpFight({ ...T(0), ours: [[{ dmg: 100, self }]] }, st(), 0, 0, "free").mh;
+  const recoil = landed => tpFight({ ...T(0), ours: [[{ dmg: 100, userCost: { landed } }]] }, st(), 0, 0, "free").mh;
   assert.deepEqual([recoil(0), recoil(20)], [280, 220], "recoil is spent on every landed use");
+}
+// One live fake turn, ours and a trainer's foe's, and its tables: each side's moves land on the other as the record a
+// turn read builds, `use` its spread and `hit` its fields past those. `ours` is our one move; `theirs` the foe's picks,
+// each `{ name, use, hit, p }` at its share `p` (#1036).
+const recordOf = (name, use, def, hit = {}) => {
+  const mean = use.reduce((t, x) => t + x.d * x.p, 0), landed = use.reduce((t, x) => t + (x.d > 0 ? x.p : 0), 0);
+  return { name, type: "Normal", cat: "physical", e: 1, ignoresSturdy: false, ignoresSub: false, ignoresAbility: false, ignoresDisguise: false, cut: null,
+    steals: null, userCost: null, priority: 0, spread: false, acc: landed, dist: [{ n: 1, p: 1 }], perHit: [{ max: Math.max(...use.map(x => x.d)), min: 0 }],
+    expected: Math.min(mean, def.hp), uncapped: mean, max: Math.min(Math.max(...use.map(x => x.d)), def.hp), pKo: 0, self: 0, use, traits: {}, costs: [], notes: [], live: true, ...hit };
+};
+const liveTurn = (ours, theirs, [ourHp, foeHp]) => {
+  const me = fakeMon("us", 50, ["Normal"], [ourHp, 100, 100, 100, 100, 200], [["Hit", "Normal", 80, "P"]], true, undefined, { isPlayer: () => true });
+  // With no picks, the foe's only move has no power, so no estimate hits back either.
+  const picks = theirs ?? [];
+  const foe = fakeMon("foe", 50, ["Normal"], [foeHp, 100, 100, 100, 100, 100], picks.length ? picks.map(x => [x.name, "Normal", 80, "P"]) : [["Splash", "Normal", 0, "P"]], true,
+    undefined, { isPlayer: () => false, hasTrainer: () => true });
+  foe.getOpponents = () => [me];
+  const turn = fakeTurn({ live: true, party: [me], foes: [foe], trainer: { getName: () => "Ace", config: { isBoss: false }, isDouble: () => false },
+    outcome: (a, d, pm) => {
+      if (a === me) return ours ? recordOf("Hit", ours.use, d, ours.hit) : null;
+      const x = picks.find(c => c.name === pm.getName());
+      return x ? recordOf(x.name, x.use, d, x.hit) : null;
+    },
+    moves: e => (e === foe ? picks.map(x => ({ name: x.name, type: "Normal", p: x.p ?? 1, score: 10, targets: [0] })) : []) });
+  return { turn, me, foe, T: globalThis.__tp.tpTables(turn, [me], [foe], false) };
+};
+const sure = d => [{ d, p: 1, n: 1 }];
+// The foe pays its own recoil, through its threat and its summary to Landing (game-code.md §8, #1036). Our 100 a turn,
+// first, into its 300; its 100 back into our 400 costs it half: 300 → 200 → 150, then 50 → 0 on its turn-2 reply, a
+// turn before our third hit would.
+{
+  const { tpFight } = globalThis.__tp;
+  const fight = hit => tpFight(liveTurn({ use: sure(100) }, [{ name: "Hit", use: sure(100), hit }], [400, 300]).T, fightState({ oh: [400], fh: [300], fs: [0] }), 0, 0, "free");
+  const [plain, recoiled] = [{}, { self: 50, userCost: { strike: 0, recoil: 0.5, landed: 0, missed: 0 } }].map(fight);
+  console.log(`== the foe's own recoil\nwon in ${plain.ends.win.turns} on ${plain.ends.win.mh} · its recoil fells it in ${recoiled.ends.win.turns} on ${recoiled.ends.win.mh}`);
+  assert.deepEqual([plain.pWin, plain.ends.win.turns, plain.ends.win.mh], [1, 3, 200]);
+  assert.deepEqual([recoiled.pWin, recoiled.ends.win.turns, recoiled.ends.win.mh], [1, 2, 200], "its second reply's recoil fells it");
+}
+// The foe's threat mixes its picks' costs by what each part is paid on: half Double-Edge, half Body Slam, each 100, the
+// threat's recoil is the half the damage it deals pays; half High Jump Kick at 50 % and half a sure hit, its crash is
+// paid on the quarter of its uses that land nothing (#1036).
+{
+  const { threatFrom } = globalThis.__hud["30-planner"];
+  const threat = picks => {
+    const { turn, me, foe } = liveTurn(null, picks, [400, 300]);
+    const t = threatFrom(turn, foe, me);
+    return { self: t.self, userCost: t.userCost };
+  };
+  const recoil = threat([{ name: "Double-Edge", use: sure(100), hit: { self: 33, userCost: { strike: 0, recoil: 0.33, landed: 0, missed: 0 } }, p: 0.5 },
+    { name: "Body Slam", use: sure(100), p: 0.5 }]);
+  const crash = threat([{ name: "High Jump Kick", use: [{ d: 0, p: 0.5, n: 0 }, { d: 100, p: 0.5, n: 1 }], hit: { self: 100, userCost: { strike: 0, recoil: 0, landed: 0, missed: 200 } }, p: 0.5 },
+    { name: "Body Slam", use: sure(100), p: 0.5 }]);
+  console.log(`== the foe's mixed cost\nrecoil: ${JSON.stringify(recoil)} · crash: ${JSON.stringify(crash)}`);
+  assert.deepEqual(recoil, { self: 16.5, userCost: { strike: 0, recoil: 0.165, landed: 0, missed: 0 } });
+  assert.deepEqual(crash, { self: 50, userCost: { strike: 0, recoil: 0, landed: 0, missed: 200 } });
+  assert.deepEqual(threat([{ name: "Body Slam", use: sure(100) }]), { self: 0, userCost: null }, "a mix that costs nothing");
+}
+// Our recoil is paid on each use that lands at its full share of what that use dealt, where the record's `self` is its
+// mean over every use, a miss's included: paying that on each landed use counted the accuracy twice (#1036). A 50 %
+// Double-Edge of 100 into 300 needs three that land, each costing us 25 of our 400, and the foe deals nothing.
+{
+  const { tpFight } = globalThis.__tp;
+  const use = [{ d: 0, p: 0.5, n: 0 }, { d: 100, p: 0.5, n: 1 }];
+  const { T } = liveTurn({ use, hit: { self: 12.5, userCost: { strike: 0, recoil: 0.25, landed: 0, missed: 0 } } }, null, [400, 300]);
+  const r = tpFight(T, fightState({ oh: [400], fh: [300], fs: [0] }), 0, 0, "free");
+  console.log(`== our recoil at 50 % accuracy\nwon on ${r.ends.win.mh} of 400`);
+  assert.equal(r.ends.win.mh, 325, "three landed uses at 25 each, not at the 12.5 the misses average it down to");
 }
 // A Shell Bell heals its holder right after its move, ahead of a slower foe's reply (game-code.md §8). Ours, four stacks
 // on 50 of 200, hits a 160 HP foe for 80 a turn and takes 60 back: healed to 90 before the reply, it stands on 30 and
@@ -847,14 +915,14 @@ const bugBite = (dmg, heal = 0, extra = {}) => ({ dmg, steals: { 0: heal, 2: hea
   assert.ok(eaten.turns > blocked.turns, "the pairing without the Unnerve pays for the berry");
 }
 // The threat record and both of the fight plan's move summaries set every race fact, on a live turn and an estimated
-// one, so the foe's summary is taken both ways (#995).
+// one, so the foe's summary is taken both ways (#995), the user cost included (#1036).
 {
   const { threatFrom } = globalThis.__hud["30-planner"];
   const stub = outcomeFrom({ "Bisharp>Iron Head>Garchomp": [[100], 1, 2], "Garchomp>Earthquake>Bisharp": [[10], 1, 1] });
   const bisharp = fakeMon("Bisharp", 80, ["Dark", "Steel"], [300, 200, 200, 100, 100, 100], [["Iron Head", "Steel", 80, "P"]], true);
   const chomp = fakeMon("Garchomp", 80, ["Dragon", "Fairy"], [300, 200, 200, 100, 100, 50], [["Earthquake", "Ground", 100, "P"]], true,
     undefined, { getOpponents: () => [bisharp] });
-  const unset = o => ["ignoresSturdy", "ignoresSub", "ignoresAbility", "ignoresDisguise", "cut", "cat", "e", "steals"].filter(k => o?.[k] === undefined);
+  const unset = o => ["ignoresSturdy", "ignoresSub", "ignoresAbility", "ignoresDisguise", "cut", "cat", "e", "steals", "userCost"].filter(k => o?.[k] === undefined);
   for (const live of [true, false]) {
     const turn = fakeTurn({ live, party: [bisharp], foes: [chomp], outcome: stub,
       moves: () => [{ name: "Earthquake", type: "Ground", p: 1, score: 10, targets: [0] }] });

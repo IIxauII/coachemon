@@ -1171,6 +1171,28 @@ Object.assign(TABLE, {
   globalThis.__stub.outcome = outcome;
 }
 
+// ---- The foe pays what its use costs it in the turn line too, off its threat's `self` (game-code.md §8, #1036)
+// Meteor Mash (85–100) 4HKOs a 300 HP Golisopod; a Leech Life that costs it 40 a use, its recoil or our Rough Skin's
+// chip, takes it in 3.
+{
+  const costing = self => (a, d, pm, o) => { const x = outcome(a, d, pm, o); return x && pm.getName() === "Leech Life" ? { ...x, self } : x; };
+  const metagross = id => mon("Metagross", 80, ["Steel", "Psychic"], [400, 180, 170, 120, 120, 120], [["Meteor Mash", "Steel", 90, "P"]], true, undefined, { id });
+  const golisopod = id => mon("Golisopod", 80, ["Bug", "Water"], [300, 180, 170, 60, 120, 40], [["Leech Life", "Bug", 80, "P"]], true, undefined, { id });
+  const leech = () => [{ name: "Leech Life", type: "Bug", p: 1, score: 10, targets: [0] }];
+  const { scene: s } = render({ party: [metagross("M")], foes: [golisopod("G")], live: true, dist: leech, switches: () => new Map() });
+  const { exchange, threatFrom } = globalThis.__planner;
+  globalThis.__stub.outcome = costing(40);
+  assert.equal(threatFrom(s, golisopod("Golisopod pays 40"), metagross("Metagross vs a 40 cost")).self, 40, "the threat carries what a use costs it");
+  const hits = self => {
+    globalThis.__stub.outcome = costing(self);
+    return exchange(s, metagross(`Metagross vs ${self}`), metagross("x").moveset[0], golisopod(`Golisopod paying ${self}`)).turnsWe;
+  };
+  const [free, paying] = [0, 40].map(hits);
+  console.log(`== the foe's own cost\nMeteor Mash into a Golisopod paying nothing: ${free} hits · paying 40 a use: ${paying}`);
+  assert.deepEqual([free, paying], [4, 3], "what its use costs it saves us a hit");
+  globalThis.__stub.outcome = outcome;
+}
+
 // ---- Our drain heals as our move lands, before the foe's reply when we move first and after it when we move second (game-code.md §18)
 // Venusaur on 160 of 280 wins back ~23 a turn against Body Slam's 68–80. Faster, it meets the third reply on 121 and the
 // fourth fells it; slower, the third reply finds it on 98 − 74 = 24, ahead of that turn's drain, and fells it then.

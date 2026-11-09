@@ -316,6 +316,8 @@ Fight plan steps approximate winnable
 ➜ 2.~ Garchomp Dragon Dragon Claw → Snorlax KO · 23% left
 == drain
 Meteor Mash into a draining Golisopod: 5 hits
+== the foe's own cost
+Meteor Mash into a Golisopod paying nothing: 4 hits · paying 40 a use: 3
 == drain by move order
 Venusaur on 160, faster: 3.9 turns · slower: 3
 == hp kept

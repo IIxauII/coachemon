@@ -8,5 +8,11 @@ from full, 70 a use: 0.00 0.00 0.00 1.00 1.00 1.00 1.00 1.00 1.00 · unnerved 0.
 lum: toxic 0 · Bad Dreams 0 · Toxic Orb -10 · Unnerved toxic -30
 Multiscale, 200 HP, a 120 hit asked at full HP: 60 · down by use 0.00 0.00 1.00
 traits: recoil ≈−9% | recharge turn
+Tackle into Rough Skin: {"strike":50,"recoil":0,"landed":0,"missed":0}
+Surf, no contact: null
+Tackle by a Magic Guard: null
+Steel Beam: {"strike":0,"recoil":0,"landed":200,"missed":200}
+High Jump Kick into Rough Skin: {"strike":50,"recoil":0,"landed":0,"missed":200}
+Chloroblast: {"strike":0,"recoil":0,"landed":200,"missed":0}
 false swipe: 93–99 of 100 HP, pKo 0
 damage: ok
