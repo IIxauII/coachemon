@@ -2,7 +2,7 @@
 // The enemy's choices are not branched, it never switches mid-exchange, and a double is planned one of ours against
 // one foe at a time.
 import { battleMoveset, iconOf, squeezeDist } from "./01-core.js";
-import { benched, koCurve, koTurns, land, landTurnEnd, landingKey, luckKey, raceFacts, stateOf, useOf } from "./10-damage.js";
+import { benched, koCurve, koTurns, land, landTurnEnd, landingKey, luckKey, raceFacts, sameLanding, stateOf, useOf } from "./10-damage.js";
 import { actionOrder, afterSteals, attemptsLost, entryOutcomes, fightCourse, hitsOn, koBoost, koBoostAfter, koBoostText, koStageFactor, laterUse, ourTeraTurn, paralysed, sendInAt, sendInBase, stealCounts, stealHeals, stealRates, threatFrom, tokenOdds, tokenShift, unnervedBy } from "./30-planner.js";
 
 // @only tests: tpSendScore, tpFight, tpTables, tpActs
@@ -383,15 +383,11 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
   const one = list => {
     if (!list.length) return null;
     let p = 0, mh = 0, fh = 0, ox = 0, od = 0, og = 0, fd = 0, fg = 0, t = 0;
-    const combos = new Map();
     for (const b of list) {
       p += b.p; mh += b.p * b.me.hp; fh += b.p * b.foe.hp; t += b.p * b.turns;
       ox += b.p * b.ox; od += b.p * b.od; og += b.p * b.og; fd += b.p * b.fd; fg += b.p * b.fg;
-      const k = `${landingKey(b.me)},${landingKey(b.foe)}`;
-      const c = combos.get(k);
-      if (c) c.p += b.p; else combos.set(k, { p: b.p, b });
     }
-    const mode = [...combos.values()].reduce((x, c) => (c.p > x.p ? c : x)).b;
+    const mode = tpSameLanding(list) ? list[0] : tpMode(list);
     const at = (sum, k) => (p > 0 ? sum / p : k(list[0]));
     const mhAt = at(mh, b => b.me.hp), fhAt = at(fh, b => b.foe.hp);
     const [mhEnd, fhEnd] = [mhAt < 1 ? 0 : mhAt, fhAt < 1 ? 0 : fhAt];
@@ -407,6 +403,17 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
   const out = { ...likely, pWin, pLoss, pStall, ends, winBy, lossBy };
   if (key) T.memo.set(key, out);
   return out;
+};
+// Contract: true only where every branch of `list` has its first's landing key on both sides; false may still hold one.
+const tpSameLanding = list => list.every(b => sameLanding(b.me, list[0].me) && sameLanding(b.foe, list[0].foe));
+const tpMode = list => {
+  const combos = new Map();
+  for (const b of list) {
+    const k = `${landingKey(b.me)},${landingKey(b.foe)}`;
+    const c = combos.get(k);
+    if (c) c.p += b.p; else combos.set(k, { p: b.p, b });
+  }
+  return [...combos.values()].reduce((x, c) => (c.p > x.p ? c : x)).b;
 };
 // At most `k` branches for each class of luck still able to save a side, and none merged across two (#1027).
 const tpMerge = (list, k, T, mi, fi) => {
@@ -425,7 +432,8 @@ const tpMean = (s, hp) => {
   return luckKey(m) === luckKey(s) ? m : s;
 };
 const tpMergeClass = (list, k, T, mi, fi) => {
-  if (list.length <= k) return list;
+  const n = list.length;
+  if (n <= k) return list;
   const ids = new Map(), sides = new Map();
   const sideKey = s => {
     let x = sides.get(s);
@@ -437,25 +445,28 @@ const tpMergeClass = (list, k, T, mi, fi) => {
     if (!ids.has(key)) ids.set(key, ids.size);
     return ids.get(key);
   };
-  const out = list.slice(), keys = out.map(idOf), mhs = out.map(b => b.me.hp), fhs = out.map(b => b.foe.hp);
+  // Slot `i` holds branch `i` until a merge empties it, and `nx[i]` / `pv[i]` are the next and previous slots still
+  // held, `n` past the last: the slots held keep the list's order.
+  const out = list.slice(), keys = tpSameLanding(out) ? out.map(() => 0) : out.map(idOf), mhs = out.map(b => b.me.hp), fhs = out.map(b => b.foe.hp);
+  const nx = out.map((_, i) => i + 1), pv = out.map((_, i) => i - 1);
   const ourMax = T.ourMax[mi], foeMax = T.foeMax[fi];
   const far = (i, j) => Math.abs(mhs[i] - mhs[j]) / ourMax + Math.abs(fhs[i] - fhs[j]) / foeMax + (keys[i] !== keys[j] ? 1 : 0);
   // Contract: `near[i]` is the first of the nearest branches after `i` and `gap[i]` how far, so the pair merged is the
   // first nearest pair in index order, as a scan of every pair finds it.
   const near = [], gap = [];
   const scan = i => {
-    let bj = i + 1, bd = Infinity;
-    for (let j = i + 1; j < out.length; j++) {
+    let bj = nx[i], bd = Infinity;
+    for (let j = nx[i]; j < n; j = nx[j]) {
       const d = far(i, j);
       if (d < bd) { bd = d; bj = j; }
     }
     near[i] = bj;
     gap[i] = bd;
   };
-  for (let i = 0; i < out.length; i++) scan(i);
-  while (out.length > k) {
-    let bi = 0, bd = Infinity;
-    for (let i = 0; i < out.length - 1; i++) if (gap[i] < bd) { bd = gap[i]; bi = i; }
+  for (let i = 0; i < n; i++) scan(i);
+  let bi = 0;
+  for (let i = 0, bd = Infinity; nx[i] < n; i = nx[i]) if (gap[i] < bd) { bd = gap[i]; bi = i; }
+  for (let held = n; held > k; held--) {
     const bj = near[bi];
     const [a, b] = [out[bi], out[bj]];
     const p = a.p + b.p;
@@ -463,23 +474,30 @@ const tpMergeClass = (list, k, T, mi, fi) => {
     const big = a.p >= b.p ? a : b;
     // `tpMean` keeps a state's luck, and so its landing key: the merged branch keeps `big`'s.
     const id = big === a ? keys[bi] : keys[bj];
-    for (const xs of [out, keys, mhs, fhs, near, gap]) xs.splice(bj, 1);
+    nx[pv[bj]] = nx[bj];
+    if (nx[bj] < n) pv[nx[bj]] = pv[bj];
+    out[bj] = null;
     out[bi] = { ...big, p, me: tpMean(big.me, w(x => x.me.hp)), foe: tpMean(big.foe, w(x => x.foe.hp)),
       ox: w(x => x.ox), od: w(x => x.od), og: w(x => x.og), fd: w(x => x.fd), fg: w(x => x.fg) };
     keys[bi] = id;
     mhs[bi] = out[bi].me.hp;
     fhs[bi] = out[bi].foe.hp;
-    for (let i = 0; i < out.length; i++) {
+    // Gotcha: the next pair is picked in this same pass, so no row's gap may change once the pass has left it.
+    let next = 0, bd = Infinity;
+    for (let i = 0; i < n; i = nx[i]) {
       const j = near[i];
-      if (i === bi || j === bi || j === bj) { scan(i); continue; }
-      if (j > bj) near[i] = j - 1;
-      if (i < bi) {
+      if (i === bi || j === bi || j === bj) scan(i);
+      else if (i < bi) {
         const d = far(i, bi);
         if (d < gap[i] || (d === gap[i] && bi < near[i])) { gap[i] = d; near[i] = bi; }
       }
+      if (nx[i] < n && gap[i] < bd) { bd = gap[i]; next = i; }
     }
+    bi = next;
   }
-  return out;
+  const kept = [];
+  for (let i = 0; i < n; i = nx[i]) kept.push(out[i]);
+  return kept;
 };
 const tpFoeLeft = r => r.pLoss * (r.ends.loss?.fh ?? 0) + r.pStall * (r.ends.stall?.fh ?? 0);
 // `r.fh` is a mean, and a float error puts it under `hp` with no hit landed: a strict `<` let summation order alone

@@ -150,8 +150,19 @@ const barStep = (f, hp, bar, d, ohko = false) => {
 // hit; `sub`, the Substitute's HP left, 0 for none; `sitrus` / `enigmas`, the Sitrus and Enigma Berries held; `others`,
 // the stack held of each of `facts.others`' berry types, replaced and never written; `fed`, a super-effective hit landed
 // this turn, which the turn end clears.
-const fresh = (f, hp, bar) => ({ hp, bar, revived: false, tok: false, busted: false, sub: f?.sub > 0 ? f.sub : 0, sitrus: f?.sitrus?.left ?? 0,
-  enigmas: f?.enigma?.left ?? 0, others: f?.others?.length ? f.others.map(x => x.left) : NO_OTHERS, fed: false, facts: f });
+const fresh = (f, hp, bar, from = null) => {
+  const others = pick(from, "others", UNSET);
+  return { hp, bar, revived: pick(from, "revived", false), tok: pick(from, "tok", false), busted: pick(from, "busted", false),
+    sub: pick(from, "sub", f?.sub > 0 ? f.sub : 0), sitrus: pick(from, "sitrus", f?.sitrus?.left ?? 0),
+    enigmas: pick(from, "enigmas", f?.enigma?.left ?? 0), others: others !== UNSET ? others : f?.others?.length ? f.others.map(x => x.left) : NO_OTHERS,
+    fed: pick(from, "fed", false), facts: f };
+};
+const UNSET = Symbol("unset");
+const pick = (from, k, v) => {
+  if (!from) return v;
+  const x = from[k];
+  return x !== undefined || k in from ? x : v;
+};
 const NO_OTHERS = [];
 const DISCRETE = Object.keys(fresh(null)).filter(k => k !== "hp" && k !== "bar" && k !== "facts");
 const LUCK = ["revived", "tok", "busted"];
@@ -160,16 +171,7 @@ const NO_HIT = {}, NO_FACTS = {};
 // `from` carries a discrete part to the new state, a Landing state, an `after1` entry or a search-state entry; its HP
 // and bar are never read.
 // @only 25-turn, 35-team-plan, tests: stateOf
-export const stateOf = (facts, hp = facts.hp, bar = null, from = null) => {
-  const s = fresh(facts, hp, bar ?? facts.idx ?? 0);
-  if (from) {
-    for (const k of DISCRETE) {
-      const v = from[k];
-      if (v !== undefined || k in from) s[k] = v;
-    }
-  }
-  return s;
-};
+export const stateOf = (facts, hp = facts.hp, bar = null, from = null) => fresh(facts, hp, bar ?? facts.idx ?? 0, from);
 // The state a side keeps once it leaves the field: its Substitute is gone (game-code.md §8).
 // @only 35-team-plan, tests: benched
 export const benched = s => (s.sub > 0 ? { ...s, sub: 0 } : s);
@@ -435,6 +437,21 @@ export const land = (state, use, hit = NO_HIT, { whole = false, user = null } = 
   if (!up || !(d > 0) || !Number.isFinite(d)) {
     return [user ? { state, user: up ? missedBy(user, h, whole) : user, p: 1, dealt: 0, subDealt: 0, hits: 0 } : { state, p: 1, dealt: 0, subDealt: 0, hits: 0 }];
   }
+  // Gotcha: `plain` repeats `strike`'s arithmetic for one hit that meets no Substitute, form, cut, Enigma Berry, steal
+  // or user and stands or falls with no luck to roll; a rule `strike` gains has to keep such a hit out of it.
+  const plain = !user && !h.steals && !(state.sub > 0) && !(f.disguise && !state.busted) && !f.multiscale && !f.shadowShield
+    && !(f.enigma?.heal > 0) && Math.max(1, Math.round(use.n ?? 1)) === 1;
+  if (plain) {
+    const hp = state.hp, dd = d * (h.factor ? h.factor(state.bar) : 1);
+    const [dealt, bar] = barStep(f, hp, state.bar, Math.max(0, dd), !!h.ohko);
+    const left = hp - dealt;
+    const endure = !state.tok && !stands(hp - dd, whole) ? f.pEndure || 0 : 0;
+    if (!endure && stands(left, whole)) return [{ state: stateOf(f, left, bar, state), p: 1, dealt, subDealt: 0, hits: 1 }];
+    if (!endure && !f.pFocus && !(f.sturdy && !h.ignoresSturdy && hp >= f.maxHp) && !(f.revive && !state.revived)) {
+      const to = Math.max(0, left);
+      return [{ state: stateOf(f, to, bar, state), p: 1, dealt: hp - to, subDealt: 0, hits: 1 }];
+    }
+  }
   const heals = h.steals && typeof h.steals === "object" ? h.steals : null;
   // Outcome `o` off carrier `c`, with its user after the berries `c` stole and the `reached` strikes past the Substitute.
   const outcome = (o, c, reached) => {
@@ -490,6 +507,20 @@ const keyWith = (s, f, sub) => {
   return s.others?.length ? `${k}|${s.others.join()}` : k;
 };
 export const landingKey = (s, f = s.facts) => keyWith(s, f, s.sub);
+// Contract: true only where `landingKey(a) === landingKey(b)`, and false wherever their facts or a field of their
+// discrete part differ, so a false still has to ask `landingKey`. Each field of the discrete part is named here.
+// @only 35-team-plan, tests: sameLanding
+export const sameLanding = (a, b) => {
+  if (a === b) return true;
+  const f = a.facts;
+  if (f !== b.facts || a.bar !== b.bar || a.revived !== b.revived || a.tok !== b.tok || a.busted !== b.busted || a.sub !== b.sub
+    || a.sitrus !== b.sitrus || a.enigmas !== b.enigmas || a.fed !== b.fed) return false;
+  if ((f?.sturdy || f?.multiscale || f?.shadowShield) && (a.hp >= f.maxHp) !== (b.hp >= f.maxHp)) return false;
+  const x = a.others?.length ? a.others : NO_OTHERS, y = b.others?.length ? b.others : NO_OTHERS;
+  if (x.length !== y.length) return false;
+  for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return false;
+  return true;
+};
 // `perHit[k]`: Map damage → p for hit k; `dist`: [{ n, p }] hit counts; `checkAll`: every hit rolls, else only the
 // first. A miss or a faint ends the move (game-code.md §2). No revive: a seed holder's `pKo` of 0 prices its seed.
 const resolve = (f, perHit, dist, acc, checkAll, hit = NO_HIT) => {

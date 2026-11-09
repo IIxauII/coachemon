@@ -711,6 +711,22 @@ const spent = Object.fromEntries(DISCRETE.map(k => [k, typeof fresh[k] === "bool
   for (const k of DISCRETE) assert.equal(s[k], spent[k], k);
 }
 
+// ---- Two states sameLanding calls the same have one landing key, and a field of the discrete part apart, a Sturdy holder's full HP or facts of their own make them two (#1027)
+{
+  const { sameLanding } = D;
+  const o = { sturdy: true, form: "disguise", sub: 25, sitrus: 1, enigma: 1, lum: 1 };
+  const f = factsOf(o), base = stateOf(f);
+  const flip = v => (typeof v === "boolean" ? !v : Array.isArray(v) ? [...v, 1] : v + 1);
+  for (const k of DISCRETE) assert.equal(sameLanding(base, stateOf(f, base.hp, base.bar, { ...base, [k]: flip(base[k]) })), false, k);
+  assert.equal(sameLanding(base, stateOf(f, base.hp - 1, base.bar, base)), false);
+  assert.equal(sameLanding(base, stateOf(factsOf(o))), false);
+  const outs = [];
+  sweep((st, use, hit, whole) => { for (const { state } of land(st, use, hit, { whole })) outs.push(state); });
+  for (let i = 0; i < outs.length; i++) {
+    for (let j = i; j < Math.min(outs.length, i + 40); j++) if (sameLanding(outs[i], outs[j])) assert.equal(landingKey(outs[i]), landingKey(outs[j]));
+  }
+}
+
 // ---- Every field of the discrete part survives a missed use from `after1` to the state `start` reopens, but the turn's mark, which its turn end clears (#1027, #1028)
 {
   const rec = { facts: factsOf() };
