@@ -1564,6 +1564,7 @@ export const HUD: Area = {
       ],
     },
     { name: "weight", kind: "field", at: [], from: "ours", note: "our threat-reason rows" },
+    { name: "whole", kind: "field", at: [], from: "ours", note: "our land() options (down below 1 HP)" },
     { name: "width", kind: "field", at: [], from: "ours", note: "DOM style.width on our panel" },
     { name: "x", kind: "field", at: [], from: "ours", note: "our scored-hit rows ({ x })" },
     { name: "CheckSwitchPhase", kind: "phase", at: ["src/phases/check-switch-phase.ts#CheckSwitchPhase"] },

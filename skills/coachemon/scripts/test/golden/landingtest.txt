@@ -1,0 +1,22 @@
+== bars
+one hit of 150 into 300 over three bars: 200/1 p1 dealt 100 ×1
+two hits of 75: 200/1 p1 dealt 100 ×2
+one hit of 300: 100/0 p1 dealt 200 ×1
+the final boss on its last bar, hit for 999: 1/0 p1 dealt 99 ×1
+== Sturdy
+full HP, hit for 150: 1/0 p1 dealt 99 ×1
+full HP, two hits of 150: 0/0 p1 dealt 100 ×2
+== the endure token
+10 % token, hit for 150 of 100: 1/0T p0.1 dealt 99 ×1 · 0/0 p0.9 dealt 100 ×1
+a 2-bar boss on 200, hit for 250: 100/0T p0.1 dealt 100 ×1 · 100/0 p0.9 dealt 100 ×1
+two hits of 150: 0/0 p0.9 dealt 100 ×1 · 0/0T p0.1 dealt 100 ×2
+== Focus Band
+hit for 150 of 100: 1/0 p0.1 dealt 99 ×1 · 0/0 p0.9 dealt 100 ×1
+two hits of 150: 1/0 p0.01 dealt 99 ×2 · 0/0 p0.9 dealt 100 ×1 · 0/0 p0.09 dealt 100 ×2
+== Reviver Seed
+100 of 200, three hits of 100: 100/0R p1 dealt 100 ×1
+== whole
+a Focus Band holder on 10, hit for 9.5, whole: 1/0 p0.1 dealt 9 ×1 · 0.5/0 p0.9 dealt 9.5 ×1
+…without: 0.5/0 p1 dealt 9.5 ×1
+== the discrete part: revived, tok
+ok
