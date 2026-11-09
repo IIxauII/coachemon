@@ -234,7 +234,7 @@ const bigHit = move(1, "Big Hit", 14, 120);
   assert.deepEqual([estimate.live, estimate.pKo, estimate.ignoresSub], [false, 0, false], "an estimate as well");
 }
 
-// ---- Every move record a turn read hands back sets its race facts, a no-effect one's included (#995)
+// ---- Every move record a turn read hands back sets its race facts, a no-effect one's included (#995), its user cost too (#1036)
 {
   const quake = move(89, "Earthquake", 4, 100);
   const atk = mon("a", { moves: [bigHit, quake] });
@@ -243,7 +243,7 @@ const bigHit = move(1, "Big Hit", 14, 120);
   floater.getAttackDamage = function (o) {
     return o.move.type === 4 ? { cancelled: false, result: HitResult.NO_EFFECT, damage: 0 } : hit.call(this, o);
   };
-  const unset = o => ["ignoresSturdy", "ignoresSub", "ignoresAbility", "ignoresDisguise", "cut", "cat", "e", "steals"].filter(k => o[k] === undefined);
+  const unset = o => ["ignoresSturdy", "ignoresSub", "ignoresAbility", "ignoresDisguise", "cut", "cat", "e", "steals", "userCost"].filter(k => o[k] === undefined);
   for (const estimate of [false, true]) {
     setup(atk, floater);
     const outs = readTurn(scene, t => t.outcomes(atk, floater), { estimate });
@@ -1038,16 +1038,38 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   const rec = moveOutcome(scene, atk, def, pmOf(recoiler), { crit: false });
   assert.deepEqual(rec.traits.recoil, { ratio: 0.33, useHp: false, blocked: false }, "the traits ride on the record");
   near(rec.self, rec.expected * 0.33, "recoil off the damage this matchup deals");
+  assert.deepEqual(rec.userCost, { strike: 0, recoil: 0.33, landed: 0, missed: 0 }, "Landing's, off what each use deals");
   assert.deepEqual(rec.costs, [`recoil \u2248\u2212${Math.round(rec.self / 400 * 100)}%`], "...and the wording carries its share of max HP");
   const beam = moveOutcome(scene, atk, def, pmOf(hyperBeam), { crit: false });
   assert.ok(beam.traits.recharge && beam.costs.includes("recharge turn"), `recharge: ${beam.costs}`);
   assert.ok(!beam.notes.includes("recharge turn"), "a cost is in `costs`, not mixed into the notes");
+  assert.equal(beam.userCost, null, "a move that costs its user no HP");
   phaseName = "MovePhase";
   setup(atk, def);
   const rough = moveOutcomes(scene, atk, def).find(o => o.name === "Hyper Beam");
   phaseName = "CommandPhase";
   assert.ok(rough.traits.recharge && rough.costs.includes("recharge turn"), `estimate: ${JSON.stringify(rough.costs)}`);
   console.log(`traits: ${rec.costs.join(" \u00b7 ")} | ${beam.costs.join(" \u00b7 ")}`);
+}
+
+// ---- A record's user cost: the chip of each strike that touches a Rough Skin or Iron Barbs target, Chloroblast's and Steel Beam's halves on a use that lands, and a crash or Steel Beam's half on a miss (game-code.md §8)
+{
+  const contact = { flags: MoveFlags.MAKES_CONTACT };
+  const tackle = move(33, "Tackle", 0, 40, contact), surf = move(57, "Surf", 10, 90);
+  const beam = move(796, "Steel Beam", 8, 140, { attrs: [new (class HalfSacrificialAttr {})()] });
+  const jump = move(136, "High Jump Kick", 1, 130, { acc: 90, ...contact, attrs: [new (class MissEffectAttr {})()] });
+  const blast = move(835, "Chloroblast", 11, 150, { acc: 95, attrs: [Object.assign(new (class RecoilAttr {})(), { damageRatio: 0.5, useHp: true })] });
+  const barbs = mon("barbs", { player: false, attrs: [abAttr("PostDefendContactDamageAbAttr", { damageRatio: 8 })] });
+  const cost = (mv, def = barbs, user = {}) => {
+    const atk = mon("user", { maxHp: 400, ...user });
+    setup(atk, def);
+    return moveOutcome(scene, atk, def, pmOf(mv), { crit: false }).userCost;
+  };
+  const rows = [["Tackle into Rough Skin", cost(tackle)], ["Surf, no contact", cost(surf)], ["Tackle by a Magic Guard", cost(tackle, barbs, { abilities: ["BlockNonDirectDamageAbAttr"] })],
+    ["Steel Beam", cost(beam)], ["High Jump Kick into Rough Skin", cost(jump)], ["Chloroblast", cost(blast)]];
+  for (const [what, x] of rows) console.log(`${what}: ${JSON.stringify(x)}`);
+  assert.deepEqual(rows.map(([, x]) => x), [{ strike: 50, recoil: 0, landed: 0, missed: 0 }, null, null, { strike: 0, recoil: 0, landed: 200, missed: 200 },
+    { strike: 50, recoil: 0, landed: 0, missed: 200 }, { strike: 0, recoil: 0, landed: 200, missed: 0 }]);
 }
 
 // ---- The page's game version, compared segment by segment

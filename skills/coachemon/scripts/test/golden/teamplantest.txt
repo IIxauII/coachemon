@@ -39,6 +39,12 @@ win 0.500 · loss 0.500
 win 1 · 128.00 HP · berry eaten
 == drain
 3 → 4 turns
+== the foe's own recoil
+won in 3 on 200 · its recoil fells it in 2 on 200
+== the foe's mixed cost
+recoil: {"self":16.5,"userCost":{"strike":0,"recoil":0.165,"landed":0,"missed":0}} · crash: {"self":50,"userCost":{"strike":0,"recoil":0,"landed":0,"missed":200}}
+== our recoil at 50 % accuracy
+won on 325 of 400
 == Shell Bell
 ours, moving first: won on turn 2 on 70 · without it lost 1 · moving second lost 1
 == beast boost

@@ -798,7 +798,7 @@ const EXACT = 1e-5;
   assert.deepEqual(next.by.slice(0, 4), [0, 0, 1, 1]);
 }
 
-// ---- The fight plan's chance the foe is down by each turn is KO pacing's, on fixed damage up to the branches it drops, and within 0.05 where the rolls vary (#1027), a Substitute's included (#1033), and a Bug Bite's steals (#1029)
+// ---- The fight plan's chance the foe is down by each turn is KO pacing's, on fixed damage up to the branches it drops, and within 0.05 where the rolls vary (#1027), a Substitute's included (#1033), a Bug Bite's steals (#1029), and our own recoil (#1036)
 {
   console.log("== KO pacing and the fight plan, on the foe");
   const ROWS = [
@@ -826,6 +826,7 @@ const EXACT = 1e-5;
     ["Enigma Berry", { use: sureUse(70), hit: { e: 2 }, foe: { hp: 200, enigma: 1 } }, EXACT],
     ["Berry Pouch on a Sitrus Berry", { use: sureUse(70), foe: { hp: 200, sitrus: 1 }, pouch: 1 }, EXACT],
     ["Bug Bite into a Sitrus x2 and a Lum, from 98 of 200", { use: sureUse(30), foe: { hp: 98, maxHp: 200, sitrus: 2, lum: 1 }, hit: { steals: true } }, EXACT],
+    ["our recoil and contact chip, which land on us alone", { use: sureUse(60), hit: { userCost: { strike: 10, recoil: 0.25, landed: 0, missed: 0 } } }, EXACT],
   ];
   for (const [what, setup, tol] of ROWS) {
     const { by, plan } = race(setup);
@@ -834,7 +835,7 @@ const EXACT = 1e-5;
   }
 }
 
-// ---- The fight plan's chance we are down by each turn is KO pacing's on us, the foe's multi-hit use landing hit by hit (#1027), our Substitute's included (#1033)
+// ---- The fight plan's chance we are down by each turn is KO pacing's on us, the foe's multi-hit use landing hit by hit (#1027), our Substitute's included (#1033), and the foe's own recoil (#1036)
 {
   console.log("== KO pacing and the fight plan, on us");
   const ROWS = [
@@ -849,6 +850,7 @@ const EXACT = 1e-5;
     ["Disguise", { use: sureUse(150), ours: { form: "disguise" } }, EXACT],
     ["Substitute", { use: sureUse(60), ours: { sub: 25 } }, EXACT],
     ["the foe's sound move past our Substitute", { use: sureUse(60), ours: { sub: 25 }, hit: { ignoresSub: true } }, EXACT],
+    ["the foe's recoil and contact chip, which land on it alone", { use: sureUse(60), ours: {}, hit: { userCost: { strike: 10, recoil: 0.25, landed: 0, missed: 0 } } }, EXACT],
   ];
   for (const [what, setup, tol] of ROWS) {
     const { by, plan } = race(setup);

@@ -105,6 +105,7 @@ Sitrus Berry at 49.0 %: KO pacing 0.000 0.000 1.000 1.000 · fight plan 0.000 0.
 Enigma Berry: KO pacing 0.000 0.000 0.000 1.000 · fight plan 0.000 0.000 0.000 1.000
 Berry Pouch on a Sitrus Berry: KO pacing 0.000 0.000 0.000 0.700 · fight plan 0.000 0.000 0.000 0.700
 Bug Bite into a Sitrus x2 and a Lum, from 98 of 200: KO pacing 0.000 0.000 0.000 0.000 · fight plan 0.000 0.000 0.000 0.000
+our recoil and contact chip, which land on us alone: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 == KO pacing and the fight plan, on us
 plain: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 plain, rolled: KO pacing 0.000 0.766 1.000 1.000 · fight plan 0.000 0.813 1.000 1.000
@@ -117,6 +118,7 @@ Multiscale, the record asked at full HP: KO pacing 0.000 1.000 1.000 1.000 · fi
 Disguise: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 Substitute: KO pacing 0.000 0.000 1.000 1.000 · fight plan 0.000 0.000 1.000 1.000
 the foe's sound move past our Substitute: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
+the foe's recoil and contact chip, which land on it alone: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 == the probe
 KO pacing:  sturdy 2.00 · seed 2.00 · band 1.11 · token 1.10
 fight plan: sturdy 2.00 · seed 2.00 · band 1.11 · token 1.10

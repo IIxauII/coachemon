@@ -428,7 +428,10 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
   // ran the lock, never confused, or was confused under every confusion length, and with no relock the state after a
   // use is the same whether it went off.
   const lockChain = steps ? i => ({ from: steps[i + spent].at, step: s => lockStep(s, lockRule) }) : null;
-  let pKo = 0, first = 0, koFirst = 0, worst = null, likely = null, drained = 0, unblocked = 0;
+  let pKo = 0, first = 0, koFirst = 0, worst = null, likely = null, drained = 0, unblocked = 0, paysSelf = 0;
+  // Each part of `userCost` as [what the picks pay, what it is paid on]: strikes landed, damage dealt, uses landed, and
+  // every use that lands nothing.
+  const cost = { strike: [0, 0], recoil: [0, 0], landed: [0, 0], missed: [0, 1] };
   // A spend chain's rows name a move once per state it may be picked in.
   const pOf = new Map();
   for (const m of moves) pOf.set(m.name, (pOf.get(m.name) ?? 0) + m.p);
@@ -448,6 +451,15 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
     const ko = m.o.pKo ?? 0;
     const p = m.p * actChance(foe, pm.getMove?.() ?? null, next);
     drained += p * (m.o.drain ?? 0) * m.o.expected;
+    paysSelf += p * (m.o.self ?? 0);
+    const c = m.o.userCost, pts = useOf(m.o);
+    const struck = pts.reduce((sum, x) => sum + (x.d > 0 ? x.p * (x.n ?? 1) : 0), 0), landed = pts.reduce((sum, x) => sum + (x.d > 0 ? x.p : 0), 0);
+    for (const [k, w] of [["strike", struck], ["recoil", m.o.expected], ["landed", landed]]) {
+      cost[k][0] += p * w * (c?.[k] ?? 0);
+      cost[k][1] += p * w;
+    }
+    cost.missed[0] += p * (1 - landed) * (c?.missed ?? 0);
+    cost.missed[1] -= p * landed;
     pKo += p * ko;
     koFirst += p * ko * order;
     if (p >= 0.05 && (!worst || m.o.max > worst.o.max)) worst = m;
@@ -475,6 +487,9 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
     boost: Object.keys(boost).length ? boost : null,
     // HP its drain moves give it back a turn; negative into Liquid Ooze.
     drain: drained,
+    // HP a use costs it, as a move record's `self`; `userCost` as Landing takes it, each part over the share of the mix
+    // it is paid on. Gotcha: a mix's recoil is floored and kept at least 1 as one move's, on its picks that recoil none.
+    self: paysSelf, userCost: mixedCost(cost),
     // The share of its picks that a Protect of ours does not stop (`IGNORE_PROTECT`, Unseen Fist's contact).
     unblocked: Math.min(1, unblocked),
     // P(its i-th use from now goes off) as its lock's confusion leaves it, and `koCurve`'s `chain` of the lock from
@@ -484,6 +499,11 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
     laterAt: chain ? i => chain.later[Math.min(i, chain.later.length) - 1] : null,
   };
 });
+const mixedCost = cost => {
+  const part = ([paid, over]) => (paid > 0 && over > 0 ? paid / over : 0);
+  const out = { strike: part(cost.strike), recoil: part(cost.recoil), landed: part(cost.landed), missed: part(cost.missed) };
+  return out.strike || out.recoil || out.landed || out.missed ? out : null;
+};
 // The `{ expected, use }` of `t`'s i-th use from now.
 const threatUse = (t, i) => (t?.own && i >= t.ownFrom ? t.own : i && t?.laterAt ? t.laterAt(i) : i && t?.later ? t.later : t);
 // The `{ expected, use }` one turn after this stands for: `later`, or the mean of the uses after this one where those

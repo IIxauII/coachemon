@@ -1033,7 +1033,7 @@ const fromGame = (env, atk, def, pm, opts) => {
   const facts = targetFacts(env, def, ignoreAbility);
   // (game-code.md §1, §2)
   const cut = fixed || ohko ? "never" : !gameIgnore && facts.hp >= facts.maxHp && (facts.multiscale || facts.shadowShield) ? "in" : null;
-  const base = { name: pm.getName(), type, cat, e, priority, spread, spreadApplied, traits: t, self: 0, bypassProtect: bypassesProtect(atk, def, move), ignoresAbility: ignoreAbility, ignoresDisguise, cut,
+  const base = { name: pm.getName(), type, cat, e, priority, spread, spreadApplied, traits: t, self: 0, userCost: null, bypassProtect: bypassesProtect(atk, def, move), ignoresAbility: ignoreAbility, ignoresDisguise, cut,
     steals: stealsOff(t, def, ignoreAbility) };
   const blocked = cancelledBy(env, atk, def, move);
   if (first.cancelled || first.result === HitResult.NO_EFFECT || first.result === HitResult.IMMUNE || blocked) {
@@ -1130,21 +1130,36 @@ const fromGame = (env, atk, def, pm, opts) => {
     : acc * dist.reduce((t, x) => t + x.n * x.p, 0);
   const contact = flagApplies(move, MoveFlags.MAKES_CONTACT, atk, def, hasFlag(move, MoveFlags.MAKES_CONTACT));
   const fromTarget = [];
+  // Landing's `userCost`, what a use costs its user once it lands or misses (game-code.md §8).
+  const cost = { strike: 0, recoil: 0, landed: 0, missed: 0 };
+  const half = Math.max(1, Math.floor(maxHp / 2));
   if (contact && !t.guarded && maxHp && ability(def, "PostDefendContactDamageAbAttr")) {
     const [abName, ratio] = [def.getAbility?.(), def.hasPassive?.() ? def.getPassiveAbility?.() : null]
       .flatMap(a => (a?.getAttrs?.("PostDefendContactDamageAbAttr") ?? []).map(x => [a.name, x.damageRatio])).find(Boolean) ?? ["contact", 8];
-    const chip = Math.max(1, Math.floor(maxHp / (ratio || 8))) * landed;
+    cost.strike = Math.max(1, Math.floor(maxHp / (ratio || 8)));
+    const chip = cost.strike * landed;
     self += chip;
     fromTarget.push(`${abName}: ≈−${Math.round(chip / maxHp * 100)}%`);
   }
   let recoilShare = null;
   if (t.recoil && !t.recoil.blocked && maxHp) {
-    const hurt = t.recoil.useHp ? Math.max(1, Math.floor(maxHp * t.recoil.ratio)) * acc : expected * t.recoil.ratio;
+    const fixed = Math.max(1, Math.floor(maxHp * t.recoil.ratio));
+    if (t.recoil.useHp) cost.landed += fixed;
+    else cost.recoil = t.recoil.ratio;
+    const hurt = t.recoil.useHp ? fixed * acc : expected * t.recoil.ratio;
     self += hurt;
     recoilShare = hurt / maxHp;
   }
-  if (t.halfSac && maxHp) self += Math.max(1, Math.floor(maxHp / 2));
-  if (t.crash && maxHp && acc < 1) self += Math.max(1, Math.floor(maxHp / 2)) * (1 - acc);
+  if (t.halfSac && maxHp) {
+    self += half;
+    cost.landed += half;
+    cost.missed += half;
+  }
+  if (t.crash && maxHp) {
+    if (acc < 1) self += half * (1 - acc);
+    cost.missed += half;
+  }
+  const userCost = cost.strike || cost.recoil || cost.landed || cost.missed ? cost : null;
   const selfKo = t.selfKo === "onHit" ? acc : t.selfKo === "always" ? 1 : 0;
   const costs = [...fromTarget, ...costNotes(t, { recoil: recoilShare, type })];
   const drain = drainRatio(env, atk, def, t);
@@ -1162,7 +1177,7 @@ const fromGame = (env, atk, def, pm, opts) => {
   if (crit === 1) notes.push("crit");
   if (semi) notes.push("target semi-invulnerable");
   return {
-    ...base, acc, crit, dist, semi, self, selfKo, drain,
+    ...base, acc, crit, dist, semi, self, userCost, selfKo, drain,
     perHit: maxes.map((max, k) => ({ max, min: Math.min(max, lows[k] ?? Math.floor(max * 0.85)) })), targetHp: f.hp,
     expected, uncapped, max: f.hp - Math.max(0, worst.hp), pKo, revive: f.revive, sub: shielded ? facts.sub : 0, costs, notes,
     use, focus: f.pFocus, ignoresSturdy, ignoresSub, flinch: flinchChance(atk, def, move, ignoreAbility),
@@ -1223,7 +1238,7 @@ const fromApprox = (env, atk, def, pm) => {
   return {
     // `raw`: the estimate before the target's HP cuts it, which is what a `dmg` for the rows is taken from.
     raw: x.dmg,
-    name: x.name, type: x.type, cat: x.cat, e: x.e, priority: x.priority, spread: x.spread, spreadApplied: false, traits: t, semi: false, self: 0,
+    name: x.name, type: x.type, cat: x.cat, e: x.e, priority: x.priority, spread: x.spread, spreadApplied: false, traits: t, semi: false, self: 0, userCost: null,
     acc, crit: 0, dist: [{ n: 1, p: 1 }], perHit: [{ max, min: Math.floor(max * 0.85) }], targetHp: def.hp,
     expected: Math.min(def.hp - end.hp, max * 0.925) * acc, uncapped: max * 0.925 * acc, max: def.hp - end.hp, pKo: end.ko && !revive ? acc : 0, revive, sub: shielded ? facts.sub : 0,
     costs: costNotes(t, { type: x.type }), notes: ["estimate"], live: false,
