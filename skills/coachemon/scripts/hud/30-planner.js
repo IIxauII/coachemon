@@ -452,7 +452,7 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
     koFirst += p * ko * order;
     if (p >= 0.05 && (!worst || m.o.max > worst.o.max)) worst = m;
     const hits = (m.o.dist ?? []).reduce((sum, d) => sum + d.n * d.p, 0) || 1;
-    kos.push({ p, max: m.o.max, pKo: ko, acc: m.o.acc ?? 1, revive: m.o.revive ?? 0, cat: m.o.cat, hits, targetHp: me.hp, live });
+    kos.push({ p, max: m.o.max, pKo: ko, acc: m.o.acc ?? 1, revive: m.o.revive ?? 0, sub: m.o.sub ?? 0, cat: m.o.cat, hits, targetHp: me.hp, live });
   }
   const brief = m => m && { name: m.name, type: m.type, e: m.o?.e ?? null, p: m.p, hits: hitCounts(m.o), ...(m.fails ? { fails: true } : {}) };
   // Gotcha: one `cut` for the mix, so a fixed-damage pick beside others is priced as theirs are.
@@ -465,6 +465,7 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
     targets: exactRow ? [...(exactRow.targets ?? [])] : null,
     revive: Math.max(0, ...kos.map(k => k.revive)),
     ignoresSturdy: moves.some(m => m.o) && moves.every(m => !m.o || !!m.o.ignoresSturdy),
+    ignoresSub: moves.some(m => m.o) && moves.every(m => !m.o || !!m.o.ignoresSub),
     ignoresAbility: moves.some(m => m.o) && moves.every(m => !m.o || !!m.o.ignoresAbility),
     ignoresDisguise: moves.some(m => m.o) && moves.every(m => !m.o || !!m.o.ignoresDisguise),
     cut: cutBy ? cutBy.o.cut ?? null : moves.some(m => m.o) ? "never" : null,

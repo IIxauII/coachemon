@@ -2,7 +2,7 @@
 // multi-hit attrs do: the numbers below are exact.
 import assert from "node:assert/strict";
 import { mountHud } from "./fake-page.mjs";
-import { AbilityId, HitResult, MoveId, MultiHitType } from "../../../../src/enums/generated.ts";
+import { AbilityId, HitResult, MoveFlags, MoveId, MultiHitType } from "../../../../src/enums/generated.ts";
 import { GAME_PROTO } from "./game-proto.mjs";
 
 class MultiHitAttr { constructor(t) { this.multiHitType = t; } }
@@ -28,8 +28,8 @@ const move = (id, name, type, power, { acc = 100, attrs = [], flags = 0, cat = 0
 });
 const pmOf = (mv, i = 0) => ({ moveId: mv.id ?? i + 1, getMove: () => mv, getName: () => mv.name, getMovePp: () => 10, ppUsed: 0 });
 // `battlerTags`: the instances `summonData.tags` holds, read by class — not `tags`, which only `getTag` sees. `bi`:
-// the battler index a Leech Seed names its seeder by.
-const mon = (id, { hp = 1000, maxHp = hp, abilities = [], attrs = [], items = [], player = true, boss = 0, types = [0], formIndex = 0, moves = [], status = null, tags = [], battlerTags = [], bi = 0 } = {}) => {
+// the battler index a Leech Seed names its seeder by. `sub`: the HP of the Substitute it stands behind.
+const mon = (id, { hp = 1000, maxHp = hp, abilities = [], attrs = [], items = [], player = true, boss = 0, types = [0], formIndex = 0, moves = [], status = null, tags = [], battlerTags = [], bi = 0, sub = 0 } = {}) => {
   const p = Object.assign(Object.create(GAME_PROTO), {
     id, name: id, level: 50, hp, formIndex, getMaxHp: () => maxHp, isPlayer: () => player, isOnField: () => true,
     getTypes: () => types, getAbility: () => ({ name: "x", getAttrs: n => attrs.filter(a => a.constructor.name === n) }), hasPassive: () => false, status,
@@ -38,7 +38,7 @@ const mon = (id, { hp = 1000, maxHp = hp, abilities = [], attrs = [], items = []
     waveData: { abilitiesApplied: new Set(), abilityRevealed: true },
     turnData: { hitCount: 0, hitsLeft: -1, moveEffectiveness: null },
     bossSegments: boss, bossSegmentIndex: boss ? boss - 1 : 0, isBoss: () => boss > 0,
-    getHeldItems: () => items, hasAbilityWithAttr: a => abilities.includes(a) || attrs.some(x => x.constructor.name === a), getTag: t => (tags.includes(t) ? {} : null),
+    getHeldItems: () => items, hasAbilityWithAttr: a => abilities.includes(a) || attrs.some(x => x.constructor.name === a), getTag: t => (sub && t === "SUBSTITUTE" ? { tagType: t, hp: sub } : tags.includes(t) ? {} : null),
     getMoveType: mv => (mv.name === "Aura Wheel" ? (p.formIndex === 1 ? 16 : 12) : mv.type),
     getMoveCategory: (_, mv) => mv.category,
     getAccuracyMultiplier: () => 1, getCritStage: () => 0,
@@ -205,6 +205,35 @@ const bigHit = move(1, "Big Hit", 14, 120);
   near(banded[1], 0.99, "Focus Band twice");
 }
 
+// ---- A move into a Substitute fells nobody this turn unless the move gets past it, and is still priced at what it deals (game-code.md §8)
+{
+  const atk = mon("a");
+  const nuke = pmOf(move(6, "Nuke", 0, 300));
+  const behind = mon("behind", { hp: 100, sub: 25 });
+  setup(atk, behind);
+  const o = moveOutcome(scene, atk, behind, nuke, { crit: false });
+  console.log(`a 300 into a 25 HP Substitute in front of 100 HP: pKo ${o.pKo} · max ${o.max} · expected ${o.expected} · ${o.notes.join(", ")}`);
+  assert.deepEqual([o.pKo, o.max, o.expected, o.ignoresSub], [0, 100, 100, false]);
+  assert.ok(o.notes.includes("substitute"));
+  assert.equal(koChanceAt(o, 40), 0, "nor from less HP");
+  assert.deepEqual(koCurve(behind, o).by.slice(0, 2), [0, 1], "it breaks, and the next use fells it");
+  const sound = moveOutcome(scene, atk, behind, pmOf(move(7, "Boom", 0, 300, { flags: MoveFlags.SOUND_BASED })), { crit: false });
+  const ignoring = moveOutcome(scene, atk, behind, pmOf(move(8, "Past", 0, 300, { flags: MoveFlags.IGNORE_SUBSTITUTE })), { crit: false });
+  const infiltrator = mon("infiltrator", { abilities: ["InfiltratorAbAttr"] });
+  setup(infiltrator, behind);
+  const infiltrated = moveOutcome(scene, infiltrator, behind, nuke, { crit: false });
+  for (const [what, x] of [["sound", sound], ["ignoring it", ignoring], ["Infiltrator", infiltrated]]) {
+    assert.deepEqual([x.pKo, x.ignoresSub, x.notes.includes("substitute")], [1, true, false], what);
+  }
+  setup(atk, behind);
+  const twice = moveOutcome(scene, atk, behind, pmOf(move(9, "Twice", 0, 150, { attrs: [new MultiHitAttr(MultiHitType.TWO)] })), { crit: false });
+  assert.equal(twice.pKo, 1, "the first hit breaks it and the second fells");
+  const thrower = mon("thrower", { moves: [move(6, "Nuke", 0, 300)] });
+  setup(thrower, behind);
+  const [estimate] = readTurn(scene, t => t.outcomes(thrower, behind), { estimate: true });
+  assert.deepEqual([estimate.live, estimate.pKo, estimate.ignoresSub], [false, 0, false], "an estimate as well");
+}
+
 // ---- Every move record a turn read hands back sets its race facts, a no-effect one's included (#995)
 {
   const quake = move(89, "Earthquake", 4, 100);
@@ -214,7 +243,7 @@ const bigHit = move(1, "Big Hit", 14, 120);
   floater.getAttackDamage = function (o) {
     return o.move.type === 4 ? { cancelled: false, result: HitResult.NO_EFFECT, damage: 0 } : hit.call(this, o);
   };
-  const unset = o => ["ignoresSturdy", "ignoresAbility", "ignoresDisguise", "cut", "cat", "e"].filter(k => o[k] === undefined);
+  const unset = o => ["ignoresSturdy", "ignoresSub", "ignoresAbility", "ignoresDisguise", "cut", "cat", "e"].filter(k => o[k] === undefined);
   for (const estimate of [false, true]) {
     setup(atk, floater);
     const outs = readTurn(scene, t => t.outcomes(atk, floater), { estimate });
@@ -514,6 +543,17 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.ok(pouched.some((x, i) => x < bare[i] - 1e-9), "and pushes it back somewhere");
   assert.deepEqual(curve({}, { use: [{ d: 70, p: 1 }], e: 2 }).by, bare, "a point without its own `se` takes the hit's `e`");
   assert.deepEqual(curve({}, undefined, { feeds: false }).by.slice(0, 3), [0, 0, 1], "`feeds` false eats none");
+}
+
+// ---- A super-effective hit a Substitute takes feeds no Enigma Berry, and one past it after it breaks does (game-code.md §8)
+{
+  const enigma = held("BerryModifier", { berryType: 2 });
+  // 200 HP behind a 50 HP Substitute, the berry 50.
+  const rec = recOf(mon("enigma", { hp: 200, items: [enigma], sub: 50 }));
+  const once = D.koCurve(rec, [{ d: 70, p: 1, se: 1 }]).after1;
+  assert.deepEqual(once.map(x => [x.hp, x.sub, x.left]), [[200, 0, 1]], "a use the Substitute took whole feeds nothing");
+  const twice = D.koCurve(rec, [{ d: 140, p: 1, n: 2, se: 1 }]).after1;
+  assert.deepEqual(twice.map(x => [x.hp, x.sub, x.left]), [[180, 0, 0]], "the second of two hits gets through, and feeds it");
 }
 
 // ---- A Sitrus Berry is a target fact like the Enigma: a quarter each, kept by a Pouch, none under Heal Block (#883)

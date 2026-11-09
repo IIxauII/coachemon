@@ -701,6 +701,21 @@ assert.equal(plan.approxDoubles, false);
     first: [[1]], ourHeal: [enigma(1)] }, st(), 0, 0, "free");
   assert.ok(Math.abs(mixed.ends.win.mh - (0.6 * 385 + 0.4 * 350)) < 1e-9, `the berry pays on the super-effective share alone: ${mixed.ends.win.mh}`);
 }
+// A super-effective hit a Substitute takes feeds its holder no Enigma Berry, on either side (game-code.md §8). 70 a
+// turn into 200 behind a 50 HP Substitute: 200 → 130 + 50 → 110 → 40 → down on turn 5. Fed on the hit the
+// Substitute took, it falls on turn 4.
+{
+  const { tpFight } = globalThis.__tp;
+  const { stateOf } = globalThis.__hud["10-damage"];
+  const enigma = { base: 0, sitrus: 0, enigma: 50, enigmas: 1 };
+  const behind = stateOf({ maxHp: 200, hp: 200, sub: 50 });
+  const foe = tpFight({ ours: [[{ dmg: 70, e: 2 }]], theirs: [[{ dmg: 1, e: 1 }]], first: [[0]], ourMax: [400], foeMax: [200], ourHeal: [null],
+    foeHeal: [enigma], foeState: [behind] }, fightState({ oh: [400], ob: [0], fh: [200], fs: [0], fb: [0] }), 0, 0, "free");
+  const us = tpFight({ ours: [[{ dmg: 1, e: 1 }]], theirs: [[{ dmg: 70, e: 2 }]], first: [[1]], ourMax: [200], foeMax: [400], ourHeal: [enigma],
+    foeHeal: [null], ourState: [behind] }, fightState({ oh: [200], ob: [0], fh: [400], fs: [0], fb: [0] }), 0, 0, "free");
+  console.log(`== an Enigma Berry behind a Substitute\nthe foe's falls on turn ${foe.turns}, ours on turn ${us.turns}`);
+  assert.deepEqual([foe.pWin, foe.turns, us.pLoss, us.turns], [1, 5, 1, 5]);
+}
 // An Unnerve blocks the berry in its own pairing, wherever it stands now (#652).
 {
   const { sceneTurnEndHp } = globalThis.__hud["10-damage"];
@@ -727,7 +742,7 @@ assert.equal(plan.approxDoubles, false);
   const bisharp = fakeMon("Bisharp", 80, ["Dark", "Steel"], [300, 200, 200, 100, 100, 100], [["Iron Head", "Steel", 80, "P"]], true);
   const chomp = fakeMon("Garchomp", 80, ["Dragon", "Fairy"], [300, 200, 200, 100, 100, 50], [["Earthquake", "Ground", 100, "P"]], true,
     undefined, { getOpponents: () => [bisharp] });
-  const unset = o => ["ignoresSturdy", "ignoresAbility", "ignoresDisguise", "cut", "cat", "e"].filter(k => o?.[k] === undefined);
+  const unset = o => ["ignoresSturdy", "ignoresSub", "ignoresAbility", "ignoresDisguise", "cut", "cat", "e"].filter(k => o?.[k] === undefined);
   for (const live of [true, false]) {
     const turn = fakeTurn({ live, party: [bisharp], foes: [chomp], outcome: stub,
       moves: () => [{ name: "Earthquake", type: "Ground", p: 1, score: 10, targets: [0] }] });
@@ -873,5 +888,29 @@ assert.equal(plan.approxDoubles, false);
   assert.equal(tera.e, 2, "its team index in instantTeras prices our hits at Tera Rock, slot 1 and all");
   assert.equal(tera.send, plain.send, "and its send-in score at the Fire/Rock it is sent in at");
   assert.equal(coal.isTerastallized, undefined, "and the flag is off again afterwards");
+}
+// One of ours the plan switches out leaves its Substitute behind, so it comes back to the fight without one (game-code.md
+// §8). Alakazam hits Golem first and takes twice that back, and a 50 HP Substitute buys it a hit more. Blastoise,
+// switched in for it, falls to the entry hit.
+{
+  const table = { "Alakazam>Psychic>Golem": [[30], 1, 1], "Golem>Rock Slide>Alakazam": [[60], 1, 1],
+    "Blastoise>Surf>Golem": [[30], 1, 1], "Golem>Rock Slide>Blastoise": [[400], 1, 1] };
+  const plan = (sub, pin) => {
+    const kazam = fakeMon("Alakazam", 50, ["Psychic"], [200, 50, 60, 135, 95, 120], [["Psychic", "Psychic", 90, "S"]], true, undefined,
+      sub ? { getTag: t => (t === "SUBSTITUTE" ? { tagType: t, hp: 50 } : null) } : {});
+    const toise = fakeMon("Blastoise", 50, ["Water"], [300, 83, 100, 85, 105, 78], [["Surf", "Water", 90, "S"]], false);
+    const golem = fakeMon("Golem", 50, ["Rock", "Ground"], [250, 120, 130, 55, 65, 45], [["Rock Slide", "Rock", 75, "P"]], true,
+      undefined, { getOpponents: () => [kazam] });
+    const turn = fakeTurn({ live: true, party: [kazam, toise], foes: [golem], outcome: outcomeFrom(table),
+      trainer: { getName: () => "Ace", config: { isBoss: false }, isDouble: () => false },
+      moves: () => [{ name: "Rock Slide", type: "Rock", p: 1, score: 10, targets: [0] }] });
+    return globalThis.__hud["35-team-plan"].teamPlanner(turn).at(pin).steps.map(x => `${["Alakazam", "Blastoise"][x.mi]} ${x.entry} → Golem ${+x.foeHp.toFixed(2)}`);
+  };
+  const [stays, staysBehind, left, leftBehind] = [[false, 0], [true, 0], [false, 1], [true, 1]].map(([sub, mi]) => plan(sub, { mi }));
+  console.log(`== a Substitute left behind\nAlakazam stays: ${stays.join(", ")} · behind one: ${staysBehind.join(", ")}\n` +
+    `Blastoise in: ${left.join(", ")} · Alakazam had one: ${leftBehind.join(", ")}`);
+  const golem = step => +step.split(" ").at(-1);
+  assert.ok(golem(staysBehind[0]) < golem(stays[0]), "staying, it keeps its Substitute");
+  assert.deepEqual(leftBehind, left);
 }
 console.log("ok");

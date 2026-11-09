@@ -7,7 +7,7 @@ import { AbilityId } from "../../../../src/enums/generated.ts";
 
 mountHud({ scene: { currentBattle: { waveIndex: 10, turn: 1 }, getField: () => [], getPlayerParty: () => [], getEnemyParty: () => [] } });
 const D = globalThis.__hud["10-damage"];
-const { stateOf, land, luckKey, landingKey, koCurve, koTurns } = D;
+const { stateOf, land, luckKey, landingKey, benched, koCurve, koTurns } = D;
 const { tpTables, tpFight } = globalThis.__hud["35-team-plan"];
 
 const held = (name, n = 1) => new ({ [name]: class { getStackCount() { return n; } } })[name]();
@@ -15,9 +15,9 @@ const tokens = n => (n ? [Object.assign(held("EnemyEndureChanceModifier", n), { 
 const BUST = { disguise: 0.125, iceFace: 0 };
 class FormBlockDamageAbAttr { constructor(recoil) { Object.assign(this, { formIndex: 0, recoil }); } }
 // `token` is the wave's endure chance in stacks of 2 %; `cut` "multiscale" or "shadow shield"; `form`: "disguise" or
-// "iceFace", held intact; `moves` as fake-mon.mjs's `mon` takes them.
+// "iceFace", held intact; `sub` the HP of the Substitute it stands behind; `moves` as fake-mon.mjs's `mon` takes them.
 const CUTS = { multiscale: AbilityId.MULTISCALE, "shadow shield": AbilityId.SHADOW_SHIELD };
-const targetMon = ({ name = "target", hp = 100, maxHp = hp, boss = 0, idx, sturdy = false, cut = null, band = 0, seed = false, form = null, player = false, trainer = false, moves = [] } = {}) =>
+const targetMon = ({ name = "target", hp = 100, maxHp = hp, boss = 0, idx, sturdy = false, cut = null, band = 0, seed = false, form = null, sub = 0, player = false, trainer = false, moves = [] } = {}) =>
   mon(name, 50, ["Normal"], [maxHp, 100, 100, 100, 100, 100], moves, true, hp, {
     isPlayer: () => player, bossSegments: boss, bossSegmentIndex: idx ?? Math.max(0, boss - 1), formIndex: 0, waveData: {},
     hasAbilityWithAttr: a => (sturdy && a === "PreDefendFullHpEndureAbAttr") || (!!form && a === "FormBlockDamageAbAttr"),
@@ -25,6 +25,7 @@ const targetMon = ({ name = "target", hp = 100, maxHp = hp, boss = 0, idx, sturd
     getAbility: () => ({ name: "x", getAttrs: n => (form && n === "FormBlockDamageAbAttr" ? [new FormBlockDamageAbAttr(BUST[form])] : []) }),
     ...(trainer ? { hasTrainer: () => true } : {}),
     getHeldItems: () => [...(band ? [held("SurviveDamageModifier", band)] : []), ...(seed ? [held("PokemonInstantReviveModifier")] : [])],
+    getTag: t => (sub && t === "SUBSTITUTE" ? { tagType: t, hp: sub } : null),
   });
 // A target's facts as the fakes read them (fake-turn.mjs).
 const factsOf = (o = {}) => D.targetFacts({ enemyModifiers: tokens(o.token ?? 0), finalBoss: !!o.finalBoss }, targetMon(o));
@@ -211,7 +212,7 @@ const shape = outs => outs.map(o => [+o.state.hp.toFixed(6), o.state.bar, o.stat
   const through = land(mimikyu, sure(60), { ignoresDisguise: true });
   assert.deepEqual(shape(through), [[40, 0, false, false, 1, 1]]);
   assert.equal(through[0].state.busted, false);
-  assert.deepEqual(land(mimikyu, sure(0)), [{ state: mimikyu, p: 1, dealt: 0, hits: 0 }]);
+  assert.deepEqual(land(mimikyu, sure(0)), [{ state: mimikyu, p: 1, dealt: 0, subDealt: 0, hits: 0 }]);
 }
 
 // ---- An intact Disguise is luck that can stop a lethal hit, so its luck key tells it from a busted one (#1034)
@@ -235,13 +236,102 @@ const shape = outs => outs.map(o => [+o.state.hp.toFixed(6), o.state.bar, o.stat
   assert.deepEqual(shape(land(stateOf(band.facts, 0.5), sure(3), {}, { whole: true })), [[0.5, 0, false, false, 1, 0]], "under 1 HP is already down");
 }
 
+// `[hp, bar, Substitute HP, p, dealt, the Substitute's loss, hits]` per outcome.
+const subShape = outs => outs.map(o => [+o.state.hp.toFixed(6), o.state.bar, +o.state.sub.toFixed(6), +o.p.toFixed(6), +o.dealt.toFixed(6), +o.subDealt.toFixed(6), o.hits]);
+const subRow = outs => outs.map(o => `${+o.state.hp.toFixed(3)}/${o.state.bar} sub ${+o.state.sub.toFixed(3)} p${+o.p.toFixed(4)} dealt ${+o.dealt.toFixed(3)} · sub lost ${+o.subDealt.toFixed(3)} ×${o.hits}`).join(" · ");
+
+// ---- A Substitute takes a hit for its owner, leaving the owner's HP, bars and luck alone, its excess lost (game-code.md §8)
+{
+  console.log("== a Substitute");
+  const sub = at({ sub: 25 });
+  const took = land(sub, sure(20));
+  console.log(`a 25 HP Substitute hit for 20: ${subRow(took)}`);
+  assert.deepEqual(subShape(took), [[100, 0, 5, 1, 0, 20, 1]]);
+  const lucky = at({ sub: 25, sturdy: true, band: 1, seed: true });
+  const broke = land(lucky, sure(150));
+  console.log(`…for 150, behind Sturdy, a Focus Band and a Reviver Seed: ${subRow(broke)}`);
+  assert.deepEqual(subShape(broke), [[100, 0, 0, 1, 0, 25, 1]], "no luck is rolled, and the 125 past it reach nobody");
+  assert.equal(broke[0].state.revived, false);
+  const boss = at({ hp: 300, boss: 3, sub: 75 });
+  assert.deepEqual(subShape(land(boss, sure(150))), [[300, 2, 0, 1, 0, 75, 1]], "a boss's bars stay as they were");
+}
+
+// ---- A Substitute takes a hit as Multiscale cut it, and keeps its owner at the full HP the cut needs (game-code.md §8)
+{
+  const three = land(at({ sub: 60, cut: "multiscale" }), sure(300, 3));
+  console.log(`a 60 HP Substitute in front of Multiscale, three hits of 100: ${subRow(three)}`);
+  assert.deepEqual(subShape(three), [[50, 0, 0, 1, 50, 60, 3]], "50 and 50 break it, and the third is still halved");
+}
+
+// ---- A hit a Substitute takes meets no Disguise, which takes the first hit that gets past it (game-code.md §8)
+{
+  const three = land(at({ sub: 25, form: "disguise" }), sure(120, 3));
+  console.log(`a 25 HP Substitute in front of a Disguise, three hits of 40: ${subRow(three)} · busted ${three[0].state.busted}`);
+  assert.deepEqual(subShape(three), [[48, 0, 0, 1, 40, 25, 3]], "the first breaks it, the Disguise takes the second at 12 HP of chip, and the third hits");
+  assert.equal(three[0].state.busted, true);
+  const past = land(at({ sub: 25, form: "disguise" }), sure(40), { ignoresSub: true });
+  assert.deepEqual([subShape(past), past[0].state.busted], [[[88, 0, 25, 1, 0, 0, 1]], true], "a hit past the Substitute busts it at once");
+}
+
+// ---- A Substitute broken mid-use leaves the use's later hits to its owner (game-code.md §2, §8)
+{
+  const sub = at({ sub: 25, sturdy: true });
+  const three = land(sub, sure(120, 3));
+  console.log(`a 25 HP Substitute in front of Sturdy, three hits of 40: ${subRow(three)}`);
+  assert.deepEqual(subShape(three), [[20, 0, 0, 1, 80, 25, 3]], "the first breaks it, 15 lost, and the next two hit, Sturdy's full HP and all");
+  const two = land(at({ sub: 25 }), sure(20, 2));
+  assert.deepEqual(subShape(two), [[100, 0, 5, 1, 0, 20, 2]], "two it outlasts");
+}
+
+// ---- A side that leaves the field leaves its Substitute behind and keeps the rest of its discrete part (game-code.md §8)
+{
+  const sub = land(at({ sub: 25, seed: true, hp: 60, maxHp: 100 }), sure(160, 2))[0].state;
+  const off = benched(sub);
+  assert.deepEqual([sub.sub, sub.revived], [0, true], "the first hit broke it and the second spent the seed");
+  assert.equal(off, sub, "nothing to leave");
+  const standing = at({ sub: 25, token: 5 });
+  const left = benched(stateOf(standing.facts, 70, 0, { ...standing, tok: true }));
+  assert.deepEqual([left.hp, left.sub, left.tok], [70, 0, true]);
+  assert.equal(standing.sub, 25, "the state it came from is untouched");
+  assert.equal(stateOf(left.facts, 70, 0, left).sub, 0, "and a state reopened from it stands behind none");
+}
+
+// ---- A sound move, one that ignores a Substitute, or an Infiltrator's, hits the owner as if it were not there (game-code.md §8)
+{
+  const past = land(at({ sub: 25 }), sure(40), { ignoresSub: true });
+  console.log(`a hit past a 25 HP Substitute for 40: ${subRow(past)}`);
+  assert.deepEqual(subShape(past), [[60, 0, 25, 1, 40, 0, 1]]);
+}
+
+// ---- A hit a Substitute takes rolls no endure token, which a later hit on its owner still may (game-code.md §8)
+{
+  const sub = at({ sub: 25, token: 5 });
+  const first = land(sub, sure(150));
+  console.log(`a 10 % token behind a 25 HP Substitute, hit for 150: ${row(first)}`);
+  assert.deepEqual(shape(first), [[100, 0, false, false, 1, 1]]);
+  const next = land(first[0].state, sure(150));
+  console.log(`…and again: ${row(next)}`);
+  assert.deepEqual(shape(next), [[1, 0, false, true, 0.1, 1], [0, 0, false, false, 0.9, 1]]);
+}
+
+// ---- A hit a Substitute takes deals its owner nothing, and the Substitute loses at most the HP it had (game-code.md §8)
+{
+  const sub = at({ sub: 25 });
+  assert.deepEqual([20, 40].map(d => land(sub, sure(d))[0]).map(o => [o.dealt, o.subDealt]), [[0, 20], [0, 25]]);
+  const broken = land(sub, sure(100, 2))[0];
+  assert.deepEqual([broken.dealt, broken.subDealt], [50, 25], "the hit after the one that broke it is the owner's");
+}
+
 // The states the invariants sweep, and the uses and hits they take.
 const STATES = [at(), at({ sturdy: true }), at({ band: 2 }), at({ token: 5 }), at({ hp: 100, maxHp: 200, seed: true }), at({ hp: 300, boss: 3, token: 5 }),
   at({ hp: 300, boss: 3, sturdy: true, band: 1, token: 10, seed: true }), at({ hp: 10, band: 1 }), at({ hp: 100, finalBoss: true, band: 1 }),
   at({ cut: "multiscale", sturdy: true, band: 1 }), at({ hp: 300, boss: 3, cut: "shadow shield", token: 5 }),
-  at({ form: "disguise" }), at({ hp: 10, maxHp: 100, form: "disguise", band: 1, seed: true }), at({ hp: 300, boss: 3, form: "disguise", token: 5 })];
+  at({ form: "disguise" }), at({ hp: 10, maxHp: 100, form: "disguise", band: 1, seed: true }), at({ hp: 300, boss: 3, form: "disguise", token: 5 }),
+  at({ sub: 25, sturdy: true, token: 5 }), at({ hp: 300, boss: 3, sub: 75, band: 1, seed: true }), at({ sub: 25, cut: "multiscale" }),
+  at({ sub: 25, form: "disguise" })];
 const USES = [sure(0), sure(50), sure(99.5), sure(100), sure(150), sure(300, 2), sure(450, 3), { d: 151, n: 2.4 }];
-const HITS = [{}, { ignoresSturdy: true }, { ignoresDisguise: true }, { ohko: true }, { factor: bar => 1 + bar / 2 }, { cut: "in" }, { cut: "never" }, { ignoresAbility: true }];
+const HITS = [{}, { ignoresSturdy: true }, { ignoresDisguise: true }, { ohko: true }, { factor: bar => 1 + bar / 2 }, { cut: "in" }, { cut: "never" }, { ignoresAbility: true },
+  { ignoresSub: true }];
 const sweep = fn => {
   for (const st of STATES) for (const use of USES) for (const hit of HITS) for (const whole of [false, true]) fn(st, use, hit, whole);
 };
@@ -260,15 +350,15 @@ const sweep = fn => {
 // ---- A state already down and a miss come back as they were, with nothing dealt (#1027)
 {
   const st = at();
-  for (const use of [sure(0), sure(-5), sure(NaN), sure(Infinity), null]) assert.deepEqual(land(st, use), [{ state: st, p: 1, dealt: 0, hits: 0 }]);
+  for (const use of [sure(0), sure(-5), sure(NaN), sure(Infinity), null]) assert.deepEqual(land(st, use), [{ state: st, p: 1, dealt: 0, subDealt: 0, hits: 0 }]);
   for (const [hp, whole] of [[0, false], [0, true], [0.5, true]]) {
     const down = stateOf(st.facts, hp);
-    assert.deepEqual(land(down, sure(50), {}, { whole }), [{ state: down, p: 1, dealt: 0, hits: 0 }]);
+    assert.deepEqual(land(down, sure(50), {}, { whole }), [{ state: down, p: 1, dealt: 0, subDealt: 0, hits: 0 }]);
   }
   assert.deepEqual(land(stateOf({ maxHp: 100 }, 100), sure(150)).map(o => [o.state.hp, o.p]), [[0, 1]], "a facts record holding only maxHp is a plain HP pool");
 }
 
-// ---- Two states with equal landing keys differ in HP alone, and a Sturdy holder's full HP is its luck (#1027)
+// ---- Two states with equal landing keys differ in HP alone, and a Sturdy holder's full HP is its luck (#1027), as a standing Substitute is (#1033)
 {
   const fields = s => Object.keys(s).filter(k => k !== "hp" && k !== "facts");
   const firsts = new Map();
@@ -284,6 +374,9 @@ const sweep = fn => {
   const sturdy = factsOf({ sturdy: true });
   assert.notEqual(luckKey(stateOf(sturdy, 100)), luckKey(stateOf(sturdy, 99)));
   assert.equal(luckKey(stateOf(factsOf(), 100)), luckKey(stateOf(factsOf(), 99)));
+  const sub = at({ sub: 25 });
+  assert.notEqual(luckKey(sub), luckKey(land(sub, sure(30))[0].state), "broken");
+  assert.equal(luckKey(sub), luckKey(land(sub, sure(10))[0].state), "still standing, at any HP");
 }
 
 // ---- A Multiscale or Shadow Shield holder's full HP is its luck (#1032)
@@ -351,7 +444,24 @@ const curve = by => by.slice(0, 4).map(x => x.toFixed(3)).join(" ");
 // The fight plan drops each branch under 1e-6 a turn, so on fixed damage the two agree only to the few that adds up to.
 const EXACT = 1e-5;
 
-// ---- The fight plan's chance the foe is down by each turn is KO pacing's, on fixed damage up to the branches it drops, and within 0.05 where the rolls vary (#1027)
+// ---- KO pacing lands each use on a standing Substitute first, and turn-end chip on its owner (game-code.md §8, §21)
+{
+  const rec = { facts: factsOf({ sub: 25 }) };
+  assert.deepEqual(koCurve(rec, sureUse(60)).by.slice(0, 3), [0, 0, 1], "60 breaks it, then 40 are left");
+  const chip = koCurve(rec, [{ d: 0, p: 1, n: 0 }], { turnEnd: -10 }).after1;
+  assert.deepEqual(chip.map(x => [x.hp, x.sub]), [[90, 25]]);
+}
+
+// ---- A standing Substitute's HP spread is squeezed as its owner's is, so a curve of weak rolled hits into it stays cheap (#1033)
+{
+  const rec = { facts: factsOf({ hp: 400, sub: 100 }) };
+  const t0 = performance.now();
+  koCurve(rec, rolls(15, 25), { turnEnd: -10 });
+  const ms = performance.now() - t0;
+  assert.ok(ms < 50, `${ms.toFixed(1)} ms`);
+}
+
+// ---- The fight plan's chance the foe is down by each turn is KO pacing's, on fixed damage up to the branches it drops, and within 0.05 where the rolls vary (#1027), a Substitute's included (#1033)
 {
   console.log("== KO pacing and the fight plan, on the foe");
   const ROWS = [
@@ -370,6 +480,10 @@ const EXACT = 1e-5;
     ["two hits into Disguise", { use: sureUse(300, 2), foe: { form: "disguise" } }, EXACT],
     // By turn 2 its branches stand in five classes of luck, one past the branches the fight plan keeps for each.
     ["every luck at once, half the uses missing", { use: [{ d: 0, p: 0.5, n: 0 }, { d: 150, p: 0.5, n: 1 }], foe: { sturdy: true, seed: true, band: 1 }, token: 5 }, EXACT],
+    ["Substitute", { use: sureUse(60), foe: { sub: 25 } }, EXACT],
+    ["Substitute, rolled weak enough to leave it standing", { use: rolls(10, 30), foe: { hp: 40, sub: 20 } }, 0.05],
+    ["two hits, through a Substitute into Sturdy", { use: sureUse(300, 2), foe: { sub: 25, sturdy: true } }, EXACT],
+    ["a sound move past a Substitute", { use: sureUse(60), foe: { sub: 25 }, hit: { ignoresSub: true } }, EXACT],
   ];
   for (const [what, setup, tol] of ROWS) {
     const { by, plan } = race(setup);
@@ -378,7 +492,7 @@ const EXACT = 1e-5;
   }
 }
 
-// ---- The fight plan's chance we are down by each turn is KO pacing's on us, the foe's multi-hit use landing hit by hit (#1027)
+// ---- The fight plan's chance we are down by each turn is KO pacing's on us, the foe's multi-hit use landing hit by hit (#1027), our Substitute's included (#1033)
 {
   console.log("== KO pacing and the fight plan, on us");
   const ROWS = [
@@ -391,6 +505,8 @@ const EXACT = 1e-5;
     ["Multiscale", { use: sureUse(150), ours: { cut: "multiscale" } }, EXACT],
     ["Multiscale, the record asked at full HP", { use: sureUse(60), ours: { cut: "multiscale" }, hit: { cut: "in" } }, EXACT],
     ["Disguise", { use: sureUse(150), ours: { form: "disguise" } }, EXACT],
+    ["Substitute", { use: sureUse(60), ours: { sub: 25 } }, EXACT],
+    ["the foe's sound move past our Substitute", { use: sureUse(60), ours: { sub: 25 }, hit: { ignoresSub: true } }, EXACT],
   ];
   for (const [what, setup, tol] of ROWS) {
     const { by, plan } = race(setup);

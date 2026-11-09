@@ -1,3 +1,4 @@
+a 300 into a 25 HP Substitute in front of 100 HP: pKo 0 · max 100 · expected 100 · substitute
 == a Berry Pouch keeps the Enigma (#822)
 after hit 1: 180 HP, 1 left, 0.30 · 180 HP, 0 left, 0.70
 down by hit n, no Pouch: 0.00 0.00 0.00 1.00 1.00 1.00 1.00 1.00 1.00
