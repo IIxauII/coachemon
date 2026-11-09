@@ -266,8 +266,12 @@ export const land = (state, use, hit = NO_HIT, { whole = false } = {}) => {
   const downs = [];
   const stood = landUse(f, { ...state, p: 1, stop: false, dealt: 0, hits: 0 }, d, Math.max(1, Math.round(use.n ?? 1)), h.factor ?? null, h, whole,
     (p, b, hp, bar) => downs.push({ state: stateOf(f, hp, bar, b), p, dealt: b.dealt + (b.hp - hp), hits: b.hits + 1 }));
-  const se = f.enigma?.heal > 0 ? use.se ?? seOf(h) : 0, fed = [];
-  for (const c of stood) feed(c, se, fed);
+  const se = f.enigma?.heal > 0 ? use.se ?? seOf(h) : 0;
+  let fed = stood;
+  if (se > 0) {
+    fed = [];
+    for (const c of stood) feed(c, se, fed);
+  }
   const outs = [];
   for (const c of fed) outs.push({ state: stateOf(f, c.hp, c.bar, c), p: c.p, dealt: c.dealt, hits: c.hits });
   for (const o of downs) outs.push(o);
@@ -282,11 +286,16 @@ const num = x => (Number.isFinite(x) ? x : 0);
 export const landTurnEnd = (state, { before = 0, after = 0, eats = true, whole = false } = {}) => {
   const f = state?.facts ?? NO_HIT;
   if (!(whole ? state?.hp >= 1 : state?.hp > 0)) return [{ state, p: 1 }];
-  const pre = num(before), outs = [], downs = [];
+  const pre = num(before), total = pre + num(after);
   const ate = x => (eats && x?.heal > 0 ? x : null);
-  endTurn(f, { ...state, p: 1, stop: false, dealt: 0, hits: 0 }, pre, pre + num(after), ate(f.sitrus), ate(f.enigma), whole, outs,
+  const sit = ate(f.sitrus), nig = ate(f.enigma);
+  if (!total && !state.fed && !(sit && state.sitrus > 0)) return [{ state, p: 1 }];
+  const outs = [], downs = [];
+  endTurn(f, { ...state, p: 1, stop: false, dealt: 0, hits: 0 }, pre, total, sit, nig, whole, outs,
     (p, c, hp, bar) => downs.push({ state: stateOf(f, hp, bar, c), p }));
-  return [...outs.map(c => ({ state: stateOf(f, c.hp, c.bar, c), p: c.p })), ...downs];
+  const res = outs.map(c => ({ state: stateOf(f, c.hp, c.bar, c), p: c.p }));
+  for (const d of downs) res.push(d);
+  return res;
 };
 export const luckKey = (s, f = s.facts) => `${+s.revived}${+s.tok}${f?.sturdy ? +(s.hp >= f.maxHp) : ""}`;
 export const landingKey = (s, f = s.facts) => {
@@ -361,8 +370,7 @@ const sideModifiers = (env, p, name) => ((p?.isPlayer?.() === false ? env?.enemy
 export const healingCharm = (env, p) => sideModifiers(env, p, "HealingBoosterModifier")
   .reduce((t, m) => t * (1 + ((m.multiplier ?? 1.1) - 1) * (m.getStackCount?.() ?? 1)), 1);
 // Berry Pouch (game-code.md §3): the chance it leaves a berry `p` eats held.
-// @only 35-team-plan: berryPouch
-export const berryPouch = (env, p) => Math.min(10, 3 * sideModifiers(env, p, "PreserveBerryModifier")
+const berryPouch = (env, p) => Math.min(10, 3 * sideModifiers(env, p, "PreserveBerryModifier")
   .reduce((t, m) => t + (m.getStackCount?.() ?? 1), 0)) / 10;
 const drainRatio = (env, atk, def, t) => {
   if (!t.drain) return 0;

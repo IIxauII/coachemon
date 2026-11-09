@@ -314,27 +314,28 @@ const spent = Object.fromEntries(DISCRETE.map(k => [k, typeof fresh[k] === "bool
 // One live fake turn feeds both engines: the KO curve on one side, the real tables and the fight plan on the other.
 // `use`: the attacker's one move's spread; the other side deals nothing.
 const ATTACKER = [400, 100, 100, 100, 100, 200];
-const hitRecord = (use, def) => {
+const hitRecord = (use, def, e = 1) => {
   const mean = use.reduce((t, x) => t + x.d * x.p, 0), max = Math.max(...use.map(x => x.d / (x.n || 1)));
   const n = Math.max(...use.map(x => x.n ?? 1));
-  return { name: "Hit", type: "Normal", cat: "physical", e: 1, ignoresSturdy: false, priority: 0, spread: false, acc: 1, dist: [{ n, p: 1 }],
+  return { name: "Hit", type: "Normal", cat: "physical", e, ignoresSturdy: false, priority: 0, spread: false, acc: 1, dist: [{ n, p: 1 }],
     perHit: Array(n).fill({ max, min: max }), expected: Math.min(mean, def.hp), uncapped: mean, max: Math.min(max * n, def.hp), pKo: 0,
     use, traits: { ...TRAITS }, costs: [], notes: [], live: true };
 };
-// `ours`: the foe hits us, and these are our luck; else we hit the foe, whose luck is `foe`.
-const race = ({ use, foe = {}, ours = null, token = 0 }) => {
+// `ours`: the foe hits us, and these are our luck; else we hit the foe, whose luck is `foe`. `e`: the hit's effectiveness;
+// `pouch`: the foe side's Berry Pouch stacks. KO pacing eats the Sitrus Berry with no steals.
+const race = ({ use, e = 1, foe = {}, ours = null, token = 0, pouch = 0 }) => {
   const hitter = (name, player) => mon(name, 50, ["Normal"], ATTACKER, [["Hit", "Normal", 80, "P"]], true, undefined, { isPlayer: () => player, hasTrainer: () => !player });
   const me = ours ? targetMon({ name: "us", player: true, ...ours }) : hitter("us", true);
   const target = ours ? hitter("foe", false) : targetMon({ name: "foe", trainer: true, ...foe });
   const [atk, def] = ours ? [target, me] : [me, target];
   target.getOpponents = () => [me];
-  const turn = fakeTurn({ live: true, party: [me], foes: [target], enemyModifiers: tokens(token),
+  const turn = fakeTurn({ live: true, party: [me], foes: [target], enemyModifiers: [...tokens(token), ...pouches(pouch)],
     trainer: { getName: () => "Ace", config: { isBoss: false }, isDouble: () => false },
-    outcome: (a, d) => (a === atk ? hitRecord(use, d) : null),
+    outcome: (a, d) => (a === atk ? hitRecord(use, d, e) : null),
     moves: e => (e === atk ? [{ name: "Hit", type: "Normal", p: 1, score: 10, targets: [0] }] : []) });
   const T = tpTables(turn, [me], [target], false);
-  const by = koCurve(turn.mon(def), turn.outcomes(atk, def)[0]).by;
-  const plan = tpFight(T, fightState({ oh: [me.hp], ob: [0], fh: [target.hp], fs: [T.foeState[0].bar], fb: [0] }), 0, 0, "free");
+  const by = koCurve(turn.mon(def), turn.outcomes(atk, def)[0], { sitrus: 0 }).by;
+  const plan = tpFight(T, fightState({ oh: [me.hp], fh: [target.hp], fs: [T.foeState[0].bar] }), 0, 0, "free");
   return { by, plan: ours ? plan.lossBy : plan.winBy };
 };
 const sureUse = (d, n = 1) => [{ d, p: 1, n }];
@@ -357,6 +358,10 @@ const EXACT = 1e-5;
     ["two hits into Sturdy", { use: sureUse(300, 2), foe: { sturdy: true } }, EXACT],
     // By turn 2 its branches stand in five classes of luck, one past the branches the fight plan keeps for each.
     ["every luck at once, half the uses missing", { use: [{ d: 0, p: 0.5, n: 0 }, { d: 150, p: 0.5, n: 1 }], foe: { sturdy: true, seed: true, band: 1 }, token: 5 }, EXACT],
+    ["Sitrus Berry at 49.5 %", { use: sureUse(101), foe: { hp: 200, sitrus: 1 } }, EXACT],
+    ["Sitrus Berry at 49.0 %", { use: sureUse(102), foe: { hp: 200, sitrus: 1 } }, EXACT],
+    ["Enigma Berry", { use: sureUse(70), e: 2, foe: { hp: 200, enigma: 1 } }, EXACT],
+    ["Berry Pouch on a Sitrus Berry", { use: sureUse(70), foe: { hp: 200, sitrus: 1 }, pouch: 1 }, EXACT],
   ];
   for (const [what, setup, tol] of ROWS) {
     const { by, plan } = race(setup);
