@@ -531,10 +531,10 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   // 200 HP taking 70 a super-effective hit, the berry 50. Without the Pouch 200 → 180 → 110 → 40 → down on hit 4.
   const curve = (side, hit = [{ d: 70, p: 1, se: 1 }], opts) => D.koCurve(recOf(mon("enigma", { hp: 200, items: [enigma] }), { ...scene, ...side }), hit, opts);
   const kept = curve({ modifiers: pouch(1) });
-  console.log(`== a Berry Pouch keeps the Enigma (#822)\nafter hit 1: ${kept.after1.map(x => `${x.hp} HP, ${x.left} left, ${x.p.toFixed(2)}`).join(" · ")}`);
-  assert.deepEqual(kept.after1.map(x => [x.hp, x.left]).sort((a, b) => a[1] - b[1]), [[180, 0], [180, 1]], "both shares healed");
-  near(kept.after1.find(x => x.left === 1).p, 0.3, "the kept share");
-  near(kept.after1.find(x => x.left === 0).p, 0.7, "the eaten share");
+  console.log(`== a Berry Pouch keeps the Enigma (#822)\nafter hit 1: ${kept.after1.map(x => `${x.hp} HP, ${x.enigmas} left, ${x.p.toFixed(2)}`).join(" · ")}`);
+  assert.deepEqual(kept.after1.map(x => [x.hp, x.enigmas]).sort((a, b) => a[1] - b[1]), [[180, 0], [180, 1]], "both shares healed");
+  near(kept.after1.find(x => x.enigmas === 1).p, 0.3, "the kept share");
+  near(kept.after1.find(x => x.enigmas === 0).p, 0.7, "the eaten share");
   const bare = curve({}).by, pouched = kept.by;
   console.log(`down by hit n, no Pouch: ${bare.map(x => x.toFixed(2)).join(" ")}\n` +
     `down by hit n, one stack: ${pouched.map(x => x.toFixed(2)).join(" ")}`);
@@ -551,9 +551,9 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   // 200 HP behind a 50 HP Substitute, the berry 50.
   const rec = recOf(mon("enigma", { hp: 200, items: [enigma], sub: 50 }));
   const once = D.koCurve(rec, [{ d: 70, p: 1, se: 1 }]).after1;
-  assert.deepEqual(once.map(x => [x.hp, x.sub, x.left]), [[200, 0, 1]], "a use the Substitute took whole feeds nothing");
+  assert.deepEqual(once.map(x => [x.hp, x.sub, x.enigmas]), [[200, 0, 1]], "a use the Substitute took whole feeds nothing");
   const twice = D.koCurve(rec, [{ d: 140, p: 1, n: 2, se: 1 }]).after1;
-  assert.deepEqual(twice.map(x => [x.hp, x.sub, x.left]), [[180, 0, 0]], "the second of two hits gets through, and feeds it");
+  assert.deepEqual(twice.map(x => [x.hp, x.sub, x.enigmas]), [[180, 0, 0]], "the second of two hits gets through, and feeds it");
 }
 
 // ---- A Sitrus Berry is a target fact like the Enigma: a quarter each, kept by a Pouch, none under Heal Block (#883)

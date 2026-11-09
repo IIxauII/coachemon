@@ -9,7 +9,8 @@ const pmName = pm => pm?.getName?.() ?? pm?.name ?? "";
 const switchesOut = o => switchesUser(o?.pm?.getMove?.());
 const bossBarsLeft = p => (p.isBoss?.() && p.bossSegments > 1 ? Math.max(1, (p.bossSegmentIndex ?? p.bossSegments - 1) + 1) : 1);
 // Turn-end HP change, signed: heals +, chip −. `dealt`: damage `p` deals a turn (Shell Bell). Never with
-// `tookSuperEffective`: `koCurve` eats the Enigma Berry, branch by branch, and under `sitrus` false the Sitrus too.
+// `tookSuperEffective`: Landing's turn end eats the Enigma Berry, branch by branch, and under `sitrus` false the Sitrus
+// too.
 const healAtEnd = (turn, p, dealt = 0, sitrus = true) => (turn.live ? turn.turnEndHp(p, { dealt, sitrus }) : 0) || 0;
 const heldStack = (p, name) => (p.getHeldItems?.() ?? []).filter(m => m.constructor?.name === name).reduce((t, m) => t + (m.getStackCount?.() ?? 1), 0);
 const hitCounts = o => {

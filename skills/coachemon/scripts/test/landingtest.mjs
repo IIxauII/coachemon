@@ -3,37 +3,42 @@ import { mountHud } from "./fake-page.mjs";
 import { mon, TRAITS } from "./fake-mon.mjs";
 import { fakeTurn } from "./fake-turn.mjs";
 import { fightState } from "./fake-fight.mjs";
-import { AbilityId } from "../../../../src/enums/generated.ts";
+import { AbilityId, BerryType } from "../../../../src/enums/generated.ts";
 
 mountHud({ scene: { currentBattle: { waveIndex: 10, turn: 1 }, getField: () => [], getPlayerParty: () => [], getEnemyParty: () => [] } });
 const D = globalThis.__hud["10-damage"];
-const { stateOf, land, luckKey, landingKey, benched, koCurve, koTurns } = D;
+const { stateOf, land, landTurnEnd, luckKey, landingKey, benched, koCurve, koTurns } = D;
 const { tpTables, tpFight } = globalThis.__hud["35-team-plan"];
 
 const held = (name, n = 1) => new ({ [name]: class { getStackCount() { return n; } } })[name]();
 const tokens = n => (n ? [Object.assign(held("EnemyEndureChanceModifier", n), { chance: 2 })] : []);
+const berries = (type, n) => (n ? [Object.assign(held("BerryModifier", n), { berryType: type })] : []);
 const BUST = { disguise: 0.125, iceFace: 0 };
 class FormBlockDamageAbAttr { constructor(recoil) { Object.assign(this, { formIndex: 0, recoil }); } }
 // `token` is the wave's endure chance in stacks of 2 %; `cut` "multiscale" or "shadow shield"; `form`: "disguise" or
-// "iceFace", held intact; `sub` the HP of the Substitute it stands behind; `moves` as fake-mon.mjs's `mon` takes them.
+// "iceFace", held intact; `sub` the HP of the Substitute it stands behind; `sitrus` and `enigma` the berries held, and
+// `pouch` the side's Berry Pouch stacks; `moves` as fake-mon.mjs's `mon` takes them.
 const CUTS = { multiscale: AbilityId.MULTISCALE, "shadow shield": AbilityId.SHADOW_SHIELD };
-const targetMon = ({ name = "target", hp = 100, maxHp = hp, boss = 0, idx, sturdy = false, cut = null, band = 0, seed = false, form = null, sub = 0, player = false, trainer = false, moves = [] } = {}) =>
+const targetMon = ({ name = "target", hp = 100, maxHp = hp, boss = 0, idx, sturdy = false, cut = null, band = 0, seed = false, form = null, sub = 0, sitrus = 0, enigma = 0, player = false, trainer = false, moves = [] } = {}) =>
   mon(name, 50, ["Normal"], [maxHp, 100, 100, 100, 100, 100], moves, true, hp, {
     isPlayer: () => player, bossSegments: boss, bossSegmentIndex: idx ?? Math.max(0, boss - 1), formIndex: 0, waveData: {},
     hasAbilityWithAttr: a => (sturdy && a === "PreDefendFullHpEndureAbAttr") || (!!form && a === "FormBlockDamageAbAttr"),
     hasAbility: id => !!cut && id === CUTS[cut],
     getAbility: () => ({ name: "x", getAttrs: n => (form && n === "FormBlockDamageAbAttr" ? [new FormBlockDamageAbAttr(BUST[form])] : []) }),
     ...(trainer ? { hasTrainer: () => true } : {}),
-    getHeldItems: () => [...(band ? [held("SurviveDamageModifier", band)] : []), ...(seed ? [held("PokemonInstantReviveModifier")] : [])],
+    getHeldItems: () => [...(band ? [held("SurviveDamageModifier", band)] : []), ...(seed ? [held("PokemonInstantReviveModifier")] : []),
+      ...berries(BerryType.SITRUS, sitrus), ...berries(BerryType.ENIGMA, enigma)],
     getTag: t => (sub && t === "SUBSTITUTE" ? { tagType: t, hp: sub } : null),
   });
+const pouches = n => (n ? [held("PreserveBerryModifier", n)] : []);
 // A target's facts as the fakes read them (fake-turn.mjs).
-const factsOf = (o = {}) => D.targetFacts({ enemyModifiers: tokens(o.token ?? 0), finalBoss: !!o.finalBoss }, targetMon(o));
+const factsOf = (o = {}) => D.targetFacts({ enemyModifiers: [...tokens(o.token ?? 0), ...pouches(o.pouch ?? 0)], finalBoss: !!o.finalBoss }, targetMon(o));
 const at = (o = {}) => stateOf(factsOf(o));
 const sure = (d, n = 1) => ({ d, n });
 // `[hp, bar, p, dealt, hits]` per outcome, with `R` for a spent Reviver Seed, `T` for a spent token and `B` for a busted
-// Disguise or Ice Face.
-const row = outs => outs.map(o => `${+o.state.hp.toFixed(3)}/${o.state.bar}${o.state.revived ? "R" : ""}${o.state.tok ? "T" : ""}${o.state.busted ? "B" : ""} p${+o.p.toFixed(4)} dealt ${+o.dealt.toFixed(3)} ×${o.hits}`).join(" · ");
+// Disguise or Ice Face; `S`, `E`: the Sitrus and Enigma Berries held; `F`: a super-effective hit landed this turn.
+const marks = s => `${s.revived ? "R" : ""}${s.tok ? "T" : ""}${s.busted ? "B" : ""}${s.sitrus ? `S${s.sitrus}` : ""}${s.enigmas ? `E${s.enigmas}` : ""}${s.fed ? "F" : ""}`;
+const row = outs => outs.map(o => `${+o.state.hp.toFixed(3)}/${o.state.bar}${marks(o.state)} p${+o.p.toFixed(4)}${"dealt" in o ? ` dealt ${+o.dealt.toFixed(3)} ×${o.hits}` : ""}`).join(" · ");
 const show = (what, outs) => console.log(`${what}: ${row(outs)}`);
 const shape = outs => outs.map(o => [+o.state.hp.toFixed(6), o.state.bar, o.state.revived, o.state.tok, +o.p.toFixed(6), o.hits]);
 
@@ -236,6 +241,97 @@ const shape = outs => outs.map(o => [+o.state.hp.toFixed(6), o.state.bar, o.stat
   assert.deepEqual(shape(land(stateOf(band.facts, 0.5), sure(3), {}, { whole: true })), [[0.5, 0, false, false, 1, 0]], "under 1 HP is already down");
 }
 
+// `[hp, bar, Sitrus held, Enigmas held, fed, p]` per turn-end outcome.
+const ended = outs => outs.map(o => [+o.state.hp.toFixed(6), o.state.bar, o.state.sitrus, o.state.enigmas, o.state.fed, +o.p.toFixed(6)]);
+
+// ---- A Sitrus Berry is eaten below half HP by the ratio rounded to 0.01, so 99 of 200 keeps it and 98 eats it (game-code.md §3)
+{
+  console.log("== the Sitrus Berry at the turn end");
+  const at99 = landTurnEnd(stateOf(factsOf({ maxHp: 200, sitrus: 1 }), 99));
+  show("99 of 200", at99);
+  assert.deepEqual(ended(at99), [[99, 0, 1, 0, false, 1]]);
+  const at98 = landTurnEnd(stateOf(factsOf({ maxHp: 200, sitrus: 1 }), 98));
+  show("98 of 200", at98);
+  assert.deepEqual(ended(at98), [[148, 0, 0, 0, false, 1]]);
+}
+
+// ---- A stack of Sitrus Berries is eaten one a turn end, while any is held (game-code.md §3)
+{
+  const two = stateOf(factsOf({ maxHp: 200, sitrus: 2 }), 60);
+  const first = landTurnEnd(two);
+  assert.deepEqual(ended(first), [[110, 0, 1, 0, false, 1]]);
+  const second = landTurnEnd(stateOf(two.facts, 60, 0, first[0].state));
+  assert.deepEqual(ended(second), [[110, 0, 0, 0, false, 1]]);
+  assert.deepEqual(ended(landTurnEnd(stateOf(two.facts, 60, 0, second[0].state))), [[60, 0, 0, 0, false, 1]], "none left");
+}
+
+// ---- A Berry Pouch keeps each berry it eats at its own chance, as a branch that still holds it (game-code.md §3)
+{
+  const pouched = landTurnEnd(stateOf(factsOf({ maxHp: 200, sitrus: 1, pouch: 1 }), 98));
+  show("a Sitrus Berry at 98 of 200, one Pouch stack", pouched);
+  assert.deepEqual(ended(pouched), [[148, 0, 0, 0, false, 0.7], [148, 0, 1, 0, false, 0.3]]);
+}
+
+// ---- An Enigma Berry is eaten at the turn end of a turn a super-effective hit landed, on that share of the use alone (game-code.md §3)
+{
+  console.log("== the Enigma Berry");
+  const st = stateOf(factsOf({ hp: 200, enigma: 1 }));
+  const hit = land(st, { d: 70, se: 1 });
+  show("hit super-effectively for 70", hit);
+  const fed = landTurnEnd(hit[0].state);
+  show("…its turn end", fed);
+  assert.deepEqual(ended(fed), [[180, 0, 0, 0, false, 1]]);
+  assert.deepEqual(ended(landTurnEnd(land(st, { d: 70 })[0].state)), [[130, 0, 0, 1, false, 1]], "a neutral hit feeds nothing");
+  assert.deepEqual(ended(landTurnEnd(land(st, { d: 70 }, { e: 2 })[0].state)), [[180, 0, 0, 0, false, 1]], "the hit's `e` stands in for a point's `se`");
+  const part = land(st, { d: 70, se: 0.4 });
+  show("super-effective on 40 % of the use", part);
+  assert.deepEqual(part.map(o => [o.state.fed, +o.p.toFixed(6)]), [[false, 0.6], [true, 0.4]]);
+  assert.deepEqual(ended(landTurnEnd(land(st, { d: 0, se: 1 })[0].state)), [[200, 0, 0, 1, false, 1]], "a miss feeds nothing");
+}
+
+// ---- A strike a Disguise takes lands no damage, so it feeds no Enigma Berry, and the use's next strike does (game-code.md §3, §8)
+{
+  const st = stateOf(factsOf({ hp: 200, form: "disguise", enigma: 1 }));
+  const busted = land(st, { d: 70, se: 1 });
+  show("a Disguise holder with an Enigma Berry, hit super-effectively for 70", busted);
+  assert.deepEqual(busted.map(o => [o.state.busted, o.state.fed]), [[true, false]]);
+  assert.deepEqual(land(st, { d: 140, n: 2, se: 1 }).map(o => [o.state.busted, o.state.fed]), [[true, true]], "two strikes of 70");
+}
+
+// ---- Both berries read the HP from before either heals, between the change ahead of the berries and the rest (game-code.md §3, §21)
+{
+  const both = stateOf(factsOf({ maxHp: 200, sitrus: 1, enigma: 1 }), 120);
+  const fed = land(both, { d: 22, se: 1 })[0].state;
+  assert.deepEqual(ended(landTurnEnd(fed)), [[198, 0, 0, 0, false, 1]], "98 eats both");
+  const sitrus = stateOf(factsOf({ maxHp: 200, sitrus: 1 }), 110);
+  assert.deepEqual(ended(landTurnEnd(sitrus, { before: -20, after: -10 })), [[130, 0, 0, 0, false, 1]], "chip ahead of the berries brings it under half");
+  assert.deepEqual(ended(landTurnEnd(sitrus, { after: -20 })), [[90, 0, 1, 0, false, 1]], "chip after them comes too late");
+  assert.deepEqual(ended(landTurnEnd(sitrus, { before: 100, after: -10 })), [[190, 0, 1, 0, false, 1]], "a heal caps at max HP");
+}
+
+// ---- An opposing Unnerve keeps every berry uneaten, and the turn's mark goes either way (game-code.md §3)
+{
+  const st = land(stateOf(factsOf({ maxHp: 200, sitrus: 1, enigma: 1 }), 120), { d: 22, se: 1 })[0].state;
+  assert.equal(st.fed, true);
+  assert.deepEqual(ended(landTurnEnd(st, { eats: false })), [[98, 0, 1, 1, false, 1]]);
+}
+
+// ---- Turn-end chip stops at a boss bar and lands through Sturdy, the endure token, a Focus Band and a Reviver Seed, and a heal never raises a bar back (game-code.md §3, §21)
+{
+  console.log("== turn-end chip");
+  const boss = stateOf(factsOf({ hp: 200, boss: 2 }), 130);
+  const clamped = landTurnEnd(boss, { before: -50 });
+  show("a 2-bar boss on 130 of 200, 50 of chip", clamped);
+  assert.deepEqual(ended(clamped), [[100, 0, 0, 0, false, 1]]);
+  assert.deepEqual(ended(landTurnEnd(clamped[0].state, { after: 60 })), [[160, 0, 0, 0, false, 1]]);
+  const lucky = stateOf(factsOf({ sturdy: true, band: 5, token: 50, seed: true }));
+  const chip = landTurnEnd(lucky, { before: -150 });
+  show("every luck at full HP, 150 of chip", chip);
+  assert.deepEqual(ended(chip), [[0, 0, 0, 0, false, 1]]);
+  assert.equal(chip[0].state.revived, false, "no Reviver Seed on chip");
+  assert.deepEqual(ended(landTurnEnd(stateOf(lucky.facts, 0), { after: 50 })), [[0, 0, 0, 0, false, 1]], "a state already down stays down");
+}
+
 // `[hp, bar, Substitute HP, p, dealt, the Substitute's loss, hits]` per outcome.
 const subShape = outs => outs.map(o => [+o.state.hp.toFixed(6), o.state.bar, +o.state.sub.toFixed(6), +o.p.toFixed(6), +o.dealt.toFixed(6), +o.subDealt.toFixed(6), o.hits]);
 const subRow = outs => outs.map(o => `${+o.state.hp.toFixed(3)}/${o.state.bar} sub ${+o.state.sub.toFixed(3)} p${+o.p.toFixed(4)} dealt ${+o.dealt.toFixed(3)} · sub lost ${+o.subDealt.toFixed(3)} ×${o.hits}`).join(" · ");
@@ -327,11 +423,13 @@ const STATES = [at(), at({ sturdy: true }), at({ band: 2 }), at({ token: 5 }), a
   at({ hp: 300, boss: 3, sturdy: true, band: 1, token: 10, seed: true }), at({ hp: 10, band: 1 }), at({ hp: 100, finalBoss: true, band: 1 }),
   at({ cut: "multiscale", sturdy: true, band: 1 }), at({ hp: 300, boss: 3, cut: "shadow shield", token: 5 }),
   at({ form: "disguise" }), at({ hp: 10, maxHp: 100, form: "disguise", band: 1, seed: true }), at({ hp: 300, boss: 3, form: "disguise", token: 5 }),
+  at({ hp: 200, sitrus: 2, enigma: 1, pouch: 1 }), at({ hp: 200, boss: 2, sitrus: 1, enigma: 2, seed: true }), at({ hp: 200, form: "disguise", enigma: 1 }),
   at({ sub: 25, sturdy: true, token: 5 }), at({ hp: 300, boss: 3, sub: 75, band: 1, seed: true }), at({ sub: 25, cut: "multiscale" }),
-  at({ sub: 25, form: "disguise" })];
-const USES = [sure(0), sure(50), sure(99.5), sure(100), sure(150), sure(300, 2), sure(450, 3), { d: 151, n: 2.4 }];
+  at({ sub: 25, form: "disguise" }), at({ hp: 200, sub: 50, enigma: 1 })];
+const USES = [sure(0), sure(50), sure(99.5), sure(100), sure(150), sure(300, 2), sure(450, 3), { d: 151, n: 2.4 }, { d: 120, n: 1, se: 0.4 }, { d: 60, n: 2, se: 1 }];
 const HITS = [{}, { ignoresSturdy: true }, { ignoresDisguise: true }, { ohko: true }, { factor: bar => 1 + bar / 2 }, { cut: "in" }, { cut: "never" }, { ignoresAbility: true },
-  { ignoresSub: true }];
+  { ignoresSub: true }, { e: 2 }];
+const ENDS = [{}, { before: -30, after: 10 }, { before: 25, after: -60 }, { after: -500, eats: false }, { before: NaN, after: 40 }];
 const sweep = fn => {
   for (const st of STATES) for (const use of USES) for (const hit of HITS) for (const whole of [false, true]) fn(st, use, hit, whole);
 };
@@ -344,6 +442,24 @@ const sweep = fn => {
     assert.ok(outs.every(o => o.p > 0));
     assert.ok(Math.abs(outs.reduce((t, o) => t + o.p, 0) - 1) < 1e-12);
     assert.equal(JSON.stringify([st, use, hit]), before);
+  });
+}
+
+// ---- Every turn end's chances are above 0 and sum to 1, it changes no input, and what stands carries no mark of the turn (#1028)
+{
+  sweep((st, use, hit, whole) => {
+    for (const { state } of land(st, use, hit, { whole })) {
+      for (const end of ENDS) {
+        const before = JSON.stringify([state, end]);
+        const outs = landTurnEnd(state, { ...end, whole });
+        assert.ok(outs.every(o => o.p > 0));
+        assert.ok(Math.abs(outs.reduce((t, o) => t + o.p, 0) - 1) < 1e-12);
+        assert.equal(JSON.stringify([state, end]), before);
+        const up = s => (whole ? s.hp >= 1 : s.hp > 0);
+        if (up(state)) assert.ok(outs.every(o => !o.state.fed));
+        else assert.deepEqual(outs, [{ state, p: 1 }]);
+      }
+    }
   });
 }
 
@@ -400,7 +516,7 @@ const spent = Object.fromEntries(DISCRETE.map(k => [k, typeof fresh[k] === "bool
   for (const k of DISCRETE) assert.equal(s[k], spent[k], k);
 }
 
-// ---- Every field of the discrete part survives a missed use from `after1` to the state `start` reopens (#1027)
+// ---- Every field of the discrete part survives a missed use from `after1` to the state `start` reopens, but the turn's mark, which its turn end clears (#1027, #1028)
 {
   const rec = { facts: factsOf() };
   const miss = [{ d: 0, p: 1, n: 0 }];
@@ -408,7 +524,7 @@ const spent = Object.fromEntries(DISCRETE.map(k => [k, typeof fresh[k] === "bool
   const twice = koCurve(rec, miss, { start: once.after1 });
   for (const [what, after1] of [["after1", once.after1], ["reopened", twice.after1]]) {
     assert.equal(after1.length, 1, what);
-    for (const k of DISCRETE) assert.equal(after1[0][k], spent[k], `${what}: ${k}`);
+    for (const k of DISCRETE) assert.equal(after1[0][k], k === "fed" ? false : spent[k], `${what}: ${k}`);
   }
 }
 
@@ -422,20 +538,21 @@ const hitRecord = (use, def, hit) => {
     perHit: Array(n).fill({ max, min: max }), expected: Math.min(mean, def.hp), uncapped: mean, max: Math.min(max * n, def.hp), pKo: 0,
     use, traits: { ...TRAITS }, costs: [], notes: [], live: true, ...hit };
 };
-// `ours`: the foe hits us, and these are our luck; else we hit the foe, whose luck is `foe`.
-const race = ({ use, foe = {}, ours = null, token = 0, hit = {} }) => {
+// `ours`: the foe hits us, and these are our luck; else we hit the foe, whose luck is `foe`. `pouch`: the foe side's Berry
+// Pouch stacks. KO pacing eats the Sitrus Berry with no steals.
+const race = ({ use, foe = {}, ours = null, token = 0, pouch = 0, hit = {} }) => {
   const hitter = (name, player) => mon(name, 50, ["Normal"], ATTACKER, [["Hit", "Normal", 80, "P"]], true, undefined, { isPlayer: () => player, hasTrainer: () => !player });
   const me = ours ? targetMon({ name: "us", player: true, ...ours }) : hitter("us", true);
   const target = ours ? hitter("foe", false) : targetMon({ name: "foe", trainer: true, ...foe });
   const [atk, def] = ours ? [target, me] : [me, target];
   target.getOpponents = () => [me];
-  const turn = fakeTurn({ live: true, party: [me], foes: [target], enemyModifiers: tokens(token),
+  const turn = fakeTurn({ live: true, party: [me], foes: [target], enemyModifiers: [...tokens(token), ...pouches(pouch)],
     trainer: { getName: () => "Ace", config: { isBoss: false }, isDouble: () => false },
     outcome: (a, d) => (a === atk ? hitRecord(use, d, hit) : null),
     moves: e => (e === atk ? [{ name: "Hit", type: "Normal", p: 1, score: 10, targets: [0] }] : []) });
   const T = tpTables(turn, [me], [target], false);
-  const by = koCurve(turn.mon(def), turn.outcomes(atk, def)[0]).by;
-  const plan = tpFight(T, fightState({ oh: [me.hp], ob: [0], fh: [target.hp], fs: [T.foeState[0].bar], fb: [0] }), 0, 0, "free");
+  const by = koCurve(turn.mon(def), turn.outcomes(atk, def)[0], { sitrus: 0 }).by;
+  const plan = tpFight(T, fightState({ oh: [me.hp], fh: [target.hp], fs: [T.foeState[0].bar] }), 0, 0, "free");
   return { by, plan: ours ? plan.lossBy : plan.winBy };
 };
 const sureUse = (d, n = 1) => [{ d, p: 1, n }];
@@ -484,6 +601,10 @@ const EXACT = 1e-5;
     ["Substitute, rolled weak enough to leave it standing", { use: rolls(10, 30), foe: { hp: 40, sub: 20 } }, 0.05],
     ["two hits, through a Substitute into Sturdy", { use: sureUse(300, 2), foe: { sub: 25, sturdy: true } }, EXACT],
     ["a sound move past a Substitute", { use: sureUse(60), foe: { sub: 25 }, hit: { ignoresSub: true } }, EXACT],
+    ["Sitrus Berry at 49.5 %", { use: sureUse(101), foe: { hp: 200, sitrus: 1 } }, EXACT],
+    ["Sitrus Berry at 49.0 %", { use: sureUse(102), foe: { hp: 200, sitrus: 1 } }, EXACT],
+    ["Enigma Berry", { use: sureUse(70), hit: { e: 2 }, foe: { hp: 200, enigma: 1 } }, EXACT],
+    ["Berry Pouch on a Sitrus Berry", { use: sureUse(70), foe: { hp: 200, sitrus: 1 }, pouch: 1 }, EXACT],
   ];
   for (const [what, setup, tol] of ROWS) {
     const { by, plan } = race(setup);

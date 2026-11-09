@@ -31,6 +31,18 @@ busted on 88, hit for 150: 0/0B p1 dealt 88 ×1
 == whole
 a Focus Band holder on 10, hit for 9.5, whole: 1/0 p0.1 dealt 9 ×1 · 0.5/0 p0.9 dealt 9.5 ×1
 …without: 0.5/0 p1 dealt 9.5 ×1
+== the Sitrus Berry at the turn end
+99 of 200: 99/0S1 p1
+98 of 200: 148/0 p1
+a Sitrus Berry at 98 of 200, one Pouch stack: 148/0 p0.7 · 148/0S1 p0.3
+== the Enigma Berry
+hit super-effectively for 70: 130/0E1F p1 dealt 70 ×1
+…its turn end: 180/0 p1
+super-effective on 40 % of the use: 130/0E1 p0.6 dealt 70 ×1 · 130/0E1F p0.4 dealt 70 ×1
+a Disguise holder with an Enigma Berry, hit super-effectively for 70: 175/0BE1 p1 dealt 0 ×1
+== turn-end chip
+a 2-bar boss on 130 of 200, 50 of chip: 100/0 p1
+every luck at full HP, 150 of chip: 0/0 p1
 == a Substitute
 a 25 HP Substitute hit for 20: 100/0 sub 5 p1 dealt 0 · sub lost 20 ×1
 …for 150, behind Sturdy, a Focus Band and a Reviver Seed: 100/0 sub 0 p1 dealt 0 · sub lost 25 ×1
@@ -40,7 +52,7 @@ a 25 HP Substitute in front of Sturdy, three hits of 40: 20/0 sub 0 p1 dealt 80 
 a hit past a 25 HP Substitute for 40: 60/0 sub 25 p1 dealt 40 · sub lost 0 ×1
 a 10 % token behind a 25 HP Substitute, hit for 150: 100/0 p1 dealt 0 ×1
 …and again: 1/0T p0.1 dealt 99 ×1 · 0/0 p0.9 dealt 100 ×1
-== the discrete part: revived, tok, busted, sub
+== the discrete part: revived, tok, busted, sub, sitrus, enigmas, fed
 == KO pacing and the fight plan, on the foe
 plain: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 plain, rolled: KO pacing 0.000 0.766 1.000 1.000 · fight plan 0.000 0.750 1.000 1.000
@@ -60,6 +72,10 @@ Substitute: KO pacing 0.000 0.000 1.000 1.000 · fight plan 0.000 0.000 1.000 1.
 Substitute, rolled weak enough to leave it standing: KO pacing 0.000 0.000 0.250 0.733 · fight plan 0.000 0.000 0.275 0.699
 two hits, through a Substitute into Sturdy: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 a sound move past a Substitute: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
+Sitrus Berry at 49.5 %: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
+Sitrus Berry at 49.0 %: KO pacing 0.000 0.000 1.000 1.000 · fight plan 0.000 0.000 1.000 1.000
+Enigma Berry: KO pacing 0.000 0.000 0.000 1.000 · fight plan 0.000 0.000 0.000 1.000
+Berry Pouch on a Sitrus Berry: KO pacing 0.000 0.000 0.000 0.700 · fight plan 0.000 0.000 0.000 0.700
 == KO pacing and the fight plan, on us
 plain: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 plain, rolled: KO pacing 0.000 0.766 1.000 1.000 · fight plan 0.000 0.813 1.000 1.000
