@@ -996,8 +996,6 @@ const pouched = (type, keep) => globalThis.__hud["10-damage"].stateOf({ maxHp: 4
   assert.ok(Math.abs(r.winBy[0] - 0.9) < 1e-9 && Math.abs(r.winBy[1] - 0.99) < 1e-9, `${r.winBy}`);
 }
 // ---- A Reviver Seed spent in one exchange stays spent in the next, and its revive is no KO (game-code.md §8, §18)
-// Ours move first and hit for 150; the foe's 1000 fells either. Garchomp's hit sends it back to 50, and it falls to
-// Dragonite.
 {
   const { teamPlanner } = globalThis.__hud["35-team-plan"];
   const seed = new ({ PokemonInstantReviveModifier: class { getStackCount() { return 1; } } }).PokemonInstantReviveModifier();
