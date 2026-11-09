@@ -463,6 +463,8 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
     targets: exactRow ? [...(exactRow.targets ?? [])] : null,
     revive: Math.max(0, ...kos.map(k => k.revive)),
     ignoresSturdy: moves.some(m => m.o) && moves.every(m => !m.o || !!m.o.ignoresSturdy),
+    // A mix of moves has no one category or effectiveness: each point of `use` carries its own `se`.
+    e: null, cat: null,
     boost: Object.keys(boost).length ? boost : null,
     // HP its drain moves give it back a turn; negative into Liquid Ooze.
     drain: drained,
@@ -935,13 +937,13 @@ export const foeCurve = (turn, t, me, hp, { dealt = 0, foe = null, mult = null, 
   const useOn = x => (x?.expected > 0 ? x.use ?? [{ d: x.expected, p: 1 }] : [{ d: 0, p: 1 }]);
   // A curve from `start` has no use of this turn's.
   const usesBefore = start ? 1 : 0;
-  return koCurve(turn.mon(me), useOn(threatUse(t, usesBefore)), {
+  const unnerved = !!foe && unnervedBy(turn, me, foe);
+  return koCurve(turn.mon(me), { ...t, use: useOn(threatUse(t, usesBefore)) }, {
     hp, start, act, turnEnd: withDrain(heal, drain), chain: t?.lockChain?.(usesBefore),
-    beforeBerry: withDrain(pre, drain), se: foe && unnervedBy(turn, me, foe) ? null : 0,
-    sitrus: foe && unnervedBy(turn, me, foe) ? null : gone ?? 0,
+    beforeBerry: withDrain(pre, drain), feeds: !unnerved, sitrus: unnerved ? null : gone ?? 0,
     scale: mult || ramp ? i => (mult ? mult(i + 1) : 1) * (ramp ? ramp(i + 1) : 1) : undefined,
     firstKo: t?.expected > 0 && !start ? threatKoAt(t, hp) * act(0) * (t.lockAct ? t.lockAct(0) : 1) : null,
-    useAt: t?.later || t?.own ? i => useOn(threatUse(t, i + usesBefore)) : null, preHeal, ignoresSturdy: t?.ignoresSturdy,
+    useAt: t?.later || t?.own ? i => useOn(threatUse(t, i + usesBefore)) : null, preHeal,
   });
 };
 const foeTurns = (turn, t, me, hp, opts = {}) => koTurns(foeCurve(turn, t, me, hp, opts).by);
@@ -1153,16 +1155,15 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     delay = actDelay(me) + (mine.semi && pF >= 0.5 ? 1 : 0);
     const nowUse = !mt.charge && delay === 0;
     const first = nowUse && entry ? entry : mine;
-    const rest = first !== mine ? useOf(mine) : null;
     opener = first;
     qWe = nowUse ? (first.pKo ?? 0) * now : 0;
-    const curve = koCurve(turn.mon(foe), useOf(first), {
-      scale, turnEnd: heal, beforeBerry: withDrain(course.pre, t?.drain ?? 0), cat: mine.cat,
-      se: unnervedBy(turn, foe, me) ? null : i => (((i ? mine : first).e ?? 1) >= 2 ? 1 : 0),
-      sitrus: unnervedBy(turn, foe, me) ? null : course.gone ?? 0,
+    const unnerved = unnervedBy(turn, foe, me);
+    const curve = koCurve(turn.mon(foe), first, {
+      scale, turnEnd: heal, beforeBerry: withDrain(course.pre, t?.drain ?? 0),
+      feeds: !unnerved, sitrus: unnerved ? null : course.gone ?? 0,
       act: i => (i === 0 && nowUse ? now : steady * (acts ? acts.act(i + 1) : 1)),
       firstKo: exact && nowUse ? qWe : null, start: after?.foe, chain: ourLock ? OUR_CHAIN : null,
-      useAt: rest && (() => rest), ignoresSturdy: first.ignoresSturdy,
+      useAt: first !== mine ? () => mine : null,
     });
     downAt = curve.downAt;
     const perChunk = curve.perChunk;
@@ -2494,7 +2495,7 @@ export const battleModel = (baseTurn, { team = null } = {}) => {
       const entry = !then && !active.includes(target) ? entryOutcome(slot.at ?? turn, slot.me, target, slot.move.name) : null;
       const dmg = entry?.expected ?? (both ? planOutcomes(slot.at ?? turn, slot.me, target).find(x => x.name === slot.move.name)?.expected ?? 0 : (then ?? slot.move).expected);
       // The slot's own KO turns, so the row and the ⚔ line agree.
-      return { me: slot.me, mine: { ...slot.move, dmg, then }, myTurns: both ? slot.each?.[ai] ?? koTurn(koCurve(turn.mon(target), [{ d: dmg, p: 1 }], { ignoresSturdy: slot.move.ignoresSturdy }).by) : slot.hits, score: slot.score, later: false, vs: target, at: slot.at };
+      return { me: slot.me, mine: { ...slot.move, dmg, then }, myTurns: both ? slot.each?.[ai] ?? koTurn(koCurve(turn.mon(target), { ...slot.move, use: [{ d: dmg, p: 1 }] }, { feeds: false, guard: false }).by) : slot.hits, score: slot.score, later: false, vs: target, at: slot.at };
     }
     const paired = (plan?.picks.length ?? 0) === 2;
     const ranked = party.map(me => ({ ...duel(atOf(me), me, foe, paired && ai >= 0 && plan.picks.some(p => p.me === me)), at: atOf(me) }))

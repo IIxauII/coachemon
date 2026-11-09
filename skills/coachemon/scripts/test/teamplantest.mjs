@@ -682,6 +682,25 @@ assert.equal(plan.approxDoubles, false);
   assert.equal(T.foeHeal[0].enigma, 75, "the profile keeps the berry an Unnerve on the field would block");
   assert.ok(eaten.turns > blocked.turns, "the pairing without the Unnerve pays for the berry");
 }
+// The threat record and both of the fight plan's move summaries set every race fact, on a live turn and an estimated
+// one, so the foe's summary is taken both ways (#995).
+{
+  const { threatFrom } = globalThis.__hud["30-planner"];
+  const stub = outcomeFrom({ "Bisharp>Iron Head>Garchomp": [[100], 1, 2], "Garchomp>Earthquake>Bisharp": [[10], 1, 1] });
+  const bisharp = fakeMon("Bisharp", 80, ["Dark", "Steel"], [300, 200, 200, 100, 100, 100], [["Iron Head", "Steel", 80, "P"]], true);
+  const chomp = fakeMon("Garchomp", 80, ["Dragon", "Fairy"], [300, 200, 200, 100, 100, 50], [["Earthquake", "Ground", 100, "P"]], true,
+    undefined, { getOpponents: () => [bisharp] });
+  const unset = o => ["ignoresSturdy", "cat", "e"].filter(k => o?.[k] === undefined);
+  for (const live of [true, false]) {
+    const turn = fakeTurn({ live, party: [bisharp], foes: [chomp], outcome: stub,
+      moves: () => [{ name: "Earthquake", type: "Ground", p: 1, score: 10, targets: [0] }] });
+    const T = globalThis.__tp.tpTables(turn, [bisharp], [chomp], false);
+    assert.equal(T.theirs[0][0].entry !== undefined, live, "the foe's summary off its threat, else off its fastest hit");
+    for (const [what, x] of [["threat", threatFrom(turn, chomp, bisharp)], ["ours", T.ours[0][0]], ["theirs", T.theirs[0][0]]]) {
+      assert.deepEqual(unset(x), [], `${what}${live ? "" : ", estimated"}`);
+    }
+  }
+}
 // The profile's Enigma is the berry's own quarter, whatever heals after it at the turn end.
 {
   const { scene: s } = run(null);

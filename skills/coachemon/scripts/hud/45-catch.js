@@ -5,7 +5,7 @@
 // The team verdict is the other half, and it is not here: a turn read cannot open a run read, so `catchLand` attaches
 // the judgment when the road lands, through the same owed/landed road the battle card's preview rides (#584).
 import { abilitiesOf, hasAttr, iconOf, movesetOf } from "./01-core.js";
-import { koCurve, koTurn, useOf } from "./10-damage.js";
+import { koCurve, koTurn } from "./10-damage.js";
 import { PARTY_SIZE, judgeNewcomer } from "./12-value.js";
 import { exchange, threatFrom } from "./30-planner.js";
 
@@ -147,7 +147,7 @@ const accountReasons = (account, foe) => {
 
 const CHIP = 1;
 const fastestHit = (turn, a, target) => turn.outcomes(a, target).filter(x => x.dmg > 0)
-  .map(x => ({ x, turns: koTurn(koCurve(turn.mon(target), useOf(x), { ignoresSturdy: x.ignoresSturdy }).by) }))
+  .map(x => ({ x, turns: koTurn(koCurve(turn.mon(target), x, { feeds: false, guard: false }).by) }))
   .reduce((b, y) => (!b || y.turns < b.turns || (y.turns === b.turns && y.x.dmg > b.x.dmg) ? y : b), null);
 // `p`: one throw's chance with the cheapest ball this catch deserves.
 const escapeReason = (turn, foe, party, p) => {

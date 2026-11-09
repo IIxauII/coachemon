@@ -198,7 +198,7 @@ const bigHit = move(1, "Big Hit", 14, 120);
   const curveOf = a => {
     setup(a, sturdy);
     const o = moveOutcome(scene, a, sturdy, nuke, { crit: false });
-    return koCurve(sturdy, useOf(o), { ignoresSturdy: o.ignoresSturdy }).by.slice(0, 2);
+    return koCurve(sturdy, o).by.slice(0, 2);
   };
   assert.deepEqual(curveOf(atk), [0, 1], "a record's curve keeps Sturdy");
   assert.deepEqual(curveOf(mold), [1, 1], "and a Mold Breaker's curve goes through it, as its record does");
@@ -209,6 +209,24 @@ const bigHit = move(1, "Big Hit", 14, 120);
   const banded = koCurve(band, [{ d: 300, p: 1 }]).by;
   near(banded[0], 0.9, "Focus Band over a use");
   near(banded[1], 0.99, "Focus Band twice");
+}
+
+// ---- Every move record a turn read hands back sets its race facts, a no-effect one's included (#995)
+{
+  const quake = move(89, "Earthquake", 4, 100);
+  const atk = mon("a", { moves: [bigHit, quake] });
+  const floater = mon("floater");
+  const hit = floater.getAttackDamage;
+  floater.getAttackDamage = function (o) {
+    return o.move.type === 4 ? { cancelled: false, result: HitResult.NO_EFFECT, damage: 0 } : hit.call(this, o);
+  };
+  const unset = o => ["ignoresSturdy", "cat", "e"].filter(k => o[k] === undefined);
+  for (const estimate of [false, true]) {
+    setup(atk, floater);
+    const outs = readTurn(scene, t => t.outcomes(atk, floater), { estimate });
+    assert.deepEqual(outs.map(o => o.live), estimate ? [false, false] : [true, true]);
+    for (const o of outs) assert.deepEqual(unset(o), [], `${o.name}${estimate ? ", estimated" : ""}`);
+  }
 }
 
 // ---- Accuracy scales expected damage, and `getMoveType` gives a form its type
@@ -462,7 +480,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   const enigma = held("BerryModifier", { berryType: 2 });
   const pouch = n => [held("PreserveBerryModifier", {}, n)];
   // 200 HP taking 70 a super-effective hit, the berry 50. Without the Pouch 200 → 180 → 110 → 40 → down on hit 4.
-  const curve = side => D.koCurve(recOf(mon("enigma", { hp: 200, items: [enigma] }), { ...scene, ...side }), [{ d: 70, p: 1 }], { se: 1 });
+  const curve = (side, hit = [{ d: 70, p: 1, se: 1 }], opts) => D.koCurve(recOf(mon("enigma", { hp: 200, items: [enigma] }), { ...scene, ...side }), hit, opts);
   const kept = curve({ modifiers: pouch(1) });
   console.log(`== a Berry Pouch keeps the Enigma (#822)\nafter hit 1: ${kept.after1.map(x => `${x.hp} HP, ${x.left} left, ${x.p.toFixed(2)}`).join(" · ")}`);
   assert.deepEqual(kept.after1.map(x => [x.hp, x.left]).sort((a, b) => a[1] - b[1]), [[180, 0], [180, 1]], "both shares healed");
@@ -474,6 +492,8 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.deepEqual(bare.slice(0, 4), [0, 0, 0, 1], "no Pouch: down on hit 4");
   assert.ok(pouched.every((x, i) => x <= bare[i] + 1e-12), "the Pouch never brings the KO forward");
   assert.ok(pouched.some((x, i) => x < bare[i] - 1e-9), "and pushes it back somewhere");
+  assert.deepEqual(curve({}, { use: [{ d: 70, p: 1 }], e: 2 }).by, bare, "a point without its own `se` takes the hit's `e`");
+  assert.deepEqual(curve({}, undefined, { feeds: false }).by.slice(0, 3), [0, 0, 1], "`feeds` false eats none");
 }
 
 // ---- A Sitrus Berry is a target fact like the Enigma: a quarter each, kept by a Pouch, none under Heal Block (#883)
@@ -834,13 +854,15 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
     // 100 → revived on 100 → 90 → down.
     ["…a lethal hit still revives with chip on", mon("t", { hp: 100, maxHp: 200, items: [seed] }), sure(100), { turnEnd: -10 }, [0, 1]],
     ["firstKo sets use 1, the rolls the HP after it", mon("t", { hp: 100 }), [{ d: 90, p: 0.5 }, { d: 110, p: 0.5 }], { firstKo: 0.2 }, [0.2, 1]],
-    ["a wild boss's Def rises as a bar breaks", mon("b", { hp: 200, boss: 2, player: false }), sure(100), { cat: "physical" }, [0, 0, 1]],
-    ["…a trainer's doesn't", Object.assign(mon("b", { hp: 200, boss: 2, player: false }), { hasTrainer: () => true }), sure(100), { cat: "physical" }, [0, 1]],
+    ["a wild boss's Def rises as a bar breaks", mon("b", { hp: 200, boss: 2, player: false }), { use: sure(100), cat: "physical" }, {}, [0, 0, 1]],
+    ["…a trainer's doesn't", Object.assign(mon("b", { hp: 200, boss: 2, player: false }), { hasTrainer: () => true }), { use: sure(100), cat: "physical" }, {}, [0, 1]],
+    ["…nor where `guard` is false", mon("b", { hp: 200, boss: 2, player: false }), { use: sure(100), cat: "physical" }, { guard: false }, [0, 1]],
     ["lost turns deal nothing", mon("t", { hp: 100 }), sure(100), { act: i => (i === 0 ? 0.5 : 1) }, [0.5, 1]],
     ["Sturdy keeps a full-HP target up on 1 HP", sturdy(100), sure(300), {}, [0, 1]],
     ["…but not a hurt one", sturdy(99), sure(300), {}, [1]],
     ["…nor through the second of two lethal hits in one use", sturdy(100), sure(600, 2), {}, [1]],
     ["…nor through turn-end chip", sturdy(100), sure(0), { turnEnd: -150 }, [1]],
+    ["a later use's hit keeps the curve's Sturdy-piercing", sturdy(100), { use: sure(0), ignoresSturdy: true }, { useAt: () => sure(300) }, [0, 1]],
   ];
   for (const [what, target, use, opts, want] of TABLE) {
     setup(mon("a"), target);

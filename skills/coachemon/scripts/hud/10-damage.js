@@ -290,17 +290,20 @@ export const shares = (list, fallback) => {
   const t = list.reduce((sum, c) => sum + c.p, 0);
   return t > 0 ? list.map(c => ({ s: c.s, p: c.p / t })) : fallback;
 };
-// `by[n − 1]`: P(the target is down by the end of use n). `rec` is `turn.mon(target)`; `use` is `useOf`'s.
-// `scale(i, broken)`: the damage factor on use i (0-based) with `broken` bars gone; `act(i)`: the chance use i happens
-// at all. `turnEnd`: the signed HP change after each use survived, or a function of the use count. `cat` ("physical"
-// or "special"): a wild boss's defence rises as its bars break. `firstKo`: this turn's exact odds for use 1, when the
-// caller has them. `useAt(i)`: the `use` of use i (from 1) where it differs from `use`. `start`: branches from an
-// earlier turn, p summing to 1. `chain`: a Markov chain stepped once a use, `{ from, step }`: `from` its states
+// `by[n − 1]`: P(the target is down by the end of use n). `rec` is `turn.mon(target)`, which carries no race
+// facts; `hit` is the hit record that does (`ignoresSturdy`, `cat`, `e`, an absent one off), and its use is
+// `useOf`'s, a bare use array reading as `{ use }`. `scale(i, broken)`: the damage factor on use i (0-based)
+// with `broken` bars gone; `act(i)`: the chance use i happens at all. `turnEnd`: the signed HP change after
+// each use survived, or a function of the use count. `guard` false: a wild boss's defence never rises as its
+// bars break, which it otherwise does at the `cat` ("physical" or "special") of use 2's hit. `firstKo`: this
+// turn's exact odds for use 1, when the caller has them. `useAt(i)`: the hit of use i (from 1) where it
+// differs from `hit`, taking each race fact it lacks from `hit`. `start`: branches from an earlier turn, p
+// summing to 1. `chain`: a Markov chain stepped once a use, `{ from, step }`: `from` its states
 // `[{ s, p }]`, p summing to 1, and `step(s)` its transitions `[{ s, p, act }]`, p summing to 1, the use going off only on
 // an `act` one; a state `s` is an object keyed by `s.key`. `after1`: the branches standing after use 1, p summing to
 // 1. `perChunk`: the uses each bar takes before it more likely than not breaks. `downAt[n − 1]`: the chain's states
-// `[{ s, p }]` of what went down on use n, empty without a `chain`. `se`: the target eats an Enigma Berry
-// (`facts.enigma`) after a landed use, at this share of it — a point's own `se` where it carries one; null eats none.
+// `[{ s, p }]` of what went down on use n, empty without a `chain`. Unless `feeds` is false, the target eats an Enigma
+// Berry (`facts.enigma`) after a landed use, at its super-effective share: a point's own `se`, else its hit's `e`.
 // The berry heals between `beforeBerry`, the part of `turnEnd` the game runs ahead of it, and the rest, and each branch,
 // `after1`'s and `start`'s included, carries the berries it has `left`; a Berry Pouch's `keep` share of a feed heals
 // and leaves `left` as it was. `preHeal(i)`: `{ p, heal }`, a heal the target takes before use i at share `p` of it, and
@@ -308,12 +311,15 @@ export const shares = (list, fallback) => {
 // at each turn end that finds it below half, where it eats the Enigma, a Pouch keeping it the same way; null eats none,
 // and otherwise it counts the Sitrus Berries steals have taken off the target by use n's turn end, n from 1 and 0 for
 // before the curve: a number, or a function of n. A branch's `sitrus` is the Sitrus Berries it still holds.
-// `ignoresSturdy`: the move record's own.
-export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 1, act = () => 1, turnEnd = 0, beforeBerry = 0, firstKo = null, cat = null, useAt = null, chain = null, se = null, preHeal = null, sitrus = null, ignoresSturdy = false } = {}) => {
-  const f = ignoresSturdy && rec.facts.sturdy ? { ...rec.facts, sturdy: false } : rec.facts;
-  const berry = se != null && f.enigma?.heal > 0 ? f.enigma : null;
+export const koCurve = (rec, hit, { hp, bar = null, start = null, scale = () => 1, act = () => 1, turnEnd = 0, beforeBerry = 0, firstKo = null, useAt = null, chain = null, preHeal = null, sitrus = null, feeds = true, guard = true } = {}) => {
+  const f = rec.facts;
+  const own = Array.isArray(hit) ? { use: hit } : hit ?? {};
+  const hitOf = later => (later && !Array.isArray(later) ? { ...own, ...later } : own);
+  let pierced = null;
+  const landsOn = h => (h.ignoresSturdy && f.sturdy ? (pierced ??= { ...f, sturdy: false }) : f);
+  const seOf = h => ((h.e ?? 1) >= 2 ? 1 : 0);
+  const berry = feeds && f.enigma?.heal > 0 ? f.enigma : null;
   const held = f.enigma?.left ?? 0;
-  const seAt = i => (typeof se === "function" ? se(i) : se);
   const keep = berry?.keep ?? 0;
   const sit = sitrus != null && f.sitrus?.heal > 0 ? f.sitrus : null;
   const sitHeld = f.sitrus?.left ?? 0;
@@ -354,9 +360,10 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
   };
   const init = stateOf(f, hp ?? f.hp, bar);
   const bars = init.bar + 1;
-  const guard = cat && bars > 1 && rec.bars ? rec.bars(cat === "special" ? Stat.SPDEF : Stat.DEF, bars) : null;
-  const pointsOf = u => u.map(x => ({ d: x.d, p: x.p, n: x.d > 0 ? Math.max(1, Math.round(x.n ?? 1)) : 0, se: x.se }));
-  const first = pointsOf(use);
+  const cat = guard && bars > 1 && rec.bars ? hitOf(useAt ? useAt(1) : null).cat : null;
+  const rises = cat ? rec.bars(cat === "special" ? Stat.SPDEF : Stat.DEF, bars) : null;
+  const pointsOf = h => (Array.isArray(h) ? h : useOf(h)).map(x => ({ d: x.d, p: x.p, n: x.d > 0 ? Math.max(1, Math.round(x.n ?? 1)) : 0, se: x.se }));
+  const first = pointsOf(hit);
   const from = chain?.from ?? NO_CHAIN;
   const stepOf = chain ? chain.step : () => NO_STEP;
   let states = (start?.length
@@ -366,11 +373,13 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
   const brokeAt = Array(bars).fill(KO_USES);
   let down = 0, after1 = [];
   for (let i = 0; i < KO_USES; i++) {
-    const points = i && useAt ? pointsOf(useAt(i)) : first;
+    const later = i && useAt ? useAt(i) : null;
+    const points = later ? pointsOf(later) : first;
+    const useHit = hitOf(later), on = landsOn(useHit);
     const a = Math.max(0, Math.min(1, act(i)));
     const factors = [];
-    const factor = broken => (factors[broken] ??= scale(i, broken) * (guard ? guard[Math.min(broken, bars - 1)] : 1));
-    const hit = [];
+    const factor = broken => (factors[broken] ??= scale(i, broken) * (rises ? rises[Math.min(broken, bars - 1)] : 1));
+    const struck = [];
     let fell = 0, fellTo = chain ? new Map() : null;
     const wentOff = i === 0 ? new Map() : null;
     const pre = preHeal?.(i);
@@ -381,10 +390,10 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
       ...(early < 1 ? [Object.assign(inChain(branch(st.hp, st.bar, st.revived, st.tok, st.p * (1 - early), false, st.left, st.sitrus), st.s), { late: true })] : []),
     ]) : states;
     for (const st of split) {
-      const mark = hit.length;
+      const mark = struck.length;
       for (const to of stepOf(st.s)) {
         const go = to.act ? a : 0, p = st.p * to.p;
-        if (go < 1) hit.push(inChain(branch(st.hp, st.bar, st.revived, st.tok, p * (1 - go), false, st.left, st.sitrus), to.s));
+        if (go < 1) struck.push(inChain(branch(st.hp, st.bar, st.revived, st.tok, p * (1 - go), false, st.left, st.sitrus), to.s));
         if (wentOff && go > 0) addShare(wentOff, to.s, p * go);
         for (const x of points) {
           const q = p * go * x.p;
@@ -395,32 +404,32 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
             for (const b of branches) {
               if (b.stop) next.push(b);
               else {
-                const gone = land(f, b, x.d / x.n * factor(init.bar - b.bar), next);
+                const gone = land(on, b, x.d / x.n * factor(init.bar - b.bar), next);
                 fell += gone;
                 if (fellTo) addShare(fellTo, to.s, gone);
               }
             }
             branches = next;
           }
-          const fed = berry && x.d > 0 ? x.se ?? seAt(i) : 0;
+          const fed = berry && x.d > 0 ? x.se ?? seOf(useHit) : 0;
           for (const b of branches) {
             b.stop = false;
-            pushFed(hit, b, to.s, fed);
+            pushFed(struck, b, to.s, fed);
           }
         }
       }
-      if (st.late) for (let k = mark; k < hit.length; k++) hit[k].late = true;
+      if (st.late) for (let k = mark; k < struck.length; k++) struck[k].late = true;
     }
     if (i === 0 && firstKo != null && !start) {
-      const standing = hit.reduce((t, x) => t + x.p, 0);
+      const standing = struck.reduce((t, x) => t + x.p, 0);
       const k = Math.min(1, firstKo);
       const offs = shares([...wentOff.values()], from);
-      if (standing > 0) for (const x of hit) x.p *= (1 - k) / standing;
+      if (standing > 0) for (const x of struck) x.p *= (1 - k) / standing;
       else if (k < 1) {
         // They survived a use that landed.
         const landed = points.filter(x => x.d > 0), mass = landed.reduce((t, x) => t + x.p, 0);
-        const fed = berry && mass > 0 ? landed.reduce((t, x) => t + x.p * (x.se ?? seAt(0)), 0) / mass : 0;
-        for (const c of offs) for (const b of robbed(branch(1, init.bar, false, false, (1 - k) * c.p, false, held, sitHeld))) pushFed(hit, b, c.s, fed);
+        const fed = berry && mass > 0 ? landed.reduce((t, x) => t + x.p * (x.se ?? seOf(own)), 0) / mass : 0;
+        for (const c of offs) for (const b of robbed(branch(1, init.bar, false, false, (1 - k) * c.p, false, held, sitHeld))) pushFed(struck, b, c.s, fed);
       }
       fell = k;
       if (fellTo) fellTo = new Map(offs.map(c => [c.s?.key, { s: c.s, p: k * c.p }]));
@@ -448,7 +457,7 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
       groups.get(key).pts.push({ d: b.hp, p: b.p });
     };
     const stolen = stealRate(i);
-    for (let b of hit) {
+    for (let b of struck) {
       if (b.late) b.hp = Math.min(f.maxHp, b.hp + pre.heal);
       if (!b.fed && !(sit && b.sitrus > 0)) {
         settle(endStep(b, h));
@@ -744,13 +753,14 @@ const fromGame = (env, atk, def, pm, opts) => {
   const eGame = def.getMoveEffectiveness?.(atk, move, gameIgnore, true);
   const e = first.cancelled ? 0 : typeof eGame === "number" ? eGame : RESULT_MULT[first.result] ?? 1;
   const base = { name: pm.getName(), type, cat, e, priority, spread, spreadApplied, traits: t, self: 0, bypassProtect: bypassesProtect(atk, def, move) };
-  const blocked = cancelledBy(env, atk, def, move);
-  if (first.cancelled || first.result === HitResult.NO_EFFECT || first.result === HitResult.IMMUNE || blocked) {
-    return { ...base, acc: 0, crit: 0, dist, perHit: [{ max: 0, min: 0 }], targetHp: def.hp, expected: 0, uncapped: 0, max: 0, pKo: 0, revive: 0, costs: [], notes: [blocked ? `stopped by ${blocked}` : "no effect"], use: [{ d: 0, p: 1, n: 0 }], focus: 0, flinch: 0 };
-  }
-
   const ohko = first.result === HitResult.ONE_HIT_KO;
   const fixed = !ohko && attrs(move, "FixedDamageAttr").length > 0;
+  const ignoresSturdy = ignoreAbility || (fixed && fixedIgnoresSturdy(env));
+  const blocked = cancelledBy(env, atk, def, move);
+  if (first.cancelled || first.result === HitResult.NO_EFFECT || first.result === HitResult.IMMUNE || blocked) {
+    return { ...base, acc: 0, crit: 0, dist, perHit: [{ max: 0, min: 0 }], targetHp: def.hp, expected: 0, uncapped: 0, max: 0, pKo: 0, revive: 0, costs: [], notes: [blocked ? `stopped by ${blocked}` : "no effect"], use: [{ d: 0, p: 1, n: 0 }], focus: 0, ignoresSturdy, flinch: 0 };
+  }
+
   const psywave = attrs(move, "RandomLevelDamageAttr").length > 0;
   const present = attrs(move, "PresentPowerAttr").length > 0;
   const crit = opts.crit === true ? 1 : opts.crit === false || fixed || ohko ? 0 : (() => {
@@ -817,7 +827,6 @@ const fromGame = (env, atk, def, pm, opts) => {
   if (disguise) { perHit[0] = new Map([[0, 1]]); maxes[0] = 0; }
 
   const facts = targetFacts(env, def, ignoreAbility);
-  const ignoresSturdy = ignoreAbility || (fixed && fixedIgnoresSturdy(env));
   const f = ignoresSturdy && facts.sturdy ? { ...facts, sturdy: false } : facts;
   const ends = resolve(f, perHit, dist, acc, checkAll, ohko);
   const expected = f.hp - ends.reduce((t, x) => t + x.p * Math.max(0, x.hp), 0);
