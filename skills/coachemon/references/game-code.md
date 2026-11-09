@@ -2312,6 +2312,10 @@ Golisopod out-healed the damage the HUD promised, and a Buzzwole with Beast Boos
    (`src/data/abilities/init-abilities.ts:1447-1456`). Base rows (`generation-07.ts:12061-12105`): Battle Bond
    72/95/67/103/71/122 (530), Ash 72/145/67/153/71/132 (640), so Atk ×1.53, SpA ×1.49, Spe ×1.08.
 
+A Reviver Seed's revive returns from `FaintPhase.start` before `doFaint` (`src/phases/faint-phase.ts:62-74`), so it runs
+neither step and adds to no faint tally (`playerFaints`, `enemyFaints`, `:100-111`): to an on-KO boost, a revived mon was
+never KO'd.
+
 Both attributes unshift `StatStageChangePhase` (±6 cap), and the stages last until the mon leaves the field. The
 move's own `PostVictoryStatStageChangeAttr` (Fell Stinger) comes after and isn't read
 (`src/phases/faint-phase.ts:148-153`). `Pokemon.hasAbilityWithAttr` respects suppression
