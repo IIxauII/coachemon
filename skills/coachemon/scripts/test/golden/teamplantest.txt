@@ -13,6 +13,15 @@ Fight plan likely lost
 ⚠ likely lost: nobody KOs Weavile 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Blastoise
 == easy trainer
 winnable · Charizard
+== chip ahead of the berries
+Charizard ends on 70
+== Leftovers once hit
+Charizard ends on 68.688, on 74.688 with Leftovers
+== a Toxic ramp in the fight plan
+sent in, Muk falls on turn 6 · out with its counter at 3, on turn 4 · switched back in, on turn 5
+== a Toxic counter across a plan
+from 0: Ditto: KO · 81% left › Chansey: falls · foe at 78%
+from 2: Ditto: KO · 56% left › Chansey: falls · foe at 89%
 == a bug bite pairing's tables
 we steal: true · a berry heals us {"0":65} · the foe holds 1 Sitrus
 == bug bite after the foe ate its own Sitrus

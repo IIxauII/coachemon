@@ -1789,6 +1789,15 @@ Read at the pinned tag. The refs are under `30-planner.js`, `10-damage.js` and `
   - **Toxic.** `PostTurnStatusEffectPhase` calls `Status.incrementTurn` first and then deals
     `toDmgValue(maxHp × toxicTurnCount / 16)` (`src/phases/post-turn-status-effect-phase.ts:26,46`;
     `src/data/status-effect.ts:21-22`). That is `(count + 1)/16` of the count read before the turn ends.
+    Only a mon on the field ticks it (`post-turn-status-effect-phase.ts:21`), and every summon puts it back to 0 in
+    `PostSummonPhase` (`src/phases/post-summon-phase.ts:18-19`). Every switch-in queues that phase: a switch, a
+    replacement after a faint and a trainer's send-in (`SwitchSummonPhase.queuePostSummon`,
+    `src/phases/switch-summon-phase.ts:269-271`). Across waves the count restarts only where the field is summoned
+    again. Under `resetArenaState` (a trainer battle, a mystery encounter, the classic final boss, a new biome),
+    `doPostBattleCleanup` recalls the whole field (`src/battle-scene.ts:1541-1567`,
+    `src/phases/party-reorder-switch-phase.ts:59-63`), and `InitEncounterPhase` runs `PostSummonPhase` for each enemy
+    and each mon summoned that turn (`src/phases/init-encounter-phase.ts:11-16`). A mon that stays out through a wild
+    wave in the same biome keeps its count.
   - **Immunity to a status move.** It comes from `getMoveEffectiveness` (`src/field/pokemon.ts:2727`): a type chart the
     move respects (`RespectAttackTypeImmunityAttr`, `:2746`; Thunder Wave into Ground), a powder move into Grass
     (`Move.isTypeImmune`, `src/data/moves/move.ts:465-479`), `MoveImmunityAbAttr` such as Good as Gold

@@ -5,7 +5,7 @@ import { benchMatchupScore, onGame } from "./game-proto.mjs";
 import { cat, mon as fakeMon, outcomeFrom, TY } from "./fake-mon.mjs";
 import { fakeTurn } from "./fake-turn.mjs";
 import { fightState } from "./fake-fight.mjs";
-import { AbilityId } from "../../../../src/enums/generated.ts";
+import { AbilityId, BerryType, StatusEffect, WeatherType } from "../../../../src/enums/generated.ts";
 
 // moves: as fake-mon.mjs's `mon` takes them.
 const mon = (name, lv, types, ability, [hp, atk, def, spa, spd, spe], moves, field, curHp, boss = 0, next) => onGame({
@@ -41,9 +41,9 @@ const run = (phase, { party: ours = party, foes: theirs = foes, double = false, 
   const scene = { phaseManager: pm, getField: () => [...party, ...foes].filter(p => p.isOnField()), currentBattle: { waveIndex: 115, turn: 1, double, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
     ui: { mode: 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes, enemyModifiers };
   const { el } = mountHud({ scene });
-  const { teamPlan, tpHealProfile, tpSendScore, tpFight, tpTables, tpActs } = globalThis.__hud["35-team-plan"];
+  const { teamPlan, tpSendScore, tpFight, tpTables, tpActs } = globalThis.__hud["35-team-plan"];
   const { readTurn } = globalThis.__hud["25-turn"];
-  globalThis.__tp = { readTurn, teamPlan, drawTeamPlan: globalThis.__hud["95-render-team"].drawTeamPlan, tpHealProfile, tpSendScore, tpFight, tpTables, tpActs };
+  globalThis.__tp = { readTurn, teamPlan, drawTeamPlan: globalThis.__hud["95-render-team"].drawTeamPlan, tpSendScore, tpFight, tpTables, tpActs };
   const plan = readTurn(scene, turn => teamPlan(turn));
   return { plan, scene, nodes: globalThis.__tp.drawTeamPlan(plan) };
 };
@@ -144,14 +144,81 @@ assert.equal(plan.approxDoubles, false);
   // out (#113).
   assert.deepEqual(double.steps.map(x => x.entry), double.steps.map(() => "stay"), `no step pays to switch in a mon already out: ${JSON.stringify(double.steps)}`);
 }
-// Turn-end chip carries into the fight as a negative per-turn change.
+// A Charizard of 96 HP that fells a Ditto, as the fight plan's tables read them off a live turn whose turn end
+// `weather` sets. `held`: its items; `hp`: where it stands; `faster`: the Ditto hits it for 30 first.
+const zardFight = ({ held = [], hp = 96, weather = WeatherType.NONE, faster = false } = {}) => {
+  const { sceneTurnEndHp } = globalThis.__hud["10-damage"];
+  const zard = fakeMon("Charizard", 30, ["Fire", "Flying"], [96, 60, 55, 80, 60, 75], [["Flamethrower", "Fire", 90, "S"]], true, hp, { getHeldItems: () => held });
+  const ditto = fakeMon("Ditto", 30, ["Normal"], [100, 10, 10, 10, 10, faster ? 200 : 10], [["Tackle", "Normal", 40, "P"]], true, undefined,
+    { isPlayer: () => false, getOpponents: () => [zard] });
+  const stub = outcomeFrom({ "Charizard>Flamethrower>Ditto": [[1000], 1, 1], ...(faster ? { "Ditto>Tackle>Charizard": [[30], 1, 1] } : {}) });
+  const turn = fakeTurn({ live: true, party: [zard], foes: [ditto], outcome: stub, heal: (p, o) => sceneTurnEndHp({ weather }, p, o),
+    moves: () => (faster ? [{ name: "Tackle", type: "Normal", p: 1, score: 10, targets: [0] }] : []) });
+  return globalThis.__tp.tpFight(globalThis.__tp.tpTables(turn, [zard], [ditto], false), fightState({ oh: [hp], fh: [100], fs: [0] }), 0, 0, "free");
+};
+const heldOf = (name, fields = {}) => Object.assign(new ({ [name]: class { getStackCount() { return 1; } } })[name](), fields);
+// The fight plan's turn end lands its course's chip ahead of the berries, and leaves the Sitrus Berry to Landing, which
+// eats it once (game-code.md §3, §21, #1031). On 52 in a sandstorm, the storm's 6 takes it to 46, under half, and the
+// berry puts 24 back: 70, not the 46 of a berry read first, nor the 94 of one eaten twice.
 {
-  const { scene: s } = run(null);
-  const zard = mon("Charizard", 30, ["Fire","Flying"], "Blaze", [96,60,55,80,60,75], [["Flamethrower","Fire",90,"S"]], true);
-  s.arena = { weather: { weatherType: 3 } };
-  assert.deepEqual(globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpHealProfile(turn, zard)), { base: -6, pre: -6 }, "sandstorm chip in the profile, all of it ahead of the berries");
-  const held = Object.assign(new ({ BerryModifier: class { berryType = 0; getStackCount() { return 1; } } }).BerryModifier(), {});
-  assert.deepEqual(globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpHealProfile(turn, Object.assign(zard, { getHeldItems: () => [held] }))), { base: -6, pre: -6 }, "a Sitrus Berry is Landing's to eat, not the profile's");
+  const r = zardFight({ held: [heldOf("BerryModifier", { berryType: BerryType.SITRUS })], hp: 52, weather: WeatherType.SANDSTORM });
+  console.log(`== chip ahead of the berries\nCharizard ends on ${r.ends.win.mh}`);
+  assert.equal(r.ends.win.mh, 70);
+}
+// A full-HP Leftovers holder hit below full heals its sixteenth at that turn's end (game-code.md §21, #1031): its course
+// is read below full HP, where the heal is not capped away. An Enigma Berry beside it, which a neutral hit never feeds,
+// adds nothing to the course.
+{
+  const leftovers = heldOf("TurnHealModifier"), enigma = heldOf("BerryModifier", { berryType: BerryType.ENIGMA });
+  const [plain, fed, both] = [[], [leftovers], [leftovers, enigma]].map(held => zardFight({ held, faster: true }).ends.win.mh);
+  console.log(`== Leftovers once hit\nCharizard ends on ${+plain.toFixed(3)}, on ${+fed.toFixed(3)} with Leftovers`);
+  assert.ok(Math.abs(fed - plain - 6) < 1e-9, `${fed} − ${plain}`);
+  assert.equal(both, fed);
+}
+// The fight plan's turn end follows the course: a badly poisoned mon's chip grows by a sixteenth each turn end, and
+// only a summon starts its counter over (game-code.md §14, #1031). A 400 HP Muk sent in takes 25, 50, 75, 100 and 125,
+// 375 by turn 5, and the sixth fells it. Out on the field with its counter at 3, it takes 100, 125 and 150, and falls on
+// turn 4; switched back in, it starts over.
+{
+  const { tpFight, tpTables } = globalThis.__tp;
+  const { sceneTurnEndHp } = globalThis.__hud["10-damage"];
+  const muk = fakeMon("Muk", 50, ["Poison"], [400, 100, 100, 100, 100, 100], [], true, undefined, { status: { effect: StatusEffect.TOXIC, toxicTurnCount: 0 } });
+  const bag = fakeMon("Chansey", 50, ["Normal"], [999, 10, 10, 10, 10, 10], [], true);
+  const T = tpTables(fakeTurn({ live: true, party: [muk], foes: [bag], heal: (p, o) => sceneTurnEndHp({ field: [] }, p, o) }), [muk], [bag], false);
+  const downOn = r => r.lossBy.findIndex(x => x >= 1 - 1e-9) + 1;
+  const fight = (cur, ot, entry) => tpFight(T, fightState({ oh: [400], fh: [999], fs: [0], cur, ot }), 0, 0, entry);
+  const [fresh, out, back] = [fight([], [0], "free"), fight([0], [3], "stay"), fight([], [3], "switch")];
+  console.log(`== a Toxic ramp in the fight plan\nsent in, Muk falls on turn ${downOn(fresh)} · out with its counter at 3, on turn ${downOn(out)} · switched back in, on turn ${downOn(back)}`);
+  assert.deepEqual([downOn(fresh), downOn(out)], [6, 4]);
+  assert.equal(downOn(back), 5, "the switch turn's own turn end is the first of six");
+  // The same Muk on the foe's side: out on the field it keeps its counter; sent in, or switching in, it starts over.
+  const U = tpTables(fakeTurn({ live: true, party: [bag], foes: [muk], heal: (p, o) => sceneTurnEndHp({ field: [] }, p, o) }), [bag], [muk], false);
+  const foeDown = r => r.winBy.findIndex(x => x >= 1 - 1e-9) + 1;
+  const vs = (fcur, entering) => tpFight(U, fightState({ oh: [999], fh: [400], fs: [0], fcur, ft: [3] }), 0, 0, "free", null, entering);
+  assert.deepEqual([vs(0, false), vs(null, false), vs(0, true)].map(foeDown), [4, 6, 6]);
+}
+// The plan starts a badly poisoned mon's counter where the game has it, and carries it on while the mon stays out
+// (game-code.md §14, #1031). Muk fells a 100 HP Ditto in two hits, then stays in on Chansey, hitting for 55 a turn.
+// From a fresh count it ends the first exchange on 325, and its next three turn ends take 75, 100 and 125; from a count of
+// 2 already, on 225, and the next two take 125 and 150.
+{
+  const { teamPlanner } = globalThis.__hud["35-team-plan"];
+  const { sceneTurnEndHp } = globalThis.__hud["10-damage"];
+  const stub = outcomeFrom({ "Muk>Sludge Bomb>Ditto": [[60], 1, 1], "Muk>Sludge Bomb>Chansey": [[60], 1, 1] });
+  const steps = count => {
+    const muk = fakeMon("Muk", 50, ["Poison"], [400, 100, 100, 100, 100, 100], [["Sludge Bomb", "Poison", 90, "S"]], true, undefined,
+      { status: { effect: StatusEffect.TOXIC, toxicTurnCount: count } });
+    const foes = [fakeMon("Ditto", 50, ["Normal"], [100, 10, 10, 10, 10, 10], [["Splash", "Normal", 0, "X"]], true),
+      fakeMon("Chansey", 50, ["Normal"], [999, 10, 10, 10, 10, 10], [["Splash", "Normal", 0, "X"]], false)];
+    for (const f of foes) Object.assign(f, { isPlayer: () => false, getOpponents: () => [muk] });
+    const turn = fakeTurn({ live: true, party: [muk], foes, outcome: stub, heal: (p, o) => sceneTurnEndHp({ field: [] }, p, o),
+      trainer: { getName: () => "Ace", config: { isBoss: false }, isDouble: () => false } });
+    return teamPlanner(turn).view(null).steps.map(x => `${x.vs.name}: ${x.why}`);
+  };
+  const [fresh, ticked] = [steps(0), steps(2)];
+  console.log(`== a Toxic counter across a plan\nfrom 0: ${fresh.join(" › ")}\nfrom 2: ${ticked.join(" › ")}`);
+  assert.deepEqual(fresh, ["Ditto: KO · 81% left", "Chansey: falls · foe at 78%"]);
+  assert.deepEqual(ticked, ["Ditto: KO · 56% left", "Chansey: falls · foe at 89%"]);
 }
 // A pairing where a move of ours can steal a berry off the foe tables what each berry type the foe holds heals that
 // thief, uncapped, and the summary of the move says it steals; which berry it takes is Landing's draw (#646, #833,
@@ -188,7 +255,7 @@ assert.equal(plan.approxDoubles, false);
 // A foe holding Berries of 50, `n` Sitrus and `m` Enigma, as the fight plan's tables would: its Landing state at `hp`.
 const berryFoe = (hp, n = 0, m = 0) => {
   const facts = { maxHp: 200, ...(n ? { sitrus: { heal: 50, left: n, keep: 0 } } : {}), ...(m ? { enigma: { heal: 50, left: m, keep: 0 } } : {}) };
-  return { foeState: [globalThis.__hud["10-damage"].stateOf(facts, hp)], foeHeal: [{ base: 0, pre: 0 }] };
+  return { foeState: [globalThis.__hud["10-damage"].stateOf(facts, hp)], foeCourse: [{ base: 0, pre: 0 }] };
 };
 // Our Bug Bite's summary, its steals healing us `heal` off a Sitrus or an Enigma.
 const bugBite = (dmg, heal = 0, extra = {}) => ({ dmg, steals: { 0: heal, 2: heal }, ...extra });
@@ -196,7 +263,7 @@ const bugBite = (dmg, heal = 0, extra = {}) => ({ dmg, steals: { 0: heal, 2: hea
 {
   const { tpFight } = globalThis.__tp;
   const foe = berryFoe(100, 1);
-  const base = { theirs: [[{ dmg: 10, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [null], ...foe };
+  const base = { theirs: [[{ dmg: 10, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourCourse: [null], ...foe };
   // A 60 into 100 HP: it eats its Sitrus at 40, and the Landing state that fight leaves holds none (#847).
   const fu = tpFight({ ...base, ours: [[{ dmg: 60, e: 1 }]] }, fightState({ oh: [100], fh: [100], fs: [0] }), 0, 0, "free").ends.win.foe;
   const T = { ...base, ours: [[bugBite(50, 50)]] };
@@ -210,7 +277,7 @@ const bugBite = (dmg, heal = 0, extra = {}) => ({ dmg, steals: { 0: heal, 2: hea
 {
   const { tpFight } = globalThis.__tp;
   const foe = berryFoe(100, 0, 1);
-  const base = { theirs: [[{ dmg: 10, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [null], ...foe };
+  const base = { theirs: [[{ dmg: 10, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourCourse: [null], ...foe };
   // A super-effective 60 into 100 HP: it eats its Enigma at 40 and goes down on the third hit.
   const fu = tpFight({ ...base, ours: [[{ dmg: 60, e: 2 }]] }, fightState({ oh: [100], fh: [100], fs: [0] }), 0, 0, "free").ends.win.foe;
   const T = { ...base, ours: [[bugBite(50, 50)]] };
@@ -220,7 +287,7 @@ const bugBite = (dmg, heal = 0, extra = {}) => ({ dmg, steals: { 0: heal, 2: hea
 // A switch-in's entry turn ends before our Bug Bite has gone off, so the foe still eats its own Sitrus then (#646).
 {
   const { tpFight } = globalThis.__tp;
-  const T = { ours: [[bugBite(100)]], theirs: [[{ dmg: 10, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [null], ...berryFoe(90, 1) };
+  const T = { ours: [[bugBite(100)]], theirs: [[{ dmg: 10, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourCourse: [null], ...berryFoe(90, 1) };
   const st = fightState({ oh: [200], fh: [90], fs: [0] });
   const [switched, free] = ["switch", "free"].map(e => tpFight(T, st, 0, 0, e));
   console.log(`== a bug bite switch-in's entry turn\nswitch: won in ${switched.ends.win.turns} · free: won in ${free.ends.win.turns}`);
@@ -232,7 +299,7 @@ const bugBite = (dmg, heal = 0, extra = {}) => ({ dmg, steals: { 0: heal, 2: hea
   const { tpFight } = globalThis.__tp;
   // The foe outspeeds; half its hits fell our 150 HP before we move, half take 50.
   const T = { ours: [[bugBite(40)]], theirs: [[{ dmg: 100, e: 1, use: [{ r: 2, p: 0.5 }, { r: 0.5, p: 0.5 }] }]], first: [[1]],
-    ourMax: [200], foeMax: [200], ourHeal: [null], ...berryFoe(90, 1) };
+    ourMax: [200], foeMax: [200], ourCourse: [null], ...berryFoe(90, 1) };
   const r = tpFight(T, fightState({ oh: [150], fh: [90], fs: [0] }), 0, 0, "free");
   console.log(`== bug bite that never went off\nlost with the foe on ${r.ends.loss.fh} on average`);
   // Felled on turn 1 (½): it ate its Sitrus, 140. Felled on turn 2 (¼) or 3 (¼) after our steal: 50, then 10.
@@ -241,7 +308,7 @@ const bugBite = (dmg, heal = 0, extra = {}) => ({ dmg, steals: { 0: heal, 2: hea
 // A stealing move pinned on a pairing whose own pick steals nothing prices the steal (#113, #833)
 {
   const { tpFight } = globalThis.__tp;
-  const T = { ours: [[{ dmg: 80, steals: null }]], theirs: [[{ dmg: 1, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [null], ...berryFoe(200, 1) };
+  const T = { ours: [[{ dmg: 80, steals: null }]], theirs: [[{ dmg: 1, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourCourse: [null], ...berryFoe(200, 1) };
   const fight = over => tpFight(T, fightState({ oh: [200], fh: [200], fs: [0] }), 0, 0, "free", over).ends.win.turns;
   const [own, pinned] = [null, bugBite(80)].map(fight);
   console.log(`== a pinned bug bite\nthe pairing's own pick wins in ${own} · a pinned Bug Bite in ${pinned}`);
@@ -250,7 +317,7 @@ const bugBite = (dmg, heal = 0, extra = {}) => ({ dmg, steals: { 0: heal, 2: hea
 // A Sitrus x2 holder loses both berries to two landed Bug Bites, and the thief eats each (#833)
 {
   const { tpFight } = globalThis.__tp;
-  const T = { ours: [[bugBite(30, 30)]], theirs: [[{ dmg: 20, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [null], ...berryFoe(200, 2) };
+  const T = { ours: [[bugBite(30, 30)]], theirs: [[{ dmg: 20, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourCourse: [null], ...berryFoe(200, 2) };
   const r = tpFight(T, fightState({ oh: [150], fh: [200], fs: [0] }), 0, 0, "free");
   console.log(`== bug bite into a Sitrus x2\nwon in ${r.ends.win.turns} on ${r.ends.win.mh} HP · ${r.foe.sitrus} Sitrus left`);
   assert.equal(r.ends.win.turns, 7, "two steals by turn 2, so the foe at 80 on turn 4 has no Sitrus left: seven 30s fell it");
@@ -263,7 +330,7 @@ const bugBite = (dmg, heal = 0, extra = {}) => ({ dmg, steals: { 0: heal, 2: hea
 // use's 30 stands. A heal ahead of the chip would be capped at 200 and end it on 140.
 {
   const { tpFight } = globalThis.__tp;
-  const T = { ours: [[bugBite(120, 50, { userCost: { strike: 30 } })]], theirs: [[{ dmg: 0, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [null], ...berryFoe(200, 1) };
+  const T = { ours: [[bugBite(120, 50, { userCost: { strike: 30 } })]], theirs: [[{ dmg: 0, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourCourse: [null], ...berryFoe(200, 1) };
   const r = tpFight(T, fightState({ oh: [200], fh: [200], fs: [0] }), 0, 0, "free");
   console.log(`== a thief's own chip\na Bug Bite paying 30 a use from full wins on ${r.ends.win.mh} HP in ${r.ends.win.turns}`);
   assert.deepEqual([r.ends.win.turns, r.ends.win.mh], [2, 170]);
@@ -271,7 +338,7 @@ const bugBite = (dmg, heal = 0, extra = {}) => ({ dmg, steals: { 0: heal, 2: hea
 // A thief its own chip downs eats nothing, and the berry is gone all the same (game-code.md §3): 30 of chip off 20 HP.
 {
   const { tpFight } = globalThis.__tp;
-  const T = { ours: [[bugBite(120, 50, { userCost: { strike: 30 } })]], theirs: [[{ dmg: 0, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [null], ...berryFoe(200, 1) };
+  const T = { ours: [[bugBite(120, 50, { userCost: { strike: 30 } })]], theirs: [[{ dmg: 0, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourCourse: [null], ...berryFoe(200, 1) };
   const r = tpFight(T, fightState({ oh: [20], fh: [200], fs: [0] }), 0, 0, "free");
   assert.deepEqual([r.pLoss, r.ends.loss.mh, r.ends.loss.foe.sitrus], [1, 0, 0]);
 }
@@ -279,7 +346,7 @@ const bugBite = (dmg, heal = 0, extra = {}) => ({ dmg, steals: { 0: heal, 2: hea
 // two of ours fell its 200.
 {
   const { tpFight } = globalThis.__tp;
-  const T = { ours: [[{ dmg: 100 }]], theirs: [[{ dmg: 100, entry: 100, e: 1 }]], first: [[1]], ourMax: [150], foeMax: [200], ourHeal: [null], foeHeal: [null] };
+  const T = { ours: [[{ dmg: 100 }]], theirs: [[{ dmg: 100, entry: 100, e: 1 }]], first: [[1]], ourMax: [150], foeMax: [200], ourCourse: [null], foeCourse: [null] };
   const st = () => fightState({ oh: [150], fh: [200], fs: [0] });
   const fight = (entry, entering) => tpFight(T, st(), 0, 0, entry, null, entering);
   const [stays, enters] = [false, true].map(e => fight("stay", e));
@@ -296,7 +363,7 @@ const bugBite = (dmg, heal = 0, extra = {}) => ({ dmg, steals: { 0: heal, 2: hea
 {
   const { tpFight } = globalThis.__tp;
   const T = ourEntry => ({ ours: [[{ name: "Surf", dmg: 50 }]], theirs: [[{ dmg: 100, entry: 100, e: 1 }]], first: [[0]], ourMax: [150], foeMax: [200],
-    ourHeal: [null], foeHeal: [null], ...(ourEntry ? { ourEntry: [[ourEntry]] } : {}) });
+    ourCourse: [null], foeCourse: [null], ...(ourEntry ? { ourEntry: [[ourEntry]] } : {}) });
   const st = () => fightState({ oh: [150], fh: [200], fs: [0] });
   const entry = { Surf: { name: "Surf", dmg: 100, e: 2 } };
   const [plain, priced] = [null, entry].map(x => tpFight(T(x), st(), 0, 0, "stay", null, true));
@@ -366,7 +433,7 @@ const bugBite = (dmg, heal = 0, extra = {}) => ({ dmg, steals: { 0: heal, 2: hea
 {
   const { tpFight } = globalThis.__tp;
   const rolls = [{ r: 0.92, p: 0.5 }, { r: 1.08, p: 0.5 }];
-  const T = { ours: [[{ dmg: 100, use: rolls }]], theirs: [[{ dmg: 100, e: 1, use: rolls }]], first: [[0.5]], ourMax: [200], foeMax: [200], ourHeal: [null], foeHeal: [null] };
+  const T = { ours: [[{ dmg: 100, use: rolls }]], theirs: [[{ dmg: 100, e: 1, use: rolls }]], first: [[0.5]], ourMax: [200], foeMax: [200], ourCourse: [null], foeCourse: [null] };
   const r = tpFight(T, fightState({ oh: [200], fh: [200], fs: [0] }), 0, 0, "free");
   console.log(`== mirror at a speed tie\nwin ${r.pWin.toFixed(3)} · loss ${r.pLoss.toFixed(3)}`);
   assert.ok(Math.abs(r.pWin - r.pLoss) < 1e-9 && Math.abs(r.pWin + r.pLoss - 1) < 1e-9, `symmetric (${r.pWin}, ${r.pLoss})`);
@@ -379,7 +446,7 @@ const bugBite = (dmg, heal = 0, extra = {}) => ({ dmg, steals: { 0: heal, 2: hea
 {
   const { tpFight } = globalThis.__tp;
   const T = { ours: [[{ dmg: 100 }]], theirs: [[{ dmg: 120, e: 1, use: [{ r: 0.7, p: 0.4 }, { r: 0.9, p: 0.3 }, { r: 1, p: 0.3 }] }]],
-    first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [null], foeHeal: [null],
+    first: [[0]], ourMax: [200], foeMax: [200], ourCourse: [null], foeCourse: [null],
     ourState: [globalThis.__hud["10-damage"].stateOf({ maxHp: 200, sitrus: { heal: 50, left: 1, keep: 0 } }, 200)] };
   const r = tpFight(T, fightState({ oh: [200], fh: [200], fs: [0] }), 0, 0, "free");
   console.log(`== an ending's one branch\nwin ${r.pWin} · ${r.ends.win.mh.toFixed(2)} HP · berry ${r.ends.win.us.sitrus ? "kept" : "eaten"}`);
@@ -393,7 +460,7 @@ const bugBite = (dmg, heal = 0, extra = {}) => ({ dmg, steals: { 0: heal, 2: hea
 {
   const { tpFight, tpActs } = globalThis.__tp;
   const T = { ours: [[{ dmg: 50 }]], theirs: [[{ dmg: 100, e: 1, use: [{ r: 0.9, p: 0.1 }, { r: 1, p: 0.6 }, { r: 1.1, p: 0.3 }] }]],
-    first: [[1]], ourMax: [80], foeMax: [101], ourHeal: [null], foeHeal: [null] };
+    first: [[1]], ourMax: [80], foeMax: [101], ourCourse: [null], foeCourse: [null] };
   const r = tpFight(T, fightState({ oh: [80], fh: [101], fs: [0] }), 0, 0, "free");
   assert.equal(r.pLoss, 1);
   assert.ok(r.fh < 101 && r.fh > 101 - 1e-9, `the knife edge is still there: ${r.fh}`);
@@ -404,7 +471,7 @@ const bugBite = (dmg, heal = 0, extra = {}) => ({ dmg, steals: { 0: heal, 2: hea
 // Drain (#90): the foe heals 30 of each 60 it lands, so our 100 a turn needs a fourth turn (300 → 230 → 160 → 90).
 {
   const { tpFight } = globalThis.__tp;
-  const T = drain => ({ ours: [[{ dmg: 100 }]], theirs: [[{ dmg: 60, e: 1, drain }]], first: [[0]], ourMax: [400], foeMax: [300], ourHeal: [null], foeHeal: [null] });
+  const T = drain => ({ ours: [[{ dmg: 100 }]], theirs: [[{ dmg: 60, e: 1, drain }]], first: [[0]], ourMax: [400], foeMax: [300], ourCourse: [null], foeCourse: [null] });
   const st = () => fightState({ oh: [400], fh: [300], fs: [0] });
   const [plain, drained] = [0, 0.5].map(d => tpFight(T(d), st(), 0, 0, "free"));
   console.log(`== drain\n${plain.turns} → ${drained.turns} turns`);
@@ -491,7 +558,7 @@ const sure = d => [{ d, p: 1, n: 1 }];
   const { tpFight } = globalThis.__tp;
   const { stateOf } = globalThis.__hud["10-damage"];
   const bell = { stacks: 4, charm: 1 };
-  const T = (first, ours = {}, foe = {}) => ({ ours: [[{ dmg: 80 }]], theirs: [[{ dmg: 60, e: 1 }]], first: [[first]], ourMax: [200], foeMax: [200], ourHeal: [null], foeHeal: [null],
+  const T = (first, ours = {}, foe = {}) => ({ ours: [[{ dmg: 80 }]], theirs: [[{ dmg: 60, e: 1 }]], first: [[first]], ourMax: [200], foeMax: [200], ourCourse: [null], foeCourse: [null],
     ourState: [stateOf({ maxHp: 200, ...ours }, 200)], foeState: [stateOf({ maxHp: 200, ...foe }, 200)] });
   const fight = (t, oh, fh) => tpFight(t, fightState({ oh: [oh], fh: [fh], fs: [0] }), 0, 0, "free");
   const [belled, plain, slower] = [T(0, { shellBell: bell }), T(0), T(1, { shellBell: bell })].map(t => fight(t, 50, 160));
@@ -768,7 +835,7 @@ const sure = d => [{ d, p: 1, n: 1 }];
   const st = (fh = 200) => fightState({ oh: [400], fh: [fh], fs: [0] });
   // `n` Enigma Berries of 50.
   const holder = (max, n) => globalThis.__hud["10-damage"].stateOf({ maxHp: max, enigma: { heal: 50, left: n, keep: 0 } }, max);
-  const T = (us, them, n, foeHeal = null) => ({ ours: [[us]], theirs: [[them]], first: [[0]], ourMax: [400], foeMax: [200], ourHeal: [null], foeHeal: [foeHeal],
+  const T = (us, them, n, foeCourse = null) => ({ ours: [[us]], theirs: [[them]], first: [[0]], ourMax: [400], foeMax: [200], ourCourse: [null], foeCourse: [foeCourse],
     ...(n ? { foeState: [holder(200, n)] } : {}) });
   // 70 a turn into 200: 130 → 180 → 110 → 40 → down on turn 4 with one berry; the second puts 50 back on turn 2.
   const [one, two] = [1, 2].map(n => tpFight(T({ dmg: 70, e: 2 }, { dmg: 1, e: 1 }, n), st(), 0, 0, "free"));
@@ -792,8 +859,8 @@ const sure = d => [{ d, p: 1, n: 1 }];
 {
   const { tpFight } = globalThis.__tp;
   const boss = globalThis.__hud["10-damage"].stateOf({ maxHp: 300, boss: true, segs: 3, segSize: 100, idx: 2, minIdx: 0 }, 300);
-  const T = { ours: [[{ dmg: 0, e: 1 }]], theirs: [[{ dmg: 0, e: 1 }]], first: [[0]], ourMax: [100], foeMax: [300], ourHeal: [null],
-    foeHeal: [{ base: -150, pre: -150 }], foeState: [boss] };
+  const T = { ours: [[{ dmg: 0, e: 1 }]], theirs: [[{ dmg: 0, e: 1 }]], first: [[0]], ourMax: [100], foeMax: [300], ourCourse: [null],
+    foeCourse: [{ base: -150, pre: -150 }], foeState: [boss] };
   const r = tpFight(T, fightState({ oh: [100], fh: [300], fs: [2] }), 0, 0, "free");
   console.log(`== turn-end chip into a boss's bars\ndown by turn: ${r.winBy.slice(0, 3).join(" ")}`);
   assert.deepEqual(r.winBy.slice(0, 3), [0, 0, 1]);
@@ -805,10 +872,10 @@ const sure = d => [{ d, p: 1, n: 1 }];
   const { tpFight } = globalThis.__tp;
   const { stateOf } = globalThis.__hud["10-damage"];
   const behind = stateOf({ maxHp: 200, hp: 200, sub: 50, enigma: { heal: 50, left: 1, keep: 0 } });
-  const foe = tpFight({ ours: [[{ dmg: 70, e: 2 }]], theirs: [[{ dmg: 1, e: 1 }]], first: [[0]], ourMax: [400], foeMax: [200], ourHeal: [null],
-    foeHeal: [null], foeState: [behind] }, fightState({ oh: [400], fh: [200], fs: [0] }), 0, 0, "free");
-  const us = tpFight({ ours: [[{ dmg: 1, e: 1 }]], theirs: [[{ dmg: 70, e: 2 }]], first: [[1]], ourMax: [200], foeMax: [400], ourHeal: [null],
-    foeHeal: [null], ourState: [behind] }, fightState({ oh: [200], fh: [400], fs: [0] }), 0, 0, "free");
+  const foe = tpFight({ ours: [[{ dmg: 70, e: 2 }]], theirs: [[{ dmg: 1, e: 1 }]], first: [[0]], ourMax: [400], foeMax: [200], ourCourse: [null],
+    foeCourse: [null], foeState: [behind] }, fightState({ oh: [400], fh: [200], fs: [0] }), 0, 0, "free");
+  const us = tpFight({ ours: [[{ dmg: 1, e: 1 }]], theirs: [[{ dmg: 70, e: 2 }]], first: [[1]], ourMax: [200], foeMax: [400], ourCourse: [null],
+    foeCourse: [null], ourState: [behind] }, fightState({ oh: [200], fh: [400], fs: [0] }), 0, 0, "free");
   console.log(`== an Enigma Berry behind a Substitute\nthe foe's falls on turn ${foe.turns}, ours on turn ${us.turns}`);
   assert.deepEqual([foe.pWin, foe.turns, us.pLoss, us.turns], [1, 5, 1, 5]);
 }
@@ -866,16 +933,14 @@ const sure = d => [{ d, p: 1, n: 1 }];
     }
   }
 }
-// Our berries are our Landing state's, the Enigma its own quarter whatever heals after it at the turn end, and the
-// profile the turn-end change alone (#822, #847).
+// Our berries are our Landing state's, the Enigma its own quarter whatever heals after it at the turn end (#822, #847).
 {
   const { scene: s } = run(null);
   const zard = mon("Charizard", 30, ["Fire","Flying"], "Blaze", [96,60,55,80,60,75], [["Flamethrower","Fire",90,"S"]], true);
   const item = (name, fields = {}) => Object.assign(new ({ [name]: class { getStackCount() { return 1; } } })[name](), fields);
   const held = [item("BerryModifier", { berryType: 2 }), item("TurnHealModifier")];
-  const read = p => globalThis.__tp.readTurn(s, turn => ({ prof: globalThis.__tp.tpHealProfile(turn, p), state: globalThis.__tp.tpTables(turn, [p], [foes[0]]).ourState[0] }));
-  const { prof, state } = read(Object.assign(zard, { getHeldItems: () => held }));
-  assert.deepEqual(prof, { base: 6, pre: 0 }, "Leftovers in the profile, and no berry");
+  const read = p => globalThis.__tp.readTurn(s, turn => ({ state: globalThis.__tp.tpTables(turn, [p], [foes[0]]).ourState[0] }));
+  const { state } = read(Object.assign(zard, { getHeldItems: () => held }));
   assert.deepEqual([state.enigmas, state.facts.enigma], [1, { heal: 24, left: 1, keep: 0 }], "a quarter of 96, though Leftovers would top 72 + 24 past max, and no Berry Pouch");
   s.modifiers = [item("PreserveBerryModifier")];
   assert.equal(read(zard).state.facts.enigma.keep, 0.3, "our Berry Pouch, one stack (#822)");
@@ -891,7 +956,7 @@ const pouched = (type, keep) => globalThis.__hud["10-damage"].stateOf({ maxHp: 4
 {
   const { tpFight } = globalThis.__tp;
   const T = keep => ({ ours: [[{ dmg: 100, e: 1 }]], theirs: [[{ dmg: 120, e: 2 }]], first: [[0]], ourMax: [400], foeMax: [300],
-    ourHeal: [null], foeHeal: [null], ourState: [pouched("enigma", keep)] });
+    ourCourse: [null], foeCourse: [null], ourState: [pouched("enigma", keep)] });
   const fight = keep => tpFight(T(keep), fightState({ oh: [400], fh: [300], fs: [0] }), 0, 0, "free");
   const [old, none, one, three] = [null, 0, 0.3, 0.9].map(fight);
   console.log(`== a Berry Pouch keeps our Enigma Berry (#822)\nwe win on ${none.ends.win.mh} HP with no Pouch, ` +
@@ -908,7 +973,7 @@ const pouched = (type, keep) => globalThis.__hud["10-damage"].stateOf({ maxHp: 4
 {
   const { tpFight } = globalThis.__tp;
   const T = keep => ({ ours: [[{ dmg: 100, e: 1 }]], theirs: [[{ dmg: 120, e: 1 }]], first: [[0]], ourMax: [400], foeMax: [500],
-    ourHeal: [null], foeHeal: [null], ourState: [pouched("sitrus", keep)] });
+    ourCourse: [null], foeCourse: [null], ourState: [pouched("sitrus", keep)] });
   const fight = keep => tpFight(T(keep), fightState({ oh: [400], fh: [500], fs: [0] }), 0, 0, "free");
   const [old, none, one, three] = [null, 0, 0.3, 0.9].map(fight);
   const near = (x, want, msg) => assert.ok(Math.abs(x - want) < 1e-9, `${msg}: ${x}`);
@@ -926,7 +991,7 @@ const pouched = (type, keep) => globalThis.__hud["10-damage"].stateOf({ maxHp: 4
 {
   const { tpFight } = globalThis.__tp;
   const band = globalThis.__hud["10-damage"].stateOf({ maxHp: 10, pFocus: 0.1 }, 10);
-  const T = { ours: [[{ dmg: 9.5, e: 1 }]], theirs: [[{ dmg: 1, e: 1 }]], first: [[0]], ourMax: [400], foeMax: [10], ourHeal: [null], foeHeal: [null], foeState: [band] };
+  const T = { ours: [[{ dmg: 9.5, e: 1 }]], theirs: [[{ dmg: 1, e: 1 }]], first: [[0]], ourMax: [400], foeMax: [10], ourCourse: [null], foeCourse: [null], foeState: [band] };
   const r = tpFight(T, fightState({ oh: [400], fh: [10], fs: [0] }), 0, 0, "free");
   console.log(`== a Focus Band holder hit to a sliver\ndown by turn 1: ${r.winBy[0].toFixed(3)} · by turn 2: ${r.winBy[1].toFixed(3)}`);
   assert.ok(Math.abs(r.winBy[0] - 0.9) < 1e-9 && Math.abs(r.winBy[1] - 0.99) < 1e-9, `${r.winBy}`);
@@ -953,7 +1018,7 @@ const pouched = (type, keep) => globalThis.__hud["10-damage"].stateOf({ maxHp: 4
 {
   const { tpFight, tpSig } = globalThis.__hud["35-team-plan"];
   const D = globalThis.__hud["10-damage"];
-  const T = { ours: [[{ dmg: 150, e: 1 }]], theirs: [[{ dmg: 1, e: 1 }]], first: [[0]], ourMax: [400], foeMax: [100], ourHeal: [null], foeHeal: [null],
+  const T = { ours: [[{ dmg: 150, e: 1 }]], theirs: [[{ dmg: 1, e: 1 }]], first: [[0]], ourMax: [400], foeMax: [100], ourCourse: [null], foeCourse: [null],
     foeState: [D.stateOf({ maxHp: 100, revive: 50 }, 100)], memo: new Map() };
   const at = fu => fightState({ oh: [400], fh: [50], fs: [0], fu });
   const spent = D.stateOf(T.foeState[0].facts, 50, 0, { revived: true });
@@ -969,7 +1034,7 @@ const pouched = (type, keep) => globalThis.__hud["10-damage"].stateOf({ maxHp: 4
 {
   const { tpFight, tpSig } = globalThis.__hud["35-team-plan"];
   const D = globalThis.__hud["10-damage"];
-  const T = { ours: [[{ dmg: 150, e: 1 }]], theirs: [[{ dmg: 1, e: 1 }]], first: [[0]], ourMax: [400], foeMax: [100], ourHeal: [null], foeHeal: [null],
+  const T = { ours: [[{ dmg: 150, e: 1 }]], theirs: [[{ dmg: 1, e: 1 }]], first: [[0]], ourMax: [400], foeMax: [100], ourCourse: [null], foeCourse: [null],
     foeState: [D.stateOf({ maxHp: 100, disguise: { chip: 12 } }, 100)], memo: new Map() };
   const at = fu => fightState({ oh: [400], fh: [88], fs: [0], fu });
   const busted = D.stateOf(T.foeState[0].facts, 88, 0, { busted: true });

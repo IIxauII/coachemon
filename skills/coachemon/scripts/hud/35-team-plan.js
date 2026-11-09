@@ -3,9 +3,9 @@
 // one foe at a time.
 import { battleMoveset, iconOf, squeezeDist } from "./01-core.js";
 import { benched, koCurve, koTurns, land, landTurnEnd, landingKey, luckKey, stateOf, useOf } from "./10-damage.js";
-import { actionOrder, afterSteals, attemptsLost, entryOutcomes, hitsOn, koBoost, koBoostAfter, koBoostText, koStageFactor, laterUse, ourTeraTurn, paralysed, sendInAt, sendInBase, stealCounts, stealHeals, stealRates, threatFrom, tokenOdds, tokenShift, unnervedBy } from "./30-planner.js";
+import { actionOrder, afterSteals, attemptsLost, entryOutcomes, fightCourse, hitsOn, koBoost, koBoostAfter, koBoostText, koStageFactor, laterUse, ourTeraTurn, paralysed, sendInAt, sendInBase, stealCounts, stealHeals, stealRates, threatFrom, tokenOdds, tokenShift, unnervedBy } from "./30-planner.js";
 
-// @only tests: tpHealProfile, tpSendScore, tpFight, tpTables, tpActs
+// @only tests: tpSendScore, tpFight, tpTables, tpActs
 const TP_BEAM = 24;
 const TP_TURNS = 15;
 const TP_BRANCHES = 4;
@@ -130,12 +130,6 @@ export const tpSendScore = (T, st, fi, mi) => {
   return typeof x === "number" ? x : sendInAt(x, st.fh[fi], T.foeMax[fi], st.oh[mi], T.ourMax[mi]);
 };
 
-// Read at 75 % HP. Gotcha: the Sitrus Berry stays out, since Landing's turn end eats it.
-const tpHealAt = (turn, p, hp = Math.ceil(p.getMaxHp() * 0.75), beforeBerries = false) => {
-  try { return turn.turnEndHp(Object.create(p, { hp: { value: hp } }), { hp, beforeBerries, sitrus: false }) || 0; } catch { return 0; }
-};
-// `base` recurs every turn, negative when chip outweighs the heals, and `pre` is its part ahead of the berries.
-export const tpHealProfile = (turn, p) => ({ base: tpHealAt(turn, p), pre: tpHealAt(turn, p, undefined, true) });
 // `facing`: the foe the first exchange is against, the only one a pinned move's own order is read for. `entering`: it
 // is switching in, so `ourEntry[mi][fi]` holds our moves by name at the typing it comes in at, where it Teras later.
 export const tpTables = (turn, party, foes, double = false, facing = null, entering = false) => {
@@ -158,7 +152,7 @@ export const tpTables = (turn, party, foes, double = false, facing = null, enter
     // Landing states, each reopened at the HP and bar the fight carries.
     ourState: party.map(p => turn.mon(p).state), foeState: foes.map(f => turn.mon(f).state),
     ourMax: party.map(p => p.getMaxHp()), foeMax: foes.map(f => f.getMaxHp()),
-    ourHeal: party.map(p => tpHealProfile(turn, p)), foeHeal: foes.map(p => tpHealProfile(turn, p)),
+    ourCourse: party.map(p => fightCourse(turn, p)), foeCourse: foes.map(f => fightCourse(turn, f)),
     // `steals[mi][fi]`: what each berry type the foe holds heals our thief, as `stealHeals` gives it, where a move of ours
     // can steal one.
     steals: party.map(me => foes.map(f => (turn.outcomes(me, f).some(o => o?.steals) ? stealHeals(turn, me, f) : null))),
@@ -191,7 +185,7 @@ const tpWithTera = (T, U, mi) => {
     ...T, memo: new Map(),
     ours: row(T.ours, U.ours), first: row(T.first, U.first), firstBy: row(T.firstBy, U.firstBy), ourEntry: row(T.ourEntry, U.ourEntry),
     theirs: col(T.theirs, U.theirs), send: col(T.send, U.send), fromUs: col(T.fromUs, U.fromUs),
-    ourHeal: row(T.ourHeal, U.ourHeal), tok: row(T.tok, U.tok), ourState: row(T.ourState, U.ourState), steals: row(T.steals, U.steals),
+    ourCourse: row(T.ourCourse, U.ourCourse), tok: row(T.tok, U.tok), ourState: row(T.ourState, U.ourState), steals: row(T.steals, U.steals),
     firstPara: row(T.firstPara, U.firstPara), firstParaBy: row(T.firstParaBy, U.firstParaBy),
     fromFoe: row(T.fromFoe, U.fromFoe), ourItems: row(T.ourItems, U.ourItems),
   };
@@ -200,7 +194,7 @@ const tpWithTera = (T, U, mi) => {
 // Wave status tokens and item thieves (30-planner.js). `fromUs[fi][mi]` is what foe `fi` steals from our `mi`, and
 // `fromFoe[mi][fi]` the reverse; `ourItems` / `foeItems` are each mon's turn-end HP change after k steals.
 const tpWear = (turn, party, foes, ours, faced = () => true) => {
-  const heal = p => tpHealAt(turn, p);
+  const heal = p => fightCourse(turn, p).base;
   const tok = party.map(me => {
     const odds = foes[0] ? tokenOdds(turn, foes[0], me) : null;
     return odds && { odds, shift: tokenShift(odds, me, heal), para: odds.tokens.filter(x => x.effect === StatusEffect.PARALYSIS).reduce((t, x) => t + x.share, 0) };
@@ -225,8 +219,9 @@ const tpStolen = (byCount, fixed, mean) => (byCount ? stealCounts(fixed, mean).r
 
 // Carried in `st` besides HP: `ox` the landed enemy hits each of ours has taken (wave status tokens), `od` / `og` the
 // Mini Black Hole and Grip Claw steals from it, `fd` / `fg` the same from each foe, `ok` / `fk` the KOs each side has
-// scored for its on-KO boosts, and `ou` / `fu` each mon's last Landing state, read for its discrete part alone (null for
-// none yet), so the berries our steals took off a foe stay gone. Returns the likelier ending's state with `pWin`,
+// scored for its on-KO boosts, `ou` / `fu` each mon's last Landing state, read for its discrete part alone (null for
+// none yet), so the berries our steals took off a foe stay gone, and `ot` / `ft` where each mon's toxic counter stands,
+// read only while it stays out and its course moves (game-code.md §14). Returns the likelier ending's state with `pWin`,
 // `pLoss`, `pStall`, all three `ends`, and `winBy` / `lossBy`. `over` pins our move for this exchange only (#113), and is
 // never memoised: the key names the pair, not the move.
 // `entering`: the foe spends this exchange's first turn switching in and does not attack, so a switch of ours made that
@@ -234,6 +229,7 @@ const tpStolen = (byCount, fixed, mean) => (byCount ? stealCounts(fixed, mean).r
 // Where the tables hold no state, a side is a plain HP pool at its max HP.
 const tpOurFacts = (T, mi) => T.ourState?.[mi]?.facts ?? { maxHp: T.ourMax[mi] };
 const tpFoeFacts = (T, fi) => T.foeState?.[fi]?.facts ?? { maxHp: T.foeMax[fi] };
+const tpMoves = course => course?.flat === false;
 export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => {
   const faints = st.oh.filter(hp => hp < 1).length + st.fh.filter(hp => hp < 1).length;
   // (game-code.md §18, #1004)
@@ -246,7 +242,10 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
   const nKey = n => (typeof n === "object" ? `${n.own}/${n.all}` : n);
   const ourFacts = tpOurFacts(T, mi), foeFacts = tpFoeFacts(T, fi);
   const me0 = stateOf(ourFacts, st.oh[mi], 0, st.ou?.[mi]), foe0 = stateOf(foeFacts, st.fh[fi], st.fs[fi], st.fu?.[fi]);
-  const key = !over && T.memo && [mi, fi, entry, entering, Math.round(st.oh[mi]), landingKey(me0), Math.round(st.fh[fi]), landingKey(foe0), nKey(nUs), nKey(nFoe),
+  const ourCourse = T.ourCourse?.[mi], foeCourse = T.foeCourse?.[fi];
+  const ourAt = tpMoves(ourCourse) && st.cur?.includes(mi) ? st.ot[mi] : 0;
+  const foeAt = tpMoves(foeCourse) && st.fcur === fi && !entering ? st.ft[fi] : 0;
+  const key = !over && T.memo && [mi, fi, entry, entering, Math.round(st.oh[mi]), landingKey(me0), Math.round(st.fh[fi]), landingKey(foe0), nKey(nUs), nKey(nFoe), ourAt, foeAt,
     ...[st.ox[mi], st.od[mi], st.og[mi], st.fd[fi], st.fg[fi]].map(x => Math.round(x * 20))].join();
   if (key && T.memo.has(key)) return T.memo.get(key);
   const us = over ?? T.ours[mi][fi], them = T.theirs[fi][mi];
@@ -300,12 +299,16 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
       return c;
     });
   };
-  // `prof`'s signed change through `s`'s turn end, `extra` after the berries.
-  const ended = (s, prof, extra, eats) => landTurnEnd(s, { before: prof?.pre ?? 0, after: (prof?.base ?? 0) - (prof?.pre ?? 0) + extra, eats, whole: true });
+  // `course`'s signed change at its `k`-th turn end through `s`'s, `extra` after the berries. A course that never moves
+  // may be a bare `{ base, pre }`.
+  const ended = (s, course, k, extra, eats) => landTurnEnd(s, { before: course?.pre ?? 0,
+    after: (tpMoves(course) ? course.at(k) : course?.base ?? 0) - (course?.pre ?? 0) + extra, eats, whole: true });
+  // Gotcha: a switch turn has a turn end of its own, ahead of turn 1's.
+  const sw = entry === "switch" ? 1 : 0;
   // Both sides' turn ends, a branch for each pair of outcomes.
   const endTurn = b => {
-    const mine = ended(b.me, T.ourHeal?.[mi], (tok ? tok.shift * by(turns) : 0) + tpStolen(T.ourItems?.[mi], b.od, b.og), ourEats);
-    const theirs = ended(b.foe, T.foeHeal?.[fi], tpStolen(T.foeItems?.[fi], b.fd, b.fg), foeEats);
+    const mine = ended(b.me, ourCourse, ourAt + turns + sw, (tok ? tok.shift * by(turns) : 0) + tpStolen(T.ourItems?.[mi], b.od, b.og), ourEats);
+    const theirs = ended(b.foe, foeCourse, foeAt + turns + sw, tpStolen(T.foeItems?.[fi], b.fd, b.fg), foeEats);
     const out = [];
     for (const m of mine) {
       for (const x of theirs) {
@@ -394,8 +397,9 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
     const at = (sum, k) => (p > 0 ? sum / p : k(list[0]));
     const mhAt = at(mh, b => b.me.hp), fhAt = at(fh, b => b.foe.hp);
     const [mhEnd, fhEnd] = [mhAt < 1 ? 0 : mhAt, fhAt < 1 ? 0 : fhAt];
+    const n = Math.round(at(t, b => b.turns));
     // `us` / `foe`: each side's Landing state at the mode, at the pool's mean HP.
-    return { mh: mhEnd, fh: fhEnd, fs: mode.foe.bar, turns: Math.round(at(t, b => b.turns)),
+    return { mh: mhEnd, fh: fhEnd, fs: mode.foe.bar, turns: n, ot: tpMoves(ourCourse) ? ourAt + n + sw : 0, ft: tpMoves(foeCourse) ? foeAt + n + sw : 0,
       ox: at(ox, b => b.ox), od: at(od, b => b.od), og: at(og, b => b.og), fd: at(fd, b => b.fd), fg: at(fg, b => b.fg),
       us: stateOf(ourFacts, mhEnd, 0, mode.me), foe: stateOf(foeFacts, fhEnd, mode.foe.bar, mode.foe) };
   };
@@ -459,20 +463,21 @@ export const tpActs = (r, hp) => hp - r.fh >= 1;
 
 const tpClone = st => ({ ...st, oh: st.oh.slice(), fh: st.fh.slice(), fs: st.fs.slice(),
   ox: st.ox.slice(), od: st.od.slice(), og: st.og.slice(), fd: st.fd.slice(), fg: st.fg.slice(),
-  ok: st.ok.slice(), fk: st.fk.slice(), ou: st.ou.slice(), fu: st.fu.slice() });
+  ok: st.ok.slice(), fk: st.fk.slice(), ou: st.ou.slice(), fu: st.fu.slice(), ot: st.ot.slice(), ft: st.ft.slice() });
 // A revive is no KO: the ending's HP says so, as the game counts none (game-code.md §18).
 const tpApply = (c, mi, fi, r) => {
   if (c.fh[fi] >= 1 && r.fh < 1) c.ok[mi]++;
   if (c.oh[mi] >= 1 && r.mh < 1) c.fk[fi]++;
   c.oh[mi] = r.mh; c.fh[fi] = r.fh; c.fs[fi] = r.fs;
   c.ox[mi] = r.ox; c.od[mi] = r.od; c.og[mi] = r.og; c.fd[fi] = r.fd; c.fg[fi] = r.fg;
-  c.ou[mi] = r.us; c.fu[fi] = r.foe;
+  c.ou[mi] = r.us; c.fu[fi] = r.foe; c.ot[mi] = r.ot; c.ft[fi] = r.ft;
 };
 // The beam's dedupe key: two states that differ in either side's luck are two positions.
 // @only tests: tpSig
 export const tpSig = (T, c) => [c.cur.join("-"), c.act, c.fcur, ...c.oh.map(Math.round), ...c.fh.map(Math.round), ...c.ok, ...c.fk,
   ...c.oh.map((hp, mi) => luckKey(stateOf(tpOurFacts(T, mi), hp, 0, c.ou[mi]))),
-  ...c.fh.map((hp, fi) => luckKey(stateOf(tpFoeFacts(T, fi), hp, c.fs[fi], c.fu[fi])))].join(",");
+  ...c.fh.map((hp, fi) => luckKey(stateOf(tpFoeFacts(T, fi), hp, c.fs[fi], c.fu[fi]))),
+  ...c.ot.filter((_, mi) => tpMoves(T.ourCourse?.[mi])), ...c.ft.filter((_, fi) => tpMoves(T.foeCourse?.[fi]))].join(",");
 const tpAlive = hps => hps.flatMap((hp, i) => (hp >= 1 ? [i] : []));
 
 // The trainer scores its send-in against our field (game-code.md §7). In a double the plan, one exchange at a time,
@@ -590,6 +595,7 @@ const tpModel = (T, double, party, foes, facing, entering, teraOf = () => T) => 
     fh: foes.map(f => f.hp), fs: T.foeState.map(x => x.bar),
     ox: party.map(() => 0), od: party.map(() => 0), og: party.map(() => 0), fd: foes.map(() => 0), fg: foes.map(() => 0),
     ou: party.map(() => null), fu: foes.map(() => null),
+    ot: party.map((_, mi) => T.ourCourse[mi].counter ?? 0), ft: foes.map((_, fi) => T.foeCourse[fi].counter ?? 0),
     ok: party.map(() => 0), fk: foes.map(() => 0),
     cur: party.flatMap((p, i) => (p.isOnField?.() ? [i] : [])), fcur: fcur >= 0 ? fcur : null, steps: [],
     // The foe that spends the first exchange's first turn switching in.

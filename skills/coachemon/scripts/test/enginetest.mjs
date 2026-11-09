@@ -216,7 +216,7 @@ const log = (...a) => console.log(...a);
   assert.deepEqual([fp.turnsWe, sp.turnsWe, fpFree.turnsWe, spFree.turnsWe], [9, 1, 1, 9]);
 
   // Team plan: the same exchange, turn by turn.
-  const T = { ours: [[{ dmg: 35, recharge: true }]], theirs: [[{ dmg: 1, e: 1 }]], first: [[0]], ourMax: [300], foeMax: [100], ourHeal: [null], foeHeal: [null] };
+  const T = { ours: [[{ dmg: 35, recharge: true }]], theirs: [[{ dmg: 1, e: 1 }]], first: [[0]], ourMax: [300], foeMax: [100], ourCourse: [null], foeCourse: [null] };
   const st = fightState({ oh: [300], fh: [100], fs: [0] });
   const withRecharge = E.tpFight(T, st, 0, 0, "free").turns;
   T.ours[0][0] = { dmg: 35 };
