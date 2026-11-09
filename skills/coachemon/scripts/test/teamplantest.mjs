@@ -781,7 +781,7 @@ const berryFoe = (hp, n = 0, m = 0) => {
   const bisharp = fakeMon("Bisharp", 80, ["Dark", "Steel"], [300, 200, 200, 100, 100, 100], [["Iron Head", "Steel", 80, "P"]], true);
   const chomp = fakeMon("Garchomp", 80, ["Dragon", "Fairy"], [300, 200, 200, 100, 100, 50], [["Earthquake", "Ground", 100, "P"]], true,
     undefined, { getOpponents: () => [bisharp] });
-  const unset = o => ["ignoresSturdy", "ignoresSub", "ignoresAbility", "ignoresDisguise", "cut", "cat", "e"].filter(k => o?.[k] === undefined);
+  const unset = o => ["ignoresSturdy", "ignoresSub", "ignoresAbility", "ignoresDisguise", "cut", "cat", "e", "steals"].filter(k => o?.[k] === undefined);
   for (const live of [true, false]) {
     const turn = fakeTurn({ live, party: [bisharp], foes: [chomp], outcome: stub,
       moves: () => [{ name: "Earthquake", type: "Ground", p: 1, score: 10, targets: [0] }] });

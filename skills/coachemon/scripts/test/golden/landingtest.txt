@@ -52,7 +52,13 @@ a 25 HP Substitute in front of Sturdy, three hits of 40: 20/0 sub 0 p1 dealt 80 
 a hit past a 25 HP Substitute for 40: 60/0 sub 25 p1 dealt 40 · sub lost 0 ×1
 a 10 % token behind a 25 HP Substitute, hit for 150: 100/0 p1 dealt 0 ×1
 …and again: 1/0T p0.1 dealt 99 ×1 · 0/0 p0.9 dealt 100 ×1
-== the discrete part: revived, tok, busted, sub, sitrus, enigmas, fed
+== a Bug Bite's steal
+Sitrus x2, an Enigma and a Lum, hit for 30: 170/0S1E1O1 p0.3333 dealt 30 ×1 · 170/0S2O1 p0.3333 dealt 30 ×1 · 170/0S2E1O0 p0.3333 dealt 30 ×1
+a Sitrus and a Lum, hit for 150 of 100: 0/0O1 p0.5 dealt 100 ×1 · 0/0S1O0 p0.5 dealt 100 ×1
+a 25 HP Substitute in front of Sitrus x2, two strikes of 40: 60/0S1 p1 dealt 40 ×2
+== the discrete part: revived, tok, busted, sub, sitrus, enigmas, others, fed
+== #915: Sitrus x2 and a Lum from 98 of 200, one sure Bug Bite of 30 a turn
+by 0.000 0.000 0.000 0.000 · after turn 1 118 S0 O1 p0.5, 118 S1 O0 p0.5 · after turn 2 88 S0, 88 S0
 == KO pacing and the fight plan, on the foe
 plain: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 plain, rolled: KO pacing 0.000 0.766 1.000 1.000 · fight plan 0.000 0.750 1.000 1.000

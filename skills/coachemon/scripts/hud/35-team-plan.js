@@ -72,7 +72,7 @@ const tpTheirMove = (turn, f, me) => {
           dmg: mean > 0 ? mean : per.expected, entry: Number.isFinite(now?.expected) ? now.expected : t.expected, use: tpSpread(per.use),
           // `first` is the order against a move of ours at priority 0, which is all this table knows: `tpFoeFirst`
           // takes it again per move for anything out of that bracket (#650).
-          name: typeof t.move === "string" ? t.move : t.move?.name ?? null, e: t.move?.e ?? 1, ignoresSturdy: !!t.ignoresSturdy, ignoresSub: !!t.ignoresSub, ignoresAbility: !!t.ignoresAbility, ignoresDisguise: !!t.ignoresDisguise, cut: t.cut ?? null, cat: null,
+          name: typeof t.move === "string" ? t.move : t.move?.name ?? null, e: t.move?.e ?? 1, ignoresSturdy: !!t.ignoresSturdy, ignoresSub: !!t.ignoresSub, ignoresAbility: !!t.ignoresAbility, ignoresDisguise: !!t.ignoresDisguise, cut: t.cut ?? null, cat: null, steals: null,
           first: t.first, priority: t.move?.priority ?? 0, hits: hitsOn(t),
           drain: t.expected > 0 ? (t.drain ?? 0) / t.expected : 0,
           phys: moved > 0 ? t.moves.reduce((sum, m) => sum + m.p * (m.cat === "special" ? 0 : 1), 0) / moved : 1,
@@ -81,7 +81,8 @@ const tpTheirMove = (turn, f, me) => {
     } catch {}
   }
   const m = tpFastest(turn, turn.outcomes(f, me).filter(x => x.dmg > 0), me);
-  return { dmg: m?.dmg ?? 0, name: m?.name ?? null, e: m?.e ?? 1, ignoresSturdy: !!m?.ignoresSturdy, ignoresSub: !!m?.ignoresSub, ignoresAbility: !!m?.ignoresAbility, ignoresDisguise: !!m?.ignoresDisguise, cut: m?.cut ?? null, cat: null, first: null, priority: m?.priority ?? 0,
+  // Gotcha: as the threat's, no steal of the foe's is priced.
+  return { dmg: m?.dmg ?? 0, name: m?.name ?? null, e: m?.e ?? 1, ignoresSturdy: !!m?.ignoresSturdy, ignoresSub: !!m?.ignoresSub, ignoresAbility: !!m?.ignoresAbility, ignoresDisguise: !!m?.ignoresDisguise, cut: m?.cut ?? null, cat: null, steals: null, first: null, priority: m?.priority ?? 0,
     hits: m?.dmg > 0 ? 1 : 0, drain: m?.drain ?? 0, phys: m?.cat === "special" ? 0 : 1 };
 };
 
@@ -333,7 +334,7 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
   const by = t => (!tok ? 0 : tok.odds.by(ox0 + (entryHit ? them.hits ?? 0 : 0) + (them.hits ?? 0) * Math.max(0, t - (foeIdle ? 1 : 0))));
   // Lands our use point `o` on the foe, one branch per outcome; drain wins back its share of what the use took.
   const hitFoe = (b, o, mv = us) => {
-    const outs = land(b.foe, { d: mv.dmg * o.r * usMul, n: o.n, se: o.se }, mv, WHOLE);
+    const outs = land(b.foe, { d: mv.dmg * o.r * usMul, n: o.n, se: o.se }, mv.steals ? { ...mv, steals: null } : mv, WHOLE);
     return outs.map(x => {
       const c = outs.length === 1 ? b : { ...b, p: b.p * x.p };
       let mh = c.me.hp;

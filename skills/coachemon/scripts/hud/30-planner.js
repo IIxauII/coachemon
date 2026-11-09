@@ -470,8 +470,9 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
     ignoresAbility: moves.some(m => m.o) && moves.every(m => !m.o || !!m.o.ignoresAbility),
     ignoresDisguise: moves.some(m => m.o) && moves.every(m => !m.o || !!m.o.ignoresDisguise),
     cut: cutBy ? cutBy.o.cut ?? null : moves.some(m => m.o) ? "never" : null,
-    // A mix of moves has no one category or effectiveness: each point of `use` carries its own `se`.
-    e: null, cat: null,
+    // A mix of moves has no one category or effectiveness: each point of `use` carries its own `se`. Gotcha: no steal is
+    // priced, so a Bug Bite of its takes none of our berries.
+    e: null, cat: null, steals: null,
     boost: Object.keys(boost).length ? boost : null,
     // HP its drain moves give it back a turn; negative into Liquid Ooze.
     drain: drained,
@@ -828,9 +829,9 @@ const sitrusStolen = (me, steals) => {
 
 // `at(j)`: `me`'s turn-end HP change at the end of turn j (1 = this turn) of a fight with `foe`, `flat` when that never
 // moves. It moves with Toxic, a status the foe's hits may hand it, and items the foe may steal. `pre`: the part of `base`
-// ahead of the berries. `eaten`, from a berry `foe` eats off it a turn (#646): `byCount` as `berryGone` gives it,
-// `counts(j)`, P(k berries gone by turn j's end), and `walk`, `me`'s `berryWalk`. The Sitrus is never in the course:
-// `koCurve` eats it, and `gone` is its `sitrus`, null when nothing can steal one.
+// ahead of the berries. `eaten`, from a berry `foe` eats off it a turn (#646): `byCount` as `berryGone` gives it, and
+// `counts(j)`, P(k berries gone by turn j's end). The Sitrus is never in the course: `koCurve` eats it and Landing takes
+// a Bug Bite's, and `gone` is its `sitrus`, what item thieves take, null when none can take one.
 export const turnEndCourse = (turn, me, foe, hitsPerTurn, dealt = 0, eaten = null) => {
   const heal = p => healAtEnd(turn, p, dealt, false);
   const base = heal(me);
@@ -846,10 +847,7 @@ export const turnEndCourse = (turn, me, foe, hitsPerTurn, dealt = 0, eaten = nul
   // Mini Black Hole draws in `TurnEndPhase`, after the berries, so only j − 1 of its draws are in by turn j's
   // (game-code.md §21).
   const thiefCounts = j => (j > 0 ? stealCounts(rates.perTurn * (j - 1), rates.perHit * hitsPerTurn * j) : [1]);
-  const gone = sitrusStolen(me, [
-    ...(eaten?.counts ? [{ walk: eaten.walk ?? berryWalk(me), counts: eaten.counts }] : []),
-    ...(walk ? [{ walk, counts: thiefCounts }] : []),
-  ]);
+  const gone = sitrusStolen(me, walk ? [{ walk, counts: thiefCounts }] : []);
   const plain = toxic ?? (() => base);
   const flat = berries ? { base, pre, gone, flat: false, at: j => plain(j) + berries(j) }
     : toxic ? { base, pre, gone, flat: false, at: toxic } : { base, pre, gone, flat: true, at: () => base };
@@ -1126,8 +1124,8 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   // An exchange `after` another follows a turn on another move, so this lock starts at its first use.
   const ourLock = mt.lock ? OUR_LOCK : null;
   // The berry a landed Bug Bite / Pluck eats (#646): the landing odds are the hit's own, and a knockout still eats.
-  // `stole` is a berry an earlier turn of a depth-2 line already ate, which the target stays short of whatever we
-  // follow up with — so the course still reads the theft when this move steals none.
+  // `stole` is a berry an earlier turn of a depth-2 line already ate: `after`'s branches hold it no more, and the course
+  // still reads its loss when this move steals none.
   const stole = Math.min(1, opts.stole ?? 0);
   // A berry a `lessBerry` patch took (a Lum a cured status burnt, #834) is gone from what it can draw.
   const holder = turn.held(foe);
@@ -1142,7 +1140,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     // Turn 1's room, moving first, is after what this use costs us (game-code.md §3).
     const out = berryGone(holder, heal, { eater: me, hp: hp - (mine?.self ?? 0), turn, walk: memo.walk, steals: memo.steals.get(dealt), eatenAt: memo.eaten.get(me) });
     if (out && !memo.eaten.has(me)) memo.eaten.set(me, out.eatenAt);
-    return out && { ...out, walk: memo.walk };
+    return out;
   })() : null;
   const lands = eats ? j => (j === 1 ? now : steady) * (mine.acc ?? 1) : () => 0;
   const counts = theft ? berryCounts(lands, theft.supply, stole) : null;
@@ -1152,7 +1150,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     const drop = mt.drops?.[atkStat] ?? 0;
     const s0 = me.summonData?.statStages?.[atkStat - 1] ?? 0;
     const course = turnEndCourse(turn, foe, me, steady * (mine.acc ?? 1) * ((mine.dist ?? []).reduce((sum, d) => sum + d.n * d.p, 0) || 1), t?.expected ?? 0,
-      theft && { byCount: theft.byCount, counts, walk: theft.walk });
+      theft && { byCount: theft.byCount, counts });
     const heal = withDrain(course.flat ? course.base : course.at, t?.drain ?? 0);
     const defStat = mine.cat === "special" ? Stat.SPDEF : Stat.DEF;
     const defUpBy = t?.boost?.[defStat] ?? 0;

@@ -243,7 +243,7 @@ const bigHit = move(1, "Big Hit", 14, 120);
   floater.getAttackDamage = function (o) {
     return o.move.type === 4 ? { cancelled: false, result: HitResult.NO_EFFECT, damage: 0 } : hit.call(this, o);
   };
-  const unset = o => ["ignoresSturdy", "ignoresSub", "ignoresAbility", "ignoresDisguise", "cut", "cat", "e"].filter(k => o[k] === undefined);
+  const unset = o => ["ignoresSturdy", "ignoresSub", "ignoresAbility", "ignoresDisguise", "cut", "cat", "e", "steals"].filter(k => o[k] === undefined);
   for (const estimate of [false, true]) {
     setup(atk, floater);
     const outs = readTurn(scene, t => t.outcomes(atk, floater), { estimate });
@@ -593,9 +593,9 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   const pouched = curve(80, 30, { sitrus: 0 }, { modifiers: pouch(1) }).by;
   assert.ok(pouched.every((x, i) => x <= below.by[i] + 1e-12) && pouched.some((x, i) => x < below.by[i] - 1e-9), "the Pouch pushes the KO back");
   assert.deepEqual(curve(80, 30, { sitrus: 0, start: [{ hp: 50, p: 1, sitrus: 0 }] }).after1.map(x => x.hp), [20], "a start branch that ate it eats none");
-  // Steals take it off the branches still holding one, ahead of the berry (#646, #833).
+  // What item thieves take comes off the branches still holding one, ahead of the berry (game-code.md §8).
   assert.deepEqual(curve(200, 70, { sitrus: n => (n >= 1 ? 1 : 0) }).by.slice(0, 3), [0, 0, 1], "stolen on use 1: never eaten");
-  assert.deepEqual(curve(80, 30, { sitrus: 1 }).after1.map(x => [x.hp, x.sitrus]), [[50, 0]], "stolen before the curve starts");
+  assert.deepEqual(curve(80, 30, { sitrus: 1 }).after1.map(x => [x.hp, x.sitrus]), [[50, 0]], "a count for every use is taken by use 1's turn end");
   const halfStolen = curve(80, 30, { sitrus: n => (n >= 1 ? 0.5 : 0) }).after1;
   near(halfStolen.find(x => x.hp === 100)?.p ?? 0, 0.5, "half the branches still had it to eat");
   // Half gone by use 1, all by use 2: use 2's steal takes it off every branch that kept it, none left to eat.
