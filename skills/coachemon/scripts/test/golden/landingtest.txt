@@ -18,7 +18,18 @@ two hits of 150: 1/0 p0.01 dealt 99 ×2 · 0/0 p0.9 dealt 100 ×1 · 0/0 p0.09 d
 == whole
 a Focus Band holder on 10, hit for 9.5, whole: 1/0 p0.1 dealt 9 ×1 · 0.5/0 p0.9 dealt 9.5 ×1
 …without: 0.5/0 p1 dealt 9.5 ×1
-== the discrete part: revived, tok
+== the Sitrus Berry at the turn end
+99 of 200: 99/0S1 p1
+98 of 200: 148/0 p1
+a Sitrus Berry at 98 of 200, one Pouch stack: 148/0 p0.7 · 148/0S1 p0.3
+== the Enigma Berry
+hit super-effectively for 70: 130/0E1F p1 dealt 70 ×1
+…its turn end: 180/0 p1
+super-effective on 40 % of the use: 130/0E1 p0.6 dealt 70 ×1 · 130/0E1F p0.4 dealt 70 ×1
+== turn-end chip
+a 2-bar boss on 130 of 200, 50 of chip: 100/0 p1
+every luck at full HP, 150 of chip: 0/0 p1
+== the discrete part: revived, tok, sitrus, enigmas, fed
 == KO pacing and the fight plan, on the foe
 plain: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 plain, rolled: KO pacing 0.000 0.766 1.000 1.000 · fight plan 0.000 0.750 1.000 1.000

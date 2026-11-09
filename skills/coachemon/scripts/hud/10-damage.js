@@ -121,12 +121,13 @@ const barStep = (f, hp, bar, d, ohko = false) => {
   return [d, after];
 };
 // Landing (CONTEXT.md, `Landing`): what one hit does to the side it lands on (game-code.md §2, §3, §8, §21). A Landing
-// state is `{ hp, bar, facts }` and the discrete part, made by `stateOf` and `land` and read, never written. Team value
-// lands no berries and no turn end (#1024).
-// The discrete part, at its fresh values. `revived`: the Reviver Seed is spent; `tok`: the enemy endure token is spent
-// for the wave.
-const FRESH = Object.freeze({ revived: false, tok: false });
-const DISCRETE = Object.keys(FRESH);
+// state is `{ hp, bar, facts }` and the discrete part, made by `stateOf`, `land` and `landTurnEnd` and read, never
+// written. Team value lands no berries and no turn end (#1024).
+// A fresh Landing state for `f`. Its discrete part is every field but `hp`, `bar` and `facts`: `revived`, the Reviver
+// Seed is spent; `tok`, the enemy endure token is spent for the wave; `sitrus` / `enigmas`, the Sitrus and Enigma Berries
+// held; `fed`, a super-effective hit landed this turn, which the turn end clears.
+const fresh = (f, hp, bar) => ({ hp, bar, revived: false, tok: false, sitrus: f?.sitrus?.left ?? 0, enigmas: f?.enigma?.left ?? 0, fed: false, facts: f });
+const DISCRETE = Object.keys(fresh(null)).filter(k => k !== "hp" && k !== "bar" && k !== "facts");
 const LUCK = ["revived", "tok"];
 const REST = DISCRETE.filter(k => !LUCK.includes(k));
 const NO_HIT = {};
@@ -134,10 +135,13 @@ const NO_HIT = {};
 // and bar are never read.
 // @only 25-turn, 35-team-plan, tests: stateOf
 export const stateOf = (facts, hp = facts.hp, bar = null, from = null) => {
-  const s = { hp, bar: bar ?? facts.idx ?? 0, ...FRESH, facts };
+  const s = fresh(facts, hp, bar ?? facts.idx ?? 0);
   if (from) for (const k of DISCRETE) if (k in from) s[k] = from[k];
   return s;
 };
+// The Sitrus Berry's trigger: `getHpRatio` rounds to a whole percent (game-code.md §3).
+const belowHalf = (hp, max) => Math.round((hp / max) * 100) / 100 < 0.5;
+const seOf = h => ((h?.e ?? 1) >= 2 ? 1 : 0);
 // A carrier is a Landing state's fields, without `facts`, at its chance `p`, with `stop`, `dealt` and `hits`.
 const fork = (b, hp, bar, p, taken, tok = b.tok) => ({ ...b, hp, bar, tok, p, dealt: b.dealt + taken, hits: b.hits + 1 });
 const stand = (b, hp, bar, endure, taken, out) => {
@@ -175,6 +179,66 @@ const strike = (f, b, d, hit, whole, luck, out, down = null) => {
   down?.(gone, b, hp, bar);
   return gone;
 };
+// Marks `fed` the share `se` of carrier `b` that a super-effective hit landed on, where it holds an Enigma Berry; the
+// rest goes onto `out` first, unmarked (game-code.md §3).
+const feed = (b, se, out) => {
+  if (se > 0 && b.enigmas > 0) {
+    const q = Math.min(1, se);
+    if (q < 1) out.push({ ...b, p: b.p * (1 - q) });
+    b.p *= q;
+    b.fed = true;
+  }
+  out.push(b);
+};
+// Carrier `b` after the signed change `d`, onto `out`: a heal caps at max HP and leaves the bar, and chip lands through
+// the bars with no luck, handing what it fells to `down` (game-code.md §3, §21).
+const shift = (f, b, d, whole, out, down) => {
+  if (d < 0) {
+    strike(f, b, -d, NO_HIT, whole, false, out, down);
+    return;
+  }
+  if (d > 0) b.hp = Math.min(f.maxHp ?? Infinity, b.hp + d);
+  out.push(b);
+};
+// One turn end on carrier `b`, onto `out` with its mark cleared: the signed change `before`, then the berries, both
+// reading the HP from before either heals, then the rest of `total` (game-code.md §3, §21). `sit` / `nig`: the Sitrus
+// and Enigma Berry facts it may eat, null for none. `between(b, out)`: a step of the caller's ahead of the berries.
+// Gotcha: with nothing it could eat, `total` lands as one change.
+const endTurn = (f, b, before, total, sit, nig, whole, out, down = null, between = null) => {
+  const eatsE = !!nig && b.fed && b.enigmas > 0;
+  b.fed = false;
+  if (!eatsE && !(sit && b.sitrus > 0)) {
+    shift(f, b, total, whole, out, down);
+    return;
+  }
+  const mid = [], standing = [];
+  shift(f, b, before, whole, mid, down);
+  for (const c of mid) if (between) between(c, standing); else standing.push(c);
+  const keepE = eatsE && nig.keep > 0 ? nig.keep : 0, keepS = sit?.keep > 0 ? sit.keep : 0;
+  for (const r of standing) {
+    const eatsS = !!sit && r.sitrus > 0 && belowHalf(r.hp, f.maxHp);
+    const heal = (eatsE ? nig.heal : 0) + (eatsS ? sit.heal : 0);
+    const ate = keepE ? [{ ...r, p: r.p * keepE }, r] : [r];
+    if (eatsE) {
+      if (keepE) r.p *= 1 - keepE;
+      r.enigmas--;
+    }
+    for (const e of ate) {
+      const kept = [e];
+      if (eatsS) {
+        if (keepS) {
+          kept.push({ ...e, p: e.p * keepS });
+          e.p *= 1 - keepS;
+        }
+        e.sitrus--;
+      }
+      for (const o of kept) {
+        o.hp = Math.min(f.maxHp ?? Infinity, o.hp + heal);
+        shift(f, o, total - before, whole, out, down);
+      }
+    }
+  }
+};
 // One use point, `n` hits of `d / n` at `fac(bar)` each, landed on `b` up to a faint or a revive (game-code.md §2):
 // what stands, in a fixed order.
 const landUse = (f, b, d, n, fac, hit, whole, down) => {
@@ -189,10 +253,12 @@ const landUse = (f, b, d, n, fac, hit, whole, down) => {
   }
   return live;
 };
-// `use`: one point of a use's spread, `{ d, n }`, `d` the whole use before the target's HP or bars cut it. `hit`: the
-// hit record, its race facts read by name and an absent one off (`ignoresSturdy`, `ohko`, `factor(bar)`). Each
-// outcome's `dealt` is what the use took through the bars, counted before a revive, and `hits` the hits that landed.
-// @only 35-team-plan, tests: land, luckKey, landingKey
+// `use`: one point of a use's spread, `{ d, n, se }`, `d` the whole use before the target's HP or bars cut it, and `se`
+// its super-effective share. `hit`: the hit record, its race facts read by name and an absent one off (`ignoresSturdy`,
+// `ohko`, `factor(bar)`, and `e`, which stands in for a missing `se`). Each outcome's `dealt` is what the use took
+// through the bars, counted before a revive, and `hits` the hits that landed. What stands on a super-effective share
+// is marked for an Enigma Berry it holds.
+// @only 35-team-plan, tests: land, landTurnEnd, luckKey, landingKey
 export const land = (state, use, hit = NO_HIT, { whole = false } = {}) => {
   const d = use?.d, h = hit ?? NO_HIT, f = state?.facts ?? NO_HIT;
   const up = whole ? state?.hp >= 1 : state?.hp > 0;
@@ -200,10 +266,27 @@ export const land = (state, use, hit = NO_HIT, { whole = false } = {}) => {
   const downs = [];
   const stood = landUse(f, { ...state, p: 1, stop: false, dealt: 0, hits: 0 }, d, Math.max(1, Math.round(use.n ?? 1)), h.factor ?? null, h, whole,
     (p, b, hp, bar) => downs.push({ state: stateOf(f, hp, bar, b), p, dealt: b.dealt + (b.hp - hp), hits: b.hits + 1 }));
+  const se = f.enigma?.heal > 0 ? use.se ?? seOf(h) : 0, fed = [];
+  for (const c of stood) feed(c, se, fed);
   const outs = [];
-  for (const c of stood) outs.push({ state: stateOf(f, c.hp, c.bar, c), p: c.p, dealt: c.dealt, hits: c.hits });
+  for (const c of fed) outs.push({ state: stateOf(f, c.hp, c.bar, c), p: c.p, dealt: c.dealt, hits: c.hits });
   for (const o of downs) outs.push(o);
   return outs;
+};
+const num = x => (Number.isFinite(x) ? x : 0);
+// One turn's end on `state`, after its last `land` of the turn (game-code.md §3, §21). `before` / `after`: the signed
+// change ahead of the berries and after them. Between them it eats its Sitrus Berry below half HP, one a turn, and its
+// Enigma Berry after a super-effective hit landed this turn, unless `eats` is false (an opposing Unnerve); a Berry Pouch
+// keeps each berry it eats on an outcome of its own. Chip lands through the bars with no luck. `whole` is `land`'s. A
+// state already down comes back as it was.
+export const landTurnEnd = (state, { before = 0, after = 0, eats = true, whole = false } = {}) => {
+  const f = state?.facts ?? NO_HIT;
+  if (!(whole ? state?.hp >= 1 : state?.hp > 0)) return [{ state, p: 1 }];
+  const pre = num(before), outs = [], downs = [];
+  const ate = x => (eats && x?.heal > 0 ? x : null);
+  endTurn(f, { ...state, p: 1, stop: false, dealt: 0, hits: 0 }, pre, pre + num(after), ate(f.sitrus), ate(f.enigma), whole, outs,
+    (p, c, hp, bar) => downs.push({ state: stateOf(f, hp, bar, c), p }));
+  return [...outs.map(c => ({ state: stateOf(f, c.hp, c.bar, c), p: c.p })), ...downs];
 };
 export const luckKey = (s, f = s.facts) => `${+s.revived}${+s.tok}${f?.sturdy ? +(s.hp >= f.maxHp) : ""}`;
 export const landingKey = (s, f = s.facts) => {
@@ -311,10 +394,9 @@ const flinchChance = (atk, def, move, ignoreAbility) => {
   return c < 0 ? 1 : Math.min(1, c / 100);
 };
 
-// A KO-curve branch: a carrier with the Enigma and Sitrus Berries it still holds, `left` and `sitrus`, its discrete
-// part `from`'s.
-const branch = (hp, bar, from, p, left = 0, sitrus = 0) => {
-  const b = { hp, bar, p, stop: false, dealt: 0, hits: 0, left, sitrus };
+// A KO-curve branch: a carrier, its discrete part `from`'s.
+const branch = (hp, bar, from, p) => {
+  const b = { hp, bar, p, stop: false, dealt: 0, hits: 0 };
   for (const k of DISCRETE) b[k] = from[k];
   return b;
 };
@@ -345,24 +427,19 @@ export const shares = (list, fallback) => {
 // summing to 1. `chain`: a Markov chain stepped once a use, `{ from, step }`: `from` its states
 // `[{ s, p }]`, p summing to 1, and `step(s)` its transitions `[{ s, p, act }]`, p summing to 1, the use going off only on
 // an `act` one; a state `s` is an object keyed by `s.key`. `after1`: the branches standing after use 1, p summing to
-// 1. `perChunk`: the uses each bar takes before it more likely than not breaks. `downAt[n − 1]`: the chain's states
-// `[{ s, p }]` of what went down on use n, empty without a `chain`. Unless `feeds` is false, the target eats an Enigma
-// Berry (`facts.enigma`) after a landed use, at its super-effective share: a point's own `se`, else its hit's `e`.
-// The berry heals between `beforeBerry`, the part of `turnEnd` the game runs ahead of it, and the rest, and each branch,
-// `after1`'s and `start`'s included, carries the berries it has `left`; a Berry Pouch's `keep` share of a feed heals
-// and leaves `left` as it was. `preHeal(i)`: `{ p, heal }`, a heal the target takes before use i at share `p` of it, and
-// after it, ahead of the turn end, otherwise; null for none. `sitrus`: the target eats a Sitrus Berry (`facts.sitrus`)
-// at each turn end that finds it below half, where it eats the Enigma, a Pouch keeping it the same way; null eats none,
-// and otherwise it counts the Sitrus Berries steals have taken off the target by use n's turn end, n from 1 and 0 for
-// before the curve: a number, or a function of n. A branch's `sitrus` is the Sitrus Berries it still holds.
+// 1, each with its HP, bar and discrete part. `perChunk`: the uses each bar takes before it more likely than not breaks.
+// `downAt[n − 1]`: the chain's states `[{ s, p }]` of what went down on use n, empty without a `chain`. Each use's turn
+// end is Landing's, `beforeBerry` the part of `turnEnd` ahead of the berries. Unless `feeds` is false, the target eats
+// its Enigma Berry (`facts.enigma`) there after a landed use, at its super-effective share: a point's own `se`, else its
+// hit's `e`. `preHeal(i)`: `{ p, heal }`, a heal the target takes before use i at share `p` of it, and after it, ahead of
+// the turn end, otherwise; null for none. `sitrus`: the target eats its Sitrus Berry (`facts.sitrus`) there too; null eats
+// none, and otherwise it counts the Sitrus Berries steals have taken off the target by use n's turn end, n from 1 and 0
+// for before the curve: a number, or a function of n.
 export const koCurve = (rec, hit, { hp, bar = null, start = null, scale = () => 1, act = () => 1, turnEnd = 0, beforeBerry = 0, firstKo = null, useAt = null, chain = null, preHeal = null, sitrus = null, feeds = true, guard = true } = {}) => {
   const f = rec.facts;
   const own = Array.isArray(hit) ? { use: hit } : hit ?? {};
   const hitOf = later => (later && !Array.isArray(later) ? { ...own, ...later } : own);
-  const seOf = h => ((h.e ?? 1) >= 2 ? 1 : 0);
   const berry = feeds && f.enigma?.heal > 0 ? f.enigma : null;
-  const held = f.enigma?.left ?? 0;
-  const keep = berry?.keep ?? 0;
   const sit = sitrus != null && f.sitrus?.heal > 0 ? f.sitrus : null;
   const sitHeld = f.sitrus?.left ?? 0;
   const goneBy = n => (typeof sitrus === "function" ? sitrus(n) : sitrus ?? 0);
@@ -390,16 +467,6 @@ export const koCurve = (rec, hit, { hp, bar = null, start = null, scale = () => 
     steal(b, rate0, out);
     return out;
   };
-  // The share `fed` of `b` eats a berry at this turn's end, and a Berry Pouch's `keep` of that heals with it still held.
-  const pushFed = (out, b, s, fed) => {
-    if (fed > 0 && b.left > 0) {
-      if (fed < 1) out.push(inChain(branch(b.hp, b.bar, b, b.p * (1 - fed), b.left, b.sitrus), s));
-      if (keep > 0) out.push(inChain(Object.assign(branch(b.hp, b.bar, b, b.p * fed * keep, b.left, b.sitrus), { fed: true, kept: true }), s));
-      b.p *= fed * (1 - keep);
-      b.fed = true;
-    }
-    out.push(inChain(b, s));
-  };
   const init = stateOf(f, hp ?? f.hp, bar);
   const bars = init.bar + 1;
   const cat = guard && bars > 1 && rec.bars ? hitOf(useAt ? useAt(1) : null).cat : null;
@@ -410,10 +477,10 @@ export const koCurve = (rec, hit, { hp, bar = null, start = null, scale = () => 
   const stepOf = chain ? chain.step : () => NO_STEP;
   const reopen = x => {
     const s = stateOf(f, x.hp, x.bar ?? init.bar, x);
-    return branch(s.hp, s.bar, s, x.p, x.left ?? held, x.sitrus ?? sitHeld);
+    return branch(s.hp, s.bar, s, x.p);
   };
-  let states = (start?.length ? start.map(reopen) : robbed(branch(init.hp, init.bar, init, 1, held, sitHeld)))
-    .flatMap(b => from.map(c => inChain(branch(b.hp, b.bar, b, b.p * c.p, b.left, b.sitrus), c.s)));
+  let states = (start?.length ? start.map(reopen) : robbed(branch(init.hp, init.bar, init, 1)))
+    .flatMap(b => from.map(c => inChain(branch(b.hp, b.bar, b, b.p * c.p), c.s)));
   const by = [], downAt = [];
   const brokeAt = Array(bars).fill(KO_USES);
   let down = 0, after1 = [];
@@ -436,24 +503,24 @@ export const koCurve = (rec, hit, { hp, bar = null, start = null, scale = () => 
     const early = pre?.heal > 0 ? Math.max(0, Math.min(1, pre.p)) : 0;
     // `late`: this branch takes `pre`'s heal at the turn end.
     const split = pre?.heal > 0 ? states.flatMap(st => [
-      ...(early > 0 ? [inChain(branch(Math.min(f.maxHp, st.hp + pre.heal), st.bar, st, st.p * early, st.left, st.sitrus), st.s)] : []),
-      ...(early < 1 ? [Object.assign(inChain(branch(st.hp, st.bar, st, st.p * (1 - early), st.left, st.sitrus), st.s), { late: true })] : []),
+      ...(early > 0 ? [inChain(branch(Math.min(f.maxHp, st.hp + pre.heal), st.bar, st, st.p * early), st.s)] : []),
+      ...(early < 1 ? [Object.assign(inChain(branch(st.hp, st.bar, st, st.p * (1 - early)), st.s), { late: true })] : []),
     ]) : states;
     for (const st of split) {
       const mark = struck.length;
       for (const to of stepOf(st.s)) {
         const go = to.act ? a : 0, p = st.p * to.p;
-        if (go < 1) struck.push(inChain(branch(st.hp, st.bar, st, p * (1 - go), st.left, st.sitrus), to.s));
+        if (go < 1) struck.push(inChain(branch(st.hp, st.bar, st, p * (1 - go)), to.s));
         if (wentOff && go > 0) addShare(wentOff, to.s, p * go);
         onto = to.s;
         for (const x of points) {
           const q = p * go * x.p;
           if (!(q > 0)) continue;
-          const branches = landUse(f, branch(st.hp, st.bar, st, q, st.left, st.sitrus), x.d, x.n, atBar, useHit, false, fallen);
+          const branches = landUse(f, branch(st.hp, st.bar, st, q), x.d, x.n, atBar, useHit, false, fallen);
           const fed = berry && x.d > 0 ? x.se ?? seOf(useHit) : 0;
           for (const b of branches) {
             b.stop = false;
-            pushFed(struck, b, to.s, fed);
+            feed(inChain(b, to.s), fed, struck);
           }
         }
       }
@@ -468,7 +535,7 @@ export const koCurve = (rec, hit, { hp, bar = null, start = null, scale = () => 
         // They survived a use that landed.
         const landed = points.filter(x => x.d > 0), mass = landed.reduce((t, x) => t + x.p, 0);
         const fed = berry && mass > 0 ? landed.reduce((t, x) => t + x.p * (x.se ?? seOf(own)), 0) / mass : 0;
-        for (const c of offs) for (const b of robbed(branch(1, init.bar, init, (1 - k) * c.p, held, sitHeld))) pushFed(struck, b, c.s, fed);
+        for (const c of offs) for (const b of robbed(branch(1, init.bar, init, (1 - k) * c.p))) feed(inChain(b, c.s), fed, struck);
       }
       fell = k;
       if (fellTo) fellTo = new Map(offs.map(c => [c.s?.key, { s: c.s, p: k * c.p }]));
@@ -476,63 +543,32 @@ export const koCurve = (rec, hit, { hp, bar = null, start = null, scale = () => 
     down += fell;
     const h = typeof turnEnd === "function" ? turnEnd(i + 1) : turnEnd;
     const h0 = typeof beforeBerry === "function" ? beforeBerry(i + 1) : beforeBerry;
-    // `b` after a signed turn-end change, null where the chip fells it.
-    const endStep = (b, d) => {
-      if (d > 0) b.hp = Math.min(f.maxHp, b.hp + d);
-      else if (d < 0) {
-        const out = [];
-        const gone = strike(f, b, -d, NO_HIT, false, false, out);
-        down += gone;
-        if (fellTo) addShare(fellTo, b.s, gone);
-        return out.length ? inChain(out[0], b.s) : null;
-      }
-      return b;
-    };
-    const groups = new Map();
-    const settle = b => {
-      if (!b) return;
-      const key = `${landingKey(b, f)}|${b.left}|${b.sitrus}${chain ? `|${b.s.key}` : ""}`;
-      if (!groups.has(key)) groups.set(key, { b, pts: [] });
-      groups.get(key).pts.push({ d: b.hp, p: b.p });
+    const chipped = (gone, b) => {
+      down += gone;
+      if (fellTo) addShare(fellTo, b.s, gone);
     };
     const stolen = stealRate(i);
-    for (let b of struck) {
+    const robs = (b, out) => steal(b, stolen, out);
+    const ended = [];
+    for (const b of struck) {
       if (b.late) b.hp = Math.min(f.maxHp, b.hp + pre.heal);
-      if (!b.fed && !(sit && b.sitrus > 0)) {
-        settle(endStep(b, h));
-        continue;
-      }
-      // `endStep` may hand back a fresh branch, which carries no `fed` or `kept`.
-      const { fed, kept } = b;
-      b = endStep(b, h0);
-      if (!b) continue;
-      const standing = [];
-      steal(b, stolen, standing);
-      for (const r of standing) {
-        // Both berries read the HP before either heals (game-code.md §21).
-        const eats = sit && r.sitrus > 0 && belowHalf(r.hp, f.maxHp);
-        const heal = (fed ? berry.heal : 0) + (eats ? sit.heal : 0);
-        if (fed && !kept) r.left--;
-        const out = [r];
-        if (eats) {
-          if (sit.keep > 0) out.push({ ...r, p: r.p * sit.keep });
-          r.p *= 1 - sit.keep;
-          r.sitrus--;
-        }
-        for (const o of out) {
-          o.hp = Math.min(f.maxHp, o.hp + heal);
-          settle(endStep(o, h - h0));
-        }
-      }
+      endTurn(f, b, h0, h, sit, berry, false, ended, chipped, robs);
     }
-    states = [...groups.values()].flatMap(({ b, pts }) => squeezeDist(pts, KO_LEVELS).filter(x => x.p > 1e-9).map(x => inChain(branch(x.d, b.bar, b, x.p, b.left, b.sitrus), b.s)));
+    const groups = new Map();
+    for (const b of ended) {
+      const key = `${landingKey(b, f)}${chain ? `|${b.s.key}` : ""}`;
+      if (!groups.has(key)) groups.set(key, { b, pts: [] });
+      groups.get(key).pts.push({ d: b.hp, p: b.p });
+    }
+    states = [...groups.values()].flatMap(({ b, pts }) => squeezeDist(pts, KO_LEVELS).filter(x => x.p > 1e-9).map(x => inChain(branch(x.d, b.bar, b, x.p), b.s)));
     downAt.push(fellTo ? [...fellTo.values()].filter(x => x.p > 0) : []);
     if (i === 0) {
       const p = states.reduce((t, x) => t + x.p, 0);
       after1 = p > 0 ? states.map(x => {
         const e = { hp: x.hp, bar: x.bar };
         for (const k of DISCRETE) e[k] = x[k];
-        return Object.assign(e, { left: x.left, sitrus: x.sitrus, p: x.p / p });
+        e.p = x.p / p;
+        return e;
       }) : [];
     }
     by.push(Math.min(1, down));
@@ -560,8 +596,6 @@ const opponentsOf = (env, p) => {
   try { return (env?.field ?? []).filter(q => q && q !== p && q.isPlayer?.() !== p.isPlayer?.()); } catch { return []; }
 };
 const tagsOf = p => { try { return p.summonData?.tags ?? []; } catch { return []; } };
-// The Sitrus Berry's trigger: `getHpRatio` rounds to a whole percent (game-code.md §21).
-const belowHalf = (hp, max) => Math.round((hp / max) * 100) / 100 < 0.5;
 const berryQuarter = p => Math.max(1, Math.floor(p.getMaxHp() / 4)) * (ability(p, "DoubleBerryEffectAbAttr") ? 2 : 1);
 const unnerved = (env, p) => opponentsOf(env, p).some(q => ability(q, "PreventBerryUseAbAttr"));
 // One Sitrus or Enigma Berry's heal before the max-HP cap, how many `p` holds, and the chance `keep` that a Berry Pouch
@@ -669,8 +703,8 @@ const applyTurnEnd = (steps, hp, max) => {
   }
   return cur;
 };
-// Signed, with no boss bars in the way, and no Enigma Berry: that is `koCurve`'s, as is the Sitrus under `sitrus`
-// false. `hp`: the HP it will have by then; `dealt`: this turn's damage dealt, for Shell Bell; `beforeBerries`: only the
+// Signed, with no boss bars in the way, and no Enigma Berry: that is Landing's turn end's, as is the Sitrus under
+// `sitrus` false. `hp`: the HP it will have by then; `dealt`: this turn's damage dealt, for Shell Bell; `beforeBerries`: only the
 // part ahead of the BerryPhase. Reads fields and item and ability attributes only.
 // @only 25-turn, tests: sceneTurnEndHp
 export const sceneTurnEndHp = (env, p, opts = {}) => {
