@@ -212,17 +212,21 @@ const hitRecord = (use, def) => {
     perHit: Array(n).fill({ max, min: max }), expected: Math.min(mean, def.hp), uncapped: mean, max: Math.min(max * n, def.hp), pKo: 0,
     use, traits: { ...TRAITS }, costs: [], notes: [], live: true };
 };
-const race = ({ use, foe = {}, token = 0 }) => {
-  const me = mon("attacker", 50, ["Normal"], ATTACKER, [["Hit", "Normal", 80, "P"]], true);
-  const target = targetMon({ name: "foe", trainer: true, ...foe });
+// `ours`: the foe hits us, and these are our luck; else we hit the foe, whose luck is `foe`.
+const race = ({ use, foe = {}, ours = null, token = 0 }) => {
+  const hitter = (name, player) => mon(name, 50, ["Normal"], ATTACKER, [["Hit", "Normal", 80, "P"]], true, undefined, { isPlayer: () => player, hasTrainer: () => !player });
+  const me = ours ? targetMon({ name: "us", player: true, ...ours }) : hitter("us", true);
+  const target = ours ? hitter("foe", false) : targetMon({ name: "foe", trainer: true, ...foe });
+  const [atk, def] = ours ? [target, me] : [me, target];
   target.getOpponents = () => [me];
   const turn = fakeTurn({ live: true, party: [me], foes: [target], enemyModifiers: tokens(token),
     trainer: { getName: () => "Ace", config: { isBoss: false }, isDouble: () => false },
-    outcome: (atk, def) => (atk === me ? hitRecord(use, def) : null) });
+    outcome: (a, d) => (a === atk ? hitRecord(use, d) : null),
+    moves: e => (e === atk ? [{ name: "Hit", type: "Normal", p: 1, score: 10, targets: [0] }] : []) });
   const T = tpTables(turn, [me], [target], false);
-  const by = koCurve(turn.mon(target), turn.outcomes(me, target)[0]).by;
+  const by = koCurve(turn.mon(def), turn.outcomes(atk, def)[0]).by;
   const plan = tpFight(T, fightState({ oh: [me.hp], ob: [0], fh: [target.hp], fs: [T.foeState[0].bar], fb: [0] }), 0, 0, "free");
-  return { by, plan: plan.winBy };
+  return { by, plan: ours ? plan.lossBy : plan.winBy };
 };
 const sureUse = (d, n = 1) => [{ d, p: 1, n }];
 const rolls = (lo, hi) => Array.from({ length: 16 }, (_, r) => ({ d: lo + (hi - lo) * r / 15, p: 1 / 16, n: 1 }));
@@ -244,6 +248,24 @@ const EXACT = 1e-5;
     ["two hits into Sturdy", { use: sureUse(300, 2), foe: { sturdy: true } }, EXACT],
     // By turn 2 its branches stand in five classes of luck, one past the branches the fight plan keeps for each.
     ["every luck at once, half the uses missing", { use: [{ d: 0, p: 0.5, n: 0 }, { d: 150, p: 0.5, n: 1 }], foe: { sturdy: true, seed: true, band: 1 }, token: 5 }, EXACT],
+  ];
+  for (const [what, setup, tol] of ROWS) {
+    const { by, plan } = race(setup);
+    console.log(`${what}: KO pacing ${curve(by)} · fight plan ${curve(plan)}`);
+    for (let t = 0; t < 9; t++) assert.ok(Math.abs(by[t] - plan[t]) < tol);
+  }
+}
+
+// ---- The fight plan's chance we are down by each turn is KO pacing's on us, the foe's multi-hit use landing hit by hit (#1027)
+{
+  console.log("== KO pacing and the fight plan, on us");
+  const ROWS = [
+    ["plain", { use: sureUse(60), ours: {} }, EXACT],
+    ["plain, rolled", { use: rolls(45, 60), ours: {} }, 0.05],
+    ["Sturdy", { use: sureUse(150), ours: { sturdy: true } }, EXACT],
+    ["Focus Band", { use: sureUse(150), ours: { band: 1 } }, EXACT],
+    ["Reviver Seed", { use: sureUse(150), ours: { seed: true } }, EXACT],
+    ["the foe's two hits into Sturdy", { use: sureUse(300, 2), ours: { sturdy: true } }, EXACT],
   ];
   for (const [what, setup, tol] of ROWS) {
     const { by, plan } = race(setup);

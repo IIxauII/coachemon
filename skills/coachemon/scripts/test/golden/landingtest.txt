@@ -29,6 +29,13 @@ Reviver Seed: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 
 two bars on a trainer: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
 two hits into Sturdy: KO pacing 1.000 1.000 1.000 1.000 · fight plan 1.000 1.000 1.000 1.000
 every luck at once, half the uses missing: KO pacing 0.000 0.000 0.084 0.226 · fight plan 0.000 0.000 0.084 0.226
+== KO pacing and the fight plan, on us
+plain: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
+plain, rolled: KO pacing 0.000 0.766 1.000 1.000 · fight plan 0.000 0.813 1.000 1.000
+Sturdy: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
+Focus Band: KO pacing 0.900 0.990 0.999 1.000 · fight plan 0.900 0.990 0.999 1.000
+Reviver Seed: KO pacing 0.000 1.000 1.000 1.000 · fight plan 0.000 1.000 1.000 1.000
+the foe's two hits into Sturdy: KO pacing 1.000 1.000 1.000 1.000 · fight plan 1.000 1.000 1.000 1.000
 == the probe
 KO pacing:  sturdy 2.00 · seed 2.00 · band 1.11 · token 1.10
 fight plan: sturdy 2.00 · seed 2.00 · band 1.11 · token 1.10

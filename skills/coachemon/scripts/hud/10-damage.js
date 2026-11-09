@@ -125,8 +125,8 @@ const barStep = (f, hp, bar, d, ohko = false) => {
 // lands no berries and no turn end (#1024).
 // The discrete part, at its fresh values. `revived`: the Reviver Seed is spent; `tok`: the enemy endure token is spent
 // for the wave.
-const discrete = () => ({ revived: false, tok: false });
-const DISCRETE = Object.keys(discrete());
+const FRESH = Object.freeze({ revived: false, tok: false });
+const DISCRETE = Object.keys(FRESH);
 const LUCK = ["revived", "tok"];
 const REST = DISCRETE.filter(k => !LUCK.includes(k));
 const NO_HIT = {};
@@ -134,7 +134,7 @@ const NO_HIT = {};
 // and bar are never read.
 // @only 25-turn, 35-team-plan, tests: stateOf
 export const stateOf = (facts, hp = facts.hp, bar = null, from = null) => {
-  const s = { hp, bar: bar ?? facts.idx ?? 0, ...discrete(), facts };
+  const s = { hp, bar: bar ?? facts.idx ?? 0, ...FRESH, facts };
   if (from) for (const k of DISCRETE) if (k in from) s[k] = from[k];
   return s;
 };
@@ -199,8 +199,11 @@ export const land = (state, use, hit = NO_HIT, { whole = false } = {}) => {
   if (!up || !(d > 0) || !Number.isFinite(d)) return [{ state, p: 1, dealt: 0, hits: 0 }];
   const downs = [];
   const stood = landUse(f, { ...state, p: 1, stop: false, dealt: 0, hits: 0 }, d, Math.max(1, Math.round(use.n ?? 1)), h.factor ?? null, h, whole,
-    (p, b, hp, bar) => downs.push({ ...b, hp, bar, p, dealt: b.dealt + (b.hp - hp), hits: b.hits + 1 }));
-  return [...stood, ...downs].map(c => ({ state: stateOf(f, c.hp, c.bar, c), p: c.p, dealt: c.dealt, hits: c.hits }));
+    (p, b, hp, bar) => downs.push({ state: stateOf(f, hp, bar, b), p, dealt: b.dealt + (b.hp - hp), hits: b.hits + 1 }));
+  const outs = [];
+  for (const c of stood) outs.push({ state: stateOf(f, c.hp, c.bar, c), p: c.p, dealt: c.dealt, hits: c.hits });
+  for (const o of downs) outs.push(o);
+  return outs;
 };
 export const luckKey = (s, f = s.facts) => `${+s.revived}${+s.tok}${f?.sturdy ? +(s.hp >= f.maxHp) : ""}`;
 export const landingKey = (s, f = s.facts) => {
