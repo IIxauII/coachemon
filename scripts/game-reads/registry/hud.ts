@@ -1933,6 +1933,7 @@ export const HUD: Area = {
         "src/modifier/modifier.ts#PokemonInstantReviveModifier.apply",
         "src/data/abilities/init-abilities.ts#initAbilities",
         "src/data/abilities/ab-attrs.ts#ReceivedMoveDamageMultiplierAbAttr",
+        "src/data/abilities/ab-attrs.ts#FormBlockDamageAbAttr.apply",
       ],
     },
     { ours: "skills/coachemon/scripts/hud/10-damage.js#with-dmg", of: ["src/field/pokemon.ts#Pokemon.getAttackDamage"] },

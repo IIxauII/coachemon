@@ -12,13 +12,17 @@ const { tpTables, tpFight } = globalThis.__hud["35-team-plan"];
 
 const held = (name, n = 1) => new ({ [name]: class { getStackCount() { return n; } } })[name]();
 const tokens = n => (n ? [Object.assign(held("EnemyEndureChanceModifier", n), { chance: 2 })] : []);
-// `token` is the wave's endure chance in stacks of 2 %; `cut` "multiscale" or "shadow shield"; `moves` as
-// fake-mon.mjs's `mon` takes them.
+const BUST = { disguise: 0.125, iceFace: 0 };
+class FormBlockDamageAbAttr { constructor(recoil) { Object.assign(this, { formIndex: 0, recoil }); } }
+// `token` is the wave's endure chance in stacks of 2 %; `cut` "multiscale" or "shadow shield"; `form`: "disguise" or
+// "iceFace", held intact; `moves` as fake-mon.mjs's `mon` takes them.
 const CUTS = { multiscale: AbilityId.MULTISCALE, "shadow shield": AbilityId.SHADOW_SHIELD };
-const targetMon = ({ name = "target", hp = 100, maxHp = hp, boss = 0, idx, sturdy = false, cut = null, band = 0, seed = false, player = false, trainer = false, moves = [] } = {}) =>
+const targetMon = ({ name = "target", hp = 100, maxHp = hp, boss = 0, idx, sturdy = false, cut = null, band = 0, seed = false, form = null, player = false, trainer = false, moves = [] } = {}) =>
   mon(name, 50, ["Normal"], [maxHp, 100, 100, 100, 100, 100], moves, true, hp, {
     isPlayer: () => player, bossSegments: boss, bossSegmentIndex: idx ?? Math.max(0, boss - 1), formIndex: 0, waveData: {},
-    hasAbilityWithAttr: a => sturdy && a === "PreDefendFullHpEndureAbAttr", hasAbility: id => !!cut && id === CUTS[cut],
+    hasAbilityWithAttr: a => (sturdy && a === "PreDefendFullHpEndureAbAttr") || (!!form && a === "FormBlockDamageAbAttr"),
+    hasAbility: id => !!cut && id === CUTS[cut],
+    getAbility: () => ({ name: "x", getAttrs: n => (form && n === "FormBlockDamageAbAttr" ? [new FormBlockDamageAbAttr(BUST[form])] : []) }),
     ...(trainer ? { hasTrainer: () => true } : {}),
     getHeldItems: () => [...(band ? [held("SurviveDamageModifier", band)] : []), ...(seed ? [held("PokemonInstantReviveModifier")] : [])],
   });
@@ -26,8 +30,9 @@ const targetMon = ({ name = "target", hp = 100, maxHp = hp, boss = 0, idx, sturd
 const factsOf = (o = {}) => D.targetFacts({ enemyModifiers: tokens(o.token ?? 0), finalBoss: !!o.finalBoss }, targetMon(o));
 const at = (o = {}) => stateOf(factsOf(o));
 const sure = (d, n = 1) => ({ d, n });
-// `[hp, bar, p, dealt, hits]` per outcome, with `R` for a spent Reviver Seed and `T` for a spent token.
-const row = outs => outs.map(o => `${+o.state.hp.toFixed(3)}/${o.state.bar}${o.state.revived ? "R" : ""}${o.state.tok ? "T" : ""} p${+o.p.toFixed(4)} dealt ${+o.dealt.toFixed(3)} ×${o.hits}`).join(" · ");
+// `[hp, bar, p, dealt, hits]` per outcome, with `R` for a spent Reviver Seed, `T` for a spent token and `B` for a busted
+// Disguise or Ice Face.
+const row = outs => outs.map(o => `${+o.state.hp.toFixed(3)}/${o.state.bar}${o.state.revived ? "R" : ""}${o.state.tok ? "T" : ""}${o.state.busted ? "B" : ""} p${+o.p.toFixed(4)} dealt ${+o.dealt.toFixed(3)} ×${o.hits}`).join(" · ");
 const show = (what, outs) => console.log(`${what}: ${row(outs)}`);
 const shape = outs => outs.map(o => [+o.state.hp.toFixed(6), o.state.bar, o.state.revived, o.state.tok, +o.p.toFixed(6), o.hits]);
 
@@ -162,6 +167,61 @@ const shape = outs => outs.map(o => [+o.state.hp.toFixed(6), o.state.bar, o.stat
   assert.deepEqual(shape(land(back[0].state, sure(300))), [[0, 0, true, false, 1, 1]], "once");
 }
 
+// ---- An intact Disguise takes a use's first hit whole, and busting it costs an eighth of max HP (game-code.md §8)
+{
+  console.log("== Disguise");
+  const first = land(at({ form: "disguise" }), sure(150));
+  show("full HP, hit for 150", first);
+  assert.deepEqual(shape(first), [[88, 0, false, false, 1, 1]]);
+  assert.equal(first[0].state.busted, true);
+  assert.equal(first[0].dealt, 0, "the bust's chip is no damage the hit dealt");
+}
+
+// ---- A use's second hit lands on the busted form, and a later use meets no disguise (game-code.md §8)
+{
+  const mimikyu = at({ form: "disguise" });
+  const twice = land(mimikyu, sure(300, 2));
+  show("two hits of 150", twice);
+  assert.deepEqual(shape(twice), [[0, 0, false, false, 1, 2]]);
+  assert.equal(twice[0].dealt, 88);
+  const [busted] = land(mimikyu, sure(150));
+  const later = land(busted.state, sure(150));
+  show("busted on 88, hit for 150", later);
+  assert.deepEqual(shape(later), [[0, 0, false, false, 1, 1]]);
+  assert.deepEqual(shape(land(stateOf(mimikyu.facts, 100, 0, busted.state), sure(150))), [[0, 0, false, false, 1, 1]], "the bust carries through `from`");
+}
+
+// ---- Ice Face's bust costs nothing; Disguise's chip lands through the bars on no Focus Band or token, and only a Reviver Seed outlives it (game-code.md §8)
+{
+  assert.deepEqual(shape(land(at({ form: "iceFace" }), sure(150))), [[100, 0, false, false, 1, 1]], "Ice Face");
+  const low = at({ hp: 10, maxHp: 100, form: "disguise", band: 10, token: 50 });
+  assert.deepEqual(shape(land(low, sure(150))), [[0, 0, false, false, 1, 1]], "12 of chip into 10 HP");
+  const seeded = land(at({ hp: 10, maxHp: 100, form: "disguise", seed: true }), sure(300, 2));
+  show("10 of 100 with a Reviver Seed, two hits of 150", seeded);
+  assert.deepEqual(shape(seeded), [[50, 0, true, false, 1, 1]]);
+  const boss = land(at({ hp: 105, maxHp: 200, boss: 2, form: "disguise" }), sure(150));
+  show("105 of a 2-bar 200, hit for 150", boss);
+  assert.deepEqual(shape(boss), [[80, 0, false, false, 1, 1]]);
+  assert.deepEqual(shape(land(at({ hp: 12.5, maxHp: 100, form: "disguise", band: 10 }), sure(5), {}, { whole: true })), [[0.5, 0, false, false, 1, 1]], "under `whole`, a chip leaving a sliver fells it");
+}
+
+// ---- A hit that ignores the form block, a Mold Breaker's or a fixed-damage one, lands whole and busts nothing, and a miss busts nothing (game-code.md §8)
+{
+  const mimikyu = at({ form: "disguise" });
+  const through = land(mimikyu, sure(60), { ignoresDisguise: true });
+  assert.deepEqual(shape(through), [[40, 0, false, false, 1, 1]]);
+  assert.equal(through[0].state.busted, false);
+  assert.deepEqual(land(mimikyu, sure(0)), [{ state: mimikyu, p: 1, dealt: 0, hits: 0 }]);
+}
+
+// ---- An intact Disguise is luck that can stop a lethal hit, so its luck key tells it from a busted one (#1034)
+{
+  const facts = factsOf({ form: "disguise" });
+  const [busted] = land(stateOf(facts), sure(150));
+  assert.notEqual(luckKey(stateOf(facts, 88)), luckKey(busted.state));
+  assert.equal(luckKey(stateOf(factsOf(), 88, 0, busted.state)), luckKey(stateOf(factsOf(), 88)), "no form block, nothing to tell");
+}
+
 // ---- Under `whole` a hit leaving under 1 HP is lethal and rolls the target's luck; without it the sliver stands (#527)
 {
   console.log("== whole");
@@ -178,9 +238,10 @@ const shape = outs => outs.map(o => [+o.state.hp.toFixed(6), o.state.bar, o.stat
 // The states the invariants sweep, and the uses and hits they take.
 const STATES = [at(), at({ sturdy: true }), at({ band: 2 }), at({ token: 5 }), at({ hp: 100, maxHp: 200, seed: true }), at({ hp: 300, boss: 3, token: 5 }),
   at({ hp: 300, boss: 3, sturdy: true, band: 1, token: 10, seed: true }), at({ hp: 10, band: 1 }), at({ hp: 100, finalBoss: true, band: 1 }),
-  at({ cut: "multiscale", sturdy: true, band: 1 }), at({ hp: 300, boss: 3, cut: "shadow shield", token: 5 })];
+  at({ cut: "multiscale", sturdy: true, band: 1 }), at({ hp: 300, boss: 3, cut: "shadow shield", token: 5 }),
+  at({ form: "disguise" }), at({ hp: 10, maxHp: 100, form: "disguise", band: 1, seed: true }), at({ hp: 300, boss: 3, form: "disguise", token: 5 })];
 const USES = [sure(0), sure(50), sure(99.5), sure(100), sure(150), sure(300, 2), sure(450, 3), { d: 151, n: 2.4 }];
-const HITS = [{}, { ignoresSturdy: true }, { ohko: true }, { factor: bar => 1 + bar / 2 }, { cut: "in" }, { cut: "never" }, { ignoresAbility: true }];
+const HITS = [{}, { ignoresSturdy: true }, { ignoresDisguise: true }, { ohko: true }, { factor: bar => 1 + bar / 2 }, { cut: "in" }, { cut: "never" }, { ignoresAbility: true }];
 const sweep = fn => {
   for (const st of STATES) for (const use of USES) for (const hit of HITS) for (const whole of [false, true]) fn(st, use, hit, whole);
 };
@@ -305,6 +366,8 @@ const EXACT = 1e-5;
     ["Multiscale", { use: sureUse(150), foe: { cut: "multiscale" } }, EXACT],
     ["two hits into Shadow Shield", { use: sureUse(150, 2), foe: { cut: "shadow shield" } }, EXACT],
     ["Multiscale, the record asked at full HP", { use: sureUse(60), foe: { cut: "multiscale" }, hit: { cut: "in" } }, EXACT],
+    ["Disguise", { use: sureUse(150), foe: { form: "disguise" } }, EXACT],
+    ["two hits into Disguise", { use: sureUse(300, 2), foe: { form: "disguise" } }, EXACT],
     // By turn 2 its branches stand in five classes of luck, one past the branches the fight plan keeps for each.
     ["every luck at once, half the uses missing", { use: [{ d: 0, p: 0.5, n: 0 }, { d: 150, p: 0.5, n: 1 }], foe: { sturdy: true, seed: true, band: 1 }, token: 5 }, EXACT],
   ];
@@ -327,6 +390,7 @@ const EXACT = 1e-5;
     ["the foe's two hits into Sturdy", { use: sureUse(300, 2), ours: { sturdy: true } }, EXACT],
     ["Multiscale", { use: sureUse(150), ours: { cut: "multiscale" } }, EXACT],
     ["Multiscale, the record asked at full HP", { use: sureUse(60), ours: { cut: "multiscale" }, hit: { cut: "in" } }, EXACT],
+    ["Disguise", { use: sureUse(150), ours: { form: "disguise" } }, EXACT],
   ];
   for (const [what, setup, tol] of ROWS) {
     const { by, plan } = race(setup);
