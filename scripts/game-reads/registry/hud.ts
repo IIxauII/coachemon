@@ -1926,6 +1926,7 @@ export const HUD: Area = {
         "src/data/moves/move.ts#RandomLevelDamageAttr.getDamage",
       ],
     },
+    { ours: "skills/coachemon/scripts/hud/10-damage.js#sub-bypass", of: ["src/data/moves/move.ts#Move.hitsSubstitute"] },
     {
       ours: "skills/coachemon/scripts/hud/10-damage.js#target-facts",
       of: [
@@ -1935,6 +1936,9 @@ export const HUD: Area = {
         "src/data/abilities/init-abilities.ts#initAbilities",
         "src/data/abilities/ab-attrs.ts#ReceivedMoveDamageMultiplierAbAttr",
         "src/data/abilities/ab-attrs.ts#FormBlockDamageAbAttr.apply",
+        "src/data/battler-tags.ts#SubstituteTag.onAdd",
+        "src/phases/move-effect-phase.ts#MoveEffectPhase.applyMoveDamage",
+        "src/phases/move-effect-phase.ts#MoveEffectPhase.updateSubstitutes",
       ],
     },
     { ours: "skills/coachemon/scripts/hud/10-damage.js#with-dmg", of: ["src/field/pokemon.ts#Pokemon.getAttackDamage"] },
