@@ -214,7 +214,7 @@ const bigHit = move(1, "Big Hit", 14, 120);
   floater.getAttackDamage = function (o) {
     return o.move.type === 4 ? { cancelled: false, result: HitResult.NO_EFFECT, damage: 0 } : hit.call(this, o);
   };
-  const unset = o => ["ignoresSturdy", "cat", "e"].filter(k => o[k] === undefined);
+  const unset = o => ["ignoresSturdy", "ignoresDisguise", "cat", "e"].filter(k => o[k] === undefined);
   for (const estimate of [false, true]) {
     setup(atk, floater);
     const outs = readTurn(scene, t => t.outcomes(atk, floater), { estimate });
@@ -325,7 +325,7 @@ const bigHit = move(1, "Big Hit", 14, 120);
   class FixedDamageAttr {}
   class PsywaveAttr extends FixedDamageAttr {}
   class OneHitKOAttr {}
-  class FormBlockDamageAbAttr { constructor(f) { this.formIndex = f; } }
+  class FormBlockDamageAbAttr { constructor(f, condition = () => true) { Object.assign(this, { formIndex: f, recoil: 0.125, condition }); } }
   const atk = mon("a"), def = mon("target");
   const realDamage = def.getAttackDamage;
   def.getAttackDamage = function (args) {
@@ -366,10 +366,20 @@ const bigHit = move(1, "Big Hit", 14, 120);
   setup(atk, boss);
   const ohko = moveOutcome(scene, atk, boss, pmOf(move(14, "Fissure", 4, 0, { acc: 30, attrs: [new OneHitKOAttr()] })));
   near(ohko.pKo, 0.3, "OHKO ignores boss bars");
-  const mimikyu = mon("mimikyu", { hp: 100 });
-  mimikyu.getAbility = () => ({ name: "Disguise", getAttrs: n => (n === "FormBlockDamageAbAttr" ? [new FormBlockDamageAbAttr(0)] : []) });
-  setup(atk, mimikyu);
-  assert.equal(moveOutcome(scene, atk, mimikyu, pmOf(bigHit)).pKo, 0, "Disguise takes the hit");
+  // Who passes a form block (game-code.md §8).
+  const mimikyu = mon("mimikyu", { hp: 100, attrs: [new FormBlockDamageAbAttr(0)] });
+  mimikyu.getAttackDamage = def.getAttackDamage;
+  const mold = mon("mold", { abilities: ["MoveAbilityBypassAbAttr"] });
+  const passes = (a, mv) => { setup(a, mimikyu); return moveOutcome(scene, a, mimikyu, pmOf(mv)).ignoresDisguise; };
+  assert.equal(passes(atk, bigHit), false, "Disguise takes the hit");
+  assert.equal(passes(mold, bigHit), true, "Mold Breaker");
+  assert.equal(passes(atk, move(13, "Seismic Toss", 1, 1, { attrs: [new FixedDamageAttr()] })), true, "fixed damage");
+  assert.equal(passes(atk, psywave), true, "Psywave");
+  assert.equal(passes(atk, move(14, "Fissure", 4, 0, { acc: 30, attrs: [new OneHitKOAttr()] })), true, "an OHKO");
+  const eiscue = mon("eiscue", { hp: 100, attrs: [new FormBlockDamageAbAttr(0, (_t, _u, mv) => mv.category === 0)] });
+  setup(atk, eiscue);
+  assert.deepEqual([bigHit, move(16, "Ice Beam", 14, 90, { cat: 1 })].map(mv => moveOutcome(scene, atk, eiscue, pmOf(mv)).ignoresDisguise), [false, true],
+    "Ice Face's condition, a physical move then a special one");
   const popBomb = move(15, "Population Bomb", 0, 30, { acc: 90, attrs: [new MultiHitAttr(3)], flags: 65536 });
   const bigBoss = mon("bigboss", { hp: 3000, player: false, boss: 5, items: [new SurviveDamageModifier()] });
   setup(atk, bigBoss);
@@ -378,6 +388,22 @@ const bigHit = move(1, "Big Hit", 14, 120);
   const ms = performance.now() - t0;
   assert.ok(pop.expected > 0 && pop.notes.includes("10 hits"));
   assert.ok(ms < 50, `10-hit resolve took ${ms} ms`);
+}
+
+// ---- A record leaves Disguise to Landing: its rolls are the game's own, its odds take the bust's chip, and its curve's second use lands (game-code.md §8, #1034)
+{
+  const atk = mon("a");
+  const plain = mon("plain", { hp: 100 });
+  const mimikyu = mon("mimikyu", { hp: 100, attrs: [abAttr("FormBlockDamageAbAttr", { formIndex: 0, recoil: 0.125 })] });
+  setup(atk, plain);
+  const hit = moveOutcome(scene, atk, plain, pmOf(bigHit), { crit: false });
+  setup(atk, mimikyu);
+  const o = moveOutcome(scene, atk, mimikyu, pmOf(bigHit), { crit: false });
+  assert.deepEqual([o.perHit, o.use], [hit.perHit, hit.use], "no hit zeroed");
+  assert.deepEqual([o.pKo, o.max, o.expected], [0, 12, 12]);
+  assert.ok(o.notes.includes("disguise"));
+  assert.deepEqual(koCurve(mimikyu, o).by.slice(0, 2), [0, 1]);
+  assert.deepEqual(koCurve(mimikyu, o, { firstKo: o.pKo }).by.slice(0, 2), [0, 1], "pinned to the record's own odds");
 }
 
 // ---- The endure token rolls on the pre-clamp hit, so a proc on a strike the bar stops spends it (game-code.md §3)

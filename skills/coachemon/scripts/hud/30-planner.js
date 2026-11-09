@@ -463,6 +463,7 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false, entered =
     targets: exactRow ? [...(exactRow.targets ?? [])] : null,
     revive: Math.max(0, ...kos.map(k => k.revive)),
     ignoresSturdy: moves.some(m => m.o) && moves.every(m => !m.o || !!m.o.ignoresSturdy),
+    ignoresDisguise: moves.some(m => m.o) && moves.every(m => !m.o || !!m.o.ignoresDisguise),
     // A mix of moves has no one category or effectiveness: each point of `use` carries its own `se`.
     e: null, cat: null,
     boost: Object.keys(boost).length ? boost : null,

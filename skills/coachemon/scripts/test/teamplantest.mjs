@@ -727,7 +727,7 @@ assert.equal(plan.approxDoubles, false);
   const bisharp = fakeMon("Bisharp", 80, ["Dark", "Steel"], [300, 200, 200, 100, 100, 100], [["Iron Head", "Steel", 80, "P"]], true);
   const chomp = fakeMon("Garchomp", 80, ["Dragon", "Fairy"], [300, 200, 200, 100, 100, 50], [["Earthquake", "Ground", 100, "P"]], true,
     undefined, { getOpponents: () => [bisharp] });
-  const unset = o => ["ignoresSturdy", "cat", "e"].filter(k => o?.[k] === undefined);
+  const unset = o => ["ignoresSturdy", "ignoresDisguise", "cat", "e"].filter(k => o?.[k] === undefined);
   for (const live of [true, false]) {
     const turn = fakeTurn({ live, party: [bisharp], foes: [chomp], outcome: stub,
       moves: () => [{ name: "Earthquake", type: "Ground", p: 1, score: 10, targets: [0] }] });
@@ -829,6 +829,21 @@ assert.equal(plan.approxDoubles, false);
   const sig = fu => tpSig(T, { ...at(fu), cur: [0], act: 0, fcur: 0 });
   assert.notEqual(sig([spent]), sig([null]));
   assert.equal(sig([null]), sig([D.stateOf(T.foeState[0].facts, 50)]), "a fresh carry reads as none");
+}
+// A Disguise busted in one exchange meets the next one busted, apart from an intact one in the memo and the beam
+// (game-code.md §8).
+{
+  const { tpFight, tpSig } = globalThis.__hud["35-team-plan"];
+  const D = globalThis.__hud["10-damage"];
+  const T = { ours: [[{ dmg: 150, e: 1 }]], theirs: [[{ dmg: 1, e: 1 }]], first: [[0]], ourMax: [400], foeMax: [100], ourHeal: [null], foeHeal: [null],
+    foeState: [D.stateOf({ maxHp: 100, disguise: { chip: 12 } }, 100)], memo: new Map() };
+  const at = fu => fightState({ oh: [400], ob: [0], fh: [88], fs: [0], fb: [0], fu });
+  const busted = D.stateOf(T.foeState[0].facts, 88, 0, { busted: true });
+  const [after, intact] = [at([busted]), at([null])].map(st => tpFight(T, st, 0, 0, "free").ends.win.turns);
+  console.log(`== a busted Disguise in the carry\nbusted: down on turn ${after} · intact: turn ${intact}`);
+  assert.deepEqual([after, intact], [1, 2]);
+  const sig = fu => tpSig(T, { ...at(fu), cur: [0], act: 0, fcur: 0 });
+  assert.notEqual(sig([busted]), sig([null]));
 }
 // A bench mon the trainer Teras (#648, Gordie W180): Coalossal's team index is in `instantTeras`, so the plan prices our
 // hits at Tera Rock, Water ×2 — it Teras at its first FIGHT command, before anything hits it once sent in after a KO —
