@@ -84,6 +84,43 @@ assert.equal(globalThis.Phaser.Math.RND.state(), "!rnd,0", "sandbox restored the
 assert.ok(!plan.compact && plan.summary === null, "a lost fight is never compact");
 assert.equal(plan.approxDoubles, false);
 
+// A live read of a 4-vs-6 trainer fight, both sides' uses spread over their rolls, plans in under 500 ms (#1027).
+{
+  const ours = [
+    mon("Garchomp", 100, ["Dragon","Ground"], "Rough Skin", [358,296,226,176,206,240], [["Earthquake","Ground",100,"P"],["Dragon Claw","Dragon",80,"P"]], true),
+    mon("Lapras", 100, ["Water","Ice"], "Water Absorb", [460,206,196,206,226,156], [["Surf","Water",90,"S"],["Ice Beam","Ice",90,"S"]], false),
+    mon("Metagross", 100, ["Steel","Psychic"], "Clear Body", [300,306,296,226,216,176], [["Meteor Mash","Steel",90,"P"],["Zen Headbutt","Psychic",80,"P"]], false),
+    mon("Gengar", 100, ["Ghost","Poison"], "Cursed Body", [260,166,156,296,186,256], [["Shadow Ball","Ghost",80,"S"],["Sludge Bomb","Poison",90,"S"]], false),
+  ];
+  const theirs = [
+    mon("Tyranitar", 100, ["Rock","Dark"], "Sand Stream", [404,306,256,226,236,156], [["Stone Edge","Rock",100,"P"],["Crunch","Dark",80,"P"]], true),
+    mon("Salamence", 100, ["Dragon","Flying"], "Intimidate", [394,306,196,256,196,236], [["Dragon Claw","Dragon",80,"P"],["Fly","Flying",90,"P"]], false),
+    mon("Starmie", 100, ["Water","Psychic"], "Natural Cure", [324,186,206,236,206,266], [["Surf","Water",90,"S"],["Psychic","Psychic",90,"S"]], false),
+    mon("Scizor", 100, ["Bug","Steel"], "Technician", [344,296,236,146,196,166], [["Bullet Punch","Steel",60,"P"],["X-Scissor","Bug",80,"P"]], false),
+    mon("Rotom", 100, ["Electric","Ghost"], "Levitate", [304,136,256,226,256,216], [["Thunderbolt","Electric",90,"S"],["Shadow Ball","Ghost",80,"S"]], false),
+    mon("Lucario", 100, ["Fighting","Steel"], "Inner Focus", [344,256,176,266,176,216], [["Aura Sphere","Fighting",80,"S"],["Close Combat","Fighting",120,"P"]], false),
+  ];
+  const table = {};
+  for (const [side, other] of [[ours, theirs], [theirs, ours]]) for (const a of side) for (const d of other) for (const pm of a.moveset) {
+    const mv = pm.getMove(), phys = mv.category === cat.P;
+    const hit = Math.floor((42 * mv.power * a.getStat(phys ? 1 : 3) / d.getStat(phys ? 2 : 4)) / 50 + 2);
+    table[`${a.name}>${pm.getName()}>${d.name}`] = [[hit], 0.95, 1];
+  }
+  const turnOf = () => fakeTurn({
+    live: true, wave: 120, party: ours, foes: theirs, outcome: outcomeFrom(table),
+    trainer: { getName: () => "Cynthia", config: { isBoss: true }, isDouble: () => false },
+    moves: e => e.moveset.map((pm, i) => ({ name: pm.getName(), type: TY[pm.getMove().type], p: i ? 0.4 : 0.6, score: 10, targets: [0] })),
+  });
+  const T = globalThis.__tp.tpTables(turnOf(), ours, theirs, false);
+  assert.ok(T.theirs.flat().every(t => t.use?.length > 1), "every foe summary is off its live threat, spread over its rolls");
+  const t1 = performance.now();
+  const read = globalThis.__tp.teamPlan(turnOf());
+  globalThis.__tp.drawTeamPlan(read);
+  const took = performance.now() - t1;
+  assert.ok(read?.steps.length > 0, "the live read plans");
+  assert.ok(took < 500, `cheap enough to run every turn on a live read (${took.toFixed(0)} ms)`);
+}
+
 // An early trainer with nothing to plan around: the plan is a win in two steps and no more. In a double battle the
 // plan is still one-on-one exchanges, and says so.
 {
