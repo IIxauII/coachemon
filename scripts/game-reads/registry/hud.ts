@@ -1940,6 +1940,7 @@ export const HUD: Area = {
         "src/data/battler-tags.ts#SubstituteTag.onAdd",
         "src/phases/move-effect-phase.ts#MoveEffectPhase.applyMoveDamage",
         "src/phases/move-effect-phase.ts#MoveEffectPhase.updateSubstitutes",
+        "src/modifier/modifier.ts#HitHealModifier.apply",
       ],
     },
     { ours: "skills/coachemon/scripts/hud/10-damage.js#with-dmg", of: ["src/field/pokemon.ts#Pokemon.getAttackDamage"] },

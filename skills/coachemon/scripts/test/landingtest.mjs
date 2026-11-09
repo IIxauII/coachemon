@@ -17,9 +17,10 @@ const BUST = { disguise: 0.125, iceFace: 0 };
 class FormBlockDamageAbAttr { constructor(recoil) { Object.assign(this, { formIndex: 0, recoil }); } }
 // `token` is the wave's endure chance in stacks of 2 %; `cut` "multiscale" or "shadow shield"; `form`: "disguise" or
 // "iceFace", held intact; `sub` the HP of the Substitute it stands behind; `sitrus` and `enigma` the berries held, and
-// `pouch` the side's Berry Pouch stacks, `lum` the Lum Berries held beside them; `moves` as fake-mon.mjs's `mon` takes them.
+// `pouch` the side's Berry Pouch stacks, `lum` the Lum Berries held beside them; `bell` its Shell Bell stacks, `charm` the
+// side's Healing Charm stacks and `healBlock` a Heal Block on it; `moves` as fake-mon.mjs's `mon` takes them.
 const CUTS = { multiscale: AbilityId.MULTISCALE, "shadow shield": AbilityId.SHADOW_SHIELD };
-const targetMon = ({ name = "target", hp = 100, maxHp = hp, boss = 0, idx, sturdy = false, cut = null, band = 0, seed = false, form = null, sub = 0, sitrus = 0, enigma = 0, lum = 0, player = false, trainer = false, moves = [] } = {}) =>
+const targetMon = ({ name = "target", hp = 100, maxHp = hp, boss = 0, idx, sturdy = false, cut = null, band = 0, seed = false, form = null, sub = 0, sitrus = 0, enigma = 0, lum = 0, bell = 0, healBlock = false, player = false, trainer = false, moves = [] } = {}) =>
   mon(name, 50, ["Normal"], [maxHp, 100, 100, 100, 100, 100], moves, true, hp, {
     isPlayer: () => player, bossSegments: boss, bossSegmentIndex: idx ?? Math.max(0, boss - 1), formIndex: 0, waveData: {},
     hasAbilityWithAttr: a => (sturdy && a === "PreDefendFullHpEndureAbAttr") || (!!form && a === "FormBlockDamageAbAttr"),
@@ -27,12 +28,13 @@ const targetMon = ({ name = "target", hp = 100, maxHp = hp, boss = 0, idx, sturd
     getAbility: () => ({ name: "x", getAttrs: n => (form && n === "FormBlockDamageAbAttr" ? [new FormBlockDamageAbAttr(BUST[form])] : []) }),
     ...(trainer ? { hasTrainer: () => true } : {}),
     getHeldItems: () => [...(band ? [held("SurviveDamageModifier", band)] : []), ...(seed ? [held("PokemonInstantReviveModifier")] : []),
-      ...berries(BerryType.SITRUS, sitrus), ...berries(BerryType.ENIGMA, enigma), ...berries(BerryType.LUM, lum)],
-    getTag: t => (sub && t === "SUBSTITUTE" ? { tagType: t, hp: sub } : null),
+      ...berries(BerryType.SITRUS, sitrus), ...berries(BerryType.ENIGMA, enigma), ...berries(BerryType.LUM, lum), ...(bell ? [held("HitHealModifier", bell)] : [])],
+    getTag: t => (sub && t === "SUBSTITUTE" ? { tagType: t, hp: sub } : healBlock && t === "HEAL_BLOCK" ? { tagType: t } : null),
   });
 const pouches = n => (n ? [held("PreserveBerryModifier", n)] : []);
 // A target's facts as the fakes read them (fake-turn.mjs).
-const factsOf = (o = {}) => D.targetFacts({ enemyModifiers: [...tokens(o.token ?? 0), ...pouches(o.pouch ?? 0)], finalBoss: !!o.finalBoss }, targetMon(o));
+const charms = n => (n ? [Object.assign(held("HealingBoosterModifier", n), { multiplier: 1.1 })] : []);
+const factsOf = (o = {}) => D.targetFacts({ modifiers: charms(o.charm ?? 0), enemyModifiers: [...tokens(o.token ?? 0), ...pouches(o.pouch ?? 0)], finalBoss: !!o.finalBoss }, targetMon(o));
 const at = (o = {}) => stateOf(factsOf(o));
 const sure = (d, n = 1) => ({ d, n });
 // `[hp, bar, p, dealt, hits]` per outcome, with `R` for a spent Reviver Seed, `T` for a spent token and `B` for a busted
@@ -485,6 +487,68 @@ const thief = hp => stateOf({ maxHp: 200 }, hp);
   }
 }
 
+// A user of ours on `hp` of 200, `o` as `targetMon` takes it.
+const ourUser = (hp, o = {}) => stateOf(factsOf({ hp: 200, player: true, ...o }), hp);
+const userHp = outs => outs.map(o => +o.user.hp.toFixed(3));
+
+// ---- A drain heals its user its share of what the use took off the target, up to its max HP, and only while it stands (game-code.md §18)
+{
+  console.log("== drain");
+  const drain = { drain: 0.5 };
+  const outs = land(at({ hp: 200 }), sure(80), drain, { user: ourUser(100) });
+  console.log(`80 into 200, drained by a user on 100 of 200: ${outs.map(o => `dealt ${o.dealt} → us ${o.user.hp}`).join(" · ")}`);
+  assert.deepEqual(userHp(outs), [140]);
+  assert.deepEqual(userHp(land(at({ hp: 200 }), sure(80), drain, { user: ourUser(190) })), [200], "up to its max HP");
+  assert.deepEqual(userHp(land(at({ hp: 60 }), sure(150), drain, { user: ourUser(100) })), [130], "on the 60 a knockout took");
+  assert.deepEqual(userHp(land(at({ sturdy: true }), sure(150), drain, { user: ourUser(100) })), [149.5], "on the 99 Sturdy let through");
+  assert.deepEqual(userHp(land(at({ hp: 200 }), sure(0), drain, { user: ourUser(100) })), [100], "a miss drains nothing");
+  for (const [hp, whole] of [[0.5, true], [0, false]]) {
+    const user = ourUser(hp);
+    assert.equal(land(at({ hp: 200 }), sure(80), drain, { whole, user })[0].user, user, `a user on ${hp} HP drains nothing${whole ? ", whole" : ""}`);
+  }
+  assert.ok(!("user" in land(at({ hp: 200 }), sure(80), drain)[0]), "without a user, KO pacing's, the record prices it");
+}
+
+// ---- A negative drain, into Liquid Ooze, takes its share off the user through its bars, with no luck to save it (game-code.md §18, §21)
+{
+  const ooze = { drain: -0.5 };
+  assert.deepEqual(userHp(land(at({ hp: 200 }), sure(80), ooze, { user: ourUser(100) })), [60]);
+  assert.deepEqual(userHp(land(at({ hp: 200 }), sure(80), ooze, { user: ourUser(30, { sturdy: true, band: 10, seed: true }) })), [0], "no Sturdy, Focus Band or Reviver Seed");
+  const boss = stateOf(factsOf({ hp: 200, boss: 2 }), 120);
+  const clamped = land(at({ hp: 200 }), sure(80), ooze, { user: boss })[0].user;
+  assert.deepEqual([clamped.hp, clamped.bar], [100, 0], "a boss's bar stops it");
+}
+
+// ---- Shell Bell heals its holder an eighth a stack of what the use took, its target's Substitute's loss included, floored and at least 1, once the use is done (game-code.md §8)
+{
+  console.log("== Shell Bell");
+  const rows = [["one Shell Bell, 80 dealt", sure(80), {}, {}], ["four", sure(80), {}, { bell: 4 }], ["3 dealt", sure(3), {}, {}],
+    ["two hits of 40", sure(80, 2), {}, {}], ["Healing Charm x2", sure(80), {}, { charm: 2 }], ["into a 25 HP Substitute", sure(80), { sub: 25 }, {}]];
+  const healed = rows.map(([what, use, target, user]) => {
+    const outs = land(at({ hp: 200, ...target }), use, {}, { user: ourUser(100, { bell: 1, ...user }) });
+    console.log(`${what}: ${outs.map(o => `dealt ${o.dealt} + ${o.subDealt} → us ${o.user.hp}`).join(" · ")}`);
+    return userHp(outs)[0];
+  });
+  assert.deepEqual(healed, [110, 140, 101, 110, 112, 103]);
+  assert.deepEqual(userHp(land(at({ hp: 200 }), sure(0), {}, { user: ourUser(100, { bell: 1 }) })), [100], "a miss heals nothing");
+  assert.deepEqual(userHp(land(at({ hp: 200 }), sure(80), {}, { user: ourUser(100, { bell: 1, healBlock: true }) })), [100], "Heal Block");
+}
+
+// ---- Drain reads only what reached the target, so a hit its Substitute takes drains nothing, where Shell Bell heals on the Substitute's loss (game-code.md §8)
+{
+  const outs = land(at({ hp: 200, sub: 25 }), sure(80), { drain: 0.5 }, { user: ourUser(100, { bell: 1 }) });
+  assert.deepEqual(outs.map(o => [o.dealt, o.subDealt, o.user.hp]), [[0, 25, 103]]);
+}
+
+// ---- Shell Bell asks for full HP before the use's own heals, so a full-HP holder draining into Liquid Ooze heals nothing back (game-code.md §8, §18)
+{
+  const ooze = { drain: -0.5 };
+  assert.deepEqual(userHp(land(at({ hp: 200 }), sure(80), ooze, { user: ourUser(200, { bell: 1 }) })), [160], "full HP: the Ooze alone");
+  assert.deepEqual(userHp(land(at({ hp: 200 }), sure(80), ooze, { user: ourUser(190, { bell: 1 }) })), [160], "190: the Ooze, then the bell's 10");
+  assert.deepEqual(userHp(land(at({ hp: 200 }), sure(80), { drain: 0.5 }, { user: ourUser(190, { bell: 1 }) })), [200], "the drain fills it, and the bell heals nothing more");
+  assert.deepEqual(userHp(land(at({ hp: 200 }), sure(80), ooze, { user: ourUser(30, { bell: 1 }) })), [0], "a holder the Ooze downs heals nothing");
+}
+
 // The states the invariants sweep, and the uses and hits they take.
 const STATES = [at(), at({ sturdy: true }), at({ band: 2 }), at({ token: 5 }), at({ hp: 100, maxHp: 200, seed: true }), at({ hp: 300, boss: 3, token: 5 }),
   at({ hp: 300, boss: 3, sturdy: true, band: 1, token: 10, seed: true }), at({ hp: 10, band: 1 }), at({ hp: 100, finalBoss: true, band: 1 }),
@@ -495,23 +559,24 @@ const STATES = [at(), at({ sturdy: true }), at({ band: 2 }), at({ token: 5 }), a
   at({ sub: 25, form: "disguise" }), at({ hp: 200, sub: 50, enigma: 1 }), at({ hp: 200, sitrus: 2, enigma: 1, lum: 1 }), at({ sub: 25, sitrus: 1, lum: 2, seed: true })];
 const USES = [sure(0), sure(50), sure(99.5), sure(100), sure(150), sure(300, 2), sure(450, 3), { d: 151, n: 2.4 }, { d: 120, n: 1, se: 0.4 }, { d: 60, n: 2, se: 1 }];
 const HITS = [{}, { ignoresSturdy: true }, { ignoresDisguise: true }, { ohko: true }, { factor: bar => 1 + bar / 2 }, { cut: "in" }, { cut: "never" }, { ignoresAbility: true },
-  { ignoresSub: true }, { e: 2 }, { steals: true }, { steals: true, ignoresSub: true }, HEALS];
+  { ignoresSub: true }, { e: 2 }, { steals: true }, { steals: true, ignoresSub: true }, HEALS, { drain: 0.5 }, { drain: -0.75 }];
 const ENDS = [{}, { before: -30, after: 10 }, { before: 25, after: -60 }, { after: -500, eats: false }, { before: NaN, after: 40 }];
 const sweep = fn => {
   for (const st of STATES) for (const use of USES) for (const hit of HITS) for (const whole of [false, true]) fn(st, use, hit, whole);
 };
 
-// ---- Every outcome's chance is above 0 and they sum to 1, and no input is changed, a user's included (#1027, #1029)
+// ---- Every outcome's chance is above 0 and they sum to 1, and no input is changed, a user's included (#1027, #1029), a Shell Bell holder's too (#1030)
 {
-  const user = thief(180);
+  const users = [thief(180), ourUser(180, { bell: 2 })];
   sweep((st, use, hit, whole) => {
-    for (const opts of [{ whole }, { whole, user }]) {
-      const before = JSON.stringify([st, use, hit, user]);
+    for (const opts of [{ whole }, ...users.map(user => ({ whole, user }))]) {
+      const before = JSON.stringify([st, use, hit, users]);
       const outs = land(st, use, hit, opts);
       assert.ok(outs.every(o => o.p > 0));
       assert.ok(Math.abs(outs.reduce((t, o) => t + o.p, 0) - 1) < 1e-12);
-      assert.equal(JSON.stringify([st, use, hit, user]), before);
-      assert.ok(outs.every(o => ("user" in o) === !!opts.user && (!opts.user || (o.user.hp >= user.hp && o.user.hp <= 200))));
+      assert.equal(JSON.stringify([st, use, hit, users]), before);
+      const user = opts.user;
+      assert.ok(outs.every(o => ("user" in o) === !!user && (!user || ((hit.drain < 0 || o.user.hp >= user.hp) && o.user.hp >= 0 && o.user.hp <= 200))));
     }
   });
 }

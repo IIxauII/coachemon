@@ -3,15 +3,14 @@
 import { ABILITY_IMMUNE, ABILITY_IMMUNE_FLAG, CONTACT_PUNISH, FIELD_TRAPS, MOVE_TRAPS, SPREAD_TARGETS, STATUS_FRAMES, TYPES, UNGROUNDED, abilitiesOf, battleMoveset, effectiveness, hitsUngrounded, iconOf, isBerry, lessOneBerry, lumsHeld, moveHasFlag, movesetOf, squeezeDist, stackOf, stage, stat, typesOf, vs } from "./01-core.js";
 import { gameTables } from "./04-game-tables.js";
 import { moveTraits, switchesUser } from "./07-move-traits.js";
-import { addShare, healingCharm, koChanceAt, koCurve, koTurn, koTurns, rawMax, shares, useOf } from "./10-damage.js";
+import { addShare, healingCharm, koChanceAt, koCurve, koTurn, koTurns, rawMax, shares, shellBellHeal, useOf } from "./10-damage.js";
 
 const pmName = pm => pm?.getName?.() ?? pm?.name ?? "";
 const switchesOut = o => switchesUser(o?.pm?.getMove?.());
 const bossBarsLeft = p => (p.isBoss?.() && p.bossSegments > 1 ? Math.max(1, (p.bossSegmentIndex ?? p.bossSegments - 1) + 1) : 1);
-// Turn-end HP change, signed: heals +, chip −. `dealt`: damage `p` deals a turn (Shell Bell). Never with
-// `tookSuperEffective`: Landing's turn end eats the Enigma Berry, branch by branch, and under `sitrus` false the Sitrus
-// too.
-const healAtEnd = (turn, p, dealt = 0, sitrus = true) => (turn.live ? turn.turnEndHp(p, { dealt, sitrus }) : 0) || 0;
+// Turn-end HP change, signed: heals +, chip −. Never with `tookSuperEffective`: Landing's turn end eats the Enigma
+// Berry, branch by branch, and under `sitrus` false the Sitrus too.
+const healAtEnd = (turn, p, sitrus = true) => (turn.live ? turn.turnEndHp(p, { sitrus }) : 0) || 0;
 const heldStack = (p, name) => (p.getHeldItems?.() ?? []).filter(m => m.constructor?.name === name).reduce((t, m) => t + (m.getStackCount?.() ?? 1), 0);
 const hitCounts = o => {
   const ns = (o?.dist ?? []).filter(d => d.p > 0).map(d => d.n);
@@ -828,10 +827,10 @@ const sitrusStolen = (me, steals) => {
 // ahead of the berries. `eaten`, from a berry `foe` eats off it a turn (#646): `byCount` as `berryGone` gives it, and
 // `counts(j)`, P(k berries gone by turn j's end). The Sitrus is never in the course: `koCurve` eats it and Landing takes
 // a Bug Bite's, and `gone` is its `sitrus`, what item thieves take, null when none can take one.
-export const turnEndCourse = (turn, me, foe, hitsPerTurn, dealt = 0, eaten = null) => {
-  const heal = p => healAtEnd(turn, p, dealt, false);
+export const turnEndCourse = (turn, me, foe, hitsPerTurn, eaten = null) => {
+  const heal = p => healAtEnd(turn, p, false);
   const base = heal(me);
-  const pre = (turn.live ? turn.turnEndHp(me, { dealt, beforeBerries: true }) : 0) || 0;
+  const pre = (turn.live ? turn.turnEndHp(me, { beforeBerries: true }) : 0) || 0;
   const toxic = me.status?.effect === StatusEffect.TOXIC
     ? j => heal(Object.create(me, { status: { value: { ...me.status, effect: StatusEffect.TOXIC, toxicTurnCount: (me.status.toxicTurnCount ?? 0) + j - 1 } } }))
     : null;
@@ -910,29 +909,12 @@ const berryCounts = (land, supply, before = 0) => {
   };
 };
 
-// A threat's `koCurve` on `me` from `hp`, turn-end included. `dealt`: what we deal a turn (Shell Bell), or a function of
-// the turn; `mult(j)`: its damage on turn j against the expected; `act(i)`: the chance its i-th attack goes off;
-// `drain`: what our drain moves win back a turn, negative into Liquid Ooze; `preHeal`: as `koCurve` takes it.
-export const foeCurve = (turn, t, me, hp, { dealt = 0, foe = null, mult = null, act = () => 1, start = null, drain = 0, preHeal = null } = {}) => {
-  const courseOf = d => turnEndCourse(turn, me, foe, t ? hitsOn(t) : -1, d);
-  let heal, pre, gone;
-  if (typeof dealt === "function") {
-    const courses = new Map();
-    const at = j => {
-      const d = dealt(j);
-      if (!courses.has(d)) courses.set(d, courseOf(d));
-      return courses.get(d);
-    };
-    heal = j => at(j).at(j);
-    pre = j => at(j).pre;
-    // A course's `gone` is the same whatever we deal.
-    gone = at(1).gone;
-  } else {
-    const course = courseOf(dealt);
-    heal = course.flat ? course.base : course.at;
-    pre = course.pre;
-    gone = course.gone;
-  }
+// A threat's `koCurve` on `me` from `hp`, turn-end included. `mult(j)`: its damage on turn j against the expected;
+// `act(i)`: the chance its i-th attack goes off; `drain`: what we win back at a turn's end besides the course, a number
+// or a function of the turn, negative into Liquid Ooze; `preHeal`: as `koCurve` takes it, what our own move wins back.
+export const foeCurve = (turn, t, me, hp, { foe = null, mult = null, act = () => 1, start = null, drain = 0, preHeal = null } = {}) => {
+  const course = turnEndCourse(turn, me, foe, t ? hitsOn(t) : -1);
+  const heal = course.flat ? course.base : course.at, pre = course.pre, gone = course.gone;
   const ramp = setupRamp(foe, t);
   const useOn = x => (x?.expected > 0 ? x.use ?? [{ d: x.expected, p: 1 }] : [{ d: 0, p: 1 }]);
   // A curve from `start` has no use of this turn's.
@@ -1126,14 +1108,14 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   const holder = turn.held(foe);
   const eats = mine?.expected > 0 && stealsBerry(mine, holder, me);
   const theft = (eats || stole > 0) && berryTypesOf(holder).length ? (() => {
-    const dealt = t?.expected ?? 0, heal = p => healAtEnd(turn, p, dealt, false);
+    const heal = p => healAtEnd(turn, p, false);
     // Keyed on the foe object, not its id: a made-up foe that keeps the real one's id reads its own.
     const byFoe = turn.memo("berries", () => new WeakMap());
-    if (!byFoe.has(holder)) byFoe.set(holder, { walk: berryWalk(holder), steals: new Map(), eaten: new WeakMap() });
+    if (!byFoe.has(holder)) byFoe.set(holder, { walk: berryWalk(holder), steals: null, eaten: new WeakMap() });
     const memo = byFoe.get(holder);
-    if (!memo.steals.has(dealt)) memo.steals.set(dealt, overWalk(memo.walk, heal));
+    memo.steals ??= overWalk(memo.walk, heal);
     // Turn 1's room, moving first, is after what this use costs us (game-code.md §3).
-    const out = berryGone(holder, heal, { eater: me, hp: hp - (mine?.self ?? 0), turn, walk: memo.walk, steals: memo.steals.get(dealt), eatenAt: memo.eaten.get(me) });
+    const out = berryGone(holder, heal, { eater: me, hp: hp - (mine?.self ?? 0), turn, walk: memo.walk, steals: memo.steals, eatenAt: memo.eaten.get(me) });
     if (out && !memo.eaten.has(me)) memo.eaten.set(me, out.eatenAt);
     return out;
   })() : null;
@@ -1144,9 +1126,13 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     const atkStat = mine.cat === "special" ? Stat.SPATK : Stat.ATK;
     const drop = mt.drops?.[atkStat] ?? 0;
     const s0 = me.summonData?.statStages?.[atkStat - 1] ?? 0;
-    const course = turnEndCourse(turn, foe, me, steady * (mine.acc ?? 1) * ((mine.dist ?? []).reduce((sum, d) => sum + d.n * d.p, 0) || 1), t?.expected ?? 0,
+    const course = turnEndCourse(turn, foe, me, steady * (mine.acc ?? 1) * ((mine.dist ?? []).reduce((sum, d) => sum + d.n * d.p, 0) || 1),
       theft && { byCount: theft.byCount, counts });
-    const heal = withDrain(course.flat ? course.base : course.at, t?.drain ?? 0);
+    // The foe's drain and Shell Bell heal it as its move lands (game-code.md §8, §18). Gotcha: a drain Liquid Ooze
+    // turns to chip stays at the turn end, where the game lands it with the move.
+    const foeOoze = Math.min(0, t?.drain ?? 0);
+    const foeBack = Math.max(0, t?.drain ?? 0) + shellBellHeal(turn.mon(foe).facts.shellBell, t?.expected ?? 0);
+    const heal = withDrain(course.flat ? course.base : course.at, foeOoze);
     const defStat = mine.cat === "special" ? Stat.SPDEF : Stat.DEF;
     const defUpBy = t?.boost?.[defStat] ?? 0;
     const d0 = foe.summonData?.statStages?.[defStat - 1] ?? 0;
@@ -1159,7 +1145,8 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     qWe = nowUse ? (first.pKo ?? 0) * now : 0;
     const unnerved = unnervedBy(turn, foe, me);
     const curve = koCurve(turn.mon(foe), first, {
-      scale, turnEnd: heal, beforeBerry: withDrain(course.pre, t?.drain ?? 0),
+      scale, turnEnd: heal, beforeBerry: withDrain(course.pre, foeOoze),
+      preHeal: foeBack > 0 ? i => ({ p: 1 - (i === 0 ? pF : pFirst), heal: foeBack }) : null,
       feeds: !unnerved, sitrus: unnerved ? null : course.gone ?? 0,
       act: i => (i === 0 && nowUse ? now : steady * (acts ? acts.act(i + 1) : 1)),
       firstKo: exact && nowUse ? qWe : null, start: after?.foe, chain: ourLock ? OUR_CHAIN : null,
@@ -1209,9 +1196,16 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   // Our first use is the entry hit where a Tera switch-in takes one, so turn 1 drains and deals what it does (#823).
   // `perUse(f)`: `f` of our move's record, or a function of the turn where the first use's record differs.
   const perUse = f => (opener === mine ? f(mine) : j => f(j === 1 ? opener : mine));
+  // What our move wins back a turn as it lands (game-code.md §8, §18): `backOf` its drain and our Shell Bell on what it
+  // deals. Gotcha: `oozeOf`, a drain Liquid Ooze turns to chip, stays at the turn end, where the game lands it with the
+  // move.
+  const bell = turn.mon(me).facts.shellBell;
   const drainOf = x => (x?.drain ?? 0) * (x?.expected ?? 0) * steady;
-  const drained = drainOf(mine), ourDrained = perUse(drainOf);
-  const drainedAt = typeof ourDrained === "function" ? ourDrained : () => drained;
+  const backOf = x => Math.max(0, drainOf(x)) + shellBellHeal(bell, x?.uncapped ?? x?.expected ?? 0) * steady;
+  const oozeOf = x => Math.min(0, drainOf(x));
+  const ourBack = perUse(backOf), ourOoze = perUse(oozeOf), ourDrained = perUse(x => backOf(x) + oozeOf(x));
+  const backAt = typeof ourBack === "function" ? ourBack : () => ourBack;
+  const drainedAt = typeof ourDrained === "function" ? ourDrained : () => ourDrained;
   // P(we move first) on the turns after this one.
   let pLast = pFirstField;
   const pPara = acts && turnsWe < 9 ? acts.para(turnsWe - 1) : 0;
@@ -1230,11 +1224,17 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   // (#646). A thief that moves first eats it before the turn's hit, so it fills only the room already there (#833).
   const eatenBy = (j, at) => lands(j) * counts(j - 1).reduce((sum, p, k) => sum + p * at[Math.min(9, k)], 0);
   const stealing = eats && theft?.eatenAt?.some(v => v > 0);
-  const ourDrain = !stealing ? ourDrained
-    : j => drainedAt(j) + (j === 1 ? pFField * eatenBy(1, theft.eatenFirst) + (1 - pFField) * eatenBy(1, theft.eatenAt) : 0);
-  const preHeal = stealing ? i => (i > 0 ? { p: pLast, heal: eatenBy(i + 1, theft.eatenAt) } : null) : null;
+  // Gotcha: turn 1's steal heal stays at the turn end, blended over both orders, since `preHeal` takes one amount and
+  // turn 1's two differ.
+  const firstSteal = stealing ? pFField * eatenBy(1, theft.eatenFirst) + (1 - pFField) * eatenBy(1, theft.eatenAt) : 0;
+  const ourDrain = !stealing ? ourDrained : j => drainedAt(j) + (j === 1 ? firstSteal : 0);
+  const atEnd = !stealing ? ourOoze : j => (typeof ourOoze === "function" ? ourOoze(j) : ourOoze) + (j === 1 ? firstSteal : 0);
+  const preHeal = stealing || ourBack ? i => {
+    const heal = backAt(i + 1) + (stealing && i > 0 ? eatenBy(i + 1, theft.eatenAt) : 0);
+    return heal > 0 ? { p: i > 0 ? pLast : pFField, heal } : null;
+  } : null;
   const theirs = budget > 0 ? foeCurve(turn, foeT, me, budget, {
-    dealt: perUse(x => x?.uncapped ?? x?.expected ?? 0), foe: fieldFoe, mult, act: theirAct, start: myStart?.length ? myStart : null, drain: ourDrain, preHeal,
+    foe: fieldFoe, mult, act: theirAct, start: myStart?.length ? myStart : null, drain: atEnd, preHeal,
   }) : null;
   const turnsFoe = theirs ? koTurn(theirs.by) : Math.max(1, Math.min(turnsWe, 9));
   const lag = freeThey ? 1 : 0;

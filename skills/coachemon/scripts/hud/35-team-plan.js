@@ -251,7 +251,6 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
   if (key && T.memo.has(key)) return T.memo.get(key);
   const us = over ?? T.ours[mi][fi], them = T.theirs[fi][mi];
   const meAt = (b, hp) => (hp === b.me.hp ? b.me : stateOf(ourFacts, hp, 0, b.me));
-  const foeAt = (b, hp) => (hp === b.foe.hp ? b.foe : stateOf(foeFacts, hp, b.foe.bar, b.foe));
   // On-KO Speed boosts are not modelled.
   const usMul = us && (nUs || nFoe) && T.koMult ? T.koMult(T.party[mi], T.ourKo[mi], nUs, T.foes[fi], T.foeKo[fi], nFoe, us.cat === "special" ? 0 : 1) : 1;
   const themMul = (nUs || nFoe) && T.koMult ? T.koMult(T.foes[fi], T.foeKo[fi], nFoe, T.party[mi], T.ourKo[mi], nUs, them.phys ?? 1) : 1;
@@ -273,31 +272,28 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
   let turns = 0;
   // P(token status by the end of turn `t`); `t` 0 is before this exchange.
   const by = t => (!tok ? 0 : tok.odds.by(ox0 + (entryHit ? them.hits ?? 0 : 0) + (them.hits ?? 0) * Math.max(0, t - (foeIdle ? 1 : 0))));
-  // Lands our use point `o` on the foe, one branch per outcome; drain wins back its share of what the use took. A
-  // stealing use pays its own chip first, since the berry it eats heals us after it (game-code.md §3).
+  const ourBell = !!ourFacts.shellBell, foeRepaid = !!them.drain || !!foeFacts.shellBell;
+  // Lands our use point `o` on the foe, one branch per outcome. A stealing use pays its own chip first, since the berry
+  // it eats heals us after it (game-code.md §3).
   const hitFoe = (b, o, mv = usHit) => {
-    const user = mv.steals ? (mv.self ? meAt(b, b.me.hp - mv.self) : b.me) : null;
+    const user = mv.steals || mv.drain || ourBell ? (mv.steals && mv.self ? meAt(b, b.me.hp - mv.self) : b.me) : null;
     const outs = land(b.foe, { d: mv.dmg * o.r * usMul, n: o.n, se: o.se }, mv, user ? { whole: true, user } : WHOLE);
     return outs.map(x => {
       const c = outs.length === 1 ? b : { ...b, p: b.p * x.p };
       if (user) c.me = x.user;
-      let mh = c.me.hp;
       c.fg += (robFoe?.perHit ?? 0) * x.hits;
-      if (mv.drain && mh >= 1) mh = Math.min(T.ourMax[mi], mh + x.dealt * mv.drain);
       // Recoil is paid whether or not the hit finished the foe.
-      if (mv.self && !user) mh -= mv.self;
-      c.me = meAt(c, mh);
+      if (mv.self && !mv.steals) c.me = meAt(c, c.me.hp - mv.self);
       c.foe = x.state;
       return c;
     });
   };
-  // Lands the foe's use point `t` on us, hit by hit, one branch per outcome; its drain wins back its share of what the
-  // use took.
+  // Lands the foe's use point `t` on us, hit by hit, one branch per outcome.
   const foeHit = (b, t, dmg = them.dmg) => {
-    const outs = land(b.me, { d: dmg * t.r * themMul, n: t.n, se: t.se }, them, WHOLE);
+    const outs = land(b.me, { d: dmg * t.r * themMul, n: t.n, se: t.se }, them, foeRepaid ? { whole: true, user: b.foe } : WHOLE);
     return outs.map(x => {
       const c = outs.length === 1 ? b : { ...b, p: b.p * x.p };
-      if (them.drain && c.foe.hp >= 1) c.foe = foeAt(c, Math.min(T.foeMax[fi], c.foe.hp + x.dealt * them.drain));
+      if (foeRepaid) c.foe = x.user;
       c.ox += them.hits ?? 0;
       c.og += (robUs?.perHit ?? 0) * (them.hits ?? 0);
       c.me = x.state;

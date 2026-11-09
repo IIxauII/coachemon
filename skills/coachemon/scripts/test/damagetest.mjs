@@ -684,11 +684,8 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   const oneToken = at(0, 0, { enemyModifiers: [held("EnemyTurnHealModifier")] });
   assert.equal(endOfTurnHp(m({ hp: 20, maxHp: 49, player: false }), { s: oneToken }), 0, "one stack under 50 max HP heals nothing");
   assert.equal(endOfTurnHp(m({ hp: 20, maxHp: 50, player: false }), { s: oneToken }), 1, "and 1 at 50");
-  assert.equal(endOfTurnHp(m({ items: [held("HitHealModifier", {}, 2)] }), { s: at(), dealt: 100 }), 25, "Shell Bell ×2");
-  assert.equal(endOfTurnHp(m({ items: [held("HitHealModifier")] }), { s: at() }), 0, "Shell Bell without damage");
-  // Shell Bell heals in `MoveEffectPhase`, so Sitrus reads the HP after it (game-code.md §8).
-  assert.equal(endOfTurnHp(m({ hp: 70, items: [new BerryModifier(0)] }), { s: at() }), 40, "70/160 eats the berry");
-  assert.equal(endOfTurnHp(m({ hp: 70, items: [new BerryModifier(0), held("HitHealModifier")] }), { s: at(), dealt: 80 }), 10, "Shell Bell lifts it over the bar first");
+  // Shell Bell heals at the end of the move, which Landing prices (game-code.md §8): no turn-end step.
+  assert.equal(endOfTurnHp(m({ items: [held("HitHealModifier", {}, 2)] }), { s: at(), dealt: 100 }), 0, "Shell Bell");
 
   // Every turn-end heal is a `PokemonHealPhase`, which Heal Block and Healing Charm reach (game-code.md §21).
   assert.equal(endOfTurnHp(m({ tags: ["HEAL_BLOCK"], items: [new TurnHealModifier()] }), { s: at() }), 0, "Heal Block");

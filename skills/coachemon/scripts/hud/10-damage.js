@@ -128,6 +128,7 @@ export const targetFacts = (env, t, ignoreAbility = false) => {
     sub: substituteHp(t),
     enigma, sitrus, others: othersOf(t, sitrus, enigma),
     unnerve: ability(t, "PreventBerryUseAbAttr"),
+    shellBell: shellBellOf(env, t),
   };
 };
 // `EnemyPokemon.damage` before any survival (game-code.md §3): [damage, bar after].
@@ -170,6 +171,30 @@ export const benched = s => (s.sub > 0 ? { ...s, sub: 0 } : s);
 // The Sitrus Berry's trigger: `getHpRatio` rounds to a whole percent (game-code.md §3).
 const belowHalf = (hp, max) => Math.round((hp / max) * 100) / 100 < 0.5;
 const seOf = h => ((h?.e ?? 1) >= 2 ? 1 : 0);
+// Shell Bell's heal on `dealt`, what a move took off its targets, before its holder's max HP caps it; 0 for none
+// (game-code.md §8).
+// @only 30-planner: shellBellHeal
+export const shellBellHeal = (bell, dealt) => (bell?.stacks > 0 && dealt > 0 ? Math.floor(Math.max(1, Math.floor(dealt * bell.stacks / 8)) * (bell.charm ?? 1)) : 0);
+// `user` after what its use did for it, in the game's order: the berries it stole, its drain on `dealt`, then its Shell
+// Bell on `dealt` and what the target's Substitute lost, which asks for full HP before either heal has run (game-code.md
+// §3, §8, §18). A user down gets nothing, and a negative drain (Liquid Ooze) lands through its bars with no luck (§21).
+const repaid = (user, hit, whole, stolen, dealt, subDealt) => {
+  const uf = user.facts ?? NO_HIT, max = uf.maxHp ?? Infinity;
+  const up = hp => (whole ? hp >= 1 : hp > 0);
+  if (!up(user.hp)) return user;
+  let hp = user.hp, bar = user.bar;
+  if (stolen > 0) hp = Math.min(max, hp + stolen);
+  const drain = dealt > 0 && Number.isFinite(hit.drain) ? dealt * hit.drain : 0;
+  if (drain > 0) hp = Math.min(max, hp + drain);
+  else if (drain < 0) {
+    const [d, after] = barStep(uf, hp, bar, -drain);
+    hp = Math.max(0, hp - d);
+    bar = after;
+  }
+  const bell = user.hp < max && up(hp) ? shellBellHeal(uf.shellBell, dealt + subDealt) : 0;
+  if (bell > 0) hp = Math.min(max, hp + bell);
+  return hp === user.hp && bar === user.bar ? user : stateOf(uf, hp, bar, user);
+};
 // A carrier is a Landing state's fields, without `facts`, at its chance `p`, with `stop`, `dealt`, `subDealt` and
 // `hits`.
 const fork = (b, hp, bar, p, taken, tok = b.tok) => ({ ...b, hp, bar, tok, p, dealt: b.dealt + taken, hits: b.hits + 1 });
@@ -344,12 +369,13 @@ const landUse = (f, b, d, n, fac, hit, whole, down) => {
 // `ignoresSub`, `ignoresAbility`, `ignoresDisguise`, `cut`, `ohko`, `factor(bar)`, `steals`, and `e`, which stands in for
 // a missing `se`); `cut` is "in" where its numbers already hold a full-HP holder's Multiscale or Shadow Shield, and
 // "never" where nothing halves it. `steals`: a Bug Bite's or Pluck's, each strike that reaches the target takes one of its
-// berries, a knockout's included (game-code.md §3). Each outcome's `dealt` is what the use took off its target through
-// the bars, counted before a revive and without a bust's chip, `subDealt` what it took off the target's Substitute, and
-// `hits` the hits that landed, on either. What stands having taken damage on a super-effective share is marked for an
-// Enigma Berry it holds. `user`: the attacker's Landing state, its chip for the use already paid, where `steals` holds
-// the heal each berry type gives it; each outcome's `user` is it after the berries it stole, eaten only while it stands
-// (game-code.md §3).
+// berries, a knockout's included (game-code.md §3); `drain`, the signed share of `dealt` its user wins back. Each
+// outcome's `dealt` is what the use took off its target through the bars, counted before a revive and without a bust's
+// chip, `subDealt` what it took off the target's Substitute, and `hits` the hits that landed, on either. What stands
+// having taken damage on a super-effective share is marked for an Enigma Berry it holds. `user`: the attacker's Landing
+// state, its chip for the use already paid, where `steals` holds the heal each berry type gives it; each outcome's `user`
+// is it after the berries it stole, its drain and its Shell Bell, all only while it stands (game-code.md §3, §8, §18).
+// Gotcha: a hit a Substitute takes drains 0 here, where the game heals at least 1 off the user's last hit (§8).
 // @only 35-team-plan, tests: land, landTurnEnd, luckKey, landingKey
 export const land = (state, use, hit = NO_HIT, { whole = false, user = null } = {}) => {
   const d = use?.d, h = hit ?? NO_HIT, f = state?.facts ?? NO_HIT;
@@ -380,9 +406,8 @@ export const land = (state, use, hit = NO_HIT, { whole = false, user = null } = 
   }
   for (const o of downs) outs.push(o);
   if (gains) {
-    const eats = whole ? user.hp >= 1 : user.hp > 0, max = user.facts?.maxHp ?? Infinity;
     for (const g of lost) gains.push(g);
-    outs.forEach((o, i) => { o.user = eats && gains[i] > 0 ? stateOf(user.facts, Math.min(max, user.hp + gains[i]), user.bar, user) : user; });
+    outs.forEach((o, i) => { o.user = repaid(user, h, whole, gains[i], o.dealt, o.subDealt); });
   }
   return outs;
 };
@@ -731,6 +756,12 @@ const quarterBerryOf = (env, p, type) => {
   return { heal: Math.floor(berryQuarter(p) * healingCharm(env, p)), left, keep: berryPouch(env, p) };
 };
 const enigmaOf = (env, p) => quarterBerryOf(env, p, BerryType.ENIGMA);
+// `p`'s Shell Bell stacks, with its side's Healing Charm, which scales the heal; null for none or under Heal Block
+// (game-code.md §8, §18).
+const shellBellOf = (env, p) => {
+  const stacks = stack(p, "HitHealModifier");
+  return stacks > 0 && !p.getTag?.("HEAL_BLOCK") ? { stacks, charm: healingCharm(env, p) } : null;
+};
 const sitrusOf = (env, p) => quarterBerryOf(env, p, BerryType.SITRUS);
 // The berries `p` holds that its `sitrus` and `enigma` facts don't count, a stack a type as `[{ type, left }]`, null for
 // none: a steal draws over them too (game-code.md §3).
@@ -740,7 +771,7 @@ const othersOf = (p, sitrus, enigma) => {
   return out.length ? out : null;
 };
 // In the game's own phase order (game-code.md §21).
-const endOfTurnSteps = (env, p, { hp = p.hp, dealt = 0, sitrus = true } = {}) => {
+const endOfTurnSteps = (env, p, { hp = p.hp, sitrus = true } = {}) => {
   const steps = [];
   if (hp <= 0) return steps;
   const max = p.getMaxHp();
@@ -765,9 +796,6 @@ const endOfTurnSteps = (env, p, { hp = p.hp, dealt = 0, sitrus = true } = {}) =>
   };
   // Heal Block doesn't stop a negative heal (game-code.md §18).
   const reverse = n => chip(Math.floor(n * charm));
-
-  const shellBells = stack(p, "HitHealModifier");
-  if (dealt > 0 && shellBells > 0) queued(frac(dealt * shellBells, 8));
 
   if (WEATHER_SPARED[weather] && !guard && !types.some(t => WEATHER_SPARED[weather].includes(t))
     && !abAttrs(p, "BlockWeatherDamageAttr").some(a => !a.weatherTypes?.length || inWeather(a))
@@ -834,8 +862,8 @@ const applyTurnEnd = (steps, hp, max) => {
   return cur;
 };
 // Signed, with no boss bars in the way, and no Enigma Berry: that is Landing's turn end's, as is the Sitrus under
-// `sitrus` false. `hp`: the HP it will have by then; `dealt`: this turn's damage dealt, for Shell Bell; `beforeBerries`: only the
-// part ahead of the BerryPhase. Reads fields and item and ability attributes only.
+// `sitrus` false, and no Shell Bell, which is Landing's use's (game-code.md §8). `hp`: the HP it will have by then;
+// `beforeBerries`: only the part ahead of the BerryPhase. Reads fields and item and ability attributes only.
 // @only 25-turn, tests: sceneTurnEndHp
 export const sceneTurnEndHp = (env, p, opts = {}) => {
   const hp = opts.hp ?? p.hp;

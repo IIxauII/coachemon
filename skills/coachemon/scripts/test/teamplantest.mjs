@@ -416,6 +416,24 @@ const bugBite = (dmg, heal = 0, extra = {}) => ({ dmg, steals: { 0: heal, 2: hea
   const recoil = self => tpFight({ ...T(0), ours: [[{ dmg: 100, self }]] }, st(), 0, 0, "free").mh;
   assert.deepEqual([recoil(0), recoil(20)], [280, 220], "recoil is spent on every landed use");
 }
+// A Shell Bell heals its holder right after its move, ahead of a slower foe's reply (game-code.md §8). Ours, four stacks
+// on 50 of 200, hits a 160 HP foe for 80 a turn and takes 60 back: healed to 90 before the reply, it stands on 30 and
+// wins on turn 2, healed again to 70. Without it, or moving second, the first reply fells it.
+{
+  const { tpFight } = globalThis.__tp;
+  const { stateOf } = globalThis.__hud["10-damage"];
+  const bell = { stacks: 4, charm: 1 };
+  const T = (first, ours = {}, foe = {}) => ({ ours: [[{ dmg: 80 }]], theirs: [[{ dmg: 60, e: 1 }]], first: [[first]], ourMax: [200], foeMax: [200], ourHeal: [null], foeHeal: [null],
+    ourState: [stateOf({ maxHp: 200, ...ours }, 200)], foeState: [stateOf({ maxHp: 200, ...foe }, 200)] });
+  const fight = (t, oh, fh) => tpFight(t, fightState({ oh: [oh], fh: [fh], fs: [0] }), 0, 0, "free");
+  const [belled, plain, slower] = [T(0, { shellBell: bell }), T(0), T(1, { shellBell: bell })].map(t => fight(t, 50, 160));
+  console.log(`== Shell Bell\nours, moving first: won on turn ${belled.ends.win?.turns} on ${belled.ends.win?.mh} · without it lost ${plain.pLoss} · moving second lost ${slower.pLoss}`);
+  assert.deepEqual([belled.pWin, belled.ends.win.turns, belled.ends.win.mh], [1, 2, 70]);
+  assert.deepEqual([plain.pLoss, slower.pLoss], [1, 1]);
+  // The foe's, four stacks, heals 30 off each 60 it lands on us: our 100 a turn into its 200 takes a third turn.
+  const theirs = fight({ ...T(0, {}, { shellBell: bell }), ours: [[{ dmg: 100 }]] }, 200, 200);
+  assert.deepEqual([theirs.pWin, theirs.ends.win.turns], [1, 3], "the foe's heals after each of its hits");
+}
 // On-KO boosts (#90, game-code.md §18): each KO Buzzwole's Beast Boost scores raises its Atk a stage.
 {
   const { tpTables, tpFight } = globalThis.__tp;
