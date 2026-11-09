@@ -153,9 +153,9 @@ assert.equal(plan.approxDoubles, false);
   const held = Object.assign(new ({ BerryModifier: class { berryType = 0; getStackCount() { return 1; } } }).BerryModifier(), {});
   assert.deepEqual(globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpHealProfile(turn, Object.assign(zard, { getHeldItems: () => [held] }))), { base: -6, pre: -6 }, "a Sitrus Berry is Landing's to eat, not the profile's");
 }
-// A foe one of ours can eat a berry off gets its heal profile and its berries' heals after each count of steals, and the
-// thief what each draw heals it (#646, #833). The draw is uniform over the berry types held, so a lone Sitrus is sure to
-// go and two types each take half; a stack of two loses its turn-end Sitrus only to the second steal.
+// A pairing where a move of ours can steal a berry off the foe tables what each berry type the foe holds heals that
+// thief, uncapped, and the summary of the move says it steals; which berry it takes is Landing's draw (#646, #833,
+// game-code.md §3).
 {
   const steal = new ({ StealEatBerryAttr: class {} }).StealEatBerryAttr();
   const berry = (berryType, n = 1) => Object.assign(new ({ BerryModifier: class { getStackCount() { return n; } } }).BerryModifier(), { berryType, isTransferable: true });
@@ -171,47 +171,27 @@ assert.equal(plan.approxDoubles, false);
     const me = Object.assign(biter(bites), thief), f = holder(items, extra);
     const { scene: s } = run(null, { party: [me], foes: [f] });
     const T = globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpTables(turn, [me], [f]));
-    return { kept: T.foeHeal[0], by: T.foeHealBy[0], facts: T.foeFactsBy[0], eats: T.stealHeal[0][0], after: T.stealHealAfter[0][0] };
+    return { heals: T.steals[0][0], steals: T.ours[0][0]?.steals ?? null, foe: T.foeState[0] };
   };
-  // Its Sitrus Berry's heal after each count of steals, from all it holds.
-  const healBy = x => x.facts.get([...x.facts.keys()][0]).map(f => f.sitrus?.heal);
   const sitrus = at(true, [berry(0)]);
-  console.log(`== a bug bite pairing's foe heal profile\nit keeps ${JSON.stringify(sitrus.kept)} · its Sitrus heals ${healBy(sitrus).join(" → ")} by steals · we eat ${sitrus.eats}`);
-  assert.deepEqual(healBy(sitrus), [100, 0], "a 400 HP Snorlax heals a quarter off a held Sitrus, and its one berry is sure to go");
-  assert.deepEqual(sitrus.by, [sitrus.kept, { base: 0, pre: 0 }], "its profile after the steal");
-  assert.deepEqual(sitrus.eats, [65], "a 260 HP thief eats a quarter of its own max HP");
+  console.log(`== a bug bite pairing's tables\nwe steal: ${sitrus.steals} · a berry heals us ${JSON.stringify(sitrus.heals)} · the foe holds ${sitrus.foe.sitrus} Sitrus`);
+  assert.deepEqual([sitrus.steals, sitrus.heals], [true, { 0: 65 }], "a 260 HP thief eats a quarter of its own max HP off a Sitrus");
+  assert.deepEqual(at(true, [berry(0), berry(1)]).heals, { 0: 65, 1: 0 }, "a Lum heals it nothing");
+  assert.deepEqual(at(true, [berry(0, 2)]).heals, { 0: 65 }, "a stack of two is one type");
+  assert.deepEqual(at(true, [berry(1)]).foe.others, [1], "a Lum is in the foe's Landing state, for the draw");
   const blunt = at(false, [berry(0)]);
-  assert.deepEqual([blunt.by, blunt.facts, blunt.eats], [null, null, null], "nobody who can steal: no steal is priced");
-  const bare = at(true, []);
-  assert.deepEqual([bare.by, bare.facts, bare.eats], [null, null, null], "and nothing to steal: the same");
-  assert.equal(healBy(at(true, [berry(0), berry(1)]))[1], 50, "beside a Lum, half the draw takes the Sitrus");
-  const two = at(true, [berry(0, 2)]);
-  assert.deepEqual(healBy(two), [100, 100, 0], "a stack of two keeps one turn-end Sitrus, and loses it to the second steal");
-  assert.deepEqual(two.eats, [65, 65], "…and feeds the thief twice");
-  // `after`, by the foe's Landing berries: what is left to steal once it has eaten some itself.
-  assert.deepEqual([...sitrus.after], [["0|0", []]], "a foe that ate its one Sitrus has nothing left to steal");
-  assert.deepEqual([...two.after], [["1|0", [65]], ["0|0", []]], "…and a Sitrus x2 one berry, then none");
-  assert.deepEqual(two.facts.get("1|0").map(f => f.sitrus.heal), [100, 0], "its own last Sitrus goes to the next steal");
-  const enigma = at(true, [berry(2)]);
-  assert.deepEqual([enigma.eats, [...enigma.after]], [[65], [["0|0", []]]], "an Enigma it ate itself is gone too");
-  {
-    const me = biter(true), f = holder([berry(2)]);
-    const { scene: s } = run(null, { party: [me], foes: [f] });
-    const pouch = new (class PreserveBerryModifier { getStackCount() { return 1; } })();
-    s.modifiers = s.enemyModifiers = [pouch];
-    const by = globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpTables(turn, [me], [f])).foeFactsBy[0].get("0|1");
-    assert.deepEqual(by.map(x => [x.enigma.heal, x.enigma.keep]), [[100, 0.3], [0, 0.3]], "a Berry Pouch is the side's, so a steal leaves its keep whole (#822)");
-  }
-  assert.equal(at(true, [berry(0)], sticky).eats, null, "Sticky Hold blocks the steal, so the fight plays the heal it keeps");
-  assert.deepEqual(at(true, [berry(0)], sticky, { hasAbilityWithAttr: a => a === "MoveAbilityBypassAbAttr" }).eats, sitrus.eats, "a Mold Breaker thief gets past it");
+  assert.deepEqual([blunt.steals, blunt.heals], [null, null], "nobody who can steal: no steal is tabled");
+  assert.equal(at(true, []).heals, null, "and nothing to steal: no heals");
+  const held = at(true, [berry(0)], sticky);
+  assert.deepEqual([held.steals, held.heals], [null, null], "Sticky Hold blocks the steal");
 }
-// A foe holding Berries of 50, `n` Sitrus and `m` Enigma, as the fight plan's tables would: its Landing state at `hp`, and
-// its facts by our steals, the heal `heals[k]` after k of them for the berry `type` names, keyed by its Landing berries.
+// A foe holding Berries of 50, `n` Sitrus and `m` Enigma, as the fight plan's tables would: its Landing state at `hp`.
 const berryFoe = (hp, n = 0, m = 0) => {
   const facts = { maxHp: 200, ...(n ? { sitrus: { heal: 50, left: n, keep: 0 } } : {}), ...(m ? { enigma: { heal: 50, left: m, keep: 0 } } : {}) };
-  const stolen = (type, heals) => [new Map([[`${n}|${m}`, heals.map(heal => ({ ...facts, [type]: { ...facts[type], heal } }))]])];
-  return { foeState: [globalThis.__hud["10-damage"].stateOf(facts, hp)], foeHeal: [{ base: 0, pre: 0 }], stolen };
+  return { foeState: [globalThis.__hud["10-damage"].stateOf(facts, hp)], foeHeal: [{ base: 0, pre: 0 }] };
 };
+// Our Bug Bite's summary, its steals healing us `heal` off a Sitrus or an Enigma.
+const bugBite = (dmg, heal = 0, extra = {}) => ({ dmg, steals: { 0: heal, 2: heal }, ...extra });
 // A foe that already ate its own Sitrus leaves our Bug Bite nothing to eat (#833).
 {
   const { tpFight } = globalThis.__tp;
@@ -219,8 +199,7 @@ const berryFoe = (hp, n = 0, m = 0) => {
   const base = { theirs: [[{ dmg: 10, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [null], ...foe };
   // A 60 into 100 HP: it eats its Sitrus at 40, and the Landing state that fight leaves holds none (#847).
   const fu = tpFight({ ...base, ours: [[{ dmg: 60, e: 1 }]] }, fightState({ oh: [100], fh: [100], fs: [0] }), 0, 0, "free").ends.win.foe;
-  const T = { ...base, ours: [[{ dmg: 50, steals: true }]], foeFactsBy: foe.stolen("sitrus", [50, 0]), stealHeal: [[[50]]],
-    stealHealAfter: [[new Map([["0|0", []]])]] };
+  const T = { ...base, ours: [[bugBite(50, 50)]] };
   const won = after => tpFight(T, fightState({ oh: [100], fh: [100], fs: [0], fu: [after] }), 0, 0, "free").ends.win.mh;
   const [held, eaten] = [won(null), won(fu)];
   console.log(`== bug bite after the foe ate its own Sitrus\nwe end on ${eaten} (${held} when it still held it)`);
@@ -234,17 +213,14 @@ const berryFoe = (hp, n = 0, m = 0) => {
   const base = { theirs: [[{ dmg: 10, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [null], ...foe };
   // A super-effective 60 into 100 HP: it eats its Enigma at 40 and goes down on the third hit.
   const fu = tpFight({ ...base, ours: [[{ dmg: 60, e: 2 }]] }, fightState({ oh: [100], fh: [100], fs: [0] }), 0, 0, "free").ends.win.foe;
-  const T = { ...base, ours: [[{ dmg: 50, steals: true }]], foeFactsBy: foe.stolen("enigma", [50, 0]), stealHeal: [[[50]]],
-    stealHealAfter: [[new Map([["0|0", []]])]] };
+  const T = { ...base, ours: [[bugBite(50, 50)]] };
   const won = after => tpFight(T, fightState({ oh: [100], fh: [100], fs: [0], fu: [after] }), 0, 0, "free").ends.win.mh;
   assert.deepEqual([won(null), won(fu)], [140, 90], `no heal for an Enigma already eaten (${fu.enigmas} held)`);
 }
 // A switch-in's entry turn ends before our Bug Bite has gone off, so the foe still eats its own Sitrus then (#646).
 {
   const { tpFight } = globalThis.__tp;
-  const foe = berryFoe(90, 1);
-  const T = { ours: [[{ dmg: 100, steals: true }]], theirs: [[{ dmg: 10, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [null],
-    ...foe, foeFactsBy: foe.stolen("sitrus", [50, 0]), stealHeal: [[[0]]] };
+  const T = { ours: [[bugBite(100)]], theirs: [[{ dmg: 10, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [null], ...berryFoe(90, 1) };
   const st = fightState({ oh: [200], fh: [90], fs: [0] });
   const [switched, free] = ["switch", "free"].map(e => tpFight(T, st, 0, 0, e));
   console.log(`== a bug bite switch-in's entry turn\nswitch: won in ${switched.ends.win.turns} · free: won in ${free.ends.win.turns}`);
@@ -254,10 +230,9 @@ const berryFoe = (hp, n = 0, m = 0) => {
 // A branch where our Bug Bite never went off keeps the foe's own Sitrus (#833)
 {
   const { tpFight } = globalThis.__tp;
-  const foe = berryFoe(90, 1);
   // The foe outspeeds; half its hits fell our 150 HP before we move, half take 50.
-  const T = { ours: [[{ dmg: 40, steals: true }]], theirs: [[{ dmg: 100, e: 1, use: [{ r: 2, p: 0.5 }, { r: 0.5, p: 0.5 }] }]], first: [[1]],
-    ourMax: [200], foeMax: [200], ourHeal: [null], ...foe, foeFactsBy: foe.stolen("sitrus", [50, 0]), stealHeal: [[[0]]] };
+  const T = { ours: [[bugBite(40)]], theirs: [[{ dmg: 100, e: 1, use: [{ r: 2, p: 0.5 }, { r: 0.5, p: 0.5 }] }]], first: [[1]],
+    ourMax: [200], foeMax: [200], ourHeal: [null], ...berryFoe(90, 1) };
   const r = tpFight(T, fightState({ oh: [150], fh: [90], fs: [0] }), 0, 0, "free");
   console.log(`== bug bite that never went off\nlost with the foe on ${r.ends.loss.fh} on average`);
   // Felled on turn 1 (½): it ate its Sitrus, 140. Felled on turn 2 (¼) or 3 (¼) after our steal: 50, then 10.
@@ -266,26 +241,39 @@ const berryFoe = (hp, n = 0, m = 0) => {
 // A stealing move pinned on a pairing whose own pick steals nothing prices the steal (#113, #833)
 {
   const { tpFight } = globalThis.__tp;
-  const foe = berryFoe(200, 1);
-  const T = { ours: [[{ dmg: 80, steals: false }]], theirs: [[{ dmg: 1, e: 1 }]], first: [[0]],
-    ourMax: [200], foeMax: [200], ourHeal: [null], ...foe, foeFactsBy: foe.stolen("sitrus", [50, 0]), stealHeal: [[[0]]] };
+  const T = { ours: [[{ dmg: 80, steals: null }]], theirs: [[{ dmg: 1, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [null], ...berryFoe(200, 1) };
   const fight = over => tpFight(T, fightState({ oh: [200], fh: [200], fs: [0] }), 0, 0, "free", over).ends.win.turns;
-  const [own, pinned] = [null, { dmg: 80, steals: true }].map(fight);
+  const [own, pinned] = [null, bugBite(80)].map(fight);
   console.log(`== a pinned bug bite\nthe pairing's own pick wins in ${own} · a pinned Bug Bite in ${pinned}`);
   assert.deepEqual([own, pinned], [4, 3], "200 → 120 → 40, and only the pinned steal keeps its Sitrus from bringing it back to 90");
 }
 // A Sitrus x2 holder loses both berries to two landed Bug Bites, and the thief eats each (#833)
 {
   const { tpFight } = globalThis.__tp;
-  const foe = berryFoe(200, 2);
-  const T = { ours: [[{ dmg: 30, steals: true }]], theirs: [[{ dmg: 20, e: 1 }]], first: [[0]],
-    ourMax: [200], foeMax: [200], ourHeal: [null], ...foe, foeFactsBy: foe.stolen("sitrus", [50, 50, 0]), stealHeal: [[[30, 30]]] };
+  const T = { ours: [[bugBite(30, 30)]], theirs: [[{ dmg: 20, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [null], ...berryFoe(200, 2) };
   const r = tpFight(T, fightState({ oh: [150], fh: [200], fs: [0] }), 0, 0, "free");
-  console.log(`== bug bite into a Sitrus x2\nwon in ${r.ends.win.turns} on ${r.ends.win.mh} HP · ${r.fl} berries gone`);
+  console.log(`== bug bite into a Sitrus x2\nwon in ${r.ends.win.turns} on ${r.ends.win.mh} HP · ${r.foe.sitrus} Sitrus left`);
   assert.equal(r.ends.win.turns, 7, "two steals by turn 2, so the foe at 80 on turn 4 has no Sitrus left: seven 30s fell it");
   // 150, +30 −20, +30 −20, then four more of its hits: 90.
   assert.equal(r.ends.win.mh, 90, "each steal heals the thief");
-  assert.equal(r.fl, 2, "the count carries to the next exchange");
+  assert.equal(r.foe.sitrus, 0, "the berries gone carry to the next exchange");
+}
+// A stealing use pays its own chip ahead of the heal it eats (game-code.md §3). Two uses of 120 fell the 200 HP foe, and
+// each costs us 30 of recoil and contact chip: from full, 170, then the 50 Sitrus heals it back to 200, and the second
+// use's 30 stands. A heal ahead of the chip would be capped at 200 and end it on 140.
+{
+  const { tpFight } = globalThis.__tp;
+  const T = { ours: [[bugBite(120, 50, { self: 30 })]], theirs: [[{ dmg: 0, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [null], ...berryFoe(200, 1) };
+  const r = tpFight(T, fightState({ oh: [200], fh: [200], fs: [0] }), 0, 0, "free");
+  console.log(`== a thief's own chip\na Bug Bite paying 30 a use from full wins on ${r.ends.win.mh} HP in ${r.ends.win.turns}`);
+  assert.deepEqual([r.ends.win.turns, r.ends.win.mh], [2, 170]);
+}
+// A thief its own chip downs eats nothing, and the berry is gone all the same (game-code.md §3): 30 of chip off 20 HP.
+{
+  const { tpFight } = globalThis.__tp;
+  const T = { ours: [[bugBite(120, 50, { self: 30 })]], theirs: [[{ dmg: 0, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [null], ...berryFoe(200, 1) };
+  const r = tpFight(T, fightState({ oh: [20], fh: [200], fs: [0] }), 0, 0, "free");
+  assert.deepEqual([r.pLoss, r.ends.loss.mh, r.ends.loss.foe.sitrus], [1, 0, 0]);
 }
 // A foe switching in spends its first turn coming in (#846). It outspeeds us and two of its hits fell our 150 HP;
 // two of ours fell its 200.

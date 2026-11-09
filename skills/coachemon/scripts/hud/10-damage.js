@@ -347,18 +347,25 @@ const landUse = (f, b, d, n, fac, hit, whole, down) => {
 // berries, a knockout's included (game-code.md §3). Each outcome's `dealt` is what the use took off its target through
 // the bars, counted before a revive and without a bust's chip, `subDealt` what it took off the target's Substitute, and
 // `hits` the hits that landed, on either. What stands having taken damage on a super-effective share is marked for an
-// Enigma Berry it holds.
+// Enigma Berry it holds. `user`: the attacker's Landing state, its chip for the use already paid, where `steals` holds
+// the heal each berry type gives it; each outcome's `user` is it after the berries it stole, eaten only while it stands
+// (game-code.md §3).
 // @only 35-team-plan, tests: land, landTurnEnd, luckKey, landingKey
-export const land = (state, use, hit = NO_HIT, { whole = false } = {}) => {
+export const land = (state, use, hit = NO_HIT, { whole = false, user = null } = {}) => {
   const d = use?.d, h = hit ?? NO_HIT, f = state?.facts ?? NO_HIT;
   const up = whole ? state?.hp >= 1 : state?.hp > 0;
-  if (!up || !(d > 0) || !Number.isFinite(d)) return [{ state, p: 1, dealt: 0, subDealt: 0, hits: 0 }];
+  const eater = user && (whole ? user.hp >= 1 : user.hp > 0) ? user : null;
+  const out = (st, p, dealt, subDealt, hits, stolen) => (user
+    ? { state: st, user: eater && stolen > 0 ? stateOf(user.facts, Math.min(user.facts?.maxHp ?? Infinity, user.hp + stolen), user.bar, user) : user, p, dealt, subDealt, hits }
+    : { state: st, p, dealt, subDealt, hits });
+  if (!up || !(d > 0) || !Number.isFinite(d)) return [out(state, 1, 0, 0, 0, 0)];
+  const heals = h.steals && typeof h.steals === "object" ? h.steals : null;
   const downs = [];
-  const downed = (p, b, hp, bar) => downs.push({ state: stateOf(f, hp, bar, b), p, dealt: b.dealt + (b.hp - hp), subDealt: b.subDealt, hits: b.hits + 1 });
+  const downed = (p, b, hp, bar) => downs.push(out(stateOf(f, hp, bar, b), p, b.dealt + (b.hp - hp), b.subDealt, b.hits + 1, b.stolen));
   const stood = landUse(f, { ...state, p: 1, stop: false, dealt: 0, subDealt: 0, hits: 0 }, d, Math.max(1, Math.round(use.n ?? 1)), h.factor ?? null, h, whole,
     h.steals ? (p, b, hp, bar) => {
       const taken = [];
-      pluck(f, { ...b, p }, null, taken);
+      pluck(f, { ...b, p }, heals, taken);
       for (const c of taken) downed(c.p, c, hp, bar);
     } : downed);
   const se = f.enigma?.heal > 0 ? use.se ?? seOf(h) : 0;
@@ -368,7 +375,7 @@ export const land = (state, use, hit = NO_HIT, { whole = false } = {}) => {
     for (const c of stood) feed(c, c.dealt > 0 ? se : 0, fed);
   }
   const outs = [];
-  for (const c of fed) outs.push({ state: stateOf(f, c.hp, c.bar, c), p: c.p, dealt: c.dealt, subDealt: c.subDealt, hits: c.hits });
+  for (const c of fed) outs.push(out(stateOf(f, c.hp, c.bar, c), c.p, c.dealt, c.subDealt, c.hits, c.stolen));
   for (const o of downs) outs.push(o);
   return outs;
 };

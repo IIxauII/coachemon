@@ -731,8 +731,7 @@ const stealWalk = (me, takes = m => m.isTransferable !== false) => {
   return out;
 };
 // The expectation of `value(held)` at each count of a `stealWalk`, each state's value worked out once.
-// @only 35-team-plan: overWalk
-export const overWalk = (walk, value) => {
+const overWalk = (walk, value) => {
   const seen = new Map();
   const at = held => {
     if (!seen.has(held)) seen.set(held, value(held));
@@ -744,8 +743,7 @@ export const overWalk = (walk, value) => {
 export const afterSteals = (me, heal, takes) => overWalk(stealWalk(me, takes), heal);
 
 // Bug Bite and Pluck's steals (`StealEatBerryAttr`, game-code.md §3).
-// @only 35-team-plan: berryWalk
-export const berryWalk = holder => stealWalk(holder, isBerry);
+const berryWalk = holder => stealWalk(holder, isBerry);
 const heldBerries = p => (p.getHeldItems?.() ?? []).filter(isBerry);
 // The distinct berry types `p` holds, in its own modifier order.
 export const berryTypesOf = p => heldBerries(p).map(m => m.berryType);
@@ -777,14 +775,12 @@ const drawValues = (walk, value) => overWalk(walk, p => {
   const types = berryTypesOf(p);
   return types.length ? types.reduce((t, b) => t + (value.get(b) ?? 0), 0) / types.length : 0;
 });
-// `eatenAt[k]`: what the (k+1)-th draw off `holder` heals `eater`, uncapped; `supply`: the berries it can lose in all.
-// Null when it holds none. `walk`: its `berryWalk`, where already worked out.
-// @only 35-team-plan: stolenDraws
-export const stolenDraws = (holder, { eater = null, turn = null, walk = null } = {}) => {
-  const held = heldBerries(holder);
-  if (!held.length) return null;
-  const value = new Map(held.map(m => [m.berryType, eatenNow(eater, m.berryType, turn)]));
-  return { supply: held.reduce((t, m) => t + stackOf(m), 0), eatenAt: drawValues(walk ?? berryWalk(holder), value) };
+// What each berry type `holder` holds heals `thief` when it steals one, uncapped, as `land` takes a hit's `steals`
+// (game-code.md §3); null where it holds none.
+// @only 35-team-plan: stealHeals
+export const stealHeals = (turn, thief, holder) => {
+  const types = berryTypesOf(holder);
+  return types.length ? Object.fromEntries(types.map(b => [b, eatenNow(thief, b, turn)])) : null;
 };
 // What one berry leaving `holder` is worth, as the HUD prices a held berry. `berry`: a `BerryType` to name the one
 // that goes, else a uniform draw over the berry types held. `heal(p)`: a holder's turn-end HP change, as
@@ -880,7 +876,7 @@ const drainTotal = (drain, turns) => (typeof drain !== "function" ? drain * turn
 
 // Whether `thief` can eat a berry off `foe` at all (game-code.md §3). A foe off the field answers nothing, so read it
 // as blocked.
-// @only 35-team-plan, tests: berryStealable
+// @only tests: berryStealable
 export const berryStealable = (foe, thief = null) => {
   let bypass = false, infiltrates = false;
   try {
@@ -894,8 +890,7 @@ export const berryStealable = (foe, thief = null) => {
   return !!berryTypesOf(foe).length;
 };
 // `mine` is our move's record.
-// @only 35-team-plan: stealsBerry
-export const stealsBerry = (mine, foe, me) => !!mine?.traits?.attrNames?.has("StealEatBerryAttr") && berryStealable(foe, me);
+const stealsBerry = (mine, foe, me) => !!mine?.traits?.attrNames?.has("StealEatBerryAttr") && berryStealable(foe, me);
 // P(k berries gone by the end of turn j), k = 0..9: one draw a landed use, at `land(j)`, until the `supply` runs out.
 // `before`: P(a steal landed before this exchange, from the turn a depth-2 line already paid for). Bug Bite and Pluck
 // are plain single-hit attacks with no delay, so use j is turn j.

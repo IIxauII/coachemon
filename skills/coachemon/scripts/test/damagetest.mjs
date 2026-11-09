@@ -252,6 +252,23 @@ const bigHit = move(1, "Big Hit", 14, 120);
   }
 }
 
+// ---- A Bug Bite's record steals, but not into Sticky Hold, which a Mold Breaker's gets past, and a move that steals nothing says so (game-code.md §3)
+{
+  const bite = move(91, "Bug Bite", 6, 60, { attrs: [new ({ StealEatBerryAttr: class {} }).StealEatBerryAttr()] });
+  const plain = mon("plain"), sticky = mon("sticky", { abilities: ["BlockItemTheftAbAttr"] });
+  const steals = (atk, def, mv = bite, estimate = false) => {
+    setup(atk, def);
+    return readTurn(scene, t => t.outcomes(atk, def), { estimate }).find(o => o.name === mv.name).steals;
+  };
+  const biter = mon("biter", { moves: [bite, bigHit] }), mold = mon("mold", { moves: [bite], abilities: ["MoveAbilityBypassAbAttr"] });
+  // The estimate knows a Mold Breaker by name (#995).
+  mold.getAbility = () => ({ name: "Mold Breaker", getAttrs: () => [] });
+  for (const estimate of [false, true]) {
+    assert.deepEqual([steals(biter, plain, bite, estimate), steals(biter, sticky, bite, estimate), steals(mold, sticky, bite, estimate), steals(biter, plain, bigHit, estimate)],
+      [true, null, true, null], estimate ? "estimated" : "live");
+  }
+}
+
 // ---- Accuracy scales expected damage, and `getMoveType` gives a form its type
 {
   const atk = mon("morpeko", { formIndex: 1 }), def = mon("target");

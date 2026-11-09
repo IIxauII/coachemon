@@ -5,6 +5,6 @@ const nulls = xs => xs.map(() => null);
 // too.
 export const fightState = st => ({
   ox: zeros(st.oh), od: zeros(st.oh), og: zeros(st.oh), ok: zeros(st.oh), ou: nulls(st.oh),
-  fd: zeros(st.fh), fg: zeros(st.fh), fl: zeros(st.fh), fk: zeros(st.fh), fu: nulls(st.fh),
+  fd: zeros(st.fh), fg: zeros(st.fh), fk: zeros(st.fh), fu: nulls(st.fh),
   ...st,
 });
