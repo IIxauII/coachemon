@@ -74,8 +74,9 @@ Each folder is emptied and refilled in place, never replaced, since Orion keys a
   keys). U is a dead key on the US layout; that is what `probe-opt-u` tests.
 - **VoiceOver off** (it uses ⌃⌥).
 - Start a run and get to the first battle: the game's stats show there when Shift reaches it.
-- **Click the game once** before pressing, and leave nothing text-focused. Wait about a second between presses: a
-  press is everything within 1.2 s.
+- **Click the game once** before pressing, and leave nothing text-focused. **Wait two seconds between presses**: a
+  press is everything that arrives within 1.2 s of the last thing, so quicker presses merge into one heading (the
+  Orion smoke check merged three ⌥K presses into one "6 grabs").
 - Press each chord **once, slowly**. For ⌥K, ⇧⌘K and ⌃K, also **hold it for a second**, to see repeats.
 
 ## Chrome (156)
