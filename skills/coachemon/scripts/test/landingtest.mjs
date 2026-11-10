@@ -750,8 +750,9 @@ const hitRecord = (use, def, hit) => {
     use, traits: { ...TRAITS }, costs: [], notes: [], live: true, ...hit };
 };
 // `ours`: the foe hits us, and these are our luck; else we hit the foe, whose luck is `foe`. `pouch`: the foe side's Berry
-// Pouch stacks. KO pacing eats the Sitrus Berry with no steals.
-const race = ({ use, foe = {}, ours = null, token = 0, pouch = 0, hit = {} }) => {
+// Pouch stacks. KO pacing eats the Sitrus Berry with no steals. `pays`: the race is the attacker's own, against what its
+// use costs it, KO pacing taking that as turn-end chip off the record's `self`.
+const race = ({ use, foe = {}, ours = null, token = 0, pouch = 0, hit = {}, pays = false }) => {
   const hitter = (name, player) => mon(name, 50, ["Normal"], ATTACKER, [["Hit", "Normal", 80, "P"]], true, undefined, { isPlayer: () => player, hasTrainer: () => !player });
   const me = ours ? targetMon({ name: "us", player: true, ...ours }) : hitter("us", true);
   const target = ours ? hitter("foe", false) : targetMon({ name: "foe", trainer: true, ...foe });
@@ -762,9 +763,10 @@ const race = ({ use, foe = {}, ours = null, token = 0, pouch = 0, hit = {} }) =>
     outcome: (a, d) => (a === atk ? hitRecord(use, d, hit) : null),
     moves: e => (e === atk ? [{ name: "Hit", type: "Normal", p: 1, score: 10, targets: [0] }] : []) });
   const T = tpTables(turn, [me], [target], false);
-  const by = koCurve(turn.mon(def), turn.outcomes(atk, def)[0], { sitrus: 0 }).by;
+  const rec = turn.outcomes(atk, def)[0];
+  const by = pays ? koCurve(turn.mon(atk), [{ d: 0, p: 1, n: 0 }], { turnEnd: -rec.self }).by : koCurve(turn.mon(def), rec, { sitrus: 0 }).by;
   const plan = tpFight(T, fightState({ oh: [me.hp], fh: [target.hp], fs: [T.foeState[0].bar] }), 0, 0, "free");
-  return { by, plan: ours ? plan.lossBy : plan.winBy };
+  return { by, plan: !!ours !== pays ? plan.lossBy : plan.winBy };
 };
 const sureUse = (d, n = 1) => [{ d, p: 1, n }];
 const rolls = (lo, hi) => Array.from({ length: 16 }, (_, r) => ({ d: lo + (hi - lo) * r / 15, p: 1 / 16, n: 1 }));
@@ -873,6 +875,23 @@ const EXACT = 1e-9, PRUNED = 10 * 1e-6;
     const { by, plan } = race(setup);
     console.log(`${what}: KO pacing ${curve(by)} · fight plan ${curve(plan)}`);
     for (let t = 0; t < 9; t++) assert.ok(Math.abs(by[t] - plan[t]) < tol);
+  }
+}
+
+// ---- The fight plan's chance a use's own recoil and contact chip down its user by each turn is KO pacing's, on either side (#1036)
+{
+  console.log("== KO pacing and the fight plan, on the side that pays");
+  const cost = { self: 70, userCost: { strike: 40, recoil: 0.5, landed: 0, missed: 0 } };
+  const ROWS = [
+    ["our recoil and contact chip", { use: sureUse(60), foe: { hp: 1000 }, hit: cost, pays: true }],
+    ["the foe's recoil and contact chip", { use: sureUse(60), ours: { hp: 1000 }, hit: cost, pays: true }],
+  ];
+  const downOn = by => by.findIndex(x => x >= 1 - EXACT) + 1;
+  for (const [what, setup] of ROWS) {
+    const { by, plan } = race(setup);
+    console.log(`${what}: KO pacing down on turn ${downOn(by)} · fight plan down on turn ${downOn(plan)}`);
+    assert.ok(downOn(by) > 0);
+    for (let t = 0; t < 9; t++) assert.ok(Math.abs(by[t] - plan[t]) < EXACT);
   }
 }
 
