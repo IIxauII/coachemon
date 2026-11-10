@@ -565,7 +565,6 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
 // ---- A super-effective hit a Substitute takes feeds no Enigma Berry, and one past it after it breaks does (game-code.md §8)
 {
   const enigma = held("BerryModifier", { berryType: 2 });
-  // 200 HP behind a 50 HP Substitute, the berry 50.
   const rec = recOf(mon("enigma", { hp: 200, items: [enigma], sub: 50 }));
   const once = D.koCurve(rec, [{ d: 70, p: 1, se: 1 }]).after1;
   assert.deepEqual(once.map(x => [x.hp, x.sub, x.enigmas]), [[200, 0, 1]], "a use the Substitute took whole feeds nothing");

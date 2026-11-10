@@ -526,7 +526,7 @@ const sure = d => [{ d, p: 1, n: 1 }];
   assert.deepEqual(crash, { self: 50, userCost: { strike: 0, recoil: 0, landed: 0, missed: 200 } });
   assert.deepEqual(threat([{ name: "Body Slam", use: sure(100) }]), { self: 0, userCost: null }, "a mix that costs nothing");
 }
-// ---- Our recoil is paid on each landed use at its share of what that use dealt, not at the record's mean, which counted the accuracy twice (#1036)
+// ---- Our recoil is paid on each landed use at its share of what that use dealt, not at the record's mean (#1036)
 {
   const { tpFight } = globalThis.__tp;
   const use = [{ d: 0, p: 0.5, n: 0 }, { d: 100, p: 0.5, n: 1 }];
@@ -547,7 +547,6 @@ const sure = d => [{ d, p: 1, n: 1 }];
   console.log(`== Shell Bell\nours, moving first: won on turn ${belled.ends.win?.turns} on ${belled.ends.win?.mh} · without it lost ${plain.pLoss} · moving second lost ${slower.pLoss}`);
   assert.deepEqual([belled.pWin, belled.ends.win.turns, belled.ends.win.mh], [1, 2, 70]);
   assert.deepEqual([plain.pLoss, slower.pLoss], [1, 1]);
-  // The foe's, four stacks, heals 30 off each 60 it lands on us: our 100 a turn into its 200 takes a third turn.
   const theirs = fight({ ...T(0, {}, { shellBell: bell }), ours: [[{ dmg: 100 }]] }, 200, 200);
   assert.deepEqual([theirs.pWin, theirs.ends.win.turns], [1, 3], "the foe's heals after each of its hits");
 }
@@ -858,7 +857,7 @@ const sure = d => [{ d, p: 1, n: 1 }];
   console.log(`== an Enigma Berry behind a Substitute\nthe foe's falls on turn ${foe.turns}, ours on turn ${us.turns}`);
   assert.deepEqual([foe.pWin, foe.turns, us.pLoss, us.turns], [1, 5, 1, 5]);
 }
-// An Unnerve blocks the berry in its own pairing, wherever it stands now (#652).
+// ---- In a single battle, an Unnerve blocks the berry in its own pairing, wherever it stands now (#652)
 {
   const { sceneTurnEndHp } = globalThis.__hud["10-damage"];
   const stub = outcomeFrom({ "Bisharp>Iron Head>Garchomp": [[100], 1, 2], "Garchomp>Earthquake>Bisharp": [[10], 1, 1] });

@@ -465,8 +465,6 @@ const thief = hp => stateOf({ maxHp: 200 }, hp);
 // ---- A steal heals its user what the berry it drew is worth after the chip the use costs it, through Landing alone, up to its max HP (game-code.md §3, §8)
 {
   console.log("== a steal's user");
-  // From full 200, its own 30 of chip first, then the Sitrus's 50: back to 200, where a heal ahead of the chip would be
-  // capped at 200 and leave it on 170.
   const user = thief(200);
   const chipped = { ...HEALS, userCost: { strike: 30 } };
   const outs = land(at({ hp: 200, sitrus: 1, lum: 1 }), sure(30), chipped, { user });
@@ -751,7 +749,7 @@ const hitRecord = (use, def, hit) => {
 };
 // `ours`: the foe hits us, and these are our luck; else we hit the foe, whose luck is `foe`. `pouch`: the foe side's Berry
 // Pouch stacks. KO pacing eats the Sitrus Berry with no steals. `pays`: the race is the attacker's own, against what its
-// use costs it, KO pacing taking that as turn-end chip off the record's `self`.
+// use costs it.
 const race = ({ use, foe = {}, ours = null, token = 0, pouch = 0, hit = {}, pays = false }) => {
   const hitter = (name, player) => mon(name, 50, ["Normal"], ATTACKER, [["Hit", "Normal", 80, "P"]], true, undefined, { isPlayer: () => player, hasTrainer: () => !player });
   const me = ours ? targetMon({ name: "us", player: true, ...ours }) : hitter("us", true);
@@ -794,8 +792,6 @@ const EXACT = 1e-9, PRUNED = 10 * 1e-6;
 
 // ---- KO pacing's Bug Bite draws per branch, so a Sitrus x2 holder beside a Lum holds no Sitrus at turn 2's berries (game-code.md §3, #915)
 {
-  // 98 of 200, 30 a use: 68 eats one (118), and turn 2's draw takes the last Sitrus where the Lum went first, and the Lum
-  // where the Sitrus did; 88 eats nothing, 58, 28, down on use 5.
   const rec = { facts: factsOf({ hp: 98, maxHp: 200, sitrus: 2, lum: 1 }) };
   const bite = { use: sureUse(30), steals: true };
   const once = koCurve(rec, bite, { sitrus: 0 });
@@ -808,8 +804,6 @@ const EXACT = 1e-9, PRUNED = 10 * 1e-6;
 
 // ---- A depth-2 curve seeded from an unnerved one has the earlier steal taken off already (game-code.md §3, #915)
 {
-  // 200 of 200 holding one Sitrus, 60 a use. Unnerved, it eats nothing, but the steal still lands; the next curve's 140 →
-  // 80 has no Sitrus to eat (20, down on use 3), where a kept one would heal 80 to 130 and last a use more.
   const rec = { facts: factsOf({ hp: 200, sitrus: 1 }) };
   const unnerved = koCurve(rec, { use: sureUse(60), steals: true }, { sitrus: null });
   const next = koCurve(rec, sureUse(60), { sitrus: 0, start: unnerved.after1 });

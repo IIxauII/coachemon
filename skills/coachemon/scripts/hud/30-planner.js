@@ -894,7 +894,7 @@ export const turnEndCourse = (turn, me, foe, hitsPerTurn, eaten = null) => {
   if (!statusChange && !items) return flat;
   return { base, pre, gone, flat: false, at: j => flat.at(j) + (statusChange ? statusChange * odds.by(hitsPerTurn * j) : 0) + (items ? items(j) : 0) };
 };
-// An opposing Unnerve keeps `holder`'s berries uneaten: `opp`'s, or in a double any on the field (game-code.md §21).
+// An opposing Unnerve keeps `holder`'s berries uneaten: `opp`'s, or in a double any on the field (game-code.md §3).
 export const unnervedBy = (turn, holder, opp) => {
   if (opp && turn.mon(opp).facts.unnerve) return true;
   if (!turn.facts.double) return false;
