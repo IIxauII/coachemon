@@ -161,17 +161,13 @@ const zardFight = ({ held = [], hp = 96, weather = WeatherType.NONE, faster = fa
   return globalThis.__tp.tpFight(globalThis.__tp.tpTables(turn, [zard], [ditto], false), fightState({ oh: [hp], fh: [100], fs: [0] }), 0, 0, "free");
 };
 const heldOf = (name, fields = {}) => Object.assign(new ({ [name]: class { getStackCount() { return 1; } } })[name](), fields);
-// The fight plan's turn end lands its course's chip ahead of the berries, and leaves the Sitrus Berry to Landing, which
-// eats it once (game-code.md §3, §21, #1031). On 52 in a sandstorm, the storm's 6 takes it to 46, under half, and the
-// berry puts 24 back: 70, not the 46 of a berry read first, nor the 94 of one eaten twice.
+// ---- The fight plan's turn end lands its course's chip ahead of the berries, and Landing eats the Sitrus Berry once (game-code.md §3, §21, #1031)
 {
   const r = zardFight({ held: [heldOf("BerryModifier", { berryType: BerryType.SITRUS })], hp: 52, weather: WeatherType.SANDSTORM });
   console.log(`== chip ahead of the berries\nCharizard ends on ${r.ends.win.mh}`);
   assert.equal(r.ends.win.mh, 70);
 }
-// A full-HP Leftovers holder hit below full heals its sixteenth at that turn's end (game-code.md §21, #1031): its course
-// is read below full HP, where the heal is not capped away. An Enigma Berry beside it, which a neutral hit never feeds,
-// adds nothing to the course.
+// ---- A full-HP Leftovers holder hit below full heals its sixteenth at that turn's end, and an unfed Enigma Berry adds nothing (game-code.md §21, #1031)
 {
   const leftovers = heldOf("TurnHealModifier"), enigma = heldOf("BerryModifier", { berryType: BerryType.ENIGMA });
   const [plain, fed, both] = [[], [leftovers], [leftovers, enigma]].map(held => zardFight({ held, faster: true }).ends.win.mh);
@@ -179,10 +175,7 @@ const heldOf = (name, fields = {}) => Object.assign(new ({ [name]: class { getSt
   assert.ok(Math.abs(fed - plain - 6) < 1e-9, `${fed} − ${plain}`);
   assert.equal(both, fed);
 }
-// The fight plan's turn end follows the course: a badly poisoned mon's chip grows by a sixteenth each turn end, and
-// only a summon starts its counter over (game-code.md §14, #1031). A 400 HP Muk sent in takes 25, 50, 75, 100 and 125,
-// 375 by turn 5, and the sixth fells it. Out on the field with its counter at 3, it takes 100, 125 and 150, and falls on
-// turn 4; switched back in, it starts over.
+// ---- A badly poisoned mon's chip grows by a sixteenth each turn end in the fight plan, and only a summon starts its counter over (game-code.md §14, #1031)
 {
   const { tpFight, tpTables } = globalThis.__tp;
   const { sceneTurnEndHp } = globalThis.__hud["10-damage"];
@@ -201,10 +194,7 @@ const heldOf = (name, fields = {}) => Object.assign(new ({ [name]: class { getSt
   const vs = (fcur, entering) => tpFight(U, fightState({ oh: [999], fh: [400], fs: [0], fcur, ft: [3] }), 0, 0, "free", null, entering);
   assert.deepEqual([vs(0, false), vs(null, false), vs(0, true)].map(foeDown), [4, 6, 6]);
 }
-// The plan starts a badly poisoned mon's counter where the game has it, and carries it on while the mon stays out
-// (game-code.md §14, #1031). Muk fells a 100 HP Ditto in two hits, then stays in on Chansey, hitting for 55 a turn.
-// From a fresh count it ends the first exchange on 325, and its next three turn ends take 75, 100 and 125; from a count of
-// 2 already, on 225, and the next two take 125 and 150.
+// ---- The plan starts a badly poisoned mon's counter where the game has it, and carries it on while the mon stays out (game-code.md §14, #1031)
 {
   const { teamPlanner } = globalThis.__hud["35-team-plan"];
   const { sceneTurnEndHp } = globalThis.__hud["10-damage"];
@@ -224,9 +214,7 @@ const heldOf = (name, fields = {}) => Object.assign(new ({ [name]: class { getSt
   assert.deepEqual(fresh, ["Ditto: KO · 81% left", "Chansey: falls · foe at 78%"]);
   assert.deepEqual(ticked, ["Ditto: KO · 56% left", "Chansey: falls · foe at 89%"]);
 }
-// A pairing where a move of ours can steal a berry off the foe tables what each berry type the foe holds heals that
-// thief, uncapped, and the summary of the move says it steals; which berry it takes is Landing's draw (#646, #833,
-// game-code.md §3).
+// ---- A pairing where a move of ours can steal a berry tables what each berry type the foe holds heals the thief, uncapped (#646, #833, game-code.md §3)
 {
   const steal = new ({ StealEatBerryAttr: class {} }).StealEatBerryAttr();
   const berry = (berryType, n = 1) => Object.assign(new ({ BerryModifier: class { getStackCount() { return n; } } }).BerryModifier(), { berryType, isTransferable: true });
@@ -277,7 +265,7 @@ const bugBite = (dmg, heal = 0, extra = {}) => ({ dmg, steals: { 0: heal, 2: hea
   // Two Bug Bites fell it, and its one hit lands between them: 100 − 10, plus 50 for a Sitrus still there to steal.
   assert.deepEqual([held, eaten], [140, 90], "no heal for a berry already eaten");
 }
-// …and an Enigma it ate on an earlier exchange the same, read off the Landing state that exchange left (#833, #822).
+// ---- An Enigma Berry the foe ate on an earlier exchange leaves our Bug Bite nothing, read off the Landing state that exchange left (#833, #822)
 {
   const { tpFight } = globalThis.__tp;
   const foe = berryFoe(100, 0, 1);
@@ -329,9 +317,7 @@ const bugBite = (dmg, heal = 0, extra = {}) => ({ dmg, steals: { 0: heal, 2: hea
   assert.equal(r.ends.win.mh, 90, "each steal heals the thief");
   assert.equal(r.foe.sitrus, 0, "the berries gone carry to the next exchange");
 }
-// A stealing use pays its own chip ahead of the heal it eats (game-code.md §3). Two uses of 120 fell the 200 HP foe, and
-// each costs us 30 of recoil and contact chip: from full, 170, then the 50 Sitrus heals it back to 200, and the second
-// use's 30 stands. A heal ahead of the chip would be capped at 200 and end it on 140.
+// ---- A stealing use pays its own chip ahead of the heal it eats (game-code.md §3)
 {
   const { tpFight } = globalThis.__tp;
   const T = { ours: [[bugBite(120, 50, { userCost: { strike: 30 } })]], theirs: [[{ dmg: 0, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourCourse: [null], ...berryFoe(200, 1) };
@@ -339,7 +325,7 @@ const bugBite = (dmg, heal = 0, extra = {}) => ({ dmg, steals: { 0: heal, 2: hea
   console.log(`== a thief's own chip\na Bug Bite paying 30 a use from full wins on ${r.ends.win.mh} HP in ${r.ends.win.turns}`);
   assert.deepEqual([r.ends.win.turns, r.ends.win.mh], [2, 170]);
 }
-// A thief its own chip downs eats nothing, and the berry is gone all the same (game-code.md §3): 30 of chip off 20 HP.
+// ---- A thief its own chip downs eats nothing, and the berry is gone all the same (game-code.md §3)
 {
   const { tpFight } = globalThis.__tp;
   const T = { ours: [[bugBite(120, 50, { userCost: { strike: 30 } })]], theirs: [[{ dmg: 0, e: 1 }]], first: [[0]], ourMax: [200], foeMax: [200], ourCourse: [null], ...berryFoe(200, 1) };
@@ -514,9 +500,7 @@ const liveTurn = (ours, theirs, [ourHp, foeHp]) => {
   return { turn, me, foe, T: globalThis.__tp.tpTables(turn, [me], [foe], false) };
 };
 const sure = d => [{ d, p: 1, n: 1 }];
-// The foe pays its own recoil, through its threat and its summary to Landing (game-code.md §8, #1036). Our 100 a turn,
-// first, into its 300; its 100 back into our 400 costs it half: 300 → 200 → 150, then 50 → 0 on its turn-2 reply, a
-// turn before our third hit would.
+// ---- The foe pays its own recoil, through its threat and its summary to Landing (game-code.md §8, #1036)
 {
   const { tpFight } = globalThis.__tp;
   const fight = hit => tpFight(liveTurn({ use: sure(100) }, [{ name: "Hit", use: sure(100), hit }], [400, 300]).T, fightState({ oh: [400], fh: [300], fs: [0] }), 0, 0, "free");
@@ -525,9 +509,7 @@ const sure = d => [{ d, p: 1, n: 1 }];
   assert.deepEqual([plain.pWin, plain.ends.win.turns, plain.ends.win.mh], [1, 3, 200]);
   assert.deepEqual([recoiled.pWin, recoiled.ends.win.turns, recoiled.ends.win.mh], [1, 2, 200], "its second reply's recoil fells it");
 }
-// The foe's threat mixes its picks' costs by what each part is paid on: half Double-Edge, half Body Slam, each 100, the
-// threat's recoil is the half the damage it deals pays; half High Jump Kick at 50 % and half a sure hit, its crash is
-// paid on the quarter of its uses that land nothing (#1036).
+// ---- The foe's threat mixes its picks' costs by what each part is paid on, its recoil by the damage that pays it and its crash by the uses that land nothing (#1036)
 {
   const { threatFrom } = globalThis.__hud["30-planner"];
   const threat = picks => {
@@ -544,9 +526,7 @@ const sure = d => [{ d, p: 1, n: 1 }];
   assert.deepEqual(crash, { self: 50, userCost: { strike: 0, recoil: 0, landed: 0, missed: 200 } });
   assert.deepEqual(threat([{ name: "Body Slam", use: sure(100) }]), { self: 0, userCost: null }, "a mix that costs nothing");
 }
-// Our recoil is paid on each use that lands at its full share of what that use dealt, where the record's `self` is its
-// mean over every use, a miss's included: paying that on each landed use counted the accuracy twice (#1036). A 50 %
-// Double-Edge of 100 into 300 needs three that land, each costing us 25 of our 400, and the foe deals nothing.
+// ---- Our recoil is paid on each landed use at its share of what that use dealt, not at the record's mean, which counted the accuracy twice (#1036)
 {
   const { tpFight } = globalThis.__tp;
   const use = [{ d: 0, p: 0.5, n: 0 }, { d: 100, p: 0.5, n: 1 }];
@@ -555,9 +535,7 @@ const sure = d => [{ d, p: 1, n: 1 }];
   console.log(`== our recoil at 50 % accuracy\nwon on ${r.ends.win.mh} of 400`);
   assert.equal(r.ends.win.mh, 325, "three landed uses at 25 each, not at the 12.5 the misses average it down to");
 }
-// A Shell Bell heals its holder right after its move, ahead of a slower foe's reply (game-code.md §8). Ours, four stacks
-// on 50 of 200, hits a 160 HP foe for 80 a turn and takes 60 back: healed to 90 before the reply, it stands on 30 and
-// wins on turn 2, healed again to 70. Without it, or moving second, the first reply fells it.
+// ---- A Shell Bell heals its holder right after its move, ahead of a slower foe's reply (game-code.md §8)
 {
   const { tpFight } = globalThis.__tp;
   const { stateOf } = globalThis.__hud["10-damage"];
@@ -858,8 +836,7 @@ const sure = d => [{ d, p: 1, n: 1 }];
     first: [[1]], ourState: [holder(400, 1)] }, st(), 0, 0, "free");
   assert.ok(Math.abs(mixed.ends.win.mh - (0.6 * 385 + 0.4 * 350)) < 1e-9, `the berry pays on the super-effective share alone: ${mixed.ends.win.mh}`);
 }
-// The fight plan's turn-end chip stops at a boss bar, as KO pacing's does (game-code.md §3, §21, #1028). A 3-bar trainer
-// boss on 300 takes 150 of chip a turn and nothing else: 200, 100, then down on turn 3, not 150 and down on turn 2.
+// ---- The fight plan's turn-end chip stops at a boss bar, as KO pacing's does (game-code.md §3, §21, #1028)
 {
   const { tpFight } = globalThis.__tp;
   const boss = globalThis.__hud["10-damage"].stateOf({ maxHp: 300, boss: true, segs: 3, segSize: 100, idx: 2, minIdx: 0 }, 300);
@@ -869,9 +846,7 @@ const sure = d => [{ d, p: 1, n: 1 }];
   console.log(`== turn-end chip into a boss's bars\ndown by turn: ${r.winBy.slice(0, 3).join(" ")}`);
   assert.deepEqual(r.winBy.slice(0, 3), [0, 0, 1]);
 }
-// A super-effective hit a Substitute takes feeds its holder no Enigma Berry, on either side (game-code.md §8). 70 a
-// turn into 200 behind a 50 HP Substitute: 200 → 130 + 50 → 110 → 40 → down on turn 5. Fed on the hit the
-// Substitute took, it falls on turn 4.
+// ---- A super-effective hit a Substitute takes feeds its holder no Enigma Berry, on either side (game-code.md §8)
 {
   const { tpFight } = globalThis.__tp;
   const { stateOf } = globalThis.__hud["10-damage"];
@@ -921,8 +896,7 @@ const sure = d => [{ d, p: 1, n: 1 }];
   assert.equal(beside.turns, facing.turns, "an Unnerve beside the pairing blocks the berry too");
   assert.ok(eaten.turns > beside.turns, "with the Unnerve off the field, the berry is eaten");
 }
-// The threat record and both of the fight plan's move summaries set every race fact, on a live turn and an estimated
-// one, so the foe's summary is taken both ways (#995), the user cost included (#1036).
+// ---- The threat record and both of the fight plan's move summaries set every race fact, user cost included, on a live turn and an estimated one (#995, #1036)
 {
   const { threatFrom } = globalThis.__hud["30-planner"];
   const stub = outcomeFrom({ "Bisharp>Iron Head>Garchomp": [[100], 1, 2], "Garchomp>Earthquake>Bisharp": [[10], 1, 1] });
@@ -940,7 +914,7 @@ const sure = d => [{ d, p: 1, n: 1 }];
     }
   }
 }
-// Our berries are our Landing state's, the Enigma its own quarter whatever heals after it at the turn end (#822, #847).
+// ---- Our berries are our Landing state's, the Enigma its own quarter whatever heals after it at the turn end (#822, #847)
 {
   const { scene: s } = run(null);
   const zard = mon("Charizard", 30, ["Fire","Flying"], "Blaze", [96,60,55,80,60,75], [["Flamethrower","Fire",90,"S"]], true);
@@ -957,9 +931,7 @@ const sure = d => [{ d, p: 1, n: 1 }];
 }
 // Our Landing state holding one Berry of 100 of `type`, kept by a Berry Pouch at `keep`, absent for facts that name none.
 const pouched = (type, keep) => globalThis.__hud["10-damage"].stateOf({ maxHp: 400, [type]: { heal: 100, left: 1, ...(keep == null ? {} : { keep }) } }, 400);
-// A Berry Pouch keeps our Enigma Berry on its own branch of each feed, so the plan prices more of it (#822, #1028). We
-// take 120 a turn super-effective into 400 and fell the foe on turn 3, before its third hit. No Pouch: 280 + 100 → 380
-// → 260; a kept berry heals again on turn 2, 260 + 100.
+// ---- A Berry Pouch keeps our Enigma Berry on its own branch of each feed, so the plan prices more of it (#822, #1028)
 {
   const { tpFight } = globalThis.__tp;
   const T = keep => ({ ours: [[{ dmg: 100, e: 1 }]], theirs: [[{ dmg: 120, e: 2 }]], first: [[0]], ourMax: [400], foeMax: [300],
@@ -973,10 +945,7 @@ const pouched = (type, keep) => globalThis.__hud["10-damage"].stateOf({ maxHp: 4
   assert.ok(Math.abs(one.ends.win.mh - (0.3 * 360 + 0.7 * 260)) < 1e-9, `one stack: ${one.ends.win.mh}`);
   assert.ok(Math.abs(three.ends.win.mh - (0.9 * 360 + 0.1 * 260)) < 1e-9, `three stacks: ${three.ends.win.mh}`);
 }
-// …and our Sitrus Berry the same: a branch that still holds it eats it again at its next turn end below half (#847,
-// #1028). We take 120 a turn into 400 and fell the foe on turn 5, before its fifth hit. No Pouch: 280 → 160 + 100 → 140 →
-// 20 → 20. Kept at `k`: 260 on turn 2, then 140 + 100 → 240 on turn 3 at `k`, then 120 + 100 → 220 on turn 4 at `k²`,
-// above half on turn 5's end.
+// ---- A Berry Pouch keeps our Sitrus Berry on its own branch, which eats it again at its next turn end below half (#847, #1028)
 {
   const { tpFight } = globalThis.__tp;
   const T = keep => ({ ours: [[{ dmg: 100, e: 1 }]], theirs: [[{ dmg: 120, e: 1 }]], first: [[0]], ourMax: [400], foeMax: [500],
@@ -1077,9 +1046,7 @@ const pouched = (type, keep) => globalThis.__hud["10-damage"].stateOf({ maxHp: 4
   assert.equal(tera.send, plain.send, "and its send-in score at the Fire/Rock it is sent in at");
   assert.equal(coal.isTerastallized, undefined, "and the flag is off again afterwards");
 }
-// One of ours the plan switches out leaves its Substitute behind, so it comes back to the fight without one (game-code.md
-// §8). Alakazam hits Golem first and takes twice that back, and a 50 HP Substitute buys it a hit more. Blastoise,
-// switched in for it, falls to the entry hit.
+// ---- One of ours the plan switches out leaves its Substitute behind, so it comes back to the fight without one (game-code.md §8)
 {
   const table = { "Alakazam>Psychic>Golem": [[30], 1, 1], "Golem>Rock Slide>Alakazam": [[60], 1, 1],
     "Blastoise>Surf>Golem": [[30], 1, 1], "Golem>Rock Slide>Blastoise": [[400], 1, 1] };

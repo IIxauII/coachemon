@@ -269,8 +269,8 @@ const cutOn = (f, hp, d, hit) => {
 // One hit of `d` on carrier `b`, in the game's order (game-code.md §3, §8). Pushes what stands onto `out`, a revive
 // among it with `stop` set, and returns the share that goes down, handing it to `down(p, b, hp, bar)` with the HP the
 // hit left. `luck` false: turn-end chip, which nothing survives on luck, no cut halves and no Substitute meets
-// (§21). `whole`: down below 1 HP (#527), else at 0 or less. A Substitute takes the hit as cut, whole, ahead of a
-// Disguise, the bars and the luck, and its loss is `subDealt` (§8).
+// (§21). `whole`: as `stands`. A Substitute takes the hit as cut, whole, ahead of a Disguise, the bars and the luck,
+// and its loss is `subDealt` (§8).
 const strike = (f, b, d, hit, whole, luck, out, down = null) => {
   const shielded = luck && b.sub > 0 && d > 0 && !hit.ignoresSub;
   if (luck && !shielded && f.disguise && !b.busted && !hit.ignoresDisguise && d > 0) return bust(f, b, whole, out, down);
@@ -416,9 +416,8 @@ export const raceFacts = o => {
   return x;
 };
 // `use`: one point of a use's spread, `{ d, n, se }`, `d` the whole use before the target's HP or bars cut it, and `se`
-// its super-effective share. `hit`: the hit record, its race facts read by name and an absent one off (`ignoresSturdy`,
-// `ignoresSub`, `ignoresAbility`, `ignoresDisguise`, `cut`, `ohko`, `factor(bar)`, `steals`, and `e`, which stands in for
-// a missing `se`); `cut` is "in" where its numbers already hold a full-HP holder's Multiscale or Shadow Shield, and
+// its super-effective share. `hit`: the hit record, each field read by name and an absent one off, its `e` standing in
+// for a missing `se`; `cut` is "in" where its numbers already hold a full-HP holder's Multiscale or Shadow Shield, and
 // "never" where nothing halves it. `steals`: a Bug Bite's or Pluck's, each strike that reaches the target takes one of its
 // berries, a knockout's included (game-code.md §3); `drain`, the signed share of `dealt` its user wins back; `userCost`,
 // what the use costs its user, null for nothing: `recoil`, its share of what the use dealt; `strike`, the HP each strike

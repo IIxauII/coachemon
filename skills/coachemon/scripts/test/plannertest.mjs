@@ -1172,8 +1172,6 @@ Object.assign(TABLE, {
 }
 
 // ---- The foe pays what its use costs it in the turn line too, off its threat's `self` (game-code.md §8, #1036)
-// Meteor Mash (85–100) 4HKOs a 300 HP Golisopod; a Leech Life that costs it 40 a use, its recoil or our Rough Skin's
-// chip, takes it in 3.
 {
   const costing = self => (a, d, pm, o) => { const x = outcome(a, d, pm, o); return x && pm.getName() === "Leech Life" ? { ...x, self } : x; };
   const metagross = id => mon("Metagross", 80, ["Steel", "Psychic"], [400, 180, 170, 120, 120, 120], [["Meteor Mash", "Steel", 90, "P"]], true, undefined, { id });
@@ -1194,8 +1192,6 @@ Object.assign(TABLE, {
 }
 
 // ---- Our drain heals as our move lands, before the foe's reply when we move first and after it when we move second (game-code.md §18)
-// Venusaur on 160 of 280 wins back ~23 a turn against Body Slam's 68–80. Faster, it meets the third reply on 121 and the
-// fourth fells it; slower, the third reply finds it on 98 − 74 = 24, ahead of that turn's drain, and fells it then.
 {
   const draining = (a, d, pm, o) => { const x = outcome(a, d, pm, o); return x && pm.getName() === "Giga Drain" ? { ...x, drain: 0.5 } : x; };
   const venusaur = id => mon("Venusaur", 80, ["Grass", "Poison"], [280, 100, 120, 180, 120, 100], [["Giga Drain", "Grass", 75, "S"]], true, 160, { id });
