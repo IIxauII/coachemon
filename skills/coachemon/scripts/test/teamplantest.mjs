@@ -901,22 +901,25 @@ const sure = d => [{ d, p: 1, n: 1 }];
   assert.deepEqual([T.foeState[0].enigmas, T.foeState[0].facts.enigma.heal], [1, 75], "its Landing state holds the berry an Unnerve on the field would block");
   assert.ok(eaten.turns > blocked.turns, "the pairing without the Unnerve pays for the berry");
 }
-// In a double, an opposing Unnerve is judged against the foe each pairing faces, not off whoever stands on the field (#1028).
+// ---- In a double, an Unnerve anywhere on the opposing field keeps the berries uneaten, whichever foe the pairing faces (game-code.md §3, #1028)
 {
   const { sceneTurnEndHp } = globalThis.__hud["10-damage"];
   const stub = outcomeFrom({ "Bisharp>Iron Head>Garchomp": [[100], 1, 1], "Garchomp>Earthquake>Bisharp": [[10], 1, 1] });
   const sitrus = Object.assign(new ({ BerryModifier: class {} }).BerryModifier(), { berryType: 0, getStackCount: () => 1 });
   const bisharp = (id, extra = {}) => fakeMon("Bisharp", 80, ["Dark", "Steel"], [300, 200, 200, 100, 100, 100], [["Iron Head", "Steel", 80, "P"]], true, undefined, { id, ...extra });
   const party = [bisharp("Unnerve", { hasAbilityWithAttr: a => a === "PreventBerryUseAbAttr" }), bisharp("Plain")];
+  let field = party;
   const chomp = fakeMon("Garchomp", 80, ["Dragon", "Ground"], [300, 200, 200, 100, 100, 50], [["Earthquake", "Ground", 100, "P"]], true, undefined,
-    { getHeldItems: () => [sitrus], getOpponents: () => party });
+    { getHeldItems: () => [sitrus], getOpponents: () => field });
   const turn = fakeTurn({ live: true, double: true, party, foes: [chomp], outcome: stub, heal: (p, o) => sceneTurnEndHp({ field: [] }, p, o),
     moves: () => [{ name: "Earthquake", type: "Ground", p: 1, score: 10, targets: [0] }] });
-  const T = globalThis.__tp.tpTables(turn, party, [chomp], true);
-  const fight = mi => globalThis.__tp.tpFight(T, fightState({ oh: [300, 300], fh: [300], fs: [0] }), mi, 0, "free");
-  const [blocked, eaten] = [0, 1].map(fight);
-  console.log(`== an Unnerve in a double\nGarchomp's Sitrus Berry: down in ${blocked.turns} facing the Unnerve, in ${eaten.turns} facing the other`);
-  assert.ok(eaten.turns > blocked.turns, "the pairing without the Unnerve pays for the berry");
+  const fight = mi => globalThis.__tp.tpFight(globalThis.__tp.tpTables(turn, party, [chomp], true), fightState({ oh: [300, 300], fh: [300], fs: [0] }), mi, 0, "free");
+  const [facing, beside] = [0, 1].map(fight);
+  field = [party[1]];
+  const eaten = fight(1);
+  console.log(`== an Unnerve in a double\nGarchomp's Sitrus Berry: down in ${facing.turns} facing the Unnerve, in ${beside.turns} beside it, in ${eaten.turns} with it off the field`);
+  assert.equal(beside.turns, facing.turns, "an Unnerve beside the pairing blocks the berry too");
+  assert.ok(eaten.turns > beside.turns, "with the Unnerve off the field, the berry is eaten");
 }
 // The threat record and both of the fight plan's move summaries set every race fact, on a live turn and an estimated
 // one, so the foe's summary is taken both ways (#995), the user cost included (#1036).

@@ -154,7 +154,7 @@ export const tpTables = (turn, party, foes, double = false, facing = null, enter
     // `steals[mi][fi]`: what each berry type the foe holds heals our thief, as `stealHeals` gives it, where a move of ours
     // can steal one.
     steals: party.map(me => foes.map(f => (turn.outcomes(me, f).some(o => o?.steals) ? stealHeals(turn, me, f) : null))),
-    ourUnnerve: party.map(p => !!turn.mon(p).facts.unnerve), foeUnnerve: foes.map(f => !!turn.mon(f).facts.unnerve),
+    ourEats: party.map(me => foes.map(f => !unnervedBy(turn, me, f))), foeEats: foes.map(f => party.map(me => !unnervedBy(turn, f, me))),
     foeStart: foes.map(f => f.hp),
     // `koMult`: the factor both sides' on-KO boosts put on a hit, after `atkN` and `defN` KOs (counts as `koStageFactor`
     // takes them), at physical share `phys`.
@@ -252,8 +252,7 @@ export const tpFight = (T, st, mi, fi, entry, over = null, entering = false) => 
   const themMul = (nUs || nFoe) && T.koMult ? T.koMult(T.foes[fi], T.foeKo[fi], nFoe, T.party[mi], T.ourKo[mi], nUs, them.phys ?? 1) : 1;
   const tok = T.tok?.[mi], robUs = T.fromUs?.[fi]?.[mi], robFoe = T.fromFoe?.[mi]?.[fi];
   const ourUse = us?.use ?? [{ r: 1, p: 1 }], theirUse = them.use ?? [{ r: 1, p: 1 }];
-  // An Unnerve across the pairing keeps the other side's berries uneaten (game-code.md §3).
-  const ourEats = !T.foeUnnerve?.[fi], foeEats = !T.ourUnnerve?.[mi];
+  const ourEats = T.ourEats?.[mi]?.[fi] ?? true, foeEats = T.foeEats?.[fi]?.[mi] ?? true;
   // The order the move being run gets, not the pairing's: with `over` pinned that is the card's ⚔ line, whose priority
   // move may land before a foe that outspeeds the pairing's own pick (#650).
   const foeFirst = T.firstBy?.[mi]?.[fi]?.[us?.name] ?? T.first[mi][fi];
