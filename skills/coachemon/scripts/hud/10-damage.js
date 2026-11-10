@@ -145,11 +145,11 @@ const barStep = (f, hp, bar, d, ohko = false) => {
 // Landing (CONTEXT.md, `Landing`): what one hit does to the side it lands on (game-code.md §2, §3, §8, §21). A Landing
 // state is `{ hp, bar, facts }` and the discrete part, made by `stateOf`, `land` and `landTurnEnd` and read, never
 // written. Team value lands no berries and no turn end (#1024).
-// A fresh Landing state for `f`. Its discrete part is every field but `hp`, `bar` and `facts`: `revived`, the Reviver
-// Seed is spent; `tok`, the enemy endure token is spent for the wave; `busted`, a Disguise or Ice Face has taken its
-// hit; `sub`, the Substitute's HP left, 0 for none; `sitrus` / `enigmas`, the Sitrus and Enigma Berries held; `others`,
-// the stack held of each of `facts.others`' berry types, replaced and never written; `fed`, a super-effective hit landed
-// this turn, which the turn end clears.
+// A Landing state's discrete part is every field but `hp`, `bar` and `facts`: `revived`, the Reviver Seed is spent;
+// `tok`, the enemy endure token is spent for the wave; `busted`, a Disguise or Ice Face has taken its hit; `sub`, the
+// Substitute's HP left, 0 for none; `sitrus` / `enigmas`, the Sitrus and Enigma Berries held; `others`, the stack held
+// of each of `facts.others`' berry types, replaced and never written; `fed`, a super-effective hit landed this turn,
+// which the turn end clears. A field `from` lacks starts fresh for `f`.
 const fresh = (f, hp, bar, from = null) => {
   const others = pick(from, "others", UNSET);
   return { hp, bar, revived: pick(from, "revived", false), tok: pick(from, "tok", false), busted: pick(from, "busted", false),
@@ -437,8 +437,8 @@ export const land = (state, use, hit = NO_HIT, { whole = false, user = null } = 
   if (!up || !(d > 0) || !Number.isFinite(d)) {
     return [user ? { state, user: up ? missedBy(user, h, whole) : user, p: 1, dealt: 0, subDealt: 0, hits: 0 } : { state, p: 1, dealt: 0, subDealt: 0, hits: 0 }];
   }
-  // Gotcha: `plain` repeats `strike`'s arithmetic for one hit that meets no Substitute, form, cut, Enigma Berry, steal
-  // or user and stands or falls with no luck to roll; a rule `strike` gains has to keep such a hit out of it.
+  // Gotcha: `plain` repeats `strike`'s and `landUse`'s arithmetic for one hit; a rule either gains has to keep such a
+  // hit out of it.
   const plain = !user && !h.steals && !(state.sub > 0) && !(f.disguise && !state.busted) && !f.multiscale && !f.shadowShield
     && !(f.enigma?.heal > 0) && Math.max(1, Math.round(use.n ?? 1)) === 1;
   if (plain) {
@@ -499,7 +499,9 @@ export const landTurnEnd = (state, { before = 0, after = 0, eats = true, whole =
   for (const d of downs) res.push(d);
   return res;
 };
-export const luckKey = (s, f = s.facts) => `${+s.revived}${+s.tok}${f?.sturdy || f?.multiscale || f?.shadowShield ? +(s.hp >= f.maxHp) : ""}${f?.disguise ? +s.busted : ""}${s.sub > 0 ? "S" : ""}`;
+// Gotcha: a rule `strike` gains that acts only at full HP joins this list, or a merge averages it away.
+const fullHpRule = f => !!(f?.sturdy || f?.multiscale || f?.shadowShield);
+export const luckKey = (s, f = s.facts) => `${+s.revived}${+s.tok}${fullHpRule(f) ? +(s.hp >= f.maxHp) : ""}${f?.disguise ? +s.busted : ""}${s.sub > 0 ? "S" : ""}`;
 // `sub` stands in for the state's own Substitute HP.
 const keyWith = (s, f, sub) => {
   let k = `${luckKey(s, f)}|${s.bar}`;
@@ -508,14 +510,15 @@ const keyWith = (s, f, sub) => {
 };
 export const landingKey = (s, f = s.facts) => keyWith(s, f, s.sub);
 // Contract: true only where `landingKey(a) === landingKey(b)`, and false wherever their facts or a field of their
-// discrete part differ, so a false still has to ask `landingKey`. Each field of the discrete part is named here.
+// discrete part differ, so a false still has to ask `landingKey`.
 // @only 35-team-plan, tests: sameLanding
 export const sameLanding = (a, b) => {
   if (a === b) return true;
   const f = a.facts;
+  // Gotcha: this names each field of the discrete part; a field `fresh` gains is compared here too.
   if (f !== b.facts || a.bar !== b.bar || a.revived !== b.revived || a.tok !== b.tok || a.busted !== b.busted || a.sub !== b.sub
     || a.sitrus !== b.sitrus || a.enigmas !== b.enigmas || a.fed !== b.fed) return false;
-  if ((f?.sturdy || f?.multiscale || f?.shadowShield) && (a.hp >= f.maxHp) !== (b.hp >= f.maxHp)) return false;
+  if (fullHpRule(f) && (a.hp >= f.maxHp) !== (b.hp >= f.maxHp)) return false;
   const x = a.others?.length ? a.others : NO_OTHERS, y = b.others?.length ? b.others : NO_OTHERS;
   if (x.length !== y.length) return false;
   for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return false;
