@@ -437,8 +437,8 @@ export const land = (state, use, hit = NO_HIT, { whole = false, user = null } = 
   if (!up || !(d > 0) || !Number.isFinite(d)) {
     return [user ? { state, user: up ? missedBy(user, h, whole) : user, p: 1, dealt: 0, subDealt: 0, hits: 0 } : { state, p: 1, dealt: 0, subDealt: 0, hits: 0 }];
   }
-  // Gotcha: `plain` repeats `strike`'s and `landUse`'s arithmetic for one hit; a rule either gains has to keep such a
-  // hit out of it.
+  // Gotcha: `plain` repeats `strike`'s and `landUse`'s arithmetic for one hit; a rule either gains joins `plain`'s
+  // guard, or a plain hit skips it.
   const plain = !user && !h.steals && !(state.sub > 0) && !(f.disguise && !state.busted) && !f.multiscale && !f.shadowShield
     && !(f.enigma?.heal > 0) && Math.max(1, Math.round(use.n ?? 1)) === 1;
   if (plain) {
@@ -500,8 +500,8 @@ export const landTurnEnd = (state, { before = 0, after = 0, eats = true, whole =
   return res;
 };
 // Gotcha: a rule `strike` gains that acts only at full HP joins this list, or a merge averages it away.
-const fullHpRule = f => !!(f?.sturdy || f?.multiscale || f?.shadowShield);
-export const luckKey = (s, f = s.facts) => `${+s.revived}${+s.tok}${fullHpRule(f) ? +(s.hp >= f.maxHp) : ""}${f?.disguise ? +s.busted : ""}${s.sub > 0 ? "S" : ""}`;
+const hasFullHpRule = f => !!(f?.sturdy || f?.multiscale || f?.shadowShield);
+export const luckKey = (s, f = s.facts) => `${+s.revived}${+s.tok}${hasFullHpRule(f) ? +(s.hp >= f.maxHp) : ""}${f?.disguise ? +s.busted : ""}${s.sub > 0 ? "S" : ""}`;
 // `sub` stands in for the state's own Substitute HP.
 const keyWith = (s, f, sub) => {
   let k = `${luckKey(s, f)}|${s.bar}`;
@@ -515,10 +515,9 @@ export const landingKey = (s, f = s.facts) => keyWith(s, f, s.sub);
 export const sameLanding = (a, b) => {
   if (a === b) return true;
   const f = a.facts;
-  // Gotcha: this names each field of the discrete part; a field `fresh` gains is compared here too.
   if (f !== b.facts || a.bar !== b.bar || a.revived !== b.revived || a.tok !== b.tok || a.busted !== b.busted || a.sub !== b.sub
     || a.sitrus !== b.sitrus || a.enigmas !== b.enigmas || a.fed !== b.fed) return false;
-  if (fullHpRule(f) && (a.hp >= f.maxHp) !== (b.hp >= f.maxHp)) return false;
+  if (hasFullHpRule(f) && (a.hp >= f.maxHp) !== (b.hp >= f.maxHp)) return false;
   const x = a.others?.length ? a.others : NO_OTHERS, y = b.others?.length ? b.others : NO_OTHERS;
   if (x.length !== y.length) return false;
   for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return false;

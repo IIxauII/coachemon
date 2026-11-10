@@ -48,6 +48,8 @@ const run = (phase, { party: ours = party, foes: theirs = foes, double = false, 
   return { plan, scene, nodes: globalThis.__tp.drawTeamPlan(plan) };
 };
 
+// Gotcha: stdout is the golden, so a wall time goes to stderr.
+const CAP = 500, report = s => console.error(`teamplantest: ${s} (${CAP} ms cap)`);
 const t0 = performance.now();
 const { plan, scene, nodes } = run(null);
 const ms = performance.now() - t0;
@@ -74,7 +76,8 @@ assert.notEqual(plan.result, "win");
 assert.ok(plan.warnings.some(w => /^likely lost/.test(w) && w.includes("Weavile")), "warns the fight is likely lost to Weavile");
 
 assert.deepEqual(globalThis.__tp.readTurn(scene, turn => globalThis.__tp.teamPlan(turn)), plan, "the same turn gives the same plan");
-assert.ok(ms < 500, `cheap enough to run every turn (${ms.toFixed(0)} ms incl. bundling)`);
+report(`approximation ${ms.toFixed(0)} ms incl. bundling`);
+assert.ok(ms < CAP, `cheap enough to run every turn (${ms.toFixed(0)} ms incl. bundling)`);
 
 // In the command phase the game-code paths are missing on the mocks: the plan falls back to the approximation, not
 // a throw.
@@ -118,9 +121,8 @@ assert.equal(plan.approxDoubles, false);
   globalThis.__tp.drawTeamPlan(read);
   const took = performance.now() - t1;
   assert.ok(read?.steps.length > 0, "the live read plans");
-  // Gotcha: stdout is the golden, so a wall time goes to stderr.
-  console.error(`teamplantest: approximation ${ms.toFixed(0)} ms incl. bundling, live read ${took.toFixed(0)} ms (500 ms cap)`);
-  assert.ok(took < 500, `cheap enough to run every turn on a live read (${took.toFixed(0)} ms)`);
+  report(`live read ${took.toFixed(0)} ms`);
+  assert.ok(took < CAP, `cheap enough to run every turn on a live read (${took.toFixed(0)} ms)`);
 }
 
 // An early trainer with nothing to plan around: the plan is a win in two steps and no more. In a double battle the
