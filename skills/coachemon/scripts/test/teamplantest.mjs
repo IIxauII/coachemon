@@ -118,6 +118,8 @@ assert.equal(plan.approxDoubles, false);
   globalThis.__tp.drawTeamPlan(read);
   const took = performance.now() - t1;
   assert.ok(read?.steps.length > 0, "the live read plans");
+  // Gotcha: stdout is the golden, so a wall time goes to stderr.
+  console.error(`teamplantest: approximation ${ms.toFixed(0)} ms incl. bundling, live read ${took.toFixed(0)} ms (500 ms cap)`);
   assert.ok(took < 500, `cheap enough to run every turn on a live read (${took.toFixed(0)} ms)`);
 }
 
