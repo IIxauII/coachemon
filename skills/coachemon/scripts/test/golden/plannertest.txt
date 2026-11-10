@@ -316,12 +316,16 @@ Fight plan steps approximate winnable
 ➜ 2.~ Garchomp Dragon Dragon Claw → Snorlax KO · 23% left
 == drain
 Meteor Mash into a draining Golisopod: 5 hits
+== the foe's own cost
+Meteor Mash into a Golisopod paying nothing: 4 hits · paying 40 a use: 3
+== drain by move order
+Venusaur on 160, faster: 3.9 turns · slower: 3
 == hp kept
 ⚔ Venusaur Grass Giga Drain → Snorlax 3 hits
 == Tera switch-in drain (single)
-no Tera 4 / 5, Tera 4 / 4.61
+no Tera 4 / 5.36, Tera 4 / 4.61
 == Tera switch-in drain (double)
-no Tera 3 / 4, Tera 3 / 3.61
+no Tera 3 / 4.36, Tera 3 / 3.61
 == on-KO boost
 ⚔ Mamoswine Ground Earthquake → Buzzwole 3 hits KO feeds Buzzwole's Beast Boost (+1 Atk)
 now: ⇄ Mamoswine out › Crobat in · takes ~6% · resists Lunge
@@ -394,11 +398,6 @@ Sitrus x2, one already ate turnsWe 3 · our HP 264 · P(steal) 1
 depth 2: the follow-up leaves us 264 HP (364 if turn 1's steal were forgotten)
 our Enigma fed beside the steal: they need 4 into Bug Bite, 3 into Pound
 our Sitrus from full HP: they need 5 (4 with no berry, 4 into an Unnerve)
-Sitrus x1                  Sitrus stolen: none gone 0 · one gone 1 · two gone 1
-Sitrus x2                  Sitrus stolen: none gone 0 · one gone 1 · two gone 2
-Sitrus x1 + Lum x1         Sitrus stolen: none gone 0 · one gone 0.5 · two gone 1
-Sitrus x2 + Lum x1         Sitrus stolen: none gone 0 · one gone 0.5 · two gone 1.25
-Sitrus x1 + Liechi x1      Sitrus stolen: none gone 0 · one gone 0.5 · two gone 1
 a thief's Sitrus by turns 1, 2: Mini Black Hole 0, 1 · Grip Claw 0.0952, 0.1813
 draw: Sitrus x1            types 0 · supply 1 · lost -70 · eaten 70
 draw: Sitrus x2            types 0 · supply 2 · lost 0 · eaten 70

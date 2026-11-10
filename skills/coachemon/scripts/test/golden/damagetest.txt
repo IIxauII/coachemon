@@ -1,3 +1,4 @@
+a 300 into a 25 HP Substitute in front of 100 HP: pKo 0 · max 100 · expected 100 · substitute
 == a Berry Pouch keeps the Enigma (#822)
 after hit 1: 180 HP, 1 left, 0.30 · 180 HP, 0 left, 0.70
 down by hit n, no Pouch: 0.00 0.00 0.00 1.00 1.00 1.00 1.00 1.00 1.00
@@ -5,6 +6,13 @@ down by hit n, one stack: 0.00 0.00 0.00 0.70 0.97 0.99 1.00 1.00 1.00
 == the KO curve eats a Sitrus (#883)
 from full, 70 a use: 0.00 0.00 0.00 1.00 1.00 1.00 1.00 1.00 1.00 · unnerved 0.00 0.00 1.00 1.00 1.00 1.00 1.00 1.00 1.00
 lum: toxic 0 · Bad Dreams 0 · Toxic Orb -10 · Unnerved toxic -30
+Multiscale, 200 HP, a 120 hit asked at full HP: 60 · down by use 0.00 0.00 1.00
 traits: recoil ≈−9% | recharge turn
+Tackle into Rough Skin: {"strike":50,"recoil":0,"landed":0,"missed":0}
+Surf, no contact: null
+Tackle by a Magic Guard: null
+Steel Beam: {"strike":0,"recoil":0,"landed":200,"missed":200}
+High Jump Kick into Rough Skin: {"strike":50,"recoil":0,"landed":0,"missed":200}
+Chloroblast: {"strike":0,"recoil":0,"landed":200,"missed":0}
 false swipe: 93–99 of 100 HP, pKo 0
 damage: ok

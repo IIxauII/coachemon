@@ -2,7 +2,7 @@
 // multi-hit attrs do: the numbers below are exact.
 import assert from "node:assert/strict";
 import { mountHud } from "./fake-page.mjs";
-import { HitResult, MoveId, MultiHitType } from "../../../../src/enums/generated.ts";
+import { AbilityId, HitResult, MoveFlags, MoveId, MultiHitType } from "../../../../src/enums/generated.ts";
 import { GAME_PROTO } from "./game-proto.mjs";
 
 class MultiHitAttr { constructor(t) { this.multiHitType = t; } }
@@ -28,8 +28,8 @@ const move = (id, name, type, power, { acc = 100, attrs = [], flags = 0, cat = 0
 });
 const pmOf = (mv, i = 0) => ({ moveId: mv.id ?? i + 1, getMove: () => mv, getName: () => mv.name, getMovePp: () => 10, ppUsed: 0 });
 // `battlerTags`: the instances `summonData.tags` holds, read by class — not `tags`, which only `getTag` sees. `bi`:
-// the battler index a Leech Seed names its seeder by.
-const mon = (id, { hp = 1000, maxHp = hp, abilities = [], attrs = [], items = [], player = true, boss = 0, types = [0], formIndex = 0, moves = [], status = null, tags = [], battlerTags = [], bi = 0 } = {}) => {
+// the battler index a Leech Seed names its seeder by. `sub`: the HP of the Substitute it stands behind.
+const mon = (id, { hp = 1000, maxHp = hp, abilities = [], attrs = [], items = [], player = true, boss = 0, types = [0], formIndex = 0, moves = [], status = null, tags = [], battlerTags = [], bi = 0, sub = 0 } = {}) => {
   const p = Object.assign(Object.create(GAME_PROTO), {
     id, name: id, level: 50, hp, formIndex, getMaxHp: () => maxHp, isPlayer: () => player, isOnField: () => true,
     getTypes: () => types, getAbility: () => ({ name: "x", getAttrs: n => attrs.filter(a => a.constructor.name === n) }), hasPassive: () => false, status,
@@ -38,7 +38,7 @@ const mon = (id, { hp = 1000, maxHp = hp, abilities = [], attrs = [], items = []
     waveData: { abilitiesApplied: new Set(), abilityRevealed: true },
     turnData: { hitCount: 0, hitsLeft: -1, moveEffectiveness: null },
     bossSegments: boss, bossSegmentIndex: boss ? boss - 1 : 0, isBoss: () => boss > 0,
-    getHeldItems: () => items, hasAbilityWithAttr: a => abilities.includes(a) || attrs.some(x => x.constructor.name === a), getTag: t => (tags.includes(t) ? {} : null),
+    getHeldItems: () => items, hasAbilityWithAttr: a => abilities.includes(a) || attrs.some(x => x.constructor.name === a), getTag: t => (sub && t === "SUBSTITUTE" ? { tagType: t, hp: sub } : tags.includes(t) ? {} : null),
     getMoveType: mv => (mv.name === "Aura Wheel" ? (p.formIndex === 1 ? 16 : 12) : mv.type),
     getMoveCategory: (_, mv) => mv.category,
     getAccuracyMultiplier: () => 1, getCritStage: () => 0,
@@ -77,7 +77,7 @@ const scene = {
 };
 mountHud({ scene });
 const D = globalThis.__hud["10-damage"];
-const { hitOn, koTurn, koTurns, useOf, koChanceAt } = D;
+const { koTurn, koTurns, useOf, koChanceAt } = D;
 const { gameVersionOf, versionAtLeast } = globalThis.__hud["01-core"];
 const { readTurn } = globalThis.__hud["25-turn"];
 
@@ -88,7 +88,6 @@ const statusMoves = (s, ...a) => ask(s, t => t.statusMoves(...a));
 const endOfTurnHp = (p, { s = scene, ...opts } = {}) => ask(s, t => t.turnEndHp(p, opts));
 const hits = (a, d) => ask(scene, t => t.outcomes(a, d));
 const recOf = (p, s = scene) => ask(s, t => t.mon(p));
-const stateOf = (p, hp, bar) => D.stateOf(recOf(p).facts, hp, bar);
 const koCurve = (target, use, opts) => D.koCurve(recOf(target), use, opts);
 
 const avgRoll = max => { let t = 0; for (let r = 85; r <= 100; r++) t += Math.max(1, Math.floor(max * r / 100)); return t / 16; };
@@ -173,10 +172,6 @@ const bigHit = move(1, "Big Hit", 14, 120);
   // 320 max: only rolls leaving ≥ 200 excess past the boundary (≥ 300 damage, rolls 94–100) break both bars.
   const big = moveOutcome(scene, atk, boss, pmOf(move(5, "Bigger Nuke", 0, 320)), { crit: false });
   near(big.pKo, 7 / 16, "boss break chance");
-  const once = hitOn(stateOf(boss), 150);
-  assert.deepEqual([once.hp, once.bar], [100, 0]);
-  assert.deepEqual([hitOn(once, 150).hp, hitOn(once, 150).bar], [0, 0]);
-  assert.equal(hitOn(stateOf(mon("plain", { hp: 200 })), 250).hp, 0);
 }
 
 // ---- Sturdy saves only at full HP and never past Mold Breaker, and Focus Band saves one time in ten
@@ -198,17 +193,80 @@ const bigHit = move(1, "Big Hit", 14, 120);
   const curveOf = a => {
     setup(a, sturdy);
     const o = moveOutcome(scene, a, sturdy, nuke, { crit: false });
-    return koCurve(sturdy, useOf(o), { ignoresSturdy: o.ignoresSturdy }).by.slice(0, 2);
+    return koCurve(sturdy, o).by.slice(0, 2);
   };
   assert.deepEqual(curveOf(atk), [0, 1], "a record's curve keeps Sturdy");
   assert.deepEqual(curveOf(mold), [1, 1], "and a Mold Breaker's curve goes through it, as its record does");
   const band = mon("band", { hp: 100, items: [new SurviveDamageModifier()] });
   setup(atk, band);
   near(moveOutcome(scene, atk, band, nuke, { crit: false }).pKo, 0.9, "Focus Band");
-  assert.equal(hitOn(stateOf(band), 300).hp, 0, "hitOn has no luck");
   const banded = koCurve(band, [{ d: 300, p: 1 }]).by;
   near(banded[0], 0.9, "Focus Band over a use");
   near(banded[1], 0.99, "Focus Band twice");
+}
+
+// ---- A move into a Substitute fells nobody this turn unless the move gets past it, and is still priced at what it deals (game-code.md §8)
+{
+  const atk = mon("a");
+  const nuke = pmOf(move(6, "Nuke", 0, 300));
+  const behind = mon("behind", { hp: 100, sub: 25 });
+  setup(atk, behind);
+  const o = moveOutcome(scene, atk, behind, nuke, { crit: false });
+  console.log(`a 300 into a 25 HP Substitute in front of 100 HP: pKo ${o.pKo} · max ${o.max} · expected ${o.expected} · ${o.notes.join(", ")}`);
+  assert.deepEqual([o.pKo, o.max, o.expected, o.ignoresSub], [0, 100, 100, false]);
+  assert.ok(o.notes.includes("substitute"));
+  assert.equal(koChanceAt(o, 40), 0, "nor from less HP");
+  assert.deepEqual(koCurve(behind, o).by.slice(0, 2), [0, 1], "it breaks, and the next use fells it");
+  const sound = moveOutcome(scene, atk, behind, pmOf(move(7, "Boom", 0, 300, { flags: MoveFlags.SOUND_BASED })), { crit: false });
+  const ignoring = moveOutcome(scene, atk, behind, pmOf(move(8, "Past", 0, 300, { flags: MoveFlags.IGNORE_SUBSTITUTE })), { crit: false });
+  const infiltrator = mon("infiltrator", { abilities: ["InfiltratorAbAttr"] });
+  setup(infiltrator, behind);
+  const infiltrated = moveOutcome(scene, infiltrator, behind, nuke, { crit: false });
+  for (const [what, x] of [["sound", sound], ["ignoring it", ignoring], ["Infiltrator", infiltrated]]) {
+    assert.deepEqual([x.pKo, x.ignoresSub, x.notes.includes("substitute")], [1, true, false], what);
+  }
+  setup(atk, behind);
+  const twice = moveOutcome(scene, atk, behind, pmOf(move(9, "Twice", 0, 150, { attrs: [new MultiHitAttr(MultiHitType.TWO)] })), { crit: false });
+  assert.equal(twice.pKo, 1, "the first hit breaks it and the second fells");
+  const thrower = mon("thrower", { moves: [move(6, "Nuke", 0, 300)] });
+  setup(thrower, behind);
+  const [estimate] = readTurn(scene, t => t.outcomes(thrower, behind), { estimate: true });
+  assert.deepEqual([estimate.live, estimate.pKo, estimate.ignoresSub], [false, 0, false], "an estimate as well");
+}
+
+// ---- Every move record a turn read hands back sets its race facts, a no-effect one's included (#995), its user cost too (#1036)
+{
+  const quake = move(89, "Earthquake", 4, 100);
+  const atk = mon("a", { moves: [bigHit, quake] });
+  const floater = mon("floater");
+  const hit = floater.getAttackDamage;
+  floater.getAttackDamage = function (o) {
+    return o.move.type === 4 ? { cancelled: false, result: HitResult.NO_EFFECT, damage: 0 } : hit.call(this, o);
+  };
+  const unset = o => D.RACE_FACTS.filter(k => o[k] === undefined);
+  for (const estimate of [false, true]) {
+    setup(atk, floater);
+    const outs = readTurn(scene, t => t.outcomes(atk, floater), { estimate });
+    assert.deepEqual(outs.map(o => o.live), estimate ? [false, false] : [true, true]);
+    for (const o of outs) assert.deepEqual(unset(o), [], `${o.name}${estimate ? ", estimated" : ""}`);
+  }
+}
+
+// ---- A Bug Bite's record steals, but not into Sticky Hold, which a Mold Breaker's gets past, and a move that steals nothing says so (game-code.md §3)
+{
+  const bite = move(91, "Bug Bite", 6, 60, { attrs: [new ({ StealEatBerryAttr: class {} }).StealEatBerryAttr()] });
+  const plain = mon("plain"), sticky = mon("sticky", { abilities: ["BlockItemTheftAbAttr"] });
+  const steals = (atk, def, mv = bite, estimate = false) => {
+    setup(atk, def);
+    return readTurn(scene, t => t.outcomes(atk, def), { estimate }).find(o => o.name === mv.name).steals;
+  };
+  const biter = mon("biter", { moves: [bite, bigHit] }), mold = mon("mold", { moves: [bite], abilities: ["MoveAbilityBypassAbAttr"] });
+  // The estimate knows a Mold Breaker by name (#995).
+  mold.getAbility = () => ({ name: "Mold Breaker", getAttrs: () => [] });
+  for (const estimate of [false, true]) {
+    assert.deepEqual([steals(biter, plain, bite, estimate), steals(biter, sticky, bite, estimate), steals(mold, sticky, bite, estimate), steals(biter, plain, bigHit, estimate)],
+      [true, null, true, null], estimate ? "estimated" : "live");
+  }
 }
 
 // ---- Accuracy scales expected damage, and `getMoveType` gives a form its type
@@ -313,7 +371,7 @@ const bigHit = move(1, "Big Hit", 14, 120);
   class FixedDamageAttr {}
   class PsywaveAttr extends FixedDamageAttr {}
   class OneHitKOAttr {}
-  class FormBlockDamageAbAttr { constructor(f) { this.formIndex = f; } }
+  class FormBlockDamageAbAttr { constructor(f, condition = () => true) { Object.assign(this, { formIndex: f, recoil: 0.125, condition }); } }
   const atk = mon("a"), def = mon("target");
   const realDamage = def.getAttackDamage;
   def.getAttackDamage = function (args) {
@@ -354,10 +412,20 @@ const bigHit = move(1, "Big Hit", 14, 120);
   setup(atk, boss);
   const ohko = moveOutcome(scene, atk, boss, pmOf(move(14, "Fissure", 4, 0, { acc: 30, attrs: [new OneHitKOAttr()] })));
   near(ohko.pKo, 0.3, "OHKO ignores boss bars");
-  const mimikyu = mon("mimikyu", { hp: 100 });
-  mimikyu.getAbility = () => ({ name: "Disguise", getAttrs: n => (n === "FormBlockDamageAbAttr" ? [new FormBlockDamageAbAttr(0)] : []) });
-  setup(atk, mimikyu);
-  assert.equal(moveOutcome(scene, atk, mimikyu, pmOf(bigHit)).pKo, 0, "Disguise takes the hit");
+  // Who passes a form block (game-code.md §8).
+  const mimikyu = mon("mimikyu", { hp: 100, attrs: [new FormBlockDamageAbAttr(0)] });
+  mimikyu.getAttackDamage = def.getAttackDamage;
+  const mold = mon("mold", { abilities: ["MoveAbilityBypassAbAttr"] });
+  const passes = (a, mv) => { setup(a, mimikyu); return moveOutcome(scene, a, mimikyu, pmOf(mv)).ignoresDisguise; };
+  assert.equal(passes(atk, bigHit), false, "Disguise takes the hit");
+  assert.equal(passes(mold, bigHit), true, "Mold Breaker");
+  assert.equal(passes(atk, move(13, "Seismic Toss", 1, 1, { attrs: [new FixedDamageAttr()] })), true, "fixed damage");
+  assert.equal(passes(atk, psywave), true, "Psywave");
+  assert.equal(passes(atk, move(14, "Fissure", 4, 0, { acc: 30, attrs: [new OneHitKOAttr()] })), true, "an OHKO");
+  const eiscue = mon("eiscue", { hp: 100, attrs: [new FormBlockDamageAbAttr(0, (_t, _u, mv) => mv.category === 0)] });
+  setup(atk, eiscue);
+  assert.deepEqual([bigHit, move(16, "Ice Beam", 14, 90, { cat: 1 })].map(mv => moveOutcome(scene, atk, eiscue, pmOf(mv)).ignoresDisguise), [false, true],
+    "Ice Face's condition, a physical move then a special one");
   const popBomb = move(15, "Population Bomb", 0, 30, { acc: 90, attrs: [new MultiHitAttr(3)], flags: 65536 });
   const bigBoss = mon("bigboss", { hp: 3000, player: false, boss: 5, items: [new SurviveDamageModifier()] });
   setup(atk, bigBoss);
@@ -366,6 +434,22 @@ const bigHit = move(1, "Big Hit", 14, 120);
   const ms = performance.now() - t0;
   assert.ok(pop.expected > 0 && pop.notes.includes("10 hits"));
   assert.ok(ms < 50, `10-hit resolve took ${ms} ms`);
+}
+
+// ---- A record leaves Disguise to Landing: its rolls are the game's own, its odds take the bust's chip, and its curve's second use lands (game-code.md §8, #1034)
+{
+  const atk = mon("a");
+  const plain = mon("plain", { hp: 100 });
+  const mimikyu = mon("mimikyu", { hp: 100, attrs: [abAttr("FormBlockDamageAbAttr", { formIndex: 0, recoil: 0.125 })] });
+  setup(atk, plain);
+  const hit = moveOutcome(scene, atk, plain, pmOf(bigHit), { crit: false });
+  setup(atk, mimikyu);
+  const o = moveOutcome(scene, atk, mimikyu, pmOf(bigHit), { crit: false });
+  assert.deepEqual([o.perHit, o.use], [hit.perHit, hit.use], "no hit zeroed");
+  assert.deepEqual([o.pKo, o.max, o.expected], [0, 12, 12]);
+  assert.ok(o.notes.includes("disguise"));
+  assert.deepEqual(koCurve(mimikyu, o).by.slice(0, 2), [0, 1]);
+  assert.deepEqual(koCurve(mimikyu, o, { firstKo: o.pKo }).by.slice(0, 2), [0, 1], "pinned to the record's own odds");
 }
 
 // ---- The endure token rolls on the pre-clamp hit, so a proc on a strike the bar stops spends it (game-code.md §3)
@@ -462,18 +546,30 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   const enigma = held("BerryModifier", { berryType: 2 });
   const pouch = n => [held("PreserveBerryModifier", {}, n)];
   // 200 HP taking 70 a super-effective hit, the berry 50. Without the Pouch 200 → 180 → 110 → 40 → down on hit 4.
-  const curve = side => D.koCurve(recOf(mon("enigma", { hp: 200, items: [enigma] }), { ...scene, ...side }), [{ d: 70, p: 1 }], { se: 1 });
+  const curve = (side, hit = [{ d: 70, p: 1, se: 1 }], opts) => D.koCurve(recOf(mon("enigma", { hp: 200, items: [enigma] }), { ...scene, ...side }), hit, opts);
   const kept = curve({ modifiers: pouch(1) });
-  console.log(`== a Berry Pouch keeps the Enigma (#822)\nafter hit 1: ${kept.after1.map(x => `${x.hp} HP, ${x.left} left, ${x.p.toFixed(2)}`).join(" · ")}`);
-  assert.deepEqual(kept.after1.map(x => [x.hp, x.left]).sort((a, b) => a[1] - b[1]), [[180, 0], [180, 1]], "both shares healed");
-  near(kept.after1.find(x => x.left === 1).p, 0.3, "the kept share");
-  near(kept.after1.find(x => x.left === 0).p, 0.7, "the eaten share");
+  console.log(`== a Berry Pouch keeps the Enigma (#822)\nafter hit 1: ${kept.after1.map(x => `${x.hp} HP, ${x.enigmas} left, ${x.p.toFixed(2)}`).join(" · ")}`);
+  assert.deepEqual(kept.after1.map(x => [x.hp, x.enigmas]).sort((a, b) => a[1] - b[1]), [[180, 0], [180, 1]], "both shares healed");
+  near(kept.after1.find(x => x.enigmas === 1).p, 0.3, "the kept share");
+  near(kept.after1.find(x => x.enigmas === 0).p, 0.7, "the eaten share");
   const bare = curve({}).by, pouched = kept.by;
   console.log(`down by hit n, no Pouch: ${bare.map(x => x.toFixed(2)).join(" ")}\n` +
     `down by hit n, one stack: ${pouched.map(x => x.toFixed(2)).join(" ")}`);
   assert.deepEqual(bare.slice(0, 4), [0, 0, 0, 1], "no Pouch: down on hit 4");
   assert.ok(pouched.every((x, i) => x <= bare[i] + 1e-12), "the Pouch never brings the KO forward");
   assert.ok(pouched.some((x, i) => x < bare[i] - 1e-9), "and pushes it back somewhere");
+  assert.deepEqual(curve({}, { use: [{ d: 70, p: 1 }], e: 2 }).by, bare, "a point without its own `se` takes the hit's `e`");
+  assert.deepEqual(curve({}, undefined, { feeds: false }).by.slice(0, 3), [0, 0, 1], "`feeds` false eats none");
+}
+
+// ---- A super-effective hit a Substitute takes feeds no Enigma Berry, and one past it after it breaks does (game-code.md §8)
+{
+  const enigma = held("BerryModifier", { berryType: 2 });
+  const rec = recOf(mon("enigma", { hp: 200, items: [enigma], sub: 50 }));
+  const once = D.koCurve(rec, [{ d: 70, p: 1, se: 1 }]).after1;
+  assert.deepEqual(once.map(x => [x.hp, x.sub, x.enigmas]), [[200, 0, 1]], "a use the Substitute took whole feeds nothing");
+  const twice = D.koCurve(rec, [{ d: 140, p: 1, n: 2, se: 1 }]).after1;
+  assert.deepEqual(twice.map(x => [x.hp, x.sub, x.enigmas]), [[180, 0, 0]], "the second of two hits gets through, and feeds it");
 }
 
 // ---- A Sitrus Berry is a target fact like the Enigma: a quarter each, kept by a Pouch, none under Heal Block (#883)
@@ -513,9 +609,9 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   const pouched = curve(80, 30, { sitrus: 0 }, { modifiers: pouch(1) }).by;
   assert.ok(pouched.every((x, i) => x <= below.by[i] + 1e-12) && pouched.some((x, i) => x < below.by[i] - 1e-9), "the Pouch pushes the KO back");
   assert.deepEqual(curve(80, 30, { sitrus: 0, start: [{ hp: 50, p: 1, sitrus: 0 }] }).after1.map(x => x.hp), [20], "a start branch that ate it eats none");
-  // Steals take it off the branches still holding one, ahead of the berry (#646, #833).
+  // What item thieves take comes off the branches still holding one, ahead of the berry (game-code.md §8).
   assert.deepEqual(curve(200, 70, { sitrus: n => (n >= 1 ? 1 : 0) }).by.slice(0, 3), [0, 0, 1], "stolen on use 1: never eaten");
-  assert.deepEqual(curve(80, 30, { sitrus: 1 }).after1.map(x => [x.hp, x.sitrus]), [[50, 0]], "stolen before the curve starts");
+  assert.deepEqual(curve(80, 30, { sitrus: 1 }).after1.map(x => [x.hp, x.sitrus]), [[50, 0]], "a count for every use is taken by use 1's turn end");
   const halfStolen = curve(80, 30, { sitrus: n => (n >= 1 ? 0.5 : 0) }).after1;
   near(halfStolen.find(x => x.hp === 100)?.p ?? 0, 0.5, "half the branches still had it to eat");
   // Half gone by use 1, all by use 2: use 2's steal takes it off every branch that kept it, none left to eat.
@@ -587,11 +683,8 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   const oneToken = at(0, 0, { enemyModifiers: [held("EnemyTurnHealModifier")] });
   assert.equal(endOfTurnHp(m({ hp: 20, maxHp: 49, player: false }), { s: oneToken }), 0, "one stack under 50 max HP heals nothing");
   assert.equal(endOfTurnHp(m({ hp: 20, maxHp: 50, player: false }), { s: oneToken }), 1, "and 1 at 50");
-  assert.equal(endOfTurnHp(m({ items: [held("HitHealModifier", {}, 2)] }), { s: at(), dealt: 100 }), 25, "Shell Bell ×2");
-  assert.equal(endOfTurnHp(m({ items: [held("HitHealModifier")] }), { s: at() }), 0, "Shell Bell without damage");
-  // Shell Bell heals in `MoveEffectPhase`, so Sitrus reads the HP after it (game-code.md §8).
-  assert.equal(endOfTurnHp(m({ hp: 70, items: [new BerryModifier(0)] }), { s: at() }), 40, "70/160 eats the berry");
-  assert.equal(endOfTurnHp(m({ hp: 70, items: [new BerryModifier(0), held("HitHealModifier")] }), { s: at(), dealt: 80 }), 10, "Shell Bell lifts it over the bar first");
+  // Shell Bell heals at the end of the move, which Landing prices (game-code.md §8): no turn-end step.
+  assert.equal(endOfTurnHp(m({ items: [held("HitHealModifier", {}, 2)] }), { s: at(), dealt: 100 }), 0, "Shell Bell");
 
   // Every turn-end heal is a `PokemonHealPhase`, which Heal Block and Healing Charm reach (game-code.md §21).
   assert.equal(endOfTurnHp(m({ tags: ["HEAL_BLOCK"], items: [new TurnHealModifier()] }), { s: at() }), 0, "Heal Block");
@@ -784,6 +877,40 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(moveOutcome(scene, plain, foe, pmOf(quake), { crit: false }).e, 0, "Earthquake into Levitate");
 }
 
+// ---- A Multiscale holder's live record holds the cut the game asked it at full HP, so neither its curve nor its own odds halve it again, and its second hit lands whole (game-code.md §2, §8)
+{
+  // Multiscale as the game's call has it: ×0.5 at full HP, and gone while a Mold Breaker's move runs (game-code.md §1).
+  const scaled = (id, hp) => {
+    const p = mon(id, { hp, player: false, bi: 2 });
+    p.hasAbility = a => a === AbilityId.MULTISCALE && !(scene.arena.ignoreAbilities && scene.arena.ignoringEffectSource !== p.getBattlerIndex());
+    const whole = p.getAttackDamage;
+    p.getAttackDamage = function (o) {
+      const r = whole.call(this, o);
+      return !o.ignoreAbility && this.hp >= this.getMaxHp() && this.hasAbility(AbilityId.MULTISCALE) ? { ...r, damage: Math.max(1, Math.floor(r.damage / 2)) } : r;
+    };
+    return p;
+  };
+  const atk = mon("atk");
+  const dragonite = scaled("dragonite", 200);
+  setup(atk, dragonite);
+  const o = moveOutcome(scene, atk, dragonite, pmOf(bigHit), { crit: false });
+  assert.deepEqual([o.perHit[0].max, o.cut, o.ignoresAbility], [60, "in", false]);
+  const by = koCurve(dragonite, o).by;
+  console.log(`Multiscale, 200 HP, a 120 hit asked at full HP: ${o.perHit[0].max} · down by use ${by.slice(0, 3).map(x => x.toFixed(2)).join(" ")}`);
+  assert.deepEqual(by.slice(0, 3), [0, 0, 1]);
+  const twice = move(22, "Twin Hit", 0, 100, { attrs: [new MultiHitAttr(MultiHitType.TWO)] });
+  const lugia = scaled("lugia", 120);
+  setup(atk, lugia);
+  const two = moveOutcome(scene, atk, lugia, pmOf(twice), { crit: false });
+  assert.deepEqual(two.perHit.map(h => h.max), [50, 50], "both strikes asked at full HP");
+  assert.equal(two.pKo, 1, "the second strike lands whole");
+  const mold = mon("mold", { abilities: ["MoveAbilityBypassAbAttr"] });
+  setup(mold, dragonite);
+  const broken = moveOutcome(scene, mold, dragonite, pmOf(bigHit), { crit: false });
+  assert.deepEqual([broken.perHit[0].max, broken.cut, broken.ignoresAbility], [120, null, true], "Mold Breaker gets past it");
+  assert.deepEqual(koCurve(dragonite, broken).by.slice(0, 2), [0, 1], "and its curve halves nothing");
+}
+
 // ---- Drain is a share of the damage dealt, which Heal Block, Healing Charm and Liquid Ooze change (game-code.md §18)
 {
   const hitHeal = (healRatio, healStat = null) => abAttr("HitHealAttr", { healRatio, healStat });
@@ -834,13 +961,15 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
     // 100 → revived on 100 → 90 → down.
     ["…a lethal hit still revives with chip on", mon("t", { hp: 100, maxHp: 200, items: [seed] }), sure(100), { turnEnd: -10 }, [0, 1]],
     ["firstKo sets use 1, the rolls the HP after it", mon("t", { hp: 100 }), [{ d: 90, p: 0.5 }, { d: 110, p: 0.5 }], { firstKo: 0.2 }, [0.2, 1]],
-    ["a wild boss's Def rises as a bar breaks", mon("b", { hp: 200, boss: 2, player: false }), sure(100), { cat: "physical" }, [0, 0, 1]],
-    ["…a trainer's doesn't", Object.assign(mon("b", { hp: 200, boss: 2, player: false }), { hasTrainer: () => true }), sure(100), { cat: "physical" }, [0, 1]],
+    ["a wild boss's Def rises as a bar breaks", mon("b", { hp: 200, boss: 2, player: false }), { use: sure(100), cat: "physical" }, {}, [0, 0, 1]],
+    ["…a trainer's doesn't", Object.assign(mon("b", { hp: 200, boss: 2, player: false }), { hasTrainer: () => true }), { use: sure(100), cat: "physical" }, {}, [0, 1]],
+    ["…nor where `guard` is false", mon("b", { hp: 200, boss: 2, player: false }), { use: sure(100), cat: "physical" }, { guard: false }, [0, 1]],
     ["lost turns deal nothing", mon("t", { hp: 100 }), sure(100), { act: i => (i === 0 ? 0.5 : 1) }, [0.5, 1]],
     ["Sturdy keeps a full-HP target up on 1 HP", sturdy(100), sure(300), {}, [0, 1]],
     ["…but not a hurt one", sturdy(99), sure(300), {}, [1]],
     ["…nor through the second of two lethal hits in one use", sturdy(100), sure(600, 2), {}, [1]],
     ["…nor through turn-end chip", sturdy(100), sure(0), { turnEnd: -150 }, [1]],
+    ["a later use's hit keeps the curve's Sturdy-piercing", sturdy(100), { use: sure(0), ignoresSturdy: true }, { useAt: () => sure(300) }, [0, 1]],
   ];
   for (const [what, target, use, opts, want] of TABLE) {
     setup(mon("a"), target);
@@ -848,15 +977,8 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
     assert.deepEqual(by.slice(0, want.length), want, `${what}: ${by}`);
     assert.equal(by[want.length - 1], 1, `${what}: down by then`);
   }
-  // Three hits of 50 take the 3-bar boss 250 → 100; one hit of 150 stops at the bar, on 200.
-  const b = boss3(250);
-  const three = [50, 50, 50].reduce(hitOn, stateOf(b));
-  assert.deepEqual([three.hp, three.bar], [100, 0]);
-  assert.deepEqual([hitOn(stateOf(b), 150).hp, hitOn(stateOf(b), 150).bar], [200, 1]);
-  assert.equal(hitOn(stateOf(boss3()), 500).hp, 0, "a big enough hit KOs through the bars");
   scene.currentBattle.isClassicFinalBoss = true;
   const eternatus = mon("eternatus", { hp: 100, player: false });
-  assert.equal(hitOn(stateOf(eternatus), 999).hp, 1, "final boss floor");
   assert.ok(koCurve(eternatus, sure(999)).by.every(x => x === 0), "never down");
   delete scene.currentBattle.isClassicFinalBoss;
   assert.deepEqual(koCurve(mon("t", { hp: 100 }), sure(10), { turnEnd: 30 }).after1.map(x => x.hp), [100]);
@@ -868,6 +990,9 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.deepEqual(round(koCurve(sturdy(100), missOr).by).slice(0, 2), [0, 0.81], "Sturdy on every use from full HP");
   assert.deepEqual(round(koCurve(sturdy(100), missOr, { firstKo: 0 }).by).slice(0, 2), [0, 0.81],
     "firstKo, which holds Sturdy already, lands use 1's survivors on 1 HP as the curve does");
+  // The HP squeeze averaged the miss's full-HP branch into the 99 HP one, and use 2 then went through its Sturdy (#1027).
+  const chips = [{ d: 0, p: 0.2, n: 0 }, { d: 1, p: 0.2 }, { d: 10, p: 0.15 }, { d: 20, p: 0.15 }, { d: 40, p: 0.15 }, { d: 60, p: 0.15 }];
+  assert.deepEqual(round(koCurve(sturdy(100), chips, { useAt: () => sure(300) }).by).slice(0, 2), [0, 0.8], "the squeeze keeps the full-HP branch apart");
   // `start`: an earlier turn's branches.
   assert.deepEqual(round(koCurve(mon("t", { hp: 100 }), sure(60), { start: [{ hp: 50, p: 0.5 }, { hp: 100, p: 0.5 }] }).by).slice(0, 2), [0.5, 1]);
   scene.enemyModifiers = [held("EnemyEndureChanceModifier", { chance: 50 })];
@@ -912,16 +1037,38 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   const rec = moveOutcome(scene, atk, def, pmOf(recoiler), { crit: false });
   assert.deepEqual(rec.traits.recoil, { ratio: 0.33, useHp: false, blocked: false }, "the traits ride on the record");
   near(rec.self, rec.expected * 0.33, "recoil off the damage this matchup deals");
+  assert.deepEqual(rec.userCost, { strike: 0, recoil: 0.33, landed: 0, missed: 0 }, "Landing's, off what each use deals");
   assert.deepEqual(rec.costs, [`recoil \u2248\u2212${Math.round(rec.self / 400 * 100)}%`], "...and the wording carries its share of max HP");
   const beam = moveOutcome(scene, atk, def, pmOf(hyperBeam), { crit: false });
   assert.ok(beam.traits.recharge && beam.costs.includes("recharge turn"), `recharge: ${beam.costs}`);
   assert.ok(!beam.notes.includes("recharge turn"), "a cost is in `costs`, not mixed into the notes");
+  assert.equal(beam.userCost, null, "a move that costs its user no HP");
   phaseName = "MovePhase";
   setup(atk, def);
   const rough = moveOutcomes(scene, atk, def).find(o => o.name === "Hyper Beam");
   phaseName = "CommandPhase";
   assert.ok(rough.traits.recharge && rough.costs.includes("recharge turn"), `estimate: ${JSON.stringify(rough.costs)}`);
   console.log(`traits: ${rec.costs.join(" \u00b7 ")} | ${beam.costs.join(" \u00b7 ")}`);
+}
+
+// ---- A record's user cost: the chip of each strike that touches a Rough Skin or Iron Barbs target, Chloroblast's and Steel Beam's halves on a use that lands, and a crash or Steel Beam's half on a miss (game-code.md §8)
+{
+  const contact = { flags: MoveFlags.MAKES_CONTACT };
+  const tackle = move(33, "Tackle", 0, 40, contact), surf = move(57, "Surf", 10, 90);
+  const beam = move(796, "Steel Beam", 8, 140, { attrs: [new (class HalfSacrificialAttr {})()] });
+  const jump = move(136, "High Jump Kick", 1, 130, { acc: 90, ...contact, attrs: [new (class MissEffectAttr {})()] });
+  const blast = move(835, "Chloroblast", 11, 150, { acc: 95, attrs: [Object.assign(new (class RecoilAttr {})(), { damageRatio: 0.5, useHp: true })] });
+  const barbs = mon("barbs", { player: false, attrs: [abAttr("PostDefendContactDamageAbAttr", { damageRatio: 8 })] });
+  const cost = (mv, def = barbs, user = {}) => {
+    const atk = mon("user", { maxHp: 400, ...user });
+    setup(atk, def);
+    return moveOutcome(scene, atk, def, pmOf(mv), { crit: false }).userCost;
+  };
+  const rows = [["Tackle into Rough Skin", cost(tackle)], ["Surf, no contact", cost(surf)], ["Tackle by a Magic Guard", cost(tackle, barbs, { abilities: ["BlockNonDirectDamageAbAttr"] })],
+    ["Steel Beam", cost(beam)], ["High Jump Kick into Rough Skin", cost(jump)], ["Chloroblast", cost(blast)]];
+  for (const [what, x] of rows) console.log(`${what}: ${JSON.stringify(x)}`);
+  assert.deepEqual(rows.map(([, x]) => x), [{ strike: 50, recoil: 0, landed: 0, missed: 0 }, null, null, { strike: 0, recoil: 0, landed: 200, missed: 200 },
+    { strike: 50, recoil: 0, landed: 0, missed: 200 }, { strike: 0, recoil: 0, landed: 200, missed: 0 }]);
 }
 
 // ---- The page's game version, compared segment by segment

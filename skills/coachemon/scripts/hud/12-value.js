@@ -6,7 +6,7 @@ import { stat, weakestConfidence } from "./01-core.js";
 import { formOf, partyAtFight } from "./08-party.js";
 import { combatantOf, duelEnv, itemKeyOf, pricesItem } from "./09-combatant.js";
 import { levelCapAt, levelProjection } from "./09-projection.js";
-import { approxOutcomes, barBreakFactors, koChanceAt, koCurve, koTurns, targetFacts, useOf } from "./10-damage.js";
+import { approxOutcomes, barBreakFactors, koChanceAt, koCurve, koTurns, targetFacts } from "./10-damage.js";
 import { threatSet } from "./11-threats.js";
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
@@ -41,7 +41,7 @@ const koRace = (env, atk, def) => {
   const best = bestHit(approxOutcomes(env, atk, def).filter(o => o.dmg > 0));
   if (!best) return { turns: NO_KO, best: null };
   const rec = { facts: targetFacts(env, def), bars: (st, n) => barBreakFactors(def, st, n) };
-  return { turns: koTurns(koCurve(rec, useOf(best), { cat: best.cat, ignoresSturdy: best.ignoresSturdy }).by), best };
+  return { turns: koTurns(koCurve(rec, best, { feeds: false }).by), best };
 };
 
 // Who moves first, by the move each would actually use and then by speed: true for `me`, false for `foe`, null where

@@ -204,11 +204,7 @@ const assertNoImmediateScrafty = field => {
   assert.equal(exchange(s, { ...metagross, id: "Metagross vs low chip" }, metagross.moveset[0], { ...gyarados, id: "Gyarados at 100", hp: 100 }).turnsWe, 1, "our hit and its chip");
   // …on our side too: Waterfall can't KO Morpeko at 90 alone, but with 20 poison chip it goes down this turn.
   assert.equal(exchange(s, { ...morpeko, id: "poisoned Morpeko" }, morpeko.moveset[0], { ...gyarados, id: "Gyarados vs poison" }, { hp: 90 }).turnsThey, 1, "its hit and our chip");
-  const asked = [];
-  globalThis.__stub.heal = (p, o) => { asked.push([p.name, Math.round(o?.dealt ?? 0)]); return 0; };
-  exchange(s, { ...metagross, id: "Metagross with a bell" }, metagross.moveset[0], { ...gyarados, id: "Gyarados vs bell" });
   delete globalThis.__stub.heal;
-  assert.ok(asked.some(([n, d]) => n === "Metagross" && d > 50), `our turn-end HP is asked with the damage dealt (${JSON.stringify(asked)})`);
   // Reviver Seed: the outcome says so this turn (`revive`, no pKo); the KO pacing reads the held seed for the turns
   // after.
   const seededOutcome = globalThis.__stub.outcome;
@@ -1154,6 +1150,12 @@ Object.assign(TABLE, {
   const leeched = exchange(s, metagross("Metagross vs Leech Life"), metagross("x").moveset[0], golisopod("Golisopod with Leech Life"));
   console.log(`== drain\nMeteor Mash into a draining Golisopod: ${leeched.turnsWe} hits`);
   assert.equal(leeched.turnsWe, 5, "Leech Life's healing costs a hit");
+  // Its Shell Bell, four stacks, heals it half of what it deals as its move lands, as the drain did (game-code.md §8).
+  globalThis.__stub.outcome = draining(0);
+  const bell = new (class HitHealModifier { getStackCount() { return 4; } })();
+  const belled = { ...golisopod("Golisopod with a Shell Bell"), getHeldItems: () => [bell] };
+  assert.equal(exchange(s, metagross("Metagross vs Shell Bell"), metagross("x").moveset[0], belled).turnsWe, 5, "its Shell Bell costs the same hit");
+  globalThis.__stub.outcome = draining();
 
   // Ours: Body Slam (68–80) 4HKOs a 280 HP Venusaur; Giga Drain (~46 a turn) wins back ~23 of it, and it takes 6. Into
   // Liquid Ooze the same drain hurts instead: 3.
@@ -1166,6 +1168,44 @@ Object.assign(TABLE, {
   const bodySlam = () => [{ name: "Body Slam", type: "Normal", p: 1, score: 10, targets: [0] }];
   globalThis.__stub.dist = bodySlam;
   assert.deepEqual([slams("plain", 0), slams("drains", 0.5), slams("into ooze", -0.5)], [4, 6, 3], "our drain buys turns; Liquid Ooze costs them");
+  globalThis.__stub.outcome = outcome;
+}
+
+// ---- The foe pays what its use costs it in the turn line too, off its threat's `self` (game-code.md §8, #1036)
+{
+  const costing = self => (a, d, pm, o) => { const x = outcome(a, d, pm, o); return x && pm.getName() === "Leech Life" ? { ...x, self } : x; };
+  const metagross = id => mon("Metagross", 80, ["Steel", "Psychic"], [400, 180, 170, 120, 120, 120], [["Meteor Mash", "Steel", 90, "P"]], true, undefined, { id });
+  const golisopod = id => mon("Golisopod", 80, ["Bug", "Water"], [300, 180, 170, 60, 120, 40], [["Leech Life", "Bug", 80, "P"]], true, undefined, { id });
+  const leech = () => [{ name: "Leech Life", type: "Bug", p: 1, score: 10, targets: [0] }];
+  const { scene: s } = render({ party: [metagross("M")], foes: [golisopod("G")], live: true, dist: leech, switches: () => new Map() });
+  const { exchange, threatFrom } = globalThis.__planner;
+  globalThis.__stub.outcome = costing(40);
+  assert.equal(threatFrom(s, golisopod("Golisopod pays 40"), metagross("Metagross vs a 40 cost")).self, 40, "the threat carries what a use costs it");
+  const hits = self => {
+    globalThis.__stub.outcome = costing(self);
+    return exchange(s, metagross(`Metagross vs ${self}`), metagross("x").moveset[0], golisopod(`Golisopod paying ${self}`)).turnsWe;
+  };
+  const [free, paying] = [0, 40].map(hits);
+  console.log(`== the foe's own cost\nMeteor Mash into a Golisopod paying nothing: ${free} hits · paying 40 a use: ${paying}`);
+  assert.deepEqual([free, paying], [4, 3], "what its use costs it saves us a hit");
+  globalThis.__stub.outcome = outcome;
+}
+
+// ---- Our drain heals as our move lands, before the foe's reply when we move first and after it when we move second (game-code.md §18)
+{
+  const draining = (a, d, pm, o) => { const x = outcome(a, d, pm, o); return x && pm.getName() === "Giga Drain" ? { ...x, drain: 0.5 } : x; };
+  const venusaur = id => mon("Venusaur", 80, ["Grass", "Poison"], [280, 100, 120, 180, 120, 100], [["Giga Drain", "Grass", 75, "S"]], true, 160, { id });
+  const snorlax = (id, spe) => mon("Snorlax", 80, ["Normal"], [900, 150, 110, 80, 150, spe], [["Body Slam", "Normal", 85, "P"]], true, undefined, { id });
+  const bodySlam = () => [{ name: "Body Slam", type: "Normal", p: 1, score: 10, targets: [0] }];
+  const { scene: s } = render({ party: [venusaur("V")], foes: [snorlax("S", 30)], live: true, dist: bodySlam, switches: () => new Map(), stubOutcome: draining });
+  const { exchange } = globalThis.__planner;
+  const ordered = spe => {
+    const me = venusaur(`Venusaur vs ${spe}`);
+    return Math.round(exchange(s, me, me.moveset[0], snorlax(`Snorlax at ${spe}`, spe)).eTurnsThey * 100) / 100;
+  };
+  const [faster, slower] = [30, 200].map(ordered);
+  console.log(`== drain by move order\nVenusaur on 160, faster: ${faster} turns · slower: ${slower}`);
+  assert.ok(faster > slower + 0.5, `the drain ahead of each reply buys a turn (${faster} vs ${slower})`);
   globalThis.__stub.outcome = outcome;
 }
 
@@ -1188,7 +1228,10 @@ Object.assign(TABLE, {
 // ---- Tera switch-in (#823): our drain and Shell Bell come off the entry hit on our first use, the Tera'd move's after.
 // Venusaur on 200 of 280 takes Body Slam (68–80); Giga Drain (42–50) lands at one typing and does 0 at the other.
 {
-  const venusaur = id => mon("Venusaur", 80, ["Grass", "Poison"], [280, 100, 120, 180, 120, 100], [["Giga Drain", "Grass", 75, "S"]], true, 200, { id });
+  // `bell`: the Shell Bell stacks it holds.
+  const shellBell = n => new (class HitHealModifier { getStackCount() { return n; } })();
+  const venusaur = (id, bell = 0) => mon("Venusaur", 80, ["Grass", "Poison"], [280, 100, 120, 180, 120, 100], [["Giga Drain", "Grass", 75, "S"]], true, 200,
+    { id, getHeldItems: () => (bell ? [shellBell(bell)] : []) });
   const snorlax = (id, hp, spe = 30) => mon("Snorlax", 80, ["Normal"], [900, 150, 110, 80, 150, spe], [["Body Slam", "Normal", 85, "P"]], true, hp, { id });
   const bodySlam = () => [{ name: "Body Slam", type: "Normal", p: 1, score: 10, targets: [0] }];
   const { scene: s } = render({ party: [venusaur("V")], foes: [snorlax("S")], live: true, dist: bodySlam, switches: () => new Map() });
@@ -1208,10 +1251,10 @@ Object.assign(TABLE, {
   let n = 0;
   // `entry` / `tera`: Giga Drain's damage at the base typing and at the Tera; `tera` alone is a foe that never Teras.
   // `entrySelf` / `teraSelf`: what one use costs us at each typing.
-  const race = ({ entry = null, tera, drain = 0, field = false, free = true, heal = null, foeHp, fieldSpe, entrySelf = 0, teraSelf = 0 }) => {
-    const id = `#823 ${n++}`, foe = snorlax(`Snorlax ${id}`, foeHp), me = venusaur(`Venusaur ${id}`);
-    const keep = { outcome: globalThis.__stub.outcome, heal: globalThis.__stub.heal };
-    Object.assign(globalThis.__stub, { outcome: gigaDrain(tera, drain, teraSelf), heal });
+  const race = ({ entry = null, tera, drain = 0, field = false, free = true, bell = 0, foeHp, fieldSpe, entrySelf = 0, teraSelf = 0 }) => {
+    const id = `#823 ${n++}`, foe = snorlax(`Snorlax ${id}`, foeHp), me = venusaur(`Venusaur ${id}`, bell);
+    const keep = { outcome: globalThis.__stub.outcome };
+    Object.assign(globalThis.__stub, { outcome: gigaDrain(tera, drain, teraSelf) });
     const turn = entry == null ? s : teraTurn(foe, gigaDrain(entry, drain, entrySelf));
     try {
       return exchange(turn, me, me.moveset[0], foe, { free, ...(field ? { field: snorlax(`field Snorlax ${id}`, undefined, fieldSpe) } : {}) });
@@ -1225,19 +1268,18 @@ Object.assign(TABLE, {
     const plain = [0, 0.5].map(drain => e(race({ tera: 50, drain, field })));
     const tera = [0, 0.5].map(drain => e(race({ entry: 50, tera: 0, drain, field })));
     console.log(`== Tera switch-in drain (${kind})\nno Tera ${plain.join(" / ")}, Tera ${tera.join(" / ")}`);
-    assert.deepEqual(plain, field ? [3, 4] : [4, 5], `${kind}: the move's drain every turn without a Tera`);
+    assert.deepEqual(plain, field ? [3, 4.36] : [4, 5.36], `${kind}: the move's drain every turn without a Tera`);
     assert.equal(tera[0], plain[0], `${kind}: no drain, no change`);
     assert.ok(tera[1] > tera[0], `${kind}: the entry hit's drain buys time on turn 1 (${tera})`);
     assert.ok(tera[1] < plain[1], `${kind}: the Tera'd move drains nothing after turn 1 (${tera[1]} vs ${plain[1]})`);
-    // Shell Bell is a turn-end heal on what we dealt: half of it prices exactly as a drain of 0.5 does.
-    const bell = (p, o) => (p.name === "Venusaur" ? Math.floor((o?.dealt ?? 0) / 2) : 0);
-    const belled = e(race({ entry: 50, tera: 0, field, heal: bell }));
+    // Shell Bell heals on what our move dealt as it lands (game-code.md §8): four stacks price as a drain of 0.5 does.
+    const belled = e(race({ entry: 50, tera: 0, field, bell: 4 }));
     assert.equal(belled, tera[1], `${kind}: Shell Bell heals on the entry hit's damage on turn 1 and the Tera'd move's after`);
     // Reverse: the base typing is immune, the Tera'd one takes the hit.
     const rev = [0, 0.5].map(drain => e(race({ entry: 0, tera: 50, drain, field })));
     assert.equal(rev[0], plain[0], `${kind}: reverse, no drain`);
     assert.ok(rev[1] > rev[0] && rev[1] < plain[1], `${kind}: no drain on turn 1, the move's from turn 2 (${rev} vs ${plain})`);
-    assert.equal(e(race({ entry: 0, tera: 50, field, heal: bell })), rev[1], `${kind}: no Shell Bell dealt on turn 1`);
+    assert.equal(e(race({ entry: 0, tera: 50, field, bell: 4 })), rev[1], `${kind}: no Shell Bell dealt on turn 1`);
   }
   // The expected HP left takes the entry hit's drain: it knocks out a Snorlax on 40 after a faster field foe hits us.
   const left = drain => race({ entry: 50, tera: 0, drain, field: true, foeHp: 40, fieldSpe: 200 }).expectedHpLeft;
@@ -1714,10 +1756,14 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
   // What the turn-end model prices for a held berry (10-damage.js's `endOfTurnSteps`): a Sitrus heals a quarter, once a
   // holder however tall its stack, and nothing where the KO curve eats it (#883). No other berry here heals at all.
   const sitrusHeal = (p, o) => (o?.sitrus !== false && p.getHeldItems().some(m => m.constructor.name === "BerryModifier" && m.berryType === BERRY.SITRUS) ? Math.floor(p.getMaxHp() / 4) : 0);
-  // The outcome stub fabricates traits, so carry the move's own attr names as 07-move-traits does.
+  // The outcome stub fabricates traits, so carry the move's own attr names as 07-move-traits does, and its `steals` as
+  // 10-damage.js's records set it, Sticky Hold and a Mold Breaker's way past it included.
   const withAttrs = (a, d, pm, o) => {
     const x = outcome(a, d, pm, o);
-    return x && { ...x, traits: { ...x.traits, attrNames: new Set(pm.getMove().attrs.map(at => at.constructor.name)) } };
+    if (!x) return x;
+    const attrNames = new Set(pm.getMove().attrs.map(at => at.constructor.name));
+    const sticky = !!d.hasAbilityWithAttr?.("BlockItemTheftAbAttr") && !a.hasAbilityWithAttr?.("MoveAbilityBypassAbAttr");
+    return { ...x, traits: { ...x.traits, attrNames }, steals: attrNames.has("StealEatBerryAttr") && !sticky ? true : null };
   };
   const BUG_BITE = ["Bug Bite", "Bug", 60, "P", 0, { attrs: ["StealEatBerryAttr"] }];
   const beedrill = hp => mon("Beedrill", 80, ["Bug", "Poison"], [400, 180, 90, 100, 100, 200], [BUG_BITE, ["Pound", "Normal", 40, "P"]], true, hp);
@@ -1803,6 +1849,13 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
   assert.deepEqual(sticky, plain, "Sticky Hold keeps the berry, even on a knockout");
   assert.deepEqual(behind, plain, "the substitute is hit, so the berry is never reached");
   assert.deepEqual(exposed, sitrus, "…and no substitute steals as before");
+  // A Substitute with its HP lands in KO pacing as well (#1033): a Bug Bite it takes steals nothing, priced as a Pound
+  // into the same Substitute, and once it breaks the game removes it, so the next read steals as `exposed` does.
+  const sub = t => (t === "SUBSTITUTE" ? { tagType: t, hp: 70 } : null);
+  const intoSub = bite([berryItem(BERRY.SITRUS)], { getTag: sub });
+  assert.deepEqual(intoSub, bite([berryItem(BERRY.SITRUS)], { move: 1, getTag: sub }), "a hit the Substitute takes steals nothing");
+  const [held, broken] = [sub, () => null].map(getTag => bite([berryItem(BERRY.SITRUS)], { move: 1, getTag, full: true }).eTurnsWe);
+  assert.ok(held > broken, `and the Substitute takes the first hit: ${held} vs ${broken} turns`);
 
   // Depth 2: the second Bug Bite of a line draws from what the first left, and the first steal is never counted twice.
   // A Sitrus x1 holder has nothing left to lose, so the follow-up gains nothing and its turn ends are already short of
@@ -1866,10 +1919,9 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
   assert.ok(holding > noBerry, `the Sitrus eaten below half buys turns (${holding} vs ${noBerry})`);
   assert.equal(unnerved, noBerry, "an opposing Unnerve keeps it uneaten");
 
-  // What the holder loses, read off the course the exchange builds for it — with the count pinned to exactly k berries
-  // gone, so the single draw's expectation shows plainly. The Sitrus is the KO curve's, so the course carries none of
-  // its heal, only `gone`, the Sitrus Berries stolen: two types are one half each, and a Liechi dilutes like a Lum
-  // (#883).
+  // What the holder loses, read off the course the exchange builds for it, with the count pinned to exactly k berries
+  // gone. The Sitrus is the KO curve's, and a Bug Bite's draw of it Landing's on each branch, so the course carries
+  // neither its heal nor a `gone` for the steals (#883, #915).
   const { berryGone, turnEndCourse } = globalThis.__planner;
   const { scene: courseScene } = render({ party: [beedrill(200)], foes: [shuckle([berryItem(BERRY.SITRUS)], {}, 280)], live: true,
     switches: () => new Map(), stubOutcome: withAttrs, heal: sitrusHeal, dist: () => [{ name: "Brine", type: "Water", p: 1, score: 10, targets: [0] }] });
@@ -1877,21 +1929,11 @@ Object.assign(TABLE, { "Beedrill>Bug Bite>Shuckle": [[150], 1, 1], "Beedrill>Pou
     const foe = shuckle(items, {}, 280);
     const eaten = { byCount: berryGone(foe, p => sitrusHeal(p, { sitrus: false })).byCount, counts: () => Array.from({ length: k + 1 }, (_, i) => (i === k ? 1 : 0)) };
     const course = turnEndCourse(courseScene, foe, null, -1, 0, eaten);
-    assert.equal(course.at(1), 0, "no Sitrus heal in the course");
-    return course.gone(1);
+    return [course.at(1), course.gone];
   };
-  const turnEnd = (label, items) => console.log(`${label.padEnd(26)} Sitrus stolen: none gone ${atTurn(items, 0)} · one gone ${atTurn(items, 1)} · two gone ${atTurn(items, 2)}`);
-  turnEnd("Sitrus x1", [berryItem(BERRY.SITRUS)]);
-  turnEnd("Sitrus x2", [berryItem(BERRY.SITRUS, 2)]);
-  turnEnd("Sitrus x1 + Lum x1", [berryItem(BERRY.SITRUS), berryItem(BERRY.LUM)]);
-  turnEnd("Sitrus x2 + Lum x1", [berryItem(BERRY.SITRUS, 2), berryItem(BERRY.LUM)]);
-  turnEnd("Sitrus x1 + Liechi x1", [berryItem(BERRY.SITRUS), berryItem(BERRY.LIECHI)]);
-  assert.equal(atTurn([berryItem(BERRY.SITRUS)], 1), 1, "the only Sitrus gone");
-  assert.equal(atTurn([berryItem(BERRY.SITRUS, 2)], 1), 1, "a Sitrus x2 holder keeps one after one steal");
-  assert.equal(atTurn([berryItem(BERRY.SITRUS, 2)], 2), 2, "…and loses it on the second");
-  assert.equal(atTurn([berryItem(BERRY.SITRUS), berryItem(BERRY.LUM)], 1), 0.5, "two types, one half each");
-  assert.equal(atTurn([berryItem(BERRY.SITRUS), berryItem(BERRY.LIECHI)], 1), 0.5, "a Liechi takes its share of the draw");
-  assert.equal(atTurn([berryItem(BERRY.SITRUS)], 0), 0, "nothing gone yet, nothing lost");
+  const stocks = [[berryItem(BERRY.SITRUS)], [berryItem(BERRY.SITRUS, 2)], [berryItem(BERRY.SITRUS), berryItem(BERRY.LUM)]];
+  const cases = stocks.flatMap(items => [0, 1, 2].map(k => atTurn(items, k)));
+  assert.deepEqual(cases, cases.map(() => [0, null]), "no Sitrus heal in the course, and no steal of one");
   assert.equal(turnEndCourse(courseScene, shuckle([berryItem(BERRY.LUM)], {}, 280), null, -1, 0, null).gone, null, "no Sitrus, nothing to steal");
   // A thief's item draws take the Sitrus too, each at its own time (game-code.md §8).
   const thiefWith = name => Object.assign(beedrill(200), { getHeldItems: () => [Object.assign(new ({ [name]: class { getStackCount() { return 1; } } })[name](), { chance: 0.1 })] });

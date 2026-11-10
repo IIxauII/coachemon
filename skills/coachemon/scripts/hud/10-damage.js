@@ -18,6 +18,7 @@ const isA = (x, name) => {
   const attrs = (mv, name) => (mv.attrs || []).filter(a => isA(a, name));
   const hasFlag = (mv, f) => (typeof mv.hasFlag === "function" ? mv.hasFlag(f) : !!((mv.flags ?? 0) & f));
   const ability = (p, attr) => { try { return !!p.hasAbilityWithAttr?.(attr); } catch { return false; } };
+  const holds = (p, id) => { try { return !!p.hasAbility?.(id); } catch { return false; } };
   const items = p => { try { return p.getHeldItems?.() ?? []; } catch { return []; } };
   const stack = (p, name) => items(p).filter(m => m.constructor.name === name).reduce((t, m) => t + (m.getStackCount?.() ?? m.stackCount ?? 1), 0);
 // One gate for `sceneUsable` and `sceneRefused`, so the pool and the reason it shrank can never disagree. A condition
@@ -88,10 +89,26 @@ const fixedIgnoresSturdy = env => {
   return !!v && !versionAtLeast(v, STURDY_VS_FIXED_FROM);
 };
 
+const substituteHp = t => {
+  try { const hp = t.getTag?.("SUBSTITUTE")?.hp; return hp > 0 ? hp : 0; } catch { return 0; }
+};
+// The current form's Disguise or Ice Face, where its ability applies (game-code.md §8).
+const formBlock = t => abAttrs(t, "FormBlockDamageAbAttr").find(a => a.formIndex === t.formIndex) ?? null;
+// An intact Disguise or Ice Face as `{ chip }`, the HP its bust costs, else null (game-code.md §8).
+const disguiseOf = (t, maxHp) => {
+  const b = formBlock(t);
+  return b ? { chip: b.recoil > 0 ? Math.max(1, Math.floor(maxHp * b.recoil)) : 0 } : null;
+};
+// Whether `def`'s form block, if any, stops `atk`'s `move`, by the attr's own condition (game-code.md §8).
+const meetsBlock = (def, atk, move) => {
+  const b = formBlock(def);
+  try { return typeof b?.condition !== "function" || !!b.condition(def, atk, move); } catch { return true; }
+};
 // @only 25-turn, 12-value, tests: targetFacts
 // @mirrors target-facts
 export const targetFacts = (env, t, ignoreAbility = false) => {
   const maxHp = t.getMaxHp();
+  const sitrus = sitrusOf(env, t), enigma = enigmaOf(env, t);
   const segs = t.bossSegments > 0 && (t.isBoss?.() ?? true) ? t.bossSegments : 0;
   const enemy = typeof t.isPlayer === "function" && !t.isPlayer();
   const endure = enemy && !t.waveData?.endured ? (env?.enemyModifiers ?? []).find(m => m.constructor.name === "EnemyEndureChanceModifier") : null;
@@ -100,13 +117,18 @@ export const targetFacts = (env, t, ignoreAbility = false) => {
     minIdx: env?.finalBoss && !t.formIndex ? 1 : 0,
     finalBoss: enemy && !!env?.finalBoss && !t.formIndex,
     sturdy: !ignoreAbility && maxHp > 1 && ability(t, "PreDefendFullHpEndureAbAttr"),
+    multiscale: !ignoreAbility && holds(t, AbilityId.MULTISCALE),
+    shadowShield: holds(t, AbilityId.SHADOW_SHIELD),
     pFocus: Math.min(1, 0.1 * stack(t, "SurviveDamageModifier")),
     pEndure: endure ? Math.min(1, (endure.chance ?? 2) * (endure.getStackCount?.() ?? 1) / 100) : 0,
     // Reviver Seed (game-code.md §8).
     revive: stack(t, "PokemonInstantReviveModifier") ? Math.max(1, Math.floor(maxHp / 2)) : 0,
-    enigma: enigmaOf(env, t),
-    sitrus: sitrusOf(env, t),
+    disguise: ignoreAbility ? null : disguiseOf(t, maxHp),
+    // The Substitute's HP left, 0 for none (game-code.md §8).
+    sub: substituteHp(t),
+    enigma, sitrus, others: othersOf(t, sitrus, enigma),
     unnerve: ability(t, "PreventBerryUseAbAttr"),
+    shellBell: shellBellOf(env, t),
   };
 };
 // `EnemyPokemon.damage` before any survival (game-code.md §3): [damage, bar after].
@@ -120,43 +142,400 @@ const barStep = (f, hp, bar, d, ohko = false) => {
   if (f.finalBoss && bar < 1) d = Math.min(d, hp - 1);
   return [d, after];
 };
-// [[state, p], …]. `tok`: the enemy endure token is spent for the wave (game-code.md §3).
-const landHit = (f, st, d, ohko) => {
-  let idx;
-  // The token rolls on the damage before the bar clamps it, hence `raw` (game-code.md §3).
-  const raw = d;
-  [d, idx] = barStep(f, st.hp, st.idx, d, ohko);
-  const left = st.hp - d;
-  if (raw < st.hp) return [[{ hp: left, idx, tok: st.tok }, 1]];
-  const endure = st.tok ? 0 : f.pEndure;
-  // Sturdy answers before the token can, but the roll still spends it (game-code.md §3).
-  if (f.sturdy && st.hp >= f.maxHp) return [
-    [{ hp: Math.max(1, left), idx, tok: true }, endure],
-    [{ hp: Math.max(1, left), idx, tok: st.tok }, 1 - endure],
-  ].filter(([, p]) => p > 0);
-  if (left > 0) return [
-    [{ hp: left, idx, tok: true }, endure],
-    [{ hp: left, idx, tok: st.tok }, 1 - endure],
-  ].filter(([, p]) => p > 0);
-  return [
-    [{ hp: 1, idx, tok: true }, endure],
-    [{ hp: 1, idx, tok: st.tok }, (1 - endure) * f.pFocus],
-    [{ hp: 0, idx, tok: st.tok }, (1 - endure) * (1 - f.pFocus)],
-  ].filter(([, p]) => p > 0);
+// Landing (CONTEXT.md, `Landing`): what one hit does to the side it lands on (game-code.md §2, §3, §8, §21). A Landing
+// state is `{ hp, bar, facts }` and the discrete part, made by `stateOf`, `land` and `landTurnEnd` and read, never
+// written. Team value lands no berries and no turn end (#1024).
+// A Landing state's discrete part is every field but `hp`, `bar` and `facts`: `revived`, the Reviver Seed is spent;
+// `tok`, the enemy endure token is spent for the wave; `busted`, a Disguise or Ice Face has taken its hit; `sub`, the
+// Substitute's HP left, 0 for none; `sitrus` / `enigmas`, the Sitrus and Enigma Berries held; `others`, the stack held
+// of each of `facts.others`' berry types, replaced and never written; `fed`, a super-effective hit landed this turn,
+// which the turn end clears. A field `from` lacks starts fresh for `f`.
+const fresh = (f, hp, bar, from = null) => {
+  const others = pick(from, "others", UNSET);
+  return { hp, bar, revived: pick(from, "revived", false), tok: pick(from, "tok", false), busted: pick(from, "busted", false),
+    sub: pick(from, "sub", f?.sub > 0 ? f.sub : 0), sitrus: pick(from, "sitrus", f?.sitrus?.left ?? 0),
+    enigmas: pick(from, "enigmas", f?.enigma?.left ?? 0), others: others !== UNSET ? others : f?.others?.length ? f.others.map(x => x.left) : NO_OTHERS,
+    fed: pick(from, "fed", false), facts: f };
+};
+const UNSET = Symbol("unset");
+const pick = (from, k, v) => {
+  if (!from) return v;
+  const x = from[k];
+  return x !== undefined || k in from ? x : v;
+};
+const NO_OTHERS = [];
+const DISCRETE = Object.keys(fresh(null)).filter(k => k !== "hp" && k !== "bar" && k !== "facts");
+const LUCK = ["revived", "tok", "busted"];
+const REST = DISCRETE.filter(k => !LUCK.includes(k) && k !== "others");
+const NO_HIT = {}, NO_FACTS = {};
+// `from` carries a discrete part to the new state, a Landing state, an `after1` entry or a search-state entry; its HP
+// and bar are never read.
+// @only 25-turn, 35-team-plan, tests: stateOf
+export const stateOf = (facts, hp = facts.hp, bar = null, from = null) => fresh(facts, hp, bar ?? facts.idx ?? 0, from);
+// The state a side keeps once it leaves the field: its Substitute is gone (game-code.md §8).
+// @only 35-team-plan, tests: benched
+export const benched = s => (s.sub > 0 ? { ...s, sub: 0 } : s);
+// The Sitrus Berry's trigger: `getHpRatio` rounds to a whole percent (game-code.md §3).
+const belowHalf = (hp, max) => Math.round((hp / max) * 100) / 100 < 0.5;
+const seOf = h => ((h?.e ?? 1) >= 2 ? 1 : 0);
+// Shell Bell's heal on `dealt`, what a move took off its targets, before its holder's max HP caps it; 0 for none
+// (game-code.md §8).
+// @only 30-planner: shellBellHeal
+export const shellBellHeal = (bell, dealt) => (bell?.stacks > 0 && dealt > 0 ? Math.floor(Math.max(1, Math.floor(dealt * bell.stacks / 8)) * (bell.charm ?? 1)) : 0);
+// Landing's down rule: with `whole`, a side is down below 1 HP (#527), else at 0 or less.
+const stands = (hp, whole) => (whole ? hp >= 1 : hp > 0);
+// A boss's bar once damage that passes its bars leaves it on `hp`, never above `bar` (game-code.md §3).
+const barAfter = (f, bar, hp) => (f.boss ? Math.max(0, Math.min(bar, Math.ceil(Math.max(0, hp) / f.segSize) - 1)) : bar);
+// The user's cost `d` off HP `hp` at bar `bar`, with no luck: through its bars, or with `past` beyond them, its bar then
+// following its HP (game-code.md §3, §8). Returns [hp, bar].
+const paid = (uf, hp, bar, d, past) => {
+  if (!(d > 0)) return [hp, bar];
+  if (!past) {
+    const [dd, after] = barStep(uf, hp, bar, d);
+    return [Math.max(0, hp - dd), after];
+  }
+  const left = Math.max(0, hp - (uf.finalBoss && bar < 1 ? Math.min(d, hp - 1) : d));
+  return [left, barAfter(uf, bar, left)];
+};
+// `user` after what its use did for it, in the game's order: what the use costs it, its recoil on `dealt` and what the
+// target's Substitute lost, then the chip of each of the `reached` strikes past that Substitute, then a landed use's own
+// cost; then the berries it stole, its drain on `dealt`, and its Shell Bell on `dealt` and the Substitute's loss, which
+// asks for its HP below full once the costs are paid and before either heal has run (game-code.md §3, §8, §18). A user
+// down gets nothing, and a negative drain (Liquid Ooze) lands through its bars with no luck (§21). Gotcha: a use of
+// several strikes pays every strike's cost ahead of its first heal, where the game heals each strike's drain and berry
+// before the next strike's chip (§3, §18).
+const repaid = (user, hit, whole, stolen, dealt, subDealt, reached) => {
+  const uf = user.facts ?? NO_FACTS, max = uf.maxHp ?? Infinity;
+  if (!stands(user.hp, whole)) return user;
+  let hp = user.hp, bar = user.bar;
+  const cost = hit.userCost;
+  if (cost) {
+    if (cost.recoil > 0 && dealt + subDealt > 0) [hp, bar] = paid(uf, hp, bar, Math.max(1, Math.floor((dealt + subDealt) * cost.recoil)), true);
+    for (let k = 0; k < reached && cost.strike > 0; k++) [hp, bar] = paid(uf, hp, bar, cost.strike, false);
+    [hp, bar] = paid(uf, hp, bar, cost.landed, true);
+    if (!stands(hp, whole)) return stateOf(uf, hp, bar, user);
+  }
+  const room = hp < max;
+  if (stolen > 0) hp = Math.min(max, hp + stolen);
+  const drain = dealt > 0 && Number.isFinite(hit.drain) ? dealt * hit.drain : 0;
+  if (drain > 0) hp = Math.min(max, hp + drain);
+  else if (drain < 0) {
+    const [d, after] = barStep(uf, hp, bar, -drain);
+    hp = Math.max(0, hp - d);
+    bar = after;
+  }
+  const bell = room && stands(hp, whole) ? shellBellHeal(uf.shellBell, dealt + subDealt) : 0;
+  if (bell > 0) hp = Math.min(max, hp + bell);
+  return hp === user.hp && bar === user.bar ? user : stateOf(uf, hp, bar, user);
+};
+// `user` after a use that missed its standing target: its crash, through its bars (game-code.md §8). Gotcha: Steel
+// Beam's half on a miss passes them in the game.
+const missedBy = (user, hit, whole) => {
+  const d = hit.userCost?.missed;
+  if (!(d > 0) || !stands(user.hp, whole)) return user;
+  const [hp, bar] = paid(user.facts ?? NO_FACTS, user.hp, user.bar, d, false);
+  return stateOf(user.facts ?? NO_FACTS, hp, bar, user);
+};
+// A carrier is a Landing state's fields, without `facts`, at its chance `p`, with `stop`, `dealt`, `subDealt`, `hits`,
+// and `subHits`, the hits its Substitute took.
+const fork = (b, hp, bar, p, taken, tok = b.tok) => ({ ...b, hp, bar, tok, p, dealt: b.dealt + taken, hits: b.hits + 1 });
+const stand = (b, hp, bar, endure, taken, out) => {
+  if (endure) out.push(fork(b, hp, bar, b.p * endure, taken, true));
+  if (endure < 1) out.push(fork(b, hp, bar, b.p * (1 - endure), taken));
+};
+// The hit an intact Disguise or Ice Face takes, and its bust's chip (game-code.md §8). Returns the share that goes
+// down, as `strike` does.
+const bust = (f, b, whole, out, down) => {
+  const left = b.hp - (f.disguise.chip || 0);
+  const bar = barAfter(f, b.bar, left);
+  const c = Object.assign(fork(b, left, bar, b.p, 0), { busted: true });
+  if (stands(left, whole)) { out.push(c); return 0; }
+  if (f.revive && !b.revived) {
+    out.push(Object.assign(c, { hp: f.revive, revived: true, stop: true }));
+    return 0;
+  }
+  const hp = Math.max(0, left);
+  down?.(b.p, { ...b, hp, busted: true }, hp, bar);
+  return b.p;
+};
+// Multiscale and Shadow Shield (game-code.md §1, §8). Gotcha: a `cut` "in" hit is doubled back below full HP, which
+// can come out 1 HP short of the game's, its halving having been floored (§2).
+const cutOn = (f, hp, d, hit) => {
+  if (hit.cut === "never" || (!f.shadowShield && hit.ignoresAbility)) return d;
+  const full = hp >= f.maxHp;
+  if (hit.cut === "in") return full ? d : d * 2;
+  return full ? d * 0.5 : d;
+};
+// One hit of `d` on carrier `b`, in the game's order (game-code.md §3, §8). Pushes what stands onto `out`, a revive
+// among it with `stop` set, and returns the share that goes down, handing it to `down(p, b, hp, bar)` with the HP the
+// hit left. `luck` false: turn-end chip, which nothing survives on luck, no cut halves and no Substitute meets
+// (§21). `whole`: as `stands`. A Substitute takes the hit as cut, whole, ahead of a Disguise, the bars and the luck,
+// and its loss is `subDealt` (§8).
+const strike = (f, b, d, hit, whole, luck, out, down = null) => {
+  const shielded = luck && b.sub > 0 && d > 0 && !hit.ignoresSub;
+  if (luck && !shielded && f.disguise && !b.busted && !hit.ignoresDisguise && d > 0) return bust(f, b, whole, out, down);
+  if (luck && (f.multiscale || f.shadowShield)) d = cutOn(f, b.hp, d, hit);
+  if (shielded) {
+    out.push({ ...b, sub: Math.max(0, b.sub - d), subDealt: b.subDealt + Math.min(b.sub, d), hits: b.hits + 1, subHits: b.subHits + 1 });
+    return 0;
+  }
+  const [dealt, bar] = barStep(f, b.hp, b.bar, Math.max(0, d), !!hit.ohko);
+  const left = b.hp - dealt;
+  // The token rolls on the damage before the bar clamps it, and a roll on a hit the clamp or Sturdy already stops
+  // still spends it (game-code.md §3).
+  const endure = luck && !b.tok && !stands(b.hp - d, whole) ? f.pEndure || 0 : 0;
+  if (stands(left, whole)) { stand(b, left, bar, endure, dealt, out); return 0; }
+  if (luck && f.sturdy && !hit.ignoresSturdy && b.hp >= f.maxHp) { stand(b, 1, bar, endure, b.hp - 1, out); return 0; }
+  const focus = luck ? f.pFocus || 0 : 0;
+  if (endure) out.push(fork(b, 1, bar, b.p * endure, b.hp - 1, true));
+  if (focus) {
+    const q = b.p * (1 - endure) * focus;
+    if (q > 0) out.push(fork(b, 1, bar, q, b.hp - 1));
+  }
+  const gone = luck ? b.p * (1 - endure) * (1 - focus) : b.p;
+  if (!(gone > 0)) return 0;
+  const hp = Math.max(0, left);
+  if (luck && f.revive && !b.revived) {
+    const c = fork(b, f.revive, bar, gone, b.hp - hp);
+    c.revived = true;
+    c.stop = true;
+    out.push(c);
+    return 0;
+  }
+  down?.(gone, b, hp, bar);
+  return gone;
+};
+// Marks `fed` the share `se` of carrier `b` that a super-effective hit landed on, where it holds an Enigma Berry; the
+// rest goes onto `out` first, unmarked (game-code.md §3).
+const feed = (b, se, out) => {
+  if (se > 0 && b.enigmas > 0) {
+    const q = Math.min(1, se);
+    if (q < 1) out.push({ ...b, p: b.p * (1 - q) });
+    b.p *= q;
+    b.fed = true;
+  }
+  out.push(b);
+};
+// A steal off carrier `b`, onto `out`: a carrier for each berry type it holds, at an even share of its chance, with one
+// berry off that type, and `b` itself where it holds none (game-code.md §3). `heals[type]`, where given, is what that
+// berry heals the thief, added to `stolen`.
+const pluck = (f, b, heals, out) => {
+  const others = b.others ?? NO_OTHERS;
+  let n = (b.sitrus > 0) + (b.enigmas > 0);
+  for (const k of others) if (k > 0) n++;
+  if (!n) { out.push(b); return; }
+  const p = b.p / n;
+  const took = (c, type) => {
+    c.p = p;
+    if (heals) c.stolen = (b.stolen || 0) + (heals[type] || 0);
+    out.push(c);
+  };
+  if (b.sitrus > 0) took({ ...b, sitrus: b.sitrus - 1 }, BerryType.SITRUS);
+  if (b.enigmas > 0) took({ ...b, enigmas: b.enigmas - 1 }, BerryType.ENIGMA);
+  others.forEach((k, i) => {
+    if (k > 0) took({ ...b, others: others.map((x, j) => (j === i ? x - 1 : x)) }, f.others?.[i]?.type);
+  });
+};
+// Carrier `b` after the signed change `d`, onto `out`: a heal caps at max HP and leaves the bar, and chip lands through
+// the bars with no luck, handing what it fells to `down` (game-code.md §3, §21).
+const shift = (f, b, d, whole, out, down) => {
+  if (d < 0) {
+    strike(f, b, -d, NO_HIT, whole, false, out, down);
+    return;
+  }
+  if (d > 0) b.hp = Math.min(f.maxHp ?? Infinity, b.hp + d);
+  out.push(b);
+};
+// One turn end on carrier `b`, onto `out` with its mark cleared: the signed change `before`, then the berries, both
+// reading the HP from before either heals, then the rest of `total` (game-code.md §3, §21). `sit` / `enigma`: the
+// Sitrus and Enigma Berry facts it may eat, null for none. `between(b, out)`: a step of the caller's ahead of the
+// berries. Gotcha: with nothing it could eat, `total` lands as one change.
+const endTurn = (f, b, before, total, sit, enigma, whole, out, down = null, between = null) => {
+  const eatsE = !!enigma && b.fed && b.enigmas > 0;
+  b.fed = false;
+  if (!eatsE && !(sit && b.sitrus > 0)) {
+    shift(f, b, total, whole, out, down);
+    return;
+  }
+  const mid = [], standing = [];
+  shift(f, b, before, whole, mid, down);
+  for (const c of mid) if (between) between(c, standing); else standing.push(c);
+  const keepE = eatsE && enigma.keep > 0 ? enigma.keep : 0, keepS = sit?.keep > 0 ? sit.keep : 0;
+  for (const r of standing) {
+    const eatsS = !!sit && r.sitrus > 0 && belowHalf(r.hp, f.maxHp);
+    const heal = (eatsE ? enigma.heal : 0) + (eatsS ? sit.heal : 0);
+    const ate = keepE ? [{ ...r, p: r.p * keepE }, r] : [r];
+    if (eatsE) {
+      if (keepE) r.p *= 1 - keepE;
+      r.enigmas--;
+    }
+    for (const e of ate) {
+      const kept = [e];
+      if (eatsS) {
+        if (keepS) {
+          kept.push({ ...e, p: e.p * keepS });
+          e.p *= 1 - keepS;
+        }
+        e.sitrus--;
+      }
+      for (const o of kept) {
+        o.hp = Math.min(f.maxHp ?? Infinity, o.hp + heal);
+        shift(f, o, total - before, whole, out, down);
+      }
+    }
+  }
+};
+// One use point, `n` hits of `d / n` at `fac(bar)` each, landed on `b` up to a faint or a revive (game-code.md §2):
+// what stands, in a fixed order. A stealing hit steals on each strike that reaches past a Substitute (§3).
+const landUse = (f, b, d, n, fac, hit, whole, down) => {
+  const heals = hit.steals && typeof hit.steals === "object" ? hit.steals : null;
+  let live = [b];
+  for (let k = 0; k < n; k++) {
+    const next = [];
+    for (const x of live) {
+      if (x.stop) next.push(x);
+      else if (!hit.steals) strike(f, x, d / n * (fac ? fac(x.bar) : 1), hit, whole, true, next, down);
+      else {
+        const struck = [];
+        strike(f, x, d / n * (fac ? fac(x.bar) : 1), hit, whole, true, struck, down);
+        for (const c of struck) if (c.subDealt > x.subDealt) next.push(c); else pluck(f, c, heals, next);
+      }
+    }
+    live = next;
+  }
+  return live;
+};
+// Contract: every hit record sets each race fact, `null` allowed, so none is left off (#995). `raceFacts(o)` sets
+// them off `o`, a flag false and any other null where `o` has none.
+const RACE_FLAGS = ["ignoresSturdy", "ignoresSub", "ignoresAbility", "ignoresDisguise"];
+// @only 35-team-plan, tests: RACE_FACTS, raceFacts
+export const RACE_FACTS = [...RACE_FLAGS, "cut", "cat", "e", "steals", "userCost"];
+export const raceFacts = o => {
+  const x = {};
+  for (const k of RACE_FACTS) x[k] = RACE_FLAGS.includes(k) ? !!o?.[k] : o?.[k] ?? null;
+  return x;
+};
+// `use`: one point of a use's spread, `{ d, n, se }`, `d` the whole use before the target's HP or bars cut it, and `se`
+// its super-effective share. `hit`: the hit record, each field read by name and an absent one off, its `e` standing in
+// for a missing `se`; `cut` is "in" where its numbers already hold a full-HP holder's Multiscale or Shadow Shield, and
+// "never" where nothing halves it. `steals`: a Bug Bite's or Pluck's, each strike that reaches the target takes one of its
+// berries, a knockout's included (game-code.md §3); `drain`, the signed share of `dealt` its user wins back; `userCost`,
+// what the use costs its user, null for nothing: `recoil`, its share of what the use dealt; `strike`, the HP each strike
+// that reaches the target costs it (Rough Skin, Iron Barbs); `landed`, what a use that lands costs it beside those
+// (Chloroblast, Steel Beam); `missed`, what a miss costs it (a crash), each absent one 0 (game-code.md §8). Each
+// outcome's `dealt` is what the use took off its target through the bars, counted before a revive and without a bust's
+// chip, `subDealt` what it took off the target's Substitute, and `hits` the hits that landed, on either. What stands
+// having taken damage on a super-effective share is marked for an Enigma Berry it holds. `user`: the attacker's Landing
+// state, where `steals` holds the heal each berry type gives it; each outcome's `user` is it after what the use cost it,
+// then the berries it stole, its drain and its Shell Bell, all only while it stands (game-code.md §3, §8, §18).
+// Gotcha: a hit a Substitute takes drains 0 here, where the game heals at least 1 off the user's last hit (§8).
+// @only 35-team-plan, tests: land, landTurnEnd, luckKey, landingKey
+export const land = (state, use, hit = NO_HIT, { whole = false, user = null } = {}) => {
+  const d = use?.d, h = hit ?? NO_HIT, f = state?.facts ?? NO_FACTS;
+  const up = stands(state?.hp, whole);
+  if (!up || !(d > 0) || !Number.isFinite(d)) {
+    return [user ? { state, user: up ? missedBy(user, h, whole) : user, p: 1, dealt: 0, subDealt: 0, hits: 0 } : { state, p: 1, dealt: 0, subDealt: 0, hits: 0 }];
+  }
+  // Gotcha: `plain` repeats `strike`'s and `landUse`'s arithmetic for one hit; a rule either gains joins `plain`'s
+  // guard, or a plain hit skips it.
+  const plain = !user && !h.steals && !(state.sub > 0) && !(f.disguise && !state.busted) && !f.multiscale && !f.shadowShield
+    && !(f.enigma?.heal > 0) && Math.max(1, Math.round(use.n ?? 1)) === 1;
+  if (plain) {
+    const hp = state.hp, dd = d * (h.factor ? h.factor(state.bar) : 1);
+    const [dealt, bar] = barStep(f, hp, state.bar, Math.max(0, dd), !!h.ohko);
+    const left = hp - dealt;
+    const endure = !state.tok && !stands(hp - dd, whole) ? f.pEndure || 0 : 0;
+    if (!endure && stands(left, whole)) return [{ state: stateOf(f, left, bar, state), p: 1, dealt, subDealt: 0, hits: 1 }];
+    if (!endure && !f.pFocus && !(f.sturdy && !h.ignoresSturdy && hp >= f.maxHp) && !(f.revive && !state.revived)) {
+      const to = Math.max(0, left);
+      return [{ state: stateOf(f, to, bar, state), p: 1, dealt: hp - to, subDealt: 0, hits: 1 }];
+    }
+  }
+  const heals = h.steals && typeof h.steals === "object" ? h.steals : null;
+  // Outcome `o` off carrier `c`, with its user after the berries `c` stole and the `reached` strikes past the Substitute.
+  const outcome = (o, c, reached) => {
+    if (user) o.user = repaid(user, h, whole, c.stolen || 0, o.dealt, o.subDealt, reached);
+    return o;
+  };
+  const downs = [];
+  const downed = (p, b, hp, bar) => {
+    downs.push(outcome({ state: stateOf(f, hp, bar, b), p, dealt: b.dealt + (b.hp - hp), subDealt: b.subDealt, hits: b.hits + 1 }, b, b.hits + 1 - b.subHits));
+  };
+  const stood = landUse(f, { ...state, p: 1, stop: false, dealt: 0, subDealt: 0, hits: 0, subHits: 0 }, d, Math.max(1, Math.round(use.n ?? 1)), h.factor ?? null, h, whole,
+    h.steals ? (p, b, hp, bar) => {
+      const taken = [];
+      pluck(f, { ...b, p }, heals, taken);
+      for (const c of taken) downed(c.p, c, hp, bar);
+    } : downed);
+  const se = f.enigma?.heal > 0 ? use.se ?? seOf(h) : 0;
+  let fed = stood;
+  if (se > 0) {
+    fed = [];
+    for (const c of stood) feed(c, c.dealt > 0 ? se : 0, fed);
+  }
+  const outs = [];
+  for (const c of fed) outs.push(outcome({ state: stateOf(f, c.hp, c.bar, c), p: c.p, dealt: c.dealt, subDealt: c.subDealt, hits: c.hits }, c, c.hits - c.subHits));
+  for (const o of downs) outs.push(o);
+  return outs;
+};
+const num = x => (Number.isFinite(x) ? x : 0);
+// One turn's end on `state`, after its last `land` of the turn (game-code.md §3, §21). `before` / `after`: the signed
+// change ahead of the berries and after them. Between them it eats its Sitrus Berry below half HP, one a turn, and its
+// Enigma Berry after a super-effective hit landed this turn, unless `eats` is false (an opposing Unnerve); a Berry Pouch
+// keeps each berry it eats on an outcome of its own. Chip lands through the bars with no luck. `whole` is `land`'s. A
+// state already down comes back as it was.
+export const landTurnEnd = (state, { before = 0, after = 0, eats = true, whole = false } = {}) => {
+  const f = state?.facts ?? NO_FACTS;
+  if (!stands(state?.hp, whole)) return [{ state, p: 1 }];
+  const pre = num(before), total = pre + num(after);
+  const ate = x => (eats && x?.heal > 0 ? x : null);
+  const sit = ate(f.sitrus), enigma = ate(f.enigma);
+  if (!total && !state.fed && !(sit && state.sitrus > 0)) return [{ state, p: 1 }];
+  const outs = [], downs = [];
+  endTurn(f, { ...state, p: 1, stop: false, dealt: 0, subDealt: 0, hits: 0 }, pre, total, sit, enigma, whole, outs,
+    (p, c, hp, bar) => downs.push({ state: stateOf(f, hp, bar, c), p }));
+  const res = outs.map(c => ({ state: stateOf(f, c.hp, c.bar, c), p: c.p }));
+  for (const d of downs) res.push(d);
+  return res;
+};
+// Gotcha: a rule `strike` gains that acts only at full HP joins this list, or a merge averages it away.
+const hasFullHpRule = f => !!(f?.sturdy || f?.multiscale || f?.shadowShield);
+export const luckKey = (s, f = s.facts) => `${+s.revived}${+s.tok}${hasFullHpRule(f) ? +(s.hp >= f.maxHp) : ""}${f?.disguise ? +s.busted : ""}${s.sub > 0 ? "S" : ""}`;
+// `sub` stands in for the state's own Substitute HP.
+const keyWith = (s, f, sub) => {
+  let k = `${luckKey(s, f)}|${s.bar}`;
+  for (const x of REST) k += `|${x === "sub" ? sub : s[x]}`;
+  return s.others?.length ? `${k}|${s.others.join()}` : k;
+};
+export const landingKey = (s, f = s.facts) => keyWith(s, f, s.sub);
+// Contract: true only where `landingKey(a) === landingKey(b)`, and false wherever their facts or a field of their
+// discrete part differ, so a false still has to ask `landingKey`.
+// @only 35-team-plan, tests: sameLanding
+export const sameLanding = (a, b) => {
+  if (a === b) return true;
+  const f = a.facts;
+  if (f !== b.facts || a.bar !== b.bar || a.revived !== b.revived || a.tok !== b.tok || a.busted !== b.busted || a.sub !== b.sub
+    || a.sitrus !== b.sitrus || a.enigmas !== b.enigmas || a.fed !== b.fed) return false;
+  if (hasFullHpRule(f) && (a.hp >= f.maxHp) !== (b.hp >= f.maxHp)) return false;
+  const x = a.others?.length ? a.others : NO_OTHERS, y = b.others?.length ? b.others : NO_OTHERS;
+  if (x.length !== y.length) return false;
+  for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return false;
+  return true;
 };
 // `perHit[k]`: Map damage → p for hit k; `dist`: [{ n, p }] hit counts; `checkAll`: every hit rolls, else only the
-// first. A miss or a faint ends the move (game-code.md §2).
-const resolve = (f, perHit, dist, acc, checkAll, ohko = false) => {
+// first. A miss or a faint ends the move (game-code.md §2). No revive: a seed holder's `pKo` of 0 prices its seed.
+const resolve = (f, perHit, dist, acc, checkAll, hit = NO_HIT) => {
+  const rf = { ...f, revive: 0 };
   const add = (m, st, p) => {
     if (!(p > 0)) return;
-    const k = `${st.hp}|${st.idx}|${st.tok}`;
+    const k = `${st.hp}|${landingKey(st, rf)}`;
     const e = m.get(k);
-    if (e) e.p += p; else m.set(k, { hp: st.hp, idx: st.idx, tok: st.tok, p });
+    if (e) e.p += p; else m.set(k, { ...st, p });
   };
   const atLeast = n => dist.filter(x => x.n >= n).reduce((t, x) => t + x.p, 0);
   const done = new Map();
   let live = new Map();
-  add(live, { hp: f.hp, idx: f.idx, tok: false }, 1);
+  add(live, { ...stateOf(rf, f.hp, f.idx), stop: false, dealt: 0, subDealt: 0, hits: 0 }, 1);
   const hitsMax = Math.max(...dist.map(x => x.n));
   for (let k = 0; k < hitsMax && live.size; k++) {
     const go = (k ? atLeast(k + 1) / atLeast(k) : atLeast(1)) * (k === 0 || checkAll ? acc : 1);
@@ -164,7 +543,13 @@ const resolve = (f, perHit, dist, acc, checkAll, ohko = false) => {
     for (const st of live.values()) {
       if (st.hp <= 0) { add(done, st, st.p); continue; }
       add(done, st, st.p * (1 - go));
-      for (const [d, p] of perHit[Math.min(k, perHit.length - 1)]) for (const [ns, q] of landHit(f, st, d, ohko)) add(next, ns, st.p * go * p * q);
+      for (const [d, p] of perHit[Math.min(k, perHit.length - 1)]) {
+        const out = [];
+        let fell = null;
+        strike(rf, { ...st, p: st.p * go * p }, d, hit, false, true, out, (q, b, hp, bar) => { fell = { ...b, hp, bar, p: q }; });
+        for (const ns of out) add(next, ns, ns.p);
+        if (fell) add(next, fell, fell.p);
+      }
     }
     live = next;
   }
@@ -204,8 +589,7 @@ const sideModifiers = (env, p, name) => ((p?.isPlayer?.() === false ? env?.enemy
 export const healingCharm = (env, p) => sideModifiers(env, p, "HealingBoosterModifier")
   .reduce((t, m) => t * (1 + ((m.multiplier ?? 1.1) - 1) * (m.getStackCount?.() ?? 1)), 1);
 // Berry Pouch (game-code.md §3): the chance it leaves a berry `p` eats held.
-// @only 35-team-plan: berryPouch
-export const berryPouch = (env, p) => Math.min(10, 3 * sideModifiers(env, p, "PreserveBerryModifier")
+const berryPouch = (env, p) => Math.min(10, 3 * sideModifiers(env, p, "PreserveBerryModifier")
   .reduce((t, m) => t + (m.getStackCount?.() ?? 1), 0)) / 10;
 const drainRatio = (env, atk, def, t) => {
   if (!t.drain) return 0;
@@ -237,42 +621,11 @@ const flinchChance = (atk, def, move, ignoreAbility) => {
   return c < 0 ? 1 : Math.min(1, c / 100);
 };
 
-const applyHit = (f, d) => {
-  const [end] = resolve({ ...f, pFocus: 0, pEndure: 0 }, [new Map([[Math.max(0, Math.floor(d)), 1]])], [{ n: 1, p: 1 }], 1, false);
-  return { hp: Math.max(0, end.hp), ko: end.hp <= 0 };
-};
-
-// `bar` is 0 on the last bar and for a non-boss. `tok`: the enemy endure token is spent for the wave.
-export const stateOf = (facts, hp = facts.hp, bar = null) => ({ hp, bar: bar ?? facts.idx, revived: false, tok: false, facts });
-// No luck: no Focus Band, endure token or Reviver Seed. A state without `facts` has no bars.
-export const hitOn = (state, dmg) => {
-  const [d, bar] = state.facts ? barStep(state.facts, state.hp, state.bar, Math.max(0, dmg)) : [Math.max(0, dmg), state.bar];
-  return { ...state, hp: Math.max(0, state.hp - d), bar };
-};
-// `stop`: the branch's use has ended (a revive). `left` / `sitrus`: the Enigma / Sitrus Berries it still holds.
-const branch = (hp, bar, revived, tok, p, stop = false, left = 0, sitrus = 0) => ({ hp, bar, revived, tok, p, stop, left, sitrus });
-// Pushes what stands onto `out` and returns the probability that goes down. `luck` false: turn-end chip, an indirect
-// KO, so no Sturdy, endure token, Focus Band or Reviver Seed (game-code.md §21).
-const land = (f, b, d, out, luck = true) => {
-  const [dealt, bar] = barStep(f, b.hp, b.bar, Math.max(0, d));
-  const endure = luck && !b.tok && d >= b.hp ? f.pEndure : 0;
-  // A roll on a hit the bar clamp or Sturdy already stops still spends the token (game-code.md §3).
-  const stands = hp => {
-    if (endure) out.push(branch(hp, bar, b.revived, true, b.p * endure, false, b.left, b.sitrus));
-    if (endure < 1) out.push(branch(hp, bar, b.revived, b.tok, b.p * (1 - endure), false, b.left, b.sitrus));
-    return 0;
-  };
-  if (b.hp - dealt > 0) return stands(b.hp - dealt);
-  if (luck && f.sturdy && b.hp >= f.maxHp) return stands(1);
-  let gone = b.p;
-  if (luck) {
-    if (endure) out.push(branch(1, bar, b.revived, true, b.p * endure, false, b.left, b.sitrus));
-    if (f.pFocus) out.push(branch(1, bar, b.revived, b.tok, b.p * (1 - endure) * f.pFocus, false, b.left, b.sitrus));
-    gone = b.p * (1 - endure) * (1 - f.pFocus);
-  }
-  if (!(gone > 0)) return 0;
-  if (luck && f.revive && !b.revived) { out.push(branch(f.revive, bar, true, b.tok, gone, true, b.left, b.sitrus)); return 0; }
-  return gone;
+// A KO-curve branch: a carrier, its discrete part `from`'s.
+const branch = (hp, bar, from, p) => {
+  const b = { hp, bar, p, stop: false, dealt: 0, subDealt: 0, hits: 0, subHits: 0 };
+  for (const k of DISCRETE) b[k] = from[k];
+  return b;
 };
 const KO_USES = 9;
 const KO_LEVELS = 4;
@@ -290,42 +643,41 @@ export const shares = (list, fallback) => {
   const t = list.reduce((sum, c) => sum + c.p, 0);
   return t > 0 ? list.map(c => ({ s: c.s, p: c.p / t })) : fallback;
 };
-// `by[n − 1]`: P(the target is down by the end of use n). `rec` is `turn.mon(target)`; `use` is `useOf`'s.
-// `scale(i, broken)`: the damage factor on use i (0-based) with `broken` bars gone; `act(i)`: the chance use i happens
-// at all. `turnEnd`: the signed HP change after each use survived, or a function of the use count. `cat` ("physical"
-// or "special"): a wild boss's defence rises as its bars break. `firstKo`: this turn's exact odds for use 1, when the
-// caller has them. `useAt(i)`: the `use` of use i (from 1) where it differs from `use`. `start`: branches from an
-// earlier turn, p summing to 1. `chain`: a Markov chain stepped once a use, `{ from, step }`: `from` its states
+// `by[n − 1]`: P(the target is down by the end of use n). `rec` is `turn.mon(target)`, which carries no race
+// facts; `hit` is the hit record that does (`land`'s, then `cat` and `e`, an absent one off), and its use is
+// `useOf`'s, a bare use array reading as `{ use }`. `scale(i, broken)`: the damage factor on use i (0-based)
+// with `broken` bars gone; `act(i)`: the chance use i happens at all. `turnEnd`: the signed HP change after
+// each use survived, or a function of the use count. `guard` false: a wild boss's defence never rises as its
+// bars break, which it otherwise does at the `cat` ("physical" or "special") of use 2's hit. `firstKo`: this
+// turn's exact odds for use 1, when the caller has them. `useAt(i)`: the hit of use i (from 1) where it
+// differs from `hit`, taking each race fact it lacks from `hit`. `start`: branches from an earlier turn, p
+// summing to 1. `chain`: a Markov chain stepped once a use, `{ from, step }`: `from` its states
 // `[{ s, p }]`, p summing to 1, and `step(s)` its transitions `[{ s, p, act }]`, p summing to 1, the use going off only on
 // an `act` one; a state `s` is an object keyed by `s.key`. `after1`: the branches standing after use 1, p summing to
-// 1. `perChunk`: the uses each bar takes before it more likely than not breaks. `downAt[n − 1]`: the chain's states
-// `[{ s, p }]` of what went down on use n, empty without a `chain`. `se`: the target eats an Enigma Berry
-// (`facts.enigma`) after a landed use, at this share of it — a point's own `se` where it carries one; null eats none.
-// The berry heals between `beforeBerry`, the part of `turnEnd` the game runs ahead of it, and the rest, and each branch,
-// `after1`'s and `start`'s included, carries the berries it has `left`; a Berry Pouch's `keep` share of a feed heals
-// and leaves `left` as it was. `preHeal(i)`: `{ p, heal }`, a heal the target takes before use i at share `p` of it, and
-// after it, ahead of the turn end, otherwise; null for none. `sitrus`: the target eats a Sitrus Berry (`facts.sitrus`)
-// at each turn end that finds it below half, where it eats the Enigma, a Pouch keeping it the same way; null eats none,
-// and otherwise it counts the Sitrus Berries steals have taken off the target by use n's turn end, n from 1 and 0 for
-// before the curve: a number, or a function of n. A branch's `sitrus` is the Sitrus Berries it still holds.
-// `ignoresSturdy`: the move record's own.
-export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 1, act = () => 1, turnEnd = 0, beforeBerry = 0, firstKo = null, cat = null, useAt = null, chain = null, se = null, preHeal = null, sitrus = null, ignoresSturdy = false } = {}) => {
-  const f = ignoresSturdy && rec.facts.sturdy ? { ...rec.facts, sturdy: false } : rec.facts;
-  const berry = se != null && f.enigma?.heal > 0 ? f.enigma : null;
-  const held = f.enigma?.left ?? 0;
-  const seAt = i => (typeof se === "function" ? se(i) : se);
-  const keep = berry?.keep ?? 0;
+// 1, each with its HP, bar and discrete part. `perChunk`: the uses each bar takes before it more likely than not breaks.
+// `downAt[n − 1]`: the chain's states `[{ s, p }]` of what went down on use n, empty without a `chain`. Each use's turn
+// end is Landing's, `beforeBerry` the part of `turnEnd` ahead of the berries. Unless `feeds` is false, the target eats
+// its Enigma Berry (`facts.enigma`) there after a landed use, at its super-effective share: a point's own `se`, else its
+// hit's `e`. `preHeal(i)`: `{ p, heal }`, a heal the target takes before use i at share `p` of it, and after it, ahead of
+// the turn end, otherwise; null for none. `sitrus`: the target eats its Sitrus Berry (`facts.sitrus`) there too; null eats
+// none, and otherwise it counts the Sitrus Berries item thieves have taken off the target by use n's turn end, n from 1: a
+// number, or a function of n. A berry taken before the curve is one its `start` branches no longer hold.
+export const koCurve = (rec, hit, { hp, bar = null, start = null, scale = () => 1, act = () => 1, turnEnd = 0, beforeBerry = 0, firstKo = null, useAt = null, chain = null, preHeal = null, sitrus = null, feeds = true, guard = true } = {}) => {
+  const f = rec.facts;
+  const own = Array.isArray(hit) ? { use: hit } : hit ?? {};
+  const hitOf = later => (later && !Array.isArray(later) ? { ...own, ...later } : own);
+  const berry = feeds && f.enigma?.heal > 0 ? f.enigma : null;
   const sit = sitrus != null && f.sitrus?.heal > 0 ? f.sitrus : null;
   const sitHeld = f.sitrus?.left ?? 0;
-  const goneBy = n => (typeof sitrus === "function" ? sitrus(n) : sitrus ?? 0);
-  // The share of the Sitrus Berries still unstolen after use n that use n + 1's steals take.
+  const goneBy = n => (n < 1 ? 0 : typeof sitrus === "function" ? sitrus(n) : sitrus ?? 0);
+  // The share of the Sitrus Berries still unstolen after use n that use n + 1's item thieves take.
   const stealRate = n => {
     const room = sitHeld - goneBy(n);
     return sit && room > 1e-12 ? Math.max(0, Math.min(1, (goneBy(n + 1) - goneBy(n)) / room)) : 0;
   };
   // Takes `rate` of `b`'s Sitrus Berries, a fraction of one at that chance, changing `b` in place; what stands goes onto
-  // `out`. Gotcha: the take scales with `b`'s own count, but the game draws a stack, whatever its count (game-code.md
-  // §8), so a stack eaten down from two loses its last at about half the game's rate.
+  // `out`. Gotcha: the take scales with `b`'s own count, but an item thief draws an item, whatever its stack
+  // (game-code.md §8), so a stack eaten down from two loses its last at about half the game's rate.
   const steal = (b, rate, out) => {
     const x = b.sitrus * rate;
     if (!(x > 0)) { out.push(b); return; }
@@ -335,92 +687,79 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
     b.sitrus -= sure;
     out.push(b);
   };
-  // What a branch built from nothing holds: a curve without `start` begins with the steals made before it.
-  const rate0 = sit && !start?.length && sitHeld > 0 ? Math.max(0, Math.min(1, goneBy(0) / sitHeld)) : 0;
-  const robbed = b => {
-    const out = [];
-    steal(b, rate0, out);
-    return out;
-  };
-  // The share `fed` of `b` eats a berry at this turn's end, and a Berry Pouch's `keep` of that heals with it still held.
-  const pushFed = (out, b, s, fed) => {
-    if (fed > 0 && b.left > 0) {
-      if (fed < 1) out.push(inChain(branch(b.hp, b.bar, b.revived, b.tok, b.p * (1 - fed), false, b.left, b.sitrus), s));
-      if (keep > 0) out.push(inChain(Object.assign(branch(b.hp, b.bar, b.revived, b.tok, b.p * fed * keep, false, b.left, b.sitrus), { fed: true, kept: true }), s));
-      b.p *= fed * (1 - keep);
-      b.fed = true;
-    }
-    out.push(inChain(b, s));
-  };
   const init = stateOf(f, hp ?? f.hp, bar);
   const bars = init.bar + 1;
-  const guard = cat && bars > 1 && rec.bars ? rec.bars(cat === "special" ? Stat.SPDEF : Stat.DEF, bars) : null;
-  const pointsOf = u => u.map(x => ({ d: x.d, p: x.p, n: x.d > 0 ? Math.max(1, Math.round(x.n ?? 1)) : 0, se: x.se }));
-  const first = pointsOf(use);
+  const cat = guard && bars > 1 && rec.bars ? hitOf(useAt ? useAt(1) : null).cat : null;
+  const rises = cat ? rec.bars(cat === "special" ? Stat.SPDEF : Stat.DEF, bars) : null;
+  const pointsOf = h => (Array.isArray(h) ? h : useOf(h)).map(x => ({ d: x.d, p: x.p, n: x.d > 0 ? Math.max(1, Math.round(x.n ?? 1)) : 0, se: x.se }));
+  const first = pointsOf(hit);
   const from = chain?.from ?? NO_CHAIN;
   const stepOf = chain ? chain.step : () => NO_STEP;
-  let states = (start?.length
-    ? start.map(x => branch(x.hp, x.bar ?? init.bar, !!x.revived, !!x.tok, x.p, false, x.left ?? held, x.sitrus ?? sitHeld))
-    : robbed(branch(init.hp, init.bar, false, false, 1, false, held, sitHeld))).flatMap(b => from.map(c => inChain(branch(b.hp, b.bar, b.revived, b.tok, b.p * c.p, false, b.left, b.sitrus), c.s)));
+  const reopen = x => {
+    const s = stateOf(f, x.hp, x.bar ?? init.bar, x);
+    return branch(s.hp, s.bar, s, x.p);
+  };
+  let states = (start?.length ? start.map(reopen) : [branch(init.hp, init.bar, init, 1)])
+    .flatMap(b => from.map(c => inChain(branch(b.hp, b.bar, b, b.p * c.p), c.s)));
   const by = [], downAt = [];
   const brokeAt = Array(bars).fill(KO_USES);
   let down = 0, after1 = [];
   for (let i = 0; i < KO_USES; i++) {
-    const points = i && useAt ? pointsOf(useAt(i)) : first;
+    const later = i && useAt ? useAt(i) : null;
+    const points = later ? pointsOf(later) : first;
+    const useHit = hitOf(later);
     const a = Math.max(0, Math.min(1, act(i)));
     const factors = [];
-    const factor = broken => (factors[broken] ??= scale(i, broken) * (guard ? guard[Math.min(broken, bars - 1)] : 1));
-    const hit = [];
-    let fell = 0, fellTo = chain ? new Map() : null;
+    const factor = broken => (factors[broken] ??= scale(i, broken) * (rises ? rises[Math.min(broken, bars - 1)] : 1));
+    const atBar = b => factor(init.bar - b);
+    const struck = [];
+    let fell = 0, fellTo = chain ? new Map() : null, onto = null;
+    const fallen = gone => {
+      fell += gone;
+      if (fellTo) addShare(fellTo, onto, gone);
+    };
     const wentOff = i === 0 ? new Map() : null;
     const pre = preHeal?.(i);
     const early = pre?.heal > 0 ? Math.max(0, Math.min(1, pre.p)) : 0;
     // `late`: this branch takes `pre`'s heal at the turn end.
     const split = pre?.heal > 0 ? states.flatMap(st => [
-      ...(early > 0 ? [inChain(branch(Math.min(f.maxHp, st.hp + pre.heal), st.bar, st.revived, st.tok, st.p * early, false, st.left, st.sitrus), st.s)] : []),
-      ...(early < 1 ? [Object.assign(inChain(branch(st.hp, st.bar, st.revived, st.tok, st.p * (1 - early), false, st.left, st.sitrus), st.s), { late: true })] : []),
+      ...(early > 0 ? [inChain(branch(Math.min(f.maxHp, st.hp + pre.heal), st.bar, st, st.p * early), st.s)] : []),
+      ...(early < 1 ? [Object.assign(inChain(branch(st.hp, st.bar, st, st.p * (1 - early)), st.s), { late: true })] : []),
     ]) : states;
     for (const st of split) {
-      const mark = hit.length;
+      const mark = struck.length;
       for (const to of stepOf(st.s)) {
         const go = to.act ? a : 0, p = st.p * to.p;
-        if (go < 1) hit.push(inChain(branch(st.hp, st.bar, st.revived, st.tok, p * (1 - go), false, st.left, st.sitrus), to.s));
+        if (go < 1) struck.push(inChain(branch(st.hp, st.bar, st, p * (1 - go)), to.s));
         if (wentOff && go > 0) addShare(wentOff, to.s, p * go);
+        onto = to.s;
         for (const x of points) {
           const q = p * go * x.p;
           if (!(q > 0)) continue;
-          let branches = [branch(st.hp, st.bar, st.revived, st.tok, q, false, st.left, st.sitrus)];
-          for (let k = 0; k < x.n; k++) {
-            const next = [];
-            for (const b of branches) {
-              if (b.stop) next.push(b);
-              else {
-                const gone = land(f, b, x.d / x.n * factor(init.bar - b.bar), next);
-                fell += gone;
-                if (fellTo) addShare(fellTo, to.s, gone);
-              }
-            }
-            branches = next;
-          }
-          const fed = berry && x.d > 0 ? x.se ?? seAt(i) : 0;
+          const branches = landUse(f, branch(st.hp, st.bar, st, q), x.d, x.n, atBar, useHit, false, fallen);
+          const fed = berry && x.d > 0 ? x.se ?? seOf(useHit) : 0;
           for (const b of branches) {
             b.stop = false;
-            pushFed(hit, b, to.s, fed);
+            feed(inChain(b, to.s), b.dealt > 0 ? fed : 0, struck);
           }
         }
       }
-      if (st.late) for (let k = mark; k < hit.length; k++) hit[k].late = true;
+      if (st.late) for (let k = mark; k < struck.length; k++) struck[k].late = true;
     }
     if (i === 0 && firstKo != null && !start) {
-      const standing = hit.reduce((t, x) => t + x.p, 0);
+      const standing = struck.reduce((t, x) => t + x.p, 0);
       const k = Math.min(1, firstKo);
       const offs = shares([...wentOff.values()], from);
-      if (standing > 0) for (const x of hit) x.p *= (1 - k) / standing;
+      if (standing > 0) for (const x of struck) x.p *= (1 - k) / standing;
       else if (k < 1) {
         // They survived a use that landed.
         const landed = points.filter(x => x.d > 0), mass = landed.reduce((t, x) => t + x.p, 0);
-        const fed = berry && mass > 0 ? landed.reduce((t, x) => t + x.p * (x.se ?? seAt(0)), 0) / mass : 0;
-        for (const c of offs) for (const b of robbed(branch(1, init.bar, false, false, (1 - k) * c.p, false, held, sitHeld))) pushFed(hit, b, c.s, fed);
+        const fed = berry && mass > 0 ? landed.reduce((t, x) => t + x.p * (x.se ?? seOf(own)), 0) / mass : 0;
+        for (const c of offs) {
+          const left = [], lone = branch(1, init.bar, init, (1 - k) * c.p);
+          if (own.steals) pluck(f, lone, null, left); else left.push(lone);
+          for (const b of left) feed(inChain(b, c.s), fed, struck);
+        }
       }
       fell = k;
       if (fellTo) fellTo = new Map(offs.map(c => [c.s?.key, { s: c.s, p: k * c.p }]));
@@ -428,60 +767,40 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
     down += fell;
     const h = typeof turnEnd === "function" ? turnEnd(i + 1) : turnEnd;
     const h0 = typeof beforeBerry === "function" ? beforeBerry(i + 1) : beforeBerry;
-    // `b` after a signed turn-end change, null where the chip fells it.
-    const endStep = (b, d) => {
-      if (d > 0) b.hp = Math.min(f.maxHp, b.hp + d);
-      else if (d < 0) {
-        const out = [];
-        const gone = land(f, b, -d, out, false);
-        down += gone;
-        if (fellTo) addShare(fellTo, b.s, gone);
-        return out.length ? inChain(out[0], b.s) : null;
-      }
-      return b;
-    };
-    const groups = new Map();
-    const settle = b => {
-      if (!b) return;
-      const key = `${b.bar}|${b.revived}|${b.tok}|${b.left}|${b.sitrus}${chain ? `|${b.s.key}` : ""}`;
-      if (!groups.has(key)) groups.set(key, { b, pts: [] });
-      groups.get(key).pts.push({ d: b.hp, p: b.p });
+    const chipped = (gone, b) => {
+      down += gone;
+      if (fellTo) addShare(fellTo, b.s, gone);
     };
     const stolen = stealRate(i);
-    for (let b of hit) {
+    const robs = (b, out) => steal(b, stolen, out);
+    const ended = [];
+    for (const b of struck) {
       if (b.late) b.hp = Math.min(f.maxHp, b.hp + pre.heal);
-      if (!b.fed && !(sit && b.sitrus > 0)) {
-        settle(endStep(b, h));
-        continue;
-      }
-      // `endStep` may hand back a fresh branch, which carries no `fed` or `kept`.
-      const { fed, kept } = b;
-      b = endStep(b, h0);
-      if (!b) continue;
-      const standing = [];
-      steal(b, stolen, standing);
-      for (const r of standing) {
-        // Both berries read the HP before either heals (game-code.md §21).
-        const eats = sit && r.sitrus > 0 && belowHalf(r.hp, f.maxHp);
-        const heal = (fed ? berry.heal : 0) + (eats ? sit.heal : 0);
-        if (fed && !kept) r.left--;
-        const out = [r];
-        if (eats) {
-          if (sit.keep > 0) out.push({ ...r, p: r.p * sit.keep });
-          r.p *= 1 - sit.keep;
-          r.sitrus--;
-        }
-        for (const o of out) {
-          o.hp = Math.min(f.maxHp, o.hp + heal);
-          settle(endStep(o, h - h0));
-        }
-      }
+      endTurn(f, b, h0, h, sit, berry, false, ended, chipped, robs);
     }
-    states = [...groups.values()].flatMap(({ b, pts }) => squeezeDist(pts, KO_LEVELS).filter(x => x.p > 1e-9).map(x => inChain(branch(x.d, b.bar, b.revived, b.tok, x.p, false, b.left, b.sitrus), b.s)));
+    const groups = new Map();
+    // A standing Substitute's HP is squeezed in place of its owner's, at the owner's exact HP: keyed exactly, a curve
+    // of weak rolled hits into one ran for seconds (#1033).
+    for (const b of ended) {
+      const shield = b.sub > 0;
+      const key = `${shield ? keyWith(b, f, `S${b.hp}`) : landingKey(b, f)}${chain ? `|${b.s.key}` : ""}`;
+      if (!groups.has(key)) groups.set(key, { b, pts: [] });
+      groups.get(key).pts.push({ d: shield ? b.sub : b.hp, p: b.p });
+    }
+    states = [...groups.values()].flatMap(({ b, pts }) => squeezeDist(pts, KO_LEVELS).filter(x => x.p > 1e-9).map(x => {
+      const c = inChain(branch(b.sub > 0 ? b.hp : x.d, b.bar, b, x.p), b.s);
+      if (b.sub > 0) c.sub = x.d;
+      return c;
+    }));
     downAt.push(fellTo ? [...fellTo.values()].filter(x => x.p > 0) : []);
     if (i === 0) {
       const p = states.reduce((t, x) => t + x.p, 0);
-      after1 = p > 0 ? states.map(x => ({ hp: x.hp, bar: x.bar, revived: x.revived, tok: x.tok, left: x.left, sitrus: x.sitrus, p: x.p / p })) : [];
+      after1 = p > 0 ? states.map(x => {
+        const e = { hp: x.hp, bar: x.bar };
+        for (const k of DISCRETE) e[k] = x[k];
+        e.p = x.p / p;
+        return e;
+      }) : [];
     }
     by.push(Math.min(1, down));
     for (let k = 1; k <= bars; k++) {
@@ -508,8 +827,6 @@ const opponentsOf = (env, p) => {
   try { return (env?.field ?? []).filter(q => q && q !== p && q.isPlayer?.() !== p.isPlayer?.()); } catch { return []; }
 };
 const tagsOf = p => { try { return p.summonData?.tags ?? []; } catch { return []; } };
-// The Sitrus Berry's trigger: `getHpRatio` rounds to a whole percent (game-code.md §21).
-const belowHalf = (hp, max) => Math.round((hp / max) * 100) / 100 < 0.5;
 const berryQuarter = p => Math.max(1, Math.floor(p.getMaxHp() / 4)) * (ability(p, "DoubleBerryEffectAbAttr") ? 2 : 1);
 const unnerved = (env, p) => opponentsOf(env, p).some(q => ability(q, "PreventBerryUseAbAttr"));
 // One Sitrus or Enigma Berry's heal before the max-HP cap, how many `p` holds, and the chance `keep` that a Berry Pouch
@@ -522,9 +839,22 @@ const quarterBerryOf = (env, p, type) => {
   return { heal: Math.floor(berryQuarter(p) * healingCharm(env, p)), left, keep: berryPouch(env, p) };
 };
 const enigmaOf = (env, p) => quarterBerryOf(env, p, BerryType.ENIGMA);
+// `p`'s Shell Bell stacks, with its side's Healing Charm, which scales the heal; null for none or under Heal Block
+// (game-code.md §8, §18).
+const shellBellOf = (env, p) => {
+  const stacks = stack(p, "HitHealModifier");
+  return stacks > 0 && !p.getTag?.("HEAL_BLOCK") ? { stacks, charm: healingCharm(env, p) } : null;
+};
 const sitrusOf = (env, p) => quarterBerryOf(env, p, BerryType.SITRUS);
+// The berries `p` holds that its `sitrus` and `enigma` facts don't count, a stack a type as `[{ type, left }]`, null for
+// none: a steal draws over them too (game-code.md §3).
+const othersOf = (p, sitrus, enigma) => {
+  const out = items(p).filter(m => m.constructor.name === "BerryModifier" && !(m.berryType === BerryType.SITRUS && sitrus) && !(m.berryType === BerryType.ENIGMA && enigma))
+    .map(m => ({ type: m.berryType, left: m.getStackCount?.() ?? m.stackCount ?? 1 }));
+  return out.length ? out : null;
+};
 // In the game's own phase order (game-code.md §21).
-const endOfTurnSteps = (env, p, { hp = p.hp, dealt = 0, sitrus = true } = {}) => {
+const endOfTurnSteps = (env, p, { hp = p.hp, sitrus = true } = {}) => {
   const steps = [];
   if (hp <= 0) return steps;
   const max = p.getMaxHp();
@@ -549,9 +879,6 @@ const endOfTurnSteps = (env, p, { hp = p.hp, dealt = 0, sitrus = true } = {}) =>
   };
   // Heal Block doesn't stop a negative heal (game-code.md §18).
   const reverse = n => chip(Math.floor(n * charm));
-
-  const shellBells = stack(p, "HitHealModifier");
-  if (dealt > 0 && shellBells > 0) queued(frac(dealt * shellBells, 8));
 
   if (WEATHER_SPARED[weather] && !guard && !types.some(t => WEATHER_SPARED[weather].includes(t))
     && !abAttrs(p, "BlockWeatherDamageAttr").some(a => !a.weatherTypes?.length || inWeather(a))
@@ -617,9 +944,9 @@ const applyTurnEnd = (steps, hp, max) => {
   }
   return cur;
 };
-// Signed, with no boss bars in the way, and no Enigma Berry: that is `koCurve`'s, as is the Sitrus under `sitrus`
-// false. `hp`: the HP it will have by then; `dealt`: this turn's damage dealt, for Shell Bell; `beforeBerries`: only the
-// part ahead of the BerryPhase. Reads fields and item and ability attributes only.
+// Signed, with no boss bars in the way, and no Enigma Berry: that is Landing's turn end's, as is the Sitrus under
+// `sitrus` false, and no Shell Bell, which is Landing's use's (game-code.md §8). `hp`: the HP it will have by then;
+// `beforeBerries`: only the part ahead of the BerryPhase. Reads fields and item and ability attributes only.
 // @only 25-turn, tests: sceneTurnEndHp
 export const sceneTurnEndHp = (env, p, opts = {}) => {
   const hp = opts.hp ?? p.hp;
@@ -743,14 +1070,22 @@ const fromGame = (env, atk, def, pm, opts) => {
   const first = call(0, false);
   const eGame = def.getMoveEffectiveness?.(atk, move, gameIgnore, true);
   const e = first.cancelled ? 0 : typeof eGame === "number" ? eGame : RESULT_MULT[first.result] ?? 1;
-  const base = { name: pm.getName(), type, cat, e, priority, spread, spreadApplied, traits: t, self: 0, bypassProtect: bypassesProtect(atk, def, move) };
-  const blocked = cancelledBy(env, atk, def, move);
-  if (first.cancelled || first.result === HitResult.NO_EFFECT || first.result === HitResult.IMMUNE || blocked) {
-    return { ...base, acc: 0, crit: 0, dist, perHit: [{ max: 0, min: 0 }], targetHp: def.hp, expected: 0, uncapped: 0, max: 0, pKo: 0, revive: 0, costs: [], notes: [blocked ? `stopped by ${blocked}` : "no effect"], use: [{ d: 0, p: 1, n: 0 }], focus: 0, flinch: 0 };
-  }
-
   const ohko = first.result === HitResult.ONE_HIT_KO;
   const fixed = !ohko && attrs(move, "FixedDamageAttr").length > 0;
+  const ignoresSturdy = ignoreAbility || (fixed && fixedIgnoresSturdy(env));
+  const ignoresSub = pastSub(atk, move);
+  // Disguise and Ice Face (game-code.md §8).
+  const ignoresDisguise = ignoreAbility || fixed || ohko || !meetsBlock(def, atk, move);
+  const facts = targetFacts(env, def, ignoreAbility);
+  // (game-code.md §1, §2)
+  const cut = fixed || ohko ? "never" : !gameIgnore && facts.hp >= facts.maxHp && (facts.multiscale || facts.shadowShield) ? "in" : null;
+  const base = { name: pm.getName(), type, cat, e, priority, spread, spreadApplied, traits: t, self: 0, userCost: null, bypassProtect: bypassesProtect(atk, def, move), ignoresAbility: ignoreAbility, ignoresDisguise, cut,
+    steals: stealsOff(t, def, ignoreAbility) };
+  const blocked = cancelledBy(env, atk, def, move);
+  if (first.cancelled || first.result === HitResult.NO_EFFECT || first.result === HitResult.IMMUNE || blocked) {
+    return { ...base, acc: 0, crit: 0, dist, perHit: [{ max: 0, min: 0 }], targetHp: def.hp, expected: 0, uncapped: 0, max: 0, pKo: 0, revive: 0, costs: [], notes: [blocked ? `stopped by ${blocked}` : "no effect"], use: [{ d: 0, p: 1, n: 0 }], focus: 0, ignoresSturdy, ignoresSub, flinch: 0 };
+  }
+
   const psywave = attrs(move, "RandomLevelDamageAttr").length > 0;
   const present = attrs(move, "PresentPowerAttr").length > 0;
   const crit = opts.crit === true ? 1 : opts.crit === false || fixed || ohko ? 0 : (() => {
@@ -810,22 +1145,22 @@ const fromGame = (env, atk, def, pm, opts) => {
   }
   const acc = accuracy(atk, def, move, ohko);
   const checkAll = t.hits.checkAll;
-  // Taken before Disguise zeroes the first hit: a later use meets no disguise.
   const use = useDist(perHit, dist, acc, checkAll);
-  // The simulated call ignores Disguise and Ice Face (game-code.md §1).
-  const disguise = !ignoreAbility && !!def.getAbility?.()?.getAttrs?.("FormBlockDamageAbAttr")?.some(a => a.formIndex === def.formIndex);
-  if (disguise) { perHit[0] = new Map([[0, 1]]); maxes[0] = 0; }
 
-  const facts = targetFacts(env, def, ignoreAbility);
-  const ignoresSturdy = ignoreAbility || (fixed && fixedIgnoresSturdy(env));
   const f = ignoresSturdy && facts.sturdy ? { ...facts, sturdy: false } : facts;
-  const ends = resolve(f, perHit, dist, acc, checkAll, ohko);
+  // The simulated call ignores Disguise and Ice Face, which Landing applies (game-code.md §1).
+  const strikes = { ignoresSturdy, ignoresSub, ohko, ignoresAbility: ignoreAbility, ignoresDisguise, cut };
+  // What the use deals is priced past a Substitute, as `use` is; `pKo` is not (game-code.md §8).
+  const shielded = facts.sub > 0 && !ignoresSub;
+  const bare = shielded ? { ...facts, sub: 0 } : facts;
+  const ends = resolve(bare, perHit, dist, acc, checkAll, strikes);
   const expected = f.hp - ends.reduce((t, x) => t + x.p * Math.max(0, x.hp), 0);
-  const pKo = f.revive ? 0 : ends.filter(x => x.hp <= 0).reduce((t, x) => t + x.p, 0);
+  const kos = shielded ? resolve(facts, perHit, dist, acc, checkAll, strikes) : ends;
+  const pKo = f.revive ? 0 : kos.filter(x => x.hp <= 0).reduce((t, x) => t + x.p, 0);
   // Expected damage a use before the target's HP or a bar cuts it: what later turns deal.
   const uncapped = perHit.reduce((t, m, k) => t + (k === 0 || checkAll ? acc ** (k + 1) : acc)
     * dist.filter(x => x.n > k).reduce((u, x) => u + x.p, 0) * [...m].reduce((u, [d, p]) => u + d * p, 0), 0);
-  const [worst] = resolve({ ...f, pFocus: 0, pEndure: 0 }, maxes.map(d => new Map([[d, 1]])), [{ n: hitsMax, p: 1 }], 1, false, ohko);
+  const [worst] = resolve({ ...bare, pFocus: 0, pEndure: 0 }, maxes.map(d => new Map([[d, 1]])), [{ n: hitsMax, p: 1 }], 1, false, strikes);
 
   // Whether the order lets it land is the planner's (game-code.md §5).
   const semiTag = (def.summonData?.tags ?? []).find(t => isA(t, "SemiInvulnerableTag"));
@@ -841,21 +1176,36 @@ const fromGame = (env, atk, def, pm, opts) => {
     : acc * dist.reduce((t, x) => t + x.n * x.p, 0);
   const contact = flagApplies(move, MoveFlags.MAKES_CONTACT, atk, def, hasFlag(move, MoveFlags.MAKES_CONTACT));
   const fromTarget = [];
+  // Landing's `userCost`, what a use costs its user once it lands or misses (game-code.md §8).
+  const cost = { strike: 0, recoil: 0, landed: 0, missed: 0 };
+  const half = Math.max(1, Math.floor(maxHp / 2));
   if (contact && !t.guarded && maxHp && ability(def, "PostDefendContactDamageAbAttr")) {
     const [abName, ratio] = [def.getAbility?.(), def.hasPassive?.() ? def.getPassiveAbility?.() : null]
       .flatMap(a => (a?.getAttrs?.("PostDefendContactDamageAbAttr") ?? []).map(x => [a.name, x.damageRatio])).find(Boolean) ?? ["contact", 8];
-    const chip = Math.max(1, Math.floor(maxHp / (ratio || 8))) * landed;
+    cost.strike = Math.max(1, Math.floor(maxHp / (ratio || 8)));
+    const chip = cost.strike * landed;
     self += chip;
     fromTarget.push(`${abName}: ≈−${Math.round(chip / maxHp * 100)}%`);
   }
   let recoilShare = null;
   if (t.recoil && !t.recoil.blocked && maxHp) {
-    const hurt = t.recoil.useHp ? Math.max(1, Math.floor(maxHp * t.recoil.ratio)) * acc : expected * t.recoil.ratio;
+    const fixed = Math.max(1, Math.floor(maxHp * t.recoil.ratio));
+    if (t.recoil.useHp) cost.landed += fixed;
+    else cost.recoil = t.recoil.ratio;
+    const hurt = t.recoil.useHp ? fixed * acc : expected * t.recoil.ratio;
     self += hurt;
     recoilShare = hurt / maxHp;
   }
-  if (t.halfSac && maxHp) self += Math.max(1, Math.floor(maxHp / 2));
-  if (t.crash && maxHp && acc < 1) self += Math.max(1, Math.floor(maxHp / 2)) * (1 - acc);
+  if (t.halfSac && maxHp) {
+    self += half;
+    cost.landed += half;
+    cost.missed += half;
+  }
+  if (t.crash && maxHp) {
+    if (acc < 1) self += half * (1 - acc);
+    cost.missed += half;
+  }
+  const userCost = cost.strike || cost.recoil || cost.landed || cost.missed ? cost : null;
   const selfKo = t.selfKo === "onHit" ? acc : t.selfKo === "always" ? 1 : 0;
   const costs = [...fromTarget, ...costNotes(t, { recoil: recoilShare, type })];
   const drain = drainRatio(env, atk, def, t);
@@ -868,20 +1218,27 @@ const fromGame = (env, atk, def, pm, opts) => {
   if (f.sturdy && f.hp >= f.maxHp) notes.push("sturdy");
   if (f.pFocus) notes.push("focus band");
   if (f.revive) notes.push("reviver seed");
-  if (disguise) notes.push("disguise");
+  if (shielded) notes.push("substitute");
+  if (f.disguise && !ignoresDisguise) notes.push("disguise");
   if (crit === 1) notes.push("crit");
   if (semi) notes.push("target semi-invulnerable");
   return {
-    ...base, acc, crit, dist, semi, self, selfKo, drain,
+    ...base, acc, crit, dist, semi, self, userCost, selfKo, drain,
     perHit: maxes.map((max, k) => ({ max, min: Math.min(max, lows[k] ?? Math.floor(max * 0.85)) })), targetHp: f.hp,
-    expected, uncapped, max: f.hp - Math.max(0, worst.hp), pKo, revive: f.revive, costs, notes,
-    use, focus: f.pFocus, ignoresSturdy, flinch: flinchChance(atk, def, move, ignoreAbility),
+    expected, uncapped, max: f.hp - Math.max(0, worst.hp), pKo, revive: f.revive, sub: shielded ? facts.sub : 0, costs, notes,
+    use, focus: f.pFocus, ignoresSturdy, ignoresSub, flinch: flinchChance(atk, def, move, ignoreAbility),
   };
 };
 
 // By ability name and move flag, never `ignoresAbilities`: a combatant can't answer the game's call, and here it would
 // run unsandboxed (#995).
 const approxIgnoresAbilities = (atk, mv) => hasMoldBreaker(atk) || hasFlag(mv, MoveFlags.IGNORE_ABILITIES);
+// A hit that gets past a Substitute: a sound move, one that ignores it, or an Infiltrator's (game-code.md §8).
+// @mirrors sub-bypass
+const pastSub = (atk, mv) => hasFlag(mv, MoveFlags.SOUND_BASED) || hasFlag(mv, MoveFlags.IGNORE_SUBSTITUTE) || ability(atk, "InfiltratorAbAttr");
+// A record's `steals`: true for a Bug Bite or Pluck, null for any other move or where the target's Sticky Hold stops it
+// (game-code.md §3).
+const stealsOff = (t, def, ignoreAbility) => (t.attrNames?.has("StealEatBerryAttr") && (ignoreAbility || !ability(def, "BlockItemTheftAbAttr")) ? true : null);
 // @mirrors ate
 const ATE = { Refrigerate: "Ice", Pixilate: "Fairy", Aerilate: "Flying", Galvanize: "Electric" };
 const approx = (a, d, pm) => {
@@ -913,8 +1270,13 @@ const fromApprox = (env, atk, def, pm) => {
   const acc = mv.accuracy > 0 ? mv.accuracy / 100 : 1;
   const max = Math.floor(x.dmg);
   const ignoresSturdy = approxIgnoresAbilities(atk, mv);
+  const ignoresSub = pastSub(atk, mv);
+  const ignoresDisguise = ignoresSturdy || !meetsBlock(def, atk, mv);
   const facts = targetFacts(env, def, ignoresSturdy);
-  const end = applyHit(facts, max);
+  const shielded = facts.sub > 0 && !ignoresSub;
+  const once = f => resolve({ ...f, pFocus: 0, pEndure: 0 }, [new Map([[Math.max(0, max), 1]])], [{ n: 1, p: 1 }], 1, false, { ignoresDisguise, ignoresSub })[0];
+  const hit = once({ ...facts, sub: 0 });
+  const end = { hp: Math.max(0, hit.hp), ko: (shielded ? once(facts) : hit).hp <= 0 };
   const { revive, pFocus } = facts;
   const rolls = new Map();
   addRolls(rolls, max, 1);
@@ -922,11 +1284,12 @@ const fromApprox = (env, atk, def, pm) => {
   return {
     // `raw`: the estimate before the target's HP cuts it, which is what a `dmg` for the rows is taken from.
     raw: x.dmg,
-    name: x.name, type: x.type, cat: x.cat, e: x.e, priority: x.priority, spread: x.spread, spreadApplied: false, traits: t, semi: false, self: 0,
+    name: x.name, type: x.type, cat: x.cat, e: x.e, priority: x.priority, spread: x.spread, spreadApplied: false, traits: t, semi: false, self: 0, userCost: null,
     acc, crit: 0, dist: [{ n: 1, p: 1 }], perHit: [{ max, min: Math.floor(max * 0.85) }], targetHp: def.hp,
-    expected: Math.min(def.hp - end.hp, max * 0.925) * acc, uncapped: max * 0.925 * acc, max: def.hp - end.hp, pKo: end.ko && !revive ? acc : 0, revive,
+    expected: Math.min(def.hp - end.hp, max * 0.925) * acc, uncapped: max * 0.925 * acc, max: def.hp - end.hp, pKo: end.ko && !revive ? acc : 0, revive, sub: shielded ? facts.sub : 0,
     costs: costNotes(t, { type: x.type }), notes: ["estimate"], live: false,
-    use: useDist([rolls], [{ n: 1, p: 1 }], acc, false), focus: pFocus, ignoresSturdy, flinch: flinchChance(atk, def, mv, false), drain: drainRatio(env, atk, def, t),
+    use: useDist([rolls], [{ n: 1, p: 1 }], acc, false), focus: pFocus, ignoresSturdy, ignoresSub, ignoresAbility: ignoresSturdy, ignoresDisguise, cut: null, steals: stealsOff(t, def, ignoresSturdy),
+    flinch: flinchChance(atk, def, mv, false), drain: drainRatio(env, atk, def, t),
   };
 };
 
@@ -994,12 +1357,12 @@ export const useOf = o => {
   return squeezeDist([...(acc < 1 ? [{ d: 0, p: 1 - acc, n: 0 }] : []), ...pts.map(x => ({ d: x.d * k, p: x.p, n }))], 12);
 };
 // A record's KO odds at another HP than its `targetHp`: linear across the roll range, all or nothing for an
-// approximation.
+// approximation. One priced into a Substitute (`sub`) keeps its own odds at any HP.
 export const koChanceAt = (o, hp) => {
   if (!o) return 0;
   if (hp <= 0) return 1;
   if (o.revive) return 0;
-  if (hp >= (o.targetHp ?? Infinity)) return o.pKo ?? 0;
+  if (o.sub > 0 || hp >= (o.targetHp ?? Infinity)) return o.pKo ?? 0;
   if (!(o.max >= hp)) return 0;
   return o.live === false ? 1 : Math.max(o.pKo ?? 0, (o.acc ?? 1) * Math.min(1, (o.max - hp) / (0.15 * o.max) + 1 / 16));
 };
